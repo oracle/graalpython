@@ -5,6 +5,6 @@ test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs_keep_buffer @ darwin-
 test.test_multibytecodec.Test_IncrementalEncoder.test_issue5640 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multibytecodec.Test_IncrementalEncoder.test_stateless @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multibytecodec.Test_MultibyteCodec.test_codingspec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_multibytecodec.Test_StreamWriter.test_gb18030 @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multibytecodec.Test_StreamWriter.test_streamwriter_strwrite @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_multibytecodec.Test_StreamWriter.test_utf_8 @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_multibytecodec.Test_StreamWriter.test_gb18030 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_multibytecodec.Test_StreamWriter.test_streamwriter_strwrite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_multibytecodec.Test_StreamWriter.test_utf_8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

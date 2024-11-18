@@ -3,4 +3,4 @@ test.test_crypt.CryptTestCase.test_invalid_rounds @ darwin-arm64,darwin-x86_64,l
 test.test_crypt.CryptTestCase.test_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_crypt.CryptTestCase.test_salt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_crypt.CryptTestCase.test_saltedcrypt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_crypt.CryptTestCase.test_sha2_rounds @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_crypt.CryptTestCase.test_sha2_rounds @ linux-aarch64,linux-x86_64

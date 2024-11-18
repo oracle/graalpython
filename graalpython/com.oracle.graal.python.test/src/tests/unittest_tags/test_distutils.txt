@@ -21,8 +21,8 @@ distutils.tests.test_archive_util.ArchiveUtilTestCase.test_tarfile_vs_tar @ darw
 distutils.tests.test_bdist.BuildTestCase.test_formats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 distutils.tests.test_bdist.BuildTestCase.test_skip_build @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 distutils.tests.test_bdist_dumb.BuildDumbTestCase.test_simple_built @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-distutils.tests.test_bdist_rpm.BuildRpmTestCase.test_no_optimize_flag @ darwin-x86_64,linux-aarch64,linux-x86_64
-distutils.tests.test_bdist_rpm.BuildRpmTestCase.test_quiet @ darwin-x86_64,linux-aarch64,linux-x86_64
+distutils.tests.test_bdist_rpm.BuildRpmTestCase.test_no_optimize_flag @ linux-aarch64,linux-x86_64
+distutils.tests.test_bdist_rpm.BuildRpmTestCase.test_quiet @ linux-aarch64,linux-x86_64
 distutils.tests.test_build.BuildTestCase.test_finalize_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 distutils.tests.test_build_clib.BuildCLibTestCase.test_build_libraries @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 distutils.tests.test_build_clib.BuildCLibTestCase.test_check_library_dist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

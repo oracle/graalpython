@@ -9,7 +9,7 @@ test.test_support.TestSupport.test_change_cwd @ darwin-arm64,darwin-x86_64,linux
 test.test_support.TestSupport.test_change_cwd__chdir_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_change_cwd__non_existent_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_change_cwd__non_existent_dir__quiet_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_support.TestSupport.test_check__all__ @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_support.TestSupport.test_check__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_check_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_detect_api_mismatch @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_detect_api_mismatch__ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -20,7 +20,7 @@ test.test_support.TestSupport.test_gc_collect @ darwin-arm64,darwin-x86_64,linux
 test.test_support.TestSupport.test_get_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_get_recursion_depth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_has_strftime_extensions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_support.TestSupport.test_ignored_deprecations_are_silent @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_support.TestSupport.test_ignored_deprecations_are_silent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_import_fresh_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_import_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_support.TestSupport.test_make_bad_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

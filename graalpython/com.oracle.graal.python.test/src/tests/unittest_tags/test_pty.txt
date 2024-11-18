@@ -1,4 +1,4 @@
 test.test_pty.PtyTest.test_master_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pty.PtyTest.test_openpty @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_pty.PtyTest.test_openpty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pty.SmallPtyTests.test__copy_to_each @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pty.SmallPtyTests.test__restore_tty_mode_normal_return @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

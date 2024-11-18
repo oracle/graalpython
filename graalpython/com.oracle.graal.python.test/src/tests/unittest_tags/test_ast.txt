@@ -65,6 +65,7 @@ test.test_ast.ASTValidatorTests.test_unaryop @ darwin-arm64,darwin-x86_64,linux-
 test.test_ast.ASTValidatorTests.test_while @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.ASTValidatorTests.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.ASTValidatorTests.test_yield @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ast.AST_Tests.test_AST_garbage_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_AST_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -73,7 +74,7 @@ test.test_ast.AST_Tests.test_ast_asdl_signature @ darwin-arm64,darwin-x86_64,lin
 test.test_ast.AST_Tests.test_ast_validation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_base_classes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_classattrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ast.AST_Tests.test_compilation_of_ast_nodes_with_default_end_position_values @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_ast.AST_Tests.test_compilation_of_ast_nodes_with_default_end_position_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_constant_as_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_debug_f_string_feature_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ast.AST_Tests.test_empty_yield_from @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

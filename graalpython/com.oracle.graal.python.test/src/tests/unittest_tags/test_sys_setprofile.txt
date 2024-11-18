@@ -14,10 +14,10 @@ test.test_sys_setprofile.ProfileSimulatorTestCase.test_caught_exception @ darwin
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_distant_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_invalid_args @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_invalid_keyword_args @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_no_args @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_no_keyword_args @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_sys_setprofile.TestEdgeCases.test_same_object @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_sys_setprofile.TestGetProfile.test_empty @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_sys_setprofile.TestGetProfile.test_setget @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_invalid_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_no_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sys_setprofile.TestEdgeCases.test_same_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sys_setprofile.TestGetProfile.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sys_setprofile.TestGetProfile.test_setget @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

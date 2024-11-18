@@ -79,10 +79,10 @@ ctypes.test.test_cast.Test.test_p2a_objects @ darwin-arm64,darwin-x86_64,linux-a
 ctypes.test.test_cast.Test.test_wchar_p @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_delattr.TestCase.test_chararray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_delattr.TestCase.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_delattr.TestCase.test_struct @ darwin-arm64,linux-aarch64,linux-x86_64
-ctypes.test.test_find.FindLibraryLinux.test_find_library_with_gcc @ darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_find.FindLibraryLinux.test_find_library_with_ld @ darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_find.FindLibraryLinux.test_find_on_libpath @ darwin-x86_64,linux-aarch64,linux-x86_64
+ctypes.test.test_delattr.TestCase.test_struct @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+ctypes.test.test_find.FindLibraryLinux.test_find_library_with_gcc @ linux-aarch64,linux-x86_64
+ctypes.test.test_find.FindLibraryLinux.test_find_library_with_ld @ linux-aarch64,linux-x86_64
+ctypes.test.test_find.FindLibraryLinux.test_find_on_libpath @ linux-aarch64,linux-x86_64
 ctypes.test.test_find.Test_OpenGL_libs.test_gl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_find.Test_OpenGL_libs.test_glu @ darwin-arm64,darwin-x86_64
 ctypes.test.test_find.Test_OpenGL_libs.test_shell_injection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -127,7 +127,7 @@ ctypes.test.test_libc.LibTest.test_qsort @ darwin-arm64,darwin-x86_64,linux-aarc
 ctypes.test.test_libc.LibTest.test_sqrt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_loading.LoaderTest.test_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_loading.LoaderTest.test_load @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-ctypes.test.test_loading.LoaderTest.test_load_version @ darwin-x86_64,linux-aarch64,linux-x86_64
+ctypes.test.test_loading.LoaderTest.test_load_version @ linux-aarch64,linux-x86_64
 ctypes.test.test_macholib.MachOTest.test_find @ darwin-arm64,darwin-x86_64
 ctypes.test.test_macholib.MachOTest.test_framework_info @ darwin-arm64,darwin-x86_64
 ctypes.test.test_macholib.MachOTest.test_info @ darwin-arm64,darwin-x86_64

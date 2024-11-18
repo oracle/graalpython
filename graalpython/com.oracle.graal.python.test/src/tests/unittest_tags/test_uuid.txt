@@ -3,7 +3,7 @@ test.test_uuid.TestInternalsWithoutExtModule.test_find_mac_near_keyword @ darwin
 test.test_uuid.TestInternalsWithoutExtModule.test_find_under_heading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_uuid.TestInternalsWithoutExtModule.test_find_under_heading_ipv6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_uuid.TestInternalsWithoutExtModule.test_ifconfig_getnode @ darwin-arm64,darwin-x86_64
-test.test_uuid.TestInternalsWithoutExtModule.test_ip_getnode @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_uuid.TestInternalsWithoutExtModule.test_ip_getnode @ linux-aarch64,linux-x86_64
 test.test_uuid.TestInternalsWithoutExtModule.test_netstat_getnode @ darwin-arm64,darwin-x86_64
 test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac_aix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

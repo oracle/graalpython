@@ -3,6 +3,6 @@ test.test_signal.GenericTests.test_functions_module_attr @ darwin-arm64,darwin-x
 test.test_signal.ItimerTest.test_setitimer_tiny @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_signal.PosixTests.test_getsignal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_signal.PosixTests.test_valid_signals @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_signal.PosixTests.test_valid_signals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_signal.SiginterruptTest.test_siginterrupt_off @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_signal.StressTest.test_stress_modifying_handlers @ darwin-arm64
+test.test_signal.StressTest.test_stress_modifying_handlers @ darwin-arm64,darwin-x86_64

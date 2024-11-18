@@ -1,11 +1,11 @@
-test.test_pulldom.PullDOMTestCase.test_comment @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_pulldom.PullDOMTestCase.test_end_document @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_pulldom.PullDOMTestCase.test_comment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pulldom.PullDOMTestCase.test_end_document @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.PullDOMTestCase.test_expandItem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.PullDOMTestCase.test_external_ges_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.PullDOMTestCase.test_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.PullDOMTestCase.test_parse_semantics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.SAX2DOMTestCase.testSAX2DOM @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.SAX2DOMTestCase.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pulldom.ThoroughTestCase.test_sax2dom_fail @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_pulldom.ThoroughTestCase.test_sax2dom_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.ThoroughTestCase.test_thorough_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pulldom.ThoroughTestCase.test_thorough_sax2dom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

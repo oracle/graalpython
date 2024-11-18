@@ -2,7 +2,7 @@ test.test_multiprocessing_spawn.test_misc.MiscTestCase.test__all__ @ darwin-arm6
 test.test_multiprocessing_spawn.test_misc.MiscTestCase.test_spawn_sys_executable_none_allows_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.OtherTest.test_answer_challenge_auth_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.OtherTest.test_deliver_challenge_auth_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_spawn.test_misc.SemLockTests.test_semlock_subclass @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_multiprocessing_spawn.test_misc.SemLockTests.test_semlock_subclass @ linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestForkAwareThreadLock.test_lock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestIgnoreEINTR.test_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestIgnoreEINTR.test_ignore_listener @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -64,7 +64,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_tho
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_timeout @ darwin-arm64,darwin-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestBarrier.test_wait_return @ darwin-arm64,darwin-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_notify @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_notify_all @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_notify_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_notify_n @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestCondition.test_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestConnection.test_connection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -74,7 +74,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestConnection.test_
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestConnection.test_spawn_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestEvent.test_event @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestEvent.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestListener.test_abstract_socket @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_multiprocessing_spawn.test_processes.WithProcessesTestListener.test_abstract_socket @ linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestListener.test_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestListener.test_multiple_bind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestListenerClient.test_issue14725 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -142,7 +142,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_fork 
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_no_import_lock_contention @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_put @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_qsize @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_qsize @ linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_queue_feeder_donot_stop_onexc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_queue_feeder_on_queue_feeder_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestQueue.test_task_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

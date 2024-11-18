@@ -11,7 +11,7 @@ test.test_posix.PosixTester.test_fstat @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_posix.PosixTester.test_fstatvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_ftruncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_getcwd_long_pathnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_posix.PosixTester.test_getgroups @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_getgroups @ linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_lchown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_listdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.PosixTester.test_listdir_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -44,4 +44,4 @@ test.test_posix.TestPosixDirFd.test_rename_dir_fd @ darwin-arm64,darwin-x86_64,l
 test.test_posix.TestPosixDirFd.test_stat_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.TestPosixDirFd.test_symlink_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_posix.TestPosixDirFd.test_unlink_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_posix.TestPosixDirFd.test_utime_dir_fd @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_utime_dir_fd @ linux-aarch64,linux-x86_64

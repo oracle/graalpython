@@ -26,7 +26,7 @@ test.test_shutil.TestCopy.test_copy_dir @ darwin-arm64,darwin-x86_64,linux-aarch
 test.test_shutil.TestCopy.test_copy_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestCopy.test_copy_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestCopy.test_copyfile_copy_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_shutil.TestCopy.test_copyfile_nonexistent_dir @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopy.test_copyfile_nonexistent_dir @ linux-aarch64,linux-x86_64
 test.test_shutil.TestCopy.test_copyfile_return_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestCopy.test_copyfile_same_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestCopy.test_copyfile_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -35,9 +35,9 @@ test.test_shutil.TestCopy.test_copymode_symlink_to_symlink_wo_lchmod @ darwin-ar
 test.test_shutil.TestCopy.test_copystat_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestCopy.test_dont_copy_file_onto_link_to_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestCopy.test_dont_copy_file_onto_symlink_to_itself @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_shutil.TestCopyFile.test_w_dest_close_fails @ darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_shutil.TestCopyFile.test_w_dest_open_fails @ darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_shutil.TestCopyFile.test_w_source_close_fails @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFile.test_w_dest_close_fails @ linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFile.test_w_dest_open_fails @ linux-aarch64,linux-x86_64
+test.test_shutil.TestCopyFile.test_w_source_close_fails @ linux-aarch64,linux-x86_64
 test.test_shutil.TestCopyFile.test_w_source_open_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestCopyFileObj.test_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_shutil.TestCopyFileObj.test_file_not_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

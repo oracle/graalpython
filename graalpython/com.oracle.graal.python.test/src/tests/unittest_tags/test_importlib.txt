@@ -978,7 +978,7 @@ test.test_importlib.test_namespace_pkgs.SingleNestedZipNamespacePackage.test_can
 test.test_importlib.test_namespace_pkgs.SingleNestedZipNamespacePackage.test_simple_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_namespace_pkgs.SingleZipNamespacePackage.test_cant_import_other @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_namespace_pkgs.SingleZipNamespacePackage.test_simple_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.test_namespace_pkgs.ZipWithMissingDirectory.test_missing_directory @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_importlib.test_namespace_pkgs.ZipWithMissingDirectory.test_missing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_namespace_pkgs.ZipWithMissingDirectory.test_present_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_open.CommonBinaryTests.test_extant_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.test_open.CommonBinaryTests.test_importing_module_as_side_effect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -59,7 +59,7 @@ test.test_os.FDInheritanceTests.test_dup2 @ darwin-arm64,darwin-x86_64,linux-aar
 test.test_os.FDInheritanceTests.test_dup_standard_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.FDInheritanceTests.test_get_set_inheritable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.FDInheritanceTests.test_get_set_inheritable_badf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_os.FDInheritanceTests.test_get_set_inheritable_o_path @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FDInheritanceTests.test_get_set_inheritable_o_path @ linux-aarch64,linux-x86_64
 test.test_os.FDInheritanceTests.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.FDInheritanceTests.test_openpty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.FDInheritanceTests.test_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -97,10 +97,10 @@ test.test_os.NonLocalSymlinkTests.test_directory_link_nonlocal @ darwin-arm64,da
 test.test_os.OSErrorTests.test_oserror_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.PathTConverterTests.test_path_t_converter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.PathTConverterTests.test_path_t_converter_and_custom_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_os.Pep383Tests.test_listdir @ darwin-arm64
-test.test_os.Pep383Tests.test_open @ darwin-arm64
-test.test_os.Pep383Tests.test_stat @ darwin-arm64
-test.test_os.Pep383Tests.test_statvfs @ darwin-arm64
+test.test_os.Pep383Tests.test_listdir @ darwin-arm64,darwin-x86_64
+test.test_os.Pep383Tests.test_open @ darwin-arm64,darwin-x86_64
+test.test_os.Pep383Tests.test_stat @ darwin-arm64,darwin-x86_64
+test.test_os.Pep383Tests.test_statvfs @ darwin-arm64,darwin-x86_64
 test.test_os.PidTests.test_getppid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.ReadlinkTests.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.ReadlinkTests.test_missing_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -128,7 +128,7 @@ test.test_os.TestInvalidFD.test_fdopen @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_os.TestInvalidFD.test_fstat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.TestInvalidFD.test_fstatvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.TestInvalidFD.test_fsync @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_os.TestInvalidFD.test_ftruncate @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_os.TestInvalidFD.test_ftruncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.TestInvalidFD.test_inheritable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.TestInvalidFD.test_isatty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.TestInvalidFD.test_lseek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -182,7 +182,7 @@ test.test_os.UtimeTests.test_utime_by_indexed @ darwin-arm64,darwin-x86_64,linux
 test.test_os.UtimeTests.test_utime_by_times @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.UtimeTests.test_utime_current @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.UtimeTests.test_utime_current_old @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_os.UtimeTests.test_utime_dir_fd @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.UtimeTests.test_utime_dir_fd @ linux-aarch64,linux-x86_64
 test.test_os.UtimeTests.test_utime_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.UtimeTests.test_utime_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_os.UtimeTests.test_utime_invalid_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

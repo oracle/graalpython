@@ -4,7 +4,7 @@ test.test_time.TestAsctime4dyear.test_year @ darwin-arm64,darwin-x86_64,linux-aa
 test.test_time.TestLocale.test_bug_3061 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_time.TestPytime.test_localtime_timezone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_time.TestPytime.test_short_times @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_time.TestPytime.test_strptime_timezone @ darwin-arm64
+test.test_time.TestPytime.test_strptime_timezone @ darwin-arm64,darwin-x86_64
 test.test_time.TestStrftime4dyear.test_large_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_time.TestStrftime4dyear.test_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_time.TestStrftime4dyear.test_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -27,7 +27,7 @@ test.test_time.TimeTestCase.test_sleep @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_time.TimeTestCase.test_strftime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_time.TimeTestCase.test_strftime_bounding_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_time.TimeTestCase.test_strftime_format_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_time.TimeTestCase.test_strptime @ darwin-arm64
+test.test_time.TimeTestCase.test_strptime @ darwin-arm64,darwin-x86_64
 test.test_time.TimeTestCase.test_strptime_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_time.TimeTestCase.test_strptime_exception_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_time.TimeTestCase.test_thread_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

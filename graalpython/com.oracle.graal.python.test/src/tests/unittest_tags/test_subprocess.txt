@@ -106,7 +106,7 @@ test.test_subprocess.ProcessTestCase.test_executable_replaces_shell @ darwin-arm
 test.test_subprocess.ProcessTestCase.test_executable_takes_precedence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_executable_with_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_executable_without_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_subprocess.ProcessTestCase.test_failed_child_execute_fd_leak @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_subprocess.ProcessTestCase.test_failed_child_execute_fd_leak @ linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_file_not_found_includes_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_file_not_found_with_bad_cwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_handles_closed_on_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

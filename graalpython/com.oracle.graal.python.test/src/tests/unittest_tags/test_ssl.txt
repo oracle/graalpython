@@ -75,8 +75,8 @@ test.test_ssl.TestEnumerations.test_tlsversion @ darwin-arm64,darwin-x86_64,linu
 test.test_ssl.TestEnumerations.test_verifyflags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.TestEnumerations.test_verifymode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.TestPreHandshakeClose.test_https_client_non_tls_response_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_client @ darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_server @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_client @ linux-aarch64,linux-x86_64
+test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_server @ linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_PROTOCOL_TLS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_asyncore_server @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ssl.ThreadedTests.test_check_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
