@@ -15,5 +15,6 @@ test.test_trace.TestLineCounts.test_linear_methods @ darwin-arm64,darwin-x86_64,
 test.test_trace.TestLineCounts.test_traced_decorated_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_trace.TestLineCounts.test_traced_func_importing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_trace.TestLineCounts.test_traced_func_linear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_trace.TestRunExecCounts.test_exec_counts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# GR-59862 - passes only if one of the other tests invokes the traced function before
+!test.test_trace.TestRunExecCounts.test_exec_counts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_trace.Test_Ignore.test_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
