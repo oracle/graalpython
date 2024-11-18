@@ -66,8 +66,9 @@ from pathlib import Path
 from textwrap import dedent
 
 DIR = Path(__file__).parent.resolve()
+GRAALPYTHON_DIR = DIR.parent.parent.resolve()
 UNIT_TEST_ROOT = (DIR / 'tests').resolve()
-TAGGED_TEST_ROOT = (DIR.parent.parent / 'lib-python' / '3' / 'test').resolve()
+TAGGED_TEST_ROOT = (GRAALPYTHON_DIR / 'lib-python' / '3' / 'test').resolve()
 IS_GRAALPY = sys.implementation.name == 'graalpy'
 
 
@@ -1197,7 +1198,7 @@ def main():
         args.failfast = True
 
     if IS_GRAALPY:
-        if get_bool_env('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS'):
+        if not get_bool_env('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS'):
             # noinspection PyUnresolvedReferences
             if not __graalpython__.java_assert():
                 sys.exit(
@@ -1206,13 +1207,13 @@ def main():
         if not hasattr(__graalpython__, 'tdebug'):
             sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")
 
-    implicit_root = (TAGGED_TEST_ROOT if args.tagged else UNIT_TEST_ROOT).relative_to(Path('.').resolve())
+    implicit_root = Path(os.path.relpath(TAGGED_TEST_ROOT if args.tagged else UNIT_TEST_ROOT))
     for i, test in enumerate(args.tests):
-        if not test.test_file.is_absolute() and not test.test_file.resolve().is_relative_to(DIR.parent.parent):
+        if not test.test_file.is_absolute() and not test.test_file.resolve().is_relative_to(GRAALPYTHON_DIR):
             args.tests[i] = test.with_test_file(implicit_root / test.test_file)
     for i, ignore in enumerate(args.ignore):
         ignore_path = Path(ignore)
-        if not ignore_path.is_absolute() and not ignore_path.resolve().is_relative_to(DIR.parent.parent):
+        if not ignore_path.is_absolute() and not ignore_path.resolve().is_relative_to(GRAALPYTHON_DIR):
             args.ignore[i] = implicit_root / ignore_path
 
     partial = None

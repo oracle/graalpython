@@ -1167,7 +1167,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if paths is not None:
         args += paths
     else:
-        args.append(os.path.relpath(SUITE.dir))
+        args.append(os.path.relpath(_python_unittest_root()))
 
     mx.logv(shlex.join([python_binary] + args))
     if lock:
@@ -1289,7 +1289,7 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
     run_python_unittests(
         python_binary,
         runner_args=['--tagged', *runner_args],
-        paths=[os.path.relpath(SUITE.dir)],
+        paths=[os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))],
         env=sub_env,
         cwd=cwd,
         nonZeroIsFatal=nonZeroIsFatal,
