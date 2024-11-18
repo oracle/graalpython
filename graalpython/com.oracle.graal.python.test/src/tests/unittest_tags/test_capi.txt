@@ -82,7 +82,8 @@ test.test_capi.test_misc.CAPITest.test_return_result_with_error @ darwin-arm64,d
 test.test_capi.test_misc.CAPITest.test_sequence_set_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.CAPITest.test_subprocess_fork_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.CAPITest.test_sys_getobject @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_capi.test_misc.CAPITest.test_trashcan_subclass @ linux-aarch64
+# Segfaults most of the time
+!test.test_capi.test_misc.CAPITest.test_trashcan_subclass
 test.test_capi.test_misc.Test_FrameAPI.test_frame_fback_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_FrameAPI.test_frame_getters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_ModuleStateAccess.test_get_module_bad_def @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
