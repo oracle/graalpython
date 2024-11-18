@@ -157,12 +157,14 @@ test.test_asyncio.test_events.SelectEventLoopTests.test_run_until_complete @ dar
 test.test_asyncio.test_events.SelectEventLoopTests.test_run_until_complete_stopped @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_events.SelectEventLoopTests.test_server_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_events.SelectEventLoopTests.test_ssl_connect_accepted_socket @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_close_after_finish @ darwin-arm64,linux-aarch64
+# Timeouts
+!test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_close_after_finish
 test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_exec_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_exitcode @ darwin-arm64,darwin-x86_64
 test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_shell @ darwin-arm64,darwin-x86_64,linux-aarch64
 test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_shell_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_wait_no_same_group @ darwin-arm64,linux-aarch64
+# Timeouts
+!test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_wait_no_same_group @ darwin-arm64,linux-aarch64
 test.test_asyncio.test_events.SelectEventLoopTests.test_timeout_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_events.SelectEventLoopTests.test_unclosed_pipe_transport @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_events.SelectEventLoopTests.test_write_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

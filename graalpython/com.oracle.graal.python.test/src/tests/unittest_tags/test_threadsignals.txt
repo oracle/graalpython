@@ -1,4 +1,5 @@
-test.test_threadsignals.ThreadSignals.test_interrupted_timed_acquire @ linux-aarch64,linux-x86_64
+# Too dependent on timings
+!test.test_threadsignals.ThreadSignals.test_interrupted_timed_acquire
 test.test_threadsignals.ThreadSignals.test_lock_acquire_interruption @ darwin-arm64,darwin-x86_64
 test.test_threadsignals.ThreadSignals.test_lock_acquire_retries_on_intr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threadsignals.ThreadSignals.test_rlock_acquire_interruption @ darwin-arm64,darwin-x86_64

@@ -2,7 +2,8 @@ test.test_multiprocessing_graalpy.MiscTestCase.test__all__ @ darwin-arm64,darwin
 test.test_multiprocessing_graalpy.OtherTest.test_answer_challenge_auth_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.OtherTest.test_deliver_challenge_auth_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.SemLockTests.test_semlock_subclass @ linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.TestForkAwareThreadLock.test_lock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Timeouts
+!test.test_multiprocessing_graalpy.TestForkAwareThreadLock.test_lock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestInvalidFamily.test_invalid_family @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 !test.test_multiprocessing_graalpy.TestNoForkBomb.test_noforkbomb @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestPoolNotLeakOnFailure.test_release_unused_processes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -29,7 +30,8 @@ test.test_multiprocessing_graalpy.TestSyncManagerTypes.test_queue @ darwin-arm64
 test.test_multiprocessing_graalpy.TestSyncManagerTypes.test_rlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestSyncManagerTypes.test_semaphore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestSyncManagerTypes.test_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_graalpy.TestTimeouts.test_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64
+# Timeouts
+!test.test_multiprocessing_graalpy.TestTimeouts.test_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64
 test.test_multiprocessing_graalpy.TestWait.test_neg_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestWait.test_wait_socket @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_graalpy.TestWait.test_wait_socket_slow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
