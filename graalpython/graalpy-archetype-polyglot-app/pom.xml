@@ -46,7 +46,7 @@ SOFTWARE.
   <artifactId>graalpy-archetype-polyglot-app</artifactId>
   <!-- This version is always overridden when deploying using mx -->
   <version>24.2.0</version>
-  <url>http://www.graalvm.org/</url>
+  <url>http://www.graalvm.org/python</url>
   <description>Maven archetype providing a skeleton GraalPy - Java polyglot application.</description>
   <packaging>maven-archetype</packaging>
 
