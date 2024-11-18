@@ -141,6 +141,9 @@ public final class VirtualFileSystem {
          * libraries, shared objects, and Python C extension files, because these need to be
          * accessed by the operating system loader. Setting this filter to <code>null</code> denies
          * any extraction. Any other filter is combined with the default filter.
+         *
+         * @param filter the extraction filter, where the provided path is an absolute path from the
+         *            VirtualFileSystem.
          */
         public Builder extractFilter(Predicate<Path> filter) {
             if (extractFilter == null) {
