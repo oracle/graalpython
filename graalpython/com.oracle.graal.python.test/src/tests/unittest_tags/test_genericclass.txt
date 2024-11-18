@@ -1,22 +1,21 @@
-test.test_genericclass.CAPITest.test_c_class
-test.test_genericclass.TestClassGetitem.test_class_getitem
-test.test_genericclass.TestClassGetitem.test_class_getitem_classmethod
-test.test_genericclass.TestClassGetitem.test_class_getitem_errors
-test.test_genericclass.TestClassGetitem.test_class_getitem_errors_2
-test.test_genericclass.TestClassGetitem.test_class_getitem_format
-test.test_genericclass.TestClassGetitem.test_class_getitem_inheritance
-test.test_genericclass.TestClassGetitem.test_class_getitem_inheritance_2
-test.test_genericclass.TestClassGetitem.test_class_getitem_metaclass
-test.test_genericclass.TestClassGetitem.test_class_getitem_metaclass_first
-test.test_genericclass.TestClassGetitem.test_class_getitem_patched
-test.test_genericclass.TestClassGetitem.test_class_getitem_with_builtins
-test.test_genericclass.TestClassGetitem.test_class_getitem_with_metaclass
-test.test_genericclass.TestMROEntry.test_mro_entry
-test.test_genericclass.TestMROEntry.test_mro_entry_errors
-test.test_genericclass.TestMROEntry.test_mro_entry_errors_2
-test.test_genericclass.TestMROEntry.test_mro_entry_metaclass
-test.test_genericclass.TestMROEntry.test_mro_entry_none
-test.test_genericclass.TestMROEntry.test_mro_entry_signature
-test.test_genericclass.TestMROEntry.test_mro_entry_type_call
-test.test_genericclass.TestMROEntry.test_mro_entry_with_builtins
-test.test_genericclass.TestMROEntry.test_mro_entry_with_builtins_2
+test.test_genericclass.TestClassGetitem.test_class_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_classmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_errors_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_inheritance_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_metaclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_metaclass_first @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_patched @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_with_builtins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestClassGetitem.test_class_getitem_with_metaclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry_errors_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry_metaclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry_signature @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry_type_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry_with_builtins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericclass.TestMROEntry.test_mro_entry_with_builtins_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

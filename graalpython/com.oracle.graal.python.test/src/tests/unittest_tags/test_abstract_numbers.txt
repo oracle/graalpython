@@ -1,3 +1,3 @@
-test.test_abstract_numbers.TestNumbers.test_complex
-test.test_abstract_numbers.TestNumbers.test_float
-test.test_abstract_numbers.TestNumbers.test_int
+test.test_abstract_numbers.TestNumbers.test_complex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abstract_numbers.TestNumbers.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_abstract_numbers.TestNumbers.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

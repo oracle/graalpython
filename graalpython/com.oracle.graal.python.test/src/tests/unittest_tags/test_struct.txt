@@ -1,35 +1,30 @@
-test.test_struct.StructTest.test_1530559
-test.test_struct.StructTest.test_705836
-test.test_struct.StructTest.test_Struct_reinitialization
-test.test_struct.StructTest.test__sizeof__
-test.test_struct.StructTest.test__struct_types_immutable
-test.test_struct.StructTest.test_bool
-test.test_struct.StructTest.test_boundary_error_message
-test.test_struct.StructTest.test_boundary_error_message_with_large_offset
-test.test_struct.StructTest.test_boundary_error_message_with_negative_offset
-test.test_struct.StructTest.test_calcsize
-test.test_struct.StructTest.test_consistence
-test.test_struct.StructTest.test_count_overflow
-test.test_struct.StructTest.test_format_attr
-test.test_struct.StructTest.test_integers
-test.test_struct.StructTest.test_isbigendian
-test.test_struct.StructTest.test_issue29802
-test.test_struct.StructTest.test_issue35714
-test.test_struct.StructTest.test_issue45034_signed
-test.test_struct.StructTest.test_issue45034_unsigned
-test.test_struct.StructTest.test_nN_code
-test.test_struct.StructTest.test_new_features
-test.test_struct.StructTest.test_p_code
-test.test_struct.StructTest.test_pack_into
-test.test_struct.StructTest.test_pack_into_fn
-test.test_struct.StructTest.test_trailing_counter
-test.test_struct.StructTest.test_transitiveness
-test.test_struct.StructTest.test_unpack_from
-test.test_struct.StructTest.test_unpack_with_buffer
-test.test_struct.UnpackIteratorTest.test_arbitrary_buffer
-test.test_struct.UnpackIteratorTest.test_construct
-test.test_struct.UnpackIteratorTest.test_half_float
-test.test_struct.UnpackIteratorTest.test_iterate
-test.test_struct.UnpackIteratorTest.test_length_hint
-test.test_struct.UnpackIteratorTest.test_module_func
-test.test_struct.UnpackIteratorTest.test_uninstantiable
+test.test_struct.StructTest.test_1530559 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_705836 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_Struct_reinitialization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_boundary_error_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_boundary_error_message_with_large_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_boundary_error_message_with_negative_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_calcsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_consistence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_format_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_integers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_isbigendian @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_issue29802 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_issue35714 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_nN_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_new_features @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_p_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_pack_into @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_pack_into_fn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_trailing_counter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_transitiveness @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_unpack_from @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.StructTest.test_unpack_with_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.UnpackIteratorTest.test_arbitrary_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.UnpackIteratorTest.test_construct @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.UnpackIteratorTest.test_half_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.UnpackIteratorTest.test_iterate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.UnpackIteratorTest.test_length_hint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.UnpackIteratorTest.test_module_func @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_struct.UnpackIteratorTest.test_uninstantiable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

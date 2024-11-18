@@ -1,18 +1,18 @@
-test.test_codeccallbacks.CodecCallbackTest.test_backslashescape
-test.test_codeccallbacks.CodecCallbackTest.test_badandgoodbackslashreplaceexceptions
-test.test_codeccallbacks.CodecCallbackTest.test_badandgoodignoreexceptions
-test.test_codeccallbacks.CodecCallbackTest.test_badandgoodnamereplaceexceptions
-test.test_codeccallbacks.CodecCallbackTest.test_badandgoodreplaceexceptions
-test.test_codeccallbacks.CodecCallbackTest.test_badandgoodstrictexceptions
-test.test_codeccallbacks.CodecCallbackTest.test_badandgoodsurrogateescapeexceptions
-test.test_codeccallbacks.CodecCallbackTest.test_badandgoodsurrogatepassexceptions
-test.test_codeccallbacks.CodecCallbackTest.test_badandgoodxmlcharrefreplaceexceptions
-test.test_codeccallbacks.CodecCallbackTest.test_badlookupcall
-test.test_codeccallbacks.CodecCallbackTest.test_badregistercall
-test.test_codeccallbacks.CodecCallbackTest.test_bug828737
-test.test_codeccallbacks.CodecCallbackTest.test_charmapencode
-test.test_codeccallbacks.CodecCallbackTest.test_fake_error_class
-test.test_codeccallbacks.CodecCallbackTest.test_lookup
-test.test_codeccallbacks.CodecCallbackTest.test_translatehelper
-test.test_codeccallbacks.CodecCallbackTest.test_unknownhandler
-test.test_codeccallbacks.CodecCallbackTest.test_xmlcharrefreplace
+test.test_codeccallbacks.CodecCallbackTest.test_backslashescape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badandgoodbackslashreplaceexceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badandgoodignoreexceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badandgoodnamereplaceexceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badandgoodreplaceexceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badandgoodstrictexceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badandgoodsurrogateescapeexceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badandgoodsurrogatepassexceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badandgoodxmlcharrefreplaceexceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badlookupcall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_badregistercall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_bug828737 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_charmapencode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_fake_error_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_translatehelper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_unknownhandler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codeccallbacks.CodecCallbackTest.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,23 +1,23 @@
-test.test_codecencodings_jp.Test_CP932.test_chunkcoding
-test.test_codecencodings_jp.Test_CP932.test_errorhandle
-test.test_codecencodings_jp.Test_CP932.test_incrementaldecoder
-test.test_codecencodings_jp.Test_CP932.test_incrementalencoder
-test.test_codecencodings_jp.Test_CP932.test_streamwriter
-test.test_codecencodings_jp.Test_CP932.test_streamwriter_reset_no_pending
-test.test_codecencodings_jp.Test_CP932.test_xmlcharrefreplace
-test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_chunkcoding
-test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_incrementaldecoder
-test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_incrementalencoder
-test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_streamwriter
-test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_streamwriter_reset_no_pending
-test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_xmlcharrefreplace
-test.test_codecencodings_jp.Test_SJISX0213.test_chunkcoding
-test.test_codecencodings_jp.Test_SJISX0213.test_incrementaldecoder
-test.test_codecencodings_jp.Test_SJISX0213.test_streamwriter_reset_no_pending
-test.test_codecencodings_jp.Test_SJISX0213.test_xmlcharrefreplace
-test.test_codecencodings_jp.Test_SJIS_COMPAT.test_chunkcoding
-test.test_codecencodings_jp.Test_SJIS_COMPAT.test_incrementaldecoder
-test.test_codecencodings_jp.Test_SJIS_COMPAT.test_incrementalencoder
-test.test_codecencodings_jp.Test_SJIS_COMPAT.test_streamwriter
-test.test_codecencodings_jp.Test_SJIS_COMPAT.test_streamwriter_reset_no_pending
-test.test_codecencodings_jp.Test_SJIS_COMPAT.test_xmlcharrefreplace
+test.test_codecencodings_jp.Test_CP932.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_CP932.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_CP932.test_incrementaldecoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_CP932.test_incrementalencoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_CP932.test_streamwriter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_CP932.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_CP932.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_incrementaldecoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_incrementalencoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_streamwriter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_EUC_JP_COMPAT.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJISX0213.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJISX0213.test_incrementaldecoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJISX0213.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJISX0213.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJIS_COMPAT.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJIS_COMPAT.test_incrementaldecoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJIS_COMPAT.test_incrementalencoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJIS_COMPAT.test_streamwriter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJIS_COMPAT.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_jp.Test_SJIS_COMPAT.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

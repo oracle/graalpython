@@ -1,32 +1,31 @@
-test.test_cmath.CMathTests.testAtanSign
-test.test_cmath.CMathTests.testAtanhSign
-test.test_cmath.CMathTests.testTanhSign
-test.test_cmath.CMathTests.test_abs
-test.test_cmath.CMathTests.test_abs_overflows
-test.test_cmath.CMathTests.test_cmath_matches_math
-test.test_cmath.CMathTests.test_constants
-test.test_cmath.CMathTests.test_infinity_and_nan_constants
-test.test_cmath.CMathTests.test_input_type
-test.test_cmath.CMathTests.test_isfinite
-test.test_cmath.CMathTests.test_isinf
-test.test_cmath.CMathTests.test_isnan
-test.test_cmath.CMathTests.test_phase
-test.test_cmath.CMathTests.test_polar
-test.test_cmath.CMathTests.test_polar_errno
-test.test_cmath.CMathTests.test_rect
-test.test_cmath.CMathTests.test_specific_values
-test.test_cmath.CMathTests.test_user_object
-test.test_cmath.IsCloseTests.test_asymmetry
-test.test_cmath.IsCloseTests.test_complex_near_zero
-test.test_cmath.IsCloseTests.test_complex_values
-test.test_cmath.IsCloseTests.test_decimals
-test.test_cmath.IsCloseTests.test_eight_decimal_places
-test.test_cmath.IsCloseTests.test_fractions
-test.test_cmath.IsCloseTests.test_identical
-test.test_cmath.IsCloseTests.test_identical_infinite
-test.test_cmath.IsCloseTests.test_inf_ninf_nan
-test.test_cmath.IsCloseTests.test_integers
-test.test_cmath.IsCloseTests.test_near_zero
-test.test_cmath.IsCloseTests.test_negative_tolerances
-test.test_cmath.IsCloseTests.test_reject_complex_tolerances
-test.test_cmath.IsCloseTests.test_zero_tolerance
+test.test_cmath.CMathTests.testAtanSign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.testAtanhSign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.testTanhSign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_abs_overflows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_cmath_matches_math @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_infinity_and_nan_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_input_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_isfinite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_isinf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_isnan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_phase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_polar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_rect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_specific_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.CMathTests.test_user_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_asymmetry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_complex_near_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_complex_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_eight_decimal_places @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_identical @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_identical_infinite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_inf_ninf_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_integers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_near_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_negative_tolerances @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_reject_complex_tolerances @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmath.IsCloseTests.test_zero_tolerance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

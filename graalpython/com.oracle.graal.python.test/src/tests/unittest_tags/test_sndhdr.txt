@@ -1,2 +1,2 @@
-test.test_sndhdr.TestFormats.test_data
-test.test_sndhdr.TestFormats.test_pickleable
+test.test_sndhdr.TestFormats.test_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sndhdr.TestFormats.test_pickleable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

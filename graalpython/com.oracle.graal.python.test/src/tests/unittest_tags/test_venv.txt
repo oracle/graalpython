@@ -1,22 +1,21 @@
-test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts
-test.test_venv.BasicTest.test_executable
-test.test_venv.BasicTest.test_executable_symlinks
-test.test_venv.BasicTest.test_isolation
-test.test_venv.BasicTest.test_macos_env
-test.test_venv.BasicTest.test_multiprocessing
-test.test_venv.BasicTest.test_multiprocessing_recursion
-test.test_venv.BasicTest.test_overwrite_existing
-test.test_venv.BasicTest.test_pathsep_error
-test.test_venv.BasicTest.test_prefixes
-test.test_venv.BasicTest.test_prompt
-test.test_venv.BasicTest.test_symlinking
-test.test_venv.BasicTest.test_sysconfig
-test.test_venv.BasicTest.test_sysconfig_symlinks
-test.test_venv.BasicTest.test_unicode_in_batch_file
-test.test_venv.BasicTest.test_unoverwritable_fails
-test.test_venv.BasicTest.test_upgrade
-test.test_venv.BasicTest.test_upgrade_dependencies
-test.test_venv.EnsurePipTest.test_devnull
-test.test_venv.EnsurePipTest.test_explicit_no_pip
-test.test_venv.EnsurePipTest.test_no_pip_by_default
-test.test_venv.EnsurePipTest.test_with_pip
+test.test_venv.BasicTest.test_deactivate_with_strict_bash_opts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_executable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_executable_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_isolation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_macos_env @ darwin-arm64,darwin-x86_64
+test.test_venv.BasicTest.test_multiprocessing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_multiprocessing_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_overwrite_existing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_pathsep_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_prefixes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_prompt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_symlinking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_sysconfig @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_sysconfig_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_unoverwritable_fails @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_upgrade @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.BasicTest.test_upgrade_dependencies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.EnsurePipTest.test_devnull @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.EnsurePipTest.test_explicit_no_pip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.EnsurePipTest.test_no_pip_by_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_venv.EnsurePipTest.test_with_pip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

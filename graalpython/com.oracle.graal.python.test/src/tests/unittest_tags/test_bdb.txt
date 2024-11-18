@@ -1,30 +1,30 @@
-test.test_bdb.BreakpointTestCase.test_bp_after_last_statement
-test.test_bdb.BreakpointTestCase.test_bp_condition
-test.test_bdb.BreakpointTestCase.test_bp_exception_on_condition_evaluation
-test.test_bdb.BreakpointTestCase.test_bp_ignore_count
-test.test_bdb.BreakpointTestCase.test_bp_on_non_existent_module
-test.test_bdb.BreakpointTestCase.test_clear_at_no_bp
-test.test_bdb.BreakpointTestCase.test_clear_two_bp_on_same_line
-test.test_bdb.BreakpointTestCase.test_disabled_temporary_bp
-test.test_bdb.BreakpointTestCase.test_ignore_count_on_disabled_bp
-test.test_bdb.BreakpointTestCase.test_load_bps_from_previous_Bdb_instance
-test.test_bdb.BreakpointTestCase.test_temporary_bp
-test.test_bdb.IssuesTestCase.test_step_at_return_with_no_trace_in_caller
-test.test_bdb.RunTestCase.test_run_step
-test.test_bdb.RunTestCase.test_runeval_step
-test.test_bdb.StateTestCase.test_down
-test.test_bdb.StateTestCase.test_next
-test.test_bdb.StateTestCase.test_next_in_caller_frame
-test.test_bdb.StateTestCase.test_next_on_plain_statement
-test.test_bdb.StateTestCase.test_next_over_import
-test.test_bdb.StateTestCase.test_return
-test.test_bdb.StateTestCase.test_return_in_caller_frame
-test.test_bdb.StateTestCase.test_skip
-test.test_bdb.StateTestCase.test_skip_with_no_name_module
-test.test_bdb.StateTestCase.test_step
-test.test_bdb.StateTestCase.test_step_next_on_last_statement
-test.test_bdb.StateTestCase.test_until
-test.test_bdb.StateTestCase.test_until_in_caller_frame
-test.test_bdb.StateTestCase.test_until_with_too_large_count
-test.test_bdb.StateTestCase.test_up
-test.test_bdb.TestRegressions.test_format_stack_entry_no_lineno
+test.test_bdb.BreakpointTestCase.test_bp_after_last_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_bp_condition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_bp_exception_on_condition_evaluation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_bp_ignore_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_bp_on_non_existent_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_clear_at_no_bp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_clear_two_bp_on_same_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_disabled_temporary_bp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_ignore_count_on_disabled_bp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_load_bps_from_previous_Bdb_instance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.BreakpointTestCase.test_temporary_bp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.IssuesTestCase.test_step_at_return_with_no_trace_in_caller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.RunTestCase.test_run_step @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.RunTestCase.test_runeval_step @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_down @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_next @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_next_in_caller_frame @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_next_on_plain_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_next_over_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_return @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_return_in_caller_frame @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_skip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_skip_with_no_name_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_step @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_step_next_on_last_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_until @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_until_in_caller_frame @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_until_with_too_large_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.StateTestCase.test_up @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bdb.TestRegressions.test_format_stack_entry_no_lineno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

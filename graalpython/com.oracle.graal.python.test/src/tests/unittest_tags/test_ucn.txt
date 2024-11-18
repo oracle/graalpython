@@ -1,13 +1,12 @@
-test.test_ucn.UnicodeNamesTest.test_aliases
-test.test_ucn.UnicodeNamesTest.test_aliases_names_in_pua_range
-test.test_ucn.UnicodeNamesTest.test_ascii_letters
-test.test_ucn.UnicodeNamesTest.test_cjk_unified_ideographs
-test.test_ucn.UnicodeNamesTest.test_errors
-test.test_ucn.UnicodeNamesTest.test_general
-test.test_ucn.UnicodeNamesTest.test_hangul_syllables
-test.test_ucn.UnicodeNamesTest.test_issue16335
-test.test_ucn.UnicodeNamesTest.test_misc_symbols
-test.test_ucn.UnicodeNamesTest.test_named_sequences_full
-test.test_ucn.UnicodeNamesTest.test_named_sequences_names_in_pua_range
-test.test_ucn.UnicodeNamesTest.test_named_sequences_sample
-test.test_ucn.UnicodeNamesTest.test_strict_error_handling
+test.test_ucn.UnicodeNamesTest.test_aliases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_aliases_names_in_pua_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_ascii_letters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_cjk_unified_ideographs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_general @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_hangul_syllables @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_misc_symbols @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_named_sequences_full @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_named_sequences_names_in_pua_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_named_sequences_sample @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_strict_error_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,6 +1,6 @@
-test.test_int_literal.TestHexOctBin.test_bin_baseline
-test.test_int_literal.TestHexOctBin.test_bin_unsigned
-test.test_int_literal.TestHexOctBin.test_hex_baseline
-test.test_int_literal.TestHexOctBin.test_hex_unsigned
-test.test_int_literal.TestHexOctBin.test_oct_baseline
-test.test_int_literal.TestHexOctBin.test_oct_unsigned
+test.test_int_literal.TestHexOctBin.test_bin_baseline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_int_literal.TestHexOctBin.test_bin_unsigned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_int_literal.TestHexOctBin.test_hex_baseline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_int_literal.TestHexOctBin.test_hex_unsigned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_int_literal.TestHexOctBin.test_oct_baseline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_int_literal.TestHexOctBin.test_oct_unsigned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

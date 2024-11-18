@@ -1,58 +1,57 @@
-test.test_unparse.CosmeticTestCase.test_class_bases_and_keywords
-test.test_unparse.CosmeticTestCase.test_docstrings_negative_cases
-test.test_unparse.CosmeticTestCase.test_fstrings
-test.test_unparse.CosmeticTestCase.test_lambda_parameters
-test.test_unparse.CosmeticTestCase.test_multiquote_joined_string
-test.test_unparse.CosmeticTestCase.test_simple_expressions_parens
-test.test_unparse.CosmeticTestCase.test_slices
-test.test_unparse.CosmeticTestCase.test_star_expr_assign_target
-test.test_unparse.CosmeticTestCase.test_star_expr_assign_target_multiple
-test.test_unparse.CosmeticTestCase.test_unary_op_factor
-test.test_unparse.UnparseTestCase.test_annotations
-test.test_unparse.UnparseTestCase.test_bytes
-test.test_unparse.UnparseTestCase.test_chained_comparisons
-test.test_unparse.UnparseTestCase.test_class_decorators
-test.test_unparse.UnparseTestCase.test_class_definition
-test.test_unparse.UnparseTestCase.test_del_statement
-test.test_unparse.UnparseTestCase.test_dict_comprehension
-test.test_unparse.UnparseTestCase.test_dict_unpacking_in_dict
-test.test_unparse.UnparseTestCase.test_docstrings
-test.test_unparse.UnparseTestCase.test_elifs
-test.test_unparse.UnparseTestCase.test_empty_set
-test.test_unparse.UnparseTestCase.test_for_else
-test.test_unparse.UnparseTestCase.test_fstrings
-test.test_unparse.UnparseTestCase.test_fstrings_complicated
-test.test_unparse.UnparseTestCase.test_fstrings_special_chars
-test.test_unparse.UnparseTestCase.test_function_arguments
-test.test_unparse.UnparseTestCase.test_function_type
-test.test_unparse.UnparseTestCase.test_huge_float
-test.test_unparse.UnparseTestCase.test_imaginary_literals
-test.test_unparse.UnparseTestCase.test_import_from_level_none
-test.test_unparse.UnparseTestCase.test_integer_parens
-test.test_unparse.UnparseTestCase.test_invalid_fstring_backslash
-test.test_unparse.UnparseTestCase.test_invalid_fstring_constant
-test.test_unparse.UnparseTestCase.test_invalid_fstring_conversion
-test.test_unparse.UnparseTestCase.test_invalid_fstring_value
-test.test_unparse.UnparseTestCase.test_invalid_raise
-test.test_unparse.UnparseTestCase.test_invalid_yield_from
-test.test_unparse.UnparseTestCase.test_lambda_parentheses
-test.test_unparse.UnparseTestCase.test_min_int
-test.test_unparse.UnparseTestCase.test_nan
-test.test_unparse.UnparseTestCase.test_nonlocal
-test.test_unparse.UnparseTestCase.test_raise_from
-test.test_unparse.UnparseTestCase.test_relative_import
-test.test_unparse.UnparseTestCase.test_set_comprehension
-test.test_unparse.UnparseTestCase.test_set_literal
-test.test_unparse.UnparseTestCase.test_shifts
-test.test_unparse.UnparseTestCase.test_slices
-test.test_unparse.UnparseTestCase.test_starred_assignment
-test.test_unparse.UnparseTestCase.test_strings
-test.test_unparse.UnparseTestCase.test_try_except_finally
-test.test_unparse.UnparseTestCase.test_try_except_star_finally
-test.test_unparse.UnparseTestCase.test_type_comments
-test.test_unparse.UnparseTestCase.test_type_ignore
-test.test_unparse.UnparseTestCase.test_unary_parens
-test.test_unparse.UnparseTestCase.test_while_else
-test.test_unparse.UnparseTestCase.test_with_as
-test.test_unparse.UnparseTestCase.test_with_simple
-test.test_unparse.UnparseTestCase.test_with_two_items
+test.test_unparse.CosmeticTestCase.test_class_bases_and_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_docstrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_docstrings_negative_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_fstrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_lambda_parameters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_multiquote_joined_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_simple_expressions_parens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_slices @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_star_expr_assign_target @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_star_expr_assign_target_multiple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.CosmeticTestCase.test_unary_op_factor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_chained_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_class_decorators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_class_definition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_del_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_dict_comprehension @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_dict_unpacking_in_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_docstrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_elifs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_empty_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_for_else @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_fstrings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_fstrings_complicated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_fstrings_special_chars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_function_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_function_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_huge_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_imaginary_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_import_from_level_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_integer_parens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_invalid_fstring_backslash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_invalid_fstring_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_invalid_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_invalid_yield_from @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_lambda_parentheses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_min_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_nonlocal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_raise_from @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_relative_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_set_comprehension @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_set_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_shifts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_slices @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_starred_assignment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_try_except_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_try_except_star_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_type_comments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_type_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_unary_parens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_while_else @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_with_as @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_with_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unparse.UnparseTestCase.test_with_two_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

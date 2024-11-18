@@ -1,15 +1,12 @@
-test.test_timeout.CreationTestCase.testBlockingThenTimeout
-test.test_timeout.CreationTestCase.testFloatReturnValue
-test.test_timeout.CreationTestCase.testObjectCreation
-test.test_timeout.CreationTestCase.testRangeCheck
-test.test_timeout.CreationTestCase.testReturnType
-test.test_timeout.CreationTestCase.testTimeoutThenBlocking
-test.test_timeout.CreationTestCase.testTypeCheck
-test.test_timeout.TCPTimeoutTestCase.testAcceptTimeout
-test.test_timeout.TCPTimeoutTestCase.testConnectTimeout
-test.test_timeout.TCPTimeoutTestCase.testRecvTimeout
-test.test_timeout.TCPTimeoutTestCase.testSend
-test.test_timeout.TCPTimeoutTestCase.testSendall
-test.test_timeout.TCPTimeoutTestCase.testSendto
-test.test_timeout.TestMain.test_main
-test.test_timeout.UDPTimeoutTestCase.testRecvfromTimeout
+test.test_timeout.CreationTestCase.testBlockingThenTimeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.CreationTestCase.testFloatReturnValue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.CreationTestCase.testObjectCreation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.CreationTestCase.testRangeCheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.CreationTestCase.testReturnType @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.CreationTestCase.testTimeoutThenBlocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.CreationTestCase.testTypeCheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.TCPTimeoutTestCase.testAcceptTimeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.TCPTimeoutTestCase.testSend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.TCPTimeoutTestCase.testSendall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.TCPTimeoutTestCase.testSendto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeout.UDPTimeoutTestCase.testRecvfromTimeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

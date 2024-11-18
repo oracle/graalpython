@@ -1,16 +1,19 @@
-test.test_cmd_line_script.CmdLineTest.test_consistent_sys_path_for_direct_execution
-test.test_cmd_line_script.CmdLineTest.test_consistent_sys_path_for_module_execution
-test.test_cmd_line_script.CmdLineTest.test_dash_m_bad_pyc
-test.test_cmd_line_script.CmdLineTest.test_dash_m_error_code_is_one
-test.test_cmd_line_script.CmdLineTest.test_dash_m_errors
-test.test_cmd_line_script.CmdLineTest.test_dash_m_init_traceback
-test.test_cmd_line_script.CmdLineTest.test_dash_m_main_traceback
-test.test_cmd_line_script.CmdLineTest.test_directory_error
-test.test_cmd_line_script.CmdLineTest.test_hint_when_triying_to_import_a_py_file
-test.test_cmd_line_script.CmdLineTest.test_issue20500_exit_with_exception_value
-test.test_cmd_line_script.CmdLineTest.test_issue20884
-test.test_cmd_line_script.CmdLineTest.test_issue8202_dash_c_file_ignored
-test.test_cmd_line_script.CmdLineTest.test_nonexisting_script
-test.test_cmd_line_script.CmdLineTest.test_package_error
-test.test_cmd_line_script.CmdLineTest.test_package_recursion
-test.test_cmd_line_script.CmdLineTest.test_pep_409_verbiage
+test.test_cmd_line_script.CmdLineTest.test_consistent_sys_path_for_direct_execution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_consistent_sys_path_for_module_execution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_dash_m_bad_pyc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_dash_m_error_code_is_one @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_dash_m_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_dash_m_init_traceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_dash_m_main_traceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_directory_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_hint_when_triying_to_import_a_py_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_issue20500_exit_with_exception_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_issue20884 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_issue8202_dash_c_file_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_non_ascii @ darwin-arm64,darwin-x86_64
+test.test_cmd_line_script.CmdLineTest.test_nonexisting_script @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_package_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_package_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_pep_409_verbiage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_script_as_dev_fd @ linux-aarch64,linux-x86_64
+test.test_cmd_line_script.CmdLineTest.test_zipfile_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

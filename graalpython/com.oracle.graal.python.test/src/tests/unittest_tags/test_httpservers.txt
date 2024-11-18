@@ -1,21 +1,74 @@
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_close_connection
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_date_time_string
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_extra_space
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_error
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_header
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_response_only
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_length
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_unbuffered_when_continue
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_html_escape_on_error
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_0_9
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_1_0
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_1_1
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_request_length
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_too_many_headers
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_1_0
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_1_1
-test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_rejected
-test.test_httpservers.CGIHTTPServerTestCase.test_accept
-test.test_httpservers.CGIHTTPServerTestCase.test_cgi_path_in_sub_directories
-test.test_httpservers.MiscTestCase.test_all
-test.test_httpservers.SimpleHTTPServerTestCase.test_undecodable_parameter
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_close_connection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_date_time_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_extra_space @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_response_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_unbuffered_when_continue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_html_escape_on_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_0_9 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_1_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_1_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_request_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_too_many_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_unprintable_not_logged @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_1_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_1_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_rejected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_error_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_head_via_send_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_header_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_header_keep_alive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_internal_key_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_latin1_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_major_version_number_too_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_minor_version_number_too_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_request_line_trimming @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_return_custom_status @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_return_explain_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_return_header_keep_alive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_send_blank @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_send_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_version_bogus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_version_digits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_version_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_version_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_version_none_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.BaseHTTPServerTestCase.test_version_signs_and_underscores @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_accept @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_authorization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_cgi_path_in_sub_directories @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_headers_and_content @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_invaliduri @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_issue19435 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_nested_cgi_path_issue21323 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_no_leading_slash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_os_environ_is_not_altered @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_post @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_query_with_continuous_slashes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_query_with_multiple_question_mark @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_url_collapse_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.CGIHTTPServerTestCase.test_urlquote_decoding_in_cgi_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.MiscTestCase.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.RequestHandlerLoggingTestCase.test_err @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.ScriptTestCase.test_server_test_ipv4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.ScriptTestCase.test_server_test_ipv6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.ScriptTestCase.test_server_test_localhost @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.ScriptTestCase.test_server_test_unspec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPRequestHandlerTestCase.test_query_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPRequestHandlerTestCase.test_start_with_double_slash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPRequestHandlerTestCase.test_windows_colon @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_browser_cache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_browser_cache_file_changed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_browser_cache_with_If_None_Match_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_get_dir_redirect_location_domain_injection_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_head @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_html_escape_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_invalid_requests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_last_modified @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_path_without_leading_slash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httpservers.SimpleHTTPServerTestCase.test_undecodable_parameter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

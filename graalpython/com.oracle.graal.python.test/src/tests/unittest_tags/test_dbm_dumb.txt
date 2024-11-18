@@ -1,24 +1,24 @@
-test.test_dbm_dumb.DumbDBMTestCase.test_check_closed
-test.test_dbm_dumb.DumbDBMTestCase.test_close_twice
-test.test_dbm_dumb.DumbDBMTestCase.test_context_manager
-test.test_dbm_dumb.DumbDBMTestCase.test_create_new
-test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_creation
-test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_creation_mode
-test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_keys
-test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_modification
-test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_read
-test.test_dbm_dumb.DumbDBMTestCase.test_eval
-test.test_dbm_dumb.DumbDBMTestCase.test_invalid_flag
-test.test_dbm_dumb.DumbDBMTestCase.test_line_endings
-test.test_dbm_dumb.DumbDBMTestCase.test_missing_data
-test.test_dbm_dumb.DumbDBMTestCase.test_missing_index
-test.test_dbm_dumb.DumbDBMTestCase.test_nonascii_filename
-test.test_dbm_dumb.DumbDBMTestCase.test_open_with_bytes_path
-test.test_dbm_dumb.DumbDBMTestCase.test_open_with_pathlib_bytes_path
-test.test_dbm_dumb.DumbDBMTestCase.test_open_with_pathlib_path
-test.test_dbm_dumb.DumbDBMTestCase.test_random
-test.test_dbm_dumb.DumbDBMTestCase.test_readonly_files
-test.test_dbm_dumb.DumbDBMTestCase.test_str_read
-test.test_dbm_dumb.DumbDBMTestCase.test_str_write_contains
-test.test_dbm_dumb.DumbDBMTestCase.test_write_contains
-test.test_dbm_dumb.DumbDBMTestCase.test_write_write_read
+test.test_dbm_dumb.DumbDBMTestCase.test_check_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_close_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_create_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_creation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_creation_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_modification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_dumbdbm_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_eval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_invalid_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_line_endings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_missing_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_missing_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_nonascii_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_open_with_bytes_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_open_with_pathlib_bytes_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_open_with_pathlib_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_random @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_readonly_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_str_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_str_write_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_write_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm_dumb.DumbDBMTestCase.test_write_write_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

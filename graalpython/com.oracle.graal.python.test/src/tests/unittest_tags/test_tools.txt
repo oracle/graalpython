@@ -1,12 +1,11 @@
-unittest.loader.ModuleSkipped.test.test_tools.test_fixcid
-unittest.loader.ModuleSkipped.test.test_tools.test_freeze
-unittest.loader.ModuleSkipped.test.test_tools.test_gprof2html
-unittest.loader.ModuleSkipped.test.test_tools.test_i18n
-unittest.loader.ModuleSkipped.test.test_tools.test_lll
-unittest.loader.ModuleSkipped.test.test_tools.test_md5sum
-unittest.loader.ModuleSkipped.test.test_tools.test_pathfix
-unittest.loader.ModuleSkipped.test.test_tools.test_pdeps
-unittest.loader.ModuleSkipped.test.test_tools.test_pindent
-unittest.loader.ModuleSkipped.test.test_tools.test_reindent
-unittest.loader.ModuleSkipped.test.test_tools.test_sundry
-unittest.loader.ModuleSkipped.test.test_tools.test_unparse
+unittest.loader.ModuleSkipped.test.test_tools.test_fixcid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_freeze @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_gprof2html @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_i18n @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_lll @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_md5sum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_pathfix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_pdeps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_pindent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_reindent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_tools.test_sundry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

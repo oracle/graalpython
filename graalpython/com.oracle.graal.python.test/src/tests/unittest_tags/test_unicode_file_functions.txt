@@ -1,31 +1,30 @@
-test.test_unicode_file_functions.TestMain.test_main
-test.test_unicode_file_functions.UnicodeFileTests.test_directory
-test.test_unicode_file_functions.UnicodeFileTests.test_failures
-test.test_unicode_file_functions.UnicodeFileTests.test_listdir
-test.test_unicode_file_functions.UnicodeFileTests.test_normalize
-test.test_unicode_file_functions.UnicodeFileTests.test_open
-test.test_unicode_file_functions.UnicodeFileTests.test_rename
-test.test_unicode_file_functions.UnicodeNFCFileTests.test_directory
-test.test_unicode_file_functions.UnicodeNFCFileTests.test_failures
-test.test_unicode_file_functions.UnicodeNFCFileTests.test_listdir
-test.test_unicode_file_functions.UnicodeNFCFileTests.test_normalize
-test.test_unicode_file_functions.UnicodeNFCFileTests.test_open
-test.test_unicode_file_functions.UnicodeNFCFileTests.test_rename
-test.test_unicode_file_functions.UnicodeNFDFileTests.test_directory
-test.test_unicode_file_functions.UnicodeNFDFileTests.test_failures
-test.test_unicode_file_functions.UnicodeNFDFileTests.test_listdir
-test.test_unicode_file_functions.UnicodeNFDFileTests.test_normalize
-test.test_unicode_file_functions.UnicodeNFDFileTests.test_open
-test.test_unicode_file_functions.UnicodeNFDFileTests.test_rename
-test.test_unicode_file_functions.UnicodeNFKCFileTests.test_directory
-test.test_unicode_file_functions.UnicodeNFKCFileTests.test_failures
-test.test_unicode_file_functions.UnicodeNFKCFileTests.test_listdir
-test.test_unicode_file_functions.UnicodeNFKCFileTests.test_normalize
-test.test_unicode_file_functions.UnicodeNFKCFileTests.test_open
-test.test_unicode_file_functions.UnicodeNFKCFileTests.test_rename
-test.test_unicode_file_functions.UnicodeNFKDFileTests.test_directory
-test.test_unicode_file_functions.UnicodeNFKDFileTests.test_failures
-test.test_unicode_file_functions.UnicodeNFKDFileTests.test_listdir
-test.test_unicode_file_functions.UnicodeNFKDFileTests.test_normalize
-test.test_unicode_file_functions.UnicodeNFKDFileTests.test_open
-test.test_unicode_file_functions.UnicodeNFKDFileTests.test_rename
+test.test_unicode_file_functions.UnicodeFileTests.test_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeFileTests.test_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeFileTests.test_listdir @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeFileTests.test_normalize @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeFileTests.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeFileTests.test_rename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFCFileTests.test_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFCFileTests.test_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFCFileTests.test_listdir @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFCFileTests.test_normalize @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFCFileTests.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFCFileTests.test_rename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFDFileTests.test_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFDFileTests.test_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFDFileTests.test_listdir @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFDFileTests.test_normalize @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFDFileTests.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFDFileTests.test_rename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKCFileTests.test_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKCFileTests.test_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKCFileTests.test_listdir @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKCFileTests.test_normalize @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKCFileTests.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKCFileTests.test_rename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKDFileTests.test_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKDFileTests.test_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKDFileTests.test_listdir @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKDFileTests.test_normalize @ linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKDFileTests.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode_file_functions.UnicodeNFKDFileTests.test_rename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,25 +1,25 @@
-test.test_range.RangeTest.test_attributes
-test.test_range.RangeTest.test_comparison
-test.test_range.RangeTest.test_contains
-test.test_range.RangeTest.test_count
-test.test_range.RangeTest.test_empty
-test.test_range.RangeTest.test_exhausted_iterator_pickling
-test.test_range.RangeTest.test_index
-test.test_range.RangeTest.test_invalid_invocation
-test.test_range.RangeTest.test_issue11845
-test.test_range.RangeTest.test_iterator_pickling
-test.test_range.RangeTest.test_iterator_pickling_overflowing_index
-test.test_range.RangeTest.test_large_exhausted_iterator_pickling
-test.test_range.RangeTest.test_large_operands
-test.test_range.RangeTest.test_large_range
-test.test_range.RangeTest.test_odd_bug
-test.test_range.RangeTest.test_pickling
-test.test_range.RangeTest.test_range
-test.test_range.RangeTest.test_range_iterators
-test.test_range.RangeTest.test_range_iterators_invocation
-test.test_range.RangeTest.test_repr
-test.test_range.RangeTest.test_reverse_iteration
-test.test_range.RangeTest.test_slice
-test.test_range.RangeTest.test_strided_limits
-test.test_range.RangeTest.test_types
-test.test_range.RangeTest.test_user_index_method
+test.test_range.RangeTest.test_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_exhausted_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_invalid_invocation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_issue11845 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_iterator_pickling_overflowing_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_large_exhausted_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_large_operands @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_large_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_odd_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_range_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_range_iterators_invocation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_reverse_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_strided_limits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_range.RangeTest.test_user_index_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

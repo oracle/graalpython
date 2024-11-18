@@ -1,375 +1,349 @@
-DocTestCase.test.test_statistics.NumericTestCase.assertApproxEqual
-DocTestCase.test.test_statistics._DoNothing
-DocTestCase.test.test_statistics._calc_errors
-DocTestCase.test.test_statistics._nan_equal
-DocTestCase.test.test_statistics.approx_equal
-test.test_statistics.ApproxEqualExactTest.test_exactly_equal_absolute
-test.test_statistics.ApproxEqualExactTest.test_exactly_equal_absolute_decimals
-test.test_statistics.ApproxEqualExactTest.test_exactly_equal_both
-test.test_statistics.ApproxEqualExactTest.test_exactly_equal_decimals
-test.test_statistics.ApproxEqualExactTest.test_exactly_equal_floats
-test.test_statistics.ApproxEqualExactTest.test_exactly_equal_fractions
-test.test_statistics.ApproxEqualExactTest.test_exactly_equal_ints
-test.test_statistics.ApproxEqualExactTest.test_exactly_equal_relative
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_absolute_decimals
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_absolute_floats
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_absolute_fractions
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_absolute_ints
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_both1
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_both2
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_both3
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_both4
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_relative_decimals
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_relative_floats
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_relative_fractions
-test.test_statistics.ApproxEqualInexactTest.test_approx_equal_relative_ints
-test.test_statistics.ApproxEqualInexactTest.test_cross_zero
-test.test_statistics.ApproxEqualSpecialsTest.test_decimal_zeroes
-test.test_statistics.ApproxEqualSpecialsTest.test_float_zeroes
-test.test_statistics.ApproxEqualSpecialsTest.test_inf
-test.test_statistics.ApproxEqualSpecialsTest.test_nan
-test.test_statistics.ApproxEqualSymmetryTest.test_relative_symmetry
-test.test_statistics.ApproxEqualSymmetryTest.test_symmetry
-test.test_statistics.ApproxEqualUnequalTest.test_exactly_unequal_decimals
-test.test_statistics.ApproxEqualUnequalTest.test_exactly_unequal_floats
-test.test_statistics.ApproxEqualUnequalTest.test_exactly_unequal_fractions
-test.test_statistics.ApproxEqualUnequalTest.test_exactly_unequal_ints
-test.test_statistics.CoerceTest.test_bool
-test.test_statistics.CoerceTest.test_decimal
-test.test_statistics.CoerceTest.test_float
-test.test_statistics.CoerceTest.test_fraction
-test.test_statistics.CoerceTest.test_incompatible_types
-test.test_statistics.CoerceTest.test_int
-test.test_statistics.CoerceTest.test_non_numeric_types
-test.test_statistics.ConvertTest.test_decimal
-test.test_statistics.ConvertTest.test_float
-test.test_statistics.ConvertTest.test_fraction
-test.test_statistics.ConvertTest.test_inf
-test.test_statistics.ConvertTest.test_int
-test.test_statistics.ConvertTest.test_invalid_input_type
-test.test_statistics.ConvertTest.test_nan
-test.test_statistics.DecimalToRatioTest.test_infinity
-test.test_statistics.DecimalToRatioTest.test_nan
-test.test_statistics.DecimalToRatioTest.test_negative_exponent
-test.test_statistics.DecimalToRatioTest.test_positive_exponent
-test.test_statistics.DecimalToRatioTest.test_regression_20536
-test.test_statistics.DecimalToRatioTest.test_sign
-test.test_statistics.DocTests.test_doc_tests
-test.test_statistics.ExactRatioTest.test_decimal
-test.test_statistics.ExactRatioTest.test_decimal_nan
-test.test_statistics.ExactRatioTest.test_float
-test.test_statistics.ExactRatioTest.test_float_nan
-test.test_statistics.ExactRatioTest.test_fraction
-test.test_statistics.ExactRatioTest.test_inf
-test.test_statistics.ExactRatioTest.test_int
-test.test_statistics.FailNegTest.test_error_msg
-test.test_statistics.FailNegTest.test_negatives_raise
-test.test_statistics.FailNegTest.test_pass_through
-test.test_statistics.FindLteqTest.test_invalid_input_values
-test.test_statistics.FindLteqTest.test_locate_successfully
-test.test_statistics.FindRteqTest.test_invalid_input_values
-test.test_statistics.FindRteqTest.test_locate_successfully
-test.test_statistics.GlobalsTest.test_check_all
-test.test_statistics.GlobalsTest.test_meta
-test.test_statistics.IsFiniteTest.test_finite
-test.test_statistics.IsFiniteTest.test_infinity
-test.test_statistics.IsFiniteTest.test_nan
-test.test_statistics.StatisticsErrorTest.test_has_exception
-test.test_statistics.SumSpecialValues.test_decimal_basiccontext_mismatched_infs_to_nan
-test.test_statistics.SumSpecialValues.test_decimal_extendedcontext_mismatched_infs_to_nan
-test.test_statistics.SumSpecialValues.test_decimal_inf
-test.test_statistics.SumSpecialValues.test_decimal_snan_raises
-test.test_statistics.SumSpecialValues.test_float_inf
-test.test_statistics.SumSpecialValues.test_float_mismatched_infs
-test.test_statistics.SumSpecialValues.test_nan
-test.test_statistics.SumTortureTest.test_torture
-test.test_statistics.TestApproxEqualErrors.test_bad_rel
-test.test_statistics.TestApproxEqualErrors.test_bad_tol
-test.test_statistics.TestBivariateStatistics.test_small_sample_error
-test.test_statistics.TestBivariateStatistics.test_unequal_size_error
-test.test_statistics.TestCorrelationAndCovariance.test_different_scales
-test.test_statistics.TestCorrelationAndCovariance.test_results
-test.test_statistics.TestFMean.test_basics
-test.test_statistics.TestFMean.test_error_cases
-test.test_statistics.TestFMean.test_special_values
-test.test_statistics.TestFMean.test_weights
-test.test_statistics.TestGeometricMean.test_basics
-test.test_statistics.TestGeometricMean.test_big_and_small
-test.test_statistics.TestGeometricMean.test_error_cases
-test.test_statistics.TestGeometricMean.test_mixed_int_and_float
-test.test_statistics.TestGeometricMean.test_special_values
-test.test_statistics.TestGeometricMean.test_various_input_types
-test.test_statistics.TestHarmonicMean.test_bad_arg_types
-test.test_statistics.TestHarmonicMean.test_decimals_exact
-test.test_statistics.TestHarmonicMean.test_doubled_data
-test.test_statistics.TestHarmonicMean.test_empty_data
-test.test_statistics.TestHarmonicMean.test_floats_exact
-test.test_statistics.TestHarmonicMean.test_fractions
-test.test_statistics.TestHarmonicMean.test_inf
-test.test_statistics.TestHarmonicMean.test_ints
-test.test_statistics.TestHarmonicMean.test_invalid_type_error
-test.test_statistics.TestHarmonicMean.test_multiply_data_points
-test.test_statistics.TestHarmonicMean.test_nan
-test.test_statistics.TestHarmonicMean.test_negative_error
-test.test_statistics.TestHarmonicMean.test_no_args
-test.test_statistics.TestHarmonicMean.test_no_inplace_modifications
-test.test_statistics.TestHarmonicMean.test_order_doesnt_matter
-test.test_statistics.TestHarmonicMean.test_range_data
-test.test_statistics.TestHarmonicMean.test_repeated_single_value
-test.test_statistics.TestHarmonicMean.test_single_value
-test.test_statistics.TestHarmonicMean.test_singleton_lists
-test.test_statistics.TestHarmonicMean.test_type_of_data_collection
-test.test_statistics.TestHarmonicMean.test_type_of_data_element
-test.test_statistics.TestHarmonicMean.test_types_conserved
-test.test_statistics.TestHarmonicMean.test_with_weights
-test.test_statistics.TestHarmonicMean.test_zero
-test.test_statistics.TestLinearRegression.test_constant_input_error
-test.test_statistics.TestLinearRegression.test_proportional
-test.test_statistics.TestLinearRegression.test_results
-test.test_statistics.TestMean.test_bad_arg_types
-test.test_statistics.TestMean.test_big_data
-test.test_statistics.TestMean.test_decimals
-test.test_statistics.TestMean.test_doubled_data
-test.test_statistics.TestMean.test_empty_data
-test.test_statistics.TestMean.test_floats
-test.test_statistics.TestMean.test_fractions
-test.test_statistics.TestMean.test_inf
-test.test_statistics.TestMean.test_ints
-test.test_statistics.TestMean.test_mismatched_infs
-test.test_statistics.TestMean.test_nan
-test.test_statistics.TestMean.test_no_args
-test.test_statistics.TestMean.test_no_inplace_modifications
-test.test_statistics.TestMean.test_order_doesnt_matter
-test.test_statistics.TestMean.test_range_data
-test.test_statistics.TestMean.test_regression_20561
-test.test_statistics.TestMean.test_regression_25177
-test.test_statistics.TestMean.test_repeated_single_value
-test.test_statistics.TestMean.test_single_value
-test.test_statistics.TestMean.test_torture_pep
-test.test_statistics.TestMean.test_type_of_data_collection
-test.test_statistics.TestMean.test_type_of_data_element
-test.test_statistics.TestMean.test_types_conserved
-test.test_statistics.TestMedian.test_bad_arg_types
-test.test_statistics.TestMedian.test_empty_data
-test.test_statistics.TestMedian.test_even_decimals
-test.test_statistics.TestMedian.test_even_fractions
-test.test_statistics.TestMedian.test_even_ints
-test.test_statistics.TestMedian.test_no_args
-test.test_statistics.TestMedian.test_no_inplace_modifications
-test.test_statistics.TestMedian.test_odd_decimals
-test.test_statistics.TestMedian.test_odd_fractions
-test.test_statistics.TestMedian.test_odd_ints
-test.test_statistics.TestMedian.test_order_doesnt_matter
-test.test_statistics.TestMedian.test_range_data
-test.test_statistics.TestMedian.test_repeated_single_value
-test.test_statistics.TestMedian.test_single_value
-test.test_statistics.TestMedian.test_type_of_data_collection
-test.test_statistics.TestMedian.test_type_of_data_element
-test.test_statistics.TestMedianDataType.test_types_conserved
-test.test_statistics.TestMedianGrouped.test_bad_arg_types
-test.test_statistics.TestMedianGrouped.test_data_type_error
-test.test_statistics.TestMedianGrouped.test_empty_data
-test.test_statistics.TestMedianGrouped.test_even_decimals
-test.test_statistics.TestMedianGrouped.test_even_fractions
-test.test_statistics.TestMedianGrouped.test_even_ints
-test.test_statistics.TestMedianGrouped.test_even_number_repeated
-test.test_statistics.TestMedianGrouped.test_interval
-test.test_statistics.TestMedianGrouped.test_no_args
-test.test_statistics.TestMedianGrouped.test_no_inplace_modifications
-test.test_statistics.TestMedianGrouped.test_odd_decimals
-test.test_statistics.TestMedianGrouped.test_odd_fractions
-test.test_statistics.TestMedianGrouped.test_odd_ints
-test.test_statistics.TestMedianGrouped.test_odd_number_repeated
-test.test_statistics.TestMedianGrouped.test_order_doesnt_matter
-test.test_statistics.TestMedianGrouped.test_range_data
-test.test_statistics.TestMedianGrouped.test_repeated_single_value
-test.test_statistics.TestMedianGrouped.test_single_value
-test.test_statistics.TestMedianGrouped.test_type_of_data_collection
-test.test_statistics.TestMedianGrouped.test_type_of_data_element
-test.test_statistics.TestMedianHigh.test_bad_arg_types
-test.test_statistics.TestMedianHigh.test_empty_data
-test.test_statistics.TestMedianHigh.test_even_decimals
-test.test_statistics.TestMedianHigh.test_even_fractions
-test.test_statistics.TestMedianHigh.test_even_ints
-test.test_statistics.TestMedianHigh.test_no_args
-test.test_statistics.TestMedianHigh.test_no_inplace_modifications
-test.test_statistics.TestMedianHigh.test_odd_decimals
-test.test_statistics.TestMedianHigh.test_odd_fractions
-test.test_statistics.TestMedianHigh.test_odd_ints
-test.test_statistics.TestMedianHigh.test_order_doesnt_matter
-test.test_statistics.TestMedianHigh.test_range_data
-test.test_statistics.TestMedianHigh.test_repeated_single_value
-test.test_statistics.TestMedianHigh.test_single_value
-test.test_statistics.TestMedianHigh.test_type_of_data_collection
-test.test_statistics.TestMedianHigh.test_type_of_data_element
-test.test_statistics.TestMedianHigh.test_types_conserved
-test.test_statistics.TestMedianLow.test_bad_arg_types
-test.test_statistics.TestMedianLow.test_empty_data
-test.test_statistics.TestMedianLow.test_even_decimals
-test.test_statistics.TestMedianLow.test_even_fractions
-test.test_statistics.TestMedianLow.test_even_ints
-test.test_statistics.TestMedianLow.test_no_args
-test.test_statistics.TestMedianLow.test_no_inplace_modifications
-test.test_statistics.TestMedianLow.test_odd_decimals
-test.test_statistics.TestMedianLow.test_odd_fractions
-test.test_statistics.TestMedianLow.test_odd_ints
-test.test_statistics.TestMedianLow.test_order_doesnt_matter
-test.test_statistics.TestMedianLow.test_range_data
-test.test_statistics.TestMedianLow.test_repeated_single_value
-test.test_statistics.TestMedianLow.test_single_value
-test.test_statistics.TestMedianLow.test_type_of_data_collection
-test.test_statistics.TestMedianLow.test_type_of_data_element
-test.test_statistics.TestMedianLow.test_types_conserved
-test.test_statistics.TestMode.test_bad_arg_types
-test.test_statistics.TestMode.test_bimodal_data
-test.test_statistics.TestMode.test_counter_data
-test.test_statistics.TestMode.test_discrete_data
-test.test_statistics.TestMode.test_empty_data
-test.test_statistics.TestMode.test_no_args
-test.test_statistics.TestMode.test_no_inplace_modifications
-test.test_statistics.TestMode.test_nominal_data
-test.test_statistics.TestMode.test_none_data
-test.test_statistics.TestMode.test_order_doesnt_matter
-test.test_statistics.TestMode.test_range_data
-test.test_statistics.TestMode.test_repeated_single_value
-test.test_statistics.TestMode.test_single_value
-test.test_statistics.TestMode.test_type_of_data_collection
-test.test_statistics.TestMode.test_type_of_data_element
-test.test_statistics.TestMode.test_types_conserved
-test.test_statistics.TestMode.test_unique_data
-test.test_statistics.TestModules.test_c_functions
-test.test_statistics.TestModules.test_py_functions
-test.test_statistics.TestMultiMode.test_basics
-test.test_statistics.TestNormalDistC.test_alternative_constructor
-test.test_statistics.TestNormalDistC.test_cdf
-test.test_statistics.TestNormalDistC.test_copy
-test.test_statistics.TestNormalDistC.test_equality
-test.test_statistics.TestNormalDistC.test_hashability
-test.test_statistics.TestNormalDistC.test_instantiation_and_attributes
-test.test_statistics.TestNormalDistC.test_inv_cdf
-test.test_statistics.TestNormalDistC.test_overlap
-test.test_statistics.TestNormalDistC.test_pdf
-test.test_statistics.TestNormalDistC.test_pickle
-test.test_statistics.TestNormalDistC.test_pickle_and_copy
-test.test_statistics.TestNormalDistC.test_properties
-test.test_statistics.TestNormalDistC.test_quantiles
-test.test_statistics.TestNormalDistC.test_repr
-test.test_statistics.TestNormalDistC.test_same_type_addition_and_subtraction
-test.test_statistics.TestNormalDistC.test_sample_generation
-test.test_statistics.TestNormalDistC.test_slots
-test.test_statistics.TestNormalDistC.test_translation_and_scaling
-test.test_statistics.TestNormalDistC.test_unary_operations
-test.test_statistics.TestNormalDistC.test_zscore
-test.test_statistics.TestNormalDistPython.test_alternative_constructor
-test.test_statistics.TestNormalDistPython.test_cdf
-test.test_statistics.TestNormalDistPython.test_copy
-test.test_statistics.TestNormalDistPython.test_equality
-test.test_statistics.TestNormalDistPython.test_hashability
-test.test_statistics.TestNormalDistPython.test_instantiation_and_attributes
-test.test_statistics.TestNormalDistPython.test_inv_cdf
-test.test_statistics.TestNormalDistPython.test_pdf
-test.test_statistics.TestNormalDistPython.test_pickle
-test.test_statistics.TestNormalDistPython.test_pickle_and_copy
-test.test_statistics.TestNormalDistPython.test_properties
-test.test_statistics.TestNormalDistPython.test_quantiles
-test.test_statistics.TestNormalDistPython.test_repr
-test.test_statistics.TestNormalDistPython.test_same_type_addition_and_subtraction
-test.test_statistics.TestNormalDistPython.test_sample_generation
-test.test_statistics.TestNormalDistPython.test_slots
-test.test_statistics.TestNormalDistPython.test_translation_and_scaling
-test.test_statistics.TestNormalDistPython.test_unary_operations
-test.test_statistics.TestNormalDistPython.test_zscore
-test.test_statistics.TestNumericTestCase.test_error_msg_numeric
-test.test_statistics.TestNumericTestCase.test_error_msg_sequence
-test.test_statistics.TestNumericTestCase.test_numerictestcase_is_testcase
-test.test_statistics.TestPStdev.test_bad_arg_types
-test.test_statistics.TestPStdev.test_center_not_at_mean
-test.test_statistics.TestPStdev.test_compare_to_variance
-test.test_statistics.TestPStdev.test_domain_error_regression
-test.test_statistics.TestPStdev.test_empty_data
-test.test_statistics.TestPStdev.test_iter_list_same
-test.test_statistics.TestPStdev.test_no_args
-test.test_statistics.TestPStdev.test_no_inplace_modifications
-test.test_statistics.TestPStdev.test_order_doesnt_matter
-test.test_statistics.TestPStdev.test_range_data
-test.test_statistics.TestPStdev.test_repeated_single_value
-test.test_statistics.TestPStdev.test_shift_data
-test.test_statistics.TestPStdev.test_shift_data_exact
-test.test_statistics.TestPStdev.test_single_value
-test.test_statistics.TestPStdev.test_type_of_data_collection
-test.test_statistics.TestPStdev.test_type_of_data_element
-test.test_statistics.TestPVariance.test_accuracy_bug_20499
-test.test_statistics.TestPVariance.test_bad_arg_types
-test.test_statistics.TestPVariance.test_decimals
-test.test_statistics.TestPVariance.test_domain_error_regression
-test.test_statistics.TestPVariance.test_empty_data
-test.test_statistics.TestPVariance.test_exact_uniform
-test.test_statistics.TestPVariance.test_fractions
-test.test_statistics.TestPVariance.test_ints
-test.test_statistics.TestPVariance.test_iter_list_same
-test.test_statistics.TestPVariance.test_no_args
-test.test_statistics.TestPVariance.test_no_inplace_modifications
-test.test_statistics.TestPVariance.test_order_doesnt_matter
-test.test_statistics.TestPVariance.test_range_data
-test.test_statistics.TestPVariance.test_repeated_single_value
-test.test_statistics.TestPVariance.test_shift_data
-test.test_statistics.TestPVariance.test_shift_data_exact
-test.test_statistics.TestPVariance.test_single_value
-test.test_statistics.TestPVariance.test_type_of_data_collection
-test.test_statistics.TestPVariance.test_type_of_data_element
-test.test_statistics.TestPVariance.test_types_conserved
-test.test_statistics.TestQuantiles.test_equal_inputs
-test.test_statistics.TestQuantiles.test_equal_sized_groups
-test.test_statistics.TestQuantiles.test_error_cases
-test.test_statistics.TestQuantiles.test_specific_cases
-test.test_statistics.TestQuantiles.test_specific_cases_inclusive
-test.test_statistics.TestSign.testZeroes
-test.test_statistics.TestSqrtHelpers.test_decimal_sqrt_of_frac
-test.test_statistics.TestSqrtHelpers.test_float_sqrt_of_frac
-test.test_statistics.TestSqrtHelpers.test_integer_sqrt_of_frac_rto
-test.test_statistics.TestStdev.test_bad_arg_types
-test.test_statistics.TestStdev.test_center_not_at_mean
-test.test_statistics.TestStdev.test_compare_to_variance
-test.test_statistics.TestStdev.test_domain_error_regression
-test.test_statistics.TestStdev.test_empty_data
-test.test_statistics.TestStdev.test_iter_list_same
-test.test_statistics.TestStdev.test_no_args
-test.test_statistics.TestStdev.test_no_inplace_modifications
-test.test_statistics.TestStdev.test_order_doesnt_matter
-test.test_statistics.TestStdev.test_range_data
-test.test_statistics.TestStdev.test_repeated_single_value
-test.test_statistics.TestStdev.test_shift_data
-test.test_statistics.TestStdev.test_shift_data_exact
-test.test_statistics.TestStdev.test_single_value
-test.test_statistics.TestStdev.test_type_of_data_collection
-test.test_statistics.TestStdev.test_type_of_data_element
-test.test_statistics.TestSum.test_bytes_fail
-test.test_statistics.TestSum.test_compare_with_math_fsum
-test.test_statistics.TestSum.test_decimals
-test.test_statistics.TestSum.test_empty_data
-test.test_statistics.TestSum.test_floats
-test.test_statistics.TestSum.test_fractions
-test.test_statistics.TestSum.test_ints
-test.test_statistics.TestSum.test_mixed_sum
-test.test_statistics.TestSum.test_start_argument
-test.test_statistics.TestSum.test_strings_fail
-test.test_statistics.TestVariance.test_accuracy_bug_20499
-test.test_statistics.TestVariance.test_bad_arg_types
-test.test_statistics.TestVariance.test_center_not_at_mean
-test.test_statistics.TestVariance.test_decimals
-test.test_statistics.TestVariance.test_domain_error_regression
-test.test_statistics.TestVariance.test_empty_data
-test.test_statistics.TestVariance.test_fractions
-test.test_statistics.TestVariance.test_ints
-test.test_statistics.TestVariance.test_iter_list_same
-test.test_statistics.TestVariance.test_no_args
-test.test_statistics.TestVariance.test_no_inplace_modifications
-test.test_statistics.TestVariance.test_order_doesnt_matter
-test.test_statistics.TestVariance.test_range_data
-test.test_statistics.TestVariance.test_repeated_single_value
-test.test_statistics.TestVariance.test_shift_data
-test.test_statistics.TestVariance.test_shift_data_exact
-test.test_statistics.TestVariance.test_single_value
-test.test_statistics.TestVariance.test_type_of_data_collection
-test.test_statistics.TestVariance.test_type_of_data_element
-test.test_statistics.TestVariance.test_types_conserved
+DocTestCase.test.test_statistics.NumericTestCase.assertApproxEqual @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_statistics._DoNothing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_statistics._calc_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_statistics._nan_equal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_statistics.approx_equal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualExactTest.test_exactly_equal_absolute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualExactTest.test_exactly_equal_absolute_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualExactTest.test_exactly_equal_both @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualExactTest.test_exactly_equal_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualExactTest.test_exactly_equal_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualExactTest.test_exactly_equal_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualExactTest.test_exactly_equal_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualExactTest.test_exactly_equal_relative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_absolute_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_absolute_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_absolute_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_absolute_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_both1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_both2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_both3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_both4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_relative_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_relative_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_relative_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_approx_equal_relative_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualInexactTest.test_cross_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualSpecialsTest.test_decimal_zeroes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualSpecialsTest.test_float_zeroes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualSpecialsTest.test_inf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualSpecialsTest.test_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualSymmetryTest.test_relative_symmetry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualSymmetryTest.test_symmetry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualUnequalTest.test_exactly_unequal_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualUnequalTest.test_exactly_unequal_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualUnequalTest.test_exactly_unequal_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ApproxEqualUnequalTest.test_exactly_unequal_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.CoerceTest.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.CoerceTest.test_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.CoerceTest.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.CoerceTest.test_fraction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.CoerceTest.test_incompatible_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.CoerceTest.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.CoerceTest.test_non_numeric_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ConvertTest.test_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ConvertTest.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ConvertTest.test_fraction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ConvertTest.test_inf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ConvertTest.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ConvertTest.test_invalid_input_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ConvertTest.test_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.DecimalToRatioTest.test_infinity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.DecimalToRatioTest.test_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.DecimalToRatioTest.test_negative_exponent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.DecimalToRatioTest.test_positive_exponent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.DecimalToRatioTest.test_regression_20536 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.DecimalToRatioTest.test_sign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.DocTests.test_doc_tests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ExactRatioTest.test_decimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ExactRatioTest.test_decimal_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ExactRatioTest.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ExactRatioTest.test_float_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ExactRatioTest.test_fraction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ExactRatioTest.test_inf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.ExactRatioTest.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.FailNegTest.test_error_msg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.FailNegTest.test_negatives_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.FailNegTest.test_pass_through @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.GlobalsTest.test_check_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.GlobalsTest.test_meta @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.IsFiniteTest.test_finite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.IsFiniteTest.test_infinity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.IsFiniteTest.test_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.StatisticsErrorTest.test_has_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.SumSpecialValues.test_decimal_basiccontext_mismatched_infs_to_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.SumSpecialValues.test_decimal_extendedcontext_mismatched_infs_to_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.SumSpecialValues.test_decimal_inf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.SumSpecialValues.test_decimal_snan_raises @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.SumSpecialValues.test_float_inf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.SumSpecialValues.test_float_mismatched_infs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.SumSpecialValues.test_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.SumTortureTest.test_torture @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestApproxEqualErrors.test_bad_rel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestApproxEqualErrors.test_bad_tol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestBivariateStatistics.test_small_sample_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestBivariateStatistics.test_unequal_size_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestCorrelationAndCovariance.test_different_scales @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestCorrelationAndCovariance.test_results @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestFMean.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestFMean.test_error_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestFMean.test_special_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestFMean.test_weights @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestGeometricMean.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestGeometricMean.test_big_and_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestGeometricMean.test_error_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestGeometricMean.test_mixed_int_and_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestGeometricMean.test_special_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestGeometricMean.test_various_input_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_decimals_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_doubled_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_floats_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_inf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_invalid_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_multiply_data_points @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_negative_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_singleton_lists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_types_conserved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_with_weights @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestHarmonicMean.test_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestLinearRegression.test_constant_input_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestLinearRegression.test_proportional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestLinearRegression.test_results @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_big_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_doubled_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_inf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_mismatched_infs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_regression_20561 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_regression_25177 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_torture_pep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMean.test_types_conserved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_even_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_even_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_even_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_odd_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_odd_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_odd_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedian.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianDataType.test_types_conserved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_data_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_even_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_even_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_even_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_even_number_repeated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_interval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_odd_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_odd_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_odd_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_odd_number_repeated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianGrouped.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_even_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_even_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_even_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_odd_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_odd_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_odd_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianHigh.test_types_conserved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_even_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_even_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_even_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_odd_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_odd_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_odd_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMedianLow.test_types_conserved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_bimodal_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_counter_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_discrete_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_nominal_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_none_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_types_conserved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMode.test_unique_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestModules.test_py_functions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestMultiMode.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_alternative_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_cdf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_hashability @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_instantiation_and_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_inv_cdf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_overlap @ darwin-arm64,linux-aarch64
+test.test_statistics.TestNormalDistPython.test_pdf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_quantiles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_same_type_addition_and_subtraction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_sample_generation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_translation_and_scaling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_unary_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNormalDistPython.test_zscore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNumericTestCase.test_error_msg_numeric @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNumericTestCase.test_error_msg_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestNumericTestCase.test_numerictestcase_is_testcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_center_not_at_mean @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_compare_to_variance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_domain_error_regression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_iter_list_same @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_shift_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_shift_data_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPStdev.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_accuracy_bug_20499 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_domain_error_regression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_exact_uniform @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_iter_list_same @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_shift_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_shift_data_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestPVariance.test_types_conserved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestQuantiles.test_equal_inputs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestQuantiles.test_equal_sized_groups @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestQuantiles.test_error_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestQuantiles.test_specific_cases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestQuantiles.test_specific_cases_inclusive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSign.testZeroes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSqrtHelpers.test_decimal_sqrt_of_frac @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSqrtHelpers.test_float_sqrt_of_frac @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSqrtHelpers.test_integer_sqrt_of_frac_rto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_center_not_at_mean @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_compare_to_variance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_domain_error_regression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_iter_list_same @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_shift_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_shift_data_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestStdev.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_bytes_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_compare_with_math_fsum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_mixed_sum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestSum.test_strings_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_accuracy_bug_20499 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_bad_arg_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_center_not_at_mean @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_decimals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_domain_error_regression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_empty_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_fractions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_iter_list_same @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_no_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_no_inplace_modifications @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_order_doesnt_matter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_range_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_repeated_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_shift_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_shift_data_exact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_single_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_type_of_data_collection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_type_of_data_element @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_statistics.TestVariance.test_types_conserved @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

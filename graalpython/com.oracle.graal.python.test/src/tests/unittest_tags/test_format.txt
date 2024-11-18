@@ -1,15 +1,12 @@
-test.test_format.FormatTest.test_bytes_and_bytearray_format
-test.test_format.FormatTest.test_common_format
-test.test_format.FormatTest.test_format_class
-test.test_format.FormatTest.test_g_format_has_no_trailing_zeros
-test.test_format.FormatTest.test_locale
-test.test_format.FormatTest.test_non_ascii
-test.test_format.FormatTest.test_nul
-test.test_format.FormatTest.test_optimisations
-test.test_format.FormatTest.test_precision
-test.test_format.FormatTest.test_precision_c_limits
-test.test_format.FormatTest.test_str_format
-test.test_format.FormatTest.test_with_a_commas_and_an_underscore_in_format_specifier
-test.test_format.FormatTest.test_with_an_underscore_and_a_comma_in_format_specifier
-test.test_format.FormatTest.test_with_two_commas_in_format_specifier
-test.test_format.FormatTest.test_with_two_underscore_in_format_specifier
+test.test_format.FormatTest.test_bytes_and_bytearray_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_common_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_g_format_has_no_trailing_zeros @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_nul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_precision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_str_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_with_a_commas_and_an_underscore_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_with_an_underscore_and_a_comma_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_with_two_commas_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_format.FormatTest.test_with_two_underscore_in_format_specifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,43 +1,47 @@
-test.test_strptime.CacheTests.test_TimeRE_recreation_locale
-test.test_strptime.CacheTests.test_new_localetime
-test.test_strptime.CacheTests.test_regex_cleanup
-test.test_strptime.CacheTests.test_time_re_recreation
-test.test_strptime.CalculationTests.test_week_0
-test.test_strptime.JulianTests.test_all_julian_days
-test.test_strptime.LocaleTime_Tests.test_am_pm
-test.test_strptime.LocaleTime_Tests.test_date_time
-test.test_strptime.LocaleTime_Tests.test_lang
-test.test_strptime.LocaleTime_Tests.test_month
-test.test_strptime.LocaleTime_Tests.test_timezone
-test.test_strptime.LocaleTime_Tests.test_weekday
-test.test_strptime.Strptime12AMPMTests.test_twelve_noon_midnight
-test.test_strptime.StrptimeTests.test_ValueError
-test.test_strptime.StrptimeTests.test_bad_offset
-test.test_strptime.StrptimeTests.test_bad_timezone
-test.test_strptime.StrptimeTests.test_caseinsensitive
-test.test_strptime.StrptimeTests.test_date
-test.test_strptime.StrptimeTests.test_date_time
-test.test_strptime.StrptimeTests.test_day
-test.test_strptime.StrptimeTests.test_defaults
-test.test_strptime.StrptimeTests.test_escaping
-test.test_strptime.StrptimeTests.test_feb29_on_leap_year_without_year
-test.test_strptime.StrptimeTests.test_fraction
-test.test_strptime.StrptimeTests.test_hour
-test.test_strptime.StrptimeTests.test_julian
-test.test_strptime.StrptimeTests.test_mar1_comes_after_feb29_even_when_omitting_the_year
-test.test_strptime.StrptimeTests.test_minute
-test.test_strptime.StrptimeTests.test_month
-test.test_strptime.StrptimeTests.test_offset
-test.test_strptime.StrptimeTests.test_percent
-test.test_strptime.StrptimeTests.test_second
-test.test_strptime.StrptimeTests.test_strptime_exception_context
-test.test_strptime.StrptimeTests.test_time
-test.test_strptime.StrptimeTests.test_unconverteddata
-test.test_strptime.StrptimeTests.test_year
-test.test_strptime.TimeRETests.test_blankpattern
-test.test_strptime.TimeRETests.test_locale_data_w_regex_metacharacters
-test.test_strptime.TimeRETests.test_matching_with_escapes
-test.test_strptime.TimeRETests.test_pattern
-test.test_strptime.TimeRETests.test_pattern_escaping
-test.test_strptime.TimeRETests.test_whitespace_substitution
-test.test_strptime.getlang_Tests.test_basic
+test.test_strptime.CacheTests.test_TimeRE_recreation_locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.CacheTests.test_new_localetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.CacheTests.test_regex_cleanup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.CacheTests.test_time_re_recreation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.CalculationTests.test_day_of_week_calculation @ darwin-arm64,darwin-x86_64
+test.test_strptime.CalculationTests.test_gregorian_calculation @ darwin-arm64,darwin-x86_64
+test.test_strptime.CalculationTests.test_julian_calculation @ darwin-arm64,darwin-x86_64
+test.test_strptime.CalculationTests.test_week_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.JulianTests.test_all_julian_days @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.LocaleTime_Tests.test_am_pm @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.LocaleTime_Tests.test_date_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.LocaleTime_Tests.test_lang @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.LocaleTime_Tests.test_month @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.LocaleTime_Tests.test_timezone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.LocaleTime_Tests.test_weekday @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.Strptime12AMPMTests.test_twelve_noon_midnight @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_ValueError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_bad_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_bad_timezone @ darwin-arm64,darwin-x86_64
+test.test_strptime.StrptimeTests.test_caseinsensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_date @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_date_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_day @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_escaping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_feb29_on_leap_year_without_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_fraction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_hour @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_julian @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_mar1_comes_after_feb29_even_when_omitting_the_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_minute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_month @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_percent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_second @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_strptime_exception_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_timezone @ darwin-arm64,darwin-x86_64
+test.test_strptime.StrptimeTests.test_unconverteddata @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.StrptimeTests.test_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.TimeRETests.test_blankpattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.TimeRETests.test_locale_data_w_regex_metacharacters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.TimeRETests.test_matching_with_escapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.TimeRETests.test_pattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.TimeRETests.test_pattern_escaping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.TimeRETests.test_whitespace_substitution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_strptime.getlang_Tests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

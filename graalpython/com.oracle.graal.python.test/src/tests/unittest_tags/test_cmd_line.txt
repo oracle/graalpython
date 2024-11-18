@@ -1,25 +1,23 @@
-test.test_cmd_line.CmdLineTest.test_argv0_normalization
-test.test_cmd_line.CmdLineTest.test_builtin_input
-test.test_cmd_line.CmdLineTest.test_closed_stdout
-test.test_cmd_line.CmdLineTest.test_coding
-test.test_cmd_line.CmdLineTest.test_del___main__
-test.test_cmd_line.CmdLineTest.test_directories
-test.test_cmd_line.CmdLineTest.test_empty_PYTHONPATH_issue16309
-test.test_cmd_line.CmdLineTest.test_help_env
-test.test_cmd_line.CmdLineTest.test_isolatedmode
-test.test_cmd_line.CmdLineTest.test_large_PYTHONPATH
-test.test_cmd_line.CmdLineTest.test_non_ascii
-test.test_cmd_line.CmdLineTest.test_optimize
-test.test_cmd_line.CmdLineTest.test_osx_android_utf8
-test.test_cmd_line.CmdLineTest.test_output_newline
-test.test_cmd_line.CmdLineTest.test_run_code
-test.test_cmd_line.CmdLineTest.test_run_module
-test.test_cmd_line.CmdLineTest.test_run_module_bug1764407
-test.test_cmd_line.CmdLineTest.test_site_flag
-test.test_cmd_line.CmdLineTest.test_stdin_readline
-test.test_cmd_line.CmdLineTest.test_unbuffered_input
-test.test_cmd_line.CmdLineTest.test_unbuffered_output
-test.test_cmd_line.CmdLineTest.test_unmached_quote
-test.test_cmd_line.CmdLineTest.test_usage
-test.test_cmd_line.CmdLineTest.test_verbose
-test.test_cmd_line.IgnoreEnvironmentTest.test_ignore_PYTHONPATH
+test.test_cmd_line.CmdLineTest.test_builtin_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_closed_stdout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_coding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_del___main__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_directories @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_empty_PYTHONPATH_issue16309 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_help_env @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_isolatedmode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_large_PYTHONPATH @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_optimize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_osx_android_utf8 @ darwin-arm64,darwin-x86_64
+test.test_cmd_line.CmdLineTest.test_output_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_run_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_run_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_run_module_bug1764407 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_site_flag @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_stdin_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_unbuffered_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_unbuffered_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_unmached_quote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.IgnoreEnvironmentTest.test_ignore_PYTHONPATH @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

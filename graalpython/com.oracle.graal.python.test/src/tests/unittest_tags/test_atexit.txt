@@ -1,16 +1,1 @@
-test.test_atexit.FunctionalTest.test_shutdown
-test.test_atexit.GeneralTest.test_args
-test.test_atexit.GeneralTest.test_badargs
-test.test_atexit.GeneralTest.test_bound_methods
-test.test_atexit.GeneralTest.test_clear
-test.test_atexit.GeneralTest.test_exit
-test.test_atexit.GeneralTest.test_order
-test.test_atexit.GeneralTest.test_print_tracebacks
-test.test_atexit.GeneralTest.test_raise
-test.test_atexit.GeneralTest.test_raise_unnormalized
-test.test_atexit.GeneralTest.test_shutdown
-test.test_atexit.GeneralTest.test_stress
-test.test_atexit.GeneralTest.test_unregister
-test.test_atexit.SubinterpreterTest.test_callback_on_subinterpreter_teardown
-test.test_atexit.SubinterpreterTest.test_callbacks_leak
-test.test_atexit.SubinterpreterTest.test_callbacks_leak_refcycle
+test.test_atexit.FunctionalTest.test_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

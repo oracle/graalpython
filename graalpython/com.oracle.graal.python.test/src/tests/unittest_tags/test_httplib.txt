@@ -1,117 +1,111 @@
-test.test_httplib.BasicTest.test_bad_status_repr
-test.test_httplib.BasicTest.test_blocksize_request
-test.test_httplib.BasicTest.test_blocksize_send
-test.test_httplib.BasicTest.test_chunked
-test.test_httplib.BasicTest.test_chunked_extension
-test.test_httplib.BasicTest.test_chunked_head
-test.test_httplib.BasicTest.test_chunked_missing_end
-test.test_httplib.BasicTest.test_chunked_sync
-test.test_httplib.BasicTest.test_chunked_trailers
-test.test_httplib.BasicTest.test_content_length_sync
-test.test_httplib.BasicTest.test_dir_with_added_behavior_on_status
-test.test_httplib.BasicTest.test_early_eof
-test.test_httplib.BasicTest.test_epipe
-test.test_httplib.BasicTest.test_error_leak
-test.test_httplib.BasicTest.test_host_port
-test.test_httplib.BasicTest.test_incomplete_read
-test.test_httplib.BasicTest.test_mixed_reads
-test.test_httplib.BasicTest.test_negative_content_length
-test.test_httplib.BasicTest.test_overflowing_chunked_line
-test.test_httplib.BasicTest.test_overflowing_header_limit_after_100
-test.test_httplib.BasicTest.test_overflowing_header_line
-test.test_httplib.BasicTest.test_overflowing_status_line
-test.test_httplib.BasicTest.test_partial_readintos
-test.test_httplib.BasicTest.test_partial_readintos_incomplete_body
-test.test_httplib.BasicTest.test_partial_readintos_no_content_length
-test.test_httplib.BasicTest.test_partial_readintos_past_end
-test.test_httplib.BasicTest.test_partial_reads
-test.test_httplib.BasicTest.test_partial_reads_incomplete_body
-test.test_httplib.BasicTest.test_partial_reads_no_content_length
-test.test_httplib.BasicTest.test_partial_reads_past_end
-test.test_httplib.BasicTest.test_putrequest_override_domain_validation
-test.test_httplib.BasicTest.test_putrequest_override_encoding
-test.test_httplib.BasicTest.test_putrequest_override_host_validation
-test.test_httplib.BasicTest.test_putrequest_override_validation
-test.test_httplib.BasicTest.test_read1_bound_content_length
-test.test_httplib.BasicTest.test_read1_content_length
-test.test_httplib.BasicTest.test_read_head
-test.test_httplib.BasicTest.test_readinto_chunked
-test.test_httplib.BasicTest.test_readinto_chunked_head
-test.test_httplib.BasicTest.test_readinto_head
-test.test_httplib.BasicTest.test_readline_bound_content_length
-test.test_httplib.BasicTest.test_readlines_content_length
-test.test_httplib.BasicTest.test_response_fileno
-test.test_httplib.BasicTest.test_response_headers
-test.test_httplib.BasicTest.test_send
-test.test_httplib.BasicTest.test_send_file
-test.test_httplib.BasicTest.test_send_iter
-test.test_httplib.BasicTest.test_send_type_error
-test.test_httplib.BasicTest.test_send_updating_file
-test.test_httplib.BasicTest.test_simple_httpstatus
-test.test_httplib.BasicTest.test_status_lines
-test.test_httplib.BasicTest.test_too_many_headers
-test.test_httplib.ExtendedReadTest.test_peek
-test.test_httplib.ExtendedReadTest.test_peek_0
-test.test_httplib.ExtendedReadTest.test_read1
-test.test_httplib.ExtendedReadTest.test_read1_0
-test.test_httplib.ExtendedReadTest.test_read1_bounded
-test.test_httplib.ExtendedReadTest.test_read1_unbounded
-test.test_httplib.ExtendedReadTest.test_readline
-test.test_httplib.ExtendedReadTestChunked.test_peek
-test.test_httplib.ExtendedReadTestChunked.test_peek_0
-test.test_httplib.ExtendedReadTestChunked.test_read1
-test.test_httplib.ExtendedReadTestChunked.test_read1_0
-test.test_httplib.ExtendedReadTestChunked.test_read1_bounded
-test.test_httplib.ExtendedReadTestChunked.test_read1_unbounded
-test.test_httplib.ExtendedReadTestChunked.test_readline
-test.test_httplib.HTTPResponseTest.test_getting_header
-test.test_httplib.HTTPResponseTest.test_getting_header_defaultint
-test.test_httplib.HTTPResponseTest.test_getting_nonexistent_header_with_iterable_default
-test.test_httplib.HTTPResponseTest.test_getting_nonexistent_header_with_string_default
-test.test_httplib.HTTPResponseTest.test_getting_nonexistent_header_without_default
-test.test_httplib.HTTPSTest.test_attributes
-test.test_httplib.HTTPSTest.test_host_port
-test.test_httplib.HTTPSTest.test_local_bad_hostname
-test.test_httplib.HTTPSTest.test_local_good_hostname
-test.test_httplib.HTTPSTest.test_local_unknown_cert
-test.test_httplib.HTTPSTest.test_networked
-test.test_httplib.HTTPSTest.test_networked_bad_cert
-test.test_httplib.HTTPSTest.test_networked_good_cert
-test.test_httplib.HTTPSTest.test_networked_noverification
-test.test_httplib.HTTPSTest.test_networked_trusted_by_default_cert
-test.test_httplib.HeaderTests.test_auto_headers
-test.test_httplib.HeaderTests.test_content_length_0
-test.test_httplib.HeaderTests.test_headers_debuglevel
-test.test_httplib.HeaderTests.test_invalid_headers
-test.test_httplib.HeaderTests.test_ipv6host_header
-test.test_httplib.HeaderTests.test_malformed_headers_coped_with
-test.test_httplib.HeaderTests.test_parse_all_octets
-test.test_httplib.HeaderTests.test_putheader
-test.test_httplib.HttpMethodTests.test_invalid_method_names
-test.test_httplib.OfflineTest.test_all
-test.test_httplib.OfflineTest.test_client_constants
-test.test_httplib.OfflineTest.test_responses
-test.test_httplib.PersistenceTest.test_100_close
-test.test_httplib.PersistenceTest.test_disconnected
-test.test_httplib.PersistenceTest.test_reuse_reconnect
-test.test_httplib.RequestBodyTest.test_ascii_body
-test.test_httplib.RequestBodyTest.test_binary_file_body
-test.test_httplib.RequestBodyTest.test_bytes_body
-test.test_httplib.RequestBodyTest.test_latin1_body
-test.test_httplib.RequestBodyTest.test_list_body
-test.test_httplib.RequestBodyTest.test_manual_content_length
-test.test_httplib.RequestBodyTest.test_text_file_body
-test.test_httplib.SourceAddressTest.testHTTPConnectionSourceAddress
-test.test_httplib.SourceAddressTest.testHTTPSConnectionSourceAddress
-test.test_httplib.TimeoutTest.testTimeoutAttribute
-test.test_httplib.TransferEncodingTest.test_empty_body
-test.test_httplib.TransferEncodingTest.test_endheaders_chunked
-test.test_httplib.TransferEncodingTest.test_explicit_headers
-test.test_httplib.TransferEncodingTest.test_request
-test.test_httplib.TunnelTests.test_connect_put_request
-test.test_httplib.TunnelTests.test_connect_with_tunnel
-test.test_httplib.TunnelTests.test_disallow_set_tunnel_after_connect
-test.test_httplib.TunnelTests.test_set_tunnel_host_port_headers
-test.test_httplib.TunnelTests.test_tunnel_connect_single_send_connection_setup
-test.test_httplib.TunnelTests.test_tunnel_debuglog
-test.test_httplib.TunnelTests.test_tunnel_leak
+test.test_httplib.BasicTest.test_bad_status_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_blocksize_request @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_blocksize_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_chunked @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_chunked_extension @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_chunked_head @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_chunked_missing_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_chunked_sync @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_chunked_trailers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_content_length_sync @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_dir_with_added_behavior_on_status @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_early_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_epipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_error_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_host_port @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_incomplete_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_mixed_reads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_negative_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_overflowing_chunked_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_overflowing_header_limit_after_100 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_overflowing_header_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_overflowing_status_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_partial_readintos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_partial_readintos_incomplete_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_partial_readintos_no_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_partial_readintos_past_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_partial_reads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_partial_reads_incomplete_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_partial_reads_no_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_partial_reads_past_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_putrequest_override_domain_validation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_putrequest_override_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_putrequest_override_host_validation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_read1_bound_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_read1_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_read_head @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_readinto_chunked @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_readinto_chunked_head @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_readinto_head @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_readline_bound_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_readlines_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_response_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_response_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_send_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_send_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_send_type_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_send_updating_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_simple_httpstatus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_status_lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.BasicTest.test_too_many_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTest.test_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTest.test_peek_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTest.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTest.test_read1_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTest.test_read1_bounded @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTest.test_read1_unbounded @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTestChunked.test_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTestChunked.test_peek_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTestChunked.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTestChunked.test_read1_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTestChunked.test_read1_bounded @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTestChunked.test_read1_unbounded @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.ExtendedReadTestChunked.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPResponseTest.test_getting_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPResponseTest.test_getting_header_defaultint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPResponseTest.test_getting_nonexistent_header_with_iterable_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPResponseTest.test_getting_nonexistent_header_with_string_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPResponseTest.test_getting_nonexistent_header_without_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPSTest.test_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPSTest.test_host_port @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPSTest.test_local_bad_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPSTest.test_local_good_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HTTPSTest.test_local_unknown_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HeaderTests.test_auto_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HeaderTests.test_content_length_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HeaderTests.test_headers_debuglevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HeaderTests.test_invalid_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HeaderTests.test_ipv6host_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HeaderTests.test_malformed_headers_coped_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HeaderTests.test_parse_all_octets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HeaderTests.test_putheader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.HttpMethodTests.test_invalid_method_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.OfflineTest.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.OfflineTest.test_client_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.OfflineTest.test_responses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.PersistenceTest.test_100_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.PersistenceTest.test_disconnected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.PersistenceTest.test_reuse_reconnect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.RequestBodyTest.test_ascii_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.RequestBodyTest.test_binary_file_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.RequestBodyTest.test_bytes_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.RequestBodyTest.test_latin1_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.RequestBodyTest.test_list_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.RequestBodyTest.test_manual_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.RequestBodyTest.test_text_file_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.SourceAddressTest.testHTTPConnectionSourceAddress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.SourceAddressTest.testHTTPSConnectionSourceAddress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TimeoutTest.testTimeoutAttribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TransferEncodingTest.test_empty_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TransferEncodingTest.test_endheaders_chunked @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TransferEncodingTest.test_explicit_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TransferEncodingTest.test_request @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TunnelTests.test_connect_put_request @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TunnelTests.test_connect_with_tunnel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TunnelTests.test_disallow_set_tunnel_after_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TunnelTests.test_set_tunnel_host_port_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TunnelTests.test_tunnel_connect_single_send_connection_setup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TunnelTests.test_tunnel_debuglog @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_httplib.TunnelTests.test_tunnel_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

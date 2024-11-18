@@ -1,1 +1,1 @@
-test.test_threadedtempfile.ThreadedTempFileTest.test_main
+test.test_threadedtempfile.ThreadedTempFileTest.test_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

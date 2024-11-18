@@ -1,17 +1,17 @@
-DocTestCase.doctest.DebugRunner
-DocTestCase.doctest.DocTestCase.debug
-DocTestCase.doctest.DocTestRunner
-DocTestCase.doctest._TestClass
-DocTestCase.doctest._TestClass.__init__
-DocTestCase.doctest._TestClass.get
-DocTestCase.doctest._TestClass.square
-DocTestCase.doctest.__test__.blank lines
-DocTestCase.doctest.__test__.bool-int equivalence
-DocTestCase.doctest.__test__.ellipsis
-DocTestCase.doctest.__test__.string
-DocTestCase.doctest.__test__.whitespace normalization
-DocTestCase.doctest._ellipsis_match
-DocTestCase.doctest.script_from_examples
-DocTestCase.doctest.set_unittest_reportflags
-test.test_doctest.TestDocTestFinder.test_empty_namespace_package
-test.test_doctest.TestDocTestFinder.test_issue35753
+DocTestCase.doctest.DebugRunner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.DocTestCase.debug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.DocTestRunner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest._TestClass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest._TestClass.__init__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest._TestClass.get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest._TestClass.square @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.__test__.blank lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.__test__.bool-int equivalence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.__test__.ellipsis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.__test__.string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.__test__.whitespace normalization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest._ellipsis_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.script_from_examples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.doctest.set_unittest_reportflags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_doctest.TestDocTestFinder.test_empty_namespace_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_doctest.TestDocTestFinder.test_issue35753 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

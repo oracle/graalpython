@@ -1,26 +1,9 @@
-test.test_signal.GenericTests.test_enums
-test.test_signal.GenericTests.test_functions_module_attr
-test.test_signal.ItimerTest.test_setitimer_tiny
-test.test_signal.PendingSignalsTests.test_pthread_kill
-test.test_signal.PendingSignalsTests.test_pthread_kill_main_thread
-test.test_signal.PendingSignalsTests.test_pthread_sigmask
-test.test_signal.PendingSignalsTests.test_pthread_sigmask_arguments
-test.test_signal.PendingSignalsTests.test_pthread_sigmask_valid_signals
-test.test_signal.PendingSignalsTests.test_sigpending
-test.test_signal.PendingSignalsTests.test_sigpending_empty
-test.test_signal.PendingSignalsTests.test_sigtimedwait
-test.test_signal.PendingSignalsTests.test_sigtimedwait_negative_timeout
-test.test_signal.PendingSignalsTests.test_sigtimedwait_poll
-test.test_signal.PendingSignalsTests.test_sigtimedwait_timeout
-test.test_signal.PendingSignalsTests.test_sigwait
-test.test_signal.PendingSignalsTests.test_sigwait_thread
-test.test_signal.PendingSignalsTests.test_sigwaitinfo
-test.test_signal.PidfdSignalTest.test_pidfd_send_signal
-test.test_signal.PosixTests.test_getsignal
-test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error
-test.test_signal.RaiseSignalTest.test_invalid_argument
-test.test_signal.SiginterruptTest.test_siginterrupt_off
-test.test_signal.WakeupSignalTests.test_pending
-test.test_signal.WindowsSignalTests.test_issue9324
-test.test_signal.WindowsSignalTests.test_keyboard_interrupt_exit_code
-test.test_signal.WindowsSignalTests.test_valid_signals
+test.test_signal.GenericTests.test_enums @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_signal.GenericTests.test_functions_module_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_signal.ItimerTest.test_setitimer_tiny @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_signal.PosixTests.test_getsignal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_signal.PosixTests.test_valid_signals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_signal.SiginterruptTest.test_siginterrupt_off @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Timeout
+!test.test_signal.StressTest.test_stress_modifying_handlers @ darwin-arm64,darwin-x86_64

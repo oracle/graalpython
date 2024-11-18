@@ -1,11 +1,11 @@
-test.test_baseexception.ExceptionClassTests.test_builtins_new_style
-test.test_baseexception.ExceptionClassTests.test_inheritance
-test.test_baseexception.ExceptionClassTests.test_interface_multi_arg
-test.test_baseexception.ExceptionClassTests.test_interface_no_arg
-test.test_baseexception.ExceptionClassTests.test_interface_single_arg
-test.test_baseexception.ExceptionClassTests.test_setstate_refcount_no_crash
-test.test_baseexception.UsageTests.test_catch_BaseException_instance
-test.test_baseexception.UsageTests.test_catch_non_BaseException
-test.test_baseexception.UsageTests.test_catch_string
-test.test_baseexception.UsageTests.test_raise_new_style_non_exception
-test.test_baseexception.UsageTests.test_raise_string
+test.test_baseexception.ExceptionClassTests.test_builtins_new_style @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.ExceptionClassTests.test_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.ExceptionClassTests.test_interface_multi_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.ExceptionClassTests.test_interface_no_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.ExceptionClassTests.test_interface_single_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.ExceptionClassTests.test_setstate_refcount_no_crash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.UsageTests.test_catch_BaseException_instance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.UsageTests.test_catch_non_BaseException @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.UsageTests.test_catch_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.UsageTests.test_raise_new_style_non_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_baseexception.UsageTests.test_raise_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,94 +1,94 @@
-test.test_operator.CCOperatorPickleTestCase.test_attrgetter
-test.test_operator.CCOperatorPickleTestCase.test_itemgetter
-test.test_operator.CCOperatorPickleTestCase.test_methodcaller
-test.test_operator.COperatorTestCase.test___all__
-test.test_operator.COperatorTestCase.test_abs
-test.test_operator.COperatorTestCase.test_add
-test.test_operator.COperatorTestCase.test_attrgetter
-test.test_operator.COperatorTestCase.test_bitwise_and
-test.test_operator.COperatorTestCase.test_bitwise_or
-test.test_operator.COperatorTestCase.test_bitwise_xor
-test.test_operator.COperatorTestCase.test_call
-test.test_operator.COperatorTestCase.test_concat
-test.test_operator.COperatorTestCase.test_contains
-test.test_operator.COperatorTestCase.test_countOf
-test.test_operator.COperatorTestCase.test_delitem
-test.test_operator.COperatorTestCase.test_dunder_is_original
-test.test_operator.COperatorTestCase.test_eq
-test.test_operator.COperatorTestCase.test_floordiv
-test.test_operator.COperatorTestCase.test_ge
-test.test_operator.COperatorTestCase.test_getitem
-test.test_operator.COperatorTestCase.test_gt
-test.test_operator.COperatorTestCase.test_indexOf
-test.test_operator.COperatorTestCase.test_inplace
-test.test_operator.COperatorTestCase.test_invert
-test.test_operator.COperatorTestCase.test_is
-test.test_operator.COperatorTestCase.test_is_not
-test.test_operator.COperatorTestCase.test_itemgetter
-test.test_operator.COperatorTestCase.test_le
-test.test_operator.COperatorTestCase.test_length_hint
-test.test_operator.COperatorTestCase.test_lshift
-test.test_operator.COperatorTestCase.test_lt
-test.test_operator.COperatorTestCase.test_matmul
-test.test_operator.COperatorTestCase.test_methodcaller
-test.test_operator.COperatorTestCase.test_mod
-test.test_operator.COperatorTestCase.test_mul
-test.test_operator.COperatorTestCase.test_ne
-test.test_operator.COperatorTestCase.test_neg
-test.test_operator.COperatorTestCase.test_pos
-test.test_operator.COperatorTestCase.test_pow
-test.test_operator.COperatorTestCase.test_rshift
-test.test_operator.COperatorTestCase.test_setitem
-test.test_operator.COperatorTestCase.test_sub
-test.test_operator.COperatorTestCase.test_truediv
-test.test_operator.COperatorTestCase.test_truth
-test.test_operator.CPyOperatorPickleTestCase.test_attrgetter
-test.test_operator.CPyOperatorPickleTestCase.test_itemgetter
-test.test_operator.CPyOperatorPickleTestCase.test_methodcaller
-test.test_operator.PyCOperatorPickleTestCase.test_attrgetter
-test.test_operator.PyCOperatorPickleTestCase.test_itemgetter
-test.test_operator.PyCOperatorPickleTestCase.test_methodcaller
-test.test_operator.PyOperatorTestCase.test___all__
-test.test_operator.PyOperatorTestCase.test_abs
-test.test_operator.PyOperatorTestCase.test_add
-test.test_operator.PyOperatorTestCase.test_attrgetter
-test.test_operator.PyOperatorTestCase.test_bitwise_and
-test.test_operator.PyOperatorTestCase.test_bitwise_or
-test.test_operator.PyOperatorTestCase.test_bitwise_xor
-test.test_operator.PyOperatorTestCase.test_call
-test.test_operator.PyOperatorTestCase.test_concat
-test.test_operator.PyOperatorTestCase.test_contains
-test.test_operator.PyOperatorTestCase.test_countOf
-test.test_operator.PyOperatorTestCase.test_delitem
-test.test_operator.PyOperatorTestCase.test_dunder_is_original
-test.test_operator.PyOperatorTestCase.test_eq
-test.test_operator.PyOperatorTestCase.test_floordiv
-test.test_operator.PyOperatorTestCase.test_ge
-test.test_operator.PyOperatorTestCase.test_getitem
-test.test_operator.PyOperatorTestCase.test_gt
-test.test_operator.PyOperatorTestCase.test_indexOf
-test.test_operator.PyOperatorTestCase.test_inplace
-test.test_operator.PyOperatorTestCase.test_invert
-test.test_operator.PyOperatorTestCase.test_is
-test.test_operator.PyOperatorTestCase.test_is_not
-test.test_operator.PyOperatorTestCase.test_itemgetter
-test.test_operator.PyOperatorTestCase.test_le
-test.test_operator.PyOperatorTestCase.test_length_hint
-test.test_operator.PyOperatorTestCase.test_lshift
-test.test_operator.PyOperatorTestCase.test_lt
-test.test_operator.PyOperatorTestCase.test_matmul
-test.test_operator.PyOperatorTestCase.test_methodcaller
-test.test_operator.PyOperatorTestCase.test_mod
-test.test_operator.PyOperatorTestCase.test_mul
-test.test_operator.PyOperatorTestCase.test_ne
-test.test_operator.PyOperatorTestCase.test_neg
-test.test_operator.PyOperatorTestCase.test_pos
-test.test_operator.PyOperatorTestCase.test_pow
-test.test_operator.PyOperatorTestCase.test_rshift
-test.test_operator.PyOperatorTestCase.test_setitem
-test.test_operator.PyOperatorTestCase.test_sub
-test.test_operator.PyOperatorTestCase.test_truediv
-test.test_operator.PyOperatorTestCase.test_truth
-test.test_operator.PyPyOperatorPickleTestCase.test_attrgetter
-test.test_operator.PyPyOperatorPickleTestCase.test_itemgetter
-test.test_operator.PyPyOperatorPickleTestCase.test_methodcaller
+test.test_operator.CCOperatorPickleTestCase.test_attrgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.CCOperatorPickleTestCase.test_itemgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.CCOperatorPickleTestCase.test_methodcaller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test___all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_attrgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_bitwise_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_bitwise_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_bitwise_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_countOf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_dunder_is_original @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_floordiv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_ge @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_gt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_indexOf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_inplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_invert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_is @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_is_not @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_itemgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_le @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_length_hint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_lshift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_matmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_methodcaller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_mod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_mul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_neg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_pos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_pow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_rshift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_truediv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.COperatorTestCase.test_truth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.CPyOperatorPickleTestCase.test_attrgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.CPyOperatorPickleTestCase.test_itemgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.CPyOperatorPickleTestCase.test_methodcaller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyCOperatorPickleTestCase.test_attrgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyCOperatorPickleTestCase.test_itemgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyCOperatorPickleTestCase.test_methodcaller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test___all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_attrgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_bitwise_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_bitwise_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_bitwise_xor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_concat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_countOf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_dunder_is_original @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_floordiv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_ge @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_gt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_indexOf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_inplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_invert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_is @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_is_not @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_itemgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_le @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_length_hint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_lshift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_lt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_matmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_methodcaller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_mod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_mul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_ne @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_neg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_pos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_pow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_rshift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_truediv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyOperatorTestCase.test_truth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyPyOperatorPickleTestCase.test_attrgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyPyOperatorPickleTestCase.test_itemgetter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_operator.PyPyOperatorPickleTestCase.test_methodcaller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,80 +1,73 @@
-DocTestCase.test.test_deque.__test__.libreftest
-test.test_deque.TestBasic.test_add
-test.test_deque.TestBasic.test_basics
-test.test_deque.TestBasic.test_big_queue_popleft
-test.test_deque.TestBasic.test_big_queue_popright
-test.test_deque.TestBasic.test_big_stack_left
-test.test_deque.TestBasic.test_big_stack_right
-test.test_deque.TestBasic.test_clear
-test.test_deque.TestBasic.test_comparisons
-test.test_deque.TestBasic.test_contains
-test.test_deque.TestBasic.test_contains_count_stop_crashes
-test.test_deque.TestBasic.test_copy
-test.test_deque.TestBasic.test_copy_method
-test.test_deque.TestBasic.test_count
-test.test_deque.TestBasic.test_deepcopy
-test.test_deque.TestBasic.test_delitem
-test.test_deque.TestBasic.test_extend
-test.test_deque.TestBasic.test_extendleft
-test.test_deque.TestBasic.test_gc_doesnt_blowup
-test.test_deque.TestBasic.test_getitem
-test.test_deque.TestBasic.test_hash
-test.test_deque.TestBasic.test_iadd
-test.test_deque.TestBasic.test_imul
-test.test_deque.TestBasic.test_index
-test.test_deque.TestBasic.test_index_bug_24913
-test.test_deque.TestBasic.test_init
-test.test_deque.TestBasic.test_insert
-test.test_deque.TestBasic.test_insert_bug_26194
-test.test_deque.TestBasic.test_iterator_pickle
-test.test_deque.TestBasic.test_len
-test.test_deque.TestBasic.test_long_steadystate_queue_popleft
-test.test_deque.TestBasic.test_long_steadystate_queue_popright
-test.test_deque.TestBasic.test_maxlen
-test.test_deque.TestBasic.test_maxlen_attribute
-test.test_deque.TestBasic.test_maxlen_zero
-test.test_deque.TestBasic.test_mul
-test.test_deque.TestBasic.test_pickle
-test.test_deque.TestBasic.test_pickle_recursive
-test.test_deque.TestBasic.test_print
-test.test_deque.TestBasic.test_remove
-test.test_deque.TestBasic.test_repr
-test.test_deque.TestBasic.test_reverse
-test.test_deque.TestBasic.test_reversed
-test.test_deque.TestBasic.test_reversed_new
-test.test_deque.TestBasic.test_rotate
-test.test_deque.TestBasic.test_roundtrip_iter_init
-test.test_deque.TestBasic.test_setitem
-test.test_deque.TestBasic.test_sizeof
-test.test_deque.TestBasic.test_underflow
-test.test_deque.TestMain.test_main
-test.test_deque.TestSequence.test_addmul
-test.test_deque.TestSequence.test_bigrepeat
-test.test_deque.TestSequence.test_constructors
-test.test_deque.TestSequence.test_contains
-test.test_deque.TestSequence.test_contains_fake
-test.test_deque.TestSequence.test_contains_order
-test.test_deque.TestSequence.test_count
-test.test_deque.TestSequence.test_free_after_iterating
-test.test_deque.TestSequence.test_getitem
-test.test_deque.TestSequence.test_getitemoverwriteiter
-test.test_deque.TestSequence.test_getslice
-test.test_deque.TestSequence.test_iadd
-test.test_deque.TestSequence.test_imul
-test.test_deque.TestSequence.test_index
-test.test_deque.TestSequence.test_len
-test.test_deque.TestSequence.test_minmax
-test.test_deque.TestSequence.test_pickle
-test.test_deque.TestSequence.test_repeat
-test.test_deque.TestSequence.test_subscript
-test.test_deque.TestSequence.test_truth
-test.test_deque.TestSubclass.test_basics
-test.test_deque.TestSubclass.test_bug_31608
-test.test_deque.TestSubclass.test_copy_pickle
-test.test_deque.TestSubclass.test_pickle_recursive
-test.test_deque.TestSubclass.test_strange_subclass
-test.test_deque.TestSubclass.test_weakref
-test.test_deque.TestSubclassWithKwargs.test_subclass_with_kwargs
-test.test_deque.TestVariousIteratorArgs.test_constructor
-test.test_deque.TestVariousIteratorArgs.test_iter_with_altered_data
-test.test_deque.TestVariousIteratorArgs.test_runtime_error_on_empty_deque
+DocTestCase.test.test_deque.__test__.libreftest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_big_queue_popleft @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_big_queue_popright @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_big_stack_left @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_big_stack_right @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_contains_count_stop_crashes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_copy_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_extend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_extendleft @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_gc_doesnt_blowup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_iadd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_imul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_index_bug_24913 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_insert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_insert_bug_26194 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_iterator_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_long_steadystate_queue_popleft @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_long_steadystate_queue_popright @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_maxlen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_maxlen_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_maxlen_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_mul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_pickle_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_reverse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_reversed_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_rotate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_roundtrip_iter_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestBasic.test_underflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_addmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_contains_fake @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_contains_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_getitemoverwriteiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_iadd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_imul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_minmax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSequence.test_truth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSubclass.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSubclass.test_copy_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSubclass.test_pickle_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSubclass.test_strange_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestSubclassWithKwargs.test_subclass_with_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestVariousIteratorArgs.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestVariousIteratorArgs.test_iter_with_altered_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_deque.TestVariousIteratorArgs.test_runtime_error_on_empty_deque @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

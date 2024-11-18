@@ -1,11 +1,11 @@
-test.test_sched.TestCase.test_args_kwargs
-test.test_sched.TestCase.test_cancel
-test.test_sched.TestCase.test_cancel_concurrent
-test.test_sched.TestCase.test_cancel_correct_event
-test.test_sched.TestCase.test_empty
-test.test_sched.TestCase.test_enter
-test.test_sched.TestCase.test_enter_concurrent
-test.test_sched.TestCase.test_enterabs
-test.test_sched.TestCase.test_priority
-test.test_sched.TestCase.test_queue
-test.test_sched.TestCase.test_run_non_blocking
+test.test_sched.TestCase.test_args_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_cancel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_cancel_concurrent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_cancel_correct_event @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_enter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_enter_concurrent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_enterabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_priority @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sched.TestCase.test_run_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

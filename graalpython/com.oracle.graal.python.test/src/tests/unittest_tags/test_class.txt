@@ -1,16 +1,15 @@
-test.test_class.ClassTests.testBadTypeReturned
-test.test_class.ClassTests.testBinaryOps
-test.test_class.ClassTests.testClassWithExtCall
-test.test_class.ClassTests.testConstructorErrorMessages
-test.test_class.ClassTests.testDel
-test.test_class.ClassTests.testForExceptionsRaisedInInstanceGetattr2
-test.test_class.ClassTests.testGetSetAndDel
-test.test_class.ClassTests.testHashComparisonOfMethods
-test.test_class.ClassTests.testHashStuff
-test.test_class.ClassTests.testInit
-test.test_class.ClassTests.testListAndDictOps
-test.test_class.ClassTests.testMisc
-test.test_class.ClassTests.testSFBug532646
-test.test_class.ClassTests.testSetattrNonStringName
-test.test_class.ClassTests.testSetattrWrapperNameIntern
-test.test_class.ClassTests.testUnaryOps
+test.test_class.ClassTests.testBadTypeReturned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testBinaryOps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testClassWithExtCall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testConstructorErrorMessages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testForExceptionsRaisedInInstanceGetattr2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testGetSetAndDel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testHashComparisonOfMethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testHashStuff @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testInit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testListAndDictOps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testMisc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testSFBug532646 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testSetattrNonStringName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testSetattrWrapperNameIntern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_class.ClassTests.testUnaryOps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

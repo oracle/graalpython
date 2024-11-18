@@ -1,46 +1,47 @@
-test.test_asyncgen.AsyncGenAsyncioTest.test_aiter_bad_args
-test.test_asyncgen.AsyncGenAsyncioTest.test_aiter_idempotent
-test.test_asyncgen.AsyncGenAsyncioTest.test_anext_bad_args
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aclose_after_exhaustion
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aclose_compatible_with_get_stack
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aclose_twice_with_different_coros
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aiter
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aiter_class
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_01
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_02
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_03
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_10
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_11
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_04
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_05
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_06
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_stopiteration
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_01
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_03
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_01
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_02
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_03
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_stopiteration
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_tuple
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_01
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_02
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_exception_01
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_await_same_aclose_coro_twice
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_await_same_anext_coro_twice
-test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_expression_01
-test.test_asyncgen.AsyncGenAsyncioTest.test_asyncgen_nonstarted_hooks_are_cancellable
-test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_01
-test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_02
-test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_03
-test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_04
-test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_05
-test.test_asyncgen.AsyncGenTest.test_async_gen_exception_03
-test.test_asyncgen.AsyncGenTest.test_async_gen_exception_04
-test.test_asyncgen.AsyncGenTest.test_async_gen_exception_05
-test.test_asyncgen.AsyncGenTest.test_async_gen_exception_07
-test.test_asyncgen.AsyncGenTest.test_async_gen_exception_08
-test.test_asyncgen.AsyncGenTest.test_async_gen_exception_09
-test.test_asyncgen.AsyncGenTest.test_async_gen_exception_11
-test.test_asyncgen.AsyncGenTest.test_async_gen_iteration_01
-test.test_asyncgen.AsyncGenTest.test_async_gen_iteration_02
+test.test_asyncgen.AsyncGenAsyncioTest.test_aiter_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_aiter_idempotent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_anext_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aclose_after_exhaustion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aclose_compatible_with_get_stack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aclose_twice_with_different_coros @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_aiter_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_02 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_03 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_aclose_11 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_04 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_05 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_06 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_stopiteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_anext_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_02 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_asend_03 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_02 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_03 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_stopiteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_athrow_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_02 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_asyncio_shutdown_exception_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_await_same_aclose_coro_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_await_same_anext_coro_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_async_gen_expression_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_asyncgen_nonstarted_hooks_are_cancellable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_02 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_03 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_04 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_05 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_exception_03 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_exception_04 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_exception_05 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_exception_07 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_exception_08 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_exception_09 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_exception_11 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_iteration_01 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncgen.AsyncGenTest.test_async_gen_iteration_02 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

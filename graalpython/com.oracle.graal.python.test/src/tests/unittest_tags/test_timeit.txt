@@ -1,41 +1,41 @@
-test.test_timeit.TestTimeit.test_autorange
-test.test_timeit.TestTimeit.test_autorange_second
-test.test_timeit.TestTimeit.test_autorange_with_callback
-test.test_timeit.TestTimeit.test_main_bad_switch
-test.test_timeit.TestTimeit.test_main_exception
-test.test_timeit.TestTimeit.test_main_exception_fixed_reps
-test.test_timeit.TestTimeit.test_main_fixed_iters
-test.test_timeit.TestTimeit.test_main_fixed_reps
-test.test_timeit.TestTimeit.test_main_help
-test.test_timeit.TestTimeit.test_main_microseconds
-test.test_timeit.TestTimeit.test_main_milliseconds
-test.test_timeit.TestTimeit.test_main_multiple_setups
-test.test_timeit.TestTimeit.test_main_negative_reps
-test.test_timeit.TestTimeit.test_main_seconds
-test.test_timeit.TestTimeit.test_main_setup
-test.test_timeit.TestTimeit.test_main_verbose
-test.test_timeit.TestTimeit.test_main_very_verbose
-test.test_timeit.TestTimeit.test_main_with_time_unit
-test.test_timeit.TestTimeit.test_print_exc
-test.test_timeit.TestTimeit.test_reindent_empty
-test.test_timeit.TestTimeit.test_reindent_multi
-test.test_timeit.TestTimeit.test_reindent_multi_empty
-test.test_timeit.TestTimeit.test_reindent_single
-test.test_timeit.TestTimeit.test_repeat_callable_setup
-test.test_timeit.TestTimeit.test_repeat_callable_stmt
-test.test_timeit.TestTimeit.test_repeat_callable_stmt_and_setup
-test.test_timeit.TestTimeit.test_repeat_few_reps_and_iters
-test.test_timeit.TestTimeit.test_repeat_function_zero_iters
-test.test_timeit.TestTimeit.test_repeat_function_zero_reps
-test.test_timeit.TestTimeit.test_repeat_zero_iters
-test.test_timeit.TestTimeit.test_repeat_zero_reps
-test.test_timeit.TestTimeit.test_timeit_callable_setup
-test.test_timeit.TestTimeit.test_timeit_callable_stmt
-test.test_timeit.TestTimeit.test_timeit_callable_stmt_and_setup
-test.test_timeit.TestTimeit.test_timeit_few_iters
-test.test_timeit.TestTimeit.test_timeit_function_zero_iters
-test.test_timeit.TestTimeit.test_timeit_globals_args
-test.test_timeit.TestTimeit.test_timeit_zero_iters
-test.test_timeit.TestTimeit.test_timer_empty_stmt
-test.test_timeit.TestTimeit.test_timer_invalid_setup
-test.test_timeit.TestTimeit.test_timer_invalid_stmt
+test.test_timeit.TestTimeit.test_autorange @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_autorange_second @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_autorange_with_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_bad_switch @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_exception_fixed_reps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_fixed_iters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_fixed_reps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_microseconds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_milliseconds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_multiple_setups @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_negative_reps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_seconds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_setup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_very_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_main_with_time_unit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_print_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_reindent_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_reindent_multi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_reindent_multi_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_reindent_single @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_repeat_callable_setup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_repeat_callable_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_repeat_callable_stmt_and_setup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_repeat_few_reps_and_iters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_repeat_function_zero_iters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_repeat_function_zero_reps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_repeat_zero_iters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_repeat_zero_reps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timeit_callable_setup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timeit_callable_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timeit_callable_stmt_and_setup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timeit_few_iters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timeit_function_zero_iters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timeit_globals_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timeit_zero_iters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timer_empty_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timer_invalid_setup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_timeit.TestTimeit.test_timer_invalid_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

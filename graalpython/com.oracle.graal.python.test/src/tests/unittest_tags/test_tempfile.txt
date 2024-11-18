@@ -1,104 +1,94 @@
-test.test_tempfile.TestCandidateTempdirList.test_nonempty_list
-test.test_tempfile.TestCandidateTempdirList.test_wanted_dirs
-test.test_tempfile.TestExports.test_exports
-test.test_tempfile.TestGetCandidateNames.test_retval
-test.test_tempfile.TestGetCandidateNames.test_same_thing
-test.test_tempfile.TestGetDefaultTempdir.test_no_files_left_behind
-test.test_tempfile.TestGetTempDir.test_case_sensitive
-test.test_tempfile.TestGetTempDir.test_directory_exists
-test.test_tempfile.TestGetTempDir.test_directory_writable
-test.test_tempfile.TestGetTempDir.test_same_thing
-test.test_tempfile.TestGetTempPrefix.test_sane_template
-test.test_tempfile.TestGetTempPrefix.test_usable_template
-test.test_tempfile.TestLowLevelInternals.test_infer_return_type_multiples
-test.test_tempfile.TestLowLevelInternals.test_infer_return_type_multiples_and_none
-test.test_tempfile.TestLowLevelInternals.test_infer_return_type_pathlib
-test.test_tempfile.TestLowLevelInternals.test_infer_return_type_pathlike
-test.test_tempfile.TestLowLevelInternals.test_infer_return_type_singles
-test.test_tempfile.TestMkdtemp.test_basic
-test.test_tempfile.TestMkdtemp.test_basic_many
-test.test_tempfile.TestMkdtemp.test_basic_with_bytes_names
-test.test_tempfile.TestMkdtemp.test_choose_directory
-test.test_tempfile.TestMkdtemp.test_collision_with_existing_directory
-test.test_tempfile.TestMkdtemp.test_collision_with_existing_file
-test.test_tempfile.TestMkdtemp.test_for_tempdir_is_bytes_issue40701_api_warts
-test.test_tempfile.TestMkdtemp.test_mode
-test.test_tempfile.TestMkdtemp.test_non_directory
-test.test_tempfile.TestMkdtemp.test_nonexisting_directory
-test.test_tempfile.TestMkdtemp.test_read_only_directory
-test.test_tempfile.TestMkstemp.test_basic
-test.test_tempfile.TestMkstemp.test_basic_with_bytes_names
-test.test_tempfile.TestMkstemp.test_choose_directory
-test.test_tempfile.TestMkstemp.test_for_tempdir_is_bytes_issue40701_api_warts
-test.test_tempfile.TestMkstempInner.test_basic
-test.test_tempfile.TestMkstempInner.test_basic_many
-test.test_tempfile.TestMkstempInner.test_basic_with_bytes_names
-test.test_tempfile.TestMkstempInner.test_collision_with_existing_directory
-test.test_tempfile.TestMkstempInner.test_collision_with_existing_file
-test.test_tempfile.TestMkstempInner.test_file_mode
-test.test_tempfile.TestMkstempInner.test_noinherit
-test.test_tempfile.TestMkstempInner.test_non_directory
-test.test_tempfile.TestMkstempInner.test_nonexisting_directory
-test.test_tempfile.TestMkstempInner.test_read_only_directory
-test.test_tempfile.TestMkstempInner.test_textmode
-test.test_tempfile.TestNamedTemporaryFile.test_bad_encoding
-test.test_tempfile.TestNamedTemporaryFile.test_bad_mode
-test.test_tempfile.TestNamedTemporaryFile.test_basic
-test.test_tempfile.TestNamedTemporaryFile.test_context_manager
-test.test_tempfile.TestNamedTemporaryFile.test_creates_named
-test.test_tempfile.TestNamedTemporaryFile.test_del_on_close
-test.test_tempfile.TestNamedTemporaryFile.test_dis_del_on_close
-test.test_tempfile.TestNamedTemporaryFile.test_iter
-test.test_tempfile.TestNamedTemporaryFile.test_method_lookup
-test.test_tempfile.TestNamedTemporaryFile.test_multiple_close
-test.test_tempfile.TestNamedTemporaryFile.test_no_leak_fd
-test.test_tempfile.TestNamedTemporaryFile.test_unexpected_error
-test.test_tempfile.TestRandomNameSequence.test_get_eight_char_str
-test.test_tempfile.TestRandomNameSequence.test_get_six_char_str
-test.test_tempfile.TestRandomNameSequence.test_many
-test.test_tempfile.TestRandomNameSequence.test_process_awareness
-test.test_tempfile.TestSpooledTemporaryFile.test_basic
-test.test_tempfile.TestSpooledTemporaryFile.test_bound_methods
-test.test_tempfile.TestSpooledTemporaryFile.test_class_getitem
-test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_after_rollover
-test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_before_rollover
-test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_during_rollover
-test.test_tempfile.TestSpooledTemporaryFile.test_del_on_close
-test.test_tempfile.TestSpooledTemporaryFile.test_del_rolled_file
-test.test_tempfile.TestSpooledTemporaryFile.test_del_unrolled_file
-test.test_tempfile.TestSpooledTemporaryFile.test_fileno
-test.test_tempfile.TestSpooledTemporaryFile.test_iobase_interface
-test.test_tempfile.TestSpooledTemporaryFile.test_is_iobase
-test.test_tempfile.TestSpooledTemporaryFile.test_multiple_close_after_rollover
-test.test_tempfile.TestSpooledTemporaryFile.test_multiple_close_before_rollover
-test.test_tempfile.TestSpooledTemporaryFile.test_properties
-test.test_tempfile.TestSpooledTemporaryFile.test_rewrite_small
-test.test_tempfile.TestSpooledTemporaryFile.test_sparse
-test.test_tempfile.TestSpooledTemporaryFile.test_text_mode
-test.test_tempfile.TestSpooledTemporaryFile.test_text_newline_and_encoding
-test.test_tempfile.TestSpooledTemporaryFile.test_truncate_with_size_parameter
-test.test_tempfile.TestSpooledTemporaryFile.test_write_sequential
-test.test_tempfile.TestSpooledTemporaryFile.test_writelines
-test.test_tempfile.TestSpooledTemporaryFile.test_writelines_sequential
-test.test_tempfile.TestTemporaryDirectory.test_cleanup_with_symlink_to_a_directory
-test.test_tempfile.TestTemporaryDirectory.test_context_manager
-test.test_tempfile.TestTemporaryDirectory.test_del_on_collection
-test.test_tempfile.TestTemporaryDirectory.test_del_on_collection_ignore_errors
-test.test_tempfile.TestTemporaryDirectory.test_del_on_shutdown
-test.test_tempfile.TestTemporaryDirectory.test_del_on_shutdown_ignore_errors
-test.test_tempfile.TestTemporaryDirectory.test_exit_on_shutdown
-test.test_tempfile.TestTemporaryDirectory.test_explicit_cleanup
-test.test_tempfile.TestTemporaryDirectory.test_explict_cleanup_ignore_errors
-test.test_tempfile.TestTemporaryDirectory.test_flags
-test.test_tempfile.TestTemporaryDirectory.test_mkdtemp_failure
-test.test_tempfile.TestTemporaryDirectory.test_modes
-test.test_tempfile.TestTemporaryDirectory.test_multiple_close
-test.test_tempfile.TestTemporaryDirectory.test_warnings_on_cleanup
-test.test_tempfile.TestTemporaryFile.test_bad_encoding
-test.test_tempfile.TestTemporaryFile.test_bad_mode
-test.test_tempfile.TestTemporaryFile.test_basic
-test.test_tempfile.TestTemporaryFile.test_has_no_name
-test.test_tempfile.TestTemporaryFile.test_mode_and_encoding
-test.test_tempfile.TestTemporaryFile.test_multiple_close
-test.test_tempfile.TestTemporaryFile.test_no_leak_fd
-test.test_tempfile.TestTemporaryFile.test_unexpected_error
+test.test_tempfile.TestCandidateTempdirList.test_nonempty_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestCandidateTempdirList.test_wanted_dirs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestExports.test_exports @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetCandidateNames.test_retval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetCandidateNames.test_same_thing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetDefaultTempdir.test_no_files_left_behind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetTempDir.test_case_sensitive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetTempDir.test_directory_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetTempDir.test_directory_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetTempDir.test_same_thing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetTempPrefix.test_sane_template @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestGetTempPrefix.test_usable_template @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestLowLevelInternals.test_infer_return_type_multiples @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestLowLevelInternals.test_infer_return_type_multiples_and_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestLowLevelInternals.test_infer_return_type_pathlib @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestLowLevelInternals.test_infer_return_type_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestLowLevelInternals.test_infer_return_type_singles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_basic_many @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_basic_with_bytes_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_choose_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_collision_with_existing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_collision_with_existing_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_for_tempdir_is_bytes_issue40701_api_warts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_non_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_nonexisting_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkdtemp.test_read_only_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstemp.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstemp.test_basic_with_bytes_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstemp.test_choose_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstemp.test_for_tempdir_is_bytes_issue40701_api_warts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_basic_many @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_basic_with_bytes_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_collision_with_existing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_collision_with_existing_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_file_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_non_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_nonexisting_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestMkstempInner.test_read_only_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_bad_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_bad_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_creates_named @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_del_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_dis_del_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_method_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_multiple_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestNamedTemporaryFile.test_unexpected_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestRandomNameSequence.test_get_eight_char_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestRandomNameSequence.test_many @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_bound_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_class_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_after_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_before_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_during_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_del_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_del_rolled_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_del_unrolled_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_iobase_interface @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_is_iobase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_multiple_close_after_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_multiple_close_before_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_rewrite_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_sparse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_text_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_text_newline_and_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_truncate_with_size_parameter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_write_sequential @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_writelines_sequential @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_cleanup_with_symlink_to_a_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_del_on_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_del_on_shutdown_ignore_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_exit_on_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_explicit_cleanup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_explict_cleanup_ignore_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_mkdtemp_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_multiple_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryFile.test_bad_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryFile.test_bad_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryFile.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryFile.test_has_no_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryFile.test_mode_and_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryFile.test_multiple_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestTemporaryFile.test_unexpected_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

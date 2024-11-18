@@ -1,21 +1,19 @@
-test.test_codecencodings_cn.Test_GB18030.test_chunkcoding
-test.test_codecencodings_cn.Test_GB18030.test_customreplace_encode
-test.test_codecencodings_cn.Test_GB18030.test_incrementaldecoder
-test.test_codecencodings_cn.Test_GB18030.test_incrementalencoder
-test.test_codecencodings_cn.Test_GB18030.test_streamwriter
-test.test_codecencodings_cn.Test_GB18030.test_streamwriter_reset_no_pending
-test.test_codecencodings_cn.Test_GB18030.test_xmlcharrefreplace
-test.test_codecencodings_cn.Test_GB2312.test_chunkcoding
-test.test_codecencodings_cn.Test_GB2312.test_errorhandle
-test.test_codecencodings_cn.Test_GB2312.test_incrementaldecoder
-test.test_codecencodings_cn.Test_GB2312.test_incrementalencoder
-test.test_codecencodings_cn.Test_GB2312.test_streamwriter
-test.test_codecencodings_cn.Test_GB2312.test_streamwriter_reset_no_pending
-test.test_codecencodings_cn.Test_GB2312.test_xmlcharrefreplace
-test.test_codecencodings_cn.Test_GBK.test_chunkcoding
-test.test_codecencodings_cn.Test_GBK.test_errorhandle
-test.test_codecencodings_cn.Test_GBK.test_incrementaldecoder
-test.test_codecencodings_cn.Test_GBK.test_incrementalencoder
-test.test_codecencodings_cn.Test_GBK.test_streamwriter
-test.test_codecencodings_cn.Test_GBK.test_streamwriter_reset_no_pending
-test.test_codecencodings_cn.Test_GBK.test_xmlcharrefreplace
+test.test_codecencodings_cn.Test_GB18030.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB18030.test_incrementaldecoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB18030.test_incrementalencoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB18030.test_streamwriter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB18030.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB2312.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB2312.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB2312.test_incrementaldecoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB2312.test_incrementalencoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB2312.test_streamwriter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB2312.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GB2312.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GBK.test_chunkcoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GBK.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GBK.test_incrementaldecoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GBK.test_incrementalencoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GBK.test_streamwriter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GBK.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_codecencodings_cn.Test_GBK.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

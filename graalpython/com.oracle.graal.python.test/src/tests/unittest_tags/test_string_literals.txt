@@ -1,17 +1,17 @@
-test.test_string_literals.TestLiterals.test_eval_bytes_incomplete
-test.test_string_literals.TestLiterals.test_eval_bytes_invalid_escape
-test.test_string_literals.TestLiterals.test_eval_bytes_normal
-test.test_string_literals.TestLiterals.test_eval_bytes_raw
-test.test_string_literals.TestLiterals.test_eval_str_incomplete
-test.test_string_literals.TestLiterals.test_eval_str_invalid_escape
-test.test_string_literals.TestLiterals.test_eval_str_normal
-test.test_string_literals.TestLiterals.test_eval_str_raw
-test.test_string_literals.TestLiterals.test_eval_str_u
-test.test_string_literals.TestLiterals.test_file_iso_8859_1
-test.test_string_literals.TestLiterals.test_file_latin9
-test.test_string_literals.TestLiterals.test_file_latin_1
-test.test_string_literals.TestLiterals.test_file_utf8
-test.test_string_literals.TestLiterals.test_file_utf_8
-test.test_string_literals.TestLiterals.test_file_utf_8_error
-test.test_string_literals.TestLiterals.test_template
-test.test_string_literals.TestLiterals.test_uppercase_prefixes
+test.test_string_literals.TestLiterals.test_eval_bytes_incomplete @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_bytes_invalid_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_bytes_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_bytes_raw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_incomplete @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_invalid_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_raw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_eval_str_u @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_file_iso_8859_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_file_latin9 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_file_latin_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_file_utf8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_file_utf_8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_file_utf_8_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_template @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_string_literals.TestLiterals.test_uppercase_prefixes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

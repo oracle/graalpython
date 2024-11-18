@@ -1,138 +1,112 @@
-test.test_unicode.CAPITest.test_asucs4
-test.test_unicode.CAPITest.test_asutf8
-test.test_unicode.CAPITest.test_asutf8andsize
-test.test_unicode.CAPITest.test_aswidechar
-test.test_unicode.CAPITest.test_aswidecharstring
-test.test_unicode.CAPITest.test_copycharacters
-test.test_unicode.CAPITest.test_encode_decimal
-test.test_unicode.CAPITest.test_findchar
-test.test_unicode.CAPITest.test_from_format
-test.test_unicode.CAPITest.test_pep393_utf8_caching_bug
-test.test_unicode.CAPITest.test_transform_decimal
-test.test_unicode.StringModuleTest.test_formatter_field_name_split
-test.test_unicode.StringModuleTest.test_formatter_parser
-test.test_unicode.StringModuleTest.test_str_subclass_attr
-test.test_unicode.UnicodeTest.test___contains__
-test.test_unicode.UnicodeTest.test_additional_rsplit
-test.test_unicode.UnicodeTest.test_additional_split
-test.test_unicode.UnicodeTest.test_ascii
-test.test_unicode.UnicodeTest.test_bug1001011
-test.test_unicode.UnicodeTest.test_bytes_comparison
-test.test_unicode.UnicodeTest.test_capitalize
-test.test_unicode.UnicodeTest.test_case_operation_overflow
-test.test_unicode.UnicodeTest.test_casefold
-test.test_unicode.UnicodeTest.test_center
-test.test_unicode.UnicodeTest.test_codecs
-test.test_unicode.UnicodeTest.test_codecs_charmap
-test.test_unicode.UnicodeTest.test_codecs_errors
-test.test_unicode.UnicodeTest.test_codecs_idna
-test.test_unicode.UnicodeTest.test_codecs_utf7
-test.test_unicode.UnicodeTest.test_codecs_utf8
-test.test_unicode.UnicodeTest.test_compare
-test.test_unicode.UnicodeTest.test_comparison
-test.test_unicode.UnicodeTest.test_concatenation
-test.test_unicode.UnicodeTest.test_constructor
-test.test_unicode.UnicodeTest.test_constructor_defaults
-test.test_unicode.UnicodeTest.test_constructor_keyword_args
-test.test_unicode.UnicodeTest.test_contains
-test.test_unicode.UnicodeTest.test_conversion
-test.test_unicode.UnicodeTest.test_count
-test.test_unicode.UnicodeTest.test_endswith
-test.test_unicode.UnicodeTest.test_exhausted_iterator
-test.test_unicode.UnicodeTest.test_expandtabs
-test.test_unicode.UnicodeTest.test_expandtabs_optimization
-test.test_unicode.UnicodeTest.test_expandtabs_overflows_gracefully
-test.test_unicode.UnicodeTest.test_extended_getslice
-test.test_unicode.UnicodeTest.test_find
-test.test_unicode.UnicodeTest.test_find_etc_raise_correct_error_messages
-test.test_unicode.UnicodeTest.test_find_periodic_pattern
-test.test_unicode.UnicodeTest.test_find_shift_table_overflow
-test.test_unicode.UnicodeTest.test_fixtype
-test.test_unicode.UnicodeTest.test_floatformatting
-test.test_unicode.UnicodeTest.test_format
-test.test_unicode.UnicodeTest.test_format_auto_numbering
-test.test_unicode.UnicodeTest.test_format_float
-test.test_unicode.UnicodeTest.test_format_huge_item_number
-test.test_unicode.UnicodeTest.test_format_huge_precision
-test.test_unicode.UnicodeTest.test_format_huge_width
-test.test_unicode.UnicodeTest.test_format_map
-test.test_unicode.UnicodeTest.test_format_subclass
-test.test_unicode.UnicodeTest.test_formatting
-test.test_unicode.UnicodeTest.test_formatting_c_limits
-test.test_unicode.UnicodeTest.test_formatting_huge_precision
-test.test_unicode.UnicodeTest.test_formatting_huge_precision_c_limits
-test.test_unicode.UnicodeTest.test_formatting_huge_width
-test.test_unicode.UnicodeTest.test_formatting_with_enum
-test.test_unicode.UnicodeTest.test_free_after_iterating
-test.test_unicode.UnicodeTest.test_getnewargs
-test.test_unicode.UnicodeTest.test_hash
-test.test_unicode.UnicodeTest.test_index
-test.test_unicode.UnicodeTest.test_inplace_rewrites
-test.test_unicode.UnicodeTest.test_invalid_cb_for_2bytes_seq
-test.test_unicode.UnicodeTest.test_invalid_cb_for_3bytes_seq
-test.test_unicode.UnicodeTest.test_invalid_cb_for_4bytes_seq
-test.test_unicode.UnicodeTest.test_invalid_start_byte
-test.test_unicode.UnicodeTest.test_isalnum
-test.test_unicode.UnicodeTest.test_isalpha
-test.test_unicode.UnicodeTest.test_isascii
-test.test_unicode.UnicodeTest.test_isdecimal
-test.test_unicode.UnicodeTest.test_isdigit
-test.test_unicode.UnicodeTest.test_isidentifier
-test.test_unicode.UnicodeTest.test_isidentifier_legacy
-test.test_unicode.UnicodeTest.test_islower
-test.test_unicode.UnicodeTest.test_isnumeric
-test.test_unicode.UnicodeTest.test_isprintable
-test.test_unicode.UnicodeTest.test_isspace
-test.test_unicode.UnicodeTest.test_isspace_invariant
-test.test_unicode.UnicodeTest.test_issue18183
-test.test_unicode.UnicodeTest.test_issue28598_strsubclass_rhs
-test.test_unicode.UnicodeTest.test_issue8271
-test.test_unicode.UnicodeTest.test_istitle
-test.test_unicode.UnicodeTest.test_isupper
-test.test_unicode.UnicodeTest.test_iteration
-test.test_unicode.UnicodeTest.test_iterators
-test.test_unicode.UnicodeTest.test_iterators_invocation
-test.test_unicode.UnicodeTest.test_join
-test.test_unicode.UnicodeTest.test_join_overflow
-test.test_unicode.UnicodeTest.test_literals
-test.test_unicode.UnicodeTest.test_ljust
-test.test_unicode.UnicodeTest.test_lower
-test.test_unicode.UnicodeTest.test_maketrans_translate
-test.test_unicode.UnicodeTest.test_mul
-test.test_unicode.UnicodeTest.test_none_arguments
-test.test_unicode.UnicodeTest.test_partition
-test.test_unicode.UnicodeTest.test_pickle_iterator
-test.test_unicode.UnicodeTest.test_printing
-test.test_unicode.UnicodeTest.test_raiseMemError
-test.test_unicode.UnicodeTest.test_removeprefix
-test.test_unicode.UnicodeTest.test_removesuffix
-test.test_unicode.UnicodeTest.test_repeat_id_preserving
-test.test_unicode.UnicodeTest.test_replace
-test.test_unicode.UnicodeTest.test_replace_id
-test.test_unicode.UnicodeTest.test_replace_overflow
-test.test_unicode.UnicodeTest.test_repr
-test.test_unicode.UnicodeTest.test_resize
-test.test_unicode.UnicodeTest.test_rfind
-test.test_unicode.UnicodeTest.test_rindex
-test.test_unicode.UnicodeTest.test_rjust
-test.test_unicode.UnicodeTest.test_rpartition
-test.test_unicode.UnicodeTest.test_rsplit
-test.test_unicode.UnicodeTest.test_slice
-test.test_unicode.UnicodeTest.test_split
-test.test_unicode.UnicodeTest.test_splitlines
-test.test_unicode.UnicodeTest.test_startswith
-test.test_unicode.UnicodeTest.test_startswith_endswith_errors
-test.test_unicode.UnicodeTest.test_strip
-test.test_unicode.UnicodeTest.test_strip_whitespace
-test.test_unicode.UnicodeTest.test_subclass_add
-test.test_unicode.UnicodeTest.test_subscript
-test.test_unicode.UnicodeTest.test_surrogates
-test.test_unicode.UnicodeTest.test_swapcase
-test.test_unicode.UnicodeTest.test_title
-test.test_unicode.UnicodeTest.test_ucs4
-test.test_unicode.UnicodeTest.test_unexpected_end_of_data
-test.test_unicode.UnicodeTest.test_unicode_repr
-test.test_unicode.UnicodeTest.test_upper
-test.test_unicode.UnicodeTest.test_utf8_decode_invalid_sequences
-test.test_unicode.UnicodeTest.test_utf8_decode_valid_sequences
-test.test_unicode.UnicodeTest.test_zfill
+test.test_unicode.StringModuleTest.test_formatter_field_name_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.StringModuleTest.test_formatter_parser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.StringModuleTest.test_str_subclass_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test___contains__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_additional_rsplit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_additional_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_bug1001011 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_bytes_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_capitalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_casefold @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_center @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_codecs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_codecs_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_codecs_idna @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_codecs_utf7 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_codecs_utf8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_concatenation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_constructor_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_constructor_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_conversion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_endswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_exhausted_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_expandtabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_extended_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_find @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_find_etc_raise_correct_error_messages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_find_periodic_pattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_find_shift_table_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_fixtype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_floatformatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_format_auto_numbering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_format_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_format_huge_item_number @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_format_huge_precision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_format_huge_width @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_format_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_format_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_formatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_formatting_huge_precision @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_formatting_huge_width @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_formatting_with_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_getnewargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_inplace_rewrites @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_invalid_cb_for_2bytes_seq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_invalid_cb_for_4bytes_seq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_invalid_start_byte @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isalnum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isalpha @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isdecimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isdigit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isidentifier @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_islower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isnumeric @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isprintable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isspace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isspace_invariant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_issue18183 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_issue28598_strsubclass_rhs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_issue8271 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_istitle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_isupper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_iterators_invocation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_ljust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_lower @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_maketrans_translate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_mul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_none_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_partition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_pickle_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_removeprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_removesuffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_repeat_id_preserving @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_rfind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_rindex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_rjust @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_rpartition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_rsplit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_splitlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_startswith @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_startswith_endswith_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_strip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_strip_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_subclass_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_surrogates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_swapcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_title @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_ucs4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_unexpected_end_of_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_unicode_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_upper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_utf8_decode_invalid_sequences @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_utf8_decode_valid_sequences @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unicode.UnicodeTest.test_zfill @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

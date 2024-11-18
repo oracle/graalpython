@@ -1,10 +1,9 @@
-test.test_filecmp.DirCompareTestCase.test_cmpfiles
-test.test_filecmp.DirCompareTestCase.test_default_ignores
-test.test_filecmp.DirCompareTestCase.test_dircmp
-test.test_filecmp.DirCompareTestCase.test_dircmp_subdirs_type
-test.test_filecmp.DirCompareTestCase.test_report_full_closure
-test.test_filecmp.DirCompareTestCase.test_report_partial_closure
-test.test_filecmp.FileCompareTestCase.test_cache_clear
-test.test_filecmp.FileCompareTestCase.test_different
-test.test_filecmp.FileCompareTestCase.test_matching
-test.test_filecmp.TestMain.test_main
+test.test_filecmp.DirCompareTestCase.test_cmpfiles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_filecmp.DirCompareTestCase.test_default_ignores @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_filecmp.DirCompareTestCase.test_dircmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_filecmp.DirCompareTestCase.test_dircmp_subdirs_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_filecmp.DirCompareTestCase.test_report_full_closure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_filecmp.DirCompareTestCase.test_report_partial_closure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_filecmp.FileCompareTestCase.test_cache_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_filecmp.FileCompareTestCase.test_different @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_filecmp.FileCompareTestCase.test_matching @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

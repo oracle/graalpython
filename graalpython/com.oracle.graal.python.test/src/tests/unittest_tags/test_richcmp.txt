@@ -1,11 +1,11 @@
-test.test_richcmp.DictTest.test_dicts
-test.test_richcmp.ListTest.test_badentry
-test.test_richcmp.ListTest.test_coverage
-test.test_richcmp.ListTest.test_goodentry
-test.test_richcmp.MiscTest.test_exception_message
-test.test_richcmp.MiscTest.test_misbehavin
-test.test_richcmp.MiscTest.test_not
-test.test_richcmp.MiscTest.test_recursion
-test.test_richcmp.NumberTest.test_basic
-test.test_richcmp.NumberTest.test_values
-test.test_richcmp.VectorTest.test_mixed
+test.test_richcmp.DictTest.test_dicts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.ListTest.test_badentry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.ListTest.test_coverage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.ListTest.test_goodentry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.MiscTest.test_exception_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.MiscTest.test_misbehavin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.MiscTest.test_not @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.MiscTest.test_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.NumberTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.NumberTest.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_richcmp.VectorTest.test_mixed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

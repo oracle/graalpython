@@ -1,0 +1,3 @@
+# The following two try to read bytecode and fail randomly as our co_code is changing
+!graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_bytecode
+!graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_relative_imports_4

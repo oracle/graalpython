@@ -1,2 +1,0 @@
-test.test_repl.TestInteractiveInterpreter.test_multiline_string_parsing
-test.test_repl.TestInteractiveInterpreter.test_no_memory

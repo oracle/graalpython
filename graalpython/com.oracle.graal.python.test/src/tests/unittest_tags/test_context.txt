@@ -1,39 +1,15 @@
-test.test_context.ContextTest.test_context_copy_1
-test.test_context.ContextTest.test_context_get_context_1
-test.test_context.ContextTest.test_context_getset_1
-test.test_context.ContextTest.test_context_getset_2
-test.test_context.ContextTest.test_context_getset_3
-test.test_context.ContextTest.test_context_getset_5
-test.test_context.ContextTest.test_context_run_1
-test.test_context.ContextTest.test_context_run_2
-test.test_context.ContextTest.test_context_run_3
-test.test_context.ContextTest.test_context_run_5
-test.test_context.ContextTest.test_context_run_6
-test.test_context.ContextTest.test_context_run_7
-test.test_context.ContextTest.test_context_subclassing_1
-test.test_context.ContextTest.test_context_threads_1
-test.test_context.ContextTest.test_context_typerrors_1
-test.test_context.ContextTest.test_contextvar_getitem
-test.test_context.HamtTest.test_hamt_basics_1
-test.test_context.HamtTest.test_hamt_basics_2
-test.test_context.HamtTest.test_hamt_basics_3
-test.test_context.HamtTest.test_hamt_basics_4
-test.test_context.HamtTest.test_hamt_collision_1
-test.test_context.HamtTest.test_hamt_collision_3
-test.test_context.HamtTest.test_hamt_delete_1
-test.test_context.HamtTest.test_hamt_delete_2
-test.test_context.HamtTest.test_hamt_delete_3
-test.test_context.HamtTest.test_hamt_delete_4
-test.test_context.HamtTest.test_hamt_delete_5
-test.test_context.HamtTest.test_hamt_eq_1
-test.test_context.HamtTest.test_hamt_eq_2
-test.test_context.HamtTest.test_hamt_gc_1
-test.test_context.HamtTest.test_hamt_gc_2
-test.test_context.HamtTest.test_hamt_getitem_1
-test.test_context.HamtTest.test_hamt_in_1
-test.test_context.HamtTest.test_hamt_items_1
-test.test_context.HamtTest.test_hamt_items_2
-test.test_context.HamtTest.test_hamt_items_3
-test.test_context.HamtTest.test_hamt_keys_1
-test.test_context.HamtTest.test_hamt_stress
-test.test_context.HamtTest.test_hashkey_helper_1
+test.test_context.ContextTest.test_context_copy_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_get_context_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_getset_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_getset_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_getset_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_getset_5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_run_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_run_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_run_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_run_5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_run_6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_run_7 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_subclassing_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_threads_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_context.ContextTest.test_context_typerrors_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,31 +1,27 @@
-DocTestCase.test.test_syntax
-test.test_syntax.SyntaxTestCase.test_assign_call
-test.test_syntax.SyntaxTestCase.test_assign_del
-test.test_syntax.SyntaxTestCase.test_bad_outdent
-test.test_syntax.SyntaxTestCase.test_barry_as_flufl_with_syntax_errors
-test.test_syntax.SyntaxTestCase.test_break_outside_loop
-test.test_syntax.SyntaxTestCase.test_case_call_does_not_raise_syntax_error
-test.test_syntax.SyntaxTestCase.test_continuation_bad_indentation
-test.test_syntax.SyntaxTestCase.test_continue_outside_loop
-test.test_syntax.SyntaxTestCase.test_curly_brace_after_primary_raises_immediately
-test.test_syntax.SyntaxTestCase.test_deep_invalid_rule
-test.test_syntax.SyntaxTestCase.test_empty_line_after_linecont
-test.test_syntax.SyntaxTestCase.test_error_on_parser_stack_overflow
-test.test_syntax.SyntaxTestCase.test_error_string_literal
-test.test_syntax.SyntaxTestCase.test_except_star_then_except
-test.test_syntax.SyntaxTestCase.test_except_then_except_star
-test.test_syntax.SyntaxTestCase.test_expression_with_assignment
-test.test_syntax.SyntaxTestCase.test_generator_in_function_call
-test.test_syntax.SyntaxTestCase.test_global_param_err_first
-test.test_syntax.SyntaxTestCase.test_invalid_line_continuation_left_recursive
-test.test_syntax.SyntaxTestCase.test_kwargs_last
-test.test_syntax.SyntaxTestCase.test_kwargs_last2
-test.test_syntax.SyntaxTestCase.test_kwargs_last3
-test.test_syntax.SyntaxTestCase.test_match_call_does_not_raise_syntax_error
-test.test_syntax.SyntaxTestCase.test_nested_named_except_blocks
-test.test_syntax.SyntaxTestCase.test_no_indent
-test.test_syntax.SyntaxTestCase.test_nonlocal_param_err_first
-test.test_syntax.SyntaxTestCase.test_return_outside_function
-test.test_syntax.SyntaxTestCase.test_syntax_error_on_deeply_nested_blocks
-test.test_syntax.SyntaxTestCase.test_unexpected_indent
-test.test_syntax.SyntaxTestCase.test_yield_outside_function
+DocTestCase.test.test_syntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_assign_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_assign_del @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_bad_outdent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_barry_as_flufl_with_syntax_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_break_outside_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_case_call_does_not_raise_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_continuation_bad_indentation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_continue_outside_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_curly_brace_after_primary_raises_immediately @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_empty_line_after_linecont @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_error_string_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_except_star_then_except @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_except_then_except_star @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_expression_with_assignment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_generator_in_function_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_global_param_err_first @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_invalid_line_continuation_left_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_kwargs_last @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_kwargs_last2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_kwargs_last3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_match_call_does_not_raise_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_no_indent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_nonlocal_param_err_first @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_return_outside_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_unexpected_indent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_syntax.SyntaxTestCase.test_yield_outside_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,7 +1,7 @@
-test.test_colorsys.ColorsysTest.test_hls_nearwhite
-test.test_colorsys.ColorsysTest.test_hls_roundtrip
-test.test_colorsys.ColorsysTest.test_hls_values
-test.test_colorsys.ColorsysTest.test_hsv_roundtrip
-test.test_colorsys.ColorsysTest.test_hsv_values
-test.test_colorsys.ColorsysTest.test_yiq_roundtrip
-test.test_colorsys.ColorsysTest.test_yiq_values
+test.test_colorsys.ColorsysTest.test_hls_nearwhite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_colorsys.ColorsysTest.test_hls_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_colorsys.ColorsysTest.test_hls_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_colorsys.ColorsysTest.test_hsv_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_colorsys.ColorsysTest.test_hsv_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_colorsys.ColorsysTest.test_yiq_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_colorsys.ColorsysTest.test_yiq_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

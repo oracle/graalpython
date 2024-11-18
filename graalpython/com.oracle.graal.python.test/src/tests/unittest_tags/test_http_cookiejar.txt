@@ -1,78 +1,77 @@
-test.test_http_cookiejar.CookieTests.test_Cookie_iterator
-test.test_http_cookiejar.CookieTests.test_bad_cookie_header
-test.test_http_cookiejar.CookieTests.test_custom_secure_protocols
-test.test_http_cookiejar.CookieTests.test_default_path
-test.test_http_cookiejar.CookieTests.test_default_path_with_query
-test.test_http_cookiejar.CookieTests.test_domain_allow
-test.test_http_cookiejar.CookieTests.test_domain_block
-test.test_http_cookiejar.CookieTests.test_domain_match
-test.test_http_cookiejar.CookieTests.test_domain_mirror
-test.test_http_cookiejar.CookieTests.test_domain_return_ok
-test.test_http_cookiejar.CookieTests.test_escape_path
-test.test_http_cookiejar.CookieTests.test_evil_local_domain
-test.test_http_cookiejar.CookieTests.test_evil_local_domain_2
-test.test_http_cookiejar.CookieTests.test_evil_nonlocal_domain
-test.test_http_cookiejar.CookieTests.test_expires
-test.test_http_cookiejar.CookieTests.test_is_HDN
-test.test_http_cookiejar.CookieTests.test_localhost_domain
-test.test_http_cookiejar.CookieTests.test_localhost_domain_contents
-test.test_http_cookiejar.CookieTests.test_localhost_domain_contents_2
-test.test_http_cookiejar.CookieTests.test_missing_final_slash
-test.test_http_cookiejar.CookieTests.test_missing_value
-test.test_http_cookiejar.CookieTests.test_no_return_comment
-test.test_http_cookiejar.CookieTests.test_ns_parser
-test.test_http_cookiejar.CookieTests.test_ns_parser_special_names
-test.test_http_cookiejar.CookieTests.test_parse_ns_headers
-test.test_http_cookiejar.CookieTests.test_path_mirror
-test.test_http_cookiejar.CookieTests.test_path_prefix_match
-test.test_http_cookiejar.CookieTests.test_port_mirror
-test.test_http_cookiejar.CookieTests.test_quote_cookie_value
-test.test_http_cookiejar.CookieTests.test_reach
-test.test_http_cookiejar.CookieTests.test_request_host
-test.test_http_cookiejar.CookieTests.test_request_path
-test.test_http_cookiejar.CookieTests.test_request_port
-test.test_http_cookiejar.CookieTests.test_rfc2109_handling
-test.test_http_cookiejar.CookieTests.test_secure
-test.test_http_cookiejar.CookieTests.test_secure_block
-test.test_http_cookiejar.CookieTests.test_strict_domain
-test.test_http_cookiejar.CookieTests.test_two_component_domain_ns
-test.test_http_cookiejar.CookieTests.test_two_component_domain_rfc2965
-test.test_http_cookiejar.CookieTests.test_wrong_domain
-test.test_http_cookiejar.DateTimeTests.test_http2time
-test.test_http_cookiejar.DateTimeTests.test_http2time_formats
-test.test_http_cookiejar.DateTimeTests.test_http2time_garbage
-test.test_http_cookiejar.DateTimeTests.test_http2time_redos_regression_actually_completes
-test.test_http_cookiejar.DateTimeTests.test_iso2time
-test.test_http_cookiejar.DateTimeTests.test_iso2time_formats
-test.test_http_cookiejar.DateTimeTests.test_iso2time_garbage
-test.test_http_cookiejar.DateTimeTests.test_iso2time_performance_regression
-test.test_http_cookiejar.DateTimeTests.test_time2isoz
-test.test_http_cookiejar.DateTimeTests.test_time2netscape
-test.test_http_cookiejar.FileCookieJarTests.test_bad_magic
-test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_none
-test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_other_types
-test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_path_like
-test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_str
-test.test_http_cookiejar.FileCookieJarTests.test_cookie_files_are_truncated
-test.test_http_cookiejar.FileCookieJarTests.test_lwp_filepermissions
-test.test_http_cookiejar.FileCookieJarTests.test_lwp_valueless_cookie
-test.test_http_cookiejar.FileCookieJarTests.test_mozilla_filepermissions
-test.test_http_cookiejar.HeaderTests.test_join_header_words
-test.test_http_cookiejar.HeaderTests.test_parse_ns_headers
-test.test_http_cookiejar.HeaderTests.test_parse_ns_headers_special_names
-test.test_http_cookiejar.HeaderTests.test_parse_ns_headers_version
-test.test_http_cookiejar.HeaderTests.test_roundtrip
-test.test_http_cookiejar.HeaderTests.test_split_header_words
-test.test_http_cookiejar.LWPCookieTests.test_empty_path
-test.test_http_cookiejar.LWPCookieTests.test_ietf_example_1
-test.test_http_cookiejar.LWPCookieTests.test_ietf_example_2
-test.test_http_cookiejar.LWPCookieTests.test_intranet_domains_2965
-test.test_http_cookiejar.LWPCookieTests.test_intranet_domains_ns
-test.test_http_cookiejar.LWPCookieTests.test_mozilla
-test.test_http_cookiejar.LWPCookieTests.test_netscape_example_1
-test.test_http_cookiejar.LWPCookieTests.test_netscape_example_2
-test.test_http_cookiejar.LWPCookieTests.test_netscape_misc
-test.test_http_cookiejar.LWPCookieTests.test_rejection
-test.test_http_cookiejar.LWPCookieTests.test_session_cookies
-test.test_http_cookiejar.LWPCookieTests.test_url_encoding
-test.test_http_cookiejar.TestMain.test_main
+test.test_http_cookiejar.CookieTests.test_Cookie_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_bad_cookie_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_custom_secure_protocols @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_default_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_default_path_with_query @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_domain_allow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_domain_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_domain_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_domain_mirror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_domain_return_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_escape_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_evil_local_domain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_evil_local_domain_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_evil_nonlocal_domain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_expires @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_is_HDN @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_localhost_domain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_localhost_domain_contents @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_localhost_domain_contents_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_missing_final_slash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_missing_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_no_return_comment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_ns_parser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_ns_parser_special_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_parse_ns_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_path_mirror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_path_prefix_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_port_mirror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_quote_cookie_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_reach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_request_host @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_request_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_request_port @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_rfc2109_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_secure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_secure_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_strict_domain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_two_component_domain_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_two_component_domain_rfc2965 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.CookieTests.test_wrong_domain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_http2time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_http2time_formats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_http2time_garbage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_http2time_redos_regression_actually_completes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_iso2time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_iso2time_formats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_iso2time_garbage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_iso2time_performance_regression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_time2isoz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.DateTimeTests.test_time2netscape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_bad_magic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_other_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_path_like @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_constructor_with_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_cookie_files_are_truncated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_lwp_filepermissions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_lwp_valueless_cookie @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.FileCookieJarTests.test_mozilla_filepermissions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.HeaderTests.test_join_header_words @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.HeaderTests.test_parse_ns_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.HeaderTests.test_parse_ns_headers_special_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.HeaderTests.test_parse_ns_headers_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.HeaderTests.test_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.HeaderTests.test_split_header_words @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_empty_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_ietf_example_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_ietf_example_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_intranet_domains_2965 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_intranet_domains_ns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_mozilla @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_netscape_example_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_netscape_example_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_netscape_misc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_rejection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_session_cookies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_http_cookiejar.LWPCookieTests.test_url_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

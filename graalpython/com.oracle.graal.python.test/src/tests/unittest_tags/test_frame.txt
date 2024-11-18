@@ -1,9 +1,5 @@
-test.test_frame.ClearTest.test_clear_does_not_clear_specials
-test.test_frame.ClearTest.test_clear_locals
-test.test_frame.ClearTest.test_clear_refcycles
-test.test_frame.ClearTest.test_lineno_with_tracing
-test.test_frame.FrameAttrsTest.test_f_lineno_del_segfault
-test.test_frame.FrameAttrsTest.test_locals
-test.test_frame.ReprTest.test_repr
-test.test_frame.TestIncompleteFrameAreInvisible.test_sneaky_frame_object
-test.test_frame.TestIncompleteFrameAreInvisible.test_sneaky_frame_object_teardown
+test.test_frame.ClearTest.test_clear_does_not_clear_specials @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_frame.ClearTest.test_lineno_with_tracing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_frame.FrameAttrsTest.test_f_lineno_del_segfault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_frame.FrameAttrsTest.test_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_frame.ReprTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

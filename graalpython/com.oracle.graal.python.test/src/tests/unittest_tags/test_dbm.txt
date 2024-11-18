@@ -1,25 +1,14 @@
-test.test_dbm.TestCase-dbm.dumb.test_anydbm_access
-test.test_dbm.TestCase-dbm.dumb.test_anydbm_creation
-test.test_dbm.TestCase-dbm.dumb.test_anydbm_creation_n_file_exists_with_invalid_contents
-test.test_dbm.TestCase-dbm.dumb.test_anydbm_keys
-test.test_dbm.TestCase-dbm.dumb.test_anydbm_modification
-test.test_dbm.TestCase-dbm.dumb.test_anydbm_not_existing
-test.test_dbm.TestCase-dbm.dumb.test_anydbm_read
-test.test_dbm.TestCase-dbm.dumb.test_empty_value
-test.test_dbm.TestCase-dbm.dumb.test_error
-test.test_dbm.TestCase_dumb.test_anydbm_access
-test.test_dbm.TestCase_dumb.test_anydbm_creation
-test.test_dbm.TestCase_dumb.test_anydbm_creation_n_file_exists_with_invalid_contents
-test.test_dbm.TestCase_dumb.test_anydbm_keys
-test.test_dbm.TestCase_dumb.test_anydbm_modification
-test.test_dbm.TestCase_dumb.test_anydbm_not_existing
-test.test_dbm.TestCase_dumb.test_anydbm_read
-test.test_dbm.TestCase_dumb.test_empty_value
-test.test_dbm.TestCase_dumb.test_error
-test.test_dbm.TestCase_dumb.test_keys
-test.test_dbm.TestCase_dumb.test_open_with_bytes
-test.test_dbm.TestCase_dumb.test_open_with_pathlib_path
-test.test_dbm.TestCase_dumb.test_open_with_pathlib_path_bytes
-test.test_dbm.WhichDBTestCase.test_keys
-test.test_dbm.WhichDBTestCase.test_whichdb
-test.test_dbm.WhichDBTestCase.test_whichdb_ndbm
+test.test_dbm.TestCase_dumb.test_anydbm_access @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_anydbm_creation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_anydbm_creation_n_file_exists_with_invalid_contents @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_anydbm_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_anydbm_modification @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_anydbm_not_existing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_anydbm_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_empty_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_open_with_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_open_with_pathlib_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.TestCase_dumb.test_open_with_pathlib_path_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_dbm.WhichDBTestCase.test_whichdb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

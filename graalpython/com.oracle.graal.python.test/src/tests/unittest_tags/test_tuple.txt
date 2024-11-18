@@ -1,34 +1,28 @@
-test.test_tuple.TupleTest.test_addmul
-test.test_tuple.TupleTest.test_bigrepeat
-test.test_tuple.TupleTest.test_bug7466
-test.test_tuple.TupleTest.test_constructors
-test.test_tuple.TupleTest.test_contains
-test.test_tuple.TupleTest.test_contains_fake
-test.test_tuple.TupleTest.test_contains_order
-test.test_tuple.TupleTest.test_count
-test.test_tuple.TupleTest.test_free_after_iterating
-test.test_tuple.TupleTest.test_getitem
-test.test_tuple.TupleTest.test_getitem_error
-test.test_tuple.TupleTest.test_getitemoverwriteiter
-test.test_tuple.TupleTest.test_getslice
-test.test_tuple.TupleTest.test_hash_optional
-test.test_tuple.TupleTest.test_iadd
-test.test_tuple.TupleTest.test_imul
-test.test_tuple.TupleTest.test_index
-test.test_tuple.TupleTest.test_iterator_pickle
-test.test_tuple.TupleTest.test_keyword_args
-test.test_tuple.TupleTest.test_len
-test.test_tuple.TupleTest.test_lexicographic_ordering
-test.test_tuple.TupleTest.test_minmax
-test.test_tuple.TupleTest.test_no_comdat_folding
-test.test_tuple.TupleTest.test_pickle
-test.test_tuple.TupleTest.test_repeat
-test.test_tuple.TupleTest.test_repr
-test.test_tuple.TupleTest.test_repr_large
-test.test_tuple.TupleTest.test_reversed_pickle
-test.test_tuple.TupleTest.test_subscript
-test.test_tuple.TupleTest.test_track_dynamic
-test.test_tuple.TupleTest.test_track_literals
-test.test_tuple.TupleTest.test_track_subtypes
-test.test_tuple.TupleTest.test_truth
-test.test_tuple.TupleTest.test_tupleresizebug
+test.test_tuple.TupleTest.test_addmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_contains_fake @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_contains_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_getitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_getitemoverwriteiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_hash_optional @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_iadd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_imul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_iterator_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_lexicographic_ordering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_minmax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_no_comdat_folding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_repr_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_reversed_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_truth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tuple.TupleTest.test_tupleresizebug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

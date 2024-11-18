@@ -1,109 +1,100 @@
-test.test_types.ClassCreationTests.test_bad___prepare__
-test.test_types.ClassCreationTests.test_metaclass_derivation
-test.test_types.ClassCreationTests.test_metaclass_new_error
-test.test_types.ClassCreationTests.test_metaclass_override_callable
-test.test_types.ClassCreationTests.test_metaclass_override_function
-test.test_types.ClassCreationTests.test_new_class_basics
-test.test_types.ClassCreationTests.test_new_class_defaults
-test.test_types.ClassCreationTests.test_new_class_exec_body
-test.test_types.ClassCreationTests.test_new_class_meta
-test.test_types.ClassCreationTests.test_new_class_meta_with_base
-test.test_types.ClassCreationTests.test_new_class_metaclass_keywords
-test.test_types.ClassCreationTests.test_new_class_subclass
-test.test_types.ClassCreationTests.test_new_class_with_mro_entry
-test.test_types.ClassCreationTests.test_new_class_with_mro_entry_error
-test.test_types.ClassCreationTests.test_new_class_with_mro_entry_genericalias
-test.test_types.ClassCreationTests.test_new_class_with_mro_entry_multiple
-test.test_types.ClassCreationTests.test_new_class_with_mro_entry_multiple_2
-test.test_types.ClassCreationTests.test_new_class_with_mro_entry_none
-test.test_types.ClassCreationTests.test_one_argument_type
-test.test_types.ClassCreationTests.test_prepare_class
-test.test_types.ClassCreationTests.test_resolve_bases
-test.test_types.ClassCreationTests.test_resolve_bases_with_mro_entry
-test.test_types.CoroutineTests.test_async_def
-test.test_types.CoroutineTests.test_duck_coro
-test.test_types.CoroutineTests.test_duck_corogen
-test.test_types.CoroutineTests.test_duck_functional_gen
-test.test_types.CoroutineTests.test_duck_gen
-test.test_types.CoroutineTests.test_gen
-test.test_types.CoroutineTests.test_genfunc
-test.test_types.CoroutineTests.test_non_gen_values
-test.test_types.CoroutineTests.test_returning_itercoro
-test.test_types.CoroutineTests.test_wrapper_object
-test.test_types.CoroutineTests.test_wrong_args
-test.test_types.MappingProxyTests.test_chainmap
-test.test_types.MappingProxyTests.test_constructor
-test.test_types.MappingProxyTests.test_contains
-test.test_types.MappingProxyTests.test_copy
-test.test_types.MappingProxyTests.test_customdict
-test.test_types.MappingProxyTests.test_get
-test.test_types.MappingProxyTests.test_iterators
-test.test_types.MappingProxyTests.test_len
-test.test_types.MappingProxyTests.test_methods
-test.test_types.MappingProxyTests.test_missing
-test.test_types.MappingProxyTests.test_reversed
-test.test_types.MappingProxyTests.test_union
-test.test_types.MappingProxyTests.test_views
-test.test_types.SimpleNamespaceTests.test_as_dict
-test.test_types.SimpleNamespaceTests.test_attrdel
-test.test_types.SimpleNamespaceTests.test_attrget
-test.test_types.SimpleNamespaceTests.test_attrset
-test.test_types.SimpleNamespaceTests.test_constructor
-test.test_types.SimpleNamespaceTests.test_equal
-test.test_types.SimpleNamespaceTests.test_fake_namespace_compare
-test.test_types.SimpleNamespaceTests.test_nested
-test.test_types.SimpleNamespaceTests.test_pickle
-test.test_types.SimpleNamespaceTests.test_recursive
-test.test_types.SimpleNamespaceTests.test_subclass
-test.test_types.SimpleNamespaceTests.test_unbound
-test.test_types.SimpleNamespaceTests.test_underlying_dict
-test.test_types.TypesTests.test_boolean_ops
-test.test_types.TypesTests.test_comparisons
-test.test_types.TypesTests.test_ellipsis_type
-test.test_types.TypesTests.test_float__format__
-test.test_types.TypesTests.test_float__format__locale
-test.test_types.TypesTests.test_float_constructor
-test.test_types.TypesTests.test_float_to_string
-test.test_types.TypesTests.test_floats
-test.test_types.TypesTests.test_format_spec_errors
-test.test_types.TypesTests.test_int__format__
-test.test_types.TypesTests.test_int__format__locale
-test.test_types.TypesTests.test_internal_sizes
-test.test_types.TypesTests.test_method_descriptor_types
-test.test_types.TypesTests.test_method_wrapper_types
-test.test_types.TypesTests.test_none_type
-test.test_types.TypesTests.test_normal_integers
-test.test_types.TypesTests.test_notimplemented_type
-test.test_types.TypesTests.test_numeric_types
-test.test_types.TypesTests.test_slot_wrapper_types
-test.test_types.TypesTests.test_strings
-test.test_types.TypesTests.test_traceback_and_frame_types
-test.test_types.TypesTests.test_truth_values
-test.test_types.TypesTests.test_type_function
-test.test_types.TypesTests.test_zero_division
-test.test_types.UnionTests.test_bad_instancecheck
-test.test_types.UnionTests.test_bad_subclasscheck
-test.test_types.UnionTests.test_hash
-test.test_types.UnionTests.test_instancecheck_and_subclasscheck
-test.test_types.UnionTests.test_instancecheck_and_subclasscheck_order
-test.test_types.UnionTests.test_or_type_operator_reference_cycle
-test.test_types.UnionTests.test_or_type_operator_with_Alias
-test.test_types.UnionTests.test_or_type_operator_with_IO
-test.test_types.UnionTests.test_or_type_operator_with_Literal
-test.test_types.UnionTests.test_or_type_operator_with_NamedTuple
-test.test_types.UnionTests.test_or_type_operator_with_NewType
-test.test_types.UnionTests.test_or_type_operator_with_Protocol
-test.test_types.UnionTests.test_or_type_operator_with_SpecialForm
-test.test_types.UnionTests.test_or_type_operator_with_TypeVar
-test.test_types.UnionTests.test_or_type_operator_with_TypedDict
-test.test_types.UnionTests.test_or_type_operator_with_bad_module
-test.test_types.UnionTests.test_or_type_operator_with_forward
-test.test_types.UnionTests.test_or_type_operator_with_genericalias
-test.test_types.UnionTests.test_or_type_repr
-test.test_types.UnionTests.test_or_types_operator
-test.test_types.UnionTests.test_union_args
-test.test_types.UnionTests.test_union_copy
-test.test_types.UnionTests.test_union_parameter_chaining
-test.test_types.UnionTests.test_union_parameter_substitution
-test.test_types.UnionTests.test_union_parameter_substitution_errors
-test.test_types.UnionTests.test_union_pickle
+test.test_types.ClassCreationTests.test_bad___prepare__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_metaclass_derivation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_metaclass_new_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_metaclass_override_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_metaclass_override_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_exec_body @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_meta @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_meta_with_base @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_metaclass_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_with_mro_entry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_with_mro_entry_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_with_mro_entry_genericalias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_with_mro_entry_multiple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_with_mro_entry_multiple_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_new_class_with_mro_entry_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_one_argument_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_prepare_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_resolve_bases @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.ClassCreationTests.test_resolve_bases_with_mro_entry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.CoroutineTests.test_duck_coro @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.CoroutineTests.test_duck_corogen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.CoroutineTests.test_non_gen_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.CoroutineTests.test_wrapper_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.CoroutineTests.test_wrong_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_chainmap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_customdict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_union @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.MappingProxyTests.test_views @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_as_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_attrdel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_attrget @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_attrset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_equal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_fake_namespace_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_unbound @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.SimpleNamespaceTests.test_underlying_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_boolean_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_comparisons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_ellipsis_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_float__format__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_float__format__locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_float_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_float_to_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_format_spec_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_int__format__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_int__format__locale @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_method_wrapper_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_none_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_normal_integers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_notimplemented_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_numeric_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_slot_wrapper_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_traceback_and_frame_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_truth_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_type_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.TypesTests.test_zero_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_bad_instancecheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_bad_subclasscheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_instancecheck_and_subclasscheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_instancecheck_and_subclasscheck_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_Alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_IO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_Literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_NamedTuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_NewType @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_Protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_SpecialForm @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_TypeVar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_TypedDict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_bad_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_forward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_operator_with_genericalias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_type_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_or_types_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_union_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_union_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_union_parameter_chaining @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_union_parameter_substitution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_union_parameter_substitution_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_types.UnionTests.test_union_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

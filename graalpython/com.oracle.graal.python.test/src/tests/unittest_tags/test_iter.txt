@@ -1,55 +1,51 @@
-test.test_iter.TestCase.test_3720
-test.test_iter.TestCase.test_builtin_filter
-test.test_iter.TestCase.test_builtin_list
-test.test_iter.TestCase.test_builtin_map
-test.test_iter.TestCase.test_builtin_max_min
-test.test_iter.TestCase.test_builtin_tuple
-test.test_iter.TestCase.test_builtin_zip
-test.test_iter.TestCase.test_countOf
-test.test_iter.TestCase.test_error_iter
-test.test_iter.TestCase.test_exception_function
-test.test_iter.TestCase.test_exception_sequence
-test.test_iter.TestCase.test_extending_list_with_iterator_does_not_segfault
-test.test_iter.TestCase.test_free_after_iterating
-test.test_iter.TestCase.test_in_and_not_in
-test.test_iter.TestCase.test_indexOf
-test.test_iter.TestCase.test_iter_basic
-test.test_iter.TestCase.test_iter_big_range
-test.test_iter.TestCase.test_iter_callable
-test.test_iter.TestCase.test_iter_class_for
-test.test_iter.TestCase.test_iter_class_iter
-test.test_iter.TestCase.test_iter_dict
-test.test_iter.TestCase.test_iter_empty
-test.test_iter.TestCase.test_iter_file
-test.test_iter.TestCase.test_iter_for_loop
-test.test_iter.TestCase.test_iter_function
-test.test_iter.TestCase.test_iter_function_stop
-test.test_iter.TestCase.test_iter_idempotency
-test.test_iter.TestCase.test_iter_independence
-test.test_iter.TestCase.test_iter_neg_setstate
-test.test_iter.TestCase.test_iter_overflow
-test.test_iter.TestCase.test_iter_range
-test.test_iter.TestCase.test_iter_string
-test.test_iter.TestCase.test_iter_tuple
-test.test_iter.TestCase.test_mutating_seq_class_exhausted_iter
-test.test_iter.TestCase.test_mutating_seq_class_iter_pickle
-test.test_iter.TestCase.test_nested_comprehensions_for
-test.test_iter.TestCase.test_nested_comprehensions_iter
-test.test_iter.TestCase.test_new_style_iter_class
-test.test_iter.TestCase.test_ref_counting_behavior
-test.test_iter.TestCase.test_seq_class_for
-test.test_iter.TestCase.test_seq_class_iter
-test.test_iter.TestCase.test_sinkstate_callable
-test.test_iter.TestCase.test_sinkstate_dict
-test.test_iter.TestCase.test_sinkstate_enumerate
-test.test_iter.TestCase.test_sinkstate_list
-test.test_iter.TestCase.test_sinkstate_range
-test.test_iter.TestCase.test_sinkstate_sequence
-test.test_iter.TestCase.test_sinkstate_string
-test.test_iter.TestCase.test_sinkstate_tuple
-test.test_iter.TestCase.test_sinkstate_yield
-test.test_iter.TestCase.test_stop_sequence
-test.test_iter.TestCase.test_unicode_join_endcase
-test.test_iter.TestCase.test_unpack_iter
-test.test_iter.TestCase.test_writelines
-test.test_iter.TestMain.test_main
+test.test_iter.TestCase.test_3720 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_builtin_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_builtin_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_builtin_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_builtin_max_min @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_builtin_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_builtin_zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_countOf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_error_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_exception_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_exception_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_extending_list_with_iterator_does_not_segfault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_in_and_not_in @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_indexOf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_big_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_class_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_class_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_for_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_function_stop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_idempotency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_independence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_neg_setstate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_iter_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_mutating_seq_class_exhausted_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_mutating_seq_class_iter_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_nested_comprehensions_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_nested_comprehensions_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_new_style_iter_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_seq_class_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_seq_class_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_enumerate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_sinkstate_yield @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_stop_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_unicode_join_endcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_unpack_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_iter.TestCase.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

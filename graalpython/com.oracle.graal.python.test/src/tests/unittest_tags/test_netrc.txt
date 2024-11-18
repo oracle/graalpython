@@ -1,29 +1,22 @@
-test.test_netrc.NetrcTestCase.test_comment_after_machine_line
-test.test_netrc.NetrcTestCase.test_comment_after_machine_line_hash_only
-test.test_netrc.NetrcTestCase.test_comment_after_machine_line_no_space
-test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line
-test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line_no_space
-test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line_pass_has_hash
-test.test_netrc.NetrcTestCase.test_comment_before_machine_line
-test.test_netrc.NetrcTestCase.test_comment_before_machine_line_hash_only
-test.test_netrc.NetrcTestCase.test_comment_before_machine_line_no_space
-test.test_netrc.NetrcTestCase.test_default
-test.test_netrc.NetrcTestCase.test_file_not_found_explicit
-test.test_netrc.NetrcTestCase.test_file_not_found_in_home
-test.test_netrc.NetrcTestCase.test_home_not_set
-test.test_netrc.NetrcTestCase.test_invalid_tokens
-test.test_netrc.NetrcTestCase.test_macros
-test.test_netrc.NetrcTestCase.test_optional_tokens
-test.test_netrc.NetrcTestCase.test_password_with_internal_hash
-test.test_netrc.NetrcTestCase.test_password_with_leading_hash
-test.test_netrc.NetrcTestCase.test_password_with_trailing_hash
-test.test_netrc.NetrcTestCase.test_security
-test.test_netrc.NetrcTestCase.test_token_value_escape
-test.test_netrc.NetrcTestCase.test_token_value_internal_hash
-test.test_netrc.NetrcTestCase.test_token_value_leading_hash
-test.test_netrc.NetrcTestCase.test_token_value_non_ascii
-test.test_netrc.NetrcTestCase.test_token_value_quotes
-test.test_netrc.NetrcTestCase.test_token_value_trailing_hash
-test.test_netrc.NetrcTestCase.test_token_value_whitespace
-test.test_netrc.NetrcTestCase.test_toplevel_non_ordered_tokens
-test.test_netrc.NetrcTestCase.test_toplevel_tokens
+test.test_netrc.NetrcTestCase.test_comment_after_machine_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_comment_after_machine_line_hash_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_comment_after_machine_line_no_space @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line_no_space @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_comment_at_end_of_machine_line_pass_has_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_comment_before_machine_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_comment_before_machine_line_hash_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_comment_before_machine_line_no_space @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_invalid_tokens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_macros @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_optional_tokens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_security @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_token_value_escape @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_token_value_internal_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_token_value_leading_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_token_value_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_token_value_quotes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_token_value_trailing_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_token_value_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_toplevel_non_ordered_tokens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_netrc.NetrcTestCase.test_toplevel_tokens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

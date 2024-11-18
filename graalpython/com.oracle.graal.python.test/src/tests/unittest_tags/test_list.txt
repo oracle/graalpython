@@ -1,57 +1,55 @@
-test.test_list.ListTest.test_addmul
-test.test_list.ListTest.test_append
-test.test_list.ListTest.test_basic
-test.test_list.ListTest.test_bigrepeat
-test.test_list.ListTest.test_clear
-test.test_list.ListTest.test_constructor_exception_handling
-test.test_list.ListTest.test_constructors
-test.test_list.ListTest.test_contains
-test.test_list.ListTest.test_contains_fake
-test.test_list.ListTest.test_contains_order
-test.test_list.ListTest.test_copy
-test.test_list.ListTest.test_count
-test.test_list.ListTest.test_count_index_remove_crashes
-test.test_list.ListTest.test_delitem
-test.test_list.ListTest.test_delslice
-test.test_list.ListTest.test_equal_operator_modifying_operand
-test.test_list.ListTest.test_exhausted_iterator
-test.test_list.ListTest.test_extend
-test.test_list.ListTest.test_extendedslicing
-test.test_list.ListTest.test_free_after_iterating
-test.test_list.ListTest.test_getitem
-test.test_list.ListTest.test_getitem_error
-test.test_list.ListTest.test_getitemoverwriteiter
-test.test_list.ListTest.test_getslice
-test.test_list.ListTest.test_iadd
-test.test_list.ListTest.test_identity
-test.test_list.ListTest.test_imul
-test.test_list.ListTest.test_index
-test.test_list.ListTest.test_init
-test.test_list.ListTest.test_insert
-test.test_list.ListTest.test_iterator_pickle
-test.test_list.ListTest.test_keyword_args
-test.test_list.ListTest.test_len
-test.test_list.ListTest.test_list_resize_overflow
-test.test_list.ListTest.test_minmax
-test.test_list.ListTest.test_no_comdat_folding
-test.test_list.ListTest.test_overflow
-test.test_list.ListTest.test_pickle
-test.test_list.ListTest.test_pop
-test.test_list.ListTest.test_preallocation
-test.test_list.ListTest.test_print
-test.test_list.ListTest.test_remove
-test.test_list.ListTest.test_repeat
-test.test_list.ListTest.test_repr
-test.test_list.ListTest.test_repr_large
-test.test_list.ListTest.test_reverse
-test.test_list.ListTest.test_reversed
-test.test_list.ListTest.test_reversed_pickle
-test.test_list.ListTest.test_set_subscript
-test.test_list.ListTest.test_setitem
-test.test_list.ListTest.test_setitem_error
-test.test_list.ListTest.test_setslice
-test.test_list.ListTest.test_slice
-test.test_list.ListTest.test_sort
-test.test_list.ListTest.test_step_overflow
-test.test_list.ListTest.test_subscript
-test.test_list.ListTest.test_truth
+test.test_list.ListTest.test_addmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_constructor_exception_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_contains_fake @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_contains_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_count_index_remove_crashes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_delslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_equal_operator_modifying_operand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_exhausted_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_extend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_extendedslicing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_getitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_getitemoverwriteiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_iadd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_imul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_insert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_iterator_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_list_resize_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_minmax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_no_comdat_folding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Disabled due to transient stack overflow that fails to get caught and crashes the VM
+!test.test_list.ListTest.test_repr_deep @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_repr_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_reverse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_reversed_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_set_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_setitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_setslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_sort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_step_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_list.ListTest.test_truth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

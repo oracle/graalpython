@@ -1,31 +1,31 @@
-test.test_funcattrs.ArbitraryFunctionAttrTest.test_delete_unknown_attr
-test.test_funcattrs.ArbitraryFunctionAttrTest.test_set_attr
-test.test_funcattrs.ArbitraryFunctionAttrTest.test_unset_attr
-test.test_funcattrs.BuiltinFunctionPropertiesTest.test_builtin__qualname__
-test.test_funcattrs.CellTest.test_comparison
-test.test_funcattrs.FunctionDictsTest.test_delete___dict__
-test.test_funcattrs.FunctionDictsTest.test_func_as_dict_key
-test.test_funcattrs.FunctionDictsTest.test_setting_dict_to_invalid
-test.test_funcattrs.FunctionDictsTest.test_setting_dict_to_valid
-test.test_funcattrs.FunctionDictsTest.test_unassigned_dict
-test.test_funcattrs.FunctionDocstringTest.test_delete_docstring
-test.test_funcattrs.FunctionDocstringTest.test_set_docstring_attr
-test.test_funcattrs.FunctionPropertiesTest.test___closure__
-test.test_funcattrs.FunctionPropertiesTest.test___code__
-test.test_funcattrs.FunctionPropertiesTest.test___globals__
-test.test_funcattrs.FunctionPropertiesTest.test___name__
-test.test_funcattrs.FunctionPropertiesTest.test___qualname__
-test.test_funcattrs.FunctionPropertiesTest.test_blank_func_defaults
-test.test_funcattrs.FunctionPropertiesTest.test_cell_new
-test.test_funcattrs.FunctionPropertiesTest.test_copying___code__
-test.test_funcattrs.FunctionPropertiesTest.test_dir_includes_correct_attrs
-test.test_funcattrs.FunctionPropertiesTest.test_duplicate_function_equality
-test.test_funcattrs.FunctionPropertiesTest.test_empty_cell
-test.test_funcattrs.FunctionPropertiesTest.test_func_default_args
-test.test_funcattrs.FunctionPropertiesTest.test_module
-test.test_funcattrs.FunctionPropertiesTest.test_set_cell
-test.test_funcattrs.InstancemethodAttrTest.test___class__
-test.test_funcattrs.InstancemethodAttrTest.test___func__
-test.test_funcattrs.InstancemethodAttrTest.test___func___non_method
-test.test_funcattrs.InstancemethodAttrTest.test___self__
-test.test_funcattrs.StaticMethodAttrsTest.test_func_attribute
+test.test_funcattrs.ArbitraryFunctionAttrTest.test_delete_unknown_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.ArbitraryFunctionAttrTest.test_set_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.ArbitraryFunctionAttrTest.test_unset_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.BuiltinFunctionPropertiesTest.test_builtin__qualname__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.CellTest.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionDictsTest.test_delete___dict__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionDictsTest.test_func_as_dict_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionDictsTest.test_setting_dict_to_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionDictsTest.test_setting_dict_to_valid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionDictsTest.test_unassigned_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionDocstringTest.test_delete_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionDocstringTest.test_set_docstring_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test___closure__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test___code__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test___globals__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test___name__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test___qualname__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_blank_func_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_cell_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_copying___code__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_dir_includes_correct_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_duplicate_function_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_empty_cell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_func_default_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test_set_cell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.InstancemethodAttrTest.test___class__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.InstancemethodAttrTest.test___func__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.InstancemethodAttrTest.test___func___non_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.InstancemethodAttrTest.test___self__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_funcattrs.StaticMethodAttrsTest.test_func_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

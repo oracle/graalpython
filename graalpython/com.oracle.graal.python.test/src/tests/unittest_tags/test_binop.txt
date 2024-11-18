@@ -1,12 +1,12 @@
-test.test_binop.FallbackBlockingTests.test_fallback_ne_blocking
-test.test_binop.FallbackBlockingTests.test_fallback_rmethod_blocking
-test.test_binop.OperationOrderTests.test_comparison_orders
-test.test_binop.RatTestCase.test_add
-test.test_binop.RatTestCase.test_constructor
-test.test_binop.RatTestCase.test_div
-test.test_binop.RatTestCase.test_eq
-test.test_binop.RatTestCase.test_floordiv
-test.test_binop.RatTestCase.test_gcd
-test.test_binop.RatTestCase.test_mul
-test.test_binop.RatTestCase.test_sub
-test.test_binop.RatTestCase.test_true_div
+test.test_binop.FallbackBlockingTests.test_fallback_ne_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.FallbackBlockingTests.test_fallback_rmethod_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.OperationOrderTests.test_comparison_orders @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_div @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_floordiv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_gcd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_mul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_sub @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_binop.RatTestCase.test_true_div @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
