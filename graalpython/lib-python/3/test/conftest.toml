@@ -42,4 +42,7 @@ selector = [
     'test_peepholer',
     # We don't have fork, so although we pass surprisingly many tests in there, it's not going to cover anything useful
     'test_multiprocessing_fork',
+    # Transiently fails with java.lang.IllegalStateException: There is an active child contexts after finalizeContext!
+    # when the runner exits. We don't know which tests can trigger this, so we exclude the whole file.
+    'test_multiprocessing_graalpy',
 ]
