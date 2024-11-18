@@ -565,7 +565,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         python_home = os.path.abspath(glob.glob(python_home)[0])
         mx.log("Using GraalPy standalone from GRAALPY_HOME: " + python_home)
         # Try to verify that we're getting what we expect:
-        has_java = os.path.exists(os.path.join(python_home, 'jvm', 'bin', 'java.exe' if WIN32 else 'java'))
+        has_java = os.path.exists(os.path.join(python_home, 'jvm', 'bin', mx.exe_suffix('java')))
         if has_java != (standalone_type == 'jvm'):
             mx.abort(f"GRAALPY_HOME is not compatible with the requested distribution type.\n"
                      f"jvm/bin/java exists?: {has_java}, requested type={standalone_type}.")
@@ -667,7 +667,7 @@ def graalvm_jdk():
         mx.log("Using GraalPy standalone from GRAAL_JDK_HOME: " + graal_jdk_home)
 
         # Try to verify that we're getting what we expect:
-        has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', 'java.exe' if WIN32 else 'java'))
+        has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', mx.exe_suffix('java')))
         if not has_java:
             mx.abort(f"GRAAL_JDK_HOME does not contain java executable.")
 
