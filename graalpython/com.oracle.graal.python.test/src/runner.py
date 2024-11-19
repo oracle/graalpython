@@ -507,16 +507,18 @@ def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
 
 
 def interrupt_process(process: subprocess.Popen):
-    sig = signal.SIGINT if sys.platform != 'win32' else signal.CTRL_C_EVENT
-    process.send_signal(sig)
+    if hasattr(signal, 'SIGINT'):
+        process.send_signal(signal.SIGINT)
+        try:
+            process.wait(3)
+            return
+        except subprocess.TimeoutExpired:
+            pass
+    process.terminate()
     try:
         process.wait(3)
     except subprocess.TimeoutExpired:
-        process.terminate()
-        try:
-            process.wait(3)
-        except subprocess.TimeoutExpired:
-            process.kill()
+        process.kill()
 
 
 class ParallelTestRunner(TestRunner):
