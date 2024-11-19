@@ -303,17 +303,50 @@ _PyTypes_Fini(PyInterpreterState *interp)
         clear_slotdefs();
     }
 }
-#endif // GraalPy change
 
 
 void
 PyType_Modified(PyTypeObject *type)
 {
-    // GraalPy change: different implementation
-    GraalPyTruffle_Type_Modified(type, type->tp_name, type->tp_mro);
+    /* Invalidate any cached data for the specified type and all
+       subclasses.  This function is called after the base
+       classes, mro, or attributes of the type are altered.
+
+       Invariants:
+
+       - before Py_TPFLAGS_VALID_VERSION_TAG can be set on a type,
+         it must first be set on all super types.
+
+       This function clears the Py_TPFLAGS_VALID_VERSION_TAG of a
+       type (so it must first clear it on all subclasses).  The
+       tp_version_tag value is meaningless unless this flag is set.
+       We don't assign new version tags eagerly, but only as
+       needed.
+     */
+    if (!_PyType_HasFeature(type, Py_TPFLAGS_VALID_VERSION_TAG)) {
+        return;
+    }
+
+    PyObject *subclasses = type->tp_subclasses;
+    if (subclasses != NULL) {
+        assert(PyDict_CheckExact(subclasses));
+
+        Py_ssize_t i = 0;
+        PyObject *ref;
+        while (PyDict_Next(subclasses, &i, NULL, &ref)) {
+            assert(PyWeakref_CheckRef(ref));
+            PyObject *obj = PyWeakref_GET_OBJECT(ref);
+            if (obj == Py_None) {
+                continue;
+            }
+            PyType_Modified(_PyType_CAST(obj));
+        }
+    }
+
+    type->tp_flags &= ~Py_TPFLAGS_VALID_VERSION_TAG;
+    type->tp_version_tag = 0; /* 0 is not a valid version tag */
 }
 
-#if 0 // GraalPy change
 static void
 type_mro_modified(PyTypeObject *type, PyObject *bases) {
     /*
@@ -6555,9 +6588,9 @@ PyType_Ready(PyTypeObject *type)
         type->tp_flags |= Py_TPFLAGS_IMMUTABLETYPE;
     }
 
-    /* GraalPy change: Types are often just static mem; so register them to be able to rule out invalid accesses.  */
+    // GraalPy change
     if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffle_Trace_Type(type, type->tp_name != NULL);
+        GraalPyTruffle_Trace_Type(type);
     }
 
     /* GraalPy change: IMPORTANT: This is a Truffle-specific statement. Since the refcnt for the type is currently 0 and
@@ -6575,8 +6608,8 @@ PyType_Ready(PyTypeObject *type)
     type->tp_flags = (type->tp_flags & ~Py_TPFLAGS_READYING) | Py_TPFLAGS_READY;
     assert(_PyType_CheckConsistency(type));
 
-    // GraalPy change: it may be that the type was used uninitialized
-	GraalPyTruffle_Type_Modified(type, type->tp_name, NULL);
+    // GraalPy change
+	GraalPyTruffle_InitializeOldStyleSlots(type);
 
 	// GraalPy change: for reason, see first call to Py_INCREF in this function
 	Py_DECREF(type);

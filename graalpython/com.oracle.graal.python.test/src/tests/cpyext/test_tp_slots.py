@@ -599,3 +599,31 @@ def test_sq_repeat_mul_without_rmul_inheritance():
 
     assert 3 * Managed1() == 3
     assert Managed1() * 3 == "__mul__result: 3"
+
+
+def test_PyType_Modified_doesnt_change_slots():
+    TypeWithSqItemAndMpSubscr = CPyExtType(
+        "TypeWithSqItemAndMpSubscr",
+        code='''
+        static PyObject* sq_item(PyObject* self, Py_ssize_t index) {
+            return PyUnicode_FromString("sq_item");
+        }
+        static PyObject* mp_subscript(PyObject* self, PyObject* index) {
+            return PyUnicode_FromString("mp_subscript");
+        }
+        static PyObject* call_PySequence_GetItem(PyObject* self, PyObject* index) {
+            Py_ssize_t i = PyLong_AsSsize_t(index);
+            if (i == -1 && PyErr_Occurred())
+                return NULL;
+            return PySequence_GetItem(self, i);
+        }
+        ''',
+        sq_item="sq_item",
+        mp_subscript="mp_subscript",
+        tp_methods='{"call_PySequence_GetItem", (PyCFunction)call_PySequence_GetItem, METH_O, ""}',
+        post_ready_code="PyType_Modified(&TypeWithSqItemAndMpSubscrType);"
+    )
+    tester = TypeWithSqItemAndMpSubscr()
+    assert tester[1] == 'mp_subscript'
+    assert tester.call_PySequence_GetItem(1) == 'sq_item'
+

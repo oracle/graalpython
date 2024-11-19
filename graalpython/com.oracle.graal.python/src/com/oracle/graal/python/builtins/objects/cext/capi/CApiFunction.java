@@ -482,7 +482,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyType_GetQualName", ret = PyObject, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_GetSlot", ret = Pointer, args = {PyTypeObject, Int}, call = CImpl)
     @CApiBuiltin(name = "PyType_IsSubtype", ret = Int, args = {PyTypeObject, PyTypeObject}, call = CImpl)
-    @CApiBuiltin(name = "PyType_Modified", ret = Void, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_Ready", ret = Int, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_Append", ret = Void, args = {PyObjectPtr, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_AppendAndDel", ret = Void, args = {PyObjectPtr, PyObject}, call = CImpl)
