@@ -1047,7 +1047,7 @@ def graalpytest(args):
     python_args = []
     runner_args = []
     for arg in unknown_args:
-        if arg.startswith(('--python.', '--engine.', '--llvm.', '--vm.', '--inspect', '--experimental-options')):
+        if arg.startswith(('--python.', '--engine.', '--llvm.', '--vm.', '--inspect', '--log.', '--experimental-options')):
             python_args.append(arg)
         else:
             runner_args.append(arg)

@@ -51,11 +51,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7BuiltinNode;
@@ -119,7 +119,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -247,27 +246,16 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer, Pointer}, call = Ignored)
-    abstract static class PyTruffle_Trace_Type extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
+    abstract static class PyTruffle_Trace_Type extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffle_Trace_Type.class);
 
-        @Specialization(limit = "3")
-        int trace(Object ptr, Object classNameObj,
-                        @CachedLibrary("ptr") InteropLibrary ptrLib,
-                        @CachedLibrary("classNameObj") InteropLibrary nameLib,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            final TruffleString className;
-            if (nameLib.isString(classNameObj)) {
-                try {
-                    className = switchEncodingNode.execute(nameLib.asTruffleString(classNameObj), TS_ENCODING);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            } else {
-                className = null;
-            }
-            Object primitivePtr = CApiContext.asPointer(ptr, ptrLib);
-            LOGGER.fine(() -> PythonUtils.formatJString("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
+        @Specialization
+        @TruffleBoundary
+        int trace(Object ptr) {
+            LOGGER.fine(() -> PythonUtils.formatJString("Initializing native type %s (ptr = %s)",
+                            CStructAccess.ReadCharPtrNode.getUncached().read(ptr, PyTypeObject__tp_name),
+                            CApiContext.asHex(CApiContext.asPointer(ptr, InteropLibrary.getUncached()))));
             return 0;
         }
     }

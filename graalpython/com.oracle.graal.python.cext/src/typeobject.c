@@ -6590,7 +6590,7 @@ PyType_Ready(PyTypeObject *type)
 
     // GraalPy change
     if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffle_Trace_Type(type, type->tp_name != NULL);
+        GraalPyTruffle_Trace_Type(type);
     }
 
     /* GraalPy change: IMPORTANT: This is a Truffle-specific statement. Since the refcnt for the type is currently 0 and
