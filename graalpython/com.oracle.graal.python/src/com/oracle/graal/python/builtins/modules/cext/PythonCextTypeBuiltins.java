@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi8Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PyObjectSetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -106,7 +105,6 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -217,51 +215,35 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
-    abstract static class PyTruffle_Type_Modified extends CApiTernaryBuiltinNode {
-
-        @TruffleBoundary
-        @Specialization(guards = "isNoValue(mroTuple)")
-        static int doIt(PythonAbstractNativeObject clazz, TruffleString name, @SuppressWarnings("unused") PNone mroTuple,
-                        @Bind("this") Node inliningTarget) {
-            PythonContext context = PythonContext.get(inliningTarget);
-            CyclicAssumption nativeClassStableAssumption = context.getNativeClassStableAssumption(clazz, false);
-            if (nativeClassStableAssumption != null) {
-                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") (without MRO) called");
-            }
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(clazz, context.getLanguage());
-            // TODO: this is called from two places: at the end of PyType_Ready, and theoretically
-            // could be called from:
-            //
-            // void PyType_Modified(PyTypeObject* type) -> GraalPyTruffle_Type_Modified(type,
-            // type->tp_name, type->tp_mro);
-            //
-            // in unlikely (impossible?) case that type->tp_mro was NULL. Should we distinguish
-            // the two cases? As a cleanup if it is impossible situation (separate two different
-            // upcalls), or because at the end of PyType_Ready, we do not want to call
-            // TpSlots.updateAllSlots(clazz), but from PyType_Modified we do.
-            return 0;
-        }
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject}, call = Ignored)
+    abstract static class PyTruffle_InitializeOldStyleSlots extends CApiUnaryBuiltinNode {
 
         @TruffleBoundary
         @Specialization
-        static int doIt(PythonAbstractNativeObject clazz, TruffleString name, PTuple mroTuple,
+        static Object doIt(PythonAbstractNativeObject clazz,
+                        @Bind("this") Node inliningTarget) {
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(clazz, PythonLanguage.get(inliningTarget));
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject}, call = Direct)
+    abstract static class PyType_Modified extends CApiUnaryBuiltinNode {
+
+        @TruffleBoundary
+        @Specialization
+        static Object doIt(PythonAbstractNativeObject clazz,
                         @Bind("this") Node inliningTarget) {
             PythonContext context = PythonContext.get(inliningTarget);
             CyclicAssumption nativeClassStableAssumption = context.getNativeClassStableAssumption(clazz, false);
             if (nativeClassStableAssumption != null) {
-                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name.toJavaStringUncached() + "\") called");
+                nativeClassStableAssumption.invalidate("PyType_Modified(\"" + TypeNodes.GetNameNode.executeUncached(clazz).toJavaStringUncached() + "\") called");
             }
-            SequenceStorage sequenceStorage = mroTuple.getSequenceStorage();
-            if (sequenceStorage instanceof MroSequenceStorage) {
-                ((MroSequenceStorage) sequenceStorage).lookupChanged();
-            } else {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("invalid MRO object for native type \"" + name.toJavaStringUncached() + "\"");
-            }
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), context.getLanguage());
+            MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(clazz);
+            mroStorage.lookupChanged();
+            // Reload slots from native, which also invalidates cached slot lookups
             clazz.setTpSlots(TpSlots.fromNative(clazz, context));
-            return 0;
+            return PNone.NO_VALUE;
         }
     }
 
