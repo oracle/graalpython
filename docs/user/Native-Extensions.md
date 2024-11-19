@@ -18,9 +18,48 @@ Please do not update `pip` or use alternative tools such as `uv`.
 ## Embedding limitations
 
 Python native extensions run by default as native binaries, with full access to the underlying system.
-Native code is entirely unrestricted and can circumvent any security protections Truffle or the JVM may provide.
-Native data structures are not subject to the Java GC and the combination of them with Java data structures may lead to memory leaks.
-Native libraries generally cannot be loaded multiple times into the same process, and they may contain global state that cannot be safely reset.
-Thus, it is not possible to create multiple GraalPy contexts that access native modules within the same JVM.
-This includes the case when you create a context, close it, and then create another context.
-The second context will not be able to access native extensions.
+This has a few implications:
+
+1. Native code is entirely unrestricted and can circumvent any security protections Truffle or the JVM may provide.
+2. Native data structures are not subject to the Java GC and the combination of them with Java data structures may lead to increased memory pressure or memory leaks.
+3. Native libraries generally cannot be loaded multiple times into the same process, and they may contain global state that cannot be safely reset.
+
+### Full Native Access
+
+The Context API allows to set options such as `allowIO`, `allowHostAccess`, `allowThreads` and more on the created contexts.
+To use Python native extensions on GraalPy, the `allowNativeAccess` option must be set to true, but this opens the door to full native access.
+This means that while Python code may be denied access to the host file system, thread- or subprocess creation, and more, the native extension is under no such restriction.
+
+### Memory Management
+
+Python C extensions, like the CPython reference implementation, use reference counting for memory management.
+This is fundamentally incompatible with JVM GCs.
+
+Java objects may end up being referenced from native data structures which the JVM cannot trace, so to avoid crashing, GraalPy keeps such Java objects strongly referenced.
+To avoid memory leaks, GraalPy implements a cycle detector that regularly traces references between Java objects and native objects that have crossed between the two worlds and cleans up strong references that are no longer needed.
+
+On the other side, reference-counted native extension objects may end up being referenced from Java objects, and in this case GraalPy bumps their reference count to make them unreclaimable.
+Any such references to native extension objects are registered with a `java.lang.ref.WeakReference` and when the JVM GC has collected the owning Java object, the reference count of the native object is reduced again.
+
+Both of these mechanisms together mean there is additional delay between objects becoming unreachable and their memory being reclaimed when compared to the CPython implementation.
+This can manifest in increased memory usage when running C extensions.
+You can tweak the Context options `python.BackgroundGCTaskInterval`, `python.BackgroundGCTaskThreshold`, and `BackgroundGCTaskMinimum` to mitigate this.
+They control the minimum interval between cycle detections, how much RSS memory must have increased since the last time to trigger the cycle detector, and the absolute minimum RSS under which no cycle detection should be done.
+You can also manually trigger the detector with the Python `gc.collect()` call.
+
+### Multi-Context and Native Libraries
+
+To support creating multiple GraalPy contexts that access native modules within the same JVM, we need to isolate them from each other.
+The current strategy for this is to copy the libraries and modify them such that the dynamic library loader of the operating system will isolate them for us.
+To do this, all GraalPy contexts in the same JVM (not just those in the same engine!) must set the `python.IsolateNativeModules` option to `true`.
+
+On Linux, Python native extensions expect to lookup Python C API functions in the global namespace and specify no explicit dependency on any libpython.
+To isolate them, we copy them with a new name, change their `SONAME`, add a `DT_NEEDED` dependency on a copy of our libpython shared object, and finally load them with `RTLD_LOCAL`.
+
+On Windows there is no global namespace so native extensions already have a dependency on our libpython DLL.
+We copy them and just change the dependency to point to the context-local copy of libpython rather than the global one.
+
+On macOS, while two-level namespaces exist, Python extensions historically use `-undefined dynamic_lookup` where they (just like in Linux) expect to find C API functions in any loaded image.
+We have to apply a similar workaround as on Linux, copy to a new name, change the `LC_ID_DYLIB` to that name, and add a `LC_LOAD_DYLIB` section to make the linker load the symbols from our libpython.
+
+Note that any code signatures are invalidated by this process.
