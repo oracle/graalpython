@@ -754,33 +754,35 @@ class SubprocessWorker:
                     self.process = subprocess.Popen(cmd, stdout=self.out_file, stderr=self.out_file)
 
                     server.settimeout(60.0)
-                    conn = Connection(server.accept()[0])
+                    with server.accept()[0] as sock:
+                        conn = Connection(sock)
 
-                    timed_out = None
+                        timed_out = None
 
-                    try:
-                        while True:
-                            while conn.poll(0.1):
-                                event = conn.recv()
-                                self.process_event(event)
-                            if self.stop_event.is_set():
-                                interrupt_process(self.process)
-                                break
-                            if self.last_started_test_id:
-                                last_started_test = self.tests_by_id.get(self.last_started_test_id)
-                                timeout = (
-                                        last_started_test.test_file.test_config.per_test_timeout
-                                        or self.runner.default_test_timeout
-                                )
-                            else:
-                                timeout = self.runner.default_test_timeout
-                            timeout *= self.runner.timeout_factor
-                            if time.time() - self.last_started_time >= timeout:
-                                interrupt_process(self.process)
-                                timed_out = timeout
-                                break
-                    except ConnectionClosed:
-                        pass
+                        try:
+                            while True:
+                                while conn.poll(0.1):
+                                    event = conn.recv()
+                                    self.process_event(event)
+                                if self.stop_event.is_set():
+                                    interrupt_process(self.process)
+                                    break
+                                if self.last_started_test_id:
+                                    last_started_test = self.tests_by_id.get(self.last_started_test_id)
+                                    timeout = (
+                                            last_started_test.test_file.test_config.per_test_timeout
+                                            or self.runner.default_test_timeout
+                                    )
+                                else:
+                                    timeout = self.runner.default_test_timeout
+                                timeout *= self.runner.timeout_factor
+                                if time.time() - self.last_started_time >= timeout:
+                                    interrupt_process(self.process)
+                                    timed_out = timeout
+                                    break
+                        except (ConnectionClosed, OSError):
+                            # The socket closed or got connection reset, that's normal if the worker exitted or crashed
+                            pass
                     try:
                         self.process.wait(self.runner.default_test_timeout)
                     except subprocess.TimeoutExpired:
