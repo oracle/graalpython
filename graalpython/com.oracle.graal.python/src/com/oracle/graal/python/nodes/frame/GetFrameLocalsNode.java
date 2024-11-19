@@ -47,8 +47,15 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -120,10 +127,19 @@ public abstract class GetFrameLocalsNode extends Node {
                         @Bind("info.getVariableCount()") int count,
                         @Shared("setItem") @Cached PyDictSetItem setItem,
                         @Shared("delItem") @Cached PyDictDelItem delItem) {
-            CodeUnit co = info.getRootNode().getCodeUnit();
-            int regularVarCount = co.varnames.length;
-            for (int i = 0; i < count; i++) {
-                copyItem(inliningTarget, locals, info, dict, setItem, delItem, i, i >= regularVarCount);
+            int regularVarCount = info.getRegularVariableCount();
+
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
+                PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
+                Object[] localsArray = rootNode.getBytecodeNode().getLocalValues(0, locals);
+                for (int i = 0; i < count; i++) {
+                    copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
+                }
+            } else {
+                for (int i = 0; i < count; i++) {
+                    copyItem(inliningTarget, locals.getValue(i), info, dict, setItem, delItem, i, i >= regularVarCount);
+                }
             }
         }
 
@@ -134,16 +150,25 @@ public abstract class GetFrameLocalsNode extends Node {
                         @Shared("delItem") @Cached PyDictDelItem delItem) {
             FrameInfo info = getInfo(locals.getFrameDescriptor());
             int count = info.getVariableCount();
-            CodeUnit co = info.getRootNode().getCodeUnit();
-            int regularVarCount = co.varnames.length;
-            for (int i = 0; i < count; i++) {
-                copyItem(inliningTarget, locals, info, dict, setItem, delItem, i, i >= regularVarCount);
+            int regularVarCount = info.getRegularVariableCount();
+
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
+                PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
+                Object[] localsArray = rootNode.getBytecodeNode().getLocalValues(0, locals);
+                for (int i = 0; i < count; i++) {
+                    copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
+                }
+            } else {
+                for (int i = 0; i < count; i++) {
+                    copyItem(inliningTarget, locals.getValue(i), info, dict, setItem, delItem, i, i >= regularVarCount);
+                }
             }
         }
 
-        private static void copyItem(Node inliningTarget, MaterializedFrame locals, FrameInfo info, PDict dict, PyDictSetItem setItem, PyDictDelItem delItem, int i, boolean deref) {
+        private static void copyItem(Node inliningTarget, Object localValue, FrameInfo info, PDict dict, PyDictSetItem setItem, PyDictDelItem delItem, int i, boolean deref) {
             TruffleString name = info.getVariableName(i);
-            Object value = locals.getValue(i);
+            Object value = localValue;
             if (deref && value != null) {
                 value = ((PCell) value).getRef();
             }
@@ -163,24 +188,39 @@ public abstract class GetFrameLocalsNode extends Node {
     /**
      * Equivalent of CPython's {@code PyFrame_LocalsToFast}
      */
-    public static void syncLocalsBackToFrame(CodeUnit co, PFrame pyFrame, Frame localFrame) {
+    public static void syncLocalsBackToFrame(CodeUnit co, PRootNode root, PFrame pyFrame, Frame localFrame) {
         if (!pyFrame.hasCustomLocals()) {
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
-            copyLocalsArray(localFrame, localsDict, co.varnames, 0, false);
-            copyLocalsArray(localFrame, localsDict, co.cellvars, co.varnames.length, true);
-            copyLocalsArray(localFrame, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
+            copyLocalsArray(localFrame, root, localsDict, co.varnames, 0, false);
+            copyLocalsArray(localFrame, root, localsDict, co.cellvars, co.varnames.length, true);
+            copyLocalsArray(localFrame, root, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
         }
     }
 
-    private static void copyLocalsArray(Frame localFrame, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
-        for (int i = 0; i < namesArray.length; i++) {
-            TruffleString varname = namesArray[i];
-            Object value = PyDictGetItem.executeUncached(localsDict, varname);
-            if (deref) {
-                PCell cell = (PCell) localFrame.getObject(offset + i);
-                cell.setRef(value);
-            } else {
-                localFrame.setObject(offset + i, value);
+    private static void copyLocalsArray(Frame localFrame, PRootNode root, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            PBytecodeDSLRootNode bytecodeDSLRootNode = (PBytecodeDSLRootNode) root;
+            BytecodeNode bytecodeNode = bytecodeDSLRootNode.getBytecodeNode();
+            for (int i = 0; i < namesArray.length; i++) {
+                TruffleString varname = namesArray[i];
+                Object value = PyDictGetItem.executeUncached(localsDict, varname);
+                if (deref) {
+                    PCell cell = (PCell) bytecodeNode.getLocalValue(0, localFrame, offset + i);
+                    cell.setRef(value);
+                } else {
+                    bytecodeNode.setLocalValue(0, localFrame, offset + i, value);
+                }
+            }
+        } else {
+            for (int i = 0; i < namesArray.length; i++) {
+                TruffleString varname = namesArray[i];
+                Object value = PyDictGetItem.executeUncached(localsDict, varname);
+                if (deref) {
+                    PCell cell = (PCell) localFrame.getObject(offset + i);
+                    cell.setRef(value);
+                } else {
+                    localFrame.setObject(offset + i, value);
+                }
             }
         }
     }

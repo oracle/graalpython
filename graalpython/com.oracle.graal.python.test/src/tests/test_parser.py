@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -267,6 +267,14 @@ def test_invalid_star_import():
 def test_invalid_return_statement():
     assert_raise_syntax_error("return 10", "'return' outside function")
     assert_raise_syntax_error("class A: return 10\n", "'return' outside function")
+
+def test_outside_of_loop_errors():
+    assert_raise_syntax_error("break", "'break' outside loop")
+    # TODO: parser gives invalid syntax for this one, but should be: "'break' outside loop"
+    assert_raise_syntax_error("def bar(): break", "")
+    assert_raise_syntax_error("continue", "'continue' not properly in loop")
+    # TODO: parser gives invalid syntax for this one, but should be: "'continue' not properly in loop"
+    assert_raise_syntax_error("def foo(): continue", "")
 
 
 def test_mangled_class_property():

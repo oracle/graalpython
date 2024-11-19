@@ -301,6 +301,12 @@ public final class PythonCextErrBuiltins {
         }
     }
 
+    /*- TODO: this sets as a location in the exception itself, but then we probably call setCatchLocation
+         once the exception surfaces in the bytecode interpreter making its root node be: PBytecodeDSLRootNode.
+         However, the Truffle stack filling logic calls PBytecodeDSLRootNodeGen.findBytecodeIndex and that
+         asserts that the location node is instanceof AbstractBytecodeNode assuming that the location must
+         come from that root node, which is not true in this situation. What should we do? Fixup the location
+         of exceptions that surface from other root nodes than us? */
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Direct)
     abstract static class _PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")

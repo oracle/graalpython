@@ -50,11 +50,15 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -77,6 +81,7 @@ import com.oracle.truffle.api.source.SourceSection;
  * object must be created for each throw.
  */
 @ExportLibrary(value = InteropLibrary.class, delegateTo = "pythonException")
+@SuppressWarnings({"serial"})
 public final class PException extends AbstractTruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
 
@@ -86,35 +91,65 @@ public final class PException extends AbstractTruffleException {
     private String message = null;
     final transient Object pythonException;
     private transient PFrame.Reference frameInfo;
-    private transient PBytecodeRootNode catchRootNode;
+
+    // This node is a manual bytecode or Bytecode DSL root node.
+    private transient PRootNode rootNode;
+    // This node is present when using the Bytecode DSL.
+    private transient BytecodeNode bytecodeNode;
+
     private int catchBci;
     private boolean reified = false;
     private boolean skipFirstTracebackFrame;
     private int tracebackFrameCount;
 
+    /**
+     * We create new {@link PException} instances wrapping the same {@link PBaseException} as the
+     * stack is unwound when the exception is reraised. See {@link MaterializeLazyTracebackNode} for
+     * more details.
+     * <p>
+     * Since the new {@link PException} for reraise will be thrown from different frame than the
+     * initial {@link PException}, Truffle will think that it belongs to that frame and not to the
+     * original frame. Truffle expects the {@link AbstractTruffleException#getLocation()} to belong
+     * the (AST of the root node of) frame where the exception was thrown. If we just copy the
+     * location from the initial {@link PException} to the {@link PException} constructed for
+     * reraise, the location would not satisfy that property, but at the same time we like to keep
+     * the original location to use it in {@link InteropLibrary#getSourceLocation} message.
+     */
+    private final Node originalLocation;
+
     private PException(Object pythonException, Node node) {
         super(node);
         this.pythonException = pythonException;
+        this.originalLocation = node;
     }
 
-    private PException(Object pythonException, Node node, Throwable wrapped) {
-        super(null, wrapped, UNLIMITED_STACK_TRACE, node);
+    private PException(Object pythonException, Node location, Node originalLocation, Throwable wrapped) {
+        super(null, wrapped, UNLIMITED_STACK_TRACE, location);
         this.pythonException = pythonException;
+        this.originalLocation = originalLocation;
         assert PyExceptionInstanceCheckNode.executeUncached(pythonException);
     }
 
-    public static PException fromObject(Object pythonException, Node node, boolean withJavaStacktrace) {
+    public static PException fromObject(Object pythonException, Node location, boolean withJavaStacktrace) {
+        return fromObject(pythonException, location, location, withJavaStacktrace);
+    }
+
+    public static PException fromObject(Object pythonException, Node location, Node originalLocation, boolean withJavaStacktrace) {
         Throwable wrapped = null;
         if (withJavaStacktrace) {
             // Create a carrier for the java stacktrace as PException cannot have one
             wrapped = createStacktraceCarrier();
         }
-        return fromObject(pythonException, node, wrapped);
+        return fromObject(pythonException, location, originalLocation, wrapped);
     }
 
     @TruffleBoundary
     private static RuntimeException createStacktraceCarrier() {
         return new RuntimeException();
+    }
+
+    public static PException fromObject(Object pythonException, Node location, Throwable wrapped) {
+        return fromObject(pythonException, location, location, wrapped);
     }
 
     /*
@@ -123,8 +158,8 @@ public final class PException extends AbstractTruffleException {
      * guarantee on how many. Therefore, it is important that this method is simple. In particular,
      * do not add calls if that can be avoided.
      */
-    public static PException fromObject(Object pythonException, Node node, Throwable wrapped) {
-        PException pException = new PException(pythonException, node, wrapped);
+    public static PException fromObject(Object pythonException, Node node, Node originalLocation, Throwable wrapped) {
+        PException pException = new PException(pythonException, node, originalLocation, wrapped);
         if (pythonException instanceof PBaseException managedException) {
             managedException.setException(pException);
         }
@@ -137,7 +172,7 @@ public final class PException extends AbstractTruffleException {
             // Create a carrier for the java stacktrace as PException cannot have one
             wrapped = createStacktraceCarrier();
         }
-        PException pException = new PException(pythonException, null, wrapped);
+        PException pException = new PException(pythonException, null, null, wrapped);
         pException.reified = true;
         if (pythonException instanceof PBaseException managedException) {
             managedException.setException(pException);
@@ -176,15 +211,33 @@ public final class PException extends AbstractTruffleException {
     }
 
     public boolean catchingFrameWantedForTraceback() {
-        return tracebackFrameCount >= 0 && catchRootNode != null && catchRootNode.frameIsVisibleToPython();
-    }
-
-    public PBytecodeRootNode getCatchRootNode() {
-        return catchRootNode;
+        if (tracebackFrameCount < 0 || rootNode == null) {
+            return false;
+        }
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            return !((PBytecodeDSLRootNode) rootNode).isInternal();
+        } else {
+            return ((PBytecodeRootNode) rootNode).frameIsVisibleToPython();
+        }
     }
 
     public int getCatchBci() {
         return catchBci;
+    }
+
+    public BytecodeNode getBytecodeNode() {
+        return bytecodeNode;
+    }
+
+    public int getCatchLine() {
+        if (rootNode == null) {
+            return -1;
+        }
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            return ((PBytecodeDSLRootNode) rootNode).bciToLine(catchBci, bytecodeNode);
+        } else {
+            return ((PBytecodeRootNode) rootNode).bciToLine(catchBci);
+        }
     }
 
     /**
@@ -240,10 +293,65 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
+    /**
+     * Set the catching frame reference for a manual bytecode node.
+     */
     public void setCatchingFrameReference(Frame frame, PBytecodeRootNode catchLocation, int catchBci) {
         this.frameInfo = PArguments.getCurrentFrameInfo(frame);
-        this.catchRootNode = catchLocation;
+        this.rootNode = catchLocation;
         this.catchBci = catchBci;
+    }
+
+    /**
+     * Sets the catching frame information for a Bytecode DSL node.
+     *
+     * NB: The manual bytecode interpreter sets all of the catching frame info in one step after it
+     * finds a handler for the bci. This is possible because it has control over the handler
+     * dispatch logic.
+     *
+     * The Bytecode DSL interpreter's generated code automatically dispatches to a handler. We can
+     * set the frame info inside the handler code, but the bci of the raising instruction is lost at
+     * that point.
+     *
+     * We thus set the catch information in two steps:
+     * <ol>
+     * <li>First, we use a hook in the DSL to set the catch location every time an exception is
+     * thrown from the bytecode loop ({@link #setCatchLocation}).</li>
+     * <li>Then, we mark the exception as "caught" when we reach a handler
+     * ({@link #markAsCaught(Frame, PBytecodeDSLRootNode)}. Once it's "caught", the catch location
+     * is frozen.</li>
+     * </ol>
+     *
+     * (It is necessary to freeze the location after calling
+     * {@link #markAsCaught(Frame, PBytecodeDSLRootNode)} because Python-level try-except-finally
+     * blocks are implemented with multiple DSL-level throws; these throws will trigger subsequent
+     * {@link #setCatchLocation} calls that would overwrite the location.)
+     *
+     * Since the catch location is set unconditionally, it could refer to a location that had no
+     * handler (i.e., the location is invalid). Code should not use the location unless the other
+     * frame info (e.g., the {@link #rootNode}) has been set, which indicates that a handler was
+     * found and that the catch location actually refers to a guarded instruction.
+     */
+    public void setCatchLocation(int catchBci, BytecodeNode bytecodeNode) {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        // Overwrite the catchBci as long as no handler has been found yet.
+        if (!isCaught()) {
+            this.catchBci = catchBci;
+            this.bytecodeNode = bytecodeNode;
+        }
+    }
+
+    public void markAsCaught(Frame frame, PBytecodeDSLRootNode catchLocation) {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        if (!isCaught()) {
+            this.frameInfo = PArguments.getCurrentFrameInfo(frame);
+            this.rootNode = catchLocation;
+        }
+    }
+
+    private boolean isCaught() {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        return rootNode != null;
     }
 
     public void markEscaped() {
@@ -312,7 +420,7 @@ public final class PException extends AbstractTruffleException {
      */
     public PException getExceptionForReraise(boolean rootNodeVisible) {
         ensureReified();
-        PException pe = PException.fromObject(pythonException, getLocation(), false);
+        PException pe = PException.fromObject(pythonException, null, getLocation(), false);
         if (rootNodeVisible) {
             pe.skipFirstTracebackFrame();
         }
@@ -362,7 +470,7 @@ public final class PException extends AbstractTruffleException {
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean hasSourceLocation() {
-        return getLocation() != null && getLocation().getEncapsulatingSourceSection() != null;
+        return originalLocation != null && originalLocation.getEncapsulatingSourceSection() != null;
     }
 
     @ExportMessage(name = "getSourceLocation")
@@ -370,7 +478,7 @@ public final class PException extends AbstractTruffleException {
                     @Bind("$node") Node inliningTarget,
                     @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (hasSourceLocation()) {
-            return getLocation().getEncapsulatingSourceSection();
+            return originalLocation.getEncapsulatingSourceSection();
         }
         unsupportedProfile.enter(inliningTarget);
         throw UnsupportedMessageException.create();

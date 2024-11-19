@@ -322,7 +322,7 @@ public class PBaseException extends PythonObject {
      **/
     public PException getExceptionForReraise(LazyTraceback reraiseTraceback) {
         setTraceback(reraiseTraceback);
-        return PException.fromObject(this, exception.getLocation(), false);
+        return PException.fromObject(this, null, exception.getLocation(), false);
     }
 
     @ExportMessage
