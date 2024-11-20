@@ -144,171 +144,178 @@ public class VirtualFileSystemIntegrationTest {
 
     @Test
     public void fsOperations() {
+        Context ctx = createContext(null, null);
+        fsOperations(ctx,"/test_mount_point/");
+        ctx = createContext(null, b -> b.currentWorkingDirectory(Path.of("/test_mount_point")));
+        fsOperations(ctx,"");
+    }
+
+    public void fsOperations(Context ctx, String pathPrefix) {
 
         // os.path.exists
-        eval("import os; assert os.path.exists('/test_mount_point')");
-        eval("import os; assert os.path.exists('/test_mount_point/file1')");
-        eval("import os; assert os.path.exists('/test_mount_point/dir1')");
-        eval("import os; assert os.path.exists('/test_mount_point/dir1/')");
-        eval("import os; assert os.path.exists('/test_mount_point/emptydir')");
-        eval("import os; assert os.path.exists('/test_mount_point/emptydir/')");
-        eval("import os; assert os.path.exists('/test_mount_point/dir1/file2')");
-        eval("import os; assert not os.path.exists('/test_mount_point/doesnotexist')");
-        eval("import os; assert not os.path.exists('/test_mount_point/doesnotexist/')");
+        eval(ctx, "import os; assert os.path.exists('/test_mount_point')", pathPrefix);
+        eval(ctx, "import os; assert os.path.exists('{pathPrefix}.')", pathPrefix);
+        eval(ctx, "import os; assert os.path.exists('{pathPrefix}file1')", pathPrefix);
+        eval(ctx, "import os; assert os.path.exists('{pathPrefix}dir1')", pathPrefix);
+        eval(ctx, "import os; assert os.path.exists('{pathPrefix}dir1/')", pathPrefix);
+        eval(ctx, "import os; assert os.path.exists('{pathPrefix}emptydir')", pathPrefix);
+        eval(ctx, "import os; assert os.path.exists('{pathPrefix}emptydir/')", pathPrefix);
+        eval(ctx, "import os; assert os.path.exists('{pathPrefix}dir1/file2')", pathPrefix);
+        eval(ctx, "import os; assert not os.path.exists('{pathPrefix}doesnotexist')", pathPrefix);
+        eval(ctx, "import os; assert not os.path.exists('{pathPrefix}doesnotexist/')", pathPrefix);
 
         // pathlib.exists
-        eval("from pathlib import Path; assert Path('/test_mount_point').exists()");
-        eval("from pathlib import Path; assert Path('/test_mount_point/file1').exists()");
-        eval("from pathlib import Path; assert Path('/test_mount_point/dir1').exists()");
-        eval("from pathlib import Path; assert Path('/test_mount_point/dir1/').exists()");
-        eval("from pathlib import Path; assert Path('/test_mount_point/emptydir').exists()");
-        eval("from pathlib import Path; assert Path('/test_mount_point/emptydir/').exists()");
-        eval("from pathlib import Path; assert not Path('/test_mount_point/doesnotexist').exists()");
-        eval("from pathlib import Path; assert not Path('/test_mount_point/doesnotexist/').exists()");
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}').exists()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}file1').exists()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}dir1').exists()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}dir1/').exists()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}emptydir').exists()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}emptydir/').exists()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert not Path('{pathPrefix}doesnotexist').exists()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert not Path('{pathPrefix}doesnotexist/').exists()", pathPrefix);
 
         // path.isfile|isdir
 
-        eval("import os; assert os.path.isfile('/test_mount_point/file1')");
-        eval("import os; assert not os.path.isfile('/test_mount_point/dir1')");
-        eval("import os; assert not os.path.isfile('/test_mount_point/dir1/')");
+        eval(ctx, "import os; assert os.path.isfile('{pathPrefix}file1')", pathPrefix);
+        eval(ctx, "import os; assert not os.path.isfile('{pathPrefix}dir1')", pathPrefix);
+        eval(ctx, "import os; assert not os.path.isfile('{pathPrefix}dir1/')", pathPrefix);
 
-        eval("import os; assert not os.path.isfile('/test_mount_point')");
-        eval("import os; assert os.path.isdir('/test_mount_point')");
-        eval("import os; assert not os.path.isdir('/test_mount_point/file1')");
-        eval("import os; assert os.path.isdir('/test_mount_point/dir1')");
-        eval("import os; assert os.path.isdir('/test_mount_point/dir1/')");
+        eval(ctx, "import os; assert not os.path.isfile('/test_mount_point')", pathPrefix);
+        eval(ctx, "import os; assert os.path.isdir('/test_mount_point')", pathPrefix);
+        eval(ctx, "import os; assert not os.path.isdir('{pathPrefix}file1')", pathPrefix);
+        eval(ctx, "import os; assert os.path.isdir('{pathPrefix}dir1')", pathPrefix);
+        eval(ctx, "import os; assert os.path.isdir('{pathPrefix}dir1/')", pathPrefix);
 
         // pathlib.is_file|is_dir
 
-        eval("from pathlib import Path; assert not Path('/test_mount_point').is_file()");
-        eval("from pathlib import Path; assert Path('/test_mount_point/file1').is_file()");
-        eval("from pathlib import Path; assert not Path('/test_mount_point/dir1').is_file()");
-        eval("from pathlib import Path; assert not Path('/test_mount_point/dir1/').is_file()");
+        eval(ctx, "from pathlib import Path; assert not Path('/test_mount_point').is_file()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}file1').is_file()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert not Path('{pathPrefix}dir1').is_file()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert not Path('{pathPrefix}dir1/').is_file()", pathPrefix);
 
-        eval("from pathlib import Path; assert Path('/test_mount_point').is_dir()");
-        eval("from pathlib import Path; assert not Path('/test_mount_point/file1').is_dir()");
-        eval("from pathlib import Path; assert Path('/test_mount_point/dir1').is_dir()");
-        eval("from pathlib import Path; assert Path('/test_mount_point/dir1/').is_dir()");
+        eval(ctx, "from pathlib import Path; assert Path('/test_mount_point').is_dir()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert not Path('{pathPrefix}file1').is_dir()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}dir1').is_dir()", pathPrefix);
+        eval(ctx, "from pathlib import Path; assert Path('{pathPrefix}dir1/').is_dir()", pathPrefix);
 
         // delete os.remove|rmdir
 
-        eval("""
+        eval(ctx, """
                         import os
                         try:
-                            os.remove('/test_mount_point/doesnotexist')
+                            os.remove('{pathPrefix}doesnotexist')
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         import os
                         try:
-                            os.remove('/test_mount_point/file1')
+                            os.remove('{pathPrefix}file1')
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         import os
                         try:
-                            os.rmdir('/test_mount_point/file1')
+                            os.rmdir('{pathPrefix}file1')
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         import os
                         try:
-                            os.remove('/test_mount_point/dir1')
+                            os.remove('{pathPrefix}dir1')
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         import os
                         try:
-                            os.rmdir('/test_mount_point/dir1')
+                            os.rmdir('{pathPrefix}dir1')
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         import os
                         try:
-                            os.rmdir('/test_mount_point/emptydir')
+                            os.rmdir('{pathPrefix}emptydir')
                         except OSError:
                             pass
-                        """);
+                        """, pathPrefix);
 
         // delete pathlib.unlink|rmdir
 
-        eval("""
+        eval(ctx, """
                         from pathlib import Path
                         try:
-                            Path('/test_mount_point/doesnotexist').unlink()
+                            Path('{pathPrefix}doesnotexist').unlink()
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         from pathlib import Path
                         try:
-                            Path('/test_mount_point/file').unlink()
+                            Path('{pathPrefix}file').unlink()
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         from pathlib import Path
                         try:
-                            Path('/test_mount_point/file1').rmdir()
+                            Path('{pathPrefix}file1').rmdir()
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         from pathlib import Path
                         try:
-                            Path('/test_mount_point/dir1').unlink()
+                            Path('{pathPrefix}dir1').unlink()
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         from pathlib import Path
                         try:
-                            Path('/test_mount_point/dir1').rmdir()
+                            Path('{pathPrefix}dir1').rmdir()
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         from pathlib import Path
                         try:
-                            Path('/test_mount_point/emptydir').rmdir()
+                            Path('{pathPrefix}emptydir').rmdir()
                         except OSError:
                             pass
-                        """);
+                        """, pathPrefix);
 
         // delete shutil.rmtree
 
-        eval("""
+        eval(ctx, """
                         import shutil
                         try:
-                            shutil.rmtree('/test_mount_point/dir1')
+                            shutil.rmtree('{pathPrefix}dir1')
                         except OSError:
                             pass
-                        """);
-        eval("""
+                        """, pathPrefix);
+        eval(ctx, """
                         import shutil
                         try:
-                            shutil.rmtree('/test_mount_point/emptydir')
+                            shutil.rmtree('{pathPrefix}emptydir')
                         except OSError:
                             pass
-                        """);
+                        """, pathPrefix);
 
         // os.listdir
 
-        eval("""
+        eval(ctx, """
                         from os import listdir
                         try:
-                            f = listdir('/test_mount_point/doesnotexist')
+                            f = listdir('{pathPrefix}doesnotexist')
                         except FileNotFoundError:
                             pass
                         except Error:
                             assert False, 'expected FileNotFoundError'
-
-                        f = listdir('/test_mount_point/emptydir')
+                        f = listdir('{pathPrefix}emptydir')
                         assert len(f) == 0, 'expected no files'
 
                         f = listdir('/test_mount_point/')
@@ -319,28 +326,29 @@ public class VirtualFileSystemIntegrationTest {
                         assert 'file1' in f, 'does not contain "file1"'
                         assert 'fileslist.txt' in f, 'does not contain "fileslist.txt"'
 
-                        f = listdir('/test_mount_point/dir1')
+                        f = listdir('{pathPrefix}dir1')
                         if len(f) != 2:
-                            print('files in /test_mount_point/dir1:')
+                            print('files in {pathPrefix}dir1:')
                             for ff in f:
                                 print(ff)
                             assert False, 'expected 3 got ' + str(len(f))
                         assert 'file2' in f, 'does not contain "file2"'
                         assert 'extractme' in f, 'does not contain "extractme"'
-                        """);
+                        """
+        , pathPrefix);
 
         // os.walk
 
-        eval("""
+        eval(ctx, """
                         from os import walk
                         i = 0
-                        for r, d, f in walk('/test_mount_point/doesnotexist'):
+                        for r, d, f in walk('{pathPrefix}doesnotexist'):
                             i = i + 1
                         assert i == 0
 
-                        for r, d, f in walk('/test_mount_point/emptydir'):
+                        for r, d, f in walk('{pathPrefix}emptydir'):
                             i = i + 1
-                            assert r == '/test_mount_point/emptydir', 'expected /test_mount_point/emptydir, got' + r
+                            assert r == '{pathPrefix}emptydir', 'expected {pathPrefix}emptydir, got' + r
                             assert len(d) == 0, 'expected no dirs in emptydir'
                             assert len(f) == 0, 'expected no files in emptydir'
                         assert i == 1
@@ -348,7 +356,7 @@ public class VirtualFileSystemIntegrationTest {
                         roots = set()
                         dirs = set()
                         files = set()
-                        for r, d, f in walk('/test_mount_point/'):
+                        for r, d, f in walk('/test_mount_point'):
                             roots.add(r)
                             for ff in f:
                                 files.add(r + "/" + ff)
@@ -358,49 +366,66 @@ public class VirtualFileSystemIntegrationTest {
                         assert len(roots) == 9, 'expected 10 roots, got ' + str(len(roots))
                         assert len(files) == 15, 'expected 15 files, got ' + str(len(files))
                         assert len(dirs) == 8, 'expected 8 dirs, got ' + str(len(dirs))
-                        """);
+                        """, pathPrefix);
 
         // read file
 
-        eval("""
-                        with open("/test_mount_point/file1", "r") as f:
+        eval(ctx, """
+                        with open("{pathPrefix}file1", "r") as f:
                             l = f.readlines()
                             assert len(l) == 2, 'expect 2 lines, got ' + len(l)
                             assert l[0].startswith("text1"), f'expected "text1", got "{l[0]}"'
                             assert l[1].startswith("text2"), f'expected "text2", got "{l[1]}"'
 
-                        with open("/test_mount_point/dir1/file2", "r") as f:
+                        with open("{pathPrefix}dir1/file2", "r") as f:
                             l = f.readlines()
                             assert len(l) == 0, 'expect 0 lines from empty file, got ' + str(len(l))
-                        """);
+                        """, pathPrefix);
 
         // write file
-        eval("""
+        eval(ctx, """
                         try:
-                            f = open("/test_mount_point/file1", "w")
+                            f = open("{pathPrefix}file1", "w")
                         except OSError:
                             pass
+                        """, pathPrefix);
+    }
+
+    @Test
+    public void osChdir() {
+        Context ctx = createContext(null, null);
+        // os.path.exists
+        eval(ctx, """
+                        import os
+                        assert not os.path.exists('file1')
+                        os.chdir('/test_mount_point')
+                        assert os.path.exists('file1')
                         """);
     }
 
     @Test
     public void fsOperationsCaseInsensitive() {
-        eval("""
+        Context ctx = createContext(b -> b.caseInsensitive(true), null);
+        eval(ctx, """
                         import os
                         assert os.path.exists('/test_mount_point/SomeFile')
                         assert os.path.exists('/test_mount_point/someFile')
                         assert os.path.exists('/test_mount_point/somefile')
                         assert not os.path.exists('/test_mount_point/somefile1')
-                        """, b -> b.caseInsensitive(true));
+                        """);
     }
 
-    private void eval(String s) {
-        eval(s, null);
+//    private void eval(String s) {
+//        eval(s, (String)null, null, null);
+//    }
+
+    private void eval(Context ctx, String s, String pathPrefix) {
+        eval(ctx, s.replace("{pathPrefix}", pathPrefix));
     }
 
-    private void eval(String s, Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> builderFunction) {
+    private void eval(Context ctx, String s) {
         String src = patchMountPoint(s);
-        getContext(builderFunction).eval(PYTHON, src);
+        ctx.eval(PYTHON, src);
     }
 
     private static String patchMountPoint(String src) {
@@ -410,26 +435,21 @@ public class VirtualFileSystemIntegrationTest {
         return src;
     }
 
-    private Context cachedContext;
-
-    public Context getContext(Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> builderFunction) {
-        if (builderFunction == null && cachedContext != null) {
-            return cachedContext;
-        }
+    public Context createContext(Function<VirtualFileSystem.Builder, VirtualFileSystem.Builder> vfsBuilderFunction, Function<Context.Builder, Context.Builder> ctxBuilderFunction) {
         VirtualFileSystem.Builder builder = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
                         resourceLoadingClass(VirtualFileSystemIntegrationTest.class);
-        if (builderFunction != null) {
-            builder = builderFunction.apply(builder);
+        if (vfsBuilderFunction != null) {
+            builder = vfsBuilderFunction.apply(builder);
         }
         VirtualFileSystem fs = builder.build();
-        Context context = addTestOptions(GraalPyResources.contextBuilder(fs)).build();
-        if (builderFunction == null) {
-            cachedContext = context;
+        Context.Builder ctxBuilder = addTestOptions(GraalPyResources.contextBuilder(fs));
+        if(ctxBuilderFunction != null) {
+            ctxBuilder = ctxBuilderFunction.apply(ctxBuilder);
         }
-        return context;
+        return ctxBuilder.build();
     }
 
     @Test

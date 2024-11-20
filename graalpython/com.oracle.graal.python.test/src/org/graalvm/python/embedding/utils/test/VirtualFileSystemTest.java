@@ -48,6 +48,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -56,15 +58,17 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -77,12 +81,16 @@ import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ_W
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class VirtualFileSystemTest {
 
     static final String VFS_UNIX_MOUNT_POINT = "/test_mount_point";
     static final String VFS_WIN_MOUNT_POINT = "X:\\test_win_mount_point";
     static final String VFS_MOUNT_POINT = IS_WINDOWS ? VFS_WIN_MOUNT_POINT : VFS_UNIX_MOUNT_POINT;
+
+    static final String VFS_ROOT = VFS_MOUNT_POINT + File.separator;
+    static final String VFS_SRC = VFS_ROOT + "src" + File.separator;
 
     private final FileSystem rwHostIOVFS;
     private final FileSystem rHostIOVFS;
@@ -103,19 +111,19 @@ public class VirtualFileSystemTest {
 
         rwHostIOVFS = getVFSImpl(VirtualFileSystem.newBuilder().//
                         allowHostIO(READ_WRITE).//
-                        unixMountPoint(VFS_MOUNT_POINT).//
+                        unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("extractme")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build());
         rHostIOVFS = getVFSImpl(VirtualFileSystem.newBuilder().//
                         allowHostIO(READ).//
-                        unixMountPoint(VFS_MOUNT_POINT).//
+                        unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("extractme")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build());
         noHostIOVFS = getVFSImpl(VirtualFileSystem.newBuilder().//
                         allowHostIO(NONE).//
-                        unixMountPoint(VFS_MOUNT_POINT).//
+                        unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("extractme")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build());
@@ -127,23 +135,29 @@ public class VirtualFileSystemTest {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             checkException(NullPointerException.class, () -> fs.toRealPath(null));
-
-            // check regular resource dir
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")));
-            // check regular resource file
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile"), fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")));
-            // check to be extracted file
-            checkExtractedFile(fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "extractme")), new String[]{"text1", "text2"});
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme"), fs.toRealPath(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme")));
+            toRealPathVFS(fs, VFS_ROOT);
+            withCWD(fs, Path.of(VFS_ROOT), (f) -> toRealPathVFS(f, ""));
         }
 
         // from real FS
         final Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
         realFSPath.toFile().createNewFile();
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
-            assertTrue(Files.isSameFile(realFSPath, fs.toRealPath(realFSPath)));
+            assertTrue(Files.isSameFile(realFSPath, fs.toRealPath(Path.of(realFSPath.getParent().toString() + "/../" + realFSPath.getParent().getFileName().toString() + "/extractme"))));
+            withCWD(fs, realFSPath.getParent(), (fst) -> assertTrue(Files.isSameFile(realFSPath, fst.toRealPath(Path.of("../" + realFSPath.getParent().getFileName().toString() + "/extractme")))));
         }
         checkException(SecurityException.class, () -> noHostIOVFS.toRealPath(realFSPath), "expected error for no host io fs");
+        withCWD(noHostIOVFS, realFSPath.getParent(), (fs) -> checkException(SecurityException.class, () -> fs.toRealPath(realFSPath.getFileName())));
+    }
+
+    private void toRealPathVFS(FileSystem fs, String pathPrefix) throws IOException {
+        // check regular resource dir
+        assertEquals(Path.of(VFS_ROOT + "dir1"), fs.toRealPath(Path.of(pathPrefix + "dir1/../dir1")));
+        // check regular resource file
+        assertEquals(Path.of(VFS_ROOT + "SomeFile"), fs.toRealPath(Path.of(pathPrefix + "../" + VFS_MOUNT_POINT + File.separator + "SomeFile")));
+        // check to be extracted file
+        checkExtractedFile(fs.toRealPath(Path.of(pathPrefix + "../" + VFS_MOUNT_POINT + File.separator + "extractme")), new String[]{"text1", "text2"});
+        assertEquals(Path.of(VFS_ROOT + "does-not-exist/extractme"), fs.toRealPath(Path.of(pathPrefix + "does-not-exist/../does-not-exist/extractme")));
     }
 
     @Test
@@ -152,23 +166,42 @@ public class VirtualFileSystemTest {
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             checkException(NullPointerException.class, () -> fs.toAbsolutePath(null));
 
-            // check regular resource dir
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1")));
-            // check regular resource file
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile"), fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile")));
-            // check to be extracted file
-            checkExtractedFile(fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "extractme")), new String[]{"text1", "text2"});
-            checkExtractedFile(fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/extractme")), null);
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme"), fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme")));
+            assertEquals(Path.of(VFS_ROOT + "dir1"), fs.toAbsolutePath(Path.of(VFS_ROOT + "dir1")));
+            assertEquals(Path.of(VFS_ROOT + "SomeFile"), fs.toAbsolutePath(Path.of(VFS_ROOT + "SomeFile")));
+
+            if (fs == noHostIOVFS) {
+                // cwd is by default set to VFS_ROOT/src
+                assertEquals(Path.of(VFS_SRC + "dir1"), fs.toAbsolutePath(Path.of("dir1")));
+                assertEquals(Path.of(VFS_SRC + "SomeFile").toAbsolutePath(), fs.toAbsolutePath(Path.of("SomeFile")));
+                // file does not exist, so not extracted
+                assertEquals(Path.of(VFS_SRC + "does-not-exist/extractme"), fs.toAbsolutePath(Path.of("does-not-exist/extractme")));
+            } else {
+                // without cwd set, the real FS absolute path is returned
+                assertEquals(Path.of("dir1").toAbsolutePath(), fs.toAbsolutePath(Path.of("dir1")));
+                assertEquals(Path.of("SomeFile").toAbsolutePath(), fs.toAbsolutePath(Path.of("SomeFile")));
+                assertEquals(Path.of("does-not-exist/extractme").toAbsolutePath(), fs.toAbsolutePath(Path.of("does-not-exist/extractme")));
+            }
+
+            withCWD(fs, Path.of(VFS_ROOT), (fst) -> {
+                // cwd set, file is recognised as from VFS and extracted
+                checkExtractedFile(fst.toAbsolutePath(Path.of("extractme")), new String[]{"text1", "text2"});
+                // file does not exist, so not extracted
+                assertEquals(Path.of(VFS_ROOT + "does-not-exist/extractme"), fst.toAbsolutePath(Path.of("does-not-exist/extractme")));
+            });
         }
 
         // from real FS
         Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
         realFSPath.toFile().createNewFile();
-        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             assertEquals(realFSPath, fs.toAbsolutePath(realFSPath));
+            if (fs == noHostIOVFS) {
+                assertEquals(Path.of(VFS_SRC + "extractme"), fs.toAbsolutePath(realFSPath.getFileName()));
+            } else {
+                assertEquals(Path.of("extractme").toAbsolutePath(), fs.toAbsolutePath(Path.of("extractme")));
+            }
+            withCWD(fs, realFSPath.getParent(), (fst) -> assertEquals(realFSPath, fs.toAbsolutePath(realFSPath.getFileName())));
         }
-        checkException(SecurityException.class, () -> noHostIOVFS.toAbsolutePath(realFSPath), "expected error for no host io fs");
     }
 
     @Test
@@ -181,14 +214,8 @@ public class VirtualFileSystemTest {
         parsePath(VirtualFileSystemTest::parseURIPath);
 
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
-            checkException(NullPointerException.class, () -> {
-                fs.parsePath((URI) null);
-                return null;
-            });
-            checkException(NullPointerException.class, () -> {
-                fs.parsePath((String) null);
-                return null;
-            });
+            checkException(NullPointerException.class, () -> fs.parsePath((URI) null));
+            checkException(NullPointerException.class, () -> fs.parsePath((String) null));
             checkException(UnsupportedOperationException.class, () -> fs.parsePath(URI.create("http://testvfs.org")), "only file uri is supported");
         }
     }
@@ -197,20 +224,20 @@ public class VirtualFileSystemTest {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             // check regular resource dir
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), parsePath.apply(fs, VFS_MOUNT_POINT + File.separator + "dir1"));
+            assertEquals(Path.of(VFS_ROOT + "dir1"), parsePath.apply(fs, VFS_ROOT + "dir1"));
             // check regular resource file
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile"), parsePath.apply(fs, VFS_MOUNT_POINT + File.separator + "SomeFile"));
+            assertEquals(Path.of(VFS_ROOT + "SomeFile"), parsePath.apply(fs, VFS_ROOT + "SomeFile"));
             // check to be extracted file
-            Path p = parsePath.apply(fs, VFS_MOUNT_POINT + File.separator + "extractme");
+            Path p = parsePath.apply(fs, VFS_ROOT + "extractme");
             // wasn't extracted => we do not expect the path to exist on real FS
             assertFalse(Files.exists(p));
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "extractme"), p);
-            p = parsePath.apply(fs, VFS_MOUNT_POINT + File.separator + "dir1/extractme");
+            assertEquals(Path.of(VFS_ROOT + "extractme"), p);
+            p = parsePath.apply(fs, VFS_ROOT + "dir1/extractme");
             assertFalse(Files.exists(p));
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "dir1/extractme"), p);
-            p = parsePath.apply(fs, VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme");
+            assertEquals(Path.of(VFS_ROOT + "dir1/extractme"), p);
+            p = parsePath.apply(fs, VFS_ROOT + "does-not-exist/extractme");
             assertFalse(Files.exists(p));
-            assertEquals(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist/extractme"), p);
+            assertEquals(Path.of(VFS_ROOT + "does-not-exist/extractme"), p);
         }
 
         // from real FS
@@ -234,46 +261,14 @@ public class VirtualFileSystemTest {
     }
 
     @Test
-    public void checkAccess() throws IOException {
+    public void checkAccess() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
-            checkException(NullPointerException.class, () -> {
-                fs.checkAccess(null, null);
-                return null;
-            });
-            checkException(NullPointerException.class, () -> {
-                fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), null);
-                return null;
-            });
+            checkException(NullPointerException.class, () -> fs.checkAccess(null, null));
+            checkException(NullPointerException.class, () -> fs.checkAccess(Path.of(VFS_ROOT + "dir1"), null));
 
-            // check regular resource dir
-            fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), Set.of(AccessMode.READ));
-            // check regular resource file
-            fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile"), Set.of(AccessMode.READ));
-            // check to be extracted file
-            fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "extractme"), Set.of(AccessMode.READ));
-
-            checkException(
-                            SecurityException.class,
-                            () -> {
-                                fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "SomeFile"), Set.of(AccessMode.WRITE));
-                                return null;
-                            },
-                            "write access should not be possible with VFS");
-            checkException(
-                            NoSuchFileException.class,
-                            () -> {
-                                fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exits"), Set.of(AccessMode.READ));
-                                return null;
-                            },
-                            "should not be able to access a file which does not exist in VFS");
-            checkException(
-                            NoSuchFileException.class,
-                            () -> {
-                                fs.checkAccess(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exits/extractme"), Set.of(AccessMode.READ));
-                                return null;
-                            },
-                            "should not be able to access a file which does not exist in VFS");
+            checkAccessVFS(fs, VFS_ROOT);
+            withCWD(fs, Path.of(VFS_ROOT), (fst) -> checkAccessVFS(fs, ""));
         }
 
         // from real FS
@@ -282,62 +277,66 @@ public class VirtualFileSystemTest {
 
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
             fs.checkAccess(realFSPath, Set.of(AccessMode.READ));
+            withCWD(fs, realFSPath.getParent(), (fst) -> fst.checkAccess(realFSPath.getFileName(), Set.of(AccessMode.READ)));
         }
-        checkException(SecurityException.class, () -> {
-            noHostIOVFS.checkAccess(realFSPath, Set.of(AccessMode.READ));
-            return null;
-        }, "expected error for no host io fs");
+        checkException(SecurityException.class, () -> noHostIOVFS.checkAccess(realFSPath, Set.of(AccessMode.READ)), "expected error for no host io fs");
+        withCWD(noHostIOVFS, realFSPath.getParent(),
+                        (fst) -> checkException(SecurityException.class, () -> fst.checkAccess(realFSPath.getFileName(), Set.of(AccessMode.READ)), "expected error for no host io fs"));
+    }
+
+    private void checkAccessVFS(FileSystem fs, String pathPrefix) throws IOException {
+        // check regular resource dir
+        fs.checkAccess(Path.of(pathPrefix + "dir1"), Set.of(AccessMode.READ));
+        // check regular resource file
+        fs.checkAccess(Path.of(pathPrefix + "SomeFile"), Set.of(AccessMode.READ));
+        // check to be extracted file
+        fs.checkAccess(Path.of(pathPrefix + "extractme"), Set.of(AccessMode.READ));
+
+        checkException(SecurityException.class, () -> fs.checkAccess(Path.of(pathPrefix + "SomeFile"), Set.of(AccessMode.WRITE)), "write access should not be possible with VFS");
+        checkException(NoSuchFileException.class, () -> fs.checkAccess(Path.of(pathPrefix + "does-not-exits"), Set.of(AccessMode.READ)),
+                        "should not be able to access a file which does not exist in VFS");
+        checkException(NoSuchFileException.class, () -> fs.checkAccess(Path.of(pathPrefix + "does-not-exits/extractme"), Set.of(AccessMode.READ)),
+                        "should not be able to access a file which does not exist in VFS");
     }
 
     @Test
-    public void createDirectory() throws IOException {
+    public void createDirectory() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
-            Path path = Path.of(VFS_MOUNT_POINT + File.separator + "new-dir");
-            checkException(NullPointerException.class, () -> {
-                fs.createDirectory(null);
-                return null;
-            });
-            checkException(NullPointerException.class, () -> {
-                fs.createDirectory(path, null);
-                return null;
-            });
-            checkException(SecurityException.class, () -> {
-                fs.createDirectory(path);
-                return null;
-            }, "should not be able to create a directory in VFS");
+            Path path = Path.of(VFS_ROOT + "new-dir");
+            checkException(NullPointerException.class, () -> fs.createDirectory(null));
+            checkException(NullPointerException.class, () -> fs.createDirectory(path, (FileAttribute<?>[]) null));
+            checkException(SecurityException.class, () -> fs.createDirectory(path), "should not be able to create a directory in VFS");
+
+            withCWD(fs, Path.of(VFS_ROOT), (fst) -> checkException(SecurityException.class, () -> fst.createDirectory(Path.of("new-dir")), "should not be able to create a directory in VFS"));
         }
 
         // from real FS
-        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
-        assertFalse(Files.exists(realFSPath));
-        checkException(SecurityException.class, () -> {
-            noHostIOVFS.createDirectory(realFSPath);
-            return null;
-        }, "expected error for no host io fs");
-        assertFalse(Files.exists(realFSPath));
+        Path newDir = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        assertFalse(Files.exists(newDir));
+        checkException(SecurityException.class, () -> noHostIOVFS.createDirectory(newDir), "expected error for no host io fs");
+        assertFalse(Files.exists(newDir));
 
-        checkException(SecurityException.class, () -> {
-            rHostIOVFS.createDirectory(realFSPath);
-            return null;
-        }, "should not be able to create a directory in a read-only FS");
-        assertFalse(Files.exists(realFSPath));
+        checkException(SecurityException.class, () -> rHostIOVFS.createDirectory(newDir), "should not be able to create a directory in a read-only FS");
+        assertFalse(Files.exists(newDir));
 
-        rwHostIOVFS.createDirectory(realFSPath);
-        assertTrue(Files.exists(realFSPath));
+        rwHostIOVFS.createDirectory(newDir);
+        assertTrue(Files.exists(newDir));
+        withCWD(rwHostIOVFS, newDir.getParent(), (fs) -> {
+            Path newDir2 = newDir.getParent().resolve("newdir");
+            fs.createDirectory(newDir2.getFileName());
+            assertTrue(Files.exists(newDir2));
+        });
     }
 
     @Test
     public void delete() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
-            checkException(NullPointerException.class, () -> {
-                fs.delete(null);
-                return null;
-            });
-            checkDelete(fs, VFS_MOUNT_POINT + File.separator + "file1");
-            checkDelete(fs, VFS_MOUNT_POINT + File.separator + "dir1");
-            checkDelete(fs, VFS_MOUNT_POINT + File.separator + "extractme");
+            checkException(NullPointerException.class, () -> fs.delete(null));
+
+            deleteVFS(fs, VFS_ROOT);
+            withCWD(fs, Path.of(VFS_ROOT), (fst) -> deleteVFS(fs, ""));
         }
 
         // from real FS
@@ -345,59 +344,46 @@ public class VirtualFileSystemTest {
         Files.createFile(realFSPath);
         assertTrue(Files.exists(realFSPath));
 
-        checkException(SecurityException.class, () -> {
-            noHostIOVFS.delete(realFSPath);
-            return null;
-        }, "expected error for no host io fs");
+        checkException(SecurityException.class, () -> noHostIOVFS.delete(realFSPath), "expected error for no host io fs");
         assertTrue(Files.exists(realFSPath));
 
-        checkException(SecurityException.class, () -> {
-            rHostIOVFS.delete(realFSPath);
-            return null;
-        }, "should not be able to create a directory in a read-only FS");
+        checkException(SecurityException.class, () -> rHostIOVFS.delete(realFSPath), "should not be able to create a directory in a read-only FS");
         assertTrue(Files.exists(realFSPath));
 
         rwHostIOVFS.delete(realFSPath);
         assertFalse(Files.exists(realFSPath));
+
+        Files.createFile(realFSPath);
+        assertTrue(Files.exists(realFSPath));
+        withCWD(rwHostIOVFS, realFSPath.getParent(), (fs) -> {
+            rwHostIOVFS.delete(realFSPath.getFileName());
+            assertFalse(Files.exists(realFSPath));
+        });
+    }
+
+    private void deleteVFS(FileSystem fs, String pathPrefix) {
+        checkDelete(fs, pathPrefix + "file1");
+        checkDelete(fs, pathPrefix + "dir1");
+        checkDelete(fs, pathPrefix + "extractme");
     }
 
     private static void checkDelete(FileSystem fs, String path) {
-        checkException(SecurityException.class, () -> {
-            fs.delete(Path.of(path));
-            return null;
-        }, "should not be able to delete in VFS");
+        checkException(SecurityException.class, () -> fs.delete(Path.of(path)), "should not be able to delete in VFS");
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void newByteChannel() throws IOException {
+    public void newByteChannel() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
-            Path path = Path.of(VFS_MOUNT_POINT + File.separator + "file1");
 
-            checkException(NullPointerException.class, () -> fs.newByteChannel(null, null, null));
+            checkException(NullPointerException.class, () -> fs.newByteChannel(null, (Set<? extends OpenOption>) null, (FileAttribute<?>) null));
             checkException(NullPointerException.class, () -> fs.newByteChannel(null, null));
-            checkException(NullPointerException.class, () -> fs.newByteChannel(path, null));
-            checkException(NullPointerException.class, () -> fs.newByteChannel(path, Set.of(StandardOpenOption.READ), null));
+            checkException(NullPointerException.class, () -> fs.newByteChannel(Path.of(VFS_ROOT + "file1"), null));
+            checkException(NullPointerException.class, () -> fs.newByteChannel(Path.of(VFS_ROOT + "file1"), Set.of(StandardOpenOption.READ), (FileAttribute<?>[]) null));
 
-            for (StandardOpenOption o : StandardOpenOption.values()) {
-                if (o == StandardOpenOption.READ) {
-                    SeekableByteChannel bch = fs.newByteChannel(path, Set.of(o));
-                    ByteBuffer buffer = ByteBuffer.allocate(1024);
-                    bch.read(buffer);
-                    String s = new String(buffer.array());
-                    String[] ss = s.split(System.lineSeparator());
-                    assertTrue(ss.length >= 2);
-                    assertEquals("text1", ss[0]);
-                    assertEquals("text2", ss[1]);
-
-                    checkException(IOException.class, () -> bch.write(buffer), "should not be able to write to VFS");
-                    checkException(IOException.class, () -> bch.truncate(0), "should not be able to write to VFS");
-                } else {
-                    checkCanOnlyRead(fs, path, o);
-                }
-            }
-            checkCanOnlyRead(fs, path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+            newByteChannelVFS(fs, VFS_ROOT);
+            withCWD(fs, Path.of(VFS_ROOT), (fst) -> newByteChannelVFS(fst, ""));
         }
 
         // from real FS
@@ -408,14 +394,41 @@ public class VirtualFileSystemTest {
         assertTrue(Files.exists(realFSPath));
 
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
-            SeekableByteChannel bch = fs.newByteChannel(realFSPath, Set.of(StandardOpenOption.READ));
-            ByteBuffer buffer = ByteBuffer.allocate(4);
-            bch.read(buffer);
-            String s = new String(buffer.array());
-            String[] ss = s.split(System.lineSeparator());
-            assertTrue(ss.length >= 1);
-            assertEquals("text", ss[0]);
+            newByteChannelRealFS(fs, realFSPath);
+            withCWD(fs, realFSPath.getParent(), (fst) -> newByteChannelRealFS(fs, realFSPath.getFileName()));
         }
+    }
+
+    private void newByteChannelVFS(FileSystem fs, String pathPrefix) throws IOException {
+        Path path = Path.of(pathPrefix + "file1");
+        for (StandardOpenOption o : StandardOpenOption.values()) {
+            if (o == StandardOpenOption.READ) {
+                SeekableByteChannel bch = fs.newByteChannel(path, Set.of(o));
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                bch.read(buffer);
+                String s = new String(buffer.array());
+                String[] ss = s.split(System.lineSeparator());
+                assertTrue(ss.length >= 2);
+                assertEquals("text1", ss[0]);
+                assertEquals("text2", ss[1]);
+
+                checkException(IOException.class, () -> bch.write(buffer), "should not be able to write to VFS");
+                checkException(IOException.class, () -> bch.truncate(0), "should not be able to write to VFS");
+            } else {
+                checkCanOnlyRead(fs, path, o);
+            }
+        }
+        checkCanOnlyRead(fs, path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+    }
+
+    private void newByteChannelRealFS(FileSystem fs, Path path) throws IOException {
+        SeekableByteChannel bch = fs.newByteChannel(path, Set.of(StandardOpenOption.READ));
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        bch.read(buffer);
+        String s = new String(buffer.array());
+        String[] ss = s.split(System.lineSeparator());
+        assertTrue(ss.length >= 1);
+        assertEquals("text", ss[0]);
     }
 
     private static void checkCanOnlyRead(FileSystem fs, Path path, StandardOpenOption... options) {
@@ -427,62 +440,79 @@ public class VirtualFileSystemTest {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             checkException(NullPointerException.class, () -> fs.newDirectoryStream(null, null));
-            checkException(NullPointerException.class, () -> fs.newDirectoryStream(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), null));
+            checkException(NullPointerException.class, () -> fs.newDirectoryStream(Path.of(VFS_ROOT + "dir1"), null));
 
-            DirectoryStream<Path> ds = fs.newDirectoryStream(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), (p) -> true);
-            Set<String> s = new HashSet<>();
-            Iterator<Path> it = ds.iterator();
-            while (it.hasNext()) {
-                Path p = it.next();
-                s.add(p.toString());
-            }
-            assertEquals(2, s.size());
-            assertTrue(s.contains(VFS_MOUNT_POINT + File.separator + "dir1" + File.separator + "extractme"));
-            assertTrue(s.contains(VFS_MOUNT_POINT + File.separator + "dir1" + File.separator + "file2"));
-
-            ds = fs.newDirectoryStream(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), (p) -> false);
-            assertFalse(ds.iterator().hasNext());
-
-            checkException(NotDirectoryException.class, () -> fs.newDirectoryStream(Path.of(VFS_MOUNT_POINT + File.separator + "file1"), (p) -> true), "");
-            checkException(NoSuchFileException.class, () -> fs.newDirectoryStream(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist"), (p) -> true), "");
+            newDirectoryStreamVFS(fs, VFS_ROOT);
+            withCWD(fs, Path.of(VFS_ROOT), (fst) -> newDirectoryStreamVFS(fst, ""));
         }
 
         // from real FS
         Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
         Files.createFile(realFSPath);
         for (FileSystem fs : new FileSystem[]{rHostIOVFS, rwHostIOVFS}) {
-            DirectoryStream<Path> ds = fs.newDirectoryStream(realFSPath.getParent(), (p) -> true);
-            Iterator<Path> it = ds.iterator();
-            assertEquals(realFSPath, it.next());
-            assertFalse(it.hasNext());
-            ds = fs.newDirectoryStream(realFSPath.getParent(), (p) -> false);
-            it = ds.iterator();
-            assertFalse(it.hasNext());
+            newDirectoryStreamRealFS(fs, realFSPath.getParent(), realFSPath);
+            withCWD(fs, realFSPath.getParent().getParent(), (fst) -> newDirectoryStreamRealFS(fs, realFSPath.getParent().getFileName(), realFSPath));
         }
         checkException(SecurityException.class, () -> noHostIOVFS.newDirectoryStream(realFSPath, null), "expected error for no host io fs");
+        withCWD(noHostIOVFS, realFSPath.getParent(), (fs) -> checkException(SecurityException.class, () -> fs.newDirectoryStream(realFSPath, null), "expected error for no host io fs"));
+    }
+
+    public void newDirectoryStreamVFS(FileSystem fs, String pathPrefix) throws Exception {
+        DirectoryStream<Path> ds = fs.newDirectoryStream(Path.of(pathPrefix + "dir1"), (p) -> true);
+        Set<String> s = new HashSet<>();
+        Iterator<Path> it = ds.iterator();
+        while (it.hasNext()) {
+            Path p = it.next();
+            s.add(p.toString());
+        }
+        assertEquals(2, s.size());
+        assertTrue(s.contains(VFS_ROOT + "dir1" + File.separator + "extractme"));
+        assertTrue(s.contains(VFS_ROOT + "dir1" + File.separator + "file2"));
+
+        ds = fs.newDirectoryStream(Path.of(pathPrefix + "dir1"), (p) -> false);
+        assertFalse(ds.iterator().hasNext());
+
+        checkException(NotDirectoryException.class, () -> fs.newDirectoryStream(Path.of(pathPrefix + "file1"), (p) -> true), "");
+        checkException(NoSuchFileException.class, () -> fs.newDirectoryStream(Path.of(pathPrefix + "does-not-exist"), (p) -> true), "");
+    }
+
+    public void newDirectoryStreamRealFS(FileSystem fs, Path dir, Path file) throws Exception {
+        DirectoryStream<Path> ds = fs.newDirectoryStream(dir, (p) -> true);
+        Iterator<Path> it = ds.iterator();
+        assertEquals(file, it.next());
+        assertFalse(it.hasNext());
+        ds = fs.newDirectoryStream(dir, (p) -> false);
+        it = ds.iterator();
+        assertFalse(it.hasNext());
     }
 
     @Test
-    public void readAttributes() throws IOException {
+    public void readAttributes() throws Exception {
         // from VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             checkException(NullPointerException.class, () -> fs.readAttributes(null, "creationTime"));
-
-            Map<String, Object> attrs = fs.readAttributes(Path.of(VFS_MOUNT_POINT + File.separator + "dir1"), "creationTime");
-            assertEquals(FileTime.fromMillis(0), attrs.get("creationTime"));
-
-            checkException(NoSuchFileException.class, () -> fs.readAttributes(Path.of(VFS_MOUNT_POINT + File.separator + "does-not-exist"), "creationTime"), "");
-            checkException(UnsupportedOperationException.class, () -> fs.readAttributes(Path.of(VFS_MOUNT_POINT + File.separator + "file1"), "unix:creationTime"), "");
+            readAttributesVFS(fs, VFS_ROOT);
+            withCWD(fs, Path.of(VFS_ROOT), (fst) -> readAttributesVFS(fst, ""));
         }
 
         // from real FS
         Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
         Files.createFile(realFSPath);
         for (FileSystem fs : new FileSystem[]{rHostIOVFS, rwHostIOVFS}) {
-            Map<String, Object> attrs = fs.readAttributes(realFSPath, "creationTime");
-            assertTrue(((FileTime) attrs.get("creationTime")).toMillis() > 0);
+            assertTrue(((FileTime) fs.readAttributes(realFSPath, "creationTime").get("creationTime")).toMillis() > 0);
+            withCWD(fs, realFSPath.getParent(), (fst) -> assertTrue(((FileTime) fs.readAttributes(realFSPath.getFileName(), "creationTime").get("creationTime")).toMillis() > 0));
         }
         checkException(SecurityException.class, () -> noHostIOVFS.readAttributes(realFSPath, "creationTime"), "expected error for no host io fs");
+        withCWD(noHostIOVFS, realFSPath.getParent(),
+                        (fs) -> checkException(SecurityException.class, () -> noHostIOVFS.readAttributes(realFSPath.getFileName(), "creationTime"), "expected error for no host io fs"));
+    }
+
+    public void readAttributesVFS(FileSystem fs, String pathPrefix) throws IOException {
+        Map<String, Object> attrs = fs.readAttributes(Path.of(pathPrefix + "dir1"), "creationTime");
+        assertEquals(FileTime.fromMillis(0), attrs.get("creationTime"));
+
+        checkException(NoSuchFileException.class, () -> fs.readAttributes(Path.of(pathPrefix + "does-not-exist"), "creationTime"), "");
+        checkException(UnsupportedOperationException.class, () -> fs.readAttributes(Path.of(pathPrefix + "file1"), "unix:creationTime"), "");
     }
 
     @Test
@@ -492,7 +522,7 @@ public class VirtualFileSystemTest {
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build());
-        Path p = fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "site-packages/testpkg/file.tso"));
+        Path p = fs.toAbsolutePath(Path.of(VFS_ROOT + "site-packages/testpkg/file.tso"));
         checkExtractedFile(p, null);
         Path extractedRoot = p.getParent().getParent().getParent();
 
@@ -504,7 +534,7 @@ public class VirtualFileSystemTest {
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file1.tso"), null);
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file2.tso"), null);
 
-        p = fs.toAbsolutePath(Path.of(VFS_MOUNT_POINT + File.separator + "site-packages/testpkg-nolibs/file.tso"));
+        p = fs.toAbsolutePath(Path.of(VFS_ROOT + "site-packages/testpkg-nolibs/file.tso"));
         checkExtractedFile(p, null);
     }
 
@@ -521,11 +551,15 @@ public class VirtualFileSystemTest {
         }
     }
 
-    private static void checkException(Class<?> exType, Callable<Object> c) {
+    private interface ExceptionCall {
+        void call() throws Exception;
+    }
+
+    private static void checkException(Class<?> exType, ExceptionCall c) {
         checkException(exType, c, null);
     }
-    
-    private static void checkException(Class<?> exType, Callable<Object> c, String msg) {
+
+    private static void checkException(Class<?> exType, ExceptionCall c, String msg) {
         boolean gotEx = false;
         try {
             c.call();
@@ -534,6 +568,41 @@ public class VirtualFileSystemTest {
             gotEx = true;
         }
         assertTrue(msg != null ? msg : "expected " + exType.getName(), gotEx);
+    }
+
+    @Test
+    public void setCurrentWorkingDirectory() throws Exception {
+        // from VFS
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.setCurrentWorkingDirectory(null), "expected NPE");
+            checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(Path.of("dir")));
+
+            checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "does-not-exist")), "");
+            checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "file1")));
+        }
+    }
+
+    private interface FSCall {
+        void call(FileSystem fs) throws Exception;
+    }
+
+    private void withCWD(FileSystem fs, Path cwd, FSCall c) throws Exception {
+        fs.setCurrentWorkingDirectory(cwd);
+        try {
+            c.call(fs);
+        } finally {
+            resetCWD(fs);
+        }
+    }
+
+    private void resetCWD(FileSystem fs) throws NoSuchFieldException, IllegalAccessException {
+        Field f = fs.getClass().getDeclaredField("cwd");
+        f.setAccessible(true);
+        if (fs == noHostIOVFS) {
+            f.set(fs, Path.of(VFS_MOUNT_POINT + File.separator + "src"));
+        } else {
+            f.set(fs, null);
+        }
     }
 
 }
