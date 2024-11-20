@@ -1,1 +1,1 @@
-test.test_doctest2.Test.test_testmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_doctest2.Test.test_testmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

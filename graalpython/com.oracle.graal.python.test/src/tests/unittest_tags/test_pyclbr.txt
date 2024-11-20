@@ -1,6 +1,6 @@
-test.test_pyclbr.PyclbrTest.test_decorators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pyclbr.PyclbrTest.test_easy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pyclbr.PyclbrTest.test_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pyclbr.PyclbrTest.test_others @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pyclbr.ReadmoduleTests.test_dotted_name_not_a_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pyclbr.ReadmoduleTests.test_module_has_no_spec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pyclbr.PyclbrTest.test_decorators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pyclbr.PyclbrTest.test_easy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pyclbr.PyclbrTest.test_nested @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pyclbr.PyclbrTest.test_others @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pyclbr.ReadmoduleTests.test_dotted_name_not_a_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pyclbr.ReadmoduleTests.test_module_has_no_spec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

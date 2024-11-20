@@ -1,0 +1,1 @@
+test.test_repl.TestInteractiveInterpreter.test_close_stdin @ win32-AMD64
