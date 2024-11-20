@@ -51,7 +51,9 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.Charset;
 import java.nio.file.AccessMode;
+import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystemException;
 import java.nio.file.FileVisitResult;
@@ -118,6 +120,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     private static final String HOME_PREFIX = VFS_ROOT + "/" + VFS_HOME;
     private static final String PROJ_PREFIX = VFS_ROOT + "/proj";
     private static final String SRC_PREFIX = VFS_ROOT + "/" + VFS_SRC;
+    private final boolean writeHostIO;
 
     /*
      * Maps platform-specific paths to entries.
@@ -275,6 +278,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             this.extractDir = null;
             this.deleteTempDir = null;
         }
+        writeHostIO = allowHostIO == VirtualFileSystem.HostIO.READ_WRITE;
         delegate = switch (allowHostIO) {
             case NONE -> null;
             case READ -> FileSystem.newReadOnlyFileSystem(FileSystem.newDefaultFileSystem());
@@ -973,6 +977,130 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             throw new IllegalArgumentException("Current working directory must be directory.");
         }
         cwd = dir;
+    }
+
+    @Override
+    public void copy(Path source, Path target, CopyOption... options) throws IOException {
+        Objects.requireNonNull(source);
+        Objects.requireNonNull(target);
+
+        boolean targetIsVFS = pathIsInVfs(resolveVFSRelative(target));
+        if (targetIsVFS) {
+            String msg = String.format("read-only filesystem, can't copy %s -> %s", source, target);
+            finer("VFS.move %s", msg);
+            throw new SecurityException(msg);
+        } else {
+            if (delegate == null) {
+                String msg = String.format("filesystem without host IO: copy '%s' -> '%s' ", source, target);
+                finest("VFS.copy %s", msg);
+                throw new SecurityException(msg);
+            } else {
+                if (writeHostIO) {
+                    FileSystem.super.copy(source, target, options);
+                } else {
+                    String msg = String.format("filesystem with read-only host IO: copy '%s' -> '%s' ", source, target);
+                    finest("VFS.copy %s", msg);
+                    throw new SecurityException(msg);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void move(Path source, Path target, CopyOption... options) throws IOException {
+        Objects.requireNonNull(source);
+        Objects.requireNonNull(target);
+        boolean sourceIsVFS = pathIsInVfs(resolveVFSRelative(source));
+        boolean targetIsVFS = pathIsInVfs(resolveVFSRelative(target));
+        if (delegate != null && !sourceIsVFS && !targetIsVFS) {
+            delegate.move(source, target, options);
+            return;
+        }
+        String msg = String.format("read-only filesystem, can't move %s -> %s", source, target);
+        finer("VFS.move %s", msg);
+        throw new SecurityException(msg);
+    }
+
+    @Override
+    public Charset getEncoding(Path path) {
+        Objects.requireNonNull(path);
+        if (delegate != null && !pathIsInVfs(resolveVFSRelative(path))) {
+            return delegate.getEncoding(path);
+        }
+        return null;
+    }
+
+    @Override
+    public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
+        Objects.requireNonNull(link);
+        Objects.requireNonNull(target);
+        boolean linkIsVFS = pathIsInVfs(resolveVFSRelative(link));
+        boolean targetIsVFS = pathIsInVfs(resolveVFSRelative(target));
+        if (delegate != null && !linkIsVFS && !targetIsVFS) {
+            delegate.createSymbolicLink(link, target, attrs);
+            return;
+        }
+        String msg = String.format("read-only filesystem, can't create link %s -> %s", link, target);
+        finer("VFS.createSymbolicLink %s", msg);
+        throw new SecurityException(msg);
+    }
+
+    @Override
+    public void createLink(Path link, Path existing) throws IOException {
+        Objects.requireNonNull(link);
+        Objects.requireNonNull(existing);
+        boolean linkIsVFS = pathIsInVfs(resolveVFSRelative(link));
+        boolean existingIsVFS = pathIsInVfs(resolveVFSRelative(existing));
+        if (delegate != null && !linkIsVFS && !existingIsVFS) {
+            delegate.createLink(link, existing);
+            return;
+        }
+        String msg = String.format("read-only filesystem, can't create link %s -> %s", link, existing);
+        finer("VFS.createLink %s", msg);
+        throw new SecurityException(msg);
+    }
+
+    @Override
+    public Path readSymbolicLink(Path link) throws IOException {
+        Objects.requireNonNull(link);
+        boolean linkIsVFS = pathIsInVfs(resolveVFSRelative(link));
+        if (delegate != null && !linkIsVFS) {
+            return delegate.readSymbolicLink(link);
+        }
+        String msg = String.format("read-only filesystem, can't read symbolic link %s", link);
+        finer("VFS.readSymbolicLink %s", msg);
+        throw new SecurityException(msg);
+    }
+
+    @Override
+    public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
+        Objects.requireNonNull(path);
+        if (delegate != null && !pathIsInVfs(resolveVFSRelative(path))) {
+            delegate.setAttribute(path, attribute, value, options);
+            return;
+        }
+        String msg = "read-only filesystem";
+        finer("VFS.setAttribute %s", msg);
+        throw new SecurityException(msg);
+    }
+
+    @Override
+    public String getMimeType(Path path) {
+        Objects.requireNonNull(path);
+        if (delegate != null && !pathIsInVfs(resolveVFSRelative(path))) {
+            return delegate.getMimeType(path);
+        }
+        return null;
+    }
+
+    @Override
+    public Path getTempDirectory() {
+        if (delegate != null) {
+            return delegate.getTempDirectory();
+        }
+        String msg = "read-only filesystem";
+        finer("VFS.getTempDirectory %s", msg);
+        throw new SecurityException(msg);
     }
 
     private static void warn(String msgFormat, Object... args) {

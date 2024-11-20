@@ -43,6 +43,7 @@ package org.graalvm.python.embedding.utils.test;
 
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.python.embedding.utils.VirtualFileSystem;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
@@ -54,6 +55,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
+import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -394,8 +396,8 @@ public class VirtualFileSystemTest {
         assertTrue(Files.exists(realFSPath));
 
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
-            newByteChannelRealFS(fs, realFSPath);
-            withCWD(fs, realFSPath.getParent(), (fst) -> newByteChannelRealFS(fs, realFSPath.getFileName()));
+            newByteChannelRealFS(fs, realFSPath, "text");
+            withCWD(fs, realFSPath.getParent(), (fst) -> newByteChannelRealFS(fs, realFSPath.getFileName(), "text"));
         }
     }
 
@@ -421,14 +423,14 @@ public class VirtualFileSystemTest {
         checkCanOnlyRead(fs, path, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
-    private void newByteChannelRealFS(FileSystem fs, Path path) throws IOException {
+    private void newByteChannelRealFS(FileSystem fs, Path path, String expectedText) throws IOException {
         SeekableByteChannel bch = fs.newByteChannel(path, Set.of(StandardOpenOption.READ));
-        ByteBuffer buffer = ByteBuffer.allocate(4);
+        ByteBuffer buffer = ByteBuffer.allocate(expectedText.length());
         bch.read(buffer);
         String s = new String(buffer.array());
         String[] ss = s.split(System.lineSeparator());
         assertTrue(ss.length >= 1);
-        assertEquals("text", ss[0]);
+        assertEquals(expectedText, ss[0]);
     }
 
     private static void checkCanOnlyRead(FileSystem fs, Path path, StandardOpenOption... options) {
@@ -580,6 +582,190 @@ public class VirtualFileSystemTest {
             checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "does-not-exist")), "");
             checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "file1")));
         }
+    }
+
+    @Test
+    public void getTempDirectory() {
+        assertTrue(Files.exists(rwHostIOVFS.getTempDirectory()));
+        checkException(SecurityException.class, () -> rHostIOVFS.getTempDirectory());
+        checkException(SecurityException.class, () -> noHostIOVFS.getTempDirectory());
+    }
+
+    @Test
+    public void getMimeType() throws IOException {
+        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        Files.createFile(realFSPath);
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.getMimeType(null));
+            Assert.assertNull(fs.getMimeType(Path.of(VFS_ROOT)));
+            fs.getMimeType(realFSPath);
+        }
+    }
+
+    @Test
+    public void getEncoding() throws IOException {
+        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        Files.createFile(realFSPath);
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.getEncoding(null));
+            Assert.assertNull(fs.getEncoding(Path.of(VFS_ROOT)));
+            fs.getEncoding(realFSPath);
+        }
+    }
+
+    @Test
+    public void setAttribute() throws IOException {
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.setAttribute(null, null, null));
+            checkException(SecurityException.class, () -> fs.setAttribute(Path.of(VFS_ROOT), null, null));
+        }
+        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        Files.createFile(realFSPath);
+        rwHostIOVFS.setAttribute(realFSPath, "creationTime", FileTime.fromMillis(42));
+        checkException(SecurityException.class, () -> rHostIOVFS.setAttribute(realFSPath, "creationTime", FileTime.fromMillis(42)));
+        checkException(SecurityException.class, () -> noHostIOVFS.setAttribute(realFSPath, "creationTime", FileTime.fromMillis(42)));
+    }
+
+    @Test
+    public void isSameFile() throws IOException {
+        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        Files.createFile(realFSPath);
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            assertTrue(fs.isSameFile(Path.of(VFS_SRC), Path.of(VFS_SRC + "/../src")));
+        }
+    }
+
+    @Test
+    public void createLink() throws IOException {
+        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        Files.createFile(realFSPath);
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.createLink(null, null));
+            checkException(NullPointerException.class, () -> fs.createLink(Path.of(VFS_ROOT), null));
+            checkException(SecurityException.class, () -> fs.createLink(Path.of(VFS_ROOT + "/link1"), realFSPath));
+            checkException(SecurityException.class, () -> fs.createLink(realFSPath.getParent().resolve("link2"), Path.of(VFS_ROOT)));
+            checkException(SecurityException.class, () -> fs.createLink(Path.of(VFS_ROOT), Path.of(VFS_ROOT + "link")));
+        }
+        rwHostIOVFS.createLink(realFSPath.getParent().resolve("link1"), realFSPath);
+        checkException(SecurityException.class, () -> rHostIOVFS.createLink(realFSPath.getParent().resolve("link2"), realFSPath));
+        checkException(SecurityException.class, () -> noHostIOVFS.createLink(realFSPath.getParent().resolve("link3"), realFSPath));
+    }
+
+    @Test
+    public void createAndReadSymbolicLink() throws IOException {
+        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        Files.createFile(realFSPath);
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.createSymbolicLink(null, null));
+            checkException(NullPointerException.class, () -> fs.readSymbolicLink(null));
+
+            checkException(SecurityException.class, () -> fs.createSymbolicLink(Path.of(VFS_ROOT + "/link1"), realFSPath));
+            checkException(SecurityException.class, () -> fs.readSymbolicLink(Path.of(VFS_ROOT + "/link1")));
+            checkException(SecurityException.class, () -> fs.createSymbolicLink(realFSPath.getParent().resolve("link2"), Path.of(VFS_ROOT)));
+            checkException(SecurityException.class, () -> fs.createSymbolicLink(Path.of(VFS_ROOT), Path.of(VFS_ROOT + "link")));
+        }
+        Path link = realFSPath.getParent().resolve("link1");
+        rwHostIOVFS.createSymbolicLink(link, realFSPath);
+        assertEquals(realFSPath, rwHostIOVFS.readSymbolicLink(link));
+        assertEquals(realFSPath, rHostIOVFS.readSymbolicLink(link));
+
+        checkException(SecurityException.class, () -> rHostIOVFS.createSymbolicLink(realFSPath.getParent().resolve("link2"), realFSPath));
+        checkException(SecurityException.class, () -> noHostIOVFS.createSymbolicLink(realFSPath.getParent().resolve("link3"), realFSPath));
+        checkException(SecurityException.class, () -> noHostIOVFS.readSymbolicLink(link));
+    }
+
+    @Test
+    public void move() throws IOException {
+        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.move(null, null));
+            checkException(NullPointerException.class, () -> fs.move(Path.of(VFS_ROOT), null));
+            checkException(SecurityException.class, () -> fs.move(Path.of(VFS_ROOT).resolve("file1"), realFSPath));
+            checkException(SecurityException.class, () -> fs.move(realFSPath, Path.of(VFS_ROOT)));
+            checkException(SecurityException.class, () -> fs.move(Path.of(VFS_ROOT).resolve("file1"), Path.of(VFS_ROOT).resolve("file2")));
+        }
+
+        Files.createFile(realFSPath);
+        rwHostIOVFS.newByteChannel(realFSPath, Set.of(StandardOpenOption.WRITE)).write(ByteBuffer.wrap("moved text".getBytes()));
+        assertTrue(Files.exists(realFSPath));
+
+        Path realFSPath2 = realFSPath.getParent().resolve("file");
+        assertFalse(Files.exists(realFSPath2));
+        rwHostIOVFS.move(realFSPath, realFSPath2);
+        assertFalse(Files.exists(realFSPath));
+        assertTrue(Files.exists(realFSPath2));
+        newByteChannelRealFS(rwHostIOVFS, realFSPath2, "moved text");
+
+        checkException(SecurityException.class, () -> rHostIOVFS.move(realFSPath2, realFSPath));
+        checkException(SecurityException.class, () -> noHostIOVFS.move(realFSPath2, realFSPath));
+    }
+
+    @Test
+    public void copy() throws IOException {
+        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            checkException(NullPointerException.class, () -> fs.copy(null, null));
+            checkException(NullPointerException.class, () -> fs.copy(Path.of(VFS_ROOT), null));
+            checkException(SecurityException.class, () -> fs.copy(Path.of(VFS_ROOT).resolve("file1"), Path.of(VFS_ROOT).resolve("file2")));
+            checkException(SecurityException.class, () -> fs.copy(realFSPath, Path.of(VFS_ROOT).resolve("file2")));
+        }
+
+        checkException(SecurityException.class, () -> noHostIOVFS.copy(realFSPath, realFSPath.getParent().resolve("file")));
+        checkException(SecurityException.class, () -> rHostIOVFS.copy(realFSPath, realFSPath.getParent().resolve("file")));
+
+        Files.createFile(realFSPath);
+        rwHostIOVFS.newByteChannel(realFSPath, Set.of(StandardOpenOption.WRITE)).write(ByteBuffer.wrap("copied text".getBytes()));
+        assertTrue(Files.exists(realFSPath));
+
+        Path realFSPath2 = realFSPath.getParent().resolve("file");
+        assertFalse(Files.exists(realFSPath2));
+        rwHostIOVFS.copy(realFSPath, realFSPath2);
+        assertTrue(Files.exists(realFSPath));
+        assertTrue(Files.exists(realFSPath2));
+        newByteChannelRealFS(rwHostIOVFS, realFSPath2, "copied text");
+
+        Path realFSPath3 = realFSPath.getParent().resolve("fromvfs");
+        assertFalse(Files.exists(realFSPath3));
+        rwHostIOVFS.copy(Path.of(VFS_ROOT).resolve("file1"), realFSPath3);
+        assertTrue(Files.exists(realFSPath3));
+        newByteChannelRealFS(rwHostIOVFS, realFSPath3, "text1");
+    }
+
+    @Test
+    public void testImpl() throws NoSuchFieldException, IllegalAccessException {
+        Set<String> ignored = Set.of(
+                        "allowInternalResourceAccess",
+                        "allowLanguageHomeAccess",
+                        "newReadOnlyFileSystem",
+                        "newFileSystem",
+                        "newDefaultFileSystem",
+                        "isSameFile",
+                        "getSeparator",
+                        "getPathSeparator");
+        Set<String> implementedMethods = new HashSet<>();
+        Class<?> vfsClass = getVFSImpl(VirtualFileSystem.create()).getClass();
+        for (Method m : vfsClass.getDeclaredMethods()) {
+            if ((m.getModifiers() & Modifier.PUBLIC) != 0) {
+                implementedMethods.add(m.getName());
+            }
+        }
+
+        List<String> notImplemented = new ArrayList<>();
+        for (Method m : FileSystem.class.getDeclaredMethods()) {
+            if ((m.getModifiers() & Modifier.PUBLIC) != 0) {
+                if (ignored.contains(m.getName())) {
+                    continue;
+                }
+                if (!implementedMethods.contains(m.getName())) {
+                    notImplemented.add(m.getName());
+                }
+            }
+        }
+
+        if (!notImplemented.isEmpty()) {
+            fail(vfsClass.getName() + " is missing implemention for " + notImplemented);
+        }
+
     }
 
     private interface FSCall {

@@ -145,9 +145,9 @@ public class VirtualFileSystemIntegrationTest {
     @Test
     public void fsOperations() {
         Context ctx = createContext(null, null);
-        fsOperations(ctx,"/test_mount_point/");
-        ctx = createContext(null, b -> b.currentWorkingDirectory(Path.of("/test_mount_point")));
-        fsOperations(ctx,"");
+        fsOperations(ctx, "/test_mount_point/");
+        ctx = createContext(null, b -> b.currentWorkingDirectory(Path.of(VFS_MOUNT_POINT)));
+        fsOperations(ctx, "");
     }
 
     public void fsOperations(Context ctx, String pathPrefix) {
@@ -334,8 +334,7 @@ public class VirtualFileSystemIntegrationTest {
                             assert False, 'expected 3 got ' + str(len(f))
                         assert 'file2' in f, 'does not contain "file2"'
                         assert 'extractme' in f, 'does not contain "extractme"'
-                        """
-        , pathPrefix);
+                        """, pathPrefix);
 
         // os.walk
 
@@ -415,10 +414,6 @@ public class VirtualFileSystemIntegrationTest {
                         """);
     }
 
-//    private void eval(String s) {
-//        eval(s, (String)null, null, null);
-//    }
-
     private void eval(Context ctx, String s, String pathPrefix) {
         eval(ctx, s.replace("{pathPrefix}", pathPrefix));
     }
@@ -446,7 +441,7 @@ public class VirtualFileSystemIntegrationTest {
         }
         VirtualFileSystem fs = builder.build();
         Context.Builder ctxBuilder = addTestOptions(GraalPyResources.contextBuilder(fs));
-        if(ctxBuilderFunction != null) {
+        if (ctxBuilderFunction != null) {
             ctxBuilder = ctxBuilderFunction.apply(ctxBuilder);
         }
         return ctxBuilder.build();
