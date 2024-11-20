@@ -729,10 +729,7 @@ class SubprocessWorker:
 
             while self.remaining_test_ids and not self.stop_event.is_set():
                 last_remaining_count = len(self.remaining_test_ids)
-                with (
-                    open(tmp_dir / 'out', 'w+') as self.out_file,
-                    open(tmp_dir / 'tests', 'w+') as tests_file,
-                ):
+                with open(tmp_dir / 'out', 'w+') as self.out_file:
                     self.last_out_pos = 0
                     self.last_started_time = time.time()
                     cmd = [
@@ -741,21 +738,17 @@ class SubprocessWorker:
                         *self.runner.subprocess_args,
                         __file__,
                         'worker',
-                        '--tests-file', str(tests_file.name),
+                        '--port', str(port),
                     ]
-                    cmd += ['--port', str(port)]
                     if self.runner.failfast:
                         cmd.append('--failfast')
-                    # We communicate the tests through a temp file to avoid running into too long commandlines on windows
-                    tests_file.seek(0)
-                    tests_file.truncate()
-                    tests_file.write('\n'.join(map(str, self.remaining_test_ids)))
-                    tests_file.flush()
                     self.process = subprocess.Popen(cmd, stdout=self.out_file, stderr=self.out_file)
 
                     server.settimeout(60.0)
                     with server.accept()[0] as sock:
                         conn = Connection(sock)
+
+                        conn.send([TestSpecifier(t.test_file, t.test_name) for t in self.remaining_test_ids])
 
                         timed_out = None
 
@@ -1242,13 +1235,10 @@ class Connection:
 
 
 def main_worker(args):
-    tests = []
-    with open(args.tests_file) as f:
-        for line in f:
-            tests.append(TestSpecifier.from_str(line.strip()))
-
     with socket.create_connection(('localhost', args.port)) as sock:
         conn = Connection(sock)
+
+        tests = conn.recv()
 
         for test_suite in collect(tests, no_excludes=True):
             result = ConnectionResult(test_suite, conn)
@@ -1407,7 +1397,6 @@ def main():
     worker_parser = subparsers.add_parser('worker', help="Internal command for subprocess workers")
     worker_parser.set_defaults(main=main_worker)
     worker_parser.add_argument('--port', type=int)
-    worker_parser.add_argument('--tests-file', type=Path, required=True)
     worker_parser.add_argument('--failfast', action='store_true')
 
     # merge-tags-from-report command declaration
