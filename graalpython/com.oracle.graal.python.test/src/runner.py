@@ -436,7 +436,7 @@ class TestRunner:
                 case _:
                     status = 'FAILED'
             report_data.append({
-                'name': str(result.test_id),
+                'name': str(result.test_id).replace('\\', '/'),
                 'status': status,
                 'duration': result.duration,
             })
