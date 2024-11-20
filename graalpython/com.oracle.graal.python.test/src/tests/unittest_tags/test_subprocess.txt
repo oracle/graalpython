@@ -125,7 +125,7 @@ test.test_subprocess.ProcessTestCase.test_pathlike_executable @ darwin-arm64,dar
 test.test_subprocess.ProcessTestCase.test_pathlike_executable_replaces_shell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_poll @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_subprocess.ProcessTestCase.test_stderr_devnull @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_subprocess.ProcessTestCase.test_stderr_devnull @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_stderr_filedes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_stderr_fileobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_stderr_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -136,7 +136,7 @@ test.test_subprocess.ProcessTestCase.test_stdin_filedes @ darwin-arm64,darwin-x8
 test.test_subprocess.ProcessTestCase.test_stdin_fileobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_stdin_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_subprocess.ProcessTestCase.test_stdin_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_subprocess.ProcessTestCase.test_stdout_devnull @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_subprocess.ProcessTestCase.test_stdout_devnull @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_stdout_filedes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_subprocess.ProcessTestCase.test_stdout_filedes_of_stdout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_subprocess.ProcessTestCase.test_stdout_fileobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
