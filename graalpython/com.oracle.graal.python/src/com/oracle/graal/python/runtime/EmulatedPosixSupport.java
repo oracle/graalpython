@@ -40,11 +40,10 @@
  */
 package com.oracle.graal.python.runtime;
 
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_LINUX;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.getThreadId;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -125,12 +124,10 @@ import static com.oracle.graal.python.runtime.PosixConstants.S_IFLNK;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFSOCK;
 import static com.oracle.graal.python.runtime.PosixConstants.TCP_NODELAY;
-import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants.W_OK;
 import static com.oracle.graal.python.runtime.PosixConstants.X_OK;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.truffle.api.CompilerAsserts.neverPartOfCompilation;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
@@ -217,13 +214,12 @@ import org.graalvm.polyglot.io.ProcessHandler.Redirect;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.EmulatedSignal;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -1892,48 +1888,21 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    private static final TruffleString[] KILL_SIGNALS = tsArray("SIGKILL", "SIGQUIT", "SIGTRAP", "SIGABRT");
-    private static final TruffleString[] TERMINATION_SIGNALS = tsArray("SIGTERM", "SIGINT");
-
     @ExportMessage
-    public void kill(long pid, int signal,
-                    @Cached ReadAttributeFromObjectNode readSignalNode,
-                    @Cached IsNode isNode) throws PosixException {
-        // TODO looking up the signal values by name is probably not compatible with CPython
-        // (the user might change the value of _signal.SIGKILL, but kill(pid, 9) should still work
-        PythonModule signalModule = context.lookupBuiltinModule(T__SIGNAL);
-        for (TruffleString name : TERMINATION_SIGNALS) {
-            Object value = readSignalNode.execute(signalModule, name);
-            if (isNode.execute(signal, value)) {
-                try {
-                    sigterm((int) pid);
-                } catch (IndexOutOfBoundsException e) {
-                    throw posixException(OSErrorEnum.ESRCH);
-                }
-                return;
-            }
-        }
-        for (TruffleString name : KILL_SIGNALS) {
-            Object value = readSignalNode.execute(signalModule, name);
-            if (isNode.execute(signal, value)) {
-                try {
-                    sigkill((int) pid);
-                } catch (IndexOutOfBoundsException e) {
-                    throw posixException(OSErrorEnum.ESRCH);
-                }
-                return;
-            }
-        }
-        Object dfl = readSignalNode.execute(signalModule, toTruffleStringUncached("SIG_DFL"));
-        if (isNode.execute(signal, dfl)) {
-            try {
+    public void kill(long pid, int signal) throws PosixException {
+        try {
+            if (signal == EmulatedSignal.SIGKILL.number) {
+                sigkill((int) pid);
+            } else if (signal == EmulatedSignal.SIGTERM.number || signal == EmulatedSignal.SIGQUIT.number || signal == EmulatedSignal.SIGABRT.number || signal == EmulatedSignal.SIGINT.number) {
+                sigterm((int) pid);
+            } else if (signal == 0) {
                 sigdfl((int) pid);
-            } catch (IndexOutOfBoundsException e) {
-                throw posixException(OSErrorEnum.ESRCH);
+            } else {
+                throw new UnsupportedPosixFeatureException("Sending arbitrary signals to child processes. Can only send some kill and term signals.");
             }
-            return;
+        } catch (IndexOutOfBoundsException e) {
+            throw posixException(OSErrorEnum.ESRCH);
         }
-        throw new UnsupportedPosixFeatureException("Sending arbitrary signals to child processes. Can only send some kill and term signals.");
     }
 
     @ExportMessage
@@ -1952,7 +1921,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     exitStatus[0] = s.waitpid((int) pid);
                 }, this);
                 return new long[]{pid, exitStatus[0]};
-            } else if (options == WNOHANG.value) {
+            } else if (options == PosixModuleBuiltins.EMULATED_WNOHANG) {
                 // TODO: simplify once the super class is merged with this class
                 int[] res = exitStatus((int) pid);
                 return new long[]{res[0], res[1]};

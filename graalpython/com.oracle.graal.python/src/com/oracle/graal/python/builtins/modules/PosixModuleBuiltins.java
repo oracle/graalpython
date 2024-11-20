@@ -227,6 +227,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                                     "operating system release", "operating system version", "hardware identifier"
                     });
 
+    // WNOHANG is not defined on windows, but emulated backend should support it even there
+    public static final int EMULATED_WNOHANG = 1;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PosixModuleBuiltinsFactory.getFactories();
@@ -384,6 +387,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             posix.setAttribute(toTruffleStringUncached("statvfs"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("geteuid"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("getegid"), PNone.NO_VALUE);
+
+            posix.setAttribute(toTruffleStringUncached("WNOHANG"), EMULATED_WNOHANG);
         }
     }
 
