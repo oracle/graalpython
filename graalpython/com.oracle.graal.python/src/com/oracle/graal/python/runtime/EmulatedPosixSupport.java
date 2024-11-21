@@ -194,6 +194,7 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1706,8 +1707,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         static void doCurrentTime(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks,
                         @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
                         @Shared("eq") @Cached(inline = false) TruffleString.EqualNode eqNode) throws PosixException {
-            FileTime time = FileTime.fromMillis(System.currentTimeMillis());
+            FileTime time = currentFileTime();
             setFileTimes(inliningTarget, followSymlinks, file, time, time, errBranch, eqNode);
+        }
+
+        @TruffleBoundary
+        private static FileTime currentFileTime() {
+            return FileTime.from(Instant.now());
         }
 
         // the second guard is just so that Truffle does not generate dead code that throws
