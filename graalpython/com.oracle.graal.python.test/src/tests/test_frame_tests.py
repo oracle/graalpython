@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,50 @@ def test_nested_lineno():
     f = test_nested()
     assert f.f_lineno == 53
 
+# IMPORTANT: DO NOT MOVE!
+def test_nested_lineno_return_loc():
+    def test_nested():
+        f = sys._getframe(0)
+        if True:
+            return f
+        return None
+
+    f = test_nested()
+    assert f.f_lineno == 63
+
+# IMPORTANT: DO NOT MOVE!
+def test_nested_lineno_implicit_return():
+    f = None
+    def test_nested():
+        nonlocal f
+        f = sys._getframe(0)
+        dummy = 42
+
+    test_nested()
+    assert f.f_lineno == 75
+
+# IMPORTANT: DO NOT MOVE!
+def test_nested_lineno_finally():
+    def test_nested():
+        try:
+            return sys._getframe(0)
+        finally:
+            dummy = 42
+
+    f = test_nested()
+    assert f.f_lineno == 86, f.f_lineno
+
+# IMPORTANT: DO NOT MOVE!
+def test_nested_lineno_multiline_return():
+    def test_nested():
+        f = sys._getframe(0)
+        if f:
+            return (
+                f)
+        return None
+
+    f = test_nested()
+    assert f.f_lineno == 96
 
 def test_read_and_write_locals():
     a = 1
