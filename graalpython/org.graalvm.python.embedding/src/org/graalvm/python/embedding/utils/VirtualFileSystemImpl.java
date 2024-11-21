@@ -619,7 +619,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             if (delegate != null) {
                 boolean passed = false;
                 try {
-                    delegate.checkAccess(p, modes, linkOptions);
+                    delegate.checkAccess(path, modes, linkOptions);
                     passed = true;
                 } finally {
                     finest("VFS.checkAccess delegated '%s' %s and ", path, passed ? "passed" : "did not pass");
@@ -856,7 +856,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         if (cwd == null) {
             return path.toAbsolutePath();
         } else {
-            return cwd.resolve(path);
+            if (pathIsInVfs(cwd)) {
+                return cwd.resolve(path).normalize();
+            } else {
+                return cwd.resolve(path);
+            }
         }
     }
 
@@ -989,12 +993,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public void copy(Path source, Path target, CopyOption... options) throws IOException {
-        Objects.requireNonNull(source);
-        Objects.requireNonNull(target);
+    public void copy(Path s, Path t, CopyOption... options) throws IOException {
+        Objects.requireNonNull(s);
+        Objects.requireNonNull(t);
 
-        boolean targetIsVFS = pathIsInVfs(resolveVFSRelative(target));
-        if (targetIsVFS) {
+        Path source = resolveVFSRelative(s);
+        Path target = resolveVFSRelative(t);
+        if (pathIsInVfs(target)) {
             String msg = String.format("read-only filesystem, can't copy %s -> %s", source, target);
             finer("VFS.move %s", msg);
             throw new SecurityException(msg);
@@ -1016,12 +1021,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public void move(Path source, Path target, CopyOption... options) throws IOException {
-        Objects.requireNonNull(source);
-        Objects.requireNonNull(target);
-        boolean sourceIsVFS = pathIsInVfs(resolveVFSRelative(source));
-        boolean targetIsVFS = pathIsInVfs(resolveVFSRelative(target));
-        if (delegate != null && !sourceIsVFS && !targetIsVFS) {
+    public void move(Path s, Path t, CopyOption... options) throws IOException {
+        Objects.requireNonNull(s);
+        Objects.requireNonNull(t);
+        Path source = resolveVFSRelative(s);
+        Path target = resolveVFSRelative(t);
+        if (delegate != null && !pathIsInVfs(source) && !pathIsInVfs(target)) {
             delegate.move(source, target, options);
             return;
         }
@@ -1031,21 +1036,22 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public Charset getEncoding(Path path) {
-        Objects.requireNonNull(path);
-        if (delegate != null && !pathIsInVfs(resolveVFSRelative(path))) {
+    public Charset getEncoding(Path p) {
+        Objects.requireNonNull(p);
+        Path path = resolveVFSRelative(p);
+        if (delegate != null && !pathIsInVfs(path)) {
             return delegate.getEncoding(path);
         }
         return null;
     }
 
     @Override
-    public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
-        Objects.requireNonNull(link);
-        Objects.requireNonNull(target);
-        boolean linkIsVFS = pathIsInVfs(resolveVFSRelative(link));
-        boolean targetIsVFS = pathIsInVfs(resolveVFSRelative(target));
-        if (delegate != null && !linkIsVFS && !targetIsVFS) {
+    public void createSymbolicLink(Path l, Path t, FileAttribute<?>... attrs) throws IOException {
+        Objects.requireNonNull(l);
+        Objects.requireNonNull(t);
+        Path link = resolveVFSRelative(l);
+        Path target = resolveVFSRelative(t);
+        if (delegate != null && !pathIsInVfs(link) && !pathIsInVfs(target)) {
             delegate.createSymbolicLink(link, target, attrs);
             return;
         }
@@ -1055,12 +1061,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public void createLink(Path link, Path existing) throws IOException {
-        Objects.requireNonNull(link);
-        Objects.requireNonNull(existing);
-        boolean linkIsVFS = pathIsInVfs(resolveVFSRelative(link));
-        boolean existingIsVFS = pathIsInVfs(resolveVFSRelative(existing));
-        if (delegate != null && !linkIsVFS && !existingIsVFS) {
+    public void createLink(Path l, Path e) throws IOException {
+        Objects.requireNonNull(l);
+        Objects.requireNonNull(e);
+        Path link = resolveVFSRelative(l);
+        Path existing = resolveVFSRelative(e);
+        if (delegate != null && !pathIsInVfs(link) && !pathIsInVfs(existing)) {
             delegate.createLink(link, existing);
             return;
         }
@@ -1070,10 +1076,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public Path readSymbolicLink(Path link) throws IOException {
-        Objects.requireNonNull(link);
-        boolean linkIsVFS = pathIsInVfs(resolveVFSRelative(link));
-        if (delegate != null && !linkIsVFS) {
+    public Path readSymbolicLink(Path l) throws IOException {
+        Objects.requireNonNull(l);
+        Path link = resolveVFSRelative(l);
+        if (delegate != null && !pathIsInVfs(link)) {
             return delegate.readSymbolicLink(link);
         }
         String msg = String.format("read-only filesystem, can't read symbolic link %s", link);
@@ -1082,9 +1088,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
-        Objects.requireNonNull(path);
-        if (delegate != null && !pathIsInVfs(resolveVFSRelative(path))) {
+    public void setAttribute(Path p, String attribute, Object value, LinkOption... options) throws IOException {
+        Objects.requireNonNull(p);
+        Path path = resolveVFSRelative(p);
+        if (delegate != null && !pathIsInVfs(path)) {
             delegate.setAttribute(path, attribute, value, options);
             return;
         }
@@ -1094,9 +1101,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public String getMimeType(Path path) {
-        Objects.requireNonNull(path);
-        if (delegate != null && !pathIsInVfs(resolveVFSRelative(path))) {
+    public String getMimeType(Path p) {
+        Objects.requireNonNull(p);
+        Path path = resolveVFSRelative(p);
+        if (delegate != null && !pathIsInVfs(path)) {
             return delegate.getMimeType(path);
         }
         return null;
