@@ -961,20 +961,21 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         boolean isDir;
         if (pathIsInVfs(dir)) {
             try {
-                isDir = getEntry(dir) instanceof DirEntry;
+                BaseEntry entry = getEntry(dir);
+                if (entry != null && !(entry instanceof DirEntry)) {
+                    throw new IllegalArgumentException("Current working directory must be directory.");
+                }
             } catch (IOException ioe) {
-                isDir = false;
+                throw new RuntimeException(String.format("Error while reading vfs entry '%s'", dir), ioe);
             }
         } else {
             if (delegate != null) {
                 delegate.setCurrentWorkingDirectory(dir);
-                isDir = true;
             } else {
-                isDir = Files.isDirectory(dir);
+                String msg = String.format("filesystem without host IO: '%s'", dir);
+                finest("VFS.setCurrentWorkingDirectory %s", msg);
+                throw new SecurityException(msg);
             }
-        }
-        if (!isDir) {
-            throw new IllegalArgumentException("Current working directory must be directory.");
         }
         cwd = dir;
     }

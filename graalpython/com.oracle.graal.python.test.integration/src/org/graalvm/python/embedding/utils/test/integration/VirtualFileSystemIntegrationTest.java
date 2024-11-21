@@ -414,11 +414,11 @@ public class VirtualFileSystemIntegrationTest {
                         """);
     }
 
-    private void eval(Context ctx, String s, String pathPrefix) {
+    private static void eval(Context ctx, String s, String pathPrefix) {
         eval(ctx, s.replace("{pathPrefix}", pathPrefix));
     }
 
-    private void eval(Context ctx, String s) {
+    private static void eval(Context ctx, String s) {
         String src = patchMountPoint(s);
         ctx.eval(PYTHON, src);
     }
