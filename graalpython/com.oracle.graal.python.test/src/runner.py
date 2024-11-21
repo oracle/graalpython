@@ -744,7 +744,7 @@ class SubprocessWorker:
                         cmd.append('--failfast')
                     self.process = subprocess.Popen(cmd, stdout=self.out_file, stderr=self.out_file)
 
-                    server.settimeout(60.0)
+                    server.settimeout(300.0)
                     with server.accept()[0] as sock:
                         conn = Connection(sock)
 
