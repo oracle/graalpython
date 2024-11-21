@@ -884,7 +884,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         boolean pathIsInVFS = pathIsInVfs(path);
         if (!pathIsInVFS) {
             if (delegate != null) {
-                Path ret = delegate.toRealPath(path);
+                Path ret = delegate.toRealPath(path, linkOptions);
                 finest("VFS.toRealPath delegated '%s' -> '%s'", path, ret);
                 return ret;
             } else {
