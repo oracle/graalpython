@@ -461,6 +461,10 @@ version = '== 2.10.1'
 patch = 'pydantic-core-2.10.1.patch'
 license = 'MIT'
 
+[[pydantic-core.rules]]
+version = '== 2.26.0'
+patch = 'pydantic-core-2.26.0.patch'
+license = 'MIT'
 
 [[PyDriller.rules]]
 patch = 'PyDriller.patch'
