@@ -864,13 +864,20 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     public Path toAbsolutePath(Path path) {
         Objects.requireNonNull(path);
         Path result = resolveVFSRelative(path);
-        boolean pathIsInVFS = pathIsInVfs(result);
-        if (pathIsInVFS && shouldExtract(result)) {
-            Path p = getExtractedPath(result);
-            if (p != null) {
-                result = p;
-            } else {
-                finer("VFS.toAbsolutePath could not extract '%s'", path);
+        if (!pathIsInVfs(result)) {
+            if (delegate == null) {
+                String msg = String.format("filesystem without host IO: '%s'", path);
+                finest("VFS.toAbsolutePath %s", msg);
+                throw new SecurityException(msg);
+            }
+        } else {
+            if (shouldExtract(result)) {
+                Path p = getExtractedPath(result);
+                if (p != null) {
+                    result = p;
+                } else {
+                    finer("VFS.toAbsolutePath could not extract '%s'", path);
+                }
             }
         }
         finer("VFS.toAbsolutePath '%s' -> '%s'", path, result);

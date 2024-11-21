@@ -193,15 +193,12 @@ public class VirtualFileSystemTest {
         // from real FS
         Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
         realFSPath.toFile().createNewFile();
-        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
-            assertEquals(realFSPath, fs.toAbsolutePath(realFSPath));
-            if (fs == noHostIOVFS) {
-                assertEquals(Path.of(VFS_SRC + "extractme"), fs.toAbsolutePath(realFSPath.getFileName()));
-            } else {
-                assertEquals(Path.of("extractme").toAbsolutePath(), fs.toAbsolutePath(Path.of("extractme")));
-                withCWD(fs, realFSPath.getParent(), (fst) -> assertEquals(realFSPath, fst.toAbsolutePath(realFSPath.getFileName())));
-            }
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
+            assertEquals(Path.of("extractme").toAbsolutePath(), fs.toAbsolutePath(Path.of("extractme")));
+            withCWD(fs, realFSPath.getParent(), (fst) -> assertEquals(realFSPath, fst.toAbsolutePath(realFSPath.getFileName())));
         }
+        checkException(SecurityException.class, () -> noHostIOVFS.toAbsolutePath(realFSPath));
+        assertEquals(Path.of(VFS_SRC + "extractme"), noHostIOVFS.toAbsolutePath(realFSPath.getFileName()));
     }
 
     @Test
