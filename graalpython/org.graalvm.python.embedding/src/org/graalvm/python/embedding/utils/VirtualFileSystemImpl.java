@@ -85,6 +85,9 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.NONE;
+import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ_WRITE;
+
 final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     private static final Logger LOGGER = Logger.getLogger(VirtualFileSystem.class.getName());
@@ -120,7 +123,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     private static final String HOME_PREFIX = VFS_ROOT + "/" + VFS_HOME;
     private static final String PROJ_PREFIX = VFS_ROOT + "/proj";
     private static final String SRC_PREFIX = VFS_ROOT + "/" + VFS_SRC;
-    private final boolean writeHostIO;
+    private final VirtualFileSystem.HostIO allowHostIO;
 
     /*
      * Maps platform-specific paths to entries.
@@ -278,15 +281,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             this.extractDir = null;
             this.deleteTempDir = null;
         }
-        writeHostIO = allowHostIO == VirtualFileSystem.HostIO.READ_WRITE;
+        this.allowHostIO = allowHostIO;
         delegate = switch (allowHostIO) {
             case NONE -> null;
             case READ -> FileSystem.newReadOnlyFileSystem(FileSystem.newDefaultFileSystem());
             case READ_WRITE -> FileSystem.newDefaultFileSystem();
         };
-        if (delegate == null) {
-            cwd = mountPoint.resolve("src");
-        }
+        cwd = allowHostIO == NONE ? mountPoint.resolve("src") : null;
     }
 
     @Override
@@ -892,18 +893,19 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                 finest("VFS.toRealPath %s", msg);
                 throw new SecurityException(msg);
             }
-        }
-        Path result = path;
-        if (pathIsInVFS && shouldExtract(path)) {
-            result = getExtractedPath(path);
-            if (result == null) {
-                finer("VFS.toRealPath could not extract '%s'", path);
-                result = path;
+        } else {
+            Path result = path;
+            if (shouldExtract(path)) {
+                result = getExtractedPath(path);
+                if (result == null) {
+                    finer("VFS.toRealPath could not extract '%s'", path);
+                    result = path;
+                }
             }
+            Path ret = result.normalize();
+            finer("VFS.toRealPath '%s' -> '%s'", path, ret);
+            return ret;
         }
-        Path ret = result.normalize();
-        finer("VFS.toRealPath '%s' -> '%s'", path, ret);
-        return ret;
     }
 
     @Override
@@ -958,7 +960,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         if (!dir.isAbsolute()) {
             throw new IllegalArgumentException("Current working directory must be absolute.");
         }
-        boolean isDir;
         if (pathIsInVfs(dir)) {
             try {
                 BaseEntry entry = getEntry(dir);
@@ -996,7 +997,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                 finest("VFS.copy %s", msg);
                 throw new SecurityException(msg);
             } else {
-                if (writeHostIO) {
+                if (allowHostIO == READ_WRITE) {
                     FileSystem.super.copy(source, target, options);
                 } else {
                     String msg = String.format("filesystem with read-only host IO: copy '%s' -> '%s' ", source, target);
