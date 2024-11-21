@@ -339,7 +339,8 @@ if sys.platform.startswith("win"):
         # Testing on an i7@4.3GHz shows that usually only 1 iteration is
         # required when contention occurs.
         timeout = 0.001
-        while timeout < 1.0:
+        # GraalPy change: increase timeout
+        while timeout < 10.0:
             # Note we are only testing for the existence of the file(s) in
             # the contents of the directory regardless of any security or
             # access rights.  If we have made it this far, we have sufficient
