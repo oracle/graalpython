@@ -12,10 +12,6 @@ application {
     mainClass = "org.example.GraalPy"
 }
 
-dependencies {
-    implementation("org.graalvm.python:python-community:24.2.0")
-}
-
 run {
     enableAssertions = true
 }

@@ -43,6 +43,9 @@ import subprocess
 import sys
 import unittest
 import urllib.parse
+import tempfile
+from abc import ABC, abstractmethod
+from typing import Optional
 
 MAVEN_VERSION = "3.9.8"
 GLOBAL_MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
@@ -54,7 +57,60 @@ VFS_PREFIX = "org.graalvm.python.vfs"
 is_maven_plugin_test_enabled = 'ENABLE_MAVEN_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_UNITTESTS'] == "true"
 is_gradle_plugin_test_enabled = 'ENABLE_GRADLE_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_PLUGIN_UNITTESTS'] == "true"
 
-class PolyglotAppTestBase(unittest.TestCase):
+
+class TemporaryTestDirectory():
+    def __init__(self):
+        if 'GRAALPY_UNITTESTS_TMPDIR_NO_CLEAN' in os.environ:
+            self.ctx = None
+            self.name = tempfile.mkdtemp()
+            print(f"Running test in {self.name}")
+        else:
+            self.ctx = tempfile.TemporaryDirectory()
+            self.name = self.ctx.name
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.ctx:
+            self.ctx.__exit__(exc_type, exc_val, exc_tb)
+
+class LoggerBase(ABC):
+    def log_block(self, name, text):
+        self.log("=" * 80)
+        self.log(f"==> {name}:")
+        self.log(text)
+        self.log("=" * 80)
+
+    @abstractmethod
+    def log(self, msg, newline=True):
+        pass
+
+class Logger(LoggerBase):
+    def __init__(self):
+        self.data = ''
+
+    def log(self, msg, newline=True):
+        self.data += msg + ('\n' if newline else '')
+
+    def __str__(self):
+        two_lines = ("=" * 80 + "\n") * 2
+        return two_lines + "Test execution log:\n" + self.data + "\n" + two_lines
+
+class NullLogger(LoggerBase):
+    def log(self, msg, newline=True):
+        pass
+
+class StdOutLogger(LoggerBase):
+    def __init__(self, delegate:LoggerBase):
+        self.delegate = delegate
+
+    def log(self, msg, newline=True):
+        print(msg)
+        self.delegate.log(msg, newline=newline)
+
+
+class BuildToolTestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not is_maven_plugin_test_enabled and not is_gradle_plugin_test_enabled:
@@ -72,14 +128,14 @@ class PolyglotAppTestBase(unittest.TestCase):
             url = urllib.parse.urlparse(custom_repo)
             if url.scheme == "file":
                 jar = os.path.join(
-                    url.path,
+                    urllib.parse.unquote(url.path),
                     cls.archetypeGroupId.replace(".", os.path.sep),
                     cls.archetypeArtifactId,
                     cls.graalvmVersion,
                     f"{cls.archetypeArtifactId}-{cls.graalvmVersion}.jar",
                 )
                 pom = os.path.join(
-                    url.path,
+                    urllib.parse.unquote(url.path),
                     cls.archetypeGroupId.replace(".", os.path.sep),
                     cls.archetypeArtifactId,
                     cls.graalvmVersion,
@@ -96,10 +152,10 @@ class PolyglotAppTestBase(unittest.TestCase):
                     "-DcreateChecksum=true",
                 ]
                 out, return_code = run_cmd(cmd, cls.env)
-                assert return_code == 0
+                assert return_code == 0, out
 
                 jar = os.path.join(
-                    url.path,
+                    urllib.parse.unquote(url.path),
                     cls.archetypeGroupId.replace(".", os.path.sep),
                     cls.pluginArtifactId,
                     cls.graalvmVersion,
@@ -107,7 +163,7 @@ class PolyglotAppTestBase(unittest.TestCase):
                 )
 
                 pom = os.path.join(
-                    url.path,
+                    urllib.parse.unquote(url.path),
                     cls.archetypeGroupId.replace(".", os.path.sep),
                     cls.pluginArtifactId,
                     cls.graalvmVersion,
@@ -125,10 +181,12 @@ class PolyglotAppTestBase(unittest.TestCase):
                     "-DcreateChecksum=true",
                 ]
                 out, return_code = run_cmd(cmd, cls.env)
-                assert return_code == 0
+                assert return_code == 0, out
                 break
 
-def run_cmd(cmd, env, cwd=None, print_out=False, gradle=False):
+def run_cmd(cmd, env, cwd=None, print_out=False, gradle=False, logger:LoggerBase=NullLogger()):
+    if print_out:
+        logger = StdOutLogger(logger)
     out = []
     out.append(f"Executing:\n    {cmd=}\n")
     prev_java_home = None     
@@ -139,27 +197,27 @@ def run_cmd(cmd, env, cwd=None, print_out=False, gradle=False):
         env["JAVA_HOME"] = env["GRADLE_JAVA_HOME"]
     
     try:
+        logger.log(f"Executing command: {' '.join(cmd)}")
         process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
-        if print_out:
-            print("============== output =============")
         for line in iter(process.stdout.readline, ""):
             out.append(line)
-            if print_out:
-                print(line, end="")
-        if print_out:
-            print("\n========== end of output ==========")
-        return "".join(out), process.wait()
+        out_str = "".join(out)
+        logger.log_block("output", out_str)
+        return out_str, process.wait()
     finally:
         if prev_java_home:
             env["JAVA_HOME"] = prev_java_home
 
-def check_ouput(txt, out, contains=True):
+def check_ouput(txt, out, contains=True, logger: Optional[LoggerBase] =None):
+    # if logger is passed, we assume that it already contains the output
     if contains and txt not in out:
-        print_output(out, f"expected '{txt}' in output")
-        assert False
+        if not logger:
+            print_output(out, f"expected '{txt}' in output")
+        assert False, f"expected '{txt}' in output. \n{logger}"
     elif not contains and txt in out:
-        print_output(out, f"did not expect '{txt}' in output")
-        assert False
+        if not logger:
+            print_output(out, f"did not expect '{txt}' in output")
+        assert False, f"did not expect '{txt}' in output. {logger}"
 
 def print_output(out, err_msg=None):
     print("============== output =============")

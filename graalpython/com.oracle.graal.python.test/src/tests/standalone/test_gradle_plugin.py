@@ -40,18 +40,21 @@
 import os
 import shutil
 import sys
-import tempfile
 import textwrap
 import unittest
 
 from tests.standalone import util
+from tests.standalone.util import TemporaryTestDirectory, Logger
 
 
 def append(file, txt):
     with open(file, "a") as f:
         f.write(txt)
 
-class GradlePluginTestBase(util.PolyglotAppTestBase):
+def _community_as_property(community):
+    return 'community = true' if community else ''
+
+class GradlePluginTestBase(util.BuildToolTestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -63,19 +66,25 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
     def copy_build_files(self, target_dir):
         pass
 
-    def packages_termcolor(self, build_file):
+    def empty_plugin(self, community):
         pass
 
-    def packages_termcolor_ujson(self):
+    def empty_python_home(self, community):
+        pass
+
+    def packages_termcolor(self, community):
+        pass
+
+    def packages_termcolor_ujson(self, community):
         pass
 
     def packages_termcolor_resource_dir(self, resources_dir):
         pass
 
-    def empty_home_includes(self):
+    def empty_home_includes(self, community):
         pass
 
-    def home_includes(self):
+    def home_includes(self, community):
         pass
 
     def empty_packages(self):
@@ -92,41 +101,48 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
 
         self.copy_build_files(target_dir)
 
-    def check_gradle_generated_app(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+    def check_filelist(self, target_dir, log, check_lib=True):
+        fl_path = os.path.join(target_dir, "build", "resources", "main", util.VFS_PREFIX, "fileslist.txt")
+        with open(fl_path) as f:
+            lines = f.readlines()
+
+        log.log_block("filelist.txt", ''.join(lines))
+        assert "/" + util.VFS_PREFIX + "/\n" in lines, log
+        assert "/" + util.VFS_PREFIX + "/home/\n" in lines, log
+        if check_lib:
+            assert "/" + util.VFS_PREFIX + "/home/lib-graalpython/\n" in lines, log
+            assert "/" + util.VFS_PREFIX + "/home/lib-python/\n" in lines, log
+
+    def check_gradle_generated_app(self, community):
+        with TemporaryTestDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "generated_app_gradle" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
-            append(build_file, self.packages_termcolor())
+            append(build_file, self.packages_termcolor(community))
 
             gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env)
+            log = Logger()
 
             # build
             cmd = gradlew_cmd + ["build"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            self.check_filelist(target_dir, log, check_lib=True)
 
             cmd = gradlew_cmd + ["nativeCompile"]
             # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher,
             # which is fine, because we need to build the native binary with a graalvm build
             # and the one we have set in JAVA_HOME is at least jdk24
             # => run without gradle = True
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("BUILD SUCCESS", out)
-
-            # check fileslist.txt
-            fl_path = os.path.join(target_dir, "build", "resources", "main", util.VFS_PREFIX, "fileslist.txt")
-            with open(fl_path) as f:
-                lines = f.readlines()
-            assert "/" + util.VFS_PREFIX + "/\n" in lines, "unexpected output from " + str(cmd)
-            assert "/" + util.VFS_PREFIX + "/home/\n" in lines, "unexpected output from " + str(cmd)
-            assert "/" + util.VFS_PREFIX + "/home/lib-graalpython/\n" in lines, "unexpected output from " + str(cmd)
-            assert "/" + util.VFS_PREFIX + "/home/lib-python/\n" in lines, "unexpected output from " + str(cmd)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            self.check_filelist(target_dir, log, check_lib=True)
 
             # execute and check native image
             cmd = [os.path.join(target_dir, "build", "native", "nativeCompile", "graalpy-gradle-test-project")]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("hello java", out)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
+            util.check_ouput("hello java", out, logger=log)
+            self.check_filelist(target_dir, log, check_lib=True)
 
             # import struct from python file triggers extract of native extension files in VirtualFileSystem
             hello_src = os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py")
@@ -137,12 +153,13 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
 
             # rebuild and exec
             cmd = gradlew_cmd + ["build", "run"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("hello java", out)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            util.check_ouput("hello java", out, logger=log)
+            self.check_filelist(target_dir, log, check_lib=True)
 
             #GR-51132 - NoClassDefFoundError when running polyglot app in java mode
-            util.check_ouput("java.lang.NoClassDefFoundError", out, False)
+            util.check_ouput("java.lang.NoClassDefFoundError", out, False, logger=log)
 
             # move app to another folder
             # this will break launcher symlinks, but should be able to recover from that
@@ -151,16 +168,17 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
             # adding new dep triggers launcher without venv regen
             self.copy_build_files(target_dir2)
             build_file2 = os.path.join(target_dir2, self.build_file_name)
-            append(build_file2, self.packages_termcolor_ujson())
+            append(build_file2, self.packages_termcolor_ujson(community))
 
             gradlew_cmd2 = util.get_gradle_wrapper(target_dir2, self.env)
             cmd = gradlew_cmd2 + ["build", "run"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("hello java", out)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2, gradle = True, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            util.check_ouput("hello java", out, logger=log)
+            self.check_filelist(target_dir2, log, check_lib=True)
 
     def check_gradle_generated_app_external_resources(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with TemporaryTestDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "generated_gradle_app_external_resources" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
@@ -215,25 +233,11 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("hello java", out)
 
-    def check_gradle_fail_without_graalpy_dep(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            target_dir = os.path.join(str(tmpdir), "gradle_fail_without_graalpy_dep" + self.target_dir_name_sufix())
-            self.generate_app(target_dir)
-            build_file = os.path.join(target_dir, self.build_file_name)
-            append(build_file, "graalPy {}")
+    def check_gradle_fail_with_mismatching_graalpy_dep(self):
+        pass # TODO: once the CI job builds enterprise
 
-            gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-
-            util.replace_in_file(build_file,
-                "implementation(\"org.graalvm.python:python-community:24.2.0\")",
-                "// implementation(\"org.graalvm.python:python-community:24.2.0\")")
-
-            cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("Missing GraalPy dependency. Please add to your build.gradle either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python", out)
-
-    def check_gradle_gen_launcher_and_venv(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+    def check_gradle_gen_launcher_and_venv(self, community):
+        with TemporaryTestDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "gradle_gen_launcher_and_venv" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
 
@@ -241,7 +245,7 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
-            append(build_file, self.packages_termcolor_ujson())
+            append(build_file, self.packages_termcolor_ujson(community))
 
             cmd = gradle_cmd + ["graalPyResources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
@@ -260,7 +264,7 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
 
             # remove ujson pkg from plugin config and check if unistalled
             self.copy_build_files(target_dir)
-            append(build_file, self.packages_termcolor())
+            append(build_file, self.packages_termcolor(community))
 
             cmd = gradle_cmd + ["graalPyResources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
@@ -269,66 +273,68 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
             util.check_ouput("Uninstalling ujson", out)
             util.check_ouput("termcolor", out, False)
 
-    def check_tagfile(self, home, expected):
+    def check_tagfile(self, home, expected, log=''):
         with open(os.path.join(home, "tagfile")) as f:
             lines = f.readlines()
-        assert lines == expected, "expected tagfile " + str(expected) + ", but got " + str(lines)
+        assert lines == expected, "expected tagfile " + str(expected) + ", but got " + str(lines) + log
 
-    def check_gradle_check_home(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+    def check_gradle_check_home(self, community):
+        with TemporaryTestDirectory() as tmpdir:
+            log = Logger()
+
             target_dir = os.path.join(str(tmpdir), "check_home_test" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
 
-            build_file_template = os.path.join(os.path.dirname(__file__), "gradle", "build", self.build_file_name)
             build_file = os.path.join(target_dir, self.build_file_name)
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
             process_resources_cmd = gradle_cmd + ["graalPyResources"]
 
             # 1. process-resources with no pythonHome config
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Copying std lib to ", out)
+            append(build_file, self.empty_plugin(community))
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            util.check_ouput("Copying std lib to ", out, logger=log)
 
             home_dir = os.path.join(target_dir, "build", "generated", "graalpy", "resources", util.VFS_PREFIX, "home")
-            assert os.path.exists(home_dir)
-            assert os.path.exists(os.path.join(home_dir, "lib-graalpython"))
-            assert os.path.isdir(os.path.join(home_dir, "lib-graalpython"))
-            assert os.path.exists(os.path.join(home_dir, "lib-python"))
-            assert os.path.isdir(os.path.join(home_dir, "lib-python"))
-            assert os.path.exists(os.path.join(home_dir, "tagfile"))
-            assert os.path.isfile(os.path.join(home_dir, "tagfile"))
-            self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
+            assert os.path.exists(home_dir), log
+            assert os.path.exists(os.path.join(home_dir, "lib-graalpython")), log
+            assert os.path.isdir(os.path.join(home_dir, "lib-graalpython")), log
+            assert os.path.exists(os.path.join(home_dir, "lib-python")), log
+            assert os.path.isdir(os.path.join(home_dir, "lib-python")), log
+            assert os.path.exists(os.path.join(home_dir, "tagfile")), log
+            assert os.path.isfile(os.path.join(home_dir, "tagfile")), log
+            self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'], log=log)
 
             # 2. process-resources with empty pythonHome
             self.copy_build_files(target_dir)
-            append(build_file, "graalPy {\n    pythonHome { }\n}")
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Copying std lib to ", out, False)
-            self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
+            append(build_file, self.empty_python_home(community))
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            util.check_ouput("Copying std lib to ", out, False, logger=log)
+            self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'], log=log)
 
             # 3. process-resources with empty pythonHome includes and excludes
             self.copy_build_files(target_dir)
-            append(build_file, self.empty_home_includes())
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Copying std lib to ", out, False)
-            self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
+            append(build_file, self.empty_home_includes(community))
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            util.check_ouput("Copying std lib to ", out, False, logger=log)
+            self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'], log=log)
 
             # 4. process-resources with pythonHome includes and excludes
             self.copy_build_files(target_dir)
-            append(build_file, self.home_includes())
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Deleting GraalPy home due to changed includes or excludes", out)
-            util.check_ouput("Copying std lib to ", out)
-            self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*__init__.py\n', 'exclude:.*html/__init__.py\n'])
+            append(build_file, self.home_includes(community))
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            util.check_ouput("Deleting GraalPy home due to changed includes or excludes", out, logger=log)
+            util.check_ouput("Copying std lib to ", out, logger=log)
+            self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*__init__.py\n', 'exclude:.*html/__init__.py\n'], log=log)
 
             # 5. check fileslist.txt
             # XXX build vs graalPyVFSFilesList task?
-            out, return_code = util.run_cmd(gradle_cmd + ["build"], self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
+            out, return_code = util.run_cmd(gradle_cmd + ["build"], self.env, cwd=target_dir, gradle = True, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
             fl_path = os.path.join(target_dir, "build", "resources", "main", util.VFS_PREFIX, "fileslist.txt")
             with open(fl_path) as f:
                 for line in f:
@@ -339,11 +345,11 @@ class GradlePluginTestBase(util.PolyglotAppTestBase):
                         continue
                     if not line.startswith("/" + util.VFS_PREFIX + "/home/") or line.endswith("/"):
                         continue
-                    assert line.endswith("/__init__.py"), f"expected line to end with /__init__.py, but was '{line}'"
-                    assert not line.endswith("html/__init__.py"), f"expected line to end with html/__init__.py, but was '{line}''"
+                    assert line.endswith("/__init__.py"), f"expected line to end with /__init__.py, but was '{line}'. {log}"
+                    assert not line.endswith("html/__init__.py"), f"expected line to end with html/__init__.py, but was '{line}'. {log}"
 
     def check_gradle_empty_packages(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with TemporaryTestDirectory() as tmpdir:
             target_dir = os.path.join(str(tmpdir), "empty_packages_test" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
@@ -365,23 +371,19 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_generated_app(self):
-        self.check_gradle_generated_app()
+        self.check_gradle_generated_app(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
         self.check_gradle_generated_app_external_resources()
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_fail_without_graalpy_dep(self):
-        self.check_gradle_fail_without_graalpy_dep()
-
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_gen_launcher_and_venv(self):
-        self.check_gradle_gen_launcher_and_venv()
+        self.check_gradle_gen_launcher_and_venv(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_check_home(self):
-        self.check_gradle_check_home()
+        self.check_gradle_check_home(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_empty_packages(self):
@@ -404,18 +406,31 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
             util.replace_in_file(settings_file,
                 "repositories {", f"repositories {{\n        {mvn_repos}")
 
-    def packages_termcolor(self):
-        return textwrap.dedent("""
-            graalPy {
-                packages = ["termcolor"]
-            }
+    def empty_plugin(self, community):
+        return f"graalPy {{ {_community_as_property(community)} }}"
+
+    def empty_python_home(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
+                pythonHome {{ }}
+                {_community_as_property(community)}
+            }}
             """)
 
-    def packages_termcolor_ujson(self):
-        return textwrap.dedent("""
-            graalPy {
+    def packages_termcolor(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
+                packages = ["termcolor"]
+                {_community_as_property(community)}
+            }}
+            """)
+
+    def packages_termcolor_ujson(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
                 packages = ["termcolor", "ujson"]
-            }
+                {_community_as_property(community)}
+            }}
             """)
 
     def packages_termcolor_resource_dir(self, resources_dir):
@@ -424,33 +439,37 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
             graalPy {{
                 packages = ["termcolor"]
                 pythonResourcesDirectory = file("{resources_dir}")
+                community = true
             }}
             """)
 
-    def home_includes(self):
-        return textwrap.dedent("""
-            graalPy {
-                pythonHome {
+    def home_includes(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
+                pythonHome {{
                     includes = [".*__init__.py"]
                     excludes = [".*html/__init__.py"]
-                }
-            }
+                }}
+                {_community_as_property(community)}
+            }}
             """)
 
-    def empty_home_includes(self):
-        return textwrap.dedent("""
-            graalPy {
-               pythonHome {
+    def empty_home_includes(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
+               pythonHome {{
                    includes = []
                    excludes = []
-               }
-            }
+               }}
+               {_community_as_property(community)}
+            }}
             """)
 
     def empty_packages(self):
         return textwrap.dedent("""
             graalPy {
                 packages = []
+                community = true
             }
             """)
 
@@ -464,23 +483,19 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_generated_app(self):
-        self.check_gradle_generated_app()
+        self.check_gradle_generated_app(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
         self.check_gradle_generated_app_external_resources()
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_fail_without_graalpy_dep(self):
-        self.check_gradle_fail_without_graalpy_dep()
-
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_gen_launcher_and_venv(self):
-        self.check_gradle_gen_launcher_and_venv()
+        self.check_gradle_gen_launcher_and_venv(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_check_home(self):
-        self.check_gradle_check_home()
+        self.check_gradle_check_home(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_empty_packages(self):
@@ -502,19 +517,32 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
             util.replace_in_file(build_file, "repositories {", f"repositories {{\n    mavenLocal()\n    {mvn_repos}")
             util.replace_in_file(settings_file, "repositories {", f"repositories {{\n        {mvn_repos}")
 
-    def packages_termcolor(self):
-       return textwrap.dedent("""
-            graalPy {
-               packages.add("termcolor")
-            }
+    def empty_plugin(self, community):
+        return f"graalPy {{ {_community_as_property(community) } }}"
+
+    def empty_python_home(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
+                pythonHome {{ }}
+                {_community_as_property(community)}
+            }}
             """)
 
-    def packages_termcolor_ujson(self):
-        return textwrap.dedent("""
-            graalPy {
+    def packages_termcolor(self, community):
+       return textwrap.dedent(f"""
+            graalPy {{
+               packages.add("termcolor")
+               {_community_as_property(community)}
+            }}
+            """)
+
+    def packages_termcolor_ujson(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
                 packages.add("termcolor")
                 packages.add("ujson")
-            }
+                {_community_as_property(community)}
+            }}
             """)
 
     def packages_termcolor_resource_dir(self, resources_dir):
@@ -523,32 +551,36 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
             graalPy {{
                 packages.add("termcolor")
                 pythonResourcesDirectory = file("{resources_dir}")
+                community = true
             }}
             """)
 
-    def home_includes(self):
-        return textwrap.dedent("""
-            graalPy {
-                pythonHome {
+    def home_includes(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
+                pythonHome {{
                     includes.add(".*__init__.py")
                     excludes.add(".*html/__init__.py")
-                }
-            }
+                }}
+                {_community_as_property(community)}
+            }}
             """)
 
-    def empty_home_includes(self):
-        return textwrap.dedent("""
-            graalPy {
-               pythonHome {
+    def empty_home_includes(self, community):
+        return textwrap.dedent(f"""
+            graalPy {{
+               pythonHome {{
                    includes
                    excludes
-               }
-            }
+               }}
+               {_community_as_property(community)}
+            }}
             """)
 
     def empty_packages(self):
         return textwrap.dedent("""
             graalPy {
                 packages
+                community = true
             }
             """)
