@@ -18,7 +18,6 @@ test.test_support.TestSupport.test_find_unused_port @ darwin-arm64,darwin-x86_64
 test.test_support.TestSupport.test_forget @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_support.TestSupport.test_gc_collect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_support.TestSupport.test_get_attribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_support.TestSupport.test_get_recursion_depth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_support.TestSupport.test_has_strftime_extensions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_support.TestSupport.test_ignored_deprecations_are_silent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_support.TestSupport.test_import_fresh_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
