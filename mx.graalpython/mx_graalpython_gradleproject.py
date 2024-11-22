@@ -48,6 +48,8 @@ import shutil
 from zipfile import ZipFile
 
 import mx
+import mx_urlrewrites
+
 
 class GradlePluginProject(mx.Distribution, mx.ClasspathDependency):  # pylint: disable=too-many-instance-attributes
     """
@@ -252,6 +254,8 @@ def _as_gradle_path(p:str) -> str:
 
 
 class _GradleBuildTask(mx.ProjectBuildTask):
+    PLUGIN_PORTAL_URL = 'https://plugins.gradle.org/m2/'
+
     def __init__(self, subject: GradlePluginProject, args):
         mx.ProjectBuildTask.__init__(self, args, 1, subject)
         self.build_script_path = os.path.join(self.subject.get_output_root(), "build.gradle")
@@ -403,6 +407,20 @@ class _GradleBuildTask(mx.ProjectBuildTask):
         mx.logvv(properties)
 
         settings = f'rootProject.name = "{self.subject.gradleProjectName}"'
+        plugin_repo = mx_urlrewrites.rewriteurl(_GradleBuildTask.PLUGIN_PORTAL_URL)
+        if plugin_repo != _GradleBuildTask.PLUGIN_PORTAL_URL:
+            # Note: we are not including mavenCentral for ordinary dependencies,
+            # so this should be the only repo that Gradle searches, so far we only
+            # depend on one external plugin: java-gradle-plugin
+            settings = textwrap.dedent(f'''
+                pluginManagement {{
+                    repositories {{
+                        maven {{
+                            url = uri("{plugin_repo}")
+                        }}
+                    }}
+                }}
+            ''') + settings
         settings_path = os.path.join(self.subject.get_output_root(), "settings.gradle")
         with open(settings_path, 'w+') as f:
             f.write(settings)
