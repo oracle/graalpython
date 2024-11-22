@@ -304,10 +304,9 @@ public abstract class CExtContext {
     public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
                     throws IOException, ApiInitException, ImportException {
         if (getLogger().isLoggable(Level.WARNING) && context.getOption(PythonOptions.WarnExperimentalFeatures)) {
-            boolean runViaLauncher = context.getOption(PythonOptions.RunViaLauncher);
-            if (!runViaLauncher || !C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
+            if (!C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
                 String message = "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.";
-                if (!runViaLauncher) {
+                if (!(boolean) context.getOption(PythonOptions.RunViaLauncher)) {
                     message += " See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions/#embedding-limitations for the limitations. " +
                                     "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'.";
                 }
