@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_LINUX;
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.signalFromName;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.getThreadId;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -216,7 +217,6 @@ import org.graalvm.polyglot.io.ProcessHandler.Redirect;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.EmulatedSignal;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
@@ -1895,16 +1895,18 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void kill(long pid, int signal) throws PosixException {
+    public void kill(long pid, int signal,
+                    @Bind("$node") Node inliningTarget) throws PosixException {
+        PythonContext context = PythonContext.get(inliningTarget);
         try {
-            if (signal == EmulatedSignal.SIGKILL.number) {
+            if (signal == signalFromName(context, "KILL")) {
                 sigkill((int) pid);
-            } else if (signal == EmulatedSignal.SIGTERM.number || signal == EmulatedSignal.SIGQUIT.number || signal == EmulatedSignal.SIGABRT.number || signal == EmulatedSignal.SIGINT.number) {
+            } else if (signal == signalFromName(context, "TERM")) {
                 sigterm((int) pid);
             } else if (signal == 0) {
                 sigdfl((int) pid);
             } else {
-                throw new UnsupportedPosixFeatureException("Sending arbitrary signals to child processes. Can only send some kill and term signals.");
+                throw new UnsupportedPosixFeatureException("Sending arbitrary signals to child processes. Can only send KILL and TERM signals.");
             }
         } catch (IndexOutOfBoundsException e) {
             throw posixException(OSErrorEnum.ESRCH);

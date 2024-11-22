@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.TimeUtils.SEC_TO_US;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,6 +86,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -127,18 +129,20 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("NSIG", Signals.SIGMAX + 1);
     }
 
-    public enum EmulatedSignal {
-        SIGTERM(15),
-        SIGKILL(9),
-        SIGINT(2),
-        SIGABRT(6),
-        SIGQUIT(3);
+    /*
+     * When using emulated posix mode (where we esentially emulate Linux), we rely on some signals
+     * being present even if they don't exist on the underlying platform, i.e. SIGKILL doesn't exist
+     * on Windows, but we still need to pass it to emulated kill.
+     */
+    private enum EmulatedSignal {
+        TERM(15),
+        KILL(9);
 
         public final TruffleString name;
         public final int number;
 
         EmulatedSignal(int number) {
-            this.name = tsLiteral(name());
+            this.name = tsLiteral("SIG" + name());
             this.number = number;
         }
     }
@@ -151,15 +155,19 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         ModuleData moduleData = new ModuleData();
         signalModule.setModuleState(moduleData);
 
+        for (int i = 0; i < Signals.PYTHON_SIGNAL_NAMES.length; i++) {
+            TruffleString name = Signals.PYTHON_SIGNAL_NAMES[i];
+            if (name != null) {
+                moduleData.signals.put(Signals.SIGNAL_NAMES[i], i);
+                signalModule.setAttribute(name, i);
+            }
+        }
+
         if (PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).equalsUncached(T_JAVA, TS_ENCODING)) {
             for (EmulatedSignal signal : EmulatedSignal.values()) {
-                signalModule.setAttribute(signal.name, signal.number);
-            }
-        } else {
-            for (int i = 0; i < Signals.PYTHON_SIGNAL_NAMES.length; i++) {
-                TruffleString name = Signals.PYTHON_SIGNAL_NAMES[i];
-                if (name != null) {
-                    signalModule.setAttribute(name, i);
+                if (signalModule.getAttribute(signal.name) == PNone.NO_VALUE) {
+                    moduleData.signals.put(signal.name(), signal.number);
+                    signalModule.setAttribute(signal.name, signal.number);
                 }
             }
         }
@@ -184,6 +192,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             assert defaultSigintHandler != PNone.NO_VALUE;
             SignalNode.signal(null, new Signal("INT").getNumber(), defaultSigintHandler, moduleData);
         }
+    }
+
+    @TruffleBoundary
+    public static int signalFromName(PythonContext context, String name) {
+        PythonModule mod = context.lookupBuiltinModule(T__SIGNAL);
+        return mod.getModuleState(ModuleData.class).signals.getOrDefault(name, -1);
     }
 
     public static void resetSignalHandlers(PythonModule mod) {
@@ -546,6 +560,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     private static final class ModuleData {
+        final Map<String, Integer> signals = new HashMap<>();
         final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
         final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
         final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
