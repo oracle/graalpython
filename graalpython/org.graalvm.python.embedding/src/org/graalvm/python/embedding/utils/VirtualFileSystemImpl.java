@@ -283,7 +283,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
         this.allowHostIO = allowHostIO;
         delegate = switch (allowHostIO) {
-            case NONE -> null;
+            case NONE -> new DeniedIOFileSystem();
             case READ -> FileSystem.newReadOnlyFileSystem(FileSystem.newDefaultFileSystem());
             case READ_WRITE -> FileSystem.newDefaultFileSystem();
         };
@@ -620,18 +620,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = resolveVFSRelative(p);
         if (!pathIsInVfs(path)) {
-            if (delegate != null) {
-                boolean passed = false;
-                try {
-                    delegate.checkAccess(path, modes, linkOptions);
-                    passed = true;
-                } finally {
-                    finest("VFS.checkAccess delegated '%s' %s and ", path, passed ? "passed" : "did not pass");
-                }
-            } else {
-                String msg = String.format("filesystem without host IO: '%s'", path);
-                finest("VFS.checkAccess %s", msg);
-                throw new SecurityException(msg);
+            boolean passed = false;
+            try {
+                delegate.checkAccess(path, modes, linkOptions);
+                passed = true;
+            } finally {
+                finest("VFS.checkAccess delegated '%s' %s and ", path, passed ? "passed" : "did not pass");
             }
         } else {
             if (modes.contains(AccessMode.WRITE)) {
@@ -655,17 +649,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path dir = resolveVFSRelative(d);
         if (!pathIsInVfs(dir)) {
-            if (delegate != null) {
-                boolean passed = false;
-                try {
-                    delegate.createDirectory(dir, attrs);
-                } finally {
-                    finest("VFS.createDirectory delegated '%s' %s", dir, passed ? "passed" : "did not pass");
-                }
-            } else {
-                String msg = String.format("filesystem without host IO: '%s'", dir);
-                finest("VFS.createDirectory %s", msg);
-                throw new SecurityException("filesystem without host IO: " + dir);
+            boolean passed = false;
+            try {
+                delegate.createDirectory(dir, attrs);
+            } finally {
+                finest("VFS.createDirectory delegated '%s' %s", dir, passed ? "passed" : "did not pass");
             }
         } else {
             String msg = String.format("read-only filesystem: '%s'", dir);
@@ -680,17 +668,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = resolveVFSRelative(p);
         if (!pathIsInVfs(path)) {
-            if (delegate != null) {
-                boolean passed = false;
-                try {
-                    delegate.delete(path);
-                } finally {
-                    finest("VFS.delete delegated '%s' %s", path, passed ? "passed" : "did not pass");
-                }
-            } else {
-                String msg = String.format("filesystem without host IO: '%s'", path);
-                finest("VFS.delete %s", msg);
-                throw new SecurityException(msg);
+            boolean passed = false;
+            try {
+                delegate.delete(path);
+            } finally {
+                finest("VFS.delete delegated '%s' %s", path, passed ? "passed" : "did not pass");
             }
         } else {
             String msg = String.format("read-only filesystem: '%s'", path);
@@ -707,17 +689,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = resolveVFSRelative(p);
         if (!pathIsInVfs(path)) {
-            if (delegate != null) {
-                boolean passed = false;
-                try {
-                    return delegate.newByteChannel(path, options, attrs);
-                } finally {
-                    finest("VFS.newByteChannel delegated '%s' %s", path, passed ? "passed" : "did not pass");
-                }
-            } else {
-                String msg = String.format("filesystem without host IO: '%s'", path);
-                finest("VFS.newByteChannel %s", msg);
-                throw new SecurityException(msg);
+            boolean passed = false;
+            try {
+                return delegate.newByteChannel(path, options, attrs);
+            } finally {
+                finest("VFS.newByteChannel delegated '%s' %s", path, passed ? "passed" : "did not pass");
             }
         }
 
@@ -807,17 +783,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(d);
         Path dir = resolveVFSRelative(d);
         if (!pathIsInVfs(dir)) {
-            if (delegate != null) {
-                boolean passed = false;
-                try {
-                    return delegate.newDirectoryStream(dir, filter);
-                } finally {
-                    finest("VFS.newDirectoryStream delegated '%s' %s", dir, passed ? "passed" : "did not pass");
-                }
-            } else {
-                String msg = String.format("filesystem without host IO: '%s'", dir);
-                finest("VFS.newDirectoryStream %s", msg);
-                throw new SecurityException(msg);
+            boolean passed = false;
+            try {
+                return delegate.newDirectoryStream(dir, filter);
+            } finally {
+                finest("VFS.newDirectoryStream delegated '%s' %s", dir, passed ? "passed" : "did not pass");
             }
         }
         Objects.requireNonNull(filter);
@@ -869,10 +839,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(path);
         Path result = resolveVFSRelative(path);
         if (!pathIsInVfs(result)) {
-            if (delegate == null) {
-                String msg = String.format("filesystem without host IO: '%s'", path);
-                finest("VFS.toAbsolutePath %s", msg);
-                throw new SecurityException(msg);
+            if (allowHostIO == NONE) {
+                delegate.toAbsolutePath(path);
             }
         } else {
             if (shouldExtract(result)) {
@@ -895,15 +863,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Path path = resolveVFSRelative(p);
         boolean pathIsInVFS = pathIsInVfs(path);
         if (!pathIsInVFS) {
-            if (delegate != null) {
-                Path ret = delegate.toRealPath(path, linkOptions);
-                finest("VFS.toRealPath delegated '%s' -> '%s'", path, ret);
-                return ret;
-            } else {
-                String msg = String.format("filesystem without host IO: '%s'", path);
-                finest("VFS.toRealPath %s", msg);
-                throw new SecurityException(msg);
-            }
+            Path ret = delegate.toRealPath(path, linkOptions);
+            finest("VFS.toRealPath delegated '%s' -> '%s'", path, ret);
+            return ret;
         } else {
             Path result = path;
             if (shouldExtract(path)) {
@@ -924,15 +886,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = resolveVFSRelative(p);
         if (!pathIsInVfs(path)) {
-            if (delegate != null) {
-                Map<String, Object> ret = delegate.readAttributes(path, attributes, options);
-                finest("VFS.readAttributes delegated '%s' -> '%s'", path, ret);
-                return ret;
-            } else {
-                String msg = String.format("filesystem without host IO: '%s'", path);
-                finest("VFS.readAttributes %s", msg);
-                throw new SecurityException(msg);
-            }
+            Map<String, Object> ret = delegate.readAttributes(path, attributes, options);
+            finest("VFS.readAttributes delegated '%s' -> '%s'", path, ret);
+            return ret;
         }
         BaseEntry entry = getEntry(path);
         if (entry == null) {
@@ -1006,18 +962,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             finer("VFS.move %s", msg);
             throw new SecurityException(msg);
         } else {
-            if (delegate == null) {
-                String msg = String.format("filesystem without host IO: copy '%s' -> '%s' ", source, target);
-                finest("VFS.copy %s", msg);
-                throw new SecurityException(msg);
+            if (allowHostIO == READ_WRITE && pathIsInVfs(source)) {
+                FileSystem.super.copy(source, target, options);
             } else {
-                if (allowHostIO == READ_WRITE) {
-                    FileSystem.super.copy(source, target, options);
-                } else {
-                    String msg = String.format("filesystem with read-only host IO: copy '%s' -> '%s' ", source, target);
-                    finest("VFS.copy %s", msg);
-                    throw new SecurityException(msg);
-                }
+                delegate.copy(source, target, options);
             }
         }
     }
@@ -1028,23 +976,24 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(t);
         Path source = resolveVFSRelative(s);
         Path target = resolveVFSRelative(t);
-        if (delegate != null && !pathIsInVfs(source) && !pathIsInVfs(target)) {
+        if (!pathIsInVfs(source) && !pathIsInVfs(target)) {
             delegate.move(source, target, options);
-            return;
+        } else {
+            String msg = String.format("read-only filesystem, can't move %s -> %s", source, target);
+            finer("VFS.move %s", msg);
+            throw new SecurityException(msg);
         }
-        String msg = String.format("read-only filesystem, can't move %s -> %s", source, target);
-        finer("VFS.move %s", msg);
-        throw new SecurityException(msg);
     }
 
     @Override
     public Charset getEncoding(Path p) {
         Objects.requireNonNull(p);
         Path path = resolveVFSRelative(p);
-        if (delegate != null && !pathIsInVfs(path)) {
+        if (!pathIsInVfs(path)) {
             return delegate.getEncoding(path);
+        } else {
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -1053,13 +1002,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(t);
         Path link = resolveVFSRelative(l);
         Path target = resolveVFSRelative(t);
-        if (delegate != null && !pathIsInVfs(link) && !pathIsInVfs(target)) {
+        if (!pathIsInVfs(link) && !pathIsInVfs(target)) {
             delegate.createSymbolicLink(link, target, attrs);
-            return;
+        } else {
+            String msg = String.format("read-only filesystem, can't create link %s -> %s", link, target);
+            finer("VFS.createSymbolicLink %s", msg);
+            throw new SecurityException(msg);
         }
-        String msg = String.format("read-only filesystem, can't create link %s -> %s", link, target);
-        finer("VFS.createSymbolicLink %s", msg);
-        throw new SecurityException(msg);
     }
 
     @Override
@@ -1068,45 +1017,46 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(e);
         Path link = resolveVFSRelative(l);
         Path existing = resolveVFSRelative(e);
-        if (delegate != null && !pathIsInVfs(link) && !pathIsInVfs(existing)) {
+        if (!pathIsInVfs(link) && !pathIsInVfs(existing)) {
             delegate.createLink(link, existing);
-            return;
+        } else {
+            String msg = String.format("read-only filesystem, can't create link %s -> %s", link, existing);
+            finer("VFS.createLink %s", msg);
+            throw new SecurityException(msg);
         }
-        String msg = String.format("read-only filesystem, can't create link %s -> %s", link, existing);
-        finer("VFS.createLink %s", msg);
-        throw new SecurityException(msg);
     }
 
     @Override
     public Path readSymbolicLink(Path l) throws IOException {
         Objects.requireNonNull(l);
         Path link = resolveVFSRelative(l);
-        if (delegate != null && !pathIsInVfs(link)) {
+        if (!pathIsInVfs(link)) {
             return delegate.readSymbolicLink(link);
+        } else {
+            String msg = String.format("read-only filesystem, can't read symbolic link %s", link);
+            finer("VFS.readSymbolicLink %s", msg);
+            throw new SecurityException(msg);
         }
-        String msg = String.format("read-only filesystem, can't read symbolic link %s", link);
-        finer("VFS.readSymbolicLink %s", msg);
-        throw new SecurityException(msg);
     }
 
     @Override
     public void setAttribute(Path p, String attribute, Object value, LinkOption... options) throws IOException {
         Objects.requireNonNull(p);
         Path path = resolveVFSRelative(p);
-        if (delegate != null && !pathIsInVfs(path)) {
+        if (!pathIsInVfs(path)) {
             delegate.setAttribute(path, attribute, value, options);
-            return;
+        } else {
+            String msg = "read-only filesystem";
+            finer("VFS.setAttribute %s", msg);
+            throw new SecurityException(msg);
         }
-        String msg = "read-only filesystem";
-        finer("VFS.setAttribute %s", msg);
-        throw new SecurityException(msg);
     }
 
     @Override
     public String getMimeType(Path p) {
         Objects.requireNonNull(p);
         Path path = resolveVFSRelative(p);
-        if (delegate != null && !pathIsInVfs(path)) {
+        if (!pathIsInVfs(path)) {
             return delegate.getMimeType(path);
         }
         return null;
@@ -1114,12 +1064,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public Path getTempDirectory() {
-        if (delegate != null) {
-            return delegate.getTempDirectory();
-        }
-        String msg = "read-only filesystem";
-        finer("VFS.getTempDirectory %s", msg);
-        throw new SecurityException(msg);
+        return delegate.getTempDirectory();
     }
 
     private static void warn(String msgFormat, Object... args) {
@@ -1145,4 +1090,102 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             LOGGER.log(Level.FINEST, String.format(msgFormat, args));
         }
     }
+
+    private static class DeniedIOFileSystem implements FileSystem {
+
+        @Override
+        public Path parsePath(final URI uri) {
+            throw new RuntimeException("should not reach here");
+        }
+
+        @Override
+        public Path parsePath(final String path) {
+            throw new RuntimeException("should not reach here");
+        }
+
+        @Override
+        public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) throws IOException {
+            throw new SecurityException(String.format("VFS.checkAccess: filesystem without host IO: '%s'", path));
+        }
+
+        @Override
+        public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
+            throw new SecurityException(String.format("VFS.createDirectory: filesystem without host IO: '%s'", dir));
+        }
+
+        @Override
+        public void delete(Path path) throws IOException {
+            throw new SecurityException(String.format("VFS.delete: filesystem without host IO: '%s'", path));
+        }
+
+        @Override
+        public void copy(Path source, Path target, CopyOption... options) throws IOException {
+            throw new SecurityException(String.format("VFS.copy: filesystem without host IO: '%s', '%s'", source, target));
+        }
+
+        @Override
+        public void move(Path source, Path target, CopyOption... options) throws IOException {
+            throw new SecurityException(String.format("VFS.move: filesystem without host IO: '%s', '%s'", source, target));
+        }
+
+        @Override
+        public SeekableByteChannel newByteChannel(Path inPath, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+            throw new SecurityException(String.format("VFS.newByteChannel: filesystem without host IO: '%s'", inPath));
+        }
+
+        @Override
+        public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
+            throw new SecurityException(String.format("VFS.newDirectoryStream: filesystem without host IO: '%s'", dir));
+        }
+
+        @Override
+        public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) {
+            throw new SecurityException(String.format("VFS.readAttributes: filesystem without host IO: '%s'", path));
+        }
+
+        @Override
+        public void setAttribute(Path path, String attribute, Object value, LinkOption... options) {
+            throw new SecurityException(String.format("VFS.setAttribute: filesystem without host IO: '%s'", path));
+        }
+
+        @Override
+        public Path toAbsolutePath(Path path) {
+            throw new SecurityException(String.format("VFS.toAbsolutePath: filesystem without host IO: '%s'", path));
+        }
+
+        @Override
+        public void setCurrentWorkingDirectory(Path currentWorkingDirectory) {
+        }
+
+        @Override
+        public Path toRealPath(Path path, LinkOption... linkOptions) {
+            throw new SecurityException(String.format("VFS.toRealPath: filesystem without host IO: '%s'", path));
+        }
+
+        @Override
+        public Path getTempDirectory() {
+            throw new SecurityException(String.format("VFS.getTempDirectory: filesystem without host IO"));
+        }
+
+        @Override
+        public void createLink(Path link, Path existing) {
+            throw new SecurityException(String.format("VFS.createLink: filesystem without host IO: '%s'", link));
+        }
+
+        @Override
+        public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) {
+            throw new SecurityException(String.format("VFS.createSymbolicLink: filesystem without host IO: '%s', '%s'", link, target));
+        }
+
+        @Override
+        public Path readSymbolicLink(Path link) {
+            throw new SecurityException(String.format("VFS.readSymbolicLink: filesystem without host IO: '%s'", link));
+        }
+
+        @Override
+        public boolean isSameFile(Path path1, Path path2, LinkOption... options) {
+            throw new SecurityException(String.format("VFS.isSameFile: filesystem without host IO: '%s', '%s'", path1, path2));
+        }
+    }
+
 }

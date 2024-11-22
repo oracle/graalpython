@@ -65,7 +65,6 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -156,7 +155,7 @@ public class VirtualFileSystemTest {
         assertEquals(VFS_ROOT_PATH.resolve("dir1"), rwHostIOVFS.toRealPath(Path.of(realFSDir.toString() + "/..".repeat(realFSDir.getNameCount()) + VFS_ROOT).resolve("dir1")));
     }
 
-    private void toRealPathVFS(FileSystem fs, String pathPrefix) throws IOException {
+    private static void toRealPathVFS(FileSystem fs, String pathPrefix) throws IOException {
         // check regular resource dir
         assertEquals(Path.of(VFS_ROOT + "dir1"), fs.toRealPath(Path.of(pathPrefix + "dir1/../dir1")));
         // check regular resource file
@@ -330,7 +329,7 @@ public class VirtualFileSystemTest {
         checkException(SecurityException.class, () -> noHostIOVFS.checkAccess(realFSPath, Set.of(AccessMode.READ)), "expected error for no host io fs");
     }
 
-    private void checkAccessVFS(FileSystem fs, String pathPrefix) throws IOException {
+    private static void checkAccessVFS(FileSystem fs, String pathPrefix) throws IOException {
         // check regular resource dir
         fs.checkAccess(Path.of(pathPrefix + "dir1"), Set.of(AccessMode.READ));
         // check regular resource file
@@ -418,7 +417,7 @@ public class VirtualFileSystemTest {
         });
     }
 
-    private void deleteVFS(FileSystem fs, String pathPrefix) {
+    private static void deleteVFS(FileSystem fs, String pathPrefix) {
         checkDelete(fs, pathPrefix + "file1");
         checkDelete(fs, pathPrefix + "dir1");
         checkDelete(fs, pathPrefix + "extractme");
@@ -457,7 +456,7 @@ public class VirtualFileSystemTest {
         }
     }
 
-    private void newByteChannelVFS(FileSystem fs, String pathPrefix) throws IOException {
+    private static void newByteChannelVFS(FileSystem fs, String pathPrefix) throws IOException {
         Path path = Path.of(pathPrefix + "file1");
         for (StandardOpenOption o : StandardOpenOption.values()) {
             if (o == StandardOpenOption.READ) {
@@ -479,7 +478,7 @@ public class VirtualFileSystemTest {
         checkCanOnlyRead(fs, path, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
-    private void newByteChannelRealFS(FileSystem fs, Path path, String expectedText) throws IOException {
+    private static void newByteChannelRealFS(FileSystem fs, Path path, String expectedText) throws IOException {
         SeekableByteChannel bch = fs.newByteChannel(path, Set.of(StandardOpenOption.READ));
         ByteBuffer buffer = ByteBuffer.allocate(expectedText.length());
         bch.read(buffer);
@@ -580,7 +579,7 @@ public class VirtualFileSystemTest {
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build());
-        Path p = fs.toAbsolutePath(VFS_ROOT_PATH.resolve("site-packages/testpkg/file.tso"));
+        Path p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg/file.tso"));
         checkExtractedFile(p, null);
         Path extractedRoot = p.getParent().getParent().getParent();
 
@@ -592,7 +591,7 @@ public class VirtualFileSystemTest {
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file1.tso"), null);
         checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file2.tso"), null);
 
-        p = fs.toAbsolutePath(VFS_ROOT_PATH.resolve("site-packages/testpkg-nolibs/file.tso"));
+        p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg-nolibs/file.tso"));
         checkExtractedFile(p, null);
     }
 
@@ -667,7 +666,6 @@ public class VirtualFileSystemTest {
             checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(VFS_ROOT_PATH.resolve("file1")));
 
             try {
-                // support non existing working dir
                 Path nonExistingDir = VFS_ROOT_PATH.resolve("does-not-exist");
                 fs.setCurrentWorkingDirectory(nonExistingDir);
                 assertEquals(nonExistingDir, fs.toAbsolutePath(Path.of("dir")).getParent());
@@ -675,25 +673,26 @@ public class VirtualFileSystemTest {
                 Path vfsDir = VFS_ROOT_PATH.resolve("dir1");
                 fs.setCurrentWorkingDirectory(vfsDir);
                 assertEquals(vfsDir, fs.toAbsolutePath(Path.of("dir")).getParent());
-            } finally {
-                resetCWD(fs);
-            }
-
-            checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(realFSFile));
-            try {
-                // support non existing working dir
-                Path nonExistingDir = realFSDir.resolve("does-not-exist");
-                fs.setCurrentWorkingDirectory(nonExistingDir);
-                assertEquals(nonExistingDir, fs.toAbsolutePath(Path.of("dir")).getParent());
-
-                fs.setCurrentWorkingDirectory(realFSDir);
-                assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
-
-                fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "../" + realFSDir.toString()));
-                assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
 
                 fs.setCurrentWorkingDirectory(Path.of(realFSDir.toString() + "/..".repeat(realFSDir.getNameCount()) + VFS_ROOT));
                 assertEquals(VFS_ROOT_PATH.resolve("dir1"), fs.toAbsolutePath(Path.of("dir1")));
+
+                if (fs == noHostIOVFS) {
+                    fs.setCurrentWorkingDirectory(realFSFile);
+                    assertEquals(VFS_ROOT_PATH, fs.toAbsolutePath(Path.of(realFSFile.toString() + "/..".repeat(realFSFile.getNameCount()) + VFS_ROOT)));
+                } else {
+                    checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(realFSFile));
+
+                    nonExistingDir = realFSDir.resolve("does-not-exist");
+                    fs.setCurrentWorkingDirectory(nonExistingDir);
+                    assertEquals(nonExistingDir, fs.toAbsolutePath(Path.of("dir")).getParent());
+
+                    fs.setCurrentWorkingDirectory(realFSDir);
+                    assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
+
+                    fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "../" + realFSDir.toString()));
+                    assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
+                }
             } finally {
                 resetCWD(fs);
             }
