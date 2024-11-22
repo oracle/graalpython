@@ -1076,7 +1076,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyLong_GCD", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_Lshift", ret = PyObject, args = {PyObject, SIZE_T}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_New", ret = PyLongObject, args = {Py_ssize_t}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyLong_NumBits", ret = SIZE_T, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_Rshift", ret = PyObject, args = {PyObject, SIZE_T}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_Size_t_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "_PyLong_UnsignedInt_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
