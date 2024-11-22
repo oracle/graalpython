@@ -679,28 +679,23 @@ public class VirtualFileSystemTest {
                 resetCWD(fs);
             }
 
-            if (fs == noHostIOVFS) {
-                checkException(SecurityException.class, () -> fs.setCurrentWorkingDirectory(realFSFile));
-                checkException(SecurityException.class, () -> fs.setCurrentWorkingDirectory(realFSDir));
-            } else {
-                checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(realFSFile));
-                try {
-                    // support non existing working dir
-                    Path nonExistingDir = realFSDir.resolve("does-not-exist");
-                    fs.setCurrentWorkingDirectory(nonExistingDir);
-                    assertEquals(nonExistingDir, fs.toAbsolutePath(Path.of("dir")).getParent());
+            checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(realFSFile));
+            try {
+                // support non existing working dir
+                Path nonExistingDir = realFSDir.resolve("does-not-exist");
+                fs.setCurrentWorkingDirectory(nonExistingDir);
+                assertEquals(nonExistingDir, fs.toAbsolutePath(Path.of("dir")).getParent());
 
-                    fs.setCurrentWorkingDirectory(realFSDir);
-                    assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
+                fs.setCurrentWorkingDirectory(realFSDir);
+                assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
 
-                    fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "../" + realFSDir.toString()));
-                    assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
+                fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "../" + realFSDir.toString()));
+                assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
 
-                    fs.setCurrentWorkingDirectory(Path.of(realFSDir.toString() + "/..".repeat(realFSDir.getNameCount()) + VFS_ROOT));
-                    assertEquals(VFS_ROOT_PATH.resolve("dir1"), fs.toAbsolutePath(Path.of("dir1")));
-                } finally {
-                    resetCWD(fs);
-                }
+                fs.setCurrentWorkingDirectory(Path.of(realFSDir.toString() + "/..".repeat(realFSDir.getNameCount()) + VFS_ROOT));
+                assertEquals(VFS_ROOT_PATH.resolve("dir1"), fs.toAbsolutePath(Path.of("dir1")));
+            } finally {
+                resetCWD(fs);
             }
         }
     }

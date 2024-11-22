@@ -439,12 +439,16 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                 warn("VFS.getEntry: no entries after init");
             }
         }
-        Path path = resolveVFSRelative(inputPath).normalize();
+        Path path = resolveVFSRelative(inputPath);
         return vfsEntries.get(toCaseComparable(path.toString()));
     }
 
+    /**
+     * Determines if the given path belongs to the VFS. The path should be already normalized
+     */
     private boolean pathIsInVfs(Path path) {
-        return toCaseComparable(path.normalize().toString()).startsWith(mountPointLowerCase);
+        assert path.toString().equals(path.normalize().toString());
+        return toCaseComparable(path.toString()).startsWith(mountPointLowerCase);
     }
 
     /**
@@ -909,9 +913,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                     result = path;
                 }
             }
-            Path ret = result.normalize();
-            finer("VFS.toRealPath '%s' -> '%s'", path, ret);
-            return ret;
+            finer("VFS.toRealPath '%s' -> '%s'", path, result);
+            return result;
         }
     }
 
