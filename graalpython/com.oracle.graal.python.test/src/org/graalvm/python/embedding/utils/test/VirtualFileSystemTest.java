@@ -562,6 +562,32 @@ public class VirtualFileSystemTest {
         }
     }
 
+    @Test
+    public void noExtractFilter() throws Exception {
+        FileSystem fs = getVFSImpl(VirtualFileSystem.newBuilder().//
+                        unixMountPoint(VFS_MOUNT_POINT).//
+                        windowsMountPoint(VFS_WIN_MOUNT_POINT).//
+                        extractFilter(null).//
+                        resourceLoadingClass(VirtualFileSystemTest.class).build());
+        checkNotExtracted(fs, VFS_ROOT_PATH);
+    }
+
+    private void checkNotExtracted(FileSystem fs, Path dir) throws IOException {
+        DirectoryStream<Path> ds = fs.newDirectoryStream(dir, (p) -> true);
+        Iterator<Path> it = ds.iterator();
+        while (it.hasNext()) {
+            Path p = it.next();
+
+            System.out.println("+++ " + p + " " + fs.readAttributes(p, "isDirectory").get("isDirectory"));
+
+            assertTrue(p.toString().startsWith(VFS_ROOT));
+            fs.readAttributes(p, "isDirectory");
+            if (Boolean.TRUE.equals((fs.readAttributes(p, "isDirectory").get("isDirectory")))) {
+                checkNotExtracted(fs, p);
+            }
+        }
+    }
+
     private interface ExceptionCall {
         void call() throws Exception;
     }

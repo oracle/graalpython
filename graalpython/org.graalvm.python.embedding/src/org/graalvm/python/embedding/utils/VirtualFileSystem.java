@@ -146,7 +146,7 @@ public final class VirtualFileSystem {
          *            VirtualFileSystem.
          */
         public Builder extractFilter(Predicate<Path> filter) {
-            if (extractFilter == null) {
+            if (filter == null) {
                 extractFilter = null;
             } else {
                 extractFilter = (p) -> filter.test(p) || DEFAULT_EXTRACT_FILTER.test(p);
