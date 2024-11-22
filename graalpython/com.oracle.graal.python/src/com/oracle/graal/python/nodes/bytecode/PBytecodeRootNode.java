@@ -1830,6 +1830,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw bytecodeRaiseVarargs(virtualFrame, stackTop, beginBci, count, localNodes);
                     }
                     case OpCodesConstants.RETURN_VALUE: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
                         return bytecodeReturnValue(virtualFrame, isGeneratorOrCoroutine, instrumentation, mutableData, stackTop, tracingOrProfilingEnabled, beginBci);
                     }
                     case OpCodesConstants.LOAD_BUILD_CLASS: {
