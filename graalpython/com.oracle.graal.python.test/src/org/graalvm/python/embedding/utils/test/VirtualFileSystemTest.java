@@ -65,6 +65,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -142,7 +143,8 @@ public class VirtualFileSystemTest {
         }
 
         // from real FS
-        final Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        final Path realFSDir = Files.createTempDirectory("graalpy.vfs.test");
+        final Path realFSPath = realFSDir.resolve("extractme");
         realFSPath.toFile().createNewFile();
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
             assertTrue(Files.isSameFile(realFSPath, fs.toRealPath(Path.of(realFSPath.getParent().toString() + "/../" + realFSPath.getParent().getFileName().toString() + "/extractme"))));
@@ -151,6 +153,7 @@ public class VirtualFileSystemTest {
             withCWD(fs, VFS_ROOT_PATH, (fst) -> assertTrue(Files.isSameFile(realFSPath, fst.toRealPath(Path.of("../" + realFSPath.toString())))));
         }
         checkException(SecurityException.class, () -> noHostIOVFS.toRealPath(realFSPath), "expected error for no host io fs");
+        assertEquals(VFS_ROOT_PATH.resolve("dir1"), rwHostIOVFS.toRealPath(Path.of(realFSDir.toString() + "/..".repeat(realFSDir.getNameCount()) + VFS_ROOT).resolve("dir1")));
     }
 
     private void toRealPathVFS(FileSystem fs, String pathPrefix) throws IOException {
@@ -165,7 +168,7 @@ public class VirtualFileSystemTest {
 
     @Test
     public void toAbsolutePath() throws Exception {
-        // from VFS
+        // VFS
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             checkException(NullPointerException.class, () -> fs.toAbsolutePath(null));
 
@@ -193,15 +196,59 @@ public class VirtualFileSystemTest {
             });
         }
 
-        // from real FS
-        Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
+        // real FS
+        Path realFSDir = Files.createTempDirectory("graalpy.vfs.test");
+        Path realFSDir2 = realFSDir.resolve("dir");
+        Files.createDirectories(realFSDir2);
+        Path realFSPath = realFSDir.resolve("extractme");
         realFSPath.toFile().createNewFile();
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
             assertEquals(Path.of("extractme").toAbsolutePath(), fs.toAbsolutePath(Path.of("extractme")));
+
+            // absolute path starting with VFS, pointing to real FS
+            // /VFS_ROOT/../real/fs/path/
+            assertEquals(realFSPath, fs.toAbsolutePath(Path.of(VFS_ROOT + ".." + realFSPath.toString())));
+            // absolute path starting with real FS, pointing to VFS
+            // /real/fs/path/../../../VFS_ROOT
+            assertEquals(VFS_ROOT_PATH, fs.toAbsolutePath(Path.of(realFSDir.toString() + "/..".repeat(realFSDir.getNameCount()) + VFS_ROOT)));
+
+            // no CWD set, so relative path starting in real FS, pointing to VFS
+            // ../../../VFS_ROOT
+            Path defaultCWD = Path.of(".").toAbsolutePath();
+            assertEquals(VFS_ROOT_PATH, fs.toAbsolutePath(Path.of("../".repeat(defaultCWD.getNameCount()) + VFS_ROOT)));
+            // ../../../VFS_ROOT/../real/fs/path
+            assertEquals(realFSPath, fs.toAbsolutePath(Path.of("../".repeat(defaultCWD.getNameCount()) + VFS_ROOT + ".." + realFSPath.toString())));
+
+            // CWD is VFS_ROOT, relative path pointing to real FS
+            // ../real/fs/path
+            withCWD(fs, VFS_ROOT_PATH, (fst) -> assertEquals(realFSPath, fst.toAbsolutePath(Path.of("../" + realFSPath.toString()))));
+            // CWD is VFS_ROOT, relative path pointing through real FS back to VFS
+            // ../real/fs/path/../../../VFS_ROOT_PATH
+            withCWD(fs, VFS_ROOT_PATH, (fst) -> assertEquals(VFS_ROOT_PATH, fst.toAbsolutePath(Path.of("../some/path/../../" + VFS_ROOT))));
+            // CWD is real FS, relative path pointing to VFS
+            // real/fs/path/../../
+            withCWD(fs, realFSPath.getParent(), (fst) -> assertEquals(VFS_ROOT_PATH, fst.toAbsolutePath(Path.of("dir/" + "../".repeat(realFSDir2.getNameCount()) + VFS_ROOT))));
+            // CWD is real FS, relative path pointing through VFS to real FS
+            // real/fs/path/../../../VFS
+            withCWD(fs, realFSPath.getParent(),
+                            (fst) -> assertEquals(realFSPath, fst.toAbsolutePath(Path.of("dir/" + "../".repeat(realFSDir2.getNameCount()) + VFS_ROOT + "../" + realFSPath.toString()))));
+            assertEquals(Path.of("extractme").toAbsolutePath(), fs.toAbsolutePath(Path.of("extractme")));
+
             withCWD(fs, realFSPath.getParent(), (fst) -> assertEquals(realFSPath, fst.toAbsolutePath(realFSPath.getFileName())));
+
         }
+
         checkException(SecurityException.class, () -> noHostIOVFS.toAbsolutePath(realFSPath));
         assertEquals(Path.of(VFS_SRC + "extractme"), noHostIOVFS.toAbsolutePath(realFSPath.getFileName()));
+
+        // absolute path starting with real FS, pointing to VFS
+        // /real/fs/path/../../../VFS_ROOT
+        assertEquals(VFS_ROOT_PATH, noHostIOVFS.toAbsolutePath(Path.of(realFSDir.toString() + "/..".repeat(realFSDir.getNameCount()) + VFS_ROOT)));
+
+        // no CWD set, relative path starting in real FS, pointing to VFS
+        // ../../../VFS_ROOT
+        Path defaultCWD = Path.of(".").toAbsolutePath();
+        assertEquals(VFS_ROOT_PATH, noHostIOVFS.toAbsolutePath(Path.of("../".repeat(defaultCWD.getNameCount()) + VFS_ROOT)));
     }
 
     @Test
@@ -608,10 +655,7 @@ public class VirtualFileSystemTest {
     }
 
     @Test
-    public void setCurrentWorkingDirectory() throws Exception {
-
-        // XXX test with not normalized paths
-
+    public void currentWorkingDirectory() throws Exception {
         Path realFSDir = Files.createTempDirectory("graalpy.vfs.test");
         Path realFSFile = realFSDir.resolve("extractme");
         Files.createFile(realFSFile);
@@ -648,6 +692,12 @@ public class VirtualFileSystemTest {
 
                     fs.setCurrentWorkingDirectory(realFSDir);
                     assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
+
+                    fs.setCurrentWorkingDirectory(Path.of(VFS_ROOT + "../" + realFSDir.toString()));
+                    assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
+
+                    fs.setCurrentWorkingDirectory(Path.of(realFSDir.toString() + "/..".repeat(realFSDir.getNameCount()) + VFS_ROOT));
+                    assertEquals(VFS_ROOT_PATH.resolve("dir1"), fs.toAbsolutePath(Path.of("dir1")));
                 } finally {
                     resetCWD(fs);
                 }
@@ -721,7 +771,7 @@ public class VirtualFileSystemTest {
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
             checkException(NullPointerException.class, () -> fs.createLink(null, null));
             checkException(NullPointerException.class, () -> fs.createLink(VFS_ROOT_PATH, null));
-            checkException(SecurityException.class, () -> fs.createLink(VFS_ROOT_PATH.resolve("/link1"), realFSPath));
+            checkException(SecurityException.class, () -> fs.createLink(VFS_ROOT_PATH.resolve("link1"), realFSPath));
             checkException(SecurityException.class, () -> fs.createLink(realFSPath.getParent().resolve("link2"), VFS_ROOT_PATH));
             checkException(SecurityException.class, () -> fs.createLink(VFS_ROOT_PATH, VFS_ROOT_PATH.resolve("link")));
         }
@@ -746,8 +796,8 @@ public class VirtualFileSystemTest {
             checkException(NullPointerException.class, () -> fs.createSymbolicLink(null, null));
             checkException(NullPointerException.class, () -> fs.readSymbolicLink(null));
 
-            checkException(SecurityException.class, () -> fs.createSymbolicLink(VFS_ROOT_PATH.resolve("/link1"), realFSPath));
-            checkException(SecurityException.class, () -> fs.readSymbolicLink(VFS_ROOT_PATH.resolve("/link1")));
+            checkException(SecurityException.class, () -> fs.createSymbolicLink(VFS_ROOT_PATH.resolve("link1"), realFSPath));
+            checkException(SecurityException.class, () -> fs.readSymbolicLink(VFS_ROOT_PATH.resolve("link1")));
             checkException(SecurityException.class, () -> fs.createSymbolicLink(realFSPath.getParent().resolve("link2"), VFS_ROOT_PATH));
             checkException(SecurityException.class, () -> fs.createSymbolicLink(VFS_ROOT_PATH, VFS_ROOT_PATH.resolve("link")));
         }

@@ -851,16 +851,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     private Path resolveVFSRelative(Path path) {
         if (path.isAbsolute()) {
-            return path;
+            return path.normalize();
         }
         if (cwd == null) {
-            return path.toAbsolutePath();
+            return path.toAbsolutePath().normalize();
         } else {
-            if (pathIsInVfs(cwd)) {
-                return cwd.resolve(path).normalize();
-            } else {
-                return cwd.resolve(path);
-            }
+            return cwd.resolve(path).normalize();
         }
     }
 
@@ -966,11 +962,15 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public void setCurrentWorkingDirectory(Path dir) {
-        Objects.requireNonNull(dir, "Current working directory must be non null.");
-        if (!dir.isAbsolute()) {
+    public void setCurrentWorkingDirectory(Path d) {
+        Objects.requireNonNull(d, "Current working directory must be non null.");
+        if (!d.isAbsolute()) {
             throw new IllegalArgumentException("Current working directory must be absolute.");
         }
+        // need resolve paths starting in VFS but pointing to real FS or vice versa
+        // /vfs_mount_point/../real/fs/path
+        // /real/fs/path/../../vfs_mount_point/...
+        Path dir = d.normalize();
         if (pathIsInVfs(dir)) {
             try {
                 BaseEntry entry = getEntry(dir);
@@ -984,9 +984,8 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             if (delegate != null) {
                 delegate.setCurrentWorkingDirectory(dir);
             } else {
-                String msg = String.format("filesystem without host IO: '%s'", dir);
-                finest("VFS.setCurrentWorkingDirectory %s", msg);
-                throw new SecurityException(msg);
+                // allow so that we can resolve relative paths pointing from real FS to VFS
+                // {cwd}/real/fs/../ ... /../vfs_root
             }
         }
         cwd = dir;
