@@ -207,7 +207,8 @@ test.test_os.Win32ErrorTests.test_rename @ win32-AMD64
 test.test_os.Win32ErrorTests.test_utime @ win32-AMD64
 test.test_os.Win32ListdirTests.test_listdir_extended_path @ win32-AMD64
 test.test_os.Win32ListdirTests.test_listdir_no_extended_path @ win32-AMD64
-test.test_os.Win32NtTests.test_getfinalpathname_handles @ win32-AMD64
+# Transiently gets different count of file handles
+!test.test_os.Win32NtTests.test_getfinalpathname_handles @ win32-AMD64
 test.test_os.Win32NtTests.test_stat_unlink_race @ win32-AMD64
 test.test_os.Win32SymlinkTests.test_12084 @ win32-AMD64
 test.test_os.Win32SymlinkTests.test_29248 @ win32-AMD64

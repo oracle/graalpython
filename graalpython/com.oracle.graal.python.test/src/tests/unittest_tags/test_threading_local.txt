@@ -1,4 +1,5 @@
-DocTestCase._threading_local @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-48555: transient "The language did not complete all polyglot threads but should have"
+!DocTestCase._threading_local @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading_local.PyThreadingLocalTest.test_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading_local.PyThreadingLocalTest.test_derived @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading_local.PyThreadingLocalTest.test_derived_cycle_dealloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

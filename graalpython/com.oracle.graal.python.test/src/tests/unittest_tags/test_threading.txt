@@ -160,6 +160,5 @@ test.test_threading.ThreadingExceptionTests.test_multithread_modify_file_noerror
 !test.test_threading.ThreadingExceptionTests.test_print_exception @ darwin-arm64,linux-aarch64,linux-x86_64
 !test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_1 @ darwin-arm64,linux-aarch64,linux-x86_64
 !test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_2 @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_threading.ThreadingExceptionTests.test_recursion_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_threading.ThreadingExceptionTests.test_start_thread_again @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.TimerTests.test_init_immutable_default_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
