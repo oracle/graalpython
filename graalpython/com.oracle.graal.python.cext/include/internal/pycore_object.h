@@ -278,6 +278,8 @@ extern int _PyObject_StoreInstanceAttribute(PyObject *obj, PyDictValues *values,
 PyObject * _PyObject_GetInstanceAttribute(PyObject *obj, PyDictValues *values,
                                         PyObject *name);
 
+#define MANAGED_WEAKREF_OFFSET (((Py_ssize_t)sizeof(PyObject *))*-4)
+
 static inline PyDictValues **_PyObject_ValuesPointer(PyObject *obj)
 {
     // GraalPy change: we don't have inlined managed dict values
@@ -299,10 +301,6 @@ extern void _PyObject_ClearInstanceAttributes(PyObject *self);
 extern void _PyObject_FreeInstanceAttributes(PyObject *self);
 extern int _PyObject_IsInstanceDictEmpty(PyObject *);
 extern PyObject* _PyType_GetSubclasses(PyTypeObject *);
-
-// Access macro to the members which are floating "behind" the object
-#define _PyHeapType_GET_MEMBERS(etype) \
-    ((PyMemberDef *)(((char *)etype) + Py_TYPE(etype)->tp_basicsize))
 
 PyAPI_FUNC(PyObject *) _PyObject_LookupSpecial(PyObject *, PyObject *);
 

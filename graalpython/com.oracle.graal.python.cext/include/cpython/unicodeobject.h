@@ -16,57 +16,37 @@
 
 /* --- Internal Unicode Operations ---------------------------------------- */
 
-#ifndef USE_UNICODE_WCHAR_CACHE
-#  define USE_UNICODE_WCHAR_CACHE 0 // GraalPy change
-#endif /* USE_UNICODE_WCHAR_CACHE */
+// Static inline functions to work with surrogates
+static inline int Py_UNICODE_IS_SURROGATE(Py_UCS4 ch) {
+    return (0xD800 <= ch && ch <= 0xDFFF);
+}
+static inline int Py_UNICODE_IS_HIGH_SURROGATE(Py_UCS4 ch) {
+    return (0xD800 <= ch && ch <= 0xDBFF);
+}
+static inline int Py_UNICODE_IS_LOW_SURROGATE(Py_UCS4 ch) {
+    return (0xDC00 <= ch && ch <= 0xDFFF);
+}
 
-/* Since splitting on whitespace is an important use case, and
-   whitespace in most situations is solely ASCII whitespace, we
-   optimize for the common case by using a quick look-up table
-   _Py_ascii_whitespace (see below) with an inlined check.
+// Join two surrogate characters and return a single Py_UCS4 value.
+static inline Py_UCS4 Py_UNICODE_JOIN_SURROGATES(Py_UCS4 high, Py_UCS4 low)  {
+    assert(Py_UNICODE_IS_HIGH_SURROGATE(high));
+    assert(Py_UNICODE_IS_LOW_SURROGATE(low));
+    return 0x10000 + (((high & 0x03FF) << 10) | (low & 0x03FF));
+}
 
- */
-#define Py_UNICODE_ISSPACE(ch) \
-    ((Py_UCS4)(ch) < 128U ? _Py_ascii_whitespace[(ch)] : _PyUnicode_IsWhitespace(ch))
+// High surrogate = top 10 bits added to 0xD800.
+// The character must be in the range [U+10000; U+10ffff].
+static inline Py_UCS4 Py_UNICODE_HIGH_SURROGATE(Py_UCS4 ch) {
+    assert(0x10000 <= ch && ch <= 0x10ffff);
+    return (0xD800 - (0x10000 >> 10) + (ch >> 10));
+}
 
-#define Py_UNICODE_ISLOWER(ch) _PyUnicode_IsLowercase(ch)
-#define Py_UNICODE_ISUPPER(ch) _PyUnicode_IsUppercase(ch)
-#define Py_UNICODE_ISTITLE(ch) _PyUnicode_IsTitlecase(ch)
-#define Py_UNICODE_ISLINEBREAK(ch) _PyUnicode_IsLinebreak(ch)
-
-#define Py_UNICODE_TOLOWER(ch) _PyUnicode_ToLowercase(ch)
-#define Py_UNICODE_TOUPPER(ch) _PyUnicode_ToUppercase(ch)
-#define Py_UNICODE_TOTITLE(ch) _PyUnicode_ToTitlecase(ch)
-
-#define Py_UNICODE_ISDECIMAL(ch) _PyUnicode_IsDecimalDigit(ch)
-#define Py_UNICODE_ISDIGIT(ch) _PyUnicode_IsDigit(ch)
-#define Py_UNICODE_ISNUMERIC(ch) _PyUnicode_IsNumeric(ch)
-#define Py_UNICODE_ISPRINTABLE(ch) _PyUnicode_IsPrintable(ch)
-
-#define Py_UNICODE_TODECIMAL(ch) _PyUnicode_ToDecimalDigit(ch)
-#define Py_UNICODE_TODIGIT(ch) _PyUnicode_ToDigit(ch)
-#define Py_UNICODE_TONUMERIC(ch) _PyUnicode_ToNumeric(ch)
-
-#define Py_UNICODE_ISALPHA(ch) _PyUnicode_IsAlpha(ch)
-
-#define Py_UNICODE_ISALNUM(ch) \
-   (Py_UNICODE_ISALPHA(ch) || \
-    Py_UNICODE_ISDECIMAL(ch) || \
-    Py_UNICODE_ISDIGIT(ch) || \
-    Py_UNICODE_ISNUMERIC(ch))
-
-/* macros to work with surrogates */
-#define Py_UNICODE_IS_SURROGATE(ch) (0xD800 <= (ch) && (ch) <= 0xDFFF)
-#define Py_UNICODE_IS_HIGH_SURROGATE(ch) (0xD800 <= (ch) && (ch) <= 0xDBFF)
-#define Py_UNICODE_IS_LOW_SURROGATE(ch) (0xDC00 <= (ch) && (ch) <= 0xDFFF)
-/* Join two surrogate characters and return a single Py_UCS4 value. */
-#define Py_UNICODE_JOIN_SURROGATES(high, low)  \
-    (((((Py_UCS4)(high) & 0x03FF) << 10) |      \
-      ((Py_UCS4)(low) & 0x03FF)) + 0x10000)
-/* high surrogate = top 10 bits added to D800 */
-#define Py_UNICODE_HIGH_SURROGATE(ch) (0xD800 - (0x10000 >> 10) + ((ch) >> 10))
-/* low surrogate = bottom 10 bits added to DC00 */
-#define Py_UNICODE_LOW_SURROGATE(ch) (0xDC00 + ((ch) & 0x3FF))
+// Low surrogate = bottom 10 bits added to 0xDC00.
+// The character must be in the range [U+10000; U+10ffff].
+static inline Py_UCS4 Py_UNICODE_LOW_SURROGATE(Py_UCS4 ch) {
+    assert(0x10000 <= ch && ch <= 0x10ffff);
+    return (0xDC00 + (ch & 0x3FF));
+}
 
 /* --- Unicode Type ------------------------------------------------------- */
 

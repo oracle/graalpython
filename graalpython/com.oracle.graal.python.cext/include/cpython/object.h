@@ -513,3 +513,5 @@ Py_DEPRECATED(3.11) typedef int UsingDeprecatedTrashcanMacro;
 #define Py_TRASHCAN_SAFE_END(op) \
         Py_TRASHCAN_END; \
     } while(0);
+
+PyAPI_FUNC(void *) PyObject_GetItemData(PyObject *obj);

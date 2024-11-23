@@ -1157,8 +1157,26 @@ _PyObject_DictPointer(PyObject *obj)
 PyObject **
 _PyObject_GetDictPtr(PyObject *obj)
 {
+    if ((Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0) {
+        return _PyObject_DictPointer(obj);
+    }
+    PyObject **dict_ptr = _PyObject_ManagedDictPointer(obj);
+#if 0 // GraalPy change
     // GraalPy change: we don't have inlined managed dict values, so just use the common path
-    return _PyObject_DictPointer(obj);
+    PyDictValues **values_ptr = _PyObject_ValuesPointer(obj);
+    if (*values_ptr == NULL) {
+        return dict_ptr;
+    }
+    assert(*dict_ptr == NULL);
+    PyObject *dict = _PyObject_MakeDictFromInstanceAttributes(obj, *values_ptr);
+    if (dict == NULL) {
+        PyErr_Clear();
+        return NULL;
+    }
+    *values_ptr = NULL;
+    *dict_ptr = dict;
+#endif // GraalPy change
+    return dict_ptr;
 }
 
 PyObject *

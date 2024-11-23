@@ -3773,6 +3773,15 @@ static const PySlot_Offset pyslot_offsets[] = {
 #include "typeslots.inc"
 };
 
+/* Align up to the nearest multiple of alignof(max_align_t)
+ * (like _Py_ALIGN_UP, but for a size rather than pointer)
+ */
+static Py_ssize_t
+_align_up(Py_ssize_t size)
+{
+    return (size + ALIGNOF_MAX_ALIGN_T - 1) & ~(ALIGNOF_MAX_ALIGN_T - 1);
+}
+
 PyObject *
 PyType_FromSpecWithBases(PyType_Spec *spec, PyObject *bases)
 {
@@ -6979,12 +6988,16 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
         goto error;
     }
     if (!rerunbuiltin) {
+        if (type_ready_inherit(type) < 0) {
             goto error;
         }
+#if 0 // GraalPy change
         if (type_ready_preheader(type) < 0) {
             goto error;
         }
+#endif // GraalPy change
     }
+    /* GraalPy change: process inherited slots
      * CPython doesn't do that in 'PyType_Ready' but we must because a native type can inherit
      * dynamic slots from a managed Python class. Since the managed Python class may be created
      * when the C API is not loaded, we need to do that later.
@@ -7048,7 +7061,7 @@ PyType_Ready(PyTypeObject *type)
     Py_INCREF(type);
     Py_INCREF(type); // TODO: this second incref keeps types alive forever...
 
-    if (type_ready(type) < 0) {
+    if (type_ready(type, 0) < 0) {
         type->tp_flags &= ~Py_TPFLAGS_READYING;
         return -1;
     }

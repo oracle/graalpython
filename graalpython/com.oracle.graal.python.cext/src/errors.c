@@ -45,6 +45,12 @@ _PyErr_SetRaisedException(PyThreadState *tstate, PyObject *exc)
     Py_XDECREF(old_exc);
 }
 
+void
+PyErr_SetRaisedException(PyObject *exc)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    _PyErr_SetRaisedException(tstate, exc);
+}
 
 void
 _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
@@ -60,13 +66,6 @@ PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
 {
     PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_Restore(tstate, type, value, traceback);
-}
-
-void
-PyErr_SetRaisedException(PyObject *exc)
-{
-    PyThreadState *tstate = _PyThreadState_GET();
-    _PyErr_SetRaisedException(tstate, exc);
 }
 
 _PyErr_StackItem *
@@ -374,15 +373,7 @@ void
 _PyErr_Fetch(PyThreadState *tstate, PyObject **p_type, PyObject **p_value,
              PyObject **p_traceback)
 {
-    // GraalPy change: different implementation
-    if (_PyErr_Occurred(tstate)) {
-        // avoid the upcall if there is no current exception
-        GraalPyTruffleErr_Fetch(p_type, p_value, p_traceback);
-    } else {
-        *p_type = NULL;
-        *p_value = NULL;
-        *p_traceback = NULL;
-    }
+#if 0 // GraalPy change
     PyObject *exc = _PyErr_GetRaisedException(tstate);
     *p_value = exc;
     if (exc == NULL) {
@@ -393,6 +384,16 @@ _PyErr_Fetch(PyThreadState *tstate, PyObject **p_type, PyObject **p_value,
         *p_type = Py_NewRef(Py_TYPE(exc));
         *p_traceback = Py_XNewRef(((PyBaseExceptionObject *)exc)->traceback);
     }
+#else // GraalPy change: different implementation
+    if (_PyErr_Occurred(tstate)) {
+        // avoid the upcall if there is no current exception
+        GraalPyTruffleErr_Fetch(p_type, p_value, p_traceback);
+    } else {
+        *p_type = NULL;
+        *p_value = NULL;
+        *p_traceback = NULL;
+    }
+#endif // GraalPy change
 }
 
 

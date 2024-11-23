@@ -89,8 +89,6 @@ whose size is determined when the object is allocated.
     { _PyObject_EXTRA_INIT              \
     1, type },
 
-#define PyVarObject_HEAD_INIT(type, size)       \
-    { PyObject_HEAD_INIT(type) size },
 
 /*
 In 32 bit systems, an object will be marked as immortal by setting all of the
@@ -185,11 +183,15 @@ static inline Py_ssize_t Py_SIZE(PyObject *ob) {
 
 static inline Py_ALWAYS_INLINE int _Py_IsImmortal(PyObject *op)
 {
+#if 0 // GraalPy change
 #if SIZEOF_VOID_P > 4
     return _Py_CAST(PY_INT32_T, op->ob_refcnt) < 0;
 #else
     return op->ob_refcnt == _Py_IMMORTAL_REFCNT;
 #endif
+#else // GraalPy change
+    return Py_REFCNT(op) == _Py_IMMORTAL_REFCNT;
+#endif // GraalPy change
 }
 #define _Py_IsImmortal(op) _Py_IsImmortal(_PyObject_CAST(op))
 
@@ -564,6 +566,7 @@ PyAPI_FUNC(void) Py_DecRef(PyObject *);
 PyAPI_FUNC(void) _Py_IncRef(PyObject *);
 PyAPI_FUNC(void) _Py_DecRef(PyObject *);
 
+#if 0 // GraalPy change
 static inline Py_ALWAYS_INLINE void Py_INCREF(PyObject *op)
 {
 #if defined(Py_LIMITED_API) && (Py_LIMITED_API+0 >= 0x030c0000 || defined(Py_REF_DEBUG))
@@ -618,6 +621,23 @@ static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
 }
 #define Py_DECREF(op) Py_DECREF(_PyObject_CAST(op))
 #endif
+
+#else // GraalPy change
+
+static inline Py_ALWAYS_INLINE void Py_INCREF(PyObject *op)
+{
+    _Py_IncRef(op);
+}
+
+#  define Py_INCREF(op) Py_INCREF(_PyObject_CAST(op))
+
+static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
+{
+    _Py_DecRef(op);
+}
+#define Py_DECREF(op) Py_DECREF(_PyObject_CAST(op))
+
+#endif // GraalPy change
 
 
 /* Safely decref `op` and set `op` to NULL, especially useful in tp_clear
