@@ -118,6 +118,60 @@ static_builtin_index_clear(PyTypeObject *self)
 }
 
 
+static inline static_builtin_state *
+static_builtin_state_get(PyInterpreterState *interp, PyTypeObject *self)
+{
+    return &(interp->types.builtins[static_builtin_index_get(self)]);
+}
+
+/* For static types we store some state in an array on each interpreter. */
+static_builtin_state *
+_PyStaticType_GetState(PyInterpreterState *interp, PyTypeObject *self)
+{
+    assert(self->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN);
+    return static_builtin_state_get(interp, self);
+}
+
+/* Set the type's per-interpreter state. */
+static void
+static_builtin_state_init(PyInterpreterState *interp, PyTypeObject *self)
+{
+    if (!static_builtin_index_is_set(self)) {
+        static_builtin_index_set(self, interp->types.num_builtins_initialized);
+    }
+    static_builtin_state *state = static_builtin_state_get(interp, self);
+
+    /* It should only be called once for each builtin type. */
+    assert(state->type == NULL);
+    state->type = self;
+
+    /* state->tp_subclasses is left NULL until init_subclasses() sets it. */
+    /* state->tp_weaklist is left NULL until insert_head() or insert_after()
+       (in weakrefobject.c) sets it. */
+
+    interp->types.num_builtins_initialized++;
+}
+
+/* Reset the type's per-interpreter state.
+   This basically undoes what static_builtin_state_init() did. */
+static void
+static_builtin_state_clear(PyInterpreterState *interp, PyTypeObject *self)
+{
+    static_builtin_state *state = static_builtin_state_get(interp, self);
+
+    assert(state->type != NULL);
+    state->type = NULL;
+    assert(state->tp_weaklist == NULL);  // It was already cleared out.
+
+    if (_Py_IsMainInterpreter(interp)) {
+        static_builtin_index_clear(self);
+    }
+
+    assert(interp->types.num_builtins_initialized > 0);
+    interp->types.num_builtins_initialized--;
+}
+
+// Also see _PyStaticType_InitBuiltin() and _PyStaticType_Dealloc().
 
 /* end static builtin helpers */
 
@@ -125,6 +179,14 @@ static_builtin_index_clear(PyTypeObject *self)
 static inline void
 start_readying(PyTypeObject *type)
 {
+    if (type->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN) {
+        PyInterpreterState *interp = _PyInterpreterState_GET();
+        static_builtin_state *state = static_builtin_state_get(interp, type);
+        assert(state != NULL);
+        assert(!state->readying);
+        state->readying = 1;
+        return;
+    }
     assert((type->tp_flags & Py_TPFLAGS_READYING) == 0);
     type->tp_flags |= Py_TPFLAGS_READYING;
 }
@@ -132,6 +194,14 @@ start_readying(PyTypeObject *type)
 static inline void
 stop_readying(PyTypeObject *type)
 {
+    if (type->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN) {
+        PyInterpreterState *interp = _PyInterpreterState_GET();
+        static_builtin_state *state = static_builtin_state_get(interp, type);
+        assert(state != NULL);
+        assert(state->readying);
+        state->readying = 0;
+        return;
+    }
     assert(type->tp_flags & Py_TPFLAGS_READYING);
     type->tp_flags &= ~Py_TPFLAGS_READYING;
 }
@@ -139,6 +209,12 @@ stop_readying(PyTypeObject *type)
 static inline int
 is_readying(PyTypeObject *type)
 {
+    if (type->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN) {
+        PyInterpreterState *interp = _PyInterpreterState_GET();
+        static_builtin_state *state = static_builtin_state_get(interp, type);
+        assert(state != NULL);
+        return state->readying;
+    }
     return (type->tp_flags & Py_TPFLAGS_READYING) != 0;
 }
 
@@ -5021,6 +5097,12 @@ object_richcompare(PyObject *self, PyObject *other, int op)
     return res;
 }
 
+PyObject*
+_Py_BaseObject_RichCompare(PyObject* self, PyObject* other, int op)
+{
+    return object_richcompare(self, other, op);
+}
+
 static PyObject *
 object_get_class(PyObject *self, void *closure)
 {
@@ -5766,7 +5848,8 @@ static PyObject *
 object___reduce_ex___impl(PyObject *self, int protocol)
 /*[clinic end generated code: output=2e157766f6b50094 input=f326b43fb8a4c5ff]*/
 {
-    static PyObject *objreduce;
+#define objreduce \
+    (_Py_INTERP_CACHED_OBJECT(_PyInterpreterState_Get(), objreduce))
     PyObject *reduce, *res;
 
     if (objreduce == NULL) {
@@ -5802,6 +5885,7 @@ object___reduce_ex___impl(PyObject *self, int protocol)
     }
 
     return _common_reduce(self, protocol);
+#undef objreduce
 }
 
 static PyObject *

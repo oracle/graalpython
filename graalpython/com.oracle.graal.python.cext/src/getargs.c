@@ -2024,8 +2024,8 @@ _parser_init(struct _PyArg_Parser *parser)
     parser->initialized = owned ? 1 : -1;
 
     assert(parser->next == NULL);
-    parser->next = static_arg_parsers;
-    static_arg_parsers = parser;
+    parser->next = _PyRuntime.getargs.static_parsers;
+    _PyRuntime.getargs.static_parsers = parser;
     return 1;
 }
 
@@ -2945,14 +2945,14 @@ _PyArg_NoKwnames(const char *funcname, PyObject *kwnames)
 void
 _PyArg_Fini(void)
 {
-    struct _PyArg_Parser *tmp, *s = static_arg_parsers;
+    struct _PyArg_Parser *tmp, *s = _PyRuntime.getargs.static_parsers;
     while (s) {
         tmp = s->next;
         s->next = NULL;
         parser_clear(s);
         s = tmp;
     }
-    static_arg_parsers = NULL;
+    _PyRuntime.getargs.static_parsers = NULL;
 }
 
 #ifdef __cplusplus

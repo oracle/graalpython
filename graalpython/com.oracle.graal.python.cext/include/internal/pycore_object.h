@@ -29,13 +29,28 @@ PyAPI_FUNC(void) _Py_NO_RETURN _Py_FatalRefcountErrorFunc(
     const char *func,
     const char *message);
 
-#define _Py_FatalRefcountError(message) _Py_FatalRefcountErrorFunc(__func__, message)
+#define _Py_FatalRefcountError(message) \
+    _Py_FatalRefcountErrorFunc(__func__, (message))
+
+
+#ifdef Py_REF_DEBUG
+/* The symbol is only exposed in the API for the sake of extensions
+   built against the pre-3.12 stable ABI. */
+PyAPI_DATA(Py_ssize_t) _Py_RefTotal;
+
+extern void _Py_AddRefTotal(PyInterpreterState *, Py_ssize_t);
+extern void _Py_IncRefTotal(PyInterpreterState *);
+extern void _Py_DecRefTotal(PyInterpreterState *);
+
+#  define _Py_DEC_REFTOTAL(interp) \
+    interp->object_state.reftotal--
+#endif
 
 static inline void
 _Py_DECREF_SPECIALIZED(PyObject *op, const destructor destruct)
 {
 #ifdef Py_REF_DEBUG
-    _Py_RefTotal--;
+    _Py_DEC_REFTOTAL(_PyInterpreterState_GET());
 #endif
     if (--op->ob_refcnt != 0) {
         assert(op->ob_refcnt > 0);
@@ -52,7 +67,7 @@ static inline void
 _Py_DECREF_NO_DEALLOC(PyObject *op)
 {
 #ifdef Py_REF_DEBUG
-    _Py_RefTotal--;
+    _Py_DEC_REFTOTAL(_PyInterpreterState_GET());
 #endif
     op->ob_refcnt--;
 #ifdef Py_DEBUG
@@ -79,6 +94,7 @@ _PyType_HasFeature(PyTypeObject *type, unsigned long feature) {
 
 extern void _PyType_InitCache(PyInterpreterState *interp);
 
+extern void _PyObject_InitState(PyInterpreterState *interp);
 
 /* Inline functions trading binary compatibility for speed:
    _PyObject_Init() is the fast version of PyObject_Init(), and
@@ -191,13 +207,15 @@ static inline void _PyObject_GC_UNTRACK(
 #endif
 
 #ifdef Py_REF_DEBUG
+extern void _PyInterpreterState_FinalizeRefTotal(PyInterpreterState *);
+extern void _Py_FinalizeRefTotal(_PyRuntimeState *);
 extern void _PyDebug_PrintTotalRefs(void);
 #endif
 
 #ifdef Py_TRACE_REFS
 extern void _Py_AddToAllObjects(PyObject *op, int force);
-extern void _Py_PrintReferences(FILE *);
-extern void _Py_PrintReferenceAddresses(FILE *);
+extern void _Py_PrintReferences(PyInterpreterState *, FILE *);
+extern void _Py_PrintReferenceAddresses(PyInterpreterState *, FILE *);
 #endif
 
 static inline PyObject **

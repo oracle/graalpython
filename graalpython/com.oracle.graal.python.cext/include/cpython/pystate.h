@@ -31,6 +31,8 @@ might not be allowed in the current interpreter (i.e. os.fork() would fail).
 #define Py_RTFLAGS_EXEC (1UL << 16)
 
 
+PyAPI_FUNC(int) _PyInterpreterState_HasFeature(PyInterpreterState *interp,
+                                               unsigned long feature);
 
 
 /* private interpreter helpers */

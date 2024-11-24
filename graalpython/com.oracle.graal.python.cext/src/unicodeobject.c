@@ -2046,7 +2046,7 @@ _PyUnicode_FromId(_Py_Identifier *id)
 
     Py_ssize_t index = _Py_atomic_size_get(&id->index);
     if (index < 0) {
-        struct _Py_unicode_runtime_ids *rt_ids = &interp->runtime->unicode_ids;
+        struct _Py_unicode_runtime_ids *rt_ids = &interp->runtime->unicode_state.ids;
 
         PyThread_acquire_lock(rt_ids->lock, WAIT_LOCK);
         // Check again to detect concurrent access. Another thread can have
@@ -2076,7 +2076,7 @@ _PyUnicode_FromId(_Py_Identifier *id)
     if (!obj) {
         return NULL;
     }
-    PyUnicode_InternInPlace(&obj);
+    _PyUnicode_InternImmortal(interp, &obj);
 
     if (index >= ids->size) {
         // Overallocate to reduce the number of realloc
