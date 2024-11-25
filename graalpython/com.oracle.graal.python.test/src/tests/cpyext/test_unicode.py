@@ -1132,6 +1132,16 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare,
     )
 
+    test_PyUnicodeDecodeError_Create = CPyExtFunction(
+        lambda args: UnicodeDecodeError(*args),
+        lambda: (
+            ("utf-8", b"asdf", 1, 2, "some reason"),
+        ),
+        resultspec="O",
+        argspec="sy#nns",
+        arguments=["const char* encoding", "const char* object", "Py_ssize_t length", "Py_ssize_t start", "Py_ssize_t end", "const char* reason"]
+    )
+
 
 class TestUnicodeObject(unittest.TestCase):
     def test_intern(self):
