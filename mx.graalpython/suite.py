@@ -460,6 +460,8 @@ suite = {
             "forceJavac": True, # GRAALPYTHON_PROCESSOR is not compatible with ECJ
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
+            # GR-60063: this disables all javac warnings
+            "javac.lint.overrides" : "none",
         },
 
         # GRAALPYTHON_UNIT_TESTS
