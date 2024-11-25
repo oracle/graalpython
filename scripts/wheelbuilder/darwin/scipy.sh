@@ -42,4 +42,8 @@ if [ -n "$GITHUB_RUN_ID" ]; then
     export PKG_CONFIG_PATH=/opt/homebrew/opt/openblas/lib/pkgconfig
 fi
 export FFLAGS=-fallow-argument-mismatch
-pip wheel "scipy==$1"
+if [ -n "$1" ]; then
+    pip wheel "scipy==$1"
+else
+    pip wheel scipy
+fi

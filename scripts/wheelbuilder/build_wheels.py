@@ -51,6 +51,7 @@ import hashlib
 import importlib
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -107,6 +108,7 @@ def build_wheels(pip):
     packages_to_build = set()
     with open(join(dirname(__file__), "packages.txt")) as f:
         for line in f.readlines():
+            line = line.strip()
             name, version = line.split("==")
             if not packages_selected or name in packages_selected or line in packages_selected:
                 packages_to_build.add(line)
@@ -131,7 +133,11 @@ def build_wheels(pip):
             env["PATH"] = abspath(dirname(pip)) + os.pathsep + env["PATH"]
             env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip)))
             print("Building", name, version, "with", script, flush=True)
-            subprocess.check_call([script, version], shell=True, env=env)
+            if sys.platform == "win32":
+                cmd = [script, version] # Python's subprocess.py does the quoting we need
+            else:
+                cmd = f"{shlex.quote(script)} {version}"
+            subprocess.check_call(cmd, shell=True, env=env)
             if not len(glob("*.whl")) > whl_count:
                 print("Building wheel for", name, version, "after", script, "did not", flush=True)
                 subprocess.check_call([pip, "wheel", spec])

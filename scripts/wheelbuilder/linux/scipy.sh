@@ -41,4 +41,8 @@ if command -v manylinux-interpreters 2>&1 >/dev/null; then
     dnf install -y gcc-toolset-12-gcc-gfortran openblas-devel
 fi
 export FFLAGS=-fallow-argument-mismatch
-pip wheel "scipy==$1"
+if [ -n "$1" ]; then
+    pip wheel "scipy==$1"
+else
+    pip wheel scipy
+fi
