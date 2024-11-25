@@ -2661,6 +2661,20 @@ PyObject_IS_GC(PyObject *obj)
 }
 
 void
+_Py_ScheduleGC(PyInterpreterState *interp)
+{
+    GCState *gcstate = &interp->gc;
+    if (gcstate->collecting == 1) {
+        return;
+    }
+    struct _ceval_state *ceval = &interp->ceval;
+    if (!_Py_atomic_load_relaxed(&ceval->gc_scheduled)) {
+        _Py_atomic_store_relaxed(&ceval->gc_scheduled, 1);
+        _Py_atomic_store_relaxed(&ceval->eval_breaker, 1);
+    }
+}
+
+void
 _PyObject_GC_Link(PyObject *op)
 {
     PyGC_Head *g = AS_GC(op);
@@ -2677,10 +2691,20 @@ _PyObject_GC_Link(PyObject *op)
         !gcstate->collecting &&
         !_PyErr_Occurred(tstate))
     {
-        gcstate->collecting = 1;
-        gc_collect_generations(tstate);
-        gcstate->collecting = 0;
+        _Py_ScheduleGC(tstate->interp);
     }
+}
+
+void
+_Py_RunGC(PyThreadState *tstate)
+{
+    GCState *gcstate = &tstate->interp->gc;
+    if (!gcstate->enabled) {
+        return;
+    }
+    gcstate->collecting = 1;
+    gc_collect_generations(tstate);
+    gcstate->collecting = 0;
 }
 
 static PyObject *
@@ -2735,10 +2759,24 @@ _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
     return op;
 }
 
+PyObject *
+PyUnstable_Object_GC_NewWithExtraData(PyTypeObject *tp, size_t extra_size)
+{
+    size_t presize = _PyType_PreHeaderSize(tp);
+    PyObject *op = gc_alloc(_PyObject_SIZE(tp) + extra_size, presize);
+    if (op == NULL) {
+        return NULL;
+    }
+    memset(op, 0, _PyObject_SIZE(tp) + extra_size);
+    _PyObject_Init(op, tp);
+    return op;
+}
+
 PyVarObject *
 _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
 {
     const size_t basicsize = _PyObject_VAR_SIZE(Py_TYPE(op), nitems);
+    const size_t presize = _PyType_PreHeaderSize(((PyObject *)op)->ob_type);
     _PyObject_ASSERT((PyObject *)op, !_PyObject_GC_IS_TRACKED(op));
     if (basicsize > PY_SSIZE_T_MAX - sizeof(PyGC_Head)) {
         return (PyVarObject *)PyErr_NoMemory();

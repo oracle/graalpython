@@ -23,9 +23,10 @@
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 #if 0 // GraalPy change
 #include "pycore_symtable.h"      // PySTEntry_Type
-#include "pycore_typeobject.h"    // _PyTypes_InitSlotDefs()
+#include "pycore_typevarobject.h" // _PyTypeAlias_Type, _Py_initialize_generic
+#include "pycore_typeobject.h"    // _PyBufferWrapper_Type
 #include "pycore_unionobject.h"   // _PyUnion_Type
-#include "pycore_interpreteridobject.h"  // _PyInterpreterID_Type
+#include "interpreteridobject.h"  // _PyInterpreterID_Type
 #endif // GraalPy change
 
 #ifdef Py_LIMITED_API
@@ -66,19 +67,100 @@ _PyObject_CheckConsistency(PyObject *op, int check_content)
 
 
 #ifdef Py_REF_DEBUG
+/* We keep the legacy symbol around for backward compatibility. */
 Py_ssize_t _Py_RefTotal;
 
-Py_ssize_t
-_Py_GetRefTotal(void)
+static inline Py_ssize_t
+get_legacy_reftotal(void)
 {
     return _Py_RefTotal;
 }
+#endif
+
+#ifdef Py_REF_DEBUG
+
+#  define REFTOTAL(interp) \
+    interp->object_state.reftotal
+
+static inline void
+reftotal_increment(PyInterpreterState *interp)
+{
+    REFTOTAL(interp)++;
+}
+
+static inline void
+reftotal_decrement(PyInterpreterState *interp)
+{
+    REFTOTAL(interp)--;
+}
+
+static inline void
+reftotal_add(PyInterpreterState *interp, Py_ssize_t n)
+{
+    REFTOTAL(interp) += n;
+}
+
+static inline Py_ssize_t get_global_reftotal(_PyRuntimeState *);
+
+/* We preserve the number of refs leaked during runtime finalization,
+   so they can be reported if the runtime is initialized again. */
+// XXX We don't lose any information by dropping this,
+// so we should consider doing so.
+static Py_ssize_t last_final_reftotal = 0;
+
+void
+_Py_FinalizeRefTotal(_PyRuntimeState *runtime)
+{
+    last_final_reftotal = get_global_reftotal(runtime);
+    runtime->object_state.interpreter_leaks = 0;
+}
+
+void
+_PyInterpreterState_FinalizeRefTotal(PyInterpreterState *interp)
+{
+    interp->runtime->object_state.interpreter_leaks += REFTOTAL(interp);
+    REFTOTAL(interp) = 0;
+}
+
+static inline Py_ssize_t
+get_reftotal(PyInterpreterState *interp)
+{
+    /* For a single interpreter, we ignore the legacy _Py_RefTotal,
+       since we can't determine which interpreter updated it. */
+    return REFTOTAL(interp);
+}
+
+static inline Py_ssize_t
+get_global_reftotal(_PyRuntimeState *runtime)
+{
+    Py_ssize_t total = 0;
+
+    /* Add up the total from each interpreter. */
+    HEAD_LOCK(&_PyRuntime);
+    PyInterpreterState *interp = PyInterpreterState_Head();
+    for (; interp != NULL; interp = PyInterpreterState_Next(interp)) {
+        total += REFTOTAL(interp);
+    }
+    HEAD_UNLOCK(&_PyRuntime);
+
+    /* Add in the updated value from the legacy _Py_RefTotal. */
+    total += get_legacy_reftotal();
+    total += last_final_reftotal;
+    total += runtime->object_state.interpreter_leaks;
+
+    return total;
+}
+
+#undef REFTOTAL
 
 void
 _PyDebug_PrintTotalRefs(void) {
+    _PyRuntimeState *runtime = &_PyRuntime;
     fprintf(stderr,
             "[%zd refs, %zd blocks]\n",
-            _Py_GetRefTotal(), _Py_GetAllocatedBlocks());
+            get_global_reftotal(runtime), _Py_GetGlobalAllocatedBlocks());
+    /* It may be helpful to also print the "legacy" reftotal separately.
+       Likewise for the total for each interpreter. */
 }
 #endif /* Py_REF_DEBUG */
 
@@ -87,11 +169,16 @@ _PyDebug_PrintTotalRefs(void) {
    Do not call them otherwise, they do not initialize the object! */
 
 #ifdef Py_TRACE_REFS
-/* Head of circular doubly-linked list of all objects.  These are linked
- * together via the _ob_prev and _ob_next members of a PyObject, which
- * exist only in a Py_TRACE_REFS build.
- */
-static PyObject refchain = {&refchain, &refchain};
+
+#define REFCHAIN(interp) &interp->object_state.refchain
+
+static inline void
+init_refchain(PyInterpreterState *interp)
+{
+    PyObject *refchain = REFCHAIN(interp);
+    refchain->_ob_prev = refchain;
+    refchain->_ob_next = refchain;
+}
 
 /* Insert op at the front of the list of all objects.  If force is true,
  * op is added even if _ob_prev and _ob_next are non-NULL already.  If
@@ -116,10 +203,11 @@ _Py_AddToAllObjects(PyObject *op, int force)
     }
 #endif
     if (force || op->_ob_prev == NULL) {
-        op->_ob_next = refchain._ob_next;
-        op->_ob_prev = &refchain;
-        refchain._ob_next->_ob_prev = op;
-        refchain._ob_next = op;
+        PyObject *refchain = REFCHAIN(_PyInterpreterState_GET());
+        op->_ob_next = refchain->_ob_next;
+        op->_ob_prev = refchain;
+        refchain->_ob_next->_ob_prev = op;
+        refchain->_ob_next = op;
     }
 }
 #endif  /* Py_TRACE_REFS */
@@ -131,6 +219,58 @@ _Py_NegativeRefcount(const char *filename, int lineno, PyObject *op)
 {
     _PyObject_AssertFailed(op, NULL, "object has negative ref count",
                            filename, lineno, __func__);
+}
+
+/* This is used strictly by Py_INCREF(). */
+void
+_Py_INCREF_IncRefTotal(void)
+{
+    reftotal_increment(_PyInterpreterState_GET());
+}
+
+/* This is used strictly by Py_DECREF(). */
+void
+_Py_DECREF_DecRefTotal(void)
+{
+    reftotal_decrement(_PyInterpreterState_GET());
+}
+
+void
+_Py_IncRefTotal(PyInterpreterState *interp)
+{
+    reftotal_increment(interp);
+}
+
+void
+_Py_DecRefTotal(PyInterpreterState *interp)
+{
+    reftotal_decrement(interp);
+}
+
+void
+_Py_AddRefTotal(PyInterpreterState *interp, Py_ssize_t n)
+{
+    reftotal_add(interp, n);
+}
+
+/* This includes the legacy total
+   and any carried over from the last runtime init/fini cycle. */
+Py_ssize_t
+_Py_GetGlobalRefTotal(void)
+{
+    return get_global_reftotal(&_PyRuntime);
+}
+
+Py_ssize_t
+_Py_GetLegacyRefTotal(void)
+{
+    return get_legacy_reftotal();
+}
+
+Py_ssize_t
+_PyInterpreterState_GetRefTotal(PyInterpreterState *interp)
+{
+    return get_reftotal(interp);
 }
 
 #endif /* Py_REF_DEBUG */
@@ -288,17 +428,12 @@ PyObject_CallFinalizerFromDealloc(PyObject *self)
     /* tp_finalize resurrected it!  Make it look like the original Py_DECREF
      * never happened. */
     Py_ssize_t refcnt = Py_REFCNT(self);
-    _Py_NewReference(self);
+    _Py_NewReferenceNoTotal(self);
     Py_SET_REFCNT(self, refcnt);
 
     _PyObject_ASSERT(self,
                      (!_PyType_IS_GC(Py_TYPE(self))
                       || _PyObject_GC_IS_TRACKED(self)));
-    /* If Py_REF_DEBUG macro is defined, _Py_NewReference() increased
-       _Py_RefTotal, so we need to undo that. */
-#ifdef Py_REF_DEBUG
-    _Py_RefTotal--;
-#endif
     return -1;
 }
 #endif // GraalPy change
@@ -2047,14 +2182,19 @@ _PyTypes_InitTypes(PyInterpreterState *interp)
     // All other static types (unless initialized elsewhere)
     for (size_t i=0; i < Py_ARRAY_LENGTH(static_types); i++) {
         PyTypeObject *type = static_types[i];
-        if (PyType_Ready(type) < 0) {
-            return _PyStatus_ERR("Can't initialize types");
+        if (_PyStaticType_InitBuiltin(interp, type) < 0) {
+            return _PyStatus_ERR("Can't initialize builtin type");
         }
         if (type == &PyType_Type) {
             // Sanitify checks of the two most important types
             assert(PyBaseObject_Type.tp_base == NULL);
             assert(PyType_Type.tp_base == &PyBaseObject_Type);
         }
+    }
+
+    // Must be after static types are initialized
+    if (_Py_initialize_generic(interp) < 0) {
+        return _PyStatus_ERR("Can't initialize generic types");
     }
 
     return _PyStatus_OK();
@@ -2074,27 +2214,41 @@ _PyTypes_FiniTypes(PyInterpreterState *interp)
     // their base classes.
     for (Py_ssize_t i=Py_ARRAY_LENGTH(static_types)-1; i>=0; i--) {
         PyTypeObject *type = static_types[i];
-        _PyStaticType_Dealloc(type);
+        _PyStaticType_Dealloc(interp, type);
     }
 }
 #endif // GraalPy change
 
 
-void
-_Py_NewReference(PyObject *op)
+static inline void
+new_reference(PyObject *op)
 {
 #if 0 // GraalPy change
-    if (_Py_tracemalloc_config.tracing) {
+    if (_PyRuntime.tracemalloc.config.tracing) {
         _PyTraceMalloc_NewReference(op);
     }
+    // Skip the immortal object check in Py_SET_REFCNT; always set refcnt to 1
+    op->ob_refcnt = 1;
 #endif // GraalPy change
-#ifdef Py_REF_DEBUG
-    _Py_RefTotal++;
-#endif
     Py_SET_REFCNT(op, 1);
 #ifdef Py_TRACE_REFS
     _Py_AddToAllObjects(op, 1);
 #endif
+}
+
+void
+_Py_NewReference(PyObject *op)
+{
+#ifdef Py_REF_DEBUG
+    reftotal_increment(_PyInterpreterState_GET());
+#endif
+    new_reference(op);
+}
+
+void
+_Py_NewReferenceNoTotal(PyObject *op)
+{
+    new_reference(op);
 }
 
 
@@ -2107,7 +2261,8 @@ _Py_ForgetReference(PyObject *op)
         _PyObject_ASSERT_FAILED_MSG(op, "negative refcnt");
     }
 
-    if (op == &refchain ||
+    PyObject *refchain = REFCHAIN(_PyInterpreterState_GET());
+    if (op == refchain ||
         op->_ob_prev->_ob_next != op || op->_ob_next->_ob_prev != op)
     {
         _PyObject_ASSERT_FAILED_MSG(op, "invalid object chain");
@@ -2115,12 +2270,12 @@ _Py_ForgetReference(PyObject *op)
 
 #ifdef SLOW_UNREF_CHECK
     PyObject *p;
-    for (p = refchain._ob_next; p != &refchain; p = p->_ob_next) {
+    for (p = refchain->_ob_next; p != refchain; p = p->_ob_next) {
         if (p == op) {
             break;
         }
     }
-    if (p == &refchain) {
+    if (p == refchain) {
         /* Not found */
         _PyObject_ASSERT_FAILED_MSG(op,
                                     "object not found in the objects list");
@@ -2136,11 +2291,15 @@ _Py_ForgetReference(PyObject *op)
  * interpreter must be in a healthy state.
  */
 void
-_Py_PrintReferences(FILE *fp)
+_Py_PrintReferences(PyInterpreterState *interp, FILE *fp)
 {
     PyObject *op;
+    if (interp == NULL) {
+        interp = _PyInterpreterState_Main();
+    }
     fprintf(fp, "Remaining objects:\n");
-    for (op = refchain._ob_next; op != &refchain; op = op->_ob_next) {
+    PyObject *refchain = REFCHAIN(interp);
+    for (op = refchain->_ob_next; op != refchain; op = op->_ob_next) {
         fprintf(fp, "%p [%zd] ", (void *)op, Py_REFCNT(op));
         if (PyObject_Print(op, fp, 0) != 0) {
             PyErr_Clear();
@@ -2152,12 +2311,17 @@ _Py_PrintReferences(FILE *fp)
 /* Print the addresses of all live objects.  Unlike _Py_PrintReferences, this
  * doesn't make any calls to the Python C API, so is always safe to call.
  */
+// XXX This function is not safe to use if the interpreter has been
+// freed or is in an unhealthy state (e.g. late in finalization).
+// The call in Py_FinalizeEx() is okay since the main interpreter
+// is statically allocated.
 void
-_Py_PrintReferenceAddresses(FILE *fp)
+_Py_PrintReferenceAddresses(PyInterpreterState *interp, FILE *fp)
 {
     PyObject *op;
+    PyObject *refchain = REFCHAIN(interp);
     fprintf(fp, "Remaining object addresses:\n");
-    for (op = refchain._ob_next; op != &refchain; op = op->_ob_next)
+    for (op = refchain->_ob_next; op != refchain; op = op->_ob_next)
         fprintf(fp, "%p [%zd] %s\n", (void *)op,
             Py_REFCNT(op), Py_TYPE(op)->tp_name);
 }
@@ -2169,18 +2333,20 @@ _Py_GetObjects(PyObject *self, PyObject *args)
     int i, n;
     PyObject *t = NULL;
     PyObject *res, *op;
+    PyInterpreterState *interp = _PyInterpreterState_GET();
 
     if (!PyArg_ParseTuple(args, "i|O", &n, &t))
         return NULL;
-    op = refchain._ob_next;
+    PyObject *refchain = REFCHAIN(interp);
+    op = refchain->_ob_next;
     res = PyList_New(0);
     if (res == NULL)
         return NULL;
-    for (i = 0; (n == 0 || i < n) && op != &refchain; i++) {
+    for (i = 0; (n == 0 || i < n) && op != refchain; i++) {
         while (op == self || op == args || op == res || op == t ||
                (t != NULL && !Py_IS_TYPE(op, (PyTypeObject *) t))) {
             op = op->_ob_next;
-            if (op == &refchain)
+            if (op == refchain)
                 return res;
         }
         if (PyList_Append(res, op) < 0) {
@@ -2192,7 +2358,9 @@ _Py_GetObjects(PyObject *self, PyObject *args)
     return res;
 }
 
-#endif
+#undef REFCHAIN
+
+#endif  /* Py_TRACE_REFS */
 
 
 /* Hack to force loading of abstract.o */

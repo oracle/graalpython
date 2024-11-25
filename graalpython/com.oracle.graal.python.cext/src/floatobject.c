@@ -1752,12 +1752,14 @@ float___getnewargs___impl(PyObject *self)
 #endif // GraalPy change
 
 /* this is for the benefit of the pack/unpack routines below */
+typedef enum _py_float_format_type float_format_type;
+#define unknown_format _py_float_format_unknown
+#define ieee_big_endian_format _py_float_format_ieee_big_endian
+#define ieee_little_endian_format _py_float_format_ieee_little_endian
 
-typedef enum {
-    unknown_format, ieee_big_endian_format, ieee_little_endian_format
-} float_format_type;
+#define float_format (_PyRuntime.float_state.float_format)
+#define double_format (_PyRuntime.float_state.double_format)
 
-static float_format_type double_format, float_format;
 
 #if 0 // GraalPy change
 /*[clinic input]
@@ -1960,8 +1962,8 @@ PyTypeObject PyFloat_Type = {
 };
 #endif // GraalPy change
 
-void
-_PyFloat_InitState(PyInterpreterState *interp)
+static void
+_init_global_state(void)
 {
     float_format_type detected_double_format, detected_float_format;
 

@@ -8,6 +8,7 @@
 #endif
 
 PyAPI_FUNC(void) _Py_NewReference(PyObject *op);
+PyAPI_FUNC(void) _Py_NewReferenceNoTotal(PyObject *op);
 
 #ifdef Py_TRACE_REFS
 /* Py_TRACE_REFS is such major surgery that we call external routines. */
@@ -15,7 +16,11 @@ PyAPI_FUNC(void) _Py_ForgetReference(PyObject *);
 #endif
 
 #ifdef Py_REF_DEBUG
-PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
+/* These are useful as debugging aids when chasing down refleaks. */
+PyAPI_FUNC(Py_ssize_t) _Py_GetGlobalRefTotal(void);
+#  define _Py_GetRefTotal() _Py_GetGlobalRefTotal()
+PyAPI_FUNC(Py_ssize_t) _Py_GetLegacyRefTotal(void);
+PyAPI_FUNC(Py_ssize_t) _PyInterpreterState_GetRefTotal(PyInterpreterState *);
 #endif
 
 
@@ -515,3 +520,21 @@ Py_DEPRECATED(3.11) typedef int UsingDeprecatedTrashcanMacro;
     } while(0);
 
 PyAPI_FUNC(void *) PyObject_GetItemData(PyObject *obj);
+
+PyAPI_FUNC(int) _PyObject_VisitManagedDict(PyObject *obj, visitproc visit, void *arg);
+PyAPI_FUNC(void) _PyObject_ClearManagedDict(PyObject *obj);
+
+#define TYPE_MAX_WATCHERS 8
+
+typedef int(*PyType_WatchCallback)(PyTypeObject *);
+PyAPI_FUNC(int) PyType_AddWatcher(PyType_WatchCallback callback);
+PyAPI_FUNC(int) PyType_ClearWatcher(int watcher_id);
+PyAPI_FUNC(int) PyType_Watch(int watcher_id, PyObject *type);
+PyAPI_FUNC(int) PyType_Unwatch(int watcher_id, PyObject *type);
+
+/* Attempt to assign a version tag to the given type.
+ *
+ * Returns 1 if the type already had a valid version tag or a new one was
+ * assigned, or 0 if a new tag could not be assigned.
+ */
+PyAPI_FUNC(int) PyUnstable_Type_AssignVersionTag(PyTypeObject *type);

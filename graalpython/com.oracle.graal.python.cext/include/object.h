@@ -319,6 +319,11 @@ PyAPI_FUNC(void *) PyType_GetModuleState(PyTypeObject *);
 PyAPI_FUNC(PyObject *) PyType_GetName(PyTypeObject *);
 PyAPI_FUNC(PyObject *) PyType_GetQualName(PyTypeObject *);
 #endif
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x030C0000
+PyAPI_FUNC(PyObject *) PyType_FromMetaclass(PyTypeObject*, PyObject*, PyType_Spec*, PyObject*);
+PyAPI_FUNC(void *) PyObject_GetTypeData(PyObject *obj, PyTypeObject *cls);
+PyAPI_FUNC(Py_ssize_t) PyType_GetTypeDataSize(PyTypeObject *cls);
+#endif
 
 /* Generic type check */
 PyAPI_FUNC(int) PyType_IsSubtype(PyTypeObject *, PyTypeObject *);
@@ -546,11 +551,12 @@ decision that's up to the implementer of each new type so if you want,
 you can count such references to the type object.)
 */
 
-#ifdef Py_REF_DEBUG
-PyAPI_DATA(Py_ssize_t) _Py_RefTotal;
+#if defined(Py_REF_DEBUG) && !defined(Py_LIMITED_API)
 PyAPI_FUNC(void) _Py_NegativeRefcount(const char *filename, int lineno,
                                       PyObject *op);
-#endif /* Py_REF_DEBUG */
+PyAPI_FUNC(void) _Py_INCREF_IncRefTotal(void);
+PyAPI_FUNC(void) _Py_DECREF_DecRefTotal(void);
+#endif  // Py_REF_DEBUG && !Py_LIMITED_API
 
 PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 
