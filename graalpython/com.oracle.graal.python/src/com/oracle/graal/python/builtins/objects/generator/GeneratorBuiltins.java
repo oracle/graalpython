@@ -224,7 +224,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString repr(PGenerator self,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<generator object %s at %d>", self.getName(), PythonAbstractObject.objectHashCode(self));
+            return simpleTruffleStringFormatNode.format("<generator object %s at 0x%d>", self.getQualname(), PythonAbstractObject.objectHashCode(self));
         }
     }
 
