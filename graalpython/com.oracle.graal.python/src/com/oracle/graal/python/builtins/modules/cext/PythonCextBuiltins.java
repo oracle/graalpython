@@ -1569,7 +1569,8 @@ public final class PythonCextBuiltins {
                 PythonNativeWrapper wrapper = nativePtrToPythonWrapperNode.execute(inliningTarget, op, true);
                 if (wrapper instanceof PythonAbstractObjectNativeWrapper abstractObjectNativeWrapper) {
                     if (GC_LOGGER.isLoggable(Level.FINE)) {
-                        GC_LOGGER.fine(PythonUtils.formatJString("Breaking reference cycle for %s", abstractObjectNativeWrapper.ref));
+                        GC_LOGGER.fine(PythonUtils.formatJString("Transitioning to weak reference to break a reference cycle for %s, refcount=%d",
+                                        abstractObjectNativeWrapper.ref, abstractObjectNativeWrapper.getRefCount()));
                     }
                     updateRefNode.clearStrongRef(inliningTarget, abstractObjectNativeWrapper);
                 }

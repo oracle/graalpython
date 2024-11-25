@@ -259,8 +259,9 @@ until Java GC runs we do not know if they are garbage or not.
 * We cannot traverse the managed objects: since we don't do refcounting on the managed
 side, we cannot traverse them and decrement refcounts to see if there is a cycle.
 
-The high level solution is that when we see a "dead" cycle going through a managed object
-(i.e., cycle not referenced by any native object from the "outside" of the collected set),
+The high level solution is that when we see a "dead" cycle going through an object with a managed reference,
+(i.e., cycle not referenced by any native object from the "outside" of the collected set,
+which may be, however, referenced from managed),
 we fully replicate the object graphs (and the cycle) on the managed side (refcounts of native objects
 in the cycle, which were not referenced from managed yet, will get new `NativeObjectReference`
 created and refcount incremented by `MANAGED_REFCNT`). Managed objects already refer
@@ -268,7 +269,7 @@ to the `PythonAbstractNativeObject` wrappers of the native objects (e.g., some P
 with managed storage), but we also make the native wrappers refer to whatever their referents
 are on the Java side (we use `tp_traverse` to find their referents).
 
-Then we make the managed objects in the cycle only weakly referenced on the Java side.
+As part of that, we make the objects in the cycle only weakly referenced on the Java side.
 One can think about this as pushing the baseline reference count when the
 object is eligible for being GC'ed and thus freed. Normally when the object has
 `refcount > MANAGED_REFCNT` we keep it alive with a strong reference assuming that
@@ -276,8 +277,21 @@ there are some native references to it. In this case, we know that all the nativ
 references to that object are part of potentially dead cycle, and we do not
 count them into this limit. Let us call this limit *weak to strong limit*.
 
-After this, if the managed objects are garbage, eventually Java GC will collect them
-together with the whole cycle.
+After this, if the objects on the managed side (the managed objects or `PythonAbstractNativeObject`
+mirrors of native objects) are garbage, eventually Java GC will collect them.
+This will push their references to the reference queue. When polled from the queue (`CApiTransitions#pollReferenceQueue`),
+we decrement the refcount by `MANAGED_REFCNT` (no managed references anymore) and
+if their refcount falls to `0`, they are freed - as part of that, we call the
+`tp_clear` slot for native objects, which should call `Py_CLEAR` for their references,
+which does `Py_DecRef` - eventually all objects in the cycle should fall to refcount `0`.
+
+*Example: managed object `o1` has refcount `MANAGED_REFCNT+1`: `MANAGED_REFCNT` representing all managed
+references, and `+1` for some native object `o2` referencing it. Native object `o2` has
+refcount `MANAGED_REFCNT`, because it is referenced only from managed (from `o1`).
+Both `o1` and `o2` form a cycle that was already transformed to managed during cycle GC.
+The reference queue processing will subtract `MANAGED_REFCNT` from `o1`'s refcount making it `1`.
+Then the reference queue processing will subtract `MANAGED_REFCNT` from `o2`'s refcount making it fall
+to `0` - this triggers the `tp_clear` of `o2`, which should subtract the final `1` from `o1`'s refcount.*
 
 If some of the managed objects are not garbage, and they passed back to native code,
 the native code can then access and resurrect the whole cycle. W.r.t. the refcounts
