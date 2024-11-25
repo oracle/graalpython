@@ -508,11 +508,11 @@ def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
 
 def interrupt_process(process: subprocess.Popen):
     if hasattr(signal, 'SIGINT'):
-        process.send_signal(signal.SIGINT)
         try:
+            process.send_signal(signal.SIGINT)
             process.wait(3)
             return
-        except subprocess.TimeoutExpired:
+        except (OSError, subprocess.TimeoutExpired):
             pass
     process.terminate()
     try:
