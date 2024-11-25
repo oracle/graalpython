@@ -1541,6 +1541,7 @@ suite = {
             "gradleProjectName": "graalpy-gradle-plugin",
             "gradlePluginId": "org.graalvm.python",
             "gradlePluginImplementation": "org.graalvm.python.GraalPyGradlePlugin",
+            "description": "Gradle plugin for GraalPy, a high-performance embeddable Python 3 runtime for Java. The plugin provides support for installing and managing Python packages.",
             "dependencies": [
                 "GRAALPYTHON-LAUNCHER",
                 "GRAALPYTHON_EMBEDDING_TOOLS",
@@ -1549,7 +1550,6 @@ suite = {
                 "tag": ["default", "public"],
                 "groupId": "org.graalvm.python",
                 "artifactId": "org.graalvm.python.gradle.plugin",
-                "description": "Gradle plugin for GraalPy, a high-performance embeddable Python 3 runtime for Java. The plugin provides support for installing and managing Python packages."
             },
         },
     },
