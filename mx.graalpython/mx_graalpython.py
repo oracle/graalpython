@@ -916,7 +916,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         lock.acquire()
 
     if parallel is None:
-        parallel = 6 if paths is None else 1
+        parallel = 4 if paths is None else 1
 
     args = args or []
     args = [
