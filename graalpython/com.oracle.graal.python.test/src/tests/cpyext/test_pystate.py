@@ -68,3 +68,47 @@ class TestPystate(CPyExtTestCase):
             tp_methods='{"get_frame", (PyCFunction)get_frame, METH_NOARGS | METH_STATIC, NULL}',
         )
         assert Tester.get_frame() is sys._getframe(0)
+
+    # This seems to get the native extensions into some inconsistent state on GraalPy, giving:
+    # refcnt below zero during managed adjustment for 0000aaae18fca780 (9 0000000000000009 - 10)
+    def ignored_test_SetAsyncExc(self):
+        SetAsyncExcCaller = CPyExtType(
+            "SetAsyncExcCaller",
+            """
+            static PyObject* trigger_ex(PyObject *cls, PyObject *args) {
+                long thread_id;
+                PyObject *ex;
+                if (!PyArg_ParseTuple(args, "lO", &thread_id, &ex)) {
+                    return NULL;
+                }
+                PyThreadState_SetAsyncExc(thread_id, ex);
+                return PyLong_FromLong(42);
+            }
+            """,
+            tp_methods='{"trigger_ex", (PyCFunction)trigger_ex, METH_VARARGS | METH_STATIC, ""}',
+        )
+
+        import threading
+        start = threading.Barrier(2, timeout=20)
+
+        caught_ex = None
+        def other_thread():
+            try:
+                start.wait() # ensure we are in the try, before raising
+                r = 0
+                for i in range(1, 1000000000):
+                    for j in range(i, 1000000000):
+                        r += j / i
+            except Exception as e:
+                nonlocal caught_ex
+                caught_ex = e
+
+
+        t = threading.Thread(target=other_thread)
+        t.start()
+
+        start.wait()
+        SetAsyncExcCaller.trigger_ex(t.ident, Exception("test my message"))
+        t.join()
+
+        assert "test my message" in str(caught_ex)

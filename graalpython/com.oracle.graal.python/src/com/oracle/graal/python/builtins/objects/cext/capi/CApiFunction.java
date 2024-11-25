@@ -879,7 +879,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThreadState_LeaveTracing", ret = Void, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_New", ret = PyThreadState, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_Next", ret = PyThreadState, args = {PyThreadState}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThreadState_SetAsyncExc", ret = Int, args = {UNSIGNED_LONG, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_Swap", ret = PyThreadState, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyThread_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyThread_ReInitTLS", ret = Void, args = {}, call = NotImplemented)
