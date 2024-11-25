@@ -122,6 +122,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2637,6 +2638,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                             gil.acquire();
                             throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                         }
+                    } catch (UnsupportedPosixFeatureException e) {
+                        throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
                     }
                 }
             } finally {
@@ -2985,6 +2988,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            } catch (UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
         }
     }
@@ -3011,6 +3016,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            } catch (UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
         }
     }

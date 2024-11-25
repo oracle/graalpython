@@ -220,7 +220,6 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -246,7 +245,6 @@ import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -352,6 +350,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         super(context);
         setEnv(context.getEnv());
         withoutIOSocket = !context.getContext().getEnv().isSocketIOAllowed();
+    }
+
+    @TruffleBoundary
+    static UnsupportedPosixFeatureException createUnsupportedFeature(String message) {
+        // TODO should have a link to some doc that tells you what to do about it
+        return new UnsupportedPosixFeatureException("Feature not supported on 'java' POSIX backend: " + message);
     }
 
     @Override
@@ -736,6 +740,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (notSeekable.profile(inliningTarget, !(channel instanceof SeekableByteChannel))) {
             throw posixException(OSErrorEnum.ESPIPE);
         }
+        if (SEEK_DATA.defined && how == SEEK_DATA.getValueIfDefined()) {
+            throw createUnsupportedFeature("SEEK_DATA");
+        }
+        if (SEEK_HOLE.defined && how == SEEK_HOLE.getValueIfDefined()) {
+            throw createUnsupportedFeature("SEEK_HOLE");
+        }
         SeekableByteChannel fc = (SeekableByteChannel) channel;
         long newPos;
         try {
@@ -745,13 +755,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
         if (notSupported.profile(inliningTarget, newPos < 0)) {
-            if (newPos == -2) {
-                throw new UnsupportedPosixFeatureException("SEEK_HOLE and SEEK_DATA are not supported");
-            } else {
-                throw new UnsupportedPosixFeatureException("emulated lseek cannot seek beyond the file size. " +
-                                "Please enable native posix support using " +
-                                "the following option '--python.PosixModuleBackend=native'");
-            }
+            throw createUnsupportedFeature("cannot seek beyond the file size");
         }
         return newPos;
     }
@@ -771,9 +775,6 @@ public final class EmulatedPosixSupport extends PosixResources {
             newPos = pos + fc.size();
         } else if (how == SEEK_SET.value) {
             newPos = pos;
-        } else if ((SEEK_DATA.defined && how == SEEK_DATA.getValueIfDefined()) ||
-                        (SEEK_HOLE.defined && how == SEEK_HOLE.getValueIfDefined())) {
-            return -2;
         } else {
             throw new IllegalArgumentException();
         }
@@ -1051,13 +1052,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public long[] statvfs(Object path) {
-        throw new UnsupportedPosixFeatureException("Emulated statvfs not supported");
+        throw createUnsupportedFeature("statvfs");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public long[] fstatvfs(int fd) {
-        throw new UnsupportedPosixFeatureException("Emulated fstatvfs not supported");
+        throw createUnsupportedFeature("fstatvfs");
     }
 
     private static long[] fstatWithoutPath(Channel fileChannel) {
@@ -1739,7 +1740,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                 // on OpenJDK8 on Linux and gives ELOOP error. See some explanation in this thread:
                 // https://stackoverflow.com/questions/17308363/symlink-lastmodifiedtime-in-java-1-7
                 if (errAndMsg.oserror == OSErrorEnum.ELOOP && !followSymlinks) {
-                    throw new UnsupportedPosixFeatureException("utime with 'follow symlinks' flag is not supported");
+                    throw createUnsupportedFeature("utime with 'follow symlinks' flag");
                 }
                 throw posixException(errAndMsg);
             }
@@ -1787,7 +1788,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         if (effectiveIds) {
             errBranch.enter(inliningTarget);
-            throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
+            throw createUnsupportedFeature("faccess with effective user IDs");
         }
         TruffleFile file = null;
         try {
@@ -1807,7 +1808,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             // TruffleFile#isExecutable/isReadable/isWriteable does not support LinkOptions, but
             // that's probably because Java NIO does not support NOFOLLOW_LINKS in permissions check
             errBranch.enter(inliningTarget);
-            throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
+            throw createUnsupportedFeature("faccess with effective user IDs");
         }
         boolean result = true;
         if ((mode & X_OK.value) != 0) {
@@ -1865,12 +1866,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) {
-        throw new UnsupportedPosixFeatureException("Emulated fchownat not supported");
+        throw createUnsupportedFeature("fchownat");
     }
 
     @ExportMessage
     public void fchown(int fd, long owner, long group) {
-        throw new UnsupportedPosixFeatureException("Emulated fchown not supported");
+        throw createUnsupportedFeature("fchown");
     }
 
     @ExportMessage
@@ -1906,7 +1907,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             } else if (signal == 0) {
                 sigdfl((int) pid);
             } else {
-                throw new UnsupportedPosixFeatureException("Sending arbitrary signals to child processes. Can only send KILL and TERM signals.");
+                throw createUnsupportedFeature("Sending arbitrary signals to child processes. Can only send KILL and TERM signals");
             }
         } catch (IndexOutOfBoundsException e) {
             throw posixException(OSErrorEnum.ESRCH);
@@ -1916,7 +1917,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public long killpg(long pgid, int signal) {
-        throw new UnsupportedPosixFeatureException("Emulated killpg not supported");
+        throw createUnsupportedFeature("killpg");
     }
 
     @ExportMessage
@@ -1934,11 +1935,11 @@ public final class EmulatedPosixSupport extends PosixResources {
                 int[] res = exitStatus((int) pid);
                 return new long[]{res[0], res[1]};
             } else {
-                throw new UnsupportedPosixFeatureException("Only 0 or WNOHANG are supported for waitpid");
+                throw createUnsupportedFeature("Only 0 or WNOHANG are supported for waitpid");
             }
         } catch (IndexOutOfBoundsException e) {
             if (pid < -1) {
-                throw new UnsupportedPosixFeatureException("Process groups are not supported.");
+                throw createUnsupportedFeature("Process groups in waitpid");
             } else if (pid <= 0) {
                 throw posixException(OSErrorEnum.ECHILD);
             } else {
@@ -2029,7 +2030,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long geteuid() {
-        throw new UnsupportedPosixFeatureException("Emulated geteuid not supported");
+        throw createUnsupportedFeature("geteuid");
     }
 
     @ExportMessage
@@ -2052,43 +2053,43 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long getegid() {
-        throw new UnsupportedPosixFeatureException("Emulated getegid not supported");
+        throw createUnsupportedFeature("getegid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public long getppid() {
-        throw new UnsupportedPosixFeatureException("Emulated getppid not supported");
+        throw createUnsupportedFeature("getppid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public long getpgid(long pid) {
-        throw new UnsupportedPosixFeatureException("Emulated getpgid not supported");
+        throw createUnsupportedFeature("getpgid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public void setpgid(long pid, long pgid) {
-        throw new UnsupportedPosixFeatureException("Emulated setpgid not supported");
+        throw createUnsupportedFeature("setpgid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public long getpgrp() {
-        throw new UnsupportedPosixFeatureException("Emulated getpgrp not supported");
+        throw createUnsupportedFeature("getpgrp");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public long getsid(long pid) {
-        throw new UnsupportedPosixFeatureException("Emulated getsid not supported");
+        throw createUnsupportedFeature("getsid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     public long setsid() {
-        throw new UnsupportedPosixFeatureException("Emulated getsid not supported");
+        throw createUnsupportedFeature("getsid");
     }
 
     @ExportMessage
@@ -2099,7 +2100,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                 case PLATFORM_LINUX, PLATFORM_DARWIN -> {
                     return new UnixSystem().getGroups();
                 }
-                default -> throw new UnsupportedPosixFeatureException("emulated getgroups is not available on this platform");
+                default -> throw createUnsupportedFeature("getgroups on this platform");
             }
         }
         throw new UnsupportedPosixFeatureException("getgroups was excluded");
@@ -2172,7 +2173,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public OpenPtyResult openpty() {
-        throw new UnsupportedPosixFeatureException("Emulated openpty not supported");
+        throw createUnsupportedFeature("openpty");
     }
 
     @ExportMessage
@@ -2227,7 +2228,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                 if (strings.length == 2) {
                     envMap.put(strings[0], strings[1]);
                 } else {
-                    throw new UnsupportedPosixFeatureException("Only key=value environment variables are supported");
+                    throw createUnsupportedFeature("Only key=value environment variables are supported in fork_exec");
                 }
             }
         }
@@ -2347,11 +2348,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         // errno:description". The exception can be null if we did not find any file in the
         // execList that could be executed
         Channel err = getFileChannel(errpipe_write);
-        if (!(err instanceof WritableByteChannel)) {
-            // TODO if we are pretending to be the child, then we should probably ignore errors like
-            // we do below
-            throw new UnsupportedPosixFeatureException(ErrorMessages.ERROR_WRITING_FORKEXEC.toJavaStringUncached());
-        } else {
+        if (err instanceof WritableByteChannel errChannel) {
             ErrorAndMessagePair pair;
             if (e == null) {
                 pair = new ErrorAndMessagePair(OSErrorEnum.ENOENT, OSErrorEnum.ENOENT.getMessage());
@@ -2359,8 +2356,9 @@ public final class EmulatedPosixSupport extends PosixResources {
                 pair = OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached());
             }
             try {
-                ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
+                errChannel.write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
             } catch (IOException e1) {
+                // ignored
             }
         }
     }
@@ -2598,8 +2596,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             try {
                 return new MMapHandle(new AnonymousMap(PythonUtils.toIntExact(length)), 0);
             } catch (OverflowException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new UnsupportedPosixFeatureException(String.format("Anonymous mapping in mmap for memory larger than %d", Integer.MAX_VALUE));
+                throw createUnsupportedFeature(PythonUtils.formatJString("Anonymous mapping in mmap for memory larger than %d", Integer.MAX_VALUE));
             }
         }
 
@@ -2628,7 +2625,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             options.add(StandardOpenOption.WRITE);
         }
         if ((prot & PROT_EXEC.value) != 0) {
-            throw new UnsupportedPosixFeatureException("mmap: flag PROT_EXEC is not supported");
+            throw createUnsupportedFeature("mmap flag PROT_EXEC");
         }
         return options;
     }
@@ -2763,7 +2760,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public long mmapGetPointer(@SuppressWarnings("unused") Object mmap) {
-        throw new UnsupportedPosixFeatureException("Unable to obtain mmap pointer in emulated posix backend");
+        throw createUnsupportedFeature("obtaining mmap pointer");
     }
 
     @TruffleBoundary
@@ -2801,7 +2798,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
     public TruffleString crypt(TruffleString word, TruffleString salt) throws PosixException {
-        throw new UnsupportedPosixFeatureException("crypt not supported");
+        throw createUnsupportedFeature("crypt");
     }
 
     @ExportMessage
@@ -2862,12 +2859,12 @@ public final class EmulatedPosixSupport extends PosixResources {
                 case PLATFORM_DARWIN:
                     UnixSystem unix = new UnixSystem();
                     if (unix.getUid() != uid) {
-                        throw new UnsupportedPosixFeatureException("getpwuid with other uid than the current user");
+                        throw createUnsupportedFeature("getpwuid with other uid than the current user");
                     }
                     compatibilityInfo("gtpwuid: default shell cannot be retrieved for %d, using '/bin/sh' instead.", uid);
                     return createPwdResult(unix);
                 default:
-                    throw new UnsupportedPosixFeatureException("emulated getpwuid is not available on this platform");
+                    throw createUnsupportedFeature("getpwuid on this platform");
             }
         }
         throw new UnsupportedPosixFeatureException("getpwuid was excluded");
@@ -2883,12 +2880,12 @@ public final class EmulatedPosixSupport extends PosixResources {
                 case PLATFORM_DARWIN:
                     UnixSystem unix = new UnixSystem();
                     if (!unix.getUsername().equals(name)) {
-                        throw new UnsupportedPosixFeatureException("getpwnam with other uid than the current user");
+                        throw createUnsupportedFeature("getpwnam with other uid than the current user");
                     }
                     compatibilityInfo("gtpwuid: default shell cannot be retrieved for %s, using '/bin/sh' instead.", name);
                     return createPwdResult(unix);
                 default:
-                    throw new UnsupportedPosixFeatureException("emulated getpwnam is not available on this platform");
+                    throw createUnsupportedFeature("getpwnam on this platform");
             }
         }
         throw new UnsupportedPosixFeatureException("getpwnam was excluded");
@@ -2903,7 +2900,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public PwdResult[] getpwentries() {
-        throw new UnsupportedPosixFeatureException("getpwent");
+        throw createUnsupportedFeature("getpwent");
     }
 
     private static PwdResult createPwdResult(UnixSystem unix) {
@@ -2914,13 +2911,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("unused")
     public int ioctlBytes(int fd, long request, byte[] arg) {
-        throw new UnsupportedPosixFeatureException("ioctl is not available in Java posix backend");
+        throw createUnsupportedFeature("ioctl");
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
     public int ioctlInt(int fd, long request, int arg) {
-        throw new UnsupportedPosixFeatureException("ioctl is not available in Java posix backend");
+        throw createUnsupportedFeature("ioctl");
     }
 
     @ExportMessage
@@ -3603,7 +3600,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) {
-        throw new UnsupportedPosixFeatureException("AF_UNIX cannot be emulated");
+        throw createUnsupportedFeature("AF_UNIX");
     }
 
     @ExportLibrary(UniversalSockAddrLibrary.class)
