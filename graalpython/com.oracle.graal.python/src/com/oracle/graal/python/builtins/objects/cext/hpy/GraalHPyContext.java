@@ -96,8 +96,8 @@ import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -106,7 +106,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.TruffleThreadBuilder;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -117,8 +117,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -518,99 +518,84 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      * {@link #references} list by exchanging it with an empty one (for a description of the
      * exchanging process, see also {@link #references}).
      */
-    static final class GraalHPyReferenceCleanerRunnable implements Runnable {
+    static final class GraalHPyReferenceCleanerRunnable extends PythonSystemThreadTask {
         private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(GraalHPyReferenceCleanerRunnable.class);
         private final ReferenceQueue<?> referenceQueue;
         private GraalHPyHandleReference cleanerList;
 
         GraalHPyReferenceCleanerRunnable(ReferenceQueue<?> referenceQueue) {
+            super("HPy reference cleaner", LOGGER);
             this.referenceQueue = referenceQueue;
         }
 
         @Override
-        public void run() {
-            try {
-                PythonContext pythonContext = PythonContext.get(null);
-                PythonLanguage language = pythonContext.getLanguage();
-                GraalHPyContext hPyContext = pythonContext.getHPyContext();
-                RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
-                PDict dummyGlobals = pythonContext.factory().createDict();
-                boolean isLoggable = LOGGER.isLoggable(Level.FINE);
+        public void doRun() {
+            PythonContext pythonContext = PythonContext.get(null);
+            PythonLanguage language = pythonContext.getLanguage();
+            GraalHPyContext hPyContext = pythonContext.getHPyContext();
+            RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
+            PDict dummyGlobals = pythonContext.factory().createDict();
+            boolean isLoggable = LOGGER.isLoggable(Level.FINE);
+            /*
+             * Intentionally retrieve the thread state every time since this will kill the thread if
+             * shutting down.
+             */
+            RootNode location = language.unavailableSafepointLocation;
+            while (!pythonContext.getThreadState(language).isShuttingDown()) {
+                Reference<?> reference = TruffleSafepoint.setBlockedThreadInterruptibleFunction(location, ReferenceQueue::remove, referenceQueue);
+                ArrayList<GraalHPyHandleReference> refs = new ArrayList<>();
+                do {
+                    if (reference instanceof GraalHPyHandleReference) {
+                        refs.add((GraalHPyHandleReference) reference);
+                    }
+                    // consume all
+                    reference = referenceQueue.poll();
+                    TruffleSafepoint.poll(location);
+                } while (reference != null);
+
+                if (isLoggable) {
+                    LOGGER.fine(PythonUtils.formatJString("Collected references: %d", refs.size()));
+                }
+
                 /*
-                 * Intentionally retrieve the thread state every time since this will kill the
-                 * thread if shutting down.
+                 * To avoid race conditions, we take the whole references list such that we can
+                 * solely process it. At this point, the references list is owned by the main thread
+                 * and this will now transfer ownership to the cleaner thread. The list will be
+                 * replaced by an empty list (which will then be owned by the main thread).
                  */
-                while (!pythonContext.getThreadState(language).isShuttingDown()) {
-                    Reference<?> reference = null;
-                    try {
-                        reference = referenceQueue.remove();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-
-                    ArrayList<GraalHPyHandleReference> refs = new ArrayList<>();
-                    do {
-                        if (reference instanceof GraalHPyHandleReference) {
-                            refs.add((GraalHPyHandleReference) reference);
-                        }
-                        // consume all
-                        reference = referenceQueue.poll();
-                    } while (reference != null);
-
-                    if (isLoggable) {
-                        LOGGER.fine(PythonUtils.formatJString("Collected references: %d", refs.size()));
-                    }
-
+                GraalHPyHandleReference refList;
+                int retries = 0;
+                do {
                     /*
-                     * To avoid race conditions, we take the whole references list such that we can
-                     * solely process it. At this point, the references list is owned by the main
-                     * thread and this will now transfer ownership to the cleaner thread. The list
-                     * will be replaced by an empty list (which will then be owned by the main
-                     * thread).
+                     * If 'refList' is null then the main is currently updating it. So, we need to
+                     * repeat until we get something. The written empty list will just be lost.
                      */
-                    GraalHPyHandleReference refList;
-                    int retries = 0;
-                    do {
-                        /*
-                         * If 'refList' is null then the main is currently updating it. So, we need
-                         * to repeat until we get something. The written empty list will just be
-                         * lost.
-                         */
-                        refList = hPyContext.references.getAndSet(null);
-                    } while (refList == null && retries++ < 3);
+                    refList = hPyContext.references.getAndSet(null);
+                } while (refList == null && retries++ < 3);
 
-                    if (!refs.isEmpty()) {
-                        try {
-                            Object[] arguments = PArguments.create(3);
-                            PArguments.setGlobals(arguments, dummyGlobals);
-                            PArguments.setException(arguments, PException.NO_EXCEPTION);
-                            PArguments.setCallerFrameInfo(arguments, PFrame.Reference.EMPTY);
-                            PArguments.setArgument(arguments, 0, refs.toArray(new GraalHPyHandleReference[0]));
-                            PArguments.setArgument(arguments, 1, refList);
-                            PArguments.setArgument(arguments, 2, cleanerList);
-                            cleanerList = (GraalHPyHandleReference) CallTargetInvokeNode.invokeUncached(callTarget, arguments);
-                        } catch (PException e) {
-                            /*
-                             * Since the cleaner thread is not running any Python code, we should
-                             * never receive a Python exception. If it happens, consider that to be
-                             * a problem (however, it is not fatal problem).
-                             */
-                            if (e.getUnreifiedException() instanceof PBaseException managedException) {
-                                e.setMessage(managedException.getFormattedMessage());
-                            }
-                            LOGGER.warning("HPy reference cleaner thread received a Python exception: " + e);
+                if (!refs.isEmpty()) {
+                    try {
+                        Object[] arguments = PArguments.create(3);
+                        PArguments.setGlobals(arguments, dummyGlobals);
+                        PArguments.setException(arguments, PException.NO_EXCEPTION);
+                        PArguments.setCallerFrameInfo(arguments, PFrame.Reference.EMPTY);
+                        PArguments.setArgument(arguments, 0, refs.toArray(new GraalHPyHandleReference[0]));
+                        PArguments.setArgument(arguments, 1, refList);
+                        PArguments.setArgument(arguments, 2, cleanerList);
+                        cleanerList = (GraalHPyHandleReference) CallTargetInvokeNode.invokeUncached(callTarget, arguments);
+                    } catch (PException e) {
+                        /*
+                         * Since the cleaner thread is not running any Python code, we should never
+                         * receive a Python exception. If it happens, consider that to be a problem
+                         * (however, it is not fatal problem).
+                         */
+                        if (e.getUnreifiedException() instanceof PBaseException managedException) {
+                            e.setMessage(managedException.getFormattedMessage());
                         }
+                        LOGGER.warning("HPy reference cleaner thread received a Python exception: " + e);
                     }
                 }
-            } catch (PythonThreadKillException e) {
-                // this is exception shuts down the thread
-                LOGGER.fine("HPy reference cleaner thread received exit signal.");
-            } catch (ControlFlowException e) {
-                LOGGER.warning("HPy reference cleaner thread received unexpected control flow exception.");
-            } catch (Exception e) {
-                LOGGER.severe("HPy reference cleaner thread received fatal exception: " + e);
             }
-            LOGGER.fine("HPy reference cleaner thread is exiting.");
         }
     }
 
@@ -1153,16 +1138,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
 
         // lazily register the runnable that concurrently collects the queued references
-        Env env = getContext().getEnv();
+        PythonContext context = getContext();
+        Env env = context.getEnv();
         if (env.isCreateThreadAllowed()) {
-            TruffleThreadBuilder truffleThreadBuilder = env.newTruffleThreadBuilder(new GraalHPyReferenceCleanerRunnable(referenceQueue)).threadGroup(getContext().getThreadGroup());
-            Thread thread = truffleThreadBuilder.build();
-            // Make the cleaner thread a daemon; it should not prevent JVM shutdown.
-            thread.setDaemon(true);
+            Thread thread = context.createSystemThread(new GraalHPyReferenceCleanerRunnable(referenceQueue));
             thread.start();
             hpyReferenceCleanerThread = thread;
         } else {
-            getContext().registerAsyncAction(() -> {
+            context.registerAsyncAction(() -> {
                 Reference<?> reference = null;
                 if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
                     try {

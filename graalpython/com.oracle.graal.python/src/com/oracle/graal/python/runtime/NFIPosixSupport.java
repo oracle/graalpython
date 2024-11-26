@@ -2385,7 +2385,6 @@ public final class NFIPosixSupport extends PosixSupport {
                 }
                 long delayMs = Math.min(deadlineMs - currentMs, 20);
                 TruffleSafepoint.setBlockedThreadInterruptible(node, Thread::sleep, delayMs);
-                TruffleSafepoint.poll(node);
             }
         }
     }
