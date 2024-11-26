@@ -43,7 +43,9 @@ package org.graalvm.python.embedding.utils.test;
 
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.python.embedding.utils.VirtualFileSystem;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -94,9 +96,9 @@ public class VirtualFileSystemTest {
     static final String VFS_SRC = VFS_ROOT + "src" + File.separator;
     private static final Path VFS_ROOT_PATH = Path.of(VFS_ROOT);
 
-    private final FileSystem rwHostIOVFS;
-    private final FileSystem rHostIOVFS;
-    private final FileSystem noHostIOVFS;
+    private FileSystem rwHostIOVFS;
+    private FileSystem rHostIOVFS;
+    private FileSystem noHostIOVFS;
 
     private static FileSystem getVFSImpl(VirtualFileSystem vfs) throws NoSuchFieldException, IllegalAccessException {
         Field impl = vfs.getClass().getDeclaredField("impl");
@@ -110,7 +112,10 @@ public class VirtualFileSystemTest {
             handler.setLevel(Level.FINE);
         }
         logger.setLevel(Level.FINE);
+    }
 
+    @Before
+    public void initFS() throws Exception {
         rwHostIOVFS = getVFSImpl(VirtualFileSystem.newBuilder().//
                         allowHostIO(READ_WRITE).//
                         unixMountPoint(VFS_UNIX_MOUNT_POINT).//
@@ -129,7 +134,13 @@ public class VirtualFileSystemTest {
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().equals("extractme")).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build());
+    }
 
+    @After
+    public void close() throws Exception {
+        ((AutoCloseable) rwHostIOVFS).close();
+        ((AutoCloseable) rHostIOVFS).close();
+        ((AutoCloseable) noHostIOVFS).close();
     }
 
     @Test
@@ -573,26 +584,28 @@ public class VirtualFileSystemTest {
     }
 
     @Test
-    public void libsExtract() throws Exception {
-        FileSystem fs = getVFSImpl(VirtualFileSystem.newBuilder().//
+    public void libsExtract() throws Exception, InterruptedException {
+        try (VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
-                        resourceLoadingClass(VirtualFileSystemTest.class).build());
-        Path p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg/file.tso"));
-        checkExtractedFile(p, null);
-        Path extractedRoot = p.getParent().getParent().getParent();
+                        resourceLoadingClass(VirtualFileSystemTest.class).build()) {
+            FileSystem fs = getVFSImpl(vfs);
+            Path p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg/file.tso"));
+            checkExtractedFile(p, null);
+            Path extractedRoot = p.getParent().getParent().getParent();
 
-        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file1.tso"), null);
-        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file2.tso"), null);
-        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file1.tso"), null);
-        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file2.tso"), null);
-        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/nofilterfile"), null);
-        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file1.tso"), null);
-        checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file2.tso"), null);
+            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file1.tso"), null);
+            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/file2.tso"), null);
+            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file1.tso"), null);
+            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/file2.tso"), null);
+            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/nofilterfile"), null);
+            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file1.tso"), null);
+            checkExtractedFile(extractedRoot.resolve("site-packages/testpkg.libs/dir/dir/file2.tso"), null);
 
-        p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg-nolibs/file.tso"));
-        checkExtractedFile(p, null);
+            p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg-nolibs/file.tso"));
+            checkExtractedFile(p, null);
+        }
     }
 
     private static void checkExtractedFile(Path extractedFile, String[] expectedContens) throws IOException {
@@ -610,12 +623,14 @@ public class VirtualFileSystemTest {
 
     @Test
     public void noExtractFilter() throws Exception {
-        FileSystem fs = getVFSImpl(VirtualFileSystem.newBuilder().//
+        try (VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(null).//
-                        resourceLoadingClass(VirtualFileSystemTest.class).build());
-        checkNotExtracted(fs, VFS_ROOT_PATH);
+                        resourceLoadingClass(VirtualFileSystemTest.class).build()) {
+            FileSystem fs = getVFSImpl(vfs);
+            checkNotExtracted(fs, VFS_ROOT_PATH);
+        }
     }
 
     private void checkNotExtracted(FileSystem fs, Path dir) throws IOException {
@@ -623,9 +638,6 @@ public class VirtualFileSystemTest {
         Iterator<Path> it = ds.iterator();
         while (it.hasNext()) {
             Path p = it.next();
-
-            System.out.println("+++ " + p + " " + fs.readAttributes(p, "isDirectory").get("isDirectory"));
-
             assertTrue(p.toString().startsWith(VFS_ROOT));
             fs.readAttributes(p, "isDirectory");
             if (Boolean.TRUE.equals((fs.readAttributes(p, "isDirectory").get("isDirectory")))) {
@@ -890,7 +902,7 @@ public class VirtualFileSystemTest {
     }
 
     @Test
-    public void testImpl() throws NoSuchFieldException, IllegalAccessException {
+    public void testImpl() throws Exception {
         Set<String> ignored = Set.of(
                         "allowInternalResourceAccess",
                         "allowLanguageHomeAccess",
@@ -901,10 +913,13 @@ public class VirtualFileSystemTest {
                         "getSeparator",
                         "getPathSeparator");
         Set<String> implementedMethods = new HashSet<>();
-        Class<?> vfsClass = getVFSImpl(VirtualFileSystem.create()).getClass();
-        for (Method m : vfsClass.getDeclaredMethods()) {
-            if ((m.getModifiers() & Modifier.PUBLIC) != 0) {
-                implementedMethods.add(m.getName());
+        Class<?> vfsClass;
+        try (VirtualFileSystem vfs = VirtualFileSystem.create()) {
+            vfsClass = getVFSImpl(vfs).getClass();
+            for (Method m : vfsClass.getDeclaredMethods()) {
+                if ((m.getModifiers() & Modifier.PUBLIC) != 0) {
+                    implementedMethods.add(m.getName());
+                }
             }
         }
 

@@ -87,22 +87,20 @@ public class VirtualFileSystemIntegrationTest {
     }
 
     @Test
-    public void defaultValues() {
-        VirtualFileSystem fs = VirtualFileSystem.create();
-        VirtualFileSystem fs2 = VirtualFileSystem.create();
-
-        assertEquals(fs.getMountPoint(), fs2.getMountPoint());
-
-        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", fs.getMountPoint());
+    public void defaultValues() throws IOException {
+        try (VirtualFileSystem fs = VirtualFileSystem.create(); VirtualFileSystem fs2 = VirtualFileSystem.create()) {
+            assertEquals(fs.getMountPoint(), fs2.getMountPoint());
+            assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", fs.getMountPoint());
+        }
     }
 
     @Test
-    public void mountPoints() {
-        VirtualFileSystem fs = VirtualFileSystem.newBuilder().//
+    public void mountPoints() throws IOException {
+        try (VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_UNIX_MOUNT_POINT).//
-                        windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
-
-        assertEquals(VFS_MOUNT_POINT, fs.getMountPoint());
+                        windowsMountPoint(VFS_WIN_MOUNT_POINT).build()) {
+            assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
+        }
 
         String multiPathUnixMountPoint = "/test/mount/point";
         String multiPathWinMountPoint = "X:\\test\\win\\mount\\point";
@@ -110,8 +108,9 @@ public class VirtualFileSystemIntegrationTest {
                         unixMountPoint(multiPathUnixMountPoint).//
                         windowsMountPoint(multiPathWinMountPoint).//
                         resourceLoadingClass(VirtualFileSystemIntegrationTest.class).build();
-        Context ctx = addTestOptions(GraalPyResources.contextBuilder(vfs)).build();
-        ctx.eval(PYTHON, "from os import listdir; listdir('" + (IS_WINDOWS ? multiPathWinMountPoint.replace("\\", "\\\\") : multiPathUnixMountPoint) + "')");
+        try (Context ctx = addTestOptions(GraalPyResources.contextBuilder(vfs)).build()) {
+            ctx.eval(PYTHON, "from os import listdir; listdir('" + (IS_WINDOWS ? multiPathWinMountPoint.replace("\\", "\\\\") : multiPathUnixMountPoint) + "')");
+        }
     }
 
     private static void checkExtractedFile(Path extractedFile, String[] expectedContens) throws IOException {
@@ -144,10 +143,12 @@ public class VirtualFileSystemIntegrationTest {
 
     @Test
     public void fsOperations() {
-        Context ctx = createContext(null, null);
-        fsOperations(ctx, "/test_mount_point/");
-        ctx = createContext(null, b -> b.currentWorkingDirectory(Path.of(VFS_MOUNT_POINT)));
-        fsOperations(ctx, "");
+        try (Context ctx = createContext(null, null)) {
+            fsOperations(ctx, "/test_mount_point/");
+        }
+        try (Context ctx = createContext(null, b -> b.currentWorkingDirectory(Path.of(VFS_MOUNT_POINT)))) {
+            fsOperations(ctx, "");
+        }
     }
 
     public void fsOperations(Context ctx, String pathPrefix) {
@@ -392,26 +393,28 @@ public class VirtualFileSystemIntegrationTest {
 
     @Test
     public void osChdir() {
-        Context ctx = createContext(null, null);
-        // os.path.exists
-        eval(ctx, """
-                        import os
-                        assert not os.path.exists('file1')
-                        os.chdir('/test_mount_point')
-                        assert os.path.exists('file1')
-                        """);
+        try (Context ctx = createContext(null, null)) {
+            // os.path.exists
+            eval(ctx, """
+                            import os
+                            assert not os.path.exists('file1')
+                            os.chdir('/test_mount_point')
+                            assert os.path.exists('file1')
+                            """);
+        }
     }
 
     @Test
     public void fsOperationsCaseInsensitive() {
-        Context ctx = createContext(b -> b.caseInsensitive(true), null);
-        eval(ctx, """
-                        import os
-                        assert os.path.exists('/test_mount_point/SomeFile')
-                        assert os.path.exists('/test_mount_point/someFile')
-                        assert os.path.exists('/test_mount_point/somefile')
-                        assert not os.path.exists('/test_mount_point/somefile1')
-                        """);
+        try (Context ctx = createContext(b -> b.caseInsensitive(true), null)) {
+            eval(ctx, """
+                            import os
+                            assert os.path.exists('/test_mount_point/SomeFile')
+                            assert os.path.exists('/test_mount_point/someFile')
+                            assert os.path.exists('/test_mount_point/somefile')
+                            assert not os.path.exists('/test_mount_point/somefile1')
+                            """);
+        }
     }
 
     private static void eval(Context ctx, String s, String pathPrefix) {
@@ -449,48 +452,50 @@ public class VirtualFileSystemIntegrationTest {
 
     @Test
     public void vfsBuilderTest() {
-        Context context = addTestOptions(GraalPyResources.contextBuilder()).allowAllAccess(true).allowHostAccess(HostAccess.ALL).build();
-        context.eval(PYTHON, "import java; java.type('java.lang.String')");
+        try (Context context = addTestOptions(GraalPyResources.contextBuilder()).allowAllAccess(true).allowHostAccess(HostAccess.ALL).build()) {
+            context.eval(PYTHON, "import java; java.type('java.lang.String')");
+        }
 
-        context = addTestOptions(GraalPyResources.contextBuilder()).allowAllAccess(false).allowHostAccess(HostAccess.NONE).build();
-        context.eval(PYTHON, """
-                        import java
-                        try:
-                            java.type('java.lang.String');
-                        except NotImplementedError:
-                            pass
-                        else:
-                            assert False, 'expected NotImplementedError'
-                        """);
-
+        try (Context context = addTestOptions(GraalPyResources.contextBuilder()).allowAllAccess(false).allowHostAccess(HostAccess.NONE).build()) {
+            context.eval(PYTHON, """
+                            import java
+                            try:
+                                java.type('java.lang.String');
+                            except NotImplementedError:
+                                pass
+                            else:
+                                assert False, 'expected NotImplementedError'
+                            """);
+        }
         VirtualFileSystem fs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         resourceLoadingClass(VirtualFileSystemIntegrationTest.class).build();
-        context = addTestOptions(GraalPyResources.contextBuilder(fs)).build();
-        context.eval(PYTHON, patchMountPoint("from os import listdir; listdir('/test_mount_point')"));
-
-        context = GraalPyResources.createContext();
-        context.eval(PYTHON, "from os import listdir; listdir('.')");
-
-        context = addTestOptions(GraalPyResources.contextBuilder()).allowIO(IOAccess.NONE).build();
-        boolean gotPE = false;
-        try {
-            context.eval(PYTHON, "from os import listdir; listdir('.')");
-        } catch (PolyglotException pe) {
-            gotPE = true;
+        try (Context context = addTestOptions(GraalPyResources.contextBuilder(fs)).build()) {
+            context.eval(PYTHON, patchMountPoint("from os import listdir; listdir('/test_mount_point')"));
         }
-        assert gotPE : "expected PolyglotException";
+
+        try (Context context = GraalPyResources.createContext()) {
+            context.eval(PYTHON, "from os import listdir; listdir('.')");
+        }
+        try (Context context = addTestOptions(GraalPyResources.contextBuilder()).allowIO(IOAccess.NONE).build()) {
+            boolean gotPE = false;
+            try {
+                context.eval(PYTHON, "from os import listdir; listdir('.')");
+            } catch (PolyglotException pe) {
+                gotPE = true;
+            }
+            assert gotPE : "expected PolyglotException";
+        }
     }
 
     @Test
     public void externalResourcesBuilderTest() throws IOException {
-        VirtualFileSystem fs = VirtualFileSystem.newBuilder().resourceLoadingClass(VirtualFileSystemIntegrationTest.class).build();
         Path resourcesDir = Files.createTempDirectory("vfs-test-resources");
-
-        // extract VFS
-        GraalPyResources.extractVirtualFileSystemResources(fs, resourcesDir);
-
+        try (VirtualFileSystem fs = VirtualFileSystem.newBuilder().resourceLoadingClass(VirtualFileSystemIntegrationTest.class).build()) {
+            // extract VFS
+            GraalPyResources.extractVirtualFileSystemResources(fs, resourcesDir);
+        }
         // check extracted contents
         InputStream stream = VirtualFileSystemIntegrationTest.class.getResourceAsStream("/org.graalvm.python.vfs/fileslist.txt");
         BufferedReader br = new BufferedReader(new InputStreamReader(stream));
@@ -535,30 +540,37 @@ public class VirtualFileSystemIntegrationTest {
     @SuppressWarnings("unchecked")
     @Test
     public void pythonPathsTest() throws IOException {
-        Context ctx = GraalPyResources.createContext();
+        String defaultMountPoint;
+        try (VirtualFileSystem vfs = VirtualFileSystem.newBuilder().build()) {
+            defaultMountPoint = vfs.getMountPoint();
+        }
+
         String getPathsSource = "import sys; [__graalpython__.get_python_home_paths(), sys.path, sys.executable]";
+        try (Context ctx = GraalPyResources.createContext()) {
+            Value paths = ctx.eval("python", getPathsSource);
 
-        Value paths = ctx.eval("python", getPathsSource);
-        String defaultMountPoint = VirtualFileSystem.newBuilder().build().getMountPoint();
-        assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", defaultMountPoint);
-        checkPaths(paths.as(List.class), defaultMountPoint);
+            assertEquals(IS_WINDOWS ? "X:\\graalpy_vfs" : "/graalpy_vfs", defaultMountPoint);
+            checkPaths(paths.as(List.class), defaultMountPoint);
+        }
 
-        ctx = GraalPyResources.contextBuilder().build();
-        paths = ctx.eval("python", getPathsSource);
-        checkPaths(paths.as(List.class), defaultMountPoint);
-
+        try (Context ctx = GraalPyResources.contextBuilder().build()) {
+            Value paths = ctx.eval("python", getPathsSource);
+            checkPaths(paths.as(List.class), defaultMountPoint);
+        }
         VirtualFileSystem vfs = VirtualFileSystem.newBuilder().//
                         unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).build();
         assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
-        ctx = GraalPyResources.contextBuilder(vfs).build();
-        paths = ctx.eval("python", getPathsSource);
-        checkPaths(paths.as(List.class), vfs.getMountPoint(), true);
-
+        try (Context ctx = GraalPyResources.contextBuilder(vfs).build()) {
+            Value paths = ctx.eval("python", getPathsSource);
+            checkPaths(paths.as(List.class), vfs.getMountPoint(), true);
+        }
         Path resourcesDir = Files.createTempDirectory("python-resources");
-        ctx = GraalPyResources.contextBuilder(resourcesDir).build();
-        paths = ctx.eval("python", getPathsSource);
-        checkPaths(paths.as(List.class), resourcesDir.toString());
+
+        try (Context ctx = GraalPyResources.contextBuilder(resourcesDir).build()) {
+            Value paths = ctx.eval("python", getPathsSource);
+            checkPaths(paths.as(List.class), resourcesDir.toString());
+        }
     }
 
     private static void checkPaths(List<Object> l, String pathPrefix) {
