@@ -119,6 +119,10 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
+import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
+import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -153,12 +157,14 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -171,6 +177,7 @@ import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
 import com.oracle.truffle.api.interop.StopIterationException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnknownKeyException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -236,13 +243,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void writeMember(String key, Object value,
-                    @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared @Cached PForeignToPTypeNode convert,
-                    @Exclusive @Cached PyObjectSetAttr setAttributeNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                            @Bind("$node") Node inliningTarget,
+                            @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                            @Shared @Cached PForeignToPTypeNode convert,
+                            @Exclusive @Cached PyObjectSetAttr setAttributeNode,
+                            // GR-44020: make shared:
+                            @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
+                            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             setAttributeNode.execute(null, inliningTarget, this, fromJavaStringNode.execute(key, TS_ENCODING), convert.executeConvert(value));
@@ -257,11 +264,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object readMember(String key,
-                    @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectLookupAttr lookup,
-                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                             @Bind("$node") Node inliningTarget,
+                             @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached PyObjectLookupAttr lookup,
+                             @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         Object value;
         try {
@@ -279,16 +286,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean hasArrayElements(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Cached GetObjectSlotsNode getSlotsNode,
-                    @Exclusive @Cached PySequenceCheckNode sequenceCheck,
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            @Cached GetObjectSlotsNode getSlotsNode,
+            @Exclusive @Cached PySequenceCheckNode sequenceCheck,
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.has_array_elements;
@@ -306,11 +313,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object readArrayElement(long key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached PySequenceGetItemNode sequenceGetItem,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+                                   @Bind("$node") Node inliningTarget,
+                                   @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                   @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                   @Cached PySequenceGetItemNode sequenceGetItem,
+                                   @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.read_array_element;
@@ -334,12 +341,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeArrayElement(long key, Object value,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Shared @Cached PForeignToPTypeNode convert,
-                    @Cached PySequenceSetItemNode sequenceSetItemNode,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+                                  @Bind("$node") Node inliningTarget,
+                                  @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                  @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                  @Shared @Cached PForeignToPTypeNode convert,
+                                  @Cached PySequenceSetItemNode sequenceSetItemNode,
+                                  @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             value = convert.executeConvert(value);
@@ -364,11 +371,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void removeArrayElement(long key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached PySequenceDelItemNode sequenceDelItemNode,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+                                   @Bind("$node") Node inliningTarget,
+                                   @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                   @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                   @Cached PySequenceDelItemNode sequenceDelItemNode,
+                                   @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.remove_array_element;
@@ -392,16 +399,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long getArraySize(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
-                    @Exclusive @Cached PySequenceCheckNode sequenceCheck,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
+            @Exclusive @Cached PySequenceCheckNode sequenceCheck,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaLongExactNode toLongNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.get_array_size;
@@ -431,15 +438,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementReadable(long idx,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Exclusive @Cached GilNode gil) {
+                                          @Bind("$node") Node inliningTarget,
+                                          // GR-44020: make shared:
+                                          @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                          // GR-44020: make shared:
+                                          @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                          @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
+                                          @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                          @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                          @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_readable;
@@ -461,15 +468,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementModifiable(long idx,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Exclusive @Cached GilNode gil) {
+                                            @Bind("$node") Node inliningTarget,
+                                            // GR-44020: make shared:
+                                            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                            // GR-44020: make shared:
+                                            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                            @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
+                                            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_modifiable;
@@ -491,15 +498,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementInsertable(long idx,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
-                    @Exclusive @Cached GilNode gil) {
+                                            @Bind("$node") Node inliningTarget,
+                                            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                            // GR-44020: make shared:
+                                            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                            // GR-44020: make shared:
+                                            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                            @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
+                                            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_insertable;
@@ -521,15 +528,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isArrayElementRemovable(long idx,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
-                    @Exclusive @Cached GilNode gil) {
+                                           @Bind("$node") Node inliningTarget,
+                                           @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                           @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                           // GR-44020: make shared:
+                                           @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                           // GR-44020: make shared:
+                                           @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                           @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
+                                           @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_array_element_removable;
@@ -555,73 +562,73 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberReadable(String member,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+                                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.READABLE);
     }
 
     @ExportMessage
     public boolean isMemberModifiable(String member,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+                                      @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                                      @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.MODIFIABLE);
     }
 
     @ExportMessage
     public boolean isMemberInsertable(String member,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+                                      @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                                      @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.INSERTABLE);
     }
 
     @ExportMessage
     public boolean isMemberInvocable(String member,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+                                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.INVOCABLE);
     }
 
     @ExportMessage
     public boolean isMemberRemovable(String member,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+                                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                                     @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.REMOVABLE);
     }
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String member,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+                                            @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                                            @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.READ_SIDE_EFFECTS);
     }
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String member,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+                                             @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                                             @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
         // TODO write specialized nodes for the appropriate property
         return keyInfoNode.execute(this, fromJavaStringNode.execute(member, TS_ENCODING), PKeyInfoNode.WRITE_SIDE_EFFECTS);
     }
 
     @ExportMessage
     public Object invokeMember(String member, Object[] arguments,
-                    @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                    @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
-                    @Exclusive @Cached PExecuteNode executeNode,
-                    @Exclusive @Cached InlinedConditionProfile profileGetattribute,
-                    @Exclusive @Cached InlinedConditionProfile profileMember,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached IsBuiltinObjectProfile attributeErrorProfile,
-                    @Exclusive @Cached GilNode gil)
-                    throws UnknownIdentifierException, UnsupportedMessageException {
+                               @Bind("$node") Node inliningTarget,
+                               @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                               @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
+                               @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
+                               @Exclusive @Cached PExecuteNode executeNode,
+                               @Exclusive @Cached InlinedConditionProfile profileGetattribute,
+                               @Exclusive @Cached InlinedConditionProfile profileMember,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached IsBuiltinObjectProfile attributeErrorProfile,
+                               @Exclusive @Cached GilNode gil)
+            throws UnknownIdentifierException, UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             Object memberObj;
@@ -647,16 +654,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isExecutable(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Cached PyCallableCheckNode callableCheck,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            @Cached PyCallableCheckNode callableCheck,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_executable;
@@ -674,11 +681,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object execute(Object[] arguments,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Exclusive @Cached PExecuteNode executeNode,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                          @Bind("$node") Node inliningTarget,
+                          @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                          @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                          @Exclusive @Cached PExecuteNode executeNode,
+                          @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.execute;
@@ -696,21 +703,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @TruffleBoundary
     public Object getMembers(boolean includeInternal,
-                    @Bind("$node") Node inliningTarget,
-                    @Cached CastToListInteropNode castToList,
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClass,
-                    @Cached PyMappingCheckNode checkMapping,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyObjectLookupAttr lookupKeys,
-                    @Cached CallNode callKeys,
-                    @Cached PyObjectGetItem getItemNode,
-                    @Cached SequenceNodes.LenNode lenNode,
-                    @Cached TypeNodes.GetMroNode getMroNode,
-                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.RegionEqualNode regionEqualNode,
-                    @Cached TruffleString.ConcatNode concatNode,
-                    @Cached StringMaterializeNode materializeNode,
-                    @Exclusive @Cached GilNode gil) {
+                             @Bind("$node") Node inliningTarget,
+                             @Cached CastToListInteropNode castToList,
+                             @Shared("getClass") @Cached(inline = false) GetClassNode getClass,
+                             @Cached PyMappingCheckNode checkMapping,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached PyObjectLookupAttr lookupKeys,
+                             @Cached CallNode callKeys,
+                             @Cached PyObjectGetItem getItemNode,
+                             @Cached SequenceNodes.LenNode lenNode,
+                             @Cached TypeNodes.GetMroNode getMroNode,
+                             @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                             @Cached TruffleString.RegionEqualNode regionEqualNode,
+                             @Cached TruffleString.ConcatNode concatNode,
+                             @Cached StringMaterializeNode materializeNode,
+                             @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashSet<TruffleString> keys = new HashSet<>();
@@ -757,12 +764,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void removeMember(String member,
-                    @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached PyObjectSetAttr deleteAttributeNode,
-                    @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                             @Bind("$node") Node inliningTarget,
+                             @Exclusive @Cached PyObjectSetAttr deleteAttributeNode,
+                             @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached IsBuiltinObjectProfile attrErrorProfile,
+                             @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             deleteAttributeNode.delete(null, inliningTarget, this, fromJavaStringNode.execute(member, TS_ENCODING));
@@ -777,10 +784,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isInstantiable(
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: use inlined:
-                    @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            // GR-44020: use inlined:
+            @Cached(inline = false) TypeNodes.IsTypeNode isTypeNode,
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return isTypeNode.execute(inliningTarget, this);
@@ -791,9 +798,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object instantiate(Object[] arguments,
-                    @CachedLibrary("this") InteropLibrary interopLib,
-                    @Exclusive @Cached PExecuteNode executeNode,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                              @CachedLibrary("this") InteropLibrary interopLib,
+                              @Exclusive @Cached PExecuteNode executeNode,
+                              @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (!interopLib.isInstantiable(this)) {
@@ -806,14 +813,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     private static void addKeysFromObject(HashSet<TruffleString> keys, PythonObject o, boolean includeInternal, TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.RegionEqualNode regionEqualNode) {
+                                          TruffleString.RegionEqualNode regionEqualNode) {
         HashingStorage dictStorage;
         PDict dict = GetDictIfExistsNode.getUncached().execute(o);
         if (dict != null) {
             dictStorage = dict.getDictStorage();
         } else {
             dictStorage = new DynamicObjectStorage(o); // temporary wrapper makes the rest of the
-                                                       // code easier
+            // code easier
         }
         HashingStorageIterator it = HashingStorageGetIterator.executeUncached(dictStorage);
         while (HashingStorageIteratorNext.executeUncached(dictStorage, it)) {
@@ -840,15 +847,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isDate(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_date;
@@ -866,19 +873,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public LocalDate asDate(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_date;
@@ -913,15 +920,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isTime(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_time;
@@ -939,19 +946,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public LocalTime asTime(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_time;
@@ -987,15 +994,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isTimeZone(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_time_zone;
@@ -1013,16 +1020,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public ZoneId asTimeZone(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_time_zone;
@@ -1075,15 +1082,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isDuration(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_duration;
@@ -1101,19 +1108,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Duration asDuration(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaLongExactNode castToLongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaLongExactNode castToLongNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_duration;
@@ -1163,17 +1170,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         static boolean access(Object object, TruffleString attrKeyName, int type,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
-                        @Cached ReadAttributeFromObjectNode readObjectAttrNode,
-                        @Cached PyCallableCheckNode callableCheck,
-                        @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
-                        @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
-                        @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsImmutable isImmutable,
-                        @Cached GetMroNode getMroNode,
-                        @Cached GilNode gil) {
+                              @Bind("this") Node inliningTarget,
+                              @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
+                              @Cached ReadAttributeFromObjectNode readObjectAttrNode,
+                              @Cached PyCallableCheckNode callableCheck,
+                              @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
+                              @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
+                              @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
+                              @Cached GetClassNode getClassNode,
+                              @Cached IsImmutable isImmutable,
+                              @Cached GetMroNode getMroNode,
+                              @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 Object owner = object;
@@ -1262,7 +1269,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public static boolean isImmutable(Node inliningTarget, Object object,
-                        @Cached GetClassNode getClassNode) {
+                                          @Cached GetClassNode getClassNode) {
             // TODO(fa) The first condition is too general; we should check if the object's type is
             // 'type'
             if (object instanceof PythonBuiltinClass || object instanceof PythonBuiltinObject || PGuards.isNativeClass(object) || PGuards.isNativeObject(object)) {
@@ -1285,24 +1292,80 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)"})
         Object doVarargsBuiltinMethod(Object receiver, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CallVarargsMethodNode callVarargsMethodNode,
-                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
+                                      @Bind("this") Node inliningTarget,
+                                      @Cached CallVarargsMethodNode callVarargsMethodNode,
+                                      @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
             Object[] convertedArgs = convertArgsNode.execute(inliningTarget, arguments);
             return callVarargsMethodNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS);
         }
 
+        private static String POSARGS_MEMBER = "org.graalvm.python.embedding.PositionalArguments.is_positional_arguments";
+        private static String KWARGS_MEMBER = "org.graalvm.python.embedding.KeywordArguments.is_keyword_arguments";
         @Specialization(replaces = "doVarargsBuiltinMethod")
         static Object doExecute(Object receiver, Object[] arguments,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyCallableCheckNode callableCheck,
-                        @Exclusive @Cached CallNode callNode,
-                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
+                                @Bind("this") Node inliningTarget,
+                                @Cached PyCallableCheckNode callableCheck,
+                                @Exclusive @Cached CallNode callNode,
+                                @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode,
+                                @Cached MappingToKeywordsNode toKeywordsNode,
+                                @Cached ExecutePositionalStarargsNode positionalStarargsNode,
+                                @CachedLibrary(limit = "1") InteropLibrary iLib1,
+                                @CachedLibrary(limit = "1") InteropLibrary iLib2,
+                                @Cached InlinedConditionProfile argsLenProfile,
+                                @Cached InlinedConditionProfile isKwargsProfile,
+                                @Cached InlinedConditionProfile isIndexZeroProfile,
+                                @Cached InlinedConditionProfile isStarargsProfile1,
+                                @Cached InlinedConditionProfile isStarargsProfile2,
+                                @Cached InlinedConditionProfile isStarargsDefinedProfile,
+                                @Cached InlinedConditionProfile isIndexNotZeroProfile ) throws UnsupportedMessageException {
             if (!callableCheck.execute(inliningTarget, receiver)) {
                 throw UnsupportedMessageException.create();
             }
-            Object[] convertedArgs = convertArgsNode.execute(inliningTarget, arguments);
-            return callNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS);
+
+            PKeyword[] kwArgs = PKeyword.EMPTY_KEYWORDS;
+            Object[] newArgs = arguments;
+            int index = arguments.length - 1;
+            if (argsLenProfile.profile(inliningTarget, index >= 0)) {
+                Object last = arguments[index];
+                Object[] starArgs = null;
+                try {
+                    if (isKwargsProfile.profile(inliningTarget, iLib1.hasMembers(last) && iLib1.isMemberReadable(last, KWARGS_MEMBER)
+                            && iLib1.readMember(last, KWARGS_MEMBER) == Boolean.TRUE)) {
+                        kwArgs = toKeywordsNode.execute(null, inliningTarget, last);
+                        --index;
+                        if (isIndexZeroProfile.profile(inliningTarget, index >= 0)) {
+                            last = arguments[index];
+                            if (isStarargsProfile1.profile(inliningTarget, iLib2.hasMembers(last) && iLib2.isMemberReadable(last, POSARGS_MEMBER)
+                                    && iLib2.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
+                                starArgs = positionalStarargsNode.executeWith(null, last);
+                            } else {
+                                // no starargs are in arguments
+                                newArgs = PythonUtils.arrayCopyOf(arguments, arguments.length - 1);
+                            }
+                        } else {
+                            // only kwargs are in arguments
+                            newArgs = new Object[0];
+                        }
+                    } else if (isStarargsProfile2.profile(inliningTarget, iLib1.hasMembers(last) && iLib1.isMemberReadable(last, POSARGS_MEMBER)
+                            && iLib1.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
+                        starArgs = positionalStarargsNode.executeWith(null, last);
+                    }
+                    if (isStarargsDefinedProfile.profile(inliningTarget, starArgs != null)) {
+                        if (isIndexNotZeroProfile.profile(inliningTarget, index > 0)) {
+                            newArgs = new Object[index + starArgs.length];
+                            PythonUtils.arraycopy(arguments, 0, newArgs, 0, index);
+                            PythonUtils.arraycopy(starArgs, 0, newArgs, index, starArgs.length);
+                        } else {
+                            // only starargs and kwargs are in arguments
+                            newArgs = starArgs;
+                        }
+                    }
+                } catch (UnknownIdentifierException | SameDictKeyException | NonMappingException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            Object[] convertedArgs = convertArgsNode.execute(inliningTarget, newArgs);
+            return callNode.execute(null, receiver, convertedArgs, kwArgs);
         }
 
         static boolean isBuiltinFunctionOrMethod(Object object) {
@@ -1329,8 +1392,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         @Specialization(guards = {"arguments.length == cachedLen", "cachedLen < 6"}, limit = "3")
         @ExplodeLoop
         static Object[] cached(Object[] arguments,
-                        @Shared @Cached(inline = false) PForeignToPTypeNode fromForeign,
-                        @Cached("arguments.length") int cachedLen) {
+                               @Shared @Cached(inline = false) PForeignToPTypeNode fromForeign,
+                               @Cached("arguments.length") int cachedLen) {
             Object[] convertedArgs = new Object[cachedLen];
             for (int i = 0; i < cachedLen; i++) {
                 convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
@@ -1340,7 +1403,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(replaces = "cached")
         static Object[] generic(Object[] arguments,
-                        @Shared @Cached(inline = false) PForeignToPTypeNode fromForeign) {
+                                @Shared @Cached(inline = false) PForeignToPTypeNode fromForeign) {
             Object[] convertedArgs = new Object[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
                 convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
@@ -1365,8 +1428,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @ExportMessage
         Object readArrayElement(long index,
-                        @Cached InlinedBranchProfile outOfBoundsProfile,
-                        @Bind("$node") Node inliningTarget) throws InvalidArrayIndexException {
+                                @Cached InlinedBranchProfile outOfBoundsProfile,
+                                @Bind("$node") Node inliningTarget) throws InvalidArrayIndexException {
             if (Long.compareUnsigned(index, keys.length) < 0) {
                 return keys[(int) index];
             } else {
@@ -1416,10 +1479,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public static TruffleString doDefault(Node inliningTarget, PythonAbstractObject receiver,
-                        @Cached(inline = false) ReadAttributeFromObjectNode readStr,
-                        @Cached(inline = false) CallNode callNode,
-                        @Cached CastToTruffleStringNode castStr,
-                        @Cached InlinedConditionProfile toStringUsed) {
+                                              @Cached(inline = false) ReadAttributeFromObjectNode readStr,
+                                              @Cached(inline = false) CallNode callNode,
+                                              @Cached CastToTruffleStringNode castStr,
+                                              @Cached InlinedConditionProfile toStringUsed) {
             Object toStrAttr;
             TruffleString names;
             PythonContext context = PythonContext.get(inliningTarget);
@@ -1454,9 +1517,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(guards = "allowSideEffects")
         public static TruffleString doSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects,
-                        @Bind("$node") Node inliningTarget,
-                        @Cached ToDisplaySideEffectingNode toDisplayCallNode,
-                        @Exclusive @Cached GilNode gil) {
+                                                    @Bind("$node") Node inliningTarget,
+                                                    @Cached ToDisplaySideEffectingNode toDisplayCallNode,
+                                                    @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return toDisplayCallNode.execute(inliningTarget, receiver);
@@ -1467,7 +1530,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(guards = "!allowSideEffects")
         public static TruffleString doNonSideEffecting(PythonAbstractObject receiver,
-                        boolean allowSideEffects, @Exclusive @Cached GilNode gil) {
+                                                       boolean allowSideEffects, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return receiver.toStringBoundary();
@@ -1491,8 +1554,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object getMetaObject(
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClass,
-                    @Exclusive @Cached GilNode gil) {
+            @Shared("getClass") @Cached(inline = false) GetClassNode getClass,
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return getClass.executeCached(this);
@@ -1503,10 +1566,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasMetaParents(
-                    @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
-                    @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
+            @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return isTypeNode.execute(inliningTarget, this) && getBaseClassNode.execute(inliningTarget, this).length > 0;
@@ -1517,11 +1580,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object getMetaParents(
-                    @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached PythonObjectFactory factory,
-                    @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
-                    @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Exclusive @Cached PythonObjectFactory factory,
+            @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
+            @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (isTypeNode.execute(inliningTarget, this)) {
@@ -1538,9 +1601,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public int identityHashCode(
-                    @Bind("$node") Node inliningTarget,
-                    @Cached ObjectNodes.GetIdentityHashNode getIdentityHashNode,
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Cached ObjectNodes.GetIdentityHashNode getIdentityHashNode,
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return getIdentityHashNode.execute(inliningTarget, this);
@@ -1571,10 +1634,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public TriState isIdenticalOrUndefined(Object otherInterop,
-                    @Shared @Cached PForeignToPTypeNode convert,
-                    @Exclusive @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                    @Cached IsNode isNode,
-                    @Exclusive @Cached GilNode gil) {
+                                           @Shared @Cached PForeignToPTypeNode convert,
+                                           @Exclusive @CachedLibrary(limit = "3") InteropLibrary otherLib,
+                                           @Cached IsNode isNode,
+                                           @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object other = convert.executeConvert(otherInterop);
@@ -1593,17 +1656,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean hasIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
+            @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.has_iterator;
@@ -1621,12 +1684,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached PyObjectGetIter getIter,
-                    @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            @Cached PyObjectGetIter getIter,
+            @Exclusive @Cached GilNode gil,
+            @CachedLibrary("this") InteropLibrary lib) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (lib.hasIterator(this)) {
@@ -1648,17 +1711,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
+            @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_iterator;
@@ -1676,20 +1739,20 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean hasIteratorNextElement(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Cached GetNextNode getNextNode,
-                    @Exclusive @Cached IsBuiltinObjectProfile exceptionProfile,
-                    @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("this") InteropLibrary ilib,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached HiddenAttr.ReadNode readHiddenAttrNode,
-                    @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            @Cached GetNextNode getNextNode,
+            @Exclusive @Cached IsBuiltinObjectProfile exceptionProfile,
+            @Exclusive @Cached GilNode gil,
+            @CachedLibrary("this") InteropLibrary ilib,
+            // GR-44020: make shared:
+            @Exclusive @Cached HiddenAttr.ReadNode readHiddenAttrNode,
+            @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (ilib.isIterator(this)) {
@@ -1721,14 +1784,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getIteratorNextElement(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @CachedLibrary("this") InteropLibrary ilib,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached HiddenAttr.ReadNode readHiddenAttrNode,
-                    @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                    @Exclusive @Cached GilNode gil) throws StopIterationException, UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            @CachedLibrary("this") InteropLibrary ilib,
+            // GR-44020: make shared:
+            @Exclusive @Cached HiddenAttr.ReadNode readHiddenAttrNode,
+            @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
+            @Exclusive @Cached GilNode gil) throws StopIterationException, UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (ilib.hasIteratorNextElement(this)) {
@@ -1752,14 +1815,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isBoolean(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                             @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                             @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_boolean;
@@ -1777,14 +1840,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isNumber(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                            // GR-44020: make shared:
+                            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                            // GR-44020: make shared:
+                            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                            // GR-44020: make shared:
+                            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_number;
@@ -1802,14 +1865,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isString(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                            // GR-44020: make shared:
+                            @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                            // GR-44020: make shared:
+                            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                            // GR-44020: make shared:
+                            @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_string;
@@ -1827,14 +1890,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInByte(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                              @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                              @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                              // GR-44020: make shared:
+                              @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                              // GR-44020: make shared:
+                              @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                              // GR-44020: make shared:
+                              @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_byte;
@@ -1852,14 +1915,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInShort(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                               @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                               @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_short;
@@ -1877,14 +1940,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInInt(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                             @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                             @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_int;
@@ -1902,14 +1965,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInLong(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                              @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                              @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                              // GR-44020: make shared:
+                              @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                              // GR-44020: make shared:
+                              @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                              // GR-44020: make shared:
+                              @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_long;
@@ -1927,14 +1990,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInFloat(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                               @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                               @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_float;
@@ -1952,14 +2015,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInDouble(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                                @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                // GR-44020: make shared:
+                                @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                // GR-44020: make shared:
+                                @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                // GR-44020: make shared:
+                                @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_double;
@@ -1977,14 +2040,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean fitsInBigInteger(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                    // GR-44020: make shared:
+                                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                    // GR-44020: make shared:
+                                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                    // GR-44020: make shared:
+                                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.fits_in_big_integer;
@@ -2002,14 +2065,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean asBoolean(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                             @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                             @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_boolean;
@@ -2027,14 +2090,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public byte asByte(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaByteNode toByteNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                       @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                       @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                       // GR-44020: make shared:
+                       @Exclusive @Cached CastToJavaByteNode toByteNode,
+                       // GR-44020: make shared:
+                       @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                       // GR-44020: make shared:
+                       @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_byte;
@@ -2052,14 +2115,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public short asShort(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaShortNode toShortNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                         @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                         @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                         // GR-44020: make shared:
+                         @Exclusive @Cached CastToJavaShortNode toShortNode,
+                         // GR-44020: make shared:
+                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                         // GR-44020: make shared:
+                         @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_short;
@@ -2077,14 +2140,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public int asInt(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                     // GR-44020: make shared:
+                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                     // GR-44020: make shared:
+                     @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                     // GR-44020: make shared:
+                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_int;
@@ -2102,14 +2165,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long asLong(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                       @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                       @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                       // GR-44020: make shared:
+                       @Exclusive @Cached CastToJavaLongExactNode toLongNode,
+                       // GR-44020: make shared:
+                       @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                       // GR-44020: make shared:
+                       @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_long;
@@ -2127,14 +2190,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public float asFloat(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                         @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                         @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                         // GR-44020: make shared:
+                         @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
+                         // GR-44020: make shared:
+                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                         // GR-44020: make shared:
+                         @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_float;
@@ -2152,14 +2215,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public double asDouble(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                           @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                           @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                           // GR-44020: make shared:
+                           @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
+                           // GR-44020: make shared:
+                           @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                           // GR-44020: make shared:
+                           @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_double;
@@ -2177,11 +2240,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public BigInteger asBigInteger(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached CastToJavaBigIntegerNode toBigIntegerNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                                   @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                   @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                   @Cached CastToJavaBigIntegerNode toBigIntegerNode,
+                                   // GR-44020: make shared:
+                                   @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_big_integer;
@@ -2200,13 +2263,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public String asString(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    @Cached CastToJavaStringNode toStringNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                           @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                           @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                           @Cached CastToJavaStringNode toStringNode,
+                           // GR-44020: make shared:
+                           @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                           // GR-44020: make shared:
+                           @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.as_string;
@@ -2224,14 +2287,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean hasHashEntries(@Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                                  @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                  @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                  // GR-44020: make shared:
+                                  @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                  // GR-44020: make shared:
+                                  @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                  // GR-44020: make shared:
+                                  @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.has_hash_entries;
@@ -2249,15 +2312,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long getHashSize(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaLongExactNode toLongNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached CastToJavaLongExactNode toLongNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_size;
@@ -2275,11 +2338,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getHashEntriesIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_entries_iterator;
@@ -2297,11 +2360,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getHashKeysIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_entries_iterator;
@@ -2319,11 +2382,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object getHashValuesIterator(
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+            @Bind("$node") Node inliningTarget,
+            @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+            @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+            // GR-44020: make shared:
+            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.get_hash_values_iterator;
@@ -2341,11 +2404,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public Object readHashValue(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                                @Bind("$node") Node inliningTarget,
+                                @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                // GR-44020: make shared:
+                                @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.read_hash_value;
@@ -2363,15 +2426,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryReadable(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                                       @Bind("$node") Node inliningTarget,
+                                       @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                       @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                       // GR-44020: make shared:
+                                       @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                       // GR-44020: make shared:
+                                       @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                       // GR-44020: make shared:
+                                       @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_readable;
@@ -2389,15 +2452,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryRemovable(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                                        @Bind("$node") Node inliningTarget,
+                                        @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                        @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                        // GR-44020: make shared:
+                                        @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                        // GR-44020: make shared:
+                                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                        // GR-44020: make shared:
+                                        @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_removable;
@@ -2415,11 +2478,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void removeHashEntry(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                                @Bind("$node") Node inliningTarget,
+                                @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                // GR-44020: make shared:
+                                @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.remove_hash_entry;
@@ -2437,15 +2500,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryModifiable(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                                         @Bind("$node") Node inliningTarget,
+                                         // GR-44020: make shared:
+                                         @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                         // GR-44020: make shared:
+                                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                         @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                         @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                         // GR-44020: make shared:
+                                         @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_modifiable;
@@ -2463,15 +2526,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public boolean isHashEntryInsertable(Object key,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) {
+                                         @Bind("$node") Node inliningTarget,
+                                         // GR-44020: make shared:
+                                         @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
+                                         // GR-44020: make shared:
+                                         @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                         @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                                         @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                                         // GR-44020: make shared:
+                                         @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.is_hash_entry_insertable;
@@ -2489,11 +2552,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeHashEntry(Object key, Object value,
-                    @Bind("$node") Node inliningTarget,
-                    @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
-                    @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                               @Bind("$node") Node inliningTarget,
+                               @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
+                               @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             InteropBehaviorMethod method = InteropBehaviorMethod.write_hash_entry;
@@ -2534,12 +2597,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public byte readBufferByte(long byteOffset,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                               @Bind("$node") Node inliningTarget,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                               @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             return bufferLib.readByte(this, offset);
@@ -2551,11 +2614,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeBufferByte(long byteOffset, byte value, @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                                // GR-44020: make shared:
+                                @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                                // GR-44020: make shared:
+                                @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             bufferLib.writeByte(this, offset, value);
@@ -2567,12 +2630,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public short readBufferShort(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                                 @Bind("$node") Node inliningTarget,
+                                 // GR-44020: make shared:
+                                 @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                                 // GR-44020: make shared:
+                                 @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                 @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             return bufferLib.readShortByteOrder(this, offset, order);
@@ -2584,11 +2647,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeBufferShort(ByteOrder order, long byteOffset, short value, @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                                 // GR-44020: make shared:
+                                 @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                                 // GR-44020: make shared:
+                                 @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                 @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             bufferLib.writeShortByteOrder(this, offset, value, order);
@@ -2600,12 +2663,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public int readBufferInt(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                             @Bind("$node") Node inliningTarget,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                             // GR-44020: make shared:
+                             @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                             @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             return bufferLib.readIntByteOrder(this, offset, order);
@@ -2617,11 +2680,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeBufferInt(ByteOrder order, long byteOffset, int value, @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                               // GR-44020: make shared:
+                               @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                               @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             bufferLib.writeIntByteOrder(this, offset, value, order);
@@ -2633,12 +2696,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public long readBufferLong(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                               @Bind("$node") Node inliningTarget,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                               // GR-44020: make shared:
+                               @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                               @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             return bufferLib.readLongByteOrder(this, offset, order);
@@ -2650,11 +2713,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeBufferLong(ByteOrder order, long byteOffset, long value, @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                                // GR-44020: make shared:
+                                @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                                // GR-44020: make shared:
+                                @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             bufferLib.writeLongByteOrder(this, offset, value, order);
@@ -2666,12 +2729,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public float readBufferFloat(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                                 @Bind("$node") Node inliningTarget,
+                                 // GR-44020: make shared:
+                                 @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                                 // GR-44020: make shared:
+                                 @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                 @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             return bufferLib.readFloatByteOrder(this, offset, order);
@@ -2683,12 +2746,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeBufferFloat(ByteOrder order, long byteOffset, float value,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                                 @Bind("$node") Node inliningTarget,
+                                 // GR-44020: make shared:
+                                 @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                                 // GR-44020: make shared:
+                                 @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                 @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             bufferLib.writeFloatByteOrder(this, offset, value, order);
@@ -2700,12 +2763,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public double readBufferDouble(ByteOrder order, long byteOffset,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                                   @Bind("$node") Node inliningTarget,
+                                   // GR-44020: make shared:
+                                   @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                                   // GR-44020: make shared:
+                                   @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                   @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             return bufferLib.readDoubleByteOrder(this, offset, order);
@@ -2717,12 +2780,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void writeBufferDouble(ByteOrder order, long byteOffset, double value,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                                  @Bind("$node") Node inliningTarget,
+                                  // GR-44020: make shared:
+                                  @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                                  // GR-44020: make shared:
+                                  @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                                  @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
             bufferLib.writeDoubleByteOrder(this, offset, value, order);
@@ -2734,12 +2797,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @SuppressWarnings("truffle-inlining")
     public void readBuffer(long byteOffset, byte[] destination, int destinationOffset, int length,
-                    @Bind("$node") Node inliningTarget,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached CastToJavaIntExactNode toIntNode,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
+                           @Bind("$node") Node inliningTarget,
+                           // GR-44020: make shared:
+                           @Exclusive @Cached CastToJavaIntExactNode toIntNode,
+                           // GR-44020: make shared:
+                           @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                           @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             if (length < 0 || (destination.length - destinationOffset > length)) {
                 throw InvalidBufferOffsetException.create(byteOffset, length);
