@@ -134,7 +134,7 @@ def build_wheels(pip):
             env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip)))
             print("Building", name, version, "with", script, flush=True)
             if sys.platform == "win32":
-                cmd = [script, version] # Python's subprocess.py does the quoting we need
+                cmd = [script, version]  # Python's subprocess.py does the quoting we need
             else:
                 cmd = f"{shlex.quote(script)} {version}"
             subprocess.check_call(cmd, shell=True, env=env)
@@ -146,152 +146,26 @@ def build_wheels(pip):
             subprocess.check_call([pip, "wheel", spec])
 
 
-_warned_dlls = []
-
-
-def repair_wheels_windows(output_dir, wheels):
-    import pefile
-    from machomachomangler.pe import redll
-
-    def resolve_dll_src(dll):
-        # search for dependencies in system directories
-        dll_search_paths = [
-            os.environ["WINDIR"],
-            join(os.environ["WINDIR"], "System32"),
-            *os.environ["PATH"].split(";"),
-        ]
-        ignored_dlls = [
-            # These DLLs are just provided by Windows.
-            # This list is probably incomplete.
-            r"advapi32\.dll",
-            r"advapires32\.dll",
-            r"atl.*\.dll",
-            r"comctl32\.dll",
-            r"comdlg32\.dll",
-            r"crtdll\.dll",
-            r"gdi32\.dll",
-            r"hal.*\.dll",
-            r"imm32\.dll",
-            r"iphlpapi\.dll",
-            r"kernel32\.dll",
-            r"kernelbase\.dll",
-            r"msvbvm60\.dll",
-            r"msvcirt\.dll",
-            r"msvcrt?.*\.dll",
-            r"netapi32\.dll",
-            r"ntdll\.dll",
-            r"ole32\.dll",
-            r"pdh\.dll",
-            r"powrprof\.dll",
-            r"psapi\.dll",
-            r"rpcrt4\.dll",
-            r"sechost\.dll",
-            r"shell32\.dll",
-            r"shlwapi\.dll",
-            r"shscrap\.dll",
-            r"ucrtbase\.dll",
-            r"user32\.dll",
-            r"version\.dll",
-            r"winmm\.dll",
-            r"ws2_32\.dll",
-            # These match DLLs that provide API sets.
-            # See https://learn.microsoft.com/en-us/windows/win32/apiindex/windows-apisets
-            r"api-ms-win-.*\.dll",
-            r"ext-ms-win-.*\.dll",
-            # These match DLLs that we provide in GraalPy
-            r"python.*\.dll",
-            # These are the DLLs typically linked when building with MSVC. See
-            # https://learn.microsoft.com/en-us/cpp/windows/determining-which-dlls-to-redistribute
-            # When these are included, the user should install the latest
-            # redist package from
-            # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist
-            # However, https://aka.ms/vs/17/redist.txt lists the libraries
-            # which can be included in application distributions.
-            r"concrt.*\.dll",
-            r"mfc.*\.dll",
-            r"msvcp.*\.dll",
-            r"vcamp.*\.dll",
-            r"vccorlib.*\.dll",
-            r"vcomp.*\.dll",
-            r"vcruntime.*\.dll",
-        ]
-        if not dll:
-            return
-        if any(re.match(pat, basename(dll), re.IGNORECASE) for pat in ignored_dlls):
-            if dll not in _warned_dlls:
-                print("Not including", dll, flush=True)
-                _warned_dlls.append(dll)
-            return
-        if isabs(dll):
-            return dll
-        for search_path in dll_search_paths:
-            if exists(src := join(search_path, dll)):
-                return src
-
-    def resolve_dll_target(dll, dependent, checksum):
-        return join(dirname(dependent), f"{checksum}.{basename(dll)}")
-
-    def filehash(files):
-        sha1 = hashlib.sha1()
-        for file in files:
-            with open(file, mode="rb") as f:
-                sha1.update(f.read())
-        return sha1.hexdigest()[:8]
-
-    for whl in wheels:
-        with TemporaryDirectory() as name:
-            with zipfile.ZipFile(whl) as f:
-                f.extractall(name)
-
-            # find all pyd files and recursively copy dependencies
-            dlls = glob(f"{name}/**/*.pyd", recursive=True)
-            checksum = filehash(dlls)
-            dependents_to_dependencies = {}
-            while dlls:
-                dll = dlls.pop()
-                with pefile.PE(dll) as pe:
-                    pe_info = pe.dump_dict()
-                for syms in pe_info.get("Imported symbols", []):
-                    for sym in syms:
-                        if dep_src := resolve_dll_src(sym.get("DLL", b"").decode("utf-8")):
-                            if not exists(dep_tgt := resolve_dll_target(dep_src, dll, checksum)):
-                                print("Including", dep_src, "as", dep_tgt, flush=True)
-                                shutil.copy(dep_src, dep_tgt)
-                                dlls.append(dep_tgt)
-                            dependents_to_dependencies.setdefault(dll, []).append(dep_src)
-
-            for dll, dependencies in dependents_to_dependencies.items():
-                mapping = {}
-                for dep_src in dependencies:
-                    mapping[basename(dep_src).encode("utf-8")] = basename(
-                        resolve_dll_target(dep_src, dll, checksum)
-                    ).encode("utf-8")
-                with open(dll, mode="rb") as f:
-                    data = f.read()
-                print(
-                    "Rewriting\n\t",
-                    "\n\t".join([k.decode("utf-8") for k in mapping.keys()]),
-                    "\n\t->\n\t",
-                    "\n\t".join([v.decode("utf-8") for v in mapping.values()]),
-                    "\nin",
-                    dll,
-                )
-                data = redll(data, mapping)
-                with open(dll, mode="wb") as f:
-                    f.write(data)
-
-            os.makedirs(output_dir, exist_ok=True)
-            if exists(whl_tgt := join(output_dir, whl)):
-                os.unlink(whl_tgt)
-            shutil.make_archive(whl_tgt, "zip", name)
-            os.rename(f"{whl_tgt}.zip", whl_tgt)
-
-
 def repair_wheels():
     if sys.platform == "win32":
-        ensure_installed("machomachomangler")
-        ensure_installed("pefile")
-        repair_wheels_windows("wheelhouse", glob("*.whl"))
+        ensure_installed("delvewheel")
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "delvewheel",
+                "repair",
+                "-v",
+                "--exclude",
+                "python-native.dll",
+                "-w",
+                "wheelhouse",
+                *glob("*.whl"),
+            ],
+            env=env,
+        )
     elif sys.platform == "linux":
         ensure_installed("auditwheel")
         subprocess.check_call(
