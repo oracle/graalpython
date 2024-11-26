@@ -681,6 +681,7 @@ public class VirtualFileSystemTest {
 
             checkException(IllegalArgumentException.class, () -> fs.setCurrentWorkingDirectory(VFS_ROOT_PATH.resolve("file1")));
 
+            Object oldCwd = getCwd(fs);
             try {
                 Path nonExistingDir = VFS_ROOT_PATH.resolve("does-not-exist");
                 fs.setCurrentWorkingDirectory(nonExistingDir);
@@ -710,7 +711,7 @@ public class VirtualFileSystemTest {
                     assertEquals(realFSDir, fs.toAbsolutePath(Path.of("dir")).getParent());
                 }
             } finally {
-                resetCWD(fs);
+                resetCWD(fs, oldCwd);
             }
         }
     }
@@ -950,22 +951,25 @@ public class VirtualFileSystemTest {
     }
 
     private void withCWD(FileSystem fs, Path cwd, FSCall c) throws Exception {
+        Object prevCwd = getCwd(fs);
         fs.setCurrentWorkingDirectory(cwd);
         try {
             c.call(fs);
         } finally {
-            resetCWD(fs);
+            resetCWD(fs, prevCwd);
         }
     }
 
-    private void resetCWD(FileSystem fs) throws NoSuchFieldException, IllegalAccessException {
+    private Object getCwd(FileSystem fs) throws IllegalAccessException, NoSuchFieldException {
         Field f = fs.getClass().getDeclaredField("cwd");
         f.setAccessible(true);
-        if (fs == noHostIOVFS) {
-            f.set(fs, Path.of(VFS_MOUNT_POINT + File.separator + "src"));
-        } else {
-            f.set(fs, null);
-        }
+        return f.get(fs);
+    }
+
+    private void resetCWD(FileSystem fs, Object oldCwd) throws NoSuchFieldException, IllegalAccessException {
+        Field f = fs.getClass().getDeclaredField("cwd");
+        f.setAccessible(true);
+        f.set(fs, oldCwd);
     }
 
 }
