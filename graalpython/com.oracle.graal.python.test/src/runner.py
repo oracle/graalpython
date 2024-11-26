@@ -42,13 +42,14 @@ import enum
 import fnmatch
 import json
 import math
-import multiprocessing
 import os
 import pickle
 import platform
 import re
+import select
 import shlex
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -205,7 +206,7 @@ def out_tell():
     try:
         return os.lseek(1, 0, os.SEEK_CUR)
     except OSError:
-        return -1
+        return 0
 
 
 T = typing.TypeVar('T')
@@ -303,7 +304,7 @@ class AbstractRemoteResult(AbstractResult):
         )
 
 
-class PipeResult(AbstractRemoteResult):
+class ConnectionResult(AbstractRemoteResult):
     def __init__(self, test_suite: 'TestSuite', conn):
         super().__init__(test_suite)
         self.conn = conn
@@ -435,7 +436,7 @@ class TestRunner:
                 case _:
                     status = 'FAILED'
             report_data.append({
-                'name': str(result.test_id),
+                'name': str(result.test_id).replace('\\', '/'),
                 'status': status,
                 'duration': result.duration,
             })
@@ -506,16 +507,18 @@ def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
 
 
 def interrupt_process(process: subprocess.Popen):
-    sig = signal.SIGINT if sys.platform != 'win32' else signal.CTRL_C_EVENT
-    process.send_signal(sig)
+    if hasattr(signal, 'SIGINT'):
+        try:
+            process.send_signal(signal.SIGINT)
+            process.wait(3)
+            return
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    process.terminate()
     try:
         process.wait(3)
     except subprocess.TimeoutExpired:
-        process.terminate()
-        try:
-            process.wait(3)
-        except subprocess.TimeoutExpired:
-            process.kill()
+        process.kill()
 
 
 class ParallelTestRunner(TestRunner):
@@ -715,22 +718,18 @@ class SubprocessWorker:
 
     def run_in_subprocess_and_watch(self):
         self.thread = threading.current_thread()
-        # noinspection PyUnresolvedReferences
-        use_pipe = sys.platform != 'win32' and (not IS_GRAALPY or __graalpython__.posix_module_backend() == 'native')
-        with tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir:
+        with (
+            tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir,
+            socket.create_server(('0.0.0.0', 0)) as server,
+        ):
             tmp_dir = Path(tmp_dir)
 
-            if use_pipe:
-                pipe, child_pipe = multiprocessing.Pipe()
-            else:
-                result_file = tmp_dir / 'result'
+            port = server.getsockname()[1]
+            assert port
 
             while self.remaining_test_ids and not self.stop_event.is_set():
                 last_remaining_count = len(self.remaining_test_ids)
-                with (
-                    open(tmp_dir / 'out', 'w+') as self.out_file,
-                    open(tmp_dir / 'tests', 'w+') as tests_file,
-                ):
+                with open(tmp_dir / 'out', 'w+') as self.out_file:
                     self.last_out_pos = 0
                     self.last_started_time = time.time()
                     cmd = [
@@ -739,69 +738,54 @@ class SubprocessWorker:
                         *self.runner.subprocess_args,
                         __file__,
                         'worker',
-                        '--tests-file', str(tests_file.name),
+                        '--port', str(port),
                     ]
-                    if use_pipe:
-                        cmd += ['--pipe-fd', str(child_pipe.fileno())]
-                    else:
-                        cmd += ['--result-file', str(result_file)]
                     if self.runner.failfast:
                         cmd.append('--failfast')
-                    # We communicate the tests through a temp file to avoid running into too long commandlines on windows
-                    tests_file.seek(0)
-                    tests_file.truncate()
-                    tests_file.write('\n'.join(map(str, self.remaining_test_ids)))
-                    tests_file.flush()
-                    popen_kwargs: dict = dict(
-                        stdout=self.out_file,
-                        stderr=self.out_file,
-                    )
-                    if use_pipe:
-                        popen_kwargs.update(pass_fds=[child_pipe.fileno()])
-                    self.process = subprocess.Popen(cmd, **popen_kwargs)
+                    self.process = subprocess.Popen(cmd, stdout=self.out_file, stderr=self.out_file)
 
-                    timed_out = None
+                    server.settimeout(600.0)
+                    with server.accept()[0] as sock:
+                        conn = Connection(sock)
 
-                    if use_pipe:
-                        while self.process.poll() is None:
-                            while pipe.poll(0.1):
-                                self.process_event(pipe.recv())
-                            if self.stop_event.is_set():
-                                interrupt_process(self.process)
-                                break
-                            if self.last_started_test_id:
-                                last_started_test = self.tests_by_id.get(self.last_started_test_id)
-                                timeout = (
-                                        last_started_test.test_file.test_config.per_test_timeout
-                                        or self.runner.default_test_timeout
-                                )
-                            else:
-                                timeout = self.runner.default_test_timeout
-                            timeout *= self.runner.timeout_factor
-                            if time.time() - self.last_started_time >= timeout:
-                                interrupt_process(self.process)
-                                timed_out = timeout
-                                # Drain the pipe
-                                while pipe.poll(0.1):
-                                    pipe.recv()
-                                break
+                        conn.send([TestSpecifier(t.test_file, t.test_name) for t in self.remaining_test_ids])
+
+                        timed_out = None
+
                         try:
-                            self.process.wait(self.runner.default_test_timeout)
-                        except subprocess.TimeoutExpired:
-                            log("Warning: Worker didn't shutdown in a timely manner, interrupting it")
-                            interrupt_process(self.process)
+                            while True:
+                                while conn.poll(0.1):
+                                    event = conn.recv()
+                                    self.process_event(event)
+                                if self.stop_event.is_set():
+                                    interrupt_process(self.process)
+                                    break
+                                if self.last_started_test_id:
+                                    last_started_test = self.tests_by_id.get(self.last_started_test_id)
+                                    timeout = (
+                                            last_started_test.test_file.test_config.per_test_timeout
+                                            or self.runner.default_test_timeout
+                                    )
+                                else:
+                                    timeout = self.runner.default_test_timeout
+                                timeout *= self.runner.timeout_factor
+                                if time.time() - self.last_started_time >= timeout:
+                                    interrupt_process(self.process)
+                                    timed_out = timeout
+                                    break
+                        except (ConnectionClosed, OSError):
+                            # The socket closed or got connection reset, that's normal if the worker exitted or crashed
+                            pass
+                    try:
+                        self.process.wait(self.runner.default_test_timeout)
+                    except subprocess.TimeoutExpired:
+                        log("Warning: Worker didn't shutdown in a timely manner, interrupting it")
+                        interrupt_process(self.process)
 
                     returncode = self.process.wait()
 
                     if self.stop_event.is_set():
                         return
-                    if use_pipe:
-                        while pipe.poll(0.1):
-                            self.process_event(pipe.recv())
-                    else:
-                        with open(result_file, 'rb') as f:
-                            for file_event in pickle.load(f):
-                                self.process_event(file_event)
 
                     if returncode != 0 or timed_out is not None:
                         self.out_file.seek(self.last_out_pos)
@@ -1215,32 +1199,51 @@ class TopLevelFunctionLoader(unittest.loader.TestLoader):
         return test_suite
 
 
+class ConnectionClosed(Exception):
+    pass
+
+
+class Connection:
+    def __init__(self, sock):
+        self.socket = sock
+
+    def send(self, obj):
+        data = pickle.dumps(obj)
+        header = len(data).to_bytes(8, byteorder='big')
+        self.socket.sendall(header)
+        self.socket.sendall(data)
+
+    def _recv(self, size):
+        data = b''
+        while len(data) < size:
+            read = self.socket.recv(size - len(data))
+            if not read:
+                return data
+            data += read
+        return data
+
+    def recv(self):
+        size = int.from_bytes(self._recv(8), byteorder='big')
+        if not size:
+            raise ConnectionClosed
+        data = self._recv(size)
+        return pickle.loads(data)
+
+    def poll(self, timeout=None):
+        rlist, wlist, xlist = select.select([self.socket], [], [], timeout)
+        return bool(rlist)
+
+
 def main_worker(args):
-    tests = []
-    with open(args.tests_file) as f:
-        for line in f:
-            tests.append(TestSpecifier.from_str(line.strip()))
+    with socket.create_connection(('localhost', args.port)) as sock:
+        conn = Connection(sock)
 
-    data = []
-    if args.pipe_fd:
-        import multiprocessing.connection
-        conn = multiprocessing.connection.Connection(args.pipe_fd)
+        tests = conn.recv()
 
-        def result_factory(suite):
-            return PipeResult(suite, conn)
-    else:
-        def result_factory(suite):
-            return SimpleResult(suite, data)
-
-    for test_suite in collect(tests, no_excludes=True):
-        result = result_factory(test_suite)
-        result.failfast = args.failfast
-        test_suite.run(result)
-
-    if args.result_file:
-        with open(args.result_file, 'wb') as f:
-            # noinspection PyTypeChecker
-            pickle.dump(data, f)
+        for test_suite in collect(tests, no_excludes=True):
+            result = ConnectionResult(test_suite, conn)
+            result.failfast = args.failfast
+            test_suite.run(result)
 
 
 def main_merge_tags(args):
@@ -1393,10 +1396,7 @@ def main():
     # worker command declaration
     worker_parser = subparsers.add_parser('worker', help="Internal command for subprocess workers")
     worker_parser.set_defaults(main=main_worker)
-    group = worker_parser.add_mutually_exclusive_group()
-    group.add_argument('--pipe-fd', type=int)
-    group.add_argument('--result-file', type=Path)
-    worker_parser.add_argument('--tests-file', type=Path, required=True)
+    worker_parser.add_argument('--port', type=int)
     worker_parser.add_argument('--failfast', action='store_true')
 
     # merge-tags-from-report command declaration

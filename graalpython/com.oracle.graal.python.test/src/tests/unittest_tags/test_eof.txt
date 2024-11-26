@@ -1,6 +1,6 @@
-test.test_eof.EOFTestCase.test_EOFS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_eof.EOFTestCase.test_EOFS_with_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_eof.EOFTestCase.test_EOF_single_quote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_eof.EOFTestCase.test_eof_with_line_continuation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_eof.EOFTestCase.test_line_continuation_EOF @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_eof.EOFTestCase.test_line_continuation_EOF_from_file_bpo2180 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_eof.EOFTestCase.test_EOFS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_eof.EOFTestCase.test_EOFS_with_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_eof.EOFTestCase.test_EOF_single_quote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_eof.EOFTestCase.test_eof_with_line_continuation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_eof.EOFTestCase.test_line_continuation_EOF @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_eof.EOFTestCase.test_line_continuation_EOF_from_file_bpo2180 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

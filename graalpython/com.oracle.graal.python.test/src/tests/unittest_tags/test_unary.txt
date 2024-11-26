@@ -1,6 +1,6 @@
-test.test_unary.UnaryOpTestCase.test_bad_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unary.UnaryOpTestCase.test_invert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unary.UnaryOpTestCase.test_negation_of_exponentiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unary.UnaryOpTestCase.test_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unary.UnaryOpTestCase.test_no_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_unary.UnaryOpTestCase.test_positive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_unary.UnaryOpTestCase.test_bad_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_unary.UnaryOpTestCase.test_invert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_unary.UnaryOpTestCase.test_negation_of_exponentiation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_unary.UnaryOpTestCase.test_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_unary.UnaryOpTestCase.test_no_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_unary.UnaryOpTestCase.test_positive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

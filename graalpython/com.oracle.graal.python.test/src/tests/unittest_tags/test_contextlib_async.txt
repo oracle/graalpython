@@ -1,9 +1,9 @@
 test.test_contextlib_async.AclosingTestCase.test_aclosing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_contextlib_async.AclosingTestCase.test_aclosing_bpo41229 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_contextlib_async.AclosingTestCase.test_aclosing_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_contextlib_async.AclosingTestCase.test_instance_docs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_attribs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_doc_attrib @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_contextlib_async.AclosingTestCase.test_instance_docs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_attribs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_doc_attrib @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_except @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_except_stopiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -23,8 +23,8 @@ test.test_contextlib_async.AsyncContextManagerTestCase.test_keywords @ darwin-ar
 test.test_contextlib_async.AsyncContextManagerTestCase.test_recursive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_contextlib_async.TestAbstractAsyncContextManager.test_async_gen_propagates_generator_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_contextlib_async.TestAbstractAsyncContextManager.test_enter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_contextlib_async.TestAbstractAsyncContextManager.test_exit_is_abstract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_contextlib_async.TestAbstractAsyncContextManager.test_structural_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_contextlib_async.TestAbstractAsyncContextManager.test_exit_is_abstract @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_contextlib_async.TestAbstractAsyncContextManager.test_structural_subclassing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_contextlib_async.TestAsyncExitStack.test_async_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_contextlib_async.TestAsyncExitStack.test_async_push @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_contextlib_async.TestAsyncExitStack.test_body_exception_suppress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

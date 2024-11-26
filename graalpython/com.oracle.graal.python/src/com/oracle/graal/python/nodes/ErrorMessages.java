@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.builtins.PythonOS;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
@@ -1031,6 +1031,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL_AEXIT = tsLiteral(
                     "'%N' object does not support the asynchronous context manager protocol (missed __aexit__ method)");
     public static final TruffleString IOCTL_STRING_ARG_TOO_LONG = tsLiteral("ioctl string arg too long");
+    public static final TruffleString S_NOT_SUPPORTED_ON_JAVA_POSIX_BACKEND = tsLiteral("'%s' not supported when using 'java' posix backend");
 
     // mmap
     public static final TruffleString MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = tsLiteral("memory mapped length must be positive");
