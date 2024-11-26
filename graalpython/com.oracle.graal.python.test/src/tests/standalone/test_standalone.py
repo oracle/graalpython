@@ -288,7 +288,8 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
             os.makedirs(src_dir, exist_ok=True)
             # copy hello.py
             shutil.copyfile(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py"), os.path.join(src_dir, "hello.py"))
-            shutil.rmtree(os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs"))
+            # remove all resources, we also want to check if the gradle plugin can deal with no user resources
+            shutil.rmtree(os.path.join(target_dir, "src", "main", "resources"))
             # patch GraalPy.java
             replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
                 "package org.example;",
@@ -307,6 +308,16 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
             util.check_ouput("BUILD SUCCESS", out)
 
+            # check java exec
+            cmd = gradle_cmd + ["run"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            util.check_ouput("hello java", out)
+
+            # prepare for native build
+            meta_inf = os.path.join(target_dir, "src", "main", "resources", "META-INF", "native-image")
+            os.makedirs(meta_inf, exist_ok=True)
+            shutil.copyfile(os.path.join(self.test_prj_path, "src", "main", "resources", "META-INF", "native-image", "proxy-config.json"), os.path.join(meta_inf, "proxy-config.json"))
+
             # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher,
             # which is fine, because we need to build the native binary with a graalvm build
             # and the one we have set in JAVA_HOME is at least jdk24
@@ -318,12 +329,6 @@ class PolyglotAppGradleTestBase(PolyglotAppTestBase):
             # execute and check native image
             cmd = [os.path.join(target_dir, "build", "native", "nativeCompile", "graalpy-gradle-test-project")]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("hello java", out)
-
-            # 2.) check java build and exec
-            cmd = gradle_cmd + ["run"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
-            util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("hello java", out)
 
     @unittest.skipUnless(is_gradle_enabled, "ENABLE_GRADLE_STANDALONE_UNITTESTS is not true")
