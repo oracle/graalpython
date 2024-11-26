@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.test.integration.interop;
 
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -92,15 +91,15 @@ public class ArgumentsTest extends PythonTests {
     }
 
     public interface TestPositionalArgsLong {
-        long fn (PositionalArguments args);
+        long fn(PositionalArguments args);
     }
 
     @Test
     public void testPositionalArgsLength() {
         String source = """
-                def fn (*args)->int:
-                    return len(args)
-                """;
+                        def fn (*args)->int:
+                            return len(args)
+                        """;
 
         TestPositionalArgsLong module = context.eval(Source.create("python", source)).as(TestPositionalArgsLong.class);
         assertEquals(1, module.fn(PositionalArguments.of(22)));
@@ -119,13 +118,13 @@ public class ArgumentsTest extends PythonTests {
     @Test
     public void testPositionalArgsWithNoneValue() {
         String source = """
-                def fn (*args):
-                    result = 0;
-                    for arg in args:
-                        if arg is None:
-                            result = result + 1;
-                    return result
-                """;
+                        def fn (*args):
+                            result = 0;
+                            for arg in args:
+                                if arg is None:
+                                    result = result + 1;
+                            return result
+                        """;
 
         TestPositionalArgsLong module = context.eval(Source.create("python", source)).as(TestPositionalArgsLong.class);
         assertEquals(0, module.fn(PositionalArguments.of(22)));
@@ -141,18 +140,18 @@ public class ArgumentsTest extends PythonTests {
     }
 
     public interface TestPositionalArgs01 {
-        String fn (Object a, Object b, PositionalArguments args);
+        String fn(Object a, Object b, PositionalArguments args);
     }
 
     @Test
     public void testPositionalArgs01() {
         String source = """
-                def fn (a, b, *args):
-                    result = str(a) + str(b);
-                    for arg in args:
-                        result = result + str(arg);
-                    return result
-                """;
+                        def fn (a, b, *args):
+                            result = str(a) + str(b);
+                            for arg in args:
+                                result = result + str(arg);
+                            return result
+                        """;
         TestPositionalArgs01 module = context.eval(Source.create("python", source)).as(TestPositionalArgs01.class);
         assertEquals("12", module.fn(1, 2, PositionalArguments.of()));
         assertEquals("123", module.fn(1, 2, PositionalArguments.of(3)));
@@ -162,22 +161,26 @@ public class ArgumentsTest extends PythonTests {
     }
 
     public interface TestPositionalArgs02 {
-        String fn (Object a);
-        String fn (Object a, PositionalArguments args);
-        String fn (PositionalArguments args);
-        String fn (Object a, Object b);
-        String fn (Object a, Object b, PositionalArguments args);
+        String fn(Object a);
+
+        String fn(Object a, PositionalArguments args);
+
+        String fn(PositionalArguments args);
+
+        String fn(Object a, Object b);
+
+        String fn(Object a, Object b, PositionalArguments args);
     }
 
     @Test
     public void testPositionalArgs02() {
         String source = """
-                def fn (a, b="correct", *args):
-                    result = str(a) + str(b)
-                    for arg in args:
-                        result = result + str(arg)
-                    return result
-                """;
+                        def fn (a, b="correct", *args):
+                            result = str(a) + str(b)
+                            for arg in args:
+                                result = result + str(arg)
+                            return result
+                        """;
         TestPositionalArgs02 module = context.eval(Source.create("python", source)).as(TestPositionalArgs02.class);
         assertEquals("1correct", module.fn(1));
         assertEquals("12", module.fn(1, 2));
@@ -191,19 +194,20 @@ public class ArgumentsTest extends PythonTests {
     }
 
     public interface TestKeywordArgs01 {
-        String fn ();
-        String fn (KeywordArguments kwArgs);
+        String fn();
+
+        String fn(KeywordArguments kwArgs);
     }
 
     @Test
     public void testKeywordArgs01() {
         String source = """
-                def fn (**kwArgs):
-                    result = ''
-                    for key, value in kwArgs.items():
-                        result = result + f'[{key}:{str(value)}],'
-                    return result
-                """;
+                        def fn (**kwArgs):
+                            result = ''
+                            for key, value in kwArgs.items():
+                                result = result + f'[{key}:{str(value)}],'
+                            return result
+                        """;
         TestKeywordArgs01 module = context.eval(Source.create("python", source)).as(TestKeywordArgs01.class);
         assertEquals("", module.fn());
         assertEquals("", module.fn(KeywordArguments.from(new HashMap<>())));

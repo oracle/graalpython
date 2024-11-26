@@ -51,14 +51,16 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * Represents a set of keyword arguments, typically used for interfacing with Python functions that accept {@code **kwargs}.
+ * Represents a set of keyword arguments, typically used for interfacing with Python functions that
+ * accept {@code **kwargs}.
  *
  * <p>
- * The {@link KeywordArguments} class provides factory methods to create instances from a {@link Map}
- * or by directly specifying key-value pairs.
+ * The {@link KeywordArguments} class provides factory methods to create instances from a
+ * {@link Map} or by directly specifying key-value pairs.
  * </p>
  *
  * <h3>Usage</h3>
+ * 
  * <pre>{@code
  * // Create using a map
  * Map<String, Object> kwargsMap = Map.of("arg1", 10, "arg2", "value");
@@ -74,14 +76,17 @@ import java.util.NoSuchElementException;
  *     .build();
  * }</pre>
  *
- * <h3>When to Use</h3>
- * {@link KeywordArguments} must be used whenever a Python function accepts named arguments (both required and optional).
- * This ensures proper mapping of Java arguments to Python function parameters, especially when working with Python methods
- * that utilize {@code **kwargs}.
+ * <h3>When to Use</h3> {@link KeywordArguments} must be used whenever a Python function accepts
+ * named arguments (both required and optional). This ensures proper mapping of Java arguments to
+ * Python function parameters, especially when working with Python methods that utilize
+ * {@code **kwargs}.
  *
- * <p><b>Important:</b> An instance of {@link KeywordArguments} must always be the last argument when invoking a Python function.
- * It may be preceded by an instance of {@link PositionalArguments}, but {@link KeywordArguments} must always be the final argument.
- * This ensures proper alignment with Python's argument structure.</p>
+ * <p>
+ * <b>Important:</b> An instance of {@link KeywordArguments} must always be the last argument when
+ * invoking a Python function. It may be preceded by an instance of {@link PositionalArguments}, but
+ * {@link KeywordArguments} must always be the final argument. This ensures proper alignment with
+ * Python's argument structure.
+ * </p>
  *
  *
  * @see PositionalArguments
@@ -91,18 +96,19 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
     /**
      * Internal implementation of the {@link KeywordArguments} class.
      * <p>
-     * This class is not intended for direct use. It provides interoperability
-     * with Python's mapping and object protocols via {@link ProxyHashMap} and {@link ProxyObject}.
+     * This class is not intended for direct use. It provides interoperability with Python's mapping
+     * and object protocols via {@link ProxyHashMap} and {@link ProxyObject}.
      * </p>
      */
     protected static final class Implementation extends KeywordArguments implements ProxyHashMap, ProxyObject {
 
-        public static final String MEMBER_KEY  = "org.graalvm.python.embedding.KeywordArguments.is_keyword_arguments";
+        public static final String MEMBER_KEY = "org.graalvm.python.embedding.KeywordArguments.is_keyword_arguments";
         private final Map<String, Object> kwArgs;
 
         private Implementation(Map<String, Object> kwArgs) {
             this.kwArgs = kwArgs;
         }
+
         @Override
         public Object getMember(String key) throws UnsupportedOperationException {
             if (MEMBER_KEY.equals(key)) {
@@ -212,8 +218,8 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
     /**
      * Creates a {@link KeywordArguments} instance from the specified map.
      *
-     * @param values a map containing the keyword arguments; each key-value pair represents a named argument.
-     *               Keys must be non-null strings, and values can be any object.
+     * @param values a map containing the keyword arguments; each key-value pair represents a named
+     *            argument. Keys must be non-null strings, and values can be any object.
      * @return a new {@link KeywordArguments} instance containing the provided arguments
      * @see java.util.Map
      */
@@ -276,7 +282,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @return a new {@link KeywordArguments} instance containing the specified arguments
      * @see java.util.Map#of(Object, Object, Object, Object, ...)
      */
-    public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4 ) {
+    public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3, name4, value4));
     }
 
@@ -294,9 +300,9 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @see java.util.Map#of(Object, Object, Object, Object, ...)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
-            String name5, Object value5) {
+                    String name5, Object value5) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3, name4, value4,
-                name5, value5));
+                        name5, value5));
     }
 
     /**
@@ -313,9 +319,9 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @see java.util.Map#of(Object, Object, Object, Object, ...)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
-                                      String name5, Object value5, String name6, Object value6) {
+                    String name5, Object value5, String name6, Object value6) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3, name4, value4,
-                name5, value5, name6, value6));
+                        name5, value5, name6, value6));
     }
 
     /**
@@ -332,9 +338,9 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @see java.util.Map#of(Object, Object, Object, Object, ...)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
-                                      String name5, Object value5, String name6, Object value6, String name7, Object value7) {
+                    String name5, Object value5, String name6, Object value6, String name7, Object value7) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3, name4, value4,
-                name5, value5, name6, value6, name7, value7));
+                        name5, value5, name6, value6, name7, value7));
     }
 
     /**
@@ -351,9 +357,9 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @see java.util.Map#of(Object, Object, Object, Object, ...)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
-                                      String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8) {
+                    String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3, name4, value4,
-                name5, value5, name6, value6, name7, value7, name8, value8));
+                        name5, value5, name6, value6, name7, value7, name8, value8));
     }
 
     /**
@@ -370,10 +376,10 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @see java.util.Map#of(Object, Object, Object, Object, ...)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
-                                      String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8,
-                                      String name9, Object value9) {
+                    String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8,
+                    String name9, Object value9) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3, name4, value4,
-                name5, value5, name6, value6, name7, value7, name8, value8, name9, value9));
+                        name5, value5, name6, value6, name7, value7, name8, value8, name9, value9));
     }
 
     /**
@@ -390,9 +396,9 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @see java.util.Map#of(Object, Object, Object, Object, ...)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
-                                      String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8,
-                                      String name9, Object value9, String name10, Object value10) {
+                    String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8,
+                    String name9, Object value9, String name10, Object value10) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3, name4, value4,
-                name5, value5, name6, value6, name7, value7, name8, value8, name9, value9, name10, value10));
+                        name5, value5, name6, value6, name7, value7, name8, value8, name9, value9, name10, value10));
     }
 }
