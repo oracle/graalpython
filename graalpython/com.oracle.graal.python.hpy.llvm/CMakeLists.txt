@@ -47,6 +47,7 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
 require_var(GRAALVM_HPY_INCLUDE_DIR)
 require_var(GRAALVM_PYTHON_INCLUDE_DIR)
+require_var(PYCONFIG_INCLUDE_DIR)
 require_var(TRUFFLE_H_INC)
 
 set(HPY_SRC "${SRC_DIR}/src")
@@ -91,6 +92,7 @@ target_sources(${TARGET_LIB} PRIVATE ${SRC_FILES} ${HPY_HEADERS})
 target_include_directories(${TARGET_LIB} PRIVATE
     "${GRAALVM_HPY_INCLUDE_DIR}"
     "${GRAALVM_PYTHON_INCLUDE_DIR}"
+    "${PYCONFIG_INCLUDE_DIR}"
     "${TRUFFLE_H_INC}"
 )
 

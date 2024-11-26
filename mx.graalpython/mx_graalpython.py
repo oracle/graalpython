@@ -1706,12 +1706,21 @@ def py_version_short(variant=None, **kwargs):
 def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
         return GRAAL_VERSION_MAJ_MIN.replace(".", "")
+    elif variant == 'major_minor':
+        return GRAAL_VERSION_MAJ_MIN
     elif variant == 'binary':
         # PythonLanguage and PythonResource consume this data, and they assume 3 components, so we cap the list size
         # to 3 although the version may have even more components
         return "".join([chr(int(p) + ord(VERSION_BASE)) for p in GRAAL_VERSION.split(".")[:3]])
+    elif variant == 'hex':
+        parts = GRAAL_VERSION.split(".")
+        num = 0
+        for i in range(3):
+            num <<= 8
+            num |= int(parts[i]) if i < len(parts) else 0
+        return hex(num)
     else:
-        return GRAAL_VERSION_MAJ_MIN
+        return '.'.join(GRAAL_VERSION.split('.')[:3])
 
 
 def release_level(variant=None):

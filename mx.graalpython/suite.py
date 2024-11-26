@@ -672,6 +672,20 @@ suite = {
             ],
         },
 
+        "graalpy-pyconfig": {
+            "subDir": "graalpython",
+            "class": "CMakeNinjaProject",
+            "max_jobs": "1",
+            "ninja_targets": ["all"],
+            "cmakeConfig": {
+                "GRAALPY_VERSION": "<graal_ver>",
+                "GRAALPY_VERSION_NUM": "<graal_ver:hex>",
+            },
+            "results": [
+                "pyconfig.h",
+            ],
+        },
+
         "com.oracle.graal.python.cext": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
@@ -686,6 +700,7 @@ suite = {
                     "<others>": {
                         "cmakeConfig": {
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
+                            "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<arch>",
                             "GRAALVM_LLVM_LIB_DIR": "<path:SULONG_NATIVE_HOME>/native/lib",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
@@ -706,6 +721,7 @@ suite = {
                     "<others>": {
                         "cmakeConfig": {
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
+                            "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<arch>",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
@@ -731,6 +747,7 @@ suite = {
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
                 "sulong:SULONG_LEGACY",
+                "graalpy-pyconfig",
                 "com.oracle.graal.python",
             ],
         },
@@ -749,6 +766,7 @@ suite = {
                 "bin/<lib:hpy-native>",
             ],
             "buildDependencies": [
+                "graalpy-pyconfig",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
                 "sulong:SULONG_LEGACY",
@@ -757,6 +775,7 @@ suite = {
                 "windows": {
                     "<others>": {
                         "cmakeConfig": {
+                            "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<arch>",
                             "GRAALVM_LLVM_LIB_DIR": "<path:SULONG_NATIVE_HOME>/native/lib",
                             "GRAALVM_HPY_INCLUDE_DIR": "<path:com.oracle.graal.python.hpy.llvm>/include",
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
@@ -768,6 +787,7 @@ suite = {
                 "<others>": {
                     "<others>": {
                         "cmakeConfig": {
+                            "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<arch>",
                             "GRAALVM_HPY_INCLUDE_DIR": "<path:com.oracle.graal.python.hpy.llvm>/include",
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
@@ -783,6 +803,7 @@ suite = {
             "native": "shared_lib",
             "deliverable": "pythonjni",
             "buildDependencies": [
+                "graalpy-pyconfig",
                 "com.oracle.graal.python", # for the generated JNI header file
             ],
             "use_jdk_headers": True, # the generated JNI header includes jni.h
@@ -801,7 +822,8 @@ suite = {
                             "-I\"<path:com.oracle.graal.python.cext>/src\"",
                             "-I\"<path:com.oracle.graal.python.hpy.llvm>/include\"",
                             "-I\"<path:com.oracle.graal.python.hpy.llvm>/src\"",
-                            "-I\"<path:com.oracle.truffle.nfi.native>/include\""
+                            "-I\"<path:com.oracle.truffle.nfi.native>/include\"",
+                            "-I\"<output_root:graalpy-pyconfig>/<arch>\"",
                         ],
                     },
                 },
@@ -815,7 +837,8 @@ suite = {
                             "-I\"<path:com.oracle.graal.python.cext>/src\"",
                             "-I\"<path:com.oracle.graal.python.hpy.llvm>/include\"",
                             "-I\"<path:com.oracle.graal.python.hpy.llvm>/src\"",
-                            "-I\"<path:com.oracle.truffle.nfi.native>/include\""
+                            "-I\"<path:com.oracle.truffle.nfi.native>/include\"",
+                            "-I\"<output_root:graalpy-pyconfig>/<arch>\"",
                         ],
                     },
                 },
@@ -1341,6 +1364,7 @@ suite = {
             "description": "GraalVM Python header resources",
             "layout": {
                 "./META-INF/resources/include/": [
+                    "dependency:graalpy-pyconfig/pyconfig.h",
                     "file:graalpython/com.oracle.graal.python.cext/include/*",
                     "file:graalpython/com.oracle.graal.python.hpy.llvm/include/*",
                 ],

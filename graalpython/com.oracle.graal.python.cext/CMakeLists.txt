@@ -45,6 +45,7 @@ if(WIN32)
     require_var(GRAALVM_LLVM_LIB_DIR)
   endif()
 require_var(CAPI_INC_DIR)
+require_var(PYCONFIG_INCLUDE_DIR)
 require_var(TRUFFLE_H_INC)
 require_var(TRUFFLE_NFI_H_INC)
 require_var(GRAALPY_EXT)
@@ -150,6 +151,7 @@ include_directories(
     ${CAPI_SRC}
     "${SRC_DIR}/include"
     "${CAPI_INC_DIR}"
+    "${PYCONFIG_INCLUDE_DIR}"
     "${TRUFFLE_H_INC}"
     "${TRUFFLE_NFI_H_INC}"
 )
