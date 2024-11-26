@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,9 +44,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
-import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 /**
@@ -54,17 +54,24 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
  */
 public class Scope {
 
-    Scope(String name, ScopeType type, SSTNode ast) {
+    Scope(String name, ScopeType type, SourceRange sourceRange) {
         this.name = name;
         this.type = type;
-        this.sourceRange = ast.getSourceRange();
+        this.sourceRange = sourceRange;
     }
 
     enum ScopeType {
         Function,
         Class,
         Module,
-        Annotation
+        Annotation,
+        TypeVarBound,
+        TypeAlias,
+        TypeParam;
+
+        boolean isFunctionLike() {
+            return this == Function || this == TypeVarBound || this == TypeAlias || this == TypeParam;
+        }
     }
 
     public enum DefUse {
@@ -78,6 +85,7 @@ public class Scope {
         DefImport,
         DefAnnot,
         DefCompIter,
+        DefTypeParam,
         // shifted VariableScope flags
         Local,
         GlobalExplicit,
@@ -96,6 +104,7 @@ public class Scope {
     ArrayList<Scope> children = new ArrayList<>();
     HashMap<String, SourceRange> directives = new HashMap<>();
     ScopeType type;
+    HashSet<String> mangledNames;
 
     enum ScopeFlags {
         IsNested,
@@ -108,7 +117,9 @@ public class Scope {
         HasVarKeywords,
         ReturnsAValue,
         NeedsClassClosure,
-        IsVisitingIterTarget
+        NeedsClassDict,
+        IsVisitingIterTarget,
+        CanSeeClassScope
     }
 
     EnumSet<ScopeFlags> flags = EnumSet.noneOf(ScopeFlags.class);
@@ -204,8 +215,16 @@ public class Scope {
         return flags.contains(ScopeFlags.NeedsClassClosure);
     }
 
+    public boolean needsClassDict() {
+        return flags.contains(ScopeFlags.NeedsClassDict);
+    }
+
+    public boolean canSeeClassScope() {
+        return flags.contains(ScopeFlags.CanSeeClassScope);
+    }
+
     public boolean isFunction() {
-        return type == ScopeType.Function;
+        return type.isFunctionLike();
     }
 
     public boolean isClass() {

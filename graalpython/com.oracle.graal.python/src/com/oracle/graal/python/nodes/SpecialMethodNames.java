@@ -469,4 +469,10 @@ public abstract class SpecialMethodNames {
 
     public static final String J_SHUTDOWN = "_shutdown";
     public static final TruffleString T_SHUTDOWN = tsLiteral(J_SHUTDOWN);
+
+    public static final String J___TYPING_SUBST__ = "__typing_subst__";
+    public static final TruffleString T___TYPING_SUBST__ = tsLiteral(J___TYPING_SUBST__);
+
+    public static final String J___TYPING_PREPARE_SUBST__ = "__typing_prepare_subst__";
+    public static final TruffleString T___TYPING_PREPARE_SUBST__ = tsLiteral(J___TYPING_PREPARE_SUBST__);
 }

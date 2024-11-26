@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -227,6 +227,12 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
+import com.oracle.graal.python.builtins.objects.typing.PParamSpec;
+import com.oracle.graal.python.builtins.objects.typing.PParamSpecArgs;
+import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
+import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
+import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
+import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
@@ -1715,6 +1721,31 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PTokenizerIter createTokenizerIter(Object cls, Supplier<int[]> inputSupplier, boolean extraTokens) {
         return trace(new PTokenizerIter(cls, getShape(cls), inputSupplier, extraTokens));
+    }
+
+    public final PTypeVar createTypeVar(Object cls, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
+                    boolean covariant, boolean contravariant, boolean inferVariance) {
+        return trace(new PTypeVar(cls, getShape(cls), name, bound, evaluateBound, constraints, evaluateConstraints, covariant, contravariant, inferVariance));
+    }
+
+    public final PTypeVarTuple createTypeVarTuple(Object cls, TruffleString name) {
+        return trace(new PTypeVarTuple(cls, getShape(cls), name));
+    }
+
+    public final PParamSpec createParamSpec(Object cls, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance) {
+        return trace(new PParamSpec(cls, getShape(cls), name, bound, covariant, contravariant, inferVariance));
+    }
+
+    public final PParamSpecArgs createParamSpecArgs(Object cls, Object origin) {
+        return trace(new PParamSpecArgs(cls, getShape(cls), origin));
+    }
+
+    public final PParamSpecKwargs createParamSpecKwargs(Object cls, Object origin) {
+        return trace(new PParamSpecKwargs(cls, getShape(cls), origin));
+    }
+
+    public final PTypeAliasType createTypeAliasType(Object cls, TruffleString name, PTuple typeParams, Object computeValue, Object value, Object module) {
+        return trace(new PTypeAliasType(cls, getShape(cls), name, typeParams, computeValue, value, module));
     }
 
     @GenerateInline

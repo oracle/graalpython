@@ -46,8 +46,8 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TokenizeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TracemallocModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
@@ -365,6 +366,13 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.GenericBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecArgsBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecKwargsBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeVarBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeVarTupleBuiltins;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -791,7 +799,17 @@ public abstract class Python3Core {
 
                         // _tokenizer
                         new TokenizeModuleBuiltins(),
-                        new TokenizerIterBuiltins()));
+                        new TokenizerIterBuiltins(),
+
+                        // _typing
+                        new TypingModuleBuiltins(),
+                        new TypeVarBuiltins(),
+                        new TypeVarTupleBuiltins(),
+                        new ParamSpecBuiltins(),
+                        new ParamSpecArgsBuiltins(),
+                        new ParamSpecKwargsBuiltins(),
+                        new TypeAliasTypeBuiltins(),
+                        new GenericBuiltins()));
         if (hasProfilerTool) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());

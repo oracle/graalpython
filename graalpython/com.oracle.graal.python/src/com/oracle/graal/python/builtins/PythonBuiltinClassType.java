@@ -83,9 +83,13 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_KEYITERA
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_GENERIC;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC_ARGS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC_KWARGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POLYGLOT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
@@ -93,6 +97,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPES;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_ALIAS_TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR_TUPLE;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPING;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
@@ -100,6 +108,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__TYPING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.lang.reflect.Field;
@@ -168,6 +177,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -555,6 +565,14 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PTokenizerIter("TokenizerIter", "_tokenize"),
 
+    PTypeVar(J_TYPE_VAR, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
+    PTypeVarTuple(J_TYPE_VAR_TUPLE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
+    PParamSpec(J_PARAM_SPEC, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
+    PParamSpecArgs(J_PARAM_SPEC_ARGS, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
+    PParamSpecKwargs(J_PARAM_SPEC_KWARGS, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
+    PTypeAliasType(J_TYPE_ALIAS_TYPE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TypeAliasTypeBuiltins.SLOTS),
+    PGeneric(J_GENERIC, J__TYPING, J_TYPING, Flags.PUBLIC_BASE_WDICT),
+
     // A marker for @Builtin that is not a class. Must always come last.
     nil("nil");
 
@@ -567,6 +585,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         static final Flags PUBLIC_BASE_WDICT = new Flags(true, true, true);
         static final Flags PUBLIC_BASE_WODICT = new Flags(true, true, false);
         static final Flags PUBLIC_DERIVED_WODICT = new Flags(true, false, false);
+        static final Flags PUBLIC_DERIVED_WDICT = new Flags(true, false, true);
         static final Flags PRIVATE_DERIVED_WODICT = new Flags(false, false, false);
 
         final boolean isPublic;

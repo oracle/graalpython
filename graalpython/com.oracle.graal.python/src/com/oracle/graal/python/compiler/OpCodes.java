@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -198,7 +198,7 @@ public enum OpCodes {
      * Writes an attribute - {@code a.b = c}. {@code b} is determined by the immediate operand which
      * indexes the names array ({@code co_names}).
      *
-     * Pops: {@code c}, then {@code a}
+     * Pops: {@code a}, then {@code c}
      */
     STORE_ATTR(1, 2, 0),
     /**
@@ -275,9 +275,28 @@ public enum OpCodes {
      */
     DELETE_DEREF(1, 0, 0),
     /**
-     * TODO not implemented
+     * Pushes locals (i.e. "special argument") to the stack.
      */
-    LOAD_CLASSDEREF(1, 0, 1),
+    LOAD_LOCALS(0, 0, 1),
+    /**
+     * Attempts to read a value from a dict and if not present, reads a local cell variable. The
+     * immediate operand indexes a stack slot after celloffset and a variable name in cellvars or
+     * freevars array ({@code co_cellvars}, {@code co_freevars}).
+     *
+     * Pops: a dict
+     *
+     * Pushes: the value
+     */
+    LOAD_FROM_DICT_OR_DEREF(1, 1, 1),
+    /**
+     * Attempts to read a value from a dict and if not present, reads a global variable. The name is
+     * determined by the immediate operand which indexes the names array ({@code co_names}).
+     *
+     * Pops: a dict
+     *
+     * Pushes: the value
+     */
+    LOAD_FROM_DICT_OR_GLOBALS(1, 1, 1),
     /**
      * Raises an exception. If the immediate operand is 0, it pops nothing and is equivalent to
      * {@code raise} without arguments. If the immediate operand is 1, it is equivalent to
@@ -580,6 +599,35 @@ public enum OpCodes {
      * Pushes: created function
      */
     MAKE_FUNCTION(2, (oparg, followingArgs, withJump) -> Integer.bitCount(followingArgs[0]), 1),
+
+    /**
+     * Creates a TypeVar, TypeVarTuple or ParamSpec object. The immediate argument determines
+     * (defined in {@link MakeTypeParamKind}) which and whether it will need to pop bound or
+     * constraints for a TypeVar.
+     *
+     * Pops: bound or constraints (if indicated by the immediate argument), then the name
+     *
+     * Pushes: created type parameter
+     */
+    MAKE_TYPE_PARAM(1, (oparg, followingArgs, withJump) -> oparg < MakeTypeParamKind.TYPE_VAR_WITH_BOUND ? 1 : 2, 1),
+
+    /**
+     * Creates a TypeAliasType object.
+     *
+     * Pops: function for computing the value, type params tuple and name
+     *
+     * Pushes: created type alias
+     */
+    MAKE_TYPE_ALIAS(0, 3, 1),
+
+    /**
+     * Creates a base for generic classes by calling typing._GenericAlias.
+     *
+     * Pops: a tuple of type parameters
+     *
+     * Pushes: created base for a generic class
+     */
+    MAKE_GENERIC(0, 1, 1),
 
     // collection literals
     /**
@@ -889,6 +937,14 @@ public enum OpCodes {
         public static final int HAS_KWONLY_DEFAULTS = 0x2;
         public static final int HAS_ANNOTATIONS = 0x04;
         public static final int HAS_CLOSURE = 0x08;
+    }
+
+    public static final class MakeTypeParamKind {
+        public static final int TYPE_VAR = 0;
+        public static final int TYPE_VAR_TUPLE = 1;
+        public static final int PARAM_SPEC = 2;
+        public static final int TYPE_VAR_WITH_BOUND = 3;
+        public static final int TYPE_VAR_WITH_CONSTRAINTS = 4;
     }
 
     private static final OpCodes[] VALUES = new OpCodes[values().length];

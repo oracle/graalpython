@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -32,9 +32,11 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_TRUFFLE_SOURCE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
@@ -71,6 +73,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -206,7 +210,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static Object setDefaults(Object self, Object defaults,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___DEFAULTS__, "tuple");
+            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___DEFAULTS__, "tuple", defaults);
         }
     }
 
@@ -322,6 +326,36 @@ public final class FunctionBuiltins extends PythonBuiltins {
         Object delete(PFunction self, @SuppressWarnings("unused") DescriptorDeleteMarker marker) {
             self.setDoc(PNone.NONE);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = J___TYPE_PARAMS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetTypeParamsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PFunction self, @SuppressWarnings("unused") PNone value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadAttributeFromObjectNode readObject,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            Object typeParams = readObject.execute(self, T___TYPE_PARAMS__);
+            if (typeParams == PNone.NO_VALUE) {
+                return factory.get(inliningTarget).createEmptyTuple();
+            }
+            return typeParams;
+        }
+
+        @Specialization
+        static Object set(PFunction self, PTuple typeParams,
+                        @Cached WriteAttributeToObjectNode writeObject) {
+            writeObject.execute(self, T___TYPE_PARAMS__, typeParams);
+            return PNone.NONE;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static Object error(Object self, Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___TYPE_PARAMS__, "tuple", value);
         }
     }
 }

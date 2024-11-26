@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,7 @@ import static com.oracle.graal.python.nodes.HiddenAttr.DICTOFFSET;
 import static com.oracle.graal.python.nodes.HiddenAttr.ITEMSIZE;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLISTOFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSDICTCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
@@ -1952,7 +1953,8 @@ public abstract class TypeNodes {
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raise,
-                        @Cached AllocateTypeWithMetaclassNode typeMetaclass) {
+                        @Cached AllocateTypeWithMetaclassNode typeMetaclass,
+                        @Cached GetOrCreateDictNode getOrCreateDictNode) {
             try {
                 assert SpecialMethodSlot.pushInitializedTypePlaceholder();
                 PDict namespace = factory.createDict();
@@ -1995,6 +1997,17 @@ public abstract class TypeNodes {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
                     delItemNamespace.execute(inliningTarget, namespace, SpecialAttributeNames.T___CLASSCELL__);
+                }
+
+                // set __classdict__ cell contents
+                Object classdictcell = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__);
+                if (classdictcell != null) {
+                    if (classdictcell instanceof PCell cell) {
+                        cell.setRef(getOrCreateDictNode.execute(inliningTarget, newType));
+                    } else {
+                        throw raise.raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classdictcell__");
+                    }
+                    delItemNamespace.execute(inliningTarget, namespace, SpecialAttributeNames.T___CLASSDICTCELL__);
                 }
 
                 SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode.execute(inliningTarget, newType), language);
@@ -2520,9 +2533,9 @@ public abstract class TypeNodes {
                 newSlots[j] = slotName;
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
-                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
+                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___CLASSDICTCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
                                 HashingStorageGetItem.hasKeyUncached(namespace.getDictStorage(), slotName)) {
-                    // __qualname__ and __classcell__ will be deleted later
+                    // __qualname__, __classcell__ and __classdictcell__ will be deleted later
                     throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
                 }
                 j++;

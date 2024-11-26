@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -32,10 +32,12 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___GLOBALS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TEXT_SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
@@ -57,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -242,6 +245,43 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         static Object getModule(PBuiltinFunction self, Object value,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
+        }
+    }
+
+    @Builtin(name = J___TYPE_PARAMS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class GetTypeParamsNode extends PythonBuiltinNode {
+        @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
+        static Object getTypeParams(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadAttributeFromObjectNode readObject,
+                        @Cached PythonObjectFactory.Lazy factory) {
+            Object typeParams = readObject.execute(self, T___TYPE_PARAMS__);
+            if (typeParams == PNone.NO_VALUE) {
+                return factory.get(inliningTarget).createEmptyTuple();
+            }
+            return typeParams;
+        }
+
+        @Specialization(guards = {"!isBuiltinFunction(self)"})
+        static Object setTypeParams(PFunction self, PTuple value,
+                        @Cached WriteAttributeToObjectNode writeObject) {
+            writeObject.execute(self, T___TYPE_PARAMS__, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)", "!isPTuple(value)"})
+        @SuppressWarnings("unused")
+        static Object setNotTuple(PFunction self, Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.MUST_BE_SET_TO_S, J___TYPE_PARAMS__, "tuple");
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        static Object builtin(PBuiltinFunction self, Object value,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", J___TYPE_PARAMS__);
         }
     }
 

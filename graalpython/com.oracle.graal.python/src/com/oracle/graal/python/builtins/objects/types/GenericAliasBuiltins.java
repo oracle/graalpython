@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -226,7 +226,12 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                 if (i > 0) {
                     sb.appendStringUncached(SEPARATOR);
                 }
-                reprItem(sb, SequenceStorageNodes.GetItemScalarNode.executeUncached(argsStorage, i));
+                Object p = SequenceStorageNodes.GetItemScalarNode.executeUncached(argsStorage, i);
+                if (p instanceof PList list) {
+                    reprItemsList(sb, list);
+                } else {
+                    reprItem(sb, p);
+                }
             }
             if (argsStorage.length() == 0) {
                 // for something like tuple[()] we should print a "()"
@@ -244,6 +249,19 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                 return;
             }
             GenericTypeNodes.reprItem(sb, obj);
+        }
+
+        private static void reprItemsList(TruffleStringBuilder sb, PList list) {
+            sb.appendCodePointUncached('[');
+            SequenceStorage storage = list.getSequenceStorage();
+            for (int i = 0; i < storage.length(); i++) {
+                if (i > 0) {
+                    sb.appendStringUncached(SEPARATOR);
+                }
+                Object p = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
+                reprItem(sb, p);
+            }
+            sb.appendCodePointUncached(']');
         }
     }
 
