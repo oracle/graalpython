@@ -629,21 +629,25 @@ public class VirtualFileSystemTest {
                         extractFilter(null).//
                         resourceLoadingClass(VirtualFileSystemTest.class).build()) {
             FileSystem fs = getVFSImpl(vfs);
-            checkNotExtracted(fs, VFS_ROOT_PATH);
+            assertEquals(23, checkNotExtracted(fs, VFS_ROOT_PATH));
         }
     }
 
-    private void checkNotExtracted(FileSystem fs, Path dir) throws IOException {
+    private int checkNotExtracted(FileSystem fs, Path dir) throws IOException {
         DirectoryStream<Path> ds = fs.newDirectoryStream(dir, (p) -> true);
         Iterator<Path> it = ds.iterator();
+        int c = 0;
         while (it.hasNext()) {
+            c++;
             Path p = it.next();
             assertTrue(p.toString().startsWith(VFS_ROOT));
+            assertTrue(fs.toRealPath(p).startsWith(VFS_ROOT));
             fs.readAttributes(p, "isDirectory");
             if (Boolean.TRUE.equals((fs.readAttributes(p, "isDirectory").get("isDirectory")))) {
-                checkNotExtracted(fs, p);
+                c += checkNotExtracted(fs, p);
             }
         }
+        return c;
     }
 
     private interface ExceptionCall {
