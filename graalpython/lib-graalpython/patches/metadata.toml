@@ -513,9 +513,13 @@ patch = 'pythran-0.12.0.patch'
 license = 'BSD-3-Clause'
 
 [[pythran.rules]]
-install-priority = 10
 version = '== 0.13.*'
 patch = 'pythran-0.13.patch'
+license = 'BSD-3-Clause'
+
+[[pythran.rules]]
+version = '>= 0.14'
+patch = 'pythran-0.15.patch'
 license = 'BSD-3-Clause'
 
 [[pyzmq.rules]]

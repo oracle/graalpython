@@ -42,3 +42,17 @@ index 1f7a981..e975333 100644
  #endif
  #ifndef PyString_GET_SIZE
  #define PyString_GET_SIZE PyUnicode_GET_LENGTH
+diff --git a/pythran/tables.py b/pythran/tables.py
+index d1d2027..eb631fd 100644
+--- a/pythran/tables.py
++++ b/pythran/tables.py
+@@ -4595,7 +4595,8 @@ def save_arguments(module_name, elements):
+             defaults = list(spec.defaults or [])
+             args += [ast.Name(arg, ast.Param(), None, None)
+                      for arg in spec.kwonlyargs]
+-            defaults += [spec.kwonlydefaults[kw] for kw in spec.kwonlyargs]
++            if spec.kwonlydefaults:
++                defaults += [spec.kwonlydefaults[kw] for kw in spec.kwonlyargs]
+ 
+             # Check if we already have a pythran description for that object
+             if signature.args.args:
