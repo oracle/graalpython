@@ -88,7 +88,6 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.NONE;
-import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ_WRITE;
 
 final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
@@ -585,8 +584,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     private FileSystemProvider defaultFileSystemProvider;
 
-    private FileSystemProvider getDefaultFileSystem() {
+    private synchronized FileSystemProvider getDefaultFileSystem() {
         if (defaultFileSystemProvider == null) {
+            // c&p from c.o.t.polyglot.FileSystems.DeniedIOFileSystem
             for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
                 if ("file".equals(provider.getScheme())) {
                     defaultFileSystemProvider = provider;
