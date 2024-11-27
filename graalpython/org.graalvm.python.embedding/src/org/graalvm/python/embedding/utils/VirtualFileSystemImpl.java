@@ -981,10 +981,10 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Path source = toAbsolutePathInternal(s);
         Path target = toAbsolutePathInternal(t);
         if (pathIsInVfs(target)) {
-            throw securityException("VFS.move", String.format("read-only filesystem, can't copy '%s' to '%s'", source, target));
+            throw securityException("VFS.copy", String.format("read-only filesystem, can't copy '%s' to '%s'", source, target));
         } else {
             try {
-                if (allowHostIO == READ_WRITE && pathIsInVfs(source)) {
+                if (pathIsInVfs(source)) {
                     FileSystem.super.copy(source, target, options);
                 } else {
                     delegate.copy(source, target, options);

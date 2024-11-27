@@ -59,6 +59,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
@@ -83,6 +84,7 @@ import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ;
 import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ_WRITE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -901,9 +903,22 @@ public class VirtualFileSystemTest {
 
         Path realFSPath5 = realFSPath.getParent().resolve("fromvfs2");
         assertFalse(Files.exists(realFSPath5));
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> fs.copy(Path.of("file1"), Path.of("../" + realFSPath5.toString())));
-        assertTrue(Files.exists(realFSPath5));
-        newByteChannelRealFS(rwHostIOVFS, realFSPath5, "text1");
+        // NoSuchFileException: no such file or directory: '/test_mount_point/does-no-exist'
+        checkException(NoSuchFileException.class, () -> rwHostIOVFS.copy(VFS_ROOT_PATH.resolve("does-no-exist"), realFSPath5));
+        assertFalse(Files.exists(realFSPath5));
+
+        Path realFSPath6 = realFSPath.getParent().resolve("fromvfs3");
+        assertFalse(Files.exists(realFSPath6));
+        // SecurityException: Operation is not allowed for: realFSPath
+        checkException(SecurityException.class, () -> rHostIOVFS.copy(VFS_ROOT_PATH.resolve("file1"), realFSPath6));
+        assertFalse(Files.exists(realFSPath6));
+
+        Path realFSPath7 = realFSPath.getParent().resolve("fromvfs3");
+        assertFalse(Files.exists(realFSPath7));
+        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> fs.copy(Path.of("file1"), Path.of("../" + realFSPath7.toString())));
+        assertTrue(Files.exists(realFSPath7));
+        newByteChannelRealFS(rwHostIOVFS, realFSPath7, "text1");
+
     }
 
     @Test
