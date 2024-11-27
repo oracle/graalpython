@@ -1,0 +1,473 @@
+/*
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.oracle.graal.python.test.interop;
+
+import com.oracle.graal.python.test.PythonTests;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyArray;
+import org.graalvm.polyglot.proxy.ProxyHashMap;
+import org.graalvm.polyglot.proxy.ProxyIterator;
+import org.graalvm.polyglot.proxy.ProxyObject;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
+public class ArgsKwArgsTest extends PythonTests {
+    private Context context;
+
+    @Before
+    public void setUpTest() {
+        Context.Builder builder = Context.newBuilder();
+        builder.allowExperimentalOptions(true);
+        builder.allowAllAccess(true);
+        context = builder.build();
+    }
+
+    @After
+    public void tearDown() {
+        context.close();
+    }
+
+    private Value run(String evalString) {
+        return context.eval("python", evalString);
+    }
+
+    private static final class LazyArray implements ProxyArray {
+
+        private final Iterator<?> it;
+        private long at;
+
+        LazyArray(Iterator<?> it) {
+            this.it = it;
+            this.at = 0;
+        }
+
+        @Override
+        public Object get(long index) {
+            if (index == at) {
+                at++;
+                return it.next();
+            }
+            return null;
+        }
+
+        @Override
+        public void set(long index, Value value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean remove(long index) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getSize() {
+            return it.hasNext() ? at + 1 : at;
+        }
+    }
+
+    private static class MockPositinalArgs implements ProxyArray, ProxyObject {
+
+        private static final String MEMBER_KEY = "org.graalvm.python.embedding.PositionalArguments.is_positional_arguments";
+
+        private final Object[] values;
+
+        private MockPositinalArgs(Object... values) {
+            this.values = values;
+        }
+
+        @Override
+        public Object get(long index) {
+            return this.values[(int) index];
+        }
+
+        @Override
+        public void set(long index, Value value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getSize() {
+            return values.length;
+        }
+
+        @Override
+        public Object getMember(String key) {
+            if (MEMBER_KEY.equals(key)) {
+                return true;
+            }
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object getMemberKeys() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasMember(String key) {
+            return MEMBER_KEY.equals(key);
+        }
+
+        @Override
+        public void putMember(String key, Value value) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class MockKwArgs implements ProxyHashMap, ProxyObject {
+        public static final String MEMBER_KEY = "org.graalvm.python.embedding.KeywordArguments.is_keyword_arguments";
+        private final Map<String, Object> kwArgs;
+
+        private MockKwArgs(Map<String, Object> kwArgs) {
+            this.kwArgs = kwArgs;
+        }
+
+        @Override
+        public long getHashSize() {
+            return kwArgs.size();
+        }
+
+        @Override
+        public boolean hasHashEntry(Value key) {
+            String unboxedKey = unboxKey(key);
+            return kwArgs.containsKey(unboxedKey);
+        }
+
+        @Override
+        public Object getHashValue(Value key) {
+            Object unboxedKey = unboxKey(key);
+            return kwArgs.get(unboxedKey);
+        }
+
+        @Override
+        public void putHashEntry(Value key, Value value) {
+            String unboxedKey = unboxKey(key);
+            kwArgs.put(unboxedKey, value.isHostObject() ? value.asHostObject() : value);
+        }
+
+        @Override
+        public Object getHashEntriesIterator() {
+            Iterator<Map.Entry<String, Object>> entryIterator = kwArgs.entrySet().iterator();
+            return new ProxyIterator() {
+                @Override
+                public boolean hasNext() {
+                    return entryIterator.hasNext();
+                }
+
+                @Override
+                public Object getNext() throws NoSuchElementException, UnsupportedOperationException {
+                    return new ArgsKwArgsTest.MockKwArgs.ProxyEntryImpl(entryIterator.next());
+                }
+            };
+        }
+
+        @Override
+        public Object getMember(String key) {
+            if (MEMBER_KEY.equals(key)) {
+                return true;
+            }
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object getMemberKeys() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasMember(String key) {
+            return MEMBER_KEY.equals(key);
+        }
+
+        @Override
+        public void putMember(String key, Value value) {
+            throw new UnsupportedOperationException();
+        }
+
+        private static String unboxKey(Value key) {
+            return key.asString();
+        }
+
+        private class ProxyEntryImpl implements ProxyArray {
+
+            private Map.Entry<String, Object> mapEntry;
+
+            ProxyEntryImpl(Map.Entry<String, Object> mapEntry) {
+                this.mapEntry = mapEntry;
+            }
+
+            @Override
+            public Object get(long index) {
+                if (index == 0L) {
+                    return mapEntry.getKey();
+                } else if (index == 1L) {
+                    return mapEntry.getValue();
+                } else {
+                    throw new ArrayIndexOutOfBoundsException();
+                }
+            }
+
+            @Override
+            public void set(long index, Value value) {
+                if (index == 0L) {
+                    throw new UnsupportedOperationException();
+                } else if (index == 1L) {
+                    ArgsKwArgsTest.MockKwArgs.this.kwArgs.put(mapEntry.getKey(), value.isHostObject() ? value.asHostObject() : value);
+                } else {
+                    throw new ArrayIndexOutOfBoundsException();
+                }
+            }
+
+            @Override
+            public long getSize() {
+                return 2;
+            }
+        }
+    }
+
+    @Test
+    public void testPositionalArgs01() {
+        // @formatter:off
+        Value module = run("""
+                def sum(*args):
+                    result = 0
+                    for arg in args:
+                        result = result + arg
+                    return result;
+                """
+        );
+
+        assertEquals(0, module.invokeMember("sum").asInt());
+        assertEquals(22, module.invokeMember("sum", 22).asInt());
+        assertEquals(60, module.invokeMember("sum",10, 20, 30).asInt());
+        assertEquals(6, module.invokeMember("sum", new ArgsKwArgsTest.MockPositinalArgs(1,2,3)).asInt());
+
+        assertEquals(0, module.invokeMember("sum", new ArgsKwArgsTest.MockPositinalArgs()).asInt());
+        assertEquals(0, module.invokeMember("sum", new ArgsKwArgsTest.MockKwArgs(Map.of())).asInt());
+
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {assertEquals(0, module.invokeMember("sum", new ArgsKwArgsTest.MockKwArgs(Map.of("one", 1))).asInt());});
+        assertEquals("TypeError: sum() got an unexpected keyword argument 'one'", pe.getMessage());
+
+    }
+
+    @Test
+    public void testPositionalArgs02() {
+        // @formatter:off
+        Value module = run("""
+                def text(a, *args):
+                    result = f'{a=},'
+                    index = 0
+                    for arg in args:
+                        result = result + f'args[{index}]={arg},'
+                        index += 1
+                    return result;
+                """
+        );
+
+        assertEquals("a=0,", module.invokeMember("text", 0).asString());
+        assertEquals("a=22,args[0]=33,", module.invokeMember("text", 22,33).asString());
+        assertEquals("a='hello',args[0]=ahoj,args[1]=cau,", module.invokeMember("text","hello", "ahoj", "cau").asString());
+        assertEquals("a='6',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text", "6",  new ArgsKwArgsTest.MockPositinalArgs(1,2,3)).asString());
+        assertEquals("a=1,args[0]=2,args[1]=3,", module.invokeMember("text",new ArgsKwArgsTest.MockPositinalArgs(1,2,3)).asString());
+        assertEquals("a=1,", module.invokeMember("text",new ArgsKwArgsTest.MockPositinalArgs(1)).asString());
+
+        assertEquals("a=1,", module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(Map.of("a", 1))).asString());
+
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(Map.of("a", 1, "b", 2)));});
+        assertEquals("TypeError: text() got an unexpected keyword argument 'b'", pe.getMessage());
+    }
+
+    @Test
+    public void testPositionalArgs03() {
+        // @formatter:off
+        Value module = run( """
+                def text(a,b=44, *args):
+                    result = f'{a=},{b=},'
+                    index = 0
+                    for arg in args:
+                        result = result + f'args[{index}]={arg},'
+                        index += 1
+                    return result;
+                """
+        );
+
+        assertEquals("a=0,b=44,", module.invokeMember("text", 0).asString());
+        assertEquals("a=22,b=33,", module.invokeMember("text", 22,33).asString());
+        assertEquals("a='hello',b='ahoj',args[0]=cau,", module.invokeMember("text","hello", "ahoj", "cau").asString());
+        assertEquals("a='6',b=1,args[0]=2,args[1]=3,", module.invokeMember("text", "6",  new ArgsKwArgsTest.MockPositinalArgs(1,2,3)).asString());
+        assertEquals("a=1,b=44,", module.invokeMember("text",new ArgsKwArgsTest.MockPositinalArgs(1)).asString());
+        assertEquals("a=1,b=2,", module.invokeMember("text",new ArgsKwArgsTest.MockPositinalArgs(1,2)).asString());
+        assertEquals("a=1,b=2,args[0]=3,", module.invokeMember("text",new ArgsKwArgsTest.MockPositinalArgs(1,2,3)).asString());
+        assertEquals("a='a',b='b',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text","a", "b", new ArgsKwArgsTest.MockPositinalArgs(1,2,3)).asString());
+    }
+
+    private String assertAllKeysInText(String text, Map<String, Object> kwArgs) {
+        for (Map.Entry<String, Object> entry : kwArgs.entrySet()) {
+            String key = entry.getKey();
+            Object val = entry.getValue();
+            String keyVal = "[" + key + ":" + val.toString() +"],";
+            assertTrue("The string \"" + keyVal + "\" was not found in \"" + text + "\"" ,  text.contains(keyVal));
+            text = text.replace(keyVal, "");
+        }
+        return text;
+    }
+
+    @Test
+    public void testKwArgs01() {
+        // @formatter:off
+        Value module = run( """
+                def text(**kwArgs):
+                    result = ''
+                    for key, value in kwArgs.items():
+                       result = result + f'[{key}:{str(value)}],'
+                    return result
+                """
+        );
+
+        assertEquals("", module.invokeMember("text").asString());
+        assertEquals("", module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(Map.of())).asString());
+
+        Map<String, Object> kwargsMap = Map.of("key1", 1);
+        String remaining = assertAllKeysInText(module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(kwargsMap)).asString(), kwargsMap);
+        assertTrue(remaining.isEmpty());
+
+        kwargsMap = Map.of("key1", 1, "key2", 22);
+        remaining = assertAllKeysInText(module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(kwargsMap)).asString(), kwargsMap);
+        assertTrue(remaining.isEmpty());
+
+        assertTrue(module.invokeMember("text", new ArgsKwArgsTest.MockPositinalArgs()).asString().isEmpty());
+
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", new ArgsKwArgsTest.MockPositinalArgs(44)).asString();});
+        assertEquals("TypeError: text() takes 0 positional arguments but 1 was given", pe.getMessage());
+    }
+
+    @Test
+    public void testKwArgs02() {
+        // @formatter:off
+        Value module = run( """
+                def text(*,named1, **kwArgs):
+                    result = f'[named1:{str(named1)}],'
+                    for key, value in kwArgs.items():
+                       result = result + f'[{key}:{str(value)}],'
+                    return result
+                """
+        );
+
+        Map<String, Object> kwargsMap = Map.of("named1", 1);
+        String remaining = assertAllKeysInText(module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(kwargsMap)).asString(), kwargsMap);
+        assertTrue(remaining.isEmpty());
+
+        kwargsMap = Map.of("named1", 1, "named2", 2);
+        remaining = assertAllKeysInText(module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(kwargsMap)).asString(), kwargsMap);
+        assertTrue(remaining.isEmpty());
+
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text").asString();});
+        assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
+
+        pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(Map.of())).asString();});
+        assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
+
+        pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(Map.of("named2", 10))).asString();});
+        assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
+
+        pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", new ArgsKwArgsTest.MockPositinalArgs()).asString();});
+        assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
+
+        pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", new ArgsKwArgsTest.MockPositinalArgs(10)).asString();});
+        assertEquals("TypeError: text() takes 0 positional arguments but 1 was given", pe.getMessage());
+    }
+
+    @Test
+    public void testKwArgs03() {
+        // @formatter:off
+        Value module = run( """
+                def text(*,named1, named2=44,  **kwArgs):
+                    result = f'[named1:{str(named1)}],[named2:{str(named2)}],'
+                    for key, value in kwArgs.items():
+                       result = result + f'[{key}:{str(value)}],'
+                    return result
+                """
+        );
+
+        Map<String, Object> kwargsMap = Map.of("named1", 1);
+        String  remaining = assertAllKeysInText(module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(kwargsMap)).asString(), kwargsMap);
+        assertEquals("[named2:44],",remaining);
+
+        kwargsMap = Map.of("named1", 1, "named2", 2);
+        remaining = assertAllKeysInText(module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(kwargsMap)).asString(), kwargsMap);
+        assertTrue(remaining.isEmpty());
+    }
+
+    @Test
+    public void testKwArgs04() {
+        // @formatter:off
+        Value module = run( """
+                def text(*,named1, named2=44):
+                    result = f'[named1:{str(named1)}],[named2:{str(named2)}],'
+                    return result
+                """
+        );
+
+        Map<String, Object> kwargsMap = Map.of("named1", 1);
+        String  remaining = module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(kwargsMap)).asString();
+        assertEquals("[named1:1],[named2:44],",remaining);
+
+        kwargsMap = Map.of("named1", 1, "named2", 2);
+        remaining = module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(kwargsMap)).asString();
+        assertEquals("[named1:1],[named2:2],",remaining);
+
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text",
+                module.invokeMember("text", new ArgsKwArgsTest.MockKwArgs(Map.of("named1", 1, "named2", 2, "named3", 3)))).asString();});
+        assertEquals("TypeError: text() got an unexpected keyword argument 'named3'", pe.getMessage());
+    }
+}
