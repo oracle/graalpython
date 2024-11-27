@@ -48,6 +48,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -98,6 +100,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         consoleHandler.setFormatter(new SimpleFormatter() {
             @Override
             public synchronized String format(LogRecord lr) {
+                if (lr.getThrown() != null) {
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    lr.getThrown().printStackTrace(pw);
+                    pw.close();
+                    return String.format("%s: %s\n%s", lr.getLevel().getName(), lr.getMessage(), sw.toString());
+                }
                 return String.format("%s: %s\n", lr.getLevel().getName(), lr.getMessage());
             }
         });
@@ -620,12 +629,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = toAbsolutePathInternal(p);
         if (!pathIsInVfs(path)) {
-            boolean passed = false;
             try {
                 delegate.checkAccess(path, modes, linkOptions);
-                passed = true;
-            } finally {
-                finest("VFS.checkAccess delegated '%s' %s and ", path, passed ? "passed" : "did not pass");
+                finest("VFS.checkAccess delegated '%s'", path);
+            } catch (Throwable t) {
+                finest(t, "VFS.checkAccess delegated '%s'", path);
+                throw t;
             }
         } else {
             if (modes.contains(AccessMode.WRITE)) {
@@ -647,11 +656,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path dir = toAbsolutePathInternal(d);
         if (!pathIsInVfs(dir)) {
-            boolean passed = false;
             try {
                 delegate.createDirectory(dir, attrs);
-            } finally {
-                finest("VFS.createDirectory delegated '%s' %s", dir, passed ? "passed" : "did not pass");
+                finest("VFS.createDirectory delegated '%s'", dir);
+            } catch (Throwable t) {
+                finest(t, "VFS.createDirectory delegated '%s'", dir);
+                throw t;
             }
         } else {
             throw securityException("VFS.createDirectory", String.format("read-only filesystem, create directory not supported '%s'", dir));
@@ -664,11 +674,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = toAbsolutePathInternal(p);
         if (!pathIsInVfs(path)) {
-            boolean passed = false;
             try {
                 delegate.delete(path);
-            } finally {
-                finest("VFS.delete delegated '%s' %s", path, passed ? "passed" : "did not pass");
+                finest("VFS.delete delegated '%s'", path);
+            } catch (Throwable t) {
+                finest(t, "VFS.delete delegated '%s'", path);
+                throw t;
             }
         } else {
             throw securityException("VFS.delete", String.format("read-only filesystem, delete not supported: '%s'", path));
@@ -683,11 +694,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = toAbsolutePathInternal(p);
         if (!pathIsInVfs(path)) {
-            boolean passed = false;
             try {
-                return delegate.newByteChannel(path, options, attrs);
-            } finally {
-                finest("VFS.newByteChannel delegated '%s' %s", path, passed ? "passed" : "did not pass");
+                SeekableByteChannel ret = delegate.newByteChannel(path, options, attrs);
+                finest("VFS.newByteChannel delegated '%s'", path);
+                return ret;
+            } catch (Throwable t) {
+                finest(t, "VFS.newByteChannel delegated '%s'", path);
+                throw t;
             }
         }
 
@@ -775,11 +788,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(d);
         Path dir = toAbsolutePathInternal(d);
         if (!pathIsInVfs(dir)) {
-            boolean passed = false;
             try {
-                return delegate.newDirectoryStream(dir, filter);
-            } finally {
-                finest("VFS.newDirectoryStream delegated '%s' %s", dir, passed ? "passed" : "did not pass");
+                DirectoryStream<Path> ret = delegate.newDirectoryStream(dir, filter);
+                finest("VFS.newDirectoryStream delegated '%s'", d);
+                return ret;
+            } catch (Throwable t) {
+                finest(t, "VFS.newDirectoryStream delegated '%s'", d);
+                throw t;
             }
         }
         Objects.requireNonNull(filter);
@@ -855,9 +870,14 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Path path = toAbsolutePathInternal(p);
         boolean pathIsInVFS = pathIsInVfs(path);
         if (!pathIsInVFS) {
-            Path ret = delegate.toRealPath(path, linkOptions);
-            finest("VFS.toRealPath delegated '%s' -> '%s'", path, ret);
-            return ret;
+            try {
+                Path ret = delegate.toRealPath(path, linkOptions);
+                finest("VFS.toRealPath delegated '%s' -> '%s'", path, ret);
+                return ret;
+            } catch (Throwable t) {
+                finest(t, "VFS.toRealPath delegated '%s'", path);
+                throw t;
+            }
         } else {
             Path result = path;
             if (shouldExtract(path)) {
@@ -878,9 +898,14 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = toAbsolutePathInternal(p);
         if (!pathIsInVfs(path)) {
-            Map<String, Object> ret = delegate.readAttributes(path, attributes, options);
-            finest("VFS.readAttributes delegated '%s' -> '%s'", path, ret);
-            return ret;
+            try {
+                Map<String, Object> ret = delegate.readAttributes(path, attributes, options);
+                finest("VFS.readAttributes delegated '%s' -> '%s'", path, ret);
+                return ret;
+            } catch (Throwable t) {
+                finest(t, "VFS.readAttributes delegated '%s'", path);
+                throw t;
+            }
         }
         BaseEntry entry = getEntry(path);
         if (entry == null) {
@@ -933,7 +958,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             }
         } else {
             if (delegate != null) {
-                delegate.setCurrentWorkingDirectory(dir);
+                try {
+                    delegate.setCurrentWorkingDirectory(dir);
+                    finest("VFS.setCurrentWorkingDirectory delegated '%s'", d);
+                } catch (Throwable t) {
+                    finest(t, "VFS.setCurrentWorkingDirectory delegated '%s'", d);
+                    throw t;
+                }
             } else {
                 // allow so that we can resolve relative paths pointing from real FS to VFS
                 // {cwd}/real/fs/../ ... /../vfs_root
@@ -952,10 +983,16 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         if (pathIsInVfs(target)) {
             throw securityException("VFS.move", String.format("read-only filesystem, can't copy '%s' to '%s'", source, target));
         } else {
-            if (allowHostIO == READ_WRITE && pathIsInVfs(source)) {
-                FileSystem.super.copy(source, target, options);
-            } else {
-                delegate.copy(source, target, options);
+            try {
+                if (allowHostIO == READ_WRITE && pathIsInVfs(source)) {
+                    FileSystem.super.copy(source, target, options);
+                } else {
+                    delegate.copy(source, target, options);
+                }
+                finest("VFS.copy delegated '%s' '%s'", source, target);
+            } catch (Throwable thr) {
+                finest(thr, "VFS.copy delegated '%s' '%s'", source, target);
+                throw thr;
             }
         }
     }
@@ -967,7 +1004,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Path source = toAbsolutePathInternal(s);
         Path target = toAbsolutePathInternal(t);
         if (!pathIsInVfs(source) && !pathIsInVfs(target)) {
-            delegate.move(source, target, options);
+            try {
+                delegate.move(source, target, options);
+            } catch (Throwable thr) {
+                finest(thr, "VFS.move delegated '%s' '%s'", source, target);
+                throw thr;
+            }
         } else {
             throw securityException("VFS.move", String.format("read-only filesystem, can't move '%s' to '%s'", source, target));
         }
@@ -978,7 +1020,14 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(p);
         Path path = toAbsolutePathInternal(p);
         if (!pathIsInVfs(path)) {
-            return delegate.getEncoding(path);
+            try {
+                Charset ret = delegate.getEncoding(path);
+                finest("VFS.getEncoding delegated '%s'", path);
+                return ret;
+            } catch (Throwable t) {
+                finest(t, "VFS.getEncoding delegated '%s'", path);
+                throw t;
+            }
         } else {
             return null;
         }
@@ -991,7 +1040,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Path link = toAbsolutePathInternal(l);
         Path target = toAbsolutePathInternal(t);
         if (!pathIsInVfs(link) && !pathIsInVfs(target)) {
-            delegate.createSymbolicLink(link, target, attrs);
+            try {
+                delegate.createSymbolicLink(link, target, attrs);
+                finest("VFS.createSymbolicLink delegated '%s' '%s'", link, target);
+            } catch (Throwable thr) {
+                finest(thr, "VFS.createSymbolicLink delegated '%s' '%s'", link, target);
+                throw thr;
+            }
         } else {
             throw securityException("VFS.createSymbolicLink", String.format("read-only filesystem, can't create symbolic link from '%s' to '%s'", link, target));
         }
@@ -1004,7 +1059,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Path link = toAbsolutePathInternal(l);
         Path existing = toAbsolutePathInternal(e);
         if (!pathIsInVfs(link) && !pathIsInVfs(existing)) {
-            delegate.createLink(link, existing);
+            try {
+                delegate.createLink(link, existing);
+                finest("VFS.createLink delegated '%s' '%s'", link, existing);
+            } catch (Throwable thr) {
+                finest(thr, "VFS.createLink delegated '%s' '%s'", link, existing);
+                throw thr;
+            }
         } else {
             throw securityException("VFS.createLink", String.format("read-only filesystem, can't create link '%s' to '%s'", link, existing));
         }
@@ -1015,7 +1076,14 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(l);
         Path link = toAbsolutePathInternal(l);
         if (!pathIsInVfs(link)) {
-            return delegate.readSymbolicLink(link);
+            try {
+                Path ret = delegate.readSymbolicLink(link);
+                finest("VFS.readSymbolicLink delegated '%s' '%s'", link, ret);
+                return ret;
+            } catch (Throwable t) {
+                finest(t, "VFS.readSymbolicLink delegated '%s'", link);
+                throw t;
+            }
         } else {
             throw securityException("VFS.readSymbolicLink", String.format("reading symbolic links in VirtualFileSystem not supported %s", link));
         }
@@ -1026,7 +1094,13 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(p);
         Path path = toAbsolutePathInternal(p);
         if (!pathIsInVfs(path)) {
-            delegate.setAttribute(path, attribute, value, options);
+            try {
+                delegate.setAttribute(path, attribute, value, options);
+                finest("VFS.setAttribute delegated '%s' '%s'", path, attribute);
+            } catch (Throwable t) {
+                finest(t, "VFS.setAttribute delegated '%s' '%s'", path, attribute);
+                throw t;
+            }
         } else {
             throw securityException("VFS.setAttribute", String.format("read-only filesystem, can't set attribute '%s' for '%s", attribute, p));
         }
@@ -1037,14 +1111,28 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(p);
         Path path = toAbsolutePathInternal(p);
         if (!pathIsInVfs(path)) {
-            return delegate.getMimeType(path);
+            try {
+                String ret = delegate.getMimeType(path);
+                finest("VFS.getMimeType delegated '%s' '%s", path, ret);
+                return ret;
+            } catch (Throwable t) {
+                finest(t, "VFS.getMimeType delegated '%s'", path);
+                throw t;
+            }
         }
         return null;
     }
 
     @Override
     public Path getTempDirectory() {
-        return delegate.getTempDirectory();
+        try {
+            Path ret = delegate.getTempDirectory();
+            finest("VFS.getTempDirectory delegated '%s'", ret);
+            return ret;
+        } catch (Throwable t) {
+            finest(t, "VFS.getTempDirectory delegated");
+            throw t;
+        }
     }
 
     private static void warn(String msgFormat, Object... args) {
@@ -1068,6 +1156,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     private static void finest(String msgFormat, Object... args) {
         if (LOGGER.isLoggable(Level.FINEST)) {
             LOGGER.log(Level.FINEST, String.format(msgFormat, args));
+        }
+    }
+
+    private static void finest(Throwable t, String msgFormat, Object... args) {
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            LOGGER.log(Level.FINEST, String.format(msgFormat, args), t);
         }
     }
 
