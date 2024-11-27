@@ -70,4 +70,4 @@ else()
     set(DOUBLE_IS_LITTLE_ENDIAN_IEEE754 1)
 endif()
 
-configure_file("pyconfig.h.in" "pyconfig.h" @ONLY)
+configure_file("pyconfig_template.h" "pyconfig.h" @ONLY)
