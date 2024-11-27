@@ -13,14 +13,16 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-/* GraalVM change
+#if 0 // GraalPy change
 #include "pycore_hashtable.h"       // _Py_hashtable_t
+#endif // GraalPy change
 #include "pycore_gc.h"              // PyGC_Head
+#if 0 // GraalPy change
 #include "pycore_global_strings.h"  // struct _Py_global_strings
 #include "pycore_hamt.h"            // PyHamtNode_Bitmap
 #include "pycore_context.h"         // _PyContextTokenMissing
+#endif // GraalPy change
 #include "pycore_typeobject.h"      // pytype_slotdef
-*/
 
 
 // These would be in pycore_long.h if it weren't for an include cycle.
@@ -36,10 +38,12 @@ extern "C" {
 #define _Py_SINGLETON(NAME) \
     _Py_GLOBAL_OBJECT(singletons.NAME)
 
+#if 0 // GraalPy change
 struct _Py_cached_objects {
     // XXX We could statically allocate the hashtable.
     _Py_hashtable_t *interned_strings;
 };
+#endif // GraalPy change
 
 struct _Py_static_objects {
     struct {
@@ -48,7 +52,7 @@ struct _Py_static_objects {
          * The integers that are preallocated are those in the range
          * -_PY_NSMALLNEGINTS (inclusive) to _PY_NSMALLPOSINTS (exclusive).
          */
-/* GraalVM change
+#if 0 // GraalPy change
         PyLongObject small_ints[_PY_NSMALLNEGINTS + _PY_NSMALLPOSINTS];
 
         PyBytesObject bytes_empty;
@@ -65,7 +69,7 @@ struct _Py_static_objects {
         _PyGC_Head_UNUSED _hamt_bitmap_node_empty_gc_not_used;
         PyHamtNode_Bitmap hamt_bitmap_node_empty;
         _PyContextTokenMissing context_token_missing;
-*/
+#endif // GraalPy change
     } singletons;
 };
 
@@ -102,7 +106,9 @@ struct _Py_interp_static_objects {
         int _not_used;
         // hamt_empty is here instead of global because of its weakreflist.
         _PyGC_Head_UNUSED _hamt_empty_gc_not_used;
+#if 0 // GraalPy change
         PyHamtObject hamt_empty;
+#endif // GraalPy change
         PyBaseExceptionObject last_resort_memory_error;
     } singletons;
 };

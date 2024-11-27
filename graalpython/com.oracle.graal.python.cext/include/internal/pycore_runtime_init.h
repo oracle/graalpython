@@ -10,9 +10,11 @@ extern "C" {
 
 #include "pycore_long.h"
 #include "pycore_object.h"
+#if 0 // GraalPy change
 #include "pycore_parser.h"
 #include "pycore_pymem_init.h"
 #include "pycore_obmalloc_init.h"
+#endif // GraalPy change
 
 
 extern PyTypeObject _PyExc_MemoryError;
@@ -24,6 +26,7 @@ extern PyTypeObject _PyExc_MemoryError;
 
 #define _PyRuntimeState_INIT(runtime) \
     { \
+        /* GraalPy change
         .allocators = { \
             .standard = _pymem_allocators_standard_INIT(runtime), \
             .debug = _pymem_allocators_debug_INIT, \
@@ -32,6 +35,7 @@ extern PyTypeObject _PyExc_MemoryError;
         .obmalloc = _obmalloc_global_state_INIT, \
         .pyhash_state = pyhash_state_INIT, \
         .signals = _signals_RUNTIME_INIT, \
+        */ \
         .interpreters = { \
             /* This prevents interpreters from getting created \
               until _PyInterpreterState_Enable() is called. */ \
@@ -40,18 +44,22 @@ extern PyTypeObject _PyExc_MemoryError;
         /* A TSS key must be initialized with Py_tss_NEEDS_INIT \
            in accordance with the specification. */ \
         .autoTSSkey = Py_tss_NEEDS_INIT, \
+        /* GraalPy change
         .parser = _parser_runtime_state_INIT, \
         .ceval = { \
             .perf = _PyEval_RUNTIME_PERF_INIT, \
         }, \
+        */ \
         .gilstate = { \
             .check_enabled = 1, \
         }, \
         .fileutils = { \
             .force_ascii = -1, \
         }, \
+        /* GraalPy change
         .faulthandler = _faulthandler_runtime_state_INIT, \
         .tracemalloc = _tracemalloc_runtime_state_INIT, \
+        */ \
         .float_state = { \
             .float_format = _py_float_format_unknown, \
             .double_format = _py_float_format_unknown, \
@@ -59,6 +67,7 @@ extern PyTypeObject _PyExc_MemoryError;
         .types = { \
             .next_version_tag = 1, \
         }, \
+        /* GraalPy change
         .static_objects = { \
             .singletons = { \
                 .small_ints = _Py_small_ints_INIT, \
@@ -81,17 +90,20 @@ extern PyTypeObject _PyExc_MemoryError;
                 }, \
             }, \
         }, \
+        */ \
         ._main_interpreter = _PyInterpreterState_INIT(runtime._main_interpreter), \
     }
 
 #define _PyInterpreterState_INIT(INTERP) \
     { \
         .id_refcount = -1, \
+        /* GraalPy change
         .imports = IMPORTS_INIT, \
         .obmalloc = _obmalloc_state_INIT(INTERP.obmalloc), \
         .ceval = { \
             .recursion_limit = Py_DEFAULT_RECURSION_LIMIT, \
         }, \
+        */ \
         .gc = { \
             .enabled = 1, \
             .generations = { \
@@ -101,15 +113,20 @@ extern PyTypeObject _PyExc_MemoryError;
                 { .threshold = 10, }, \
             }, \
         }, \
+        /* GraalPy change
         .object_state = _py_object_state_INIT(INTERP), \
+        */ \
         .dtoa = _dtoa_state_INIT(&(INTERP)), \
+        /* GraalPy change
         .dict_state = _dict_state_INIT, \
         .func_state = { \
             .next_version = 1, \
         }, \
+        */ \
         .types = { \
             .next_version_tag = _Py_TYPE_BASE_VERSION_TAG, \
         }, \
+        /* GraalPy change
         .static_objects = { \
             .singletons = { \
                 ._not_used = 1, \
@@ -123,6 +140,7 @@ extern PyTypeObject _PyExc_MemoryError;
                 }, \
             }, \
         }, \
+        */ \
         ._initial_thread = _PyThreadState_INIT, \
     }
 
@@ -145,6 +163,7 @@ extern PyTypeObject _PyExc_MemoryError;
 
 // global objects
 
+#if 0 // GraalPy change
 #define _PyBytes_SIMPLE_INIT(CH, LEN) \
     { \
         _PyVarObject_HEAD_INIT(&PyBytes_Type, (LEN)) \
@@ -188,6 +207,7 @@ extern PyTypeObject _PyExc_MemoryError;
     }
 
 #include "pycore_runtime_init_generated.h"
+#endif // GraalPy change
 
 #ifdef __cplusplus
 }

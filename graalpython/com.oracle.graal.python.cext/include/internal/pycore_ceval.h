@@ -21,9 +21,7 @@ struct _ceval_runtime_state;
 #  define Py_DEFAULT_RECURSION_LIMIT 1000
 #endif
 
-#if 0 // GraalPy change
 #include "pycore_interp.h"        // PyInterpreterState.eval_frame
-#endif // GraalPy change
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 
 

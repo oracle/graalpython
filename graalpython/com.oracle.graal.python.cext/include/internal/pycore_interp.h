@@ -10,25 +10,33 @@ extern "C" {
 
 #include <stdbool.h>
 
+#if 0 // GraalPy change
 #include "pycore_ast_state.h"     // struct ast_state
 #include "pycore_atexit.h"        // struct atexit_state
+#endif // GraalPy change
 #include "pycore_atomic.h"        // _Py_atomic_address
+#if 0 // GraalPy change
 #include "pycore_ceval_state.h"   // struct _ceval_state
 #include "pycore_code.h"          // struct callable_cache
 #include "pycore_context.h"       // struct _Py_context_state
 #include "pycore_dict_state.h"    // struct _Py_dict_state
+#endif // GraalPy change
 #include "pycore_dtoa.h"          // struct _dtoa_state
+#if 0 // GraalPy change
 #include "pycore_exceptions.h"    // struct _Py_exc_state
 #include "pycore_floatobject.h"   // struct _Py_float_state
 #include "pycore_function.h"      // FUNC_MAX_WATCHERS
 #include "pycore_genobject.h"     // struct _Py_async_gen_state
+#endif // GraalPy change
 #include "pycore_gc.h"            // struct _gc_runtime_state
 #include "pycore_global_objects.h"  // struct _Py_interp_static_objects
+#if 0 // GraalPy change
 #include "pycore_import.h"        // struct _import_state
 #include "pycore_instruments.h"   // _PY_MONITORING_EVENTS
 #include "pycore_list.h"          // struct _Py_list_state
 #include "pycore_object_state.h"   // struct _py_object_state
 #include "pycore_obmalloc.h"      // struct obmalloc_state
+#endif // GraalPy change
 #include "pycore_tuple.h"         // struct _Py_tuple_state
 #include "pycore_typeobject.h"    // struct type_cache
 #include "pycore_unicodeobject.h" // struct _Py_unicode_state
@@ -135,12 +143,14 @@ struct _is {
     // Dictionary of the builtins module
     PyObject *builtins;
 
+#if 0 // GraalPy change
     struct _ceval_state ceval;
 
     struct _import_state imports;
 
     /* The per-interpreter GIL, which might not be used. */
     struct _gil_runtime_state _gil;
+#endif // GraalPy change
 
      /* ---------- IMPORTANT ---------------------------
      The fields above this line are declared as early as
@@ -162,7 +172,9 @@ struct _is {
     // Initialized to _PyEval_EvalFrameDefault().
     _PyFrameEvalFunction eval_frame;
 
+#if 0 // GraalPy change
     PyFunction_WatchCallback func_watchers[FUNC_MAX_WATCHERS];
+#endif // GraalPy change
     // One bit is set for each non-NULL entry in func_watchers
     uint8_t active_func_watchers;
 
@@ -175,28 +187,37 @@ struct _is {
     PyObject *after_forkers_child;
 #endif
 
+#if 0 // GraalPy change
     struct _warnings_runtime_state warnings;
     struct atexit_state atexit;
 
     struct _obmalloc_state obmalloc;
+#endif // GraalPy change
 
     PyObject *audit_hooks;
+#if 0 // GraalPy change
     PyType_WatchCallback type_watchers[TYPE_MAX_WATCHERS];
     PyCode_WatchCallback code_watchers[CODE_MAX_WATCHERS];
+#endif // GraalPy change
     // One bit is set for each non-NULL entry in code_watchers
     uint8_t active_code_watchers;
 
+#if 0 // GraalPy change
     struct _py_object_state object_state;
     struct _Py_unicode_state unicode;
     struct _Py_float_state float_state;
     struct _Py_long_state long_state;
+#endif // GraalPy change
     struct _dtoa_state dtoa;
+#if 0 // GraalPy change
     struct _py_func_state func_state;
+#endif // GraalPy change
     /* Using a cache is very effective since typically only a single slice is
        created and then deleted again. */
     PySliceObject *slice_cache;
 
     struct _Py_tuple_state tuple;
+#if 0 // GraalPy change
     struct _Py_list_state list;
     struct _Py_dict_state dict_state;
     struct _Py_async_gen_state async_gen;
@@ -204,21 +225,28 @@ struct _is {
     struct _Py_exc_state exc_state;
 
     struct ast_state ast;
+#endif // GraalPy change
     struct types_state types;
+#if 0 // GraalPy change
     struct callable_cache callable_cache;
+#endif // GraalPy change
     PyCodeObject *interpreter_trampoline;
 
+#if 0 // GraalPy change
     _Py_GlobalMonitors monitors;
+#endif // GraalPy change
     bool f_opcode_trace_set;
     bool sys_profile_initialized;
     bool sys_trace_initialized;
     Py_ssize_t sys_profiling_threads; /* Count of threads with c_profilefunc set */
     Py_ssize_t sys_tracing_threads; /* Count of threads with c_tracefunc set */
+#if 0 // GraalPy change
     PyObject *monitoring_callables[PY_MONITORING_TOOL_IDS][_PY_MONITORING_EVENTS];
     PyObject *monitoring_tool_names[PY_MONITORING_TOOL_IDS];
 
     struct _Py_interp_cached_objects cached_objects;
     struct _Py_interp_static_objects static_objects;
+#endif // GraalPy change
 
     // XXX Remove this field once we have a tp_* slot.
     struct _xidregistry xidregistry;

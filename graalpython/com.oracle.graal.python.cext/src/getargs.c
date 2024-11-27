@@ -10,6 +10,8 @@
 #include "pycore_tuple.h"         // _PyTuple_ITEMS()
 #if 0 // GraalPy change
 #include "pycore_pylifecycle.h"   // _PyArg_Fini
+#else // GraalPy change
+#include "pycore_runtime.h"       // _PyRuntime
 #endif // GraalPy change
 
 #include <ctype.h>

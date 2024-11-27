@@ -153,10 +153,12 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_ceval.h,python.
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_condvar.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_dtoa.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_fileutils.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_floatobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_frame.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_gc.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_gil.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_global_objects.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_interp.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_moduleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_namespace.h,python.copyright
@@ -166,6 +168,7 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_pymath.h,python
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pymem.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pystate.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_runtime.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_runtime_init.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_strhex.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_tuple.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_typeobject.h,python.copyright
@@ -316,6 +319,7 @@ graalpython/com.oracle.graal.python.cext/src/mystrtoul.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/object.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pyctype.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pyhash.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/pystate.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystrcmp.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystrhex.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystrtod.c,python.copyright

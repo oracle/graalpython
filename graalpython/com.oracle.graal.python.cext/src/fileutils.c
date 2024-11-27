@@ -5,8 +5,8 @@
  */
 #include "Python.h"
 #include "pycore_fileutils.h"     // fileutils definitions
-#if 0 // GraalPy change
 #include "pycore_runtime.h"       // _PyRuntime
+#if 0 // GraalPy change
 #include "osdefs.h"               // SEP
 #endif // GraalPy change
 #include <locale.h>

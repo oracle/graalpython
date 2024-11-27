@@ -2667,11 +2667,13 @@ _Py_ScheduleGC(PyInterpreterState *interp)
     if (gcstate->collecting == 1) {
         return;
     }
+#if 0 // GraalPy change
     struct _ceval_state *ceval = &interp->ceval;
     if (!_Py_atomic_load_relaxed(&ceval->gc_scheduled)) {
         _Py_atomic_store_relaxed(&ceval->gc_scheduled, 1);
         _Py_atomic_store_relaxed(&ceval->eval_breaker, 1);
     }
+#endif // GraalPy change
 }
 
 void

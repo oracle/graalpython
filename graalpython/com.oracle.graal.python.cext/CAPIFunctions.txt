@@ -960,20 +960,21 @@ _PyGILState_GetInterpreterStateUnsafe;PyInterpreterState*;void
 _PyGen_FetchStopIterationValue;int;PyObject**
 _PyGen_Finalize;void;PyObject*
 _PyGen_SetStopIterationValue;int;PyObject*
-_PyImport_AcquireLock;void;void
+_PyImport_AcquireLock;void;PyInterpreterState*
 _PyImport_FixupBuiltin;int;PyObject*|const char*|PyObject*
 _PyImport_FixupExtensionObject;int;PyObject*|PyObject*|PyObject*|PyObject*
 _PyImport_GetModuleAttr;PyObject*;PyObject*|PyObject*
 _PyImport_GetModuleAttrString;PyObject*;const char*|const char*
 _PyImport_GetModuleId;PyObject*;_Py_Identifier*
 _PyImport_IsInitialized;int;PyInterpreterState*
-_PyImport_ReleaseLock;int;void
+_PyImport_ReleaseLock;int;PyInterpreterState*
 _PyImport_SetModule;int;PyObject*|PyObject*
 _PyImport_SetModuleString;int;const char*|PyObject*
 _PyInterpreterState_GetConfig;const PyConfig*;PyInterpreterState*
 _PyInterpreterState_GetConfigCopy;int;struct PyConfig*
 _PyInterpreterState_GetEvalFrameFunc;_PyFrameEvalFunction;PyInterpreterState*
 _PyInterpreterState_GetMainModule;PyObject*;PyInterpreterState*
+_PyInterpreterState_HasFeature;int;PyInterpreterState*|unsigned long
 _PyInterpreterState_RequireIDRef;void;PyInterpreterState*|int
 _PyInterpreterState_RequiresIDRef;int;PyInterpreterState*
 _PyInterpreterState_SetConfig;int;const struct PyConfig*

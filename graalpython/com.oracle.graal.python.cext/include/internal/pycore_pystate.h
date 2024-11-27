@@ -13,7 +13,6 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-#if 0 // GraalPy change
 #include "pycore_runtime.h"   /* PyRuntimeState */
 
 
@@ -50,6 +49,7 @@ _Py_IsMainInterpreterFinalizing(PyInterpreterState *interp)
             interp == &_PyRuntime._main_interpreter);
 }
 
+#if 0 // GraalPy change
 // Export for _xxsubinterpreters module.
 PyAPI_FUNC(int) _PyInterpreterState_SetRunningMain(PyInterpreterState *);
 PyAPI_FUNC(void) _PyInterpreterState_SetNotRunningMain(PyInterpreterState *);
@@ -104,8 +104,6 @@ _PyThreadState_GET(void)
     return PyThreadState_Get();
 }
 
-#if 0 // GraalPy change
-
 static inline void
 _Py_EnsureFuncTstateNotNULL(const char *func, PyThreadState *tstate)
 {
@@ -139,6 +137,7 @@ static inline PyInterpreterState* _PyInterpreterState_GET(void) {
 }
 
 
+#if 0 // GraalPy change
 // PyThreadState functions
 
 PyAPI_FUNC(PyThreadState *) _PyThreadState_New(PyInterpreterState *interp);

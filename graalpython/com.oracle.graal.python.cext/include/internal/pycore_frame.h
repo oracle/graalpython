@@ -11,7 +11,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "pycore_code.h"         // STATS
+// #include "pycore_code.h"         // STATS
 
 /* See Objects/frame_layout.md for an explanation of the frame stack
  * including explanation of the PyFrameObject and _PyInterpreterFrame
@@ -105,6 +105,7 @@ static inline void _PyFrame_StackPush(_PyInterpreterFrame *f, PyObject *value) {
 
 #define FRAME_SPECIALS_SIZE ((int)((sizeof(_PyInterpreterFrame)-1)/sizeof(PyObject *)))
 
+#if 0 // GraalPy change
 static inline int
 _PyFrame_NumSlotsForCodeObject(PyCodeObject *code)
 {
@@ -113,6 +114,7 @@ _PyFrame_NumSlotsForCodeObject(PyCodeObject *code)
     assert(code->co_framesize >= FRAME_SPECIALS_SIZE);
     return code->co_framesize - FRAME_SPECIALS_SIZE;
 }
+#endif // GraalPy change
 
 void _PyFrame_Copy(_PyInterpreterFrame *src, _PyInterpreterFrame *dest);
 
@@ -259,6 +261,7 @@ _PyThreadState_PushFrame(PyThreadState *tstate, size_t size);
 
 void _PyThreadState_PopFrame(PyThreadState *tstate, _PyInterpreterFrame *frame);
 
+#if 0 // GraalPy change
 /* Pushes a frame without checking for space.
  * Must be guarded by _PyThreadState_HasStackSpace()
  * Consumes reference to func. */
@@ -281,6 +284,7 @@ PyGenObject *_PyFrame_GetGenerator(_PyInterpreterFrame *frame)
     size_t offset_in_gen = offsetof(PyGenObject, gi_iframe);
     return (PyGenObject *)(((char *)frame) - offset_in_gen);
 }
+#endif // GraalPy change
 
 #ifdef __cplusplus
 }

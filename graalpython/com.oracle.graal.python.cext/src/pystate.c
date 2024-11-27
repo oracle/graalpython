@@ -3,17 +3,25 @@
 
 #include "Python.h"
 #include "pycore_ceval.h"
+#if 0 // GraalPy change
 #include "pycore_code.h"          // stats
+#endif // GraalPy change
 #include "pycore_dtoa.h"          // _dtoa_state_INIT()
 #include "pycore_frame.h"
+#if 0 // GraalPy change
 #include "pycore_initconfig.h"
+#endif // GraalPy change
 #include "pycore_object.h"        // _PyType_InitCache()
 #include "pycore_pyerrors.h"
+#if 0 // GraalPy change
 #include "pycore_pylifecycle.h"
+#endif // GraalPy change
 #include "pycore_pymem.h"         // _PyMem_SetDefaultAllocator()
 #include "pycore_pystate.h"
 #include "pycore_runtime_init.h"  // _PyRuntimeState_INIT
+#if 0 // GraalPy change
 #include "pycore_sysmodule.h"
+#endif // GraalPy change
 
 #include "capi.h"
 #include <trufflenfi.h>
@@ -434,6 +442,7 @@ alloc_for_runtime(PyThread_type_lock locks[NUMLOCKS])
     return 0;
 }
 
+#if 0 //
 static void
 init_runtime(_PyRuntimeState *runtime,
              void *open_code_hook, void *open_code_userdata,
@@ -1113,6 +1122,7 @@ _PyInterpreterState_IsRunningMain(PyInterpreterState *interp)
 {
     return (interp->threads_main != NULL);
 }
+#endif //
 
 
 //----------
@@ -1122,15 +1132,15 @@ _PyInterpreterState_IsRunningMain(PyInterpreterState *interp)
 int64_t
 PyInterpreterState_GetID(PyInterpreterState *interp)
 {
-#if 0 //
+#if 0 // GraalPy change
     if (interp == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "no interpreter provided");
         return -1;
     }
     return interp->id;
-#else //
+#else // GraalPy change
     return 0;
-#endif //
+#endif // GraalPy change
 }
 
 
@@ -1164,7 +1174,7 @@ _PyInterpreterState_IDIncref(PyInterpreterState *interp)
     return 0;
 }
 
-
+#if 0 //
 void
 _PyInterpreterState_IDDecref(PyInterpreterState *interp)
 {
@@ -1209,6 +1219,7 @@ _PyInterpreterState_GetMainModule(PyInterpreterState *interp)
     }
     return PyMapping_GetItemString(modules, "__main__");
 }
+#endif //
 
 // GraalPy change: We don't have subinterpreters at the moment, so store the dict into a global object
 static PyObject* interpreter_dict;
@@ -1216,7 +1227,7 @@ static PyObject* interpreter_dict;
 PyObject *
 PyInterpreterState_GetDict(PyInterpreterState *interp)
 {
-#if 0 //
+#if 0 // GraalPy change
     if (interp->dict == NULL) {
         interp->dict = PyDict_New();
         if (interp->dict == NULL) {
@@ -1225,7 +1236,7 @@ PyInterpreterState_GetDict(PyInterpreterState *interp)
     }
     /* Returning NULL means no per-interpreter dict is available. */
     return interp->dict;
-#else //
+#else // GraalPy change
     if (interpreter_dict == NULL) {
         interpreter_dict = PyDict_New();
         if (interpreter_dict == NULL) {
@@ -1234,7 +1245,7 @@ PyInterpreterState_GetDict(PyInterpreterState *interp)
     }
     /* Returning NULL means no per-interpreter dict is available. */
     return interpreter_dict;
-#endif //
+#endif // GraalPy change
 }
 
 
@@ -1322,6 +1333,7 @@ tstate_is_alive(PyThreadState *tstate)
 /* Minimum size of data stack chunk */
 #define DATA_STACK_CHUNK_SIZE (16*1024)
 
+#if 0 // GraalPy change
 static _PyStackChunk*
 allocate_chunk(int size_in_bytes, _PyStackChunk* previous)
 {
@@ -1515,11 +1527,12 @@ clear_datastack(PyThreadState *tstate)
         chunk = prev;
     }
 }
+#endif // GraalPy change
 
 void
 PyThreadState_Clear(PyThreadState *tstate)
 {
-#if 0 //
+#if 0 // GraalPy change
     assert(tstate->_status.initialized && !tstate->_status.cleared);
     // XXX assert(!tstate->_status.bound || tstate->_status.unbound);
     tstate->_status.finalizing = 1;  // just in case
@@ -1597,9 +1610,10 @@ PyThreadState_Clear(PyThreadState *tstate)
 
     // XXX Call _PyThreadStateSwap(runtime, NULL) here if "current".
     // XXX Do it as early in the function as possible.
-#endif //
+#endif // GraalPy change
 }
 
+#if 0 // GraalPy change
 /* Common code for PyThreadState_Delete() and PyThreadState_DeleteCurrent() */
 static void
 tstate_delete_common(PyThreadState *tstate)
@@ -1659,18 +1673,19 @@ PyThreadState_Delete(PyThreadState *tstate)
     tstate_delete_common(tstate);
     free_threadstate(tstate);
 }
+#endif // GraalPy change
 
 
 void
 _PyThreadState_DeleteCurrent(PyThreadState *tstate)
 {
-#if 0 //
+#if 0 // GraalPy change
     _Py_EnsureTstateNotNULL(tstate);
     tstate_delete_common(tstate);
     current_fast_clear(tstate->interp->runtime);
     _PyEval_ReleaseLock(tstate->interp, NULL);
     free_threadstate(tstate);
-#endif //
+#endif // GraalPy change
 }
 
 void
@@ -1681,6 +1696,7 @@ PyThreadState_DeleteCurrent(void)
 }
 
 
+#if 0 // GraalPy change
 /*
  * Delete all thread states except the one passed as argument.
  * Note that, if there is a current thread state, it *must* be the one
@@ -1723,6 +1739,7 @@ _PyThreadState_DeleteExcept(PyThreadState *tstate)
         free_threadstate(p);
     }
 }
+#endif // GraalPy change
 
 
 //----------
@@ -1749,6 +1766,7 @@ _PyThreadState_GetDict(PyThreadState *tstate)
 }
 
 
+#if 0 // GraalPy change
 PyObject *
 PyThreadState_GetDict(void)
 {
@@ -1758,6 +1776,7 @@ PyThreadState_GetDict(void)
     }
     return _PyThreadState_GetDict(tstate);
 }
+#endif // GraalPy change
 
 
 PyInterpreterState *
@@ -1768,6 +1787,7 @@ PyThreadState_GetInterpreter(PyThreadState *tstate)
 }
 
 
+#if 0 // GraalPy change
 PyFrameObject*
 PyThreadState_GetFrame(PyThreadState *tstate)
 {
@@ -1782,6 +1802,7 @@ PyThreadState_GetFrame(PyThreadState *tstate)
     }
     return (PyFrameObject*)Py_XNewRef(frame);
 }
+#endif // GraalPy change
 
 
 uint64_t
@@ -1828,6 +1849,7 @@ tstate_deactivate(PyThreadState *tstate)
 // other API
 //----------
 
+#if 0 // GraalPy change
 /* Asynchronously raise an exception in a thread.
    Requested by Just van Rossum and Alex Martelli.
    To prevent naive misuse, you must write your own extension
@@ -1874,6 +1896,7 @@ PyThreadState_SetAsyncExc(unsigned long id, PyObject *exc)
     HEAD_UNLOCK(runtime);
     return 0;
 }
+#endif // GraalPy change
 
 
 //---------------------------------
@@ -1883,24 +1906,24 @@ PyThreadState_SetAsyncExc(unsigned long id, PyObject *exc)
 PyThreadState *
 _PyThreadState_UncheckedGet(void)
 {
-#if 0 //
+#if 0 // GraalPy change
     return current_fast_get(&_PyRuntime);
-#else //
+#else // GraalPy change
     return _get_thread_state();
-#endif //
+#endif // GraalPy change
 }
 
 
 PyThreadState *
 PyThreadState_Get(void)
 {
-#if 0 //
+#if 0 // GraalPy change
     PyThreadState *tstate = current_fast_get(&_PyRuntime);
     _Py_EnsureTstateNotNULL(tstate);
     return tstate;
-#else //
+#else // GraalPy change
     return _get_thread_state();
-#endif //
+#endif // GraalPy change
 }
 
 
@@ -1943,6 +1966,7 @@ _PyThreadState_SwapNoGIL(PyThreadState *newts)
     return oldts;
 }
 
+#if 0 // GraalPy change
 PyThreadState *
 _PyThreadState_Swap(_PyRuntimeState *runtime, PyThreadState *newts)
 {
@@ -1979,6 +2003,7 @@ _PyThreadState_Bind(PyThreadState *tstate)
     }
 }
 
+#endif // GraalPy change
 
 /***********************************/
 /* routines for advanced debuggers */
@@ -1996,12 +2021,12 @@ PyInterpreterState_Head(void)
 PyInterpreterState *
 PyInterpreterState_Main(void)
 {
-#if 0 //
+#if 0 // GraalPy change
     return _PyInterpreterState_Main();
-#else //
+#else // GraalPy change
     // TODO: not yet supported
     return NULL;
-#endif //
+#endif // GraalPy change
 }
 
 PyInterpreterState *
@@ -2024,6 +2049,7 @@ PyThreadState_Next(PyThreadState *tstate) {
 /* reporting execution state of all threads */
 /********************************************/
 
+#if 0 // GraalPy change
 /* The implementation of sys._current_frames().  This is intended to be
    called with the GIL held, as it will be when called via
    sys._current_frames().  It's possible it would work fine even without
@@ -2213,27 +2239,28 @@ _PyGILState_GetInterpreterStateUnsafe(void)
 {
     return _PyRuntime.gilstate.autoInterpreterState;
 }
+#endif // GraalPy change
 
 /* The public functions */
 
 PyThreadState *
 PyGILState_GetThisThreadState(void)
 {
-#if 0 //
+#if 0 // GraalPy change
     _PyRuntimeState *runtime = &_PyRuntime;
     if (!gilstate_tss_initialized(runtime)) {
         return NULL;
     }
     return gilstate_tss_get(runtime);
-#else //
+#else // GraalPy change
     return _get_thread_state();
-#endif //
+#endif // GraalPy change
 }
 
 int
 PyGILState_Check(void)
 {
-#if 0 // 
+#if 0 // GraalPy change
     _PyRuntimeState *runtime = &_PyRuntime;
     if (!runtime->gilstate.check_enabled) {
         return 1;
@@ -2249,7 +2276,7 @@ PyGILState_Check(void)
     }
 
     return (tstate == gilstate_tss_get(runtime));
-#else //
+#else // GraalPy change
     int attached = 0;
     /*
      * PyGILState_Check is allowed to be called from a new thread that didn't yet setup the GIL.
@@ -2268,13 +2295,13 @@ PyGILState_Check(void)
         (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
     }
     return ret;
-#endif //
+#endif // GraalPy change
 }
 
 PyGILState_STATE
 PyGILState_Ensure(void)
 {
-#if 0 //
+#if 0 // GraalPy change
     _PyRuntimeState *runtime = &_PyRuntime;
 
     /* Note that we do not auto-init Python here - apart from
@@ -2321,7 +2348,7 @@ PyGILState_Ensure(void)
     ++tcur->gilstate_counter;
 
     return has_gil ? PyGILState_LOCKED : PyGILState_UNLOCKED;
-#else //
+#else // GraalPy change
     if (TRUFFLE_CONTEXT) {
         if ((*TRUFFLE_CONTEXT)->getTruffleEnv(TRUFFLE_CONTEXT) == NULL) {
             (*TRUFFLE_CONTEXT)->attachCurrentThread(TRUFFLE_CONTEXT);
@@ -2330,13 +2357,13 @@ PyGILState_Ensure(void)
         graalpy_gilstate_counter++;
     }
     return GraalPyTruffleGILState_Ensure() ? PyGILState_UNLOCKED : PyGILState_LOCKED;
-#endif //
+#endif // GraalPy change
 }
 
 void
 PyGILState_Release(PyGILState_STATE oldstate)
 {
-#if 0 //
+#if 0 // GraalPy change
     _PyRuntimeState *runtime = &_PyRuntime;
     PyThreadState *tstate = gilstate_tss_get(runtime);
     if (tstate == NULL) {
@@ -2384,7 +2411,7 @@ PyGILState_Release(PyGILState_STATE oldstate)
     else if (oldstate == PyGILState_UNLOCKED) {
         PyEval_SaveThread();
     }
-#else //
+#else // GraalPy change
     if (oldstate == PyGILState_UNLOCKED) {
         GraalPyTruffleGILState_Release();
     }
@@ -2400,7 +2427,7 @@ PyGILState_Release(PyGILState_STATE oldstate)
             tstate_current = NULL;
         }
     }
-#endif //
+#endif // GraalPy change
 }
 
 
@@ -2593,6 +2620,7 @@ _xidata_release_and_rawfree_pending(void *data)
     return 0;
 }
 
+#if 0 // GraalPy change
 static int
 _xidata_release(_PyCrossInterpreterData *data, int rawfree)
 {
@@ -2649,6 +2677,7 @@ _PyCrossInterpreterData_ReleaseAndRawFree(_PyCrossInterpreterData *data)
 {
     return _xidata_release(data, 1);
 }
+#endif // GraalPy change
 
 /* registry of {type -> crossinterpdatafunc} */
 
@@ -3017,6 +3046,7 @@ _PyInterpreterState_GetConfig(PyInterpreterState *interp)
 }
 
 
+#if 0 // GraalPy change
 int
 _PyInterpreterState_GetConfigCopy(PyConfig *config)
 {
@@ -3040,6 +3070,7 @@ _Py_GetConfig(void)
     _Py_EnsureTstateNotNULL(tstate);
     return _PyInterpreterState_GetConfig(tstate->interp);
 }
+#endif // GraalPy change
 
 
 int
@@ -3051,6 +3082,7 @@ _PyInterpreterState_HasFeature(PyInterpreterState *interp, unsigned long feature
 
 #define MINIMUM_OVERHEAD 1000
 
+#if 0 // GraalPy change
 static PyObject **
 push_chunk(PyThreadState *tstate, int size)
 {
@@ -3109,6 +3141,7 @@ _PyThreadState_PopFrame(PyThreadState *tstate, _PyInterpreterFrame * frame)
         tstate->datastack_top = base;
     }
 }
+#endif // GraalPy change
 
 
 #ifndef NDEBUG

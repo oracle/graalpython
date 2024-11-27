@@ -19,8 +19,8 @@
 #include "pycore_object.h"        // _PyType_HasFeature()
 #include "pycore_long.h"          // _PyLong_IsNegative()
 #include "pycore_pyerrors.h"      // _PyErr_Occurred()
-#if 0 // GraalPy change
 #include "pycore_pystate.h"       // _PyThreadState_GET()
+#if 0 // GraalPy change
 #include "pycore_typeobject.h"    // struct type_cache
 #include "pycore_unionobject.h"   // _Py_union_type_or
 #include "pycore_frame.h"         // _PyInterpreterFrame

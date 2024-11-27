@@ -13,22 +13,34 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
+#if 0 // GraalPy change
 #include "pycore_atexit.h"          // struct atexit_runtime_state
+#endif // GraalPy change
 #include "pycore_atomic.h"          /* _Py_atomic_address */
+#if 0 // GraalPy change
 #include "pycore_ceval_state.h"     // struct _ceval_runtime_state
+#endif // GraalPy change
 #include "pycore_floatobject.h"     // struct _Py_float_runtime_state
+#if 0 // GraalPy change
 #include "pycore_faulthandler.h"    // struct _faulthandler_runtime_state
+#endif // GraalPy change
 #include "pycore_global_objects.h"  // struct _Py_global_objects
+#if 0 // GraalPy change
 #include "pycore_import.h"          // struct _import_runtime_state
+#endif // GraalPy change
 #include "pycore_interp.h"          // PyInterpreterState
+#if 0 // GraalPy change
 #include "pycore_object_state.h"    // struct _py_object_runtime_state
 #include "pycore_parser.h"          // struct _parser_runtime_state
+#endif // GraalPy change
 #include "pycore_pymem.h"           // struct _pymem_allocators
+#if 0 // GraalPy change
 #include "pycore_pyhash.h"          // struct pyhash_runtime_state
 #include "pycore_pythread.h"        // struct _pythread_runtime_state
 #include "pycore_signal.h"          // struct _signals_runtime_state
 #include "pycore_time.h"            // struct _time_runtime_state
 #include "pycore_tracemalloc.h"     // struct _tracemalloc_runtime_state
+#endif // GraalPy change
 #include "pycore_typeobject.h"      // struct types_runtime_state
 #include "pycore_unicodeobject.h"   // struct _Py_unicode_runtime_ids
 
@@ -119,11 +131,13 @@ typedef struct pyruntimestate {
     struct _xidregistry xidregistry;
 
     struct _pymem_allocators allocators;
+#if 0 // GraalPy change
     struct _obmalloc_global_state obmalloc;
     struct pyhash_runtime_state pyhash_state;
     struct _time_runtime_state time;
     struct _pythread_runtime_state threads;
     struct _signals_runtime_state signals;
+#endif // GraalPy change
 
     /* Used for the thread state bound to the current thread. */
     Py_tss_t autoTSSkey;
@@ -133,17 +147,21 @@ typedef struct pyruntimestate {
 
     PyWideStringList orig_argv;
 
+#if 0 // GraalPy change
     struct _parser_runtime_state parser;
 
     struct _atexit_runtime_state atexit;
 
     struct _import_runtime_state imports;
     struct _ceval_runtime_state ceval;
+#endif // GraalPy change
     struct _gilstate_runtime_state gilstate;
     struct _getargs_runtime_state getargs;
     struct _fileutils_state fileutils;
+#if 0 // GraalPy change
     struct _faulthandler_runtime_state faulthandler;
     struct _tracemalloc_runtime_state tracemalloc;
+#endif // GraalPy change
 
     PyPreConfig preconfig;
 
@@ -156,14 +174,18 @@ typedef struct pyruntimestate {
         _Py_AuditHookEntry *head;
     } audit_hooks;
 
+#if 0 // GraalPy change
     struct _py_object_runtime_state object_state;
+#endif // GraalPy change
     struct _Py_float_runtime_state float_state;
     struct _Py_unicode_runtime_state unicode_state;
     struct _types_runtime_state types;
 
     /* All the objects that are shared by the runtime's interpreters. */
+#if 0 // GraalPy change
     struct _Py_static_objects static_objects;
     struct _Py_cached_objects cached_objects;
+#endif // GraalPy change
 
     /* The ID of the OS thread in which we are finalizing.
        We use _Py_atomic_address instead of adding a new _Py_atomic_ulong. */
