@@ -75,6 +75,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrDeleteNode;
@@ -84,13 +87,14 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -127,6 +131,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsOtherBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.DeleteDictNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -146,7 +151,8 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -180,46 +186,49 @@ public final class ObjectBuiltins extends PythonBuiltins {
             return getClassNode.execute(inliningTarget, self);
         }
 
-        @Specialization(guards = "isNativeClass(klass)")
-        static Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object klass,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
-        }
-
-        @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
-        static PNone setClass(VirtualFrame frame, PythonObject self, Object value,
+        @Specialization(guards = "!isNoValue(value)")
+        static PNone setClass(VirtualFrame frame, Object self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @Cached IsOtherBuiltinClassProfile classProfile1,
-                        @Cached IsOtherBuiltinClassProfile classProfile2,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached IsBuiltinClassProfile isModuleProfile,
+                        @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigmentNode,
                         @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached SetClassNode setClassNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (!isTypeNode.execute(inliningTarget, value)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
+            }
             Object type = getClassNode.execute(inliningTarget, self);
-            if (isBuiltinClassNotModule(inliningTarget, value, classProfile1) || PGuards.isNativeClass(value) || isBuiltinClassNotModule(inliningTarget, type, classProfile2) ||
-                            PGuards.isNativeClass(type)) {
+            boolean bothModuleSubtypes = isModuleProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonModule) &&
+                            isModuleProfile.profileClass(inliningTarget, value, PythonBuiltinClassType.PythonModule);
+            boolean bothMutable = (getTypeFlagsNode.execute(type) & TypeFlags.IMMUTABLETYPE) == 0 && (getTypeFlagsNode.execute(value) & TypeFlags.IMMUTABLETYPE) == 0;
+            if (!bothModuleSubtypes && !bothMutable) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
             checkCompatibleForAssigmentNode.execute(frame, type, value);
-            writeHiddenAttrNode.execute(inliningTarget, self, HiddenAttr.CLASS, value);
+            setClassNode.execute(inliningTarget, self, value);
+
             return PNone.NONE;
         }
 
-        private static boolean isBuiltinClassNotModule(Node inliningTarget, Object type, IsOtherBuiltinClassProfile classProfile) {
-            return classProfile.profileIsOtherBuiltinClass(inliningTarget, type, PythonBuiltinClassType.PythonModule);
-        }
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class SetClassNode extends Node {
+            public abstract void execute(Node inliningTarget, Object self, Object newClass);
 
-        @Specialization(guards = {"isPythonClass(value) || isPythonBuiltinClassType(value)", "!isPythonObject(self)"})
-        static Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
-        }
+            @Specialization
+            static void doPythonObject(Node inliningTarget, PythonObject self, Object newClass,
+                            @Cached HiddenAttr.WriteNode writeHiddenAttrNode) {
+                writeHiddenAttrNode.execute(inliningTarget, self, HiddenAttr.CLASS, newClass);
+            }
 
-        @Fallback
-        static Object getClassError(@SuppressWarnings("unused") Object self, Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
+            @Specialization
+            static void doNative(PythonAbstractNativeObject self, Object newClass,
+                            @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNewRefNode) {
+                writeObjectNewRefNode.writeToObject(self, CFields.PyObject__ob_type, newClass);
+            }
         }
     }
 

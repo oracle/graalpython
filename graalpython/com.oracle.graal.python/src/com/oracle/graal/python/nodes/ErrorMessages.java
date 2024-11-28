@@ -351,7 +351,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
     public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
     public static final TruffleString S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S = tsLiteral("%s() got multiple sub-patterns for attribute '%s'");
-    public static final TruffleString S_PAREN_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
+    public static final TruffleString S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG = tsLiteral("%s() got multiple values for argument '%s'");
     public static final TruffleString S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = tsLiteral("%s() got some positional-only arguments passed as keyword arguments: '%s'");
@@ -566,7 +566,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NUMBER_IS_REQUIRED = tsLiteral("a number is required");
     public static final TruffleString NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = tsLiteral("number %s cannot fit into index-sized integer");
     public static final TruffleString OBJ_INDEX_MUST_BE_INT_OR_SLICES = tsLiteral("%s indices must be integers or slices, not %p");
-    public static final TruffleString OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = tsLiteral("'%p' object cannot be interpreted as an int");
+    public static final TruffleString OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = tsLiteral("'%p' object cannot be interpreted as an integer");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_INDEXING = tsLiteral("'%p' object does not support indexing");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = tsLiteral("'%s' object does not support item assignment");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_ITEM_DELETION = tsLiteral("'%s' object does not support item deletion");
