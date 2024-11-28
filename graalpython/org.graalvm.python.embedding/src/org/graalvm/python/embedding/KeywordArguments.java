@@ -247,7 +247,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param name2 the name of the second argument
      * @param value2 the value of the second argument
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2));
@@ -263,7 +263,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param name3 the name of the third argument
      * @param value3 the value of the third argument
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3));
@@ -280,7 +280,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param value3 the value of the third argument
      * ... (similar for other parameters) ...
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object, Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4) {
         return new KeywordArguments.Implementation(Map.of(name1, value1, name2, value2, name3, value3, name4, value4));
@@ -297,7 +297,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param value3 the value of the third argument
      * ... (similar for other parameters) ...
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object, Object, Object, Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
                     String name5, Object value5) {
@@ -316,7 +316,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param value3 the value of the third argument
      * ... (similar for other parameters) ...
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
                     String name5, Object value5, String name6, Object value6) {
@@ -335,7 +335,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param value3 the value of the third argument
      * ... (similar for other parameters) ...
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
                     String name5, Object value5, String name6, Object value6, String name7, Object value7) {
@@ -354,7 +354,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param value3 the value of the third argument
      * ... (similar for other parameters) ...
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
                     String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8) {
@@ -373,7 +373,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param value3 the value of the third argument
      * ... (similar for other parameters) ...
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
                     String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8,
@@ -393,7 +393,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * @param value3 the value of the third argument
      * ... (similar for other parameters) ...
      * @return a new {@link KeywordArguments} instance containing the specified arguments
-     * @see java.util.Map#of(Object, Object, Object, Object, ...)
+     * @see java.util.Map#of(Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object)
      */
     public static KeywordArguments of(String name1, Object value1, String name2, Object value2, String name3, Object value3, String name4, Object value4,
                     String name5, Object value5, String name6, Object value6, String name7, Object value7, String name8, Object value8,
