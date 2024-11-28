@@ -42,7 +42,6 @@ package com.oracle.graal.python.runtime.exception;
 
 import com.oracle.truffle.api.TruffleSafepoint.Interruptible;
 import com.oracle.truffle.api.nodes.Node;
-import org.graalvm.polyglot.PolyglotException;
 
 /**
  * This exception kills a Python thread.
@@ -92,19 +91,5 @@ public final class PythonThreadKillException extends RuntimeException {
     @Override
     public final Throwable fillInStackTrace() {
         return this;
-    }
-
-    /**
-     * Helper method for threads that do not run Python code and should gracefully terminate on
-     * catching {@link PythonThreadKillException} and some types of Polyglot exception thrown from
-     * Thread Location Actions run in Truffle Sefepoint.
-     */
-    public static boolean shouldKillThread(Throwable ex) {
-        if (ex instanceof PythonThreadKillException) {
-            return true;
-        } else if (ex instanceof PolyglotException pex) {
-            return pex.isCancelled() || pex.isInterrupted();
-        }
-        return false;
     }
 }

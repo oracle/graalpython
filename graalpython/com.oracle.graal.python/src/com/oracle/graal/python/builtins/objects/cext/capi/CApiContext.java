@@ -775,8 +775,6 @@ public final class CApiContext extends CExtContext {
             return;
         }
         backgroundGCTaskThread = context.createSystemThread(gcTask);
-        backgroundGCTaskThread.setDaemon(true);
-        backgroundGCTaskThread.setName("python-gc-task");
         backgroundGCTaskThread.start();
     }
 
@@ -916,7 +914,8 @@ public final class CApiContext extends CExtContext {
                 long finalizingPointer = lib.asPointer(finalizingPointerObj);
                 // We are writing off heap memory and registering a VM shutdown hook, there is no
                 // point in creating this thread via Truffle sandbox at this point
-                nativeFinalizerShutdownHook = new Thread(() -> unsafe.putInt(finalizingPointer, 1));
+                nativeFinalizerRunnable = () -> unsafe.putInt(finalizingPointer, 1);
+                nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
                 Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
             } catch (UnsupportedMessageException e) {
                 throw new RuntimeException(e);
@@ -957,14 +956,16 @@ public final class CApiContext extends CExtContext {
     @SuppressWarnings("try")
     public void finalizeCApi() {
         CompilerAsserts.neverPartOfCompilation();
-        HandleContext handleContext = getContext().nativeContext;
+        PythonContext context = getContext();
+        HandleContext handleContext = context.nativeContext;
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
+            context.killSystemThread(backgroundGCTaskThread);
             try {
-                backgroundGCTaskThread.interrupt();
-                backgroundGCTaskThread.join();
+                backgroundGCTaskThread.join(10);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                LOGGER.finest("got interrupt while joining GC thread before cleaning up C API state");
             }
+            backgroundGCTaskThread = null;
         }
 
         /*

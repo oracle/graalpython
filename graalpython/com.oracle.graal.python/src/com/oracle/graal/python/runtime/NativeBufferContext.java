@@ -67,8 +67,6 @@ public class NativeBufferContext {
     // Storing references here to keep them alive
     private ConcurrentHashMap<NativePrimitiveReference, NativePrimitiveReference> phantomReferences;
 
-    private Thread nativeBufferReferenceCleanerThread;
-
     @TruffleBoundary
     public void initReferenceQueue() {
         var context = PythonContext.get(null);
@@ -77,9 +75,7 @@ public class NativeBufferContext {
         TruffleLanguage.Env env = context.getEnv();
         if (env.isCreateThreadAllowed()) {
             var runnable = new NativeBufferDeallocatorRunnable(referenceQueue, this.phantomReferences);
-            Thread thread = context.createSystemThread(runnable);
-            thread.start();
-            this.nativeBufferReferenceCleanerThread = thread;
+            context.createSystemThread(runnable).start();
         }
     }
 
@@ -90,20 +86,6 @@ public class NativeBufferContext {
         phantomReferences.put(phantomRef, phantomRef);
 
         return storage;
-    }
-
-    public void finalizeContext() {
-        Thread thread = this.nativeBufferReferenceCleanerThread;
-        if (thread != null) {
-            if (thread.isAlive() && !thread.isInterrupted()) {
-                thread.interrupt();
-            }
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                // ignore
-            }
-        }
     }
 
     public NativeIntSequenceStorage toNativeIntStorage(int[] arr) {

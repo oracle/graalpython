@@ -2089,7 +2089,6 @@ public final class PythonContext extends Python3Core {
         // interrupt and join or kill system threads
         joinSystemThreads();
         cleanupHPyResources();
-        nativeBufferContext.finalizeContext();
         for (int fd : getChildContextFDs()) {
             if (!getSharedMultiprocessingData().decrementFDRefCount(fd)) {
                 getSharedMultiprocessingData().closePipe(fd);
@@ -2305,13 +2304,7 @@ public final class PythonContext extends Python3Core {
             LOGGER.finest("joining thread " + thread);
             int tries = 100;
             for (int i = 0; i < tries && thread.isAlive(); i++) {
-                env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
-                    @Override
-                    protected void perform(ThreadLocalAction.Access access) {
-                        throw new PythonThreadKillException();
-                    }
-                });
-                thread.interrupt();
+                killSystemThread(thread);
                 try {
                     thread.join(tries - i);
                 } catch (InterruptedException e) {
@@ -2341,6 +2334,16 @@ public final class PythonContext extends Python3Core {
         thread.setName(task.getName());
         systemThreads.add(new TruffleWeakReference<>(thread));
         return thread;
+    }
+
+    public void killSystemThread(Thread thread) {
+        env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
+            @Override
+            protected void perform(ThreadLocalAction.Access access) {
+                throw new PythonThreadKillException();
+            }
+        });
+        thread.interrupt();
     }
 
     public void initializeMainModule(TruffleString path) {

@@ -421,7 +421,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public final AtomicReference<GraalHPyHandleReference> references = new AtomicReference<>(null);
     private ReferenceQueue<Object> nativeSpaceReferenceQueue;
     @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
-    private Thread hpyReferenceCleanerThread;
 
     private long nativeSpacePointers;
 
@@ -1141,9 +1140,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         PythonContext context = getContext();
         Env env = context.getEnv();
         if (env.isCreateThreadAllowed()) {
-            Thread thread = context.createSystemThread(new GraalHPyReferenceCleanerRunnable(referenceQueue));
-            thread.start();
-            hpyReferenceCleanerThread = thread;
+            context.createSystemThread(new GraalHPyReferenceCleanerRunnable(referenceQueue)).start();
         } else {
             context.registerAsyncAction(() -> {
                 Reference<?> reference = null;
@@ -1196,17 +1193,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      * Join the reference cleaner thread.
      */
     public void finalizeContext() {
-        Thread thread = this.hpyReferenceCleanerThread;
-        if (thread != null) {
-            if (thread.isAlive() && !thread.isInterrupted()) {
-                thread.interrupt();
-            }
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                // ignore
-            }
-        }
         backend.finalizeNativeContext();
         if (nativeArgumentsStack != 0) {
             UNSAFE.freeMemory(nativeArgumentsStack);

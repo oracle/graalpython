@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.util;
 
+import java.util.logging.Level;
+
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.truffle.api.TruffleLogger;
-
-import java.util.logging.Level;
 
 /**
  * Base class for runnables of "system" threads that handle some internal aspects of the Python
@@ -55,8 +55,9 @@ import java.util.logging.Level;
  * shutdown is through sending Java interrupt and submitting a Thread Local Action (TLA) that throws
  * {@link PythonThreadKillException}. The Java interrupt should interrupt any blocking operation,
  * which should then poll a safepoint. This wrapper takes care of handling
- * {@link PythonThreadKillException} gracefully as well as other exception types that Truffle itself
- * may submit through TLA to shut down the thread.
+ * {@link PythonThreadKillException} gracefully. Note that Truffle may also shut down this thread
+ * via TLA that throws its own internal cancellation exception, which is handled in Truffle internal
+ * code that wraps this Runnable.
  */
 public abstract class PythonSystemThreadTask implements Runnable {
     private final String name;
@@ -75,14 +76,15 @@ public abstract class PythonSystemThreadTask implements Runnable {
     public final void run() {
         try {
             doRun();
+            logger.fine(() -> String.format("'%s' finished", name));
+        } catch (PythonThreadKillException ex) {
+            logger.fine(() -> String.format("%s killed with exception '%s'", name, PythonThreadKillException.class.getSimpleName()));
         } catch (Throwable ex) {
-            if (PythonThreadKillException.shouldKillThread(ex)) {
-                logger.fine(() -> String.format("%s killed with exception %s", name, ex));
-            } else {
-                logger.log(Level.WARNING, ex, () -> String.format("Unhandled exception %s in %s", ex.getClass().getSimpleName(), name));
-            }
+            // Note: Truffle wraps this Runnable in its own Runnable that handles Truffle's own
+            // internal cancellation exception that is submitted via TLA
+            logger.log(Level.FINE, String.format("Unhandled exception %s in thread '%s'", ex.getClass().getSimpleName(), name), ex);
+            throw ex;
         }
-        logger.fine(() -> String.format("%s finished", name));
     }
 
     protected abstract void doRun();
