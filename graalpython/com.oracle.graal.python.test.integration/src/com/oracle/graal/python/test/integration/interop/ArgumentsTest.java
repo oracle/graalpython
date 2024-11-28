@@ -42,7 +42,6 @@ package com.oracle.graal.python.test.integration.interop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
@@ -57,15 +56,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.time.ZoneId;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 public class ArgumentsTest extends PythonTests {
 
