@@ -42,6 +42,8 @@
 #define Py_PYCONFIG_H
 
 #define GRAALVM_PYTHON 1
+#cmakedefine GRAALPY_VERSION "@GRAALPY_VERSION@"
+#cmakedefine GRAALPY_VERSION_NUM @GRAALPY_VERSION_NUM@
 
 // The graalpy build always sets MS_WINDOWS, so when this is not set, we are
 // dealing with an extension build. In that case, if we're on Windows, we need
@@ -148,44 +150,37 @@
 // #define Py_LIMITED_API 1
 // END TRUFFLE DEFS
 
-#define HAVE_ACOSH 1
-#define HAVE_ASINH 1
-#define HAVE_ATANH 1
-#define HAVE_CLOCK 1
-#define HAVE_DIRENT_H 1
-#define HAVE_SENDFILE 1
-#define HAVE_SYS_STAT_H 1
-#define HAVE_ERRNO_H 1
-#define HAVE_UTIME_H
-#define HAVE_SIGNAL_H
-#define HAVE_FCNTL_H
+#cmakedefine HAVE_ACOSH 1
+#cmakedefine HAVE_ASINH 1
+#cmakedefine HAVE_ATANH 1
+#cmakedefine HAVE_COPYSIGN 1
+#cmakedefine HAVE_ROUND 1
+#cmakedefine HAVE_HYPOT 1
+#cmakedefine HAVE_CLOCK 1
+#cmakedefine HAVE_SENDFILE 1
+#cmakedefine HAVE_DIRENT_H 1
+#cmakedefine HAVE_ERRNO_H 1
+#cmakedefine HAVE_UTIME_H 1
+#cmakedefine HAVE_SIGNAL_H 1
+#cmakedefine HAVE_FCNTL_H 1
+#cmakedefine HAVE_WCHAR_H 1
+#cmakedefine HAVE_UNISTD_H 1
+#cmakedefine HAVE_PTHREAD_H 1
+#cmakedefine HAVE_SYS_WAIT_H 1
+#cmakedefine HAVE_SYS_TIME_H 1
+#cmakedefine HAVE_SYS_STAT_H 1
 
-#define HAVE_STDARG_PROTOTYPES
+#cmakedefine TIME_WITH_SYS_TIME 1
+#cmakedefine NT_THREADS 1
 
-#define HAVE_WCHAR_H 1
-
+#define HAVE_STDARG_PROTOTYPES 1
 #define WITH_THREAD 1
 #define WITH_DOC_STRINGS 1
 
-#ifndef MS_WINDOWS
-#define HAVE_UNISTD_H
-#define HAVE_PTHREAD_H
-#define HAVE_SYS_WAIT_H
-#define HAVE_SYS_TIME_H
-#define TIME_WITH_SYS_TIME 1
-#else
-#define HAVE_COPYSIGN 1
-#define HAVE_ROUND 1
-#define HAVE_HYPOT 1
-#define NT_THREADS 1
-#endif
-
-// The following should have been generated using `configure` command,
-// but instead, are set manully for the time being.
-
 /* Define if C doubles are 64-bit IEEE 754 binary format, stored with the
    least significant byte first */
-#define DOUBLE_IS_LITTLE_ENDIAN_IEEE754 1
+#cmakedefine DOUBLE_IS_LITTLE_ENDIAN_IEEE754 1
+#cmakedefine DOUBLE_IS_BIG_ENDIAN_IEEE754 1
 
 
 #endif /*Py_PYCONFIG_H*/

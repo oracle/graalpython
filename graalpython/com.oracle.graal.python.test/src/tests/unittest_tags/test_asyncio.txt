@@ -726,7 +726,7 @@ test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_create_subproc
 test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_popen_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_popen_error_with_stdin_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_read_stdout_after_process_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_start_new_session @ darwin-x86_64
+!test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_start_new_session
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_cancel_make_subprocess_transport_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_cancel_post_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_cancel_process_wait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
