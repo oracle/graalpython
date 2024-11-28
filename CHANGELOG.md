@@ -9,7 +9,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * When calling a method on a foreign object in Python code, Python methods are now prioritized over foreign members.
 * Added `polyglot.register_interop_type` and `@polyglot.interop_type` to define custom Python methods for a given foreign class/type. See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Interoperability.md#the-interoperability-extension-api) for more information.
 * Foreign objects are now given a Python class corresponding to their interop traits.
-  * Foreign lists now inherit from Python `list`, foreign dictionaries from `dict`, foreign strings from `str`, foreign iterators from `iterator`, foreign exceptions from `BaseException`, foreign numbers from `polyglot.ForeignNumber` and foreign none/null from `NoneType`.
+  * Foreign lists now inherit from Python `list`, foreign dictionaries from `dict`, foreign strings from `str`, foreign iterators from `iterator`, foreign exceptions from `BaseException`, foreign numbers from `polyglot.ForeignNumber`, foreign booleans from `polyglot.ForeignBoolean`, and foreign null values from `NoneType`.
   * This means all Python methods of these types are available on the corresponding foreign objects, which behave as close as possible as if they were Python objects.
   * See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Interoperability.md#interacting-with-foreign-objects-from-python-scripts) for more information.
 * Remove support for running with Sulong managed both in embeddings as well as through the `graalpy-managed` launcher.
