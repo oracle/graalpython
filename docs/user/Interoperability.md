@@ -65,8 +65,8 @@ Foreign objects are given a Python class corresponding to their interop traits:
 
 ```python
 from java.util import ArrayList, HashMap
-type(ArrayList()).mro() # => [<class 'polyglot.ForeignList'>, <class 'list'>, <class 'foreign'>, <class 'object'>]
-type(HashMap()).mro() # => [<class 'polyglot.ForeignDict'>, <class 'dict'>, <class 'foreign'>, <class 'object'>]
+type(ArrayList()).mro() # => [<class 'polyglot.ForeignList'>, <class 'list'>, <class 'polyglot.ForeignObject'>, <class 'object'>]
+type(HashMap()).mro() # => [<class 'polyglot.ForeignDict'>, <class 'dict'>, <class 'polyglot.ForeignObject'>, <class 'object'>]
 ```
 
 This means all Python methods of these types are available on the corresponding foreign objects, which behave as close as possible as if they were Python objects:
@@ -89,18 +89,21 @@ h |= {3: 6} # {1: 2, 3: 6}
 h == {1: 2, 3: 6} # True
 ```
 
-Specifically:
-* Foreign lists inherit from Python `list`
-* Foreign dictionaries inherit from `dict`
-* Foreign strings inherit from `str`
-* Foreign iterators inherit from `iterator`
-* Foreign exceptions inherit from `BaseException`
-* Foreign numbers inherit from `ForeignNumberType` (since `InteropLibrary` has no way to differentiate integers and floats, but see below)
-* Foreign none/null inherit from `NoneType`
-* Other foreign objects inherit from `foreign`
+In case of a method defined both in Python and on the foreign object, the Python method wins.
+To call the foreign method instead, use `super(type_owning_the_python_method, foreign_object).method(*args)`:
 
-Note that Java primitives `byte`, `short`, `int`, `long` and `BigInteger` values are considered Python `int` objects,
-and Java primitives `float`, `double` values are considered Python `float` objects.
+```python
+from java.util import ArrayList
+l = ArrayList()
+l.extend([5, 6, 7])
+l.remove(7) # Python list.remove
+assert l == [5, 6]
+
+super(list, l).remove(0) # ArrayList#remove(int index)
+assert l == [6]
+```
+
+See [this section](#interop-types-to-python) for more interop traits and how they map to Python types.
 
 ## Interacting with other dynamic languages from Python scripts
 
@@ -226,35 +229,36 @@ The `polyglot` module can be used to expose Python objects to JVM languages and 
 
 ## Mapping Types between Python and Other Languages
 
-The interop protocol defines different "types" which can overlap in all kinds of ways and have restrictions on how they can interact with Python.
+The interop protocol defines different "types/traits" which can overlap in all kinds of ways and have restrictions on how they can interact with Python.
 
 ### Interop Types to Python
 
-Most importantly and upfront: all foreign objects passed into Python have the Python type `foreign`.
-There is no emulation of (for example) objects that are of interop type "boolean" to have the Python type `bool`.
-This is because interop types can overlap in ways that the Python built-in types cannot, and we have yet to define which type should take precedence and such situations.
-We do expect to change this in the future, however.
-For now, the `foreign` type defines all of the Python special methods for type conversion that are used throughout the interpreter (methods such as `__add__`, `__int__`, `__str__`, `__getitem__`, and so on)
-and these try to "do the right thing" based on the interop type (or raise an exception).
+All foreign objects passed into Python have the Python type `polyglot.ForeignObject` or a subclass.
 
 Types not listed in the table below have no special interpretation in Python.
 
-| Interop Type                        | Python Interpretation                                                                                                                                                                   |
-|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `null`         | `null` is like `None`. Important to know: interop `null` values are all identical to `None`. JavaScript defines two "null-like" values; `undefined` and `null`, which are *not* identical, but when passed to Python, they are treated so.                                                                                                        |
-| `boolean`      | `boolean` behaves like Python booleans, including the fact that in Python, all booleans are also integers (1 and 0 for true and false, respectively).                                                                                                                                                                                             |
-| `number`       | `number` Behaves like Python numbers. Python only has one integer and one floating point type, but ranges are imported in some places such as typed arrays.                                                                                                                                                                                       |
-| `string`       | Behaves in the same way as a Python string.                                                                                                                                                                                                                                                                                                       |
-| `buffer`       | Buffers are also a concept in Python's native API (albeit slightly different). Interop buffers are treated in the same was as Python buffers in some places (such as `memoryview`) to avoid copies of data.                                                                                                                                       |
-| `array`        | An `array` can be used with subscript access in the same way as Python lists, with integers and slices as indices.                                                                                                                                                                                                                                |
-| `hash`         | A `hash` can be used with subscript access in the same way as Python dictionaries, with any "hashable" object as a key. "Hashable" follows Python semantics: generally every interop type with an identity is deemed "hashable". Note that if an interop object is of type `Array` **and** `Hash`, the behavior of subscript access is undefined. |
-| `members`      | An object of type `members` can be read using conventional Python `.` notation or `getattr` and related functions.                                                                                                                                                                                                                                |
-| `iterable`     | An `iterable` is treated in the same way as any Python object with an `__iter__` method. That is, it can be used in a loop and other places that accept Python iterables.                                                                                                                                                                         |
-| `iterator`     | An `iterator` is treated in the same way as any Python object with a `__next__` method.                                                                                                                                                                                                                                                           |
-| `exception`    | An `exception` can be caught in a generic `except` clause.                                                                                                                                                                                                                                                                                        |
-| `MetaObject`   | Meta objects can be used in subtype and `isinstance` checks.                                                                                                                                                                                                                                                                                      |
-| `executable`   | An `executable` object can be executed as a function, but never with keyword arguments.                                                                                                                                                                                                                                                           |
-| `instantiable` | An `instantiable` object can be called just like a Python type, but never with keyword arguments.                                                                                                                    |
+| Interop Type   | Inherits from                     | Python Interpretation                                                                                                                                                                                                                      |
+|:---------------|:----------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `null`         | ForeignNone, `NoneType`           | `null` is like `None`. Important to know: interop `null` values are all identical to `None`. JavaScript defines two "null-like" values; `undefined` and `null`, which are *not* identical, but when passed to Python, they are treated so. |
+| `boolean`      | ForeignBoolean, ForeignNumber     | `boolean` behaves like Python booleans, including the fact that in Python, all booleans are also integers (1 and 0 for true and false, respectively).                                                                                      |
+| `number`       | ForeignNumber                     | `number` behaves like Python numbers. Python only has one integer and one floating point type, but ranges are imported in some places such as typed arrays.                                                                                |
+| `string`       | ForeignString, `str`              | Behaves in the same way as a Python string.                                                                                                                                                                                                |
+| `buffer`       | ForeignObject                     | Buffers are also a concept in Python's native API (albeit slightly different). Interop buffers are treated in the same was as Python buffers in some places (such as `memoryview`) to avoid copies of data.                                |
+| `array`        | ForeignList, `list`               | An `array` behaves like a Python `list`.                                                                                                                                                                                                   |
+| `hash`         | ForeignDict, `dict`               | A `hash` behaves like a Python `dict`, with any "hashable" object as a key. "Hashable" follows Python semantics: generally every interop type with an identity is deemed "hashable".                                                       |
+| `members`      | ForeignObject                     | An object of type `members` can be read using conventional Python `.` notation or `getattr` and related functions.                                                                                                                         |
+| `iterable`     | ForeignIterable                   | An `iterable` is treated in the same way as any Python object with an `__iter__` method. That is, it can be used in a loop and other places that accept Python iterables.                                                                  |
+| `iterator`     | ForeignIterator, `iterator`       | An `iterator` is treated in the same way as any Python object with a `__next__` method.                                                                                                                                                    |
+| `exception`    | ForeignException, `BaseException` | An `exception` can be caught in a generic `except` clause.                                                                                                                                                                                 |
+| `MetaObject`   | ForeignAbstractClass              | Meta objects can be used in subtype and `isinstance` checks.                                                                                                                                                                               |
+| `executable`   | ForeignExecutable                 | An `executable` object can be executed as a function, but never with keyword arguments.                                                                                                                                                    |
+| `instantiable` | ForeignInstantiable               | An `instantiable` object can be called just like a Python type, but never with keyword arguments.                                                                                                                                          |
+
+Foreign numbers inherit from `polyglot.ForeignNumber` and not `int` or `float` because `InteropLibrary` has currently no way to differentiate integers and floats.
+However:
+* When foreign numbers are represented as Java primitives `byte`, `short`, `int`, `long`, they are considered Python `int` objects.
+* When foreign numbers are represented as Java primitives `float`, `double`, they are considered Python `float` objects.
+* When foreign booleans re represented as Java primitives `boolean`, they are considered Python `bool` objects.
 
 ### Python to Interop Types
 
@@ -360,8 +364,8 @@ class Main {
 ```
 #### Interop Types
 The `register_interop_type` API allows the usage of python classes for foreign objects.
-The type of such a foreign object will no longer be `foreign`. 
-Instead, it will be a generated class with the registered python classes and `foreign` and as super classes.
+The class of such a foreign object will no longer be `polyglot.ForeignObject` or `polyglot.Foreign*`. 
+Instead, it will be a generated class with the registered python classes and `polyglot.ForeignObject` as super class.
 This allows custom mapping of foreign methods and attributes to Python's magic methods or more idiomatic Python code.
 
 ```java
@@ -409,7 +413,7 @@ import java
 from polyglot import register_interop_type
 
 print(my_java_object.getX()) # 42
-print(type(my_java_object)) # <class 'foreign'>
+print(type(my_java_object)) # <class 'polyglot.ForeignObject'>
 
 class MyPythonClass:
    def get_tuple(self):
@@ -421,7 +425,7 @@ register_interop_type(foreign_class, MyPythonClass)
 
 print(my_java_object.get_tuple()) # (42, 17)
 print(type(my_java_object)) # <class 'polyglot.Java_org.example.MyJavaClass_generated'>
-print(type(my_java_object).mro()) # [polyglot.Java_org.example.MyJavaClass_generated, MyPythonClass, foreign, object]
+print(type(my_java_object).mro()) # [polyglot.Java_org.example.MyJavaClass_generated, MyPythonClass, polyglot.ForeignObject, object]
 
 class MyPythonClassTwo:
    def get_tuple(self):
@@ -435,7 +439,7 @@ register_interop_type(foreign_class, MyPythonClassTwo, allow_method_overwrites=T
 
 # A newly registered class will be before already registered classes in the mro.
 # It allows overwriting methods from already registered classes with the flag 'allow_method_overwrites=True'
-print(type(my_java_object).mro()) # [generated_class, MyPythonClassTwo, MyPythonClass, foreign, object]
+print(type(my_java_object).mro()) # [generated_class, MyPythonClassTwo, MyPythonClass, polyglot.ForeignObject, object]
 
 print(my_java_object.get_tuple()) # (17, 42)
 print(my_java_object) # MyJavaInstance(x=42, y=17)

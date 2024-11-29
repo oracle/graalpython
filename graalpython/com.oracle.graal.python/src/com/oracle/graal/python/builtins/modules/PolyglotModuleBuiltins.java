@@ -112,6 +112,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -181,6 +182,13 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
         } catch (SecurityException | IOException e) {
         }
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+
+        GetForeignObjectClassNode.getUncached().defineSingleTraitClasses();
     }
 
     @Builtin(name = "import_value", minNumOfPositionalArgs = 1, parameterNames = {"name"})
