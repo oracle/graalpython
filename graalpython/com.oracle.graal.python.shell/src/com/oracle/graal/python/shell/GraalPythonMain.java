@@ -762,7 +762,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         if (!noSite) {
             contextBuilder.option("python.ForceImportSite", "true");
         }
-        contextBuilder.option("python.SetupLLVMLibraryPaths", "true");
         contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
         contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
 
