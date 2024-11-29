@@ -482,7 +482,6 @@ class GraalPythonTags(object):
     unittest_standalone = 'python-unittest-standalone'
     unittest_gradle_plugin = 'python-unittest-gradle-plugin'
     unittest_maven_plugin = 'python-unittest-maven-plugin'
-    ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
