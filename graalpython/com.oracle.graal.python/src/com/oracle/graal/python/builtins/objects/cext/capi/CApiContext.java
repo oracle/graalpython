@@ -115,6 +115,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
@@ -613,9 +614,10 @@ public final class CApiContext extends CExtContext {
         // TODO(fa): implement untracking of container objects
     }
 
-    private static final class BackgroundGCTask implements Runnable {
+    private static final class BackgroundGCTask extends PythonSystemThreadTask {
 
         private BackgroundGCTask(PythonContext context) {
+            super("Python GC", LOGGER);
             this.ctx = new WeakReference<>(context);
             this.rssInterval = context.getOption(PythonOptions.BackgroundGCTaskInterval);
             this.gcRSSThreshold = context.getOption(PythonOptions.BackgroundGCTaskThreshold) / (double) 100;
@@ -667,15 +669,23 @@ public final class CApiContext extends CExtContext {
         }
 
         @Override
-        public void run() {
-            try {
-                while (true) {
-                    Thread.sleep(rssInterval);
-                    perform();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        protected void doRun() {
+            Node location = getSafepointLocation();
+            if (location == null) {
+                return;
             }
+            while (true) {
+                TruffleSafepoint.setBlockedThreadInterruptible(location, Thread::sleep, rssInterval);
+                perform();
+            }
+        }
+
+        private Node getSafepointLocation() {
+            PythonContext context = ctx.get();
+            if (context == null) {
+                return null;
+            }
+            return context.getLanguage().unavailableSafepointLocation;
         }
 
         private void perform() {
@@ -764,9 +774,7 @@ public final class CApiContext extends CExtContext {
                         || !context.getOption(PythonOptions.BackgroundGCTask)) {
             return;
         }
-        backgroundGCTaskThread = context.getEnv().newTruffleThreadBuilder(gcTask).context(context.getEnv().getContext()).build();
-        backgroundGCTaskThread.setDaemon(true);
-        backgroundGCTaskThread.setName("python-gc-task");
+        backgroundGCTaskThread = context.createSystemThread(gcTask);
         backgroundGCTaskThread.start();
     }
 
@@ -865,7 +873,7 @@ public final class CApiContext extends CExtContext {
                     Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
                     Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
                     try {
-                        cApiContext.addNativeFinalizer(env, finalizingPointer);
+                        cApiContext.addNativeFinalizer(context, finalizingPointer);
                         cApiContext.runBackgroundGCTask(context);
                     } catch (RuntimeException e) {
                         // This can happen when other languages restrict multithreading
@@ -898,14 +906,16 @@ public final class CApiContext extends CExtContext {
      * We need to do it in a VM shutdown hook to make sure C atexit won't crash even if our context
      * finalization didn't run.
      */
-    private void addNativeFinalizer(Env env, Object finalizingPointerObj) {
-        final Unsafe unsafe = getContext().getUnsafe();
+    private void addNativeFinalizer(PythonContext context, Object finalizingPointerObj) {
+        final Unsafe unsafe = context.getUnsafe();
         InteropLibrary lib = InteropLibrary.getUncached(finalizingPointerObj);
         if (!lib.isNull(finalizingPointerObj) && lib.isPointer(finalizingPointerObj)) {
             try {
                 long finalizingPointer = lib.asPointer(finalizingPointerObj);
+                // We are writing off heap memory and registering a VM shutdown hook, there is no
+                // point in creating this thread via Truffle sandbox at this point
                 nativeFinalizerRunnable = () -> unsafe.putInt(finalizingPointer, 1);
-                nativeFinalizerShutdownHook = env.newTruffleThreadBuilder(nativeFinalizerRunnable).build();
+                nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
                 Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
             } catch (UnsupportedMessageException e) {
                 throw new RuntimeException(e);
@@ -946,14 +956,16 @@ public final class CApiContext extends CExtContext {
     @SuppressWarnings("try")
     public void finalizeCApi() {
         CompilerAsserts.neverPartOfCompilation();
-        HandleContext handleContext = getContext().nativeContext;
+        PythonContext context = getContext();
+        HandleContext handleContext = context.nativeContext;
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
+            context.killSystemThread(backgroundGCTaskThread);
             try {
-                backgroundGCTaskThread.interrupt();
-                backgroundGCTaskThread.join();
+                backgroundGCTaskThread.join(10);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                LOGGER.finest("got interrupt while joining GC thread before cleaning up C API state");
             }
+            backgroundGCTaskThread = null;
         }
 
         /*

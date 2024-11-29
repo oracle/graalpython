@@ -171,6 +171,7 @@ import com.oracle.graal.python.runtime.locale.PythonLocale;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Consumer;
+import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
@@ -752,9 +753,12 @@ public final class PythonContext extends Python3Core {
 
     @CompilationFinal private TruffleLanguage.Env env;
 
-    /* map of thread IDs to the corresponding 'threadStates' */
+    /* map of Python threads' IDs to the corresponding 'threadStates' */
     private final Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
     private WeakReference<Thread> mainThread;
+
+    /* List of non-Python level threads. Those threads will be joined in finalizeContext. */
+    private final ArrayList<WeakReference<Thread>> systemThreads = new ArrayList<>();
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -2074,7 +2078,7 @@ public final class PythonContext extends Python3Core {
             handler.shutdown();
             finalizing = true;
             // interrupt and join or kill python threads
-            joinThreads();
+            joinPythonThreads();
             flushStdFiles();
             if (cApiContext != null) {
                 cApiContext.finalizeCApi();
@@ -2082,8 +2086,9 @@ public final class PythonContext extends Python3Core {
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
         }
+        // interrupt and join or kill system threads
+        joinSystemThreads();
         cleanupHPyResources();
-        nativeBufferContext.finalizeContext();
         for (int fd : getChildContextFDs()) {
             if (!getSharedMultiprocessingData().decrementFDRefCount(fd)) {
                 getSharedMultiprocessingData().closePipe(fd);
@@ -2217,10 +2222,12 @@ public final class PythonContext extends Python3Core {
 
     /**
      * This method joins all threads created by this context after the GIL was released. This is
-     * required by Truffle.
+     * required by Truffle. This is a last resort: most of the threads will already be finished,
+     * because Truffle should have submitted to them a Thread Local Action that throws
+     * cancelling/interrupt AbstractTruffleException that should have bubbled up to the top.
      */
     @SuppressWarnings("deprecation")
-    private void joinThreads() {
+    private void joinPythonThreads() {
         LOGGER.fine("joining threads");
         try {
             // make a copy of the threads, because the threads will disappear one by one from the
@@ -2278,6 +2285,67 @@ public final class PythonContext extends Python3Core {
         }
     }
 
+    /**
+     * This method joins all system threads, i.e., threads without mapping in
+     * {@link #threadStateMapping}, created by this context. This is required by Truffle. This is a
+     * last resort: most of the threads will already be finished, because Truffle should have
+     * submitted to them a Thread Local Action that throws cancelling/interrupt
+     * AbstractTruffleException that should have bubbled up to the top.
+     */
+    @SuppressWarnings("deprecation")
+    private void joinSystemThreads() {
+        LOGGER.fine("joining system threads");
+        for (WeakReference<Thread> threadRef : systemThreads) {
+            Thread thread = threadRef.get();
+            if (thread == null) {
+                continue;
+            }
+            assert thread != Thread.currentThread();
+            LOGGER.finest("joining thread " + thread);
+            int tries = 100;
+            for (int i = 0; i < tries && thread.isAlive(); i++) {
+                killSystemThread(thread);
+                try {
+                    thread.join(tries - i);
+                } catch (InterruptedException e) {
+                    LOGGER.finest("got interrupt while joining threads");
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                if (!thread.isAlive()) {
+                    break;
+                }
+                LOGGER.fine("Trying to interrupt our " + thread.getName() + " failed after " + (tries - i) + "ms.");
+            }
+        }
+    }
+
+    /**
+     * See {@link PythonSystemThreadTask}.
+     */
+    public Thread createSystemThread(PythonSystemThreadTask task) {
+        // TODO: use env.createSystemThread where applicable. Some of our "system" threads need to
+        // execute Python - those can never be real Truffle system threads, and all of them use
+        // TruffleLogger, which needs entered Context, but there may be some way around that.
+        // Truffle system threads would not be killed by submitting TLA, but by plain Java interrupt
+        // and check of thread state isShuttingDown flag.
+        Thread thread = env.newTruffleThreadBuilder(task).threadGroup(getThreadGroup()).build();
+        thread.setDaemon(true);
+        thread.setName(task.getName());
+        systemThreads.add(new TruffleWeakReference<>(thread));
+        return thread;
+    }
+
+    public void killSystemThread(Thread thread) {
+        env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
+            @Override
+            protected void perform(ThreadLocalAction.Access access) {
+                throw new PythonThreadKillException();
+            }
+        });
+        thread.interrupt();
+    }
+
     public void initializeMainModule(TruffleString path) {
         if (path != null) {
             mainModule.setAttribute(T___FILE__, path);
@@ -2291,7 +2359,7 @@ public final class PythonContext extends Python3Core {
     /**
      * Trigger any pending asynchronous actions
      */
-    public static final void triggerAsyncActions(Node node) {
+    public static void triggerAsyncActions(Node node) {
         TruffleSafepoint.poll(node);
     }
 

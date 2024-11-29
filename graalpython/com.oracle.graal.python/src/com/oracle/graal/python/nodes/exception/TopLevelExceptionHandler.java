@@ -70,6 +70,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.exception.PythonInterruptedException;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -145,6 +147,8 @@ public final class TopLevelExceptionHandler extends RootNode {
                     return run(frame);
                 } catch (PythonExitException e) {
                     throw e;
+                } catch (PythonThreadKillException e) {
+                    throw new PythonInterruptedException();
                 } catch (AbstractTruffleException e) {
                     assert !PArguments.isPythonFrame(frame);
                     if (e instanceof PException pe && pe.getEscapedException() instanceof PBaseException managedException && getContext().isChildContext() && isSystemExit(managedException)) {
