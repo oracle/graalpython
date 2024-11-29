@@ -65,6 +65,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SLASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WARNINGS;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.initUnsafe;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -351,6 +352,12 @@ public final class PythonContext extends Python3Core {
          */
         Object nativeThreadLocalVarPointer;
 
+        /**
+         * Raw pointer to {@link #nativeThreadLocalVarPointer} if available, so that we can clean up
+         * during thread disposal.
+         */
+        long nativeThreadLocalVarRawPointer;
+
         /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
         Object traceFun;
 
@@ -551,9 +558,14 @@ public final class PythonContext extends Python3Core {
             }
             /*
              * Write 'NULL' to the native thread-local variable used to store the PyThreadState
-             * struct such that it cannot accidentally be reused.
+             * struct such that it cannot accidentally be reused. We can invoke LLVM only if we are
+             * not shutting down the thread.
              */
-            if (nativeThreadLocalVarPointer != null) {
+            if (nativeThreadLocalVarRawPointer != 0 && context.env.isNativeAccessAllowed()) {
+                context.getUnsafe().putAddress(nativeThreadLocalVarRawPointer, 0);
+                nativeThreadLocalVarRawPointer = 0;
+                nativeThreadLocalVarPointer = null;
+            } else if (nativeThreadLocalVarPointer != null && !isShuttingDown()) {
                 CStructAccess.WritePointerNode.writeUncached(nativeThreadLocalVarPointer, 0, context.getNativeNull());
                 nativeThreadLocalVarPointer = null;
             }
@@ -624,10 +636,17 @@ public final class PythonContext extends Python3Core {
             this.asyncgenFirstIter = asyncgenFirstIter;
         }
 
-        public void setNativeThreadLocalVarPointer(Object ptr) {
+        public void setNativeThreadLocalVarPointer(InteropLibrary interop, Object ptr) {
             // either unset or same
             assert nativeThreadLocalVarPointer == null || nativeThreadLocalVarPointer == ptr ||
                             InteropLibrary.getUncached().isIdentical(nativeThreadLocalVarPointer, ptr, InteropLibrary.getUncached());
+            if (interop.isPointer(ptr)) {
+                try {
+                    this.nativeThreadLocalVarRawPointer = interop.asPointer(ptr);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
             this.nativeThreadLocalVarPointer = ptr;
         }
     }
