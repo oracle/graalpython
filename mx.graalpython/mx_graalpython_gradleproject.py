@@ -243,9 +243,16 @@ def _run_gradle(args, **kwargs):
     kwargs.setdefault('env', os.environ.copy())
     env = kwargs.pop('env')
     if 'GRADLE_JAVA_HOME' not in env:
-        env['GRADLE_JAVA_HOME'] = env.get('JAVA_HOME')
+        def abortCallback(msg):
+            mx.abort("Could not find a JDK of version between 17 and 21 to build a Gradle project.\n"
+                     "Export GRADLE_JAVA_HOME pointing to a suitable JDK "
+                     "or use the generic MX mechanism explained below:\n" + msg)
+        jdk = mx.get_jdk('17..21', abortCallback=abortCallback)
+        env['GRADLE_JAVA_HOME'] = jdk.home
+        env['JAVA_HOME'] = jdk.home
     else:
         env['JAVA_HOME'] = env['GRADLE_JAVA_HOME']
+    mx.logv("Building Gradle project using java: " + env['GRADLE_JAVA_HOME'])
     mx.run([gradle_command, *args], env=env, **kwargs)
 
 # Gradle uses forward slashes in paths even on Windows
