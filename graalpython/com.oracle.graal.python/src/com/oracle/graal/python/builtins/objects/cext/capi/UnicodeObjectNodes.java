@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -86,32 +85,15 @@ public abstract class UnicodeObjectNodes {
         @Specialization
         @TruffleBoundary
         static PBytes doUnicode(TruffleString s, long elementSize, ByteOrder byteOrder) {
-            TruffleString.Encoding encoding = byteOrder == ByteOrder.LITTLE_ENDIAN ? TruffleString.Encoding.UTF_32LE : TruffleString.Encoding.UTF_32BE;
-
-            // elementSize == 2: Store String in 'wchar_t' of size == 2, i.e., use UCS2. This is
-            // achieved by decoding to UTF32 (which is basically UCS4) and ignoring the two
-            // MSBs.
-            if (elementSize == 2L) {
-                ByteBuffer bytes = ByteBuffer.wrap(getBytes(s, encoding));
-                // FIXME unsafe narrowing
-                int size = bytes.remaining() / 2;
-                ByteBuffer buf = ByteBuffer.allocate(size);
-                while (bytes.remaining() >= 4) {
-                    if (byteOrder != ByteOrder.nativeOrder()) {
-                        buf.putChar((char) ((bytes.getInt() & 0xFFFF0000) >> 16));
-                    } else {
-                        buf.putChar((char) (bytes.getInt() & 0x0000FFFF));
-                    }
-                }
-                buf.flip();
-                byte[] barr = new byte[buf.remaining()];
-                buf.get(barr);
-                return PythonObjectFactory.getUncached().createBytes(barr);
-            } else if (elementSize == 4L) {
-                return PythonObjectFactory.getUncached().createBytes(getBytes(s, encoding));
+            TruffleString.Encoding encoding;
+            if (elementSize == 4) {
+                encoding = byteOrder == ByteOrder.LITTLE_ENDIAN ? TruffleString.Encoding.UTF_32LE : TruffleString.Encoding.UTF_32BE;
+            } else if (elementSize == 2) {
+                encoding = byteOrder == ByteOrder.LITTLE_ENDIAN ? TruffleString.Encoding.UTF_16LE : TruffleString.Encoding.UTF_16BE;
             } else {
                 throw new RuntimeException("unsupported wchar size; was: " + elementSize);
             }
+            return PythonObjectFactory.getUncached().createBytes(getBytes(s, encoding));
         }
 
         private static byte[] getBytes(TruffleString s, TruffleString.Encoding encoding) {
