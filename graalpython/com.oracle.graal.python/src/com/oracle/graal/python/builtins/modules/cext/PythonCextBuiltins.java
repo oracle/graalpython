@@ -95,7 +95,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -185,7 +184,6 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -220,7 +218,6 @@ import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -1919,92 +1916,18 @@ public final class PythonCextBuiltins {
         }
     }
 
-    /**
-     * A native wrapper for arbitrary byte arrays (i.e. the store of a Python Bytes object) to be
-     * used like a {@code char*} pointer.
-     */
-    @ExportLibrary(InteropLibrary.class)
-    @SuppressWarnings("truffle-abstract-export")
-    public static final class PMMapWrapper implements TruffleObject {
-
-        private final PMMap delegate;
-
-        public PMMapWrapper(PMMap delegate) {
-            this.delegate = delegate;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        boolean hasBufferElements() {
-            return true;
-        }
-
-        @ExportMessage
-        long getBufferSize() {
-            return delegate.getLength();
-        }
-
-        private final void checkIndex(long idx) throws InvalidBufferOffsetException {
-            long len = delegate.getLength();
-            if (idx < 0 || idx >= len) {
-                throw InvalidBufferOffsetException.create(idx, len);
-            }
-        }
-
-        @ExportMessage
-        byte readBufferByte(long idx,
-                        @Bind("$node") Node inliningTarget,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixSupportLib,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) throws InvalidBufferOffsetException {
-            checkIndex(idx);
-            try {
-                return (posixSupportLib.mmapReadByte(PythonContext.get(posixSupportLib).getPosixSupport(), delegate.getPosixSupportHandle(), idx));
-            } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(null, e.getErrorCode(), e.getMessageAsTruffleString());
-            }
-        }
-
-        @ExportMessage
-        @SuppressWarnings({"static-method", "unused"})
-        short readBufferShort(ByteOrder order, long byteOffset) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
-        }
-
-        @ExportMessage
-        @SuppressWarnings({"static-method", "unused"})
-        int readBufferInt(ByteOrder order, long byteOffset) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
-        }
-
-        @ExportMessage
-        @SuppressWarnings({"static-method", "unused"})
-        long readBufferLong(ByteOrder order, long byteOffset) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
-        }
-
-        @ExportMessage
-        @SuppressWarnings({"static-method", "unused"})
-        float readBufferFloat(ByteOrder order, long byteOffset) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
-        }
-
-        @ExportMessage
-        @SuppressWarnings({"static-method", "unused"})
-        double readBufferDouble(ByteOrder order, long byteOffset) throws UnsupportedMessageException {
-            throw UnsupportedMessageException.create();
-        }
-    }
-
     @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Ignored)
     abstract static class PyTruffle_GetMMapData extends CApiUnaryBuiltinNode {
 
         @Specialization
         Object get(PMMap object,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy raiseNode) {
             try {
                 return posixLib.mmapGetPointer(getPosixSupport(), object.getPosixSupportHandle());
             } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
-                return new PMMapWrapper(object);
+                throw raiseNode.get(inliningTarget).raiseOSErrorUnsupported(null, e);
             }
         }
     }
