@@ -563,6 +563,7 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "17+",
             "workingSets": "Truffle,Python",
+            "jacoco": "exclude",
         },
 
         "python-venvlauncher": {
