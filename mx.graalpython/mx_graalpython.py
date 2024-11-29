@@ -769,26 +769,35 @@ def make_coverage_launcher_if_needed(launcher):
         # patch our launchers created under jacoco to also run with jacoco.
         # do not use is_collecting_coverage() here, we only want to patch when
         # jacoco agent is requested.
+        quote = shlex.quote if sys.platform != 'win32' else lambda x: x
         def graalvm_vm_arg(java_arg):
             if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
                 with open(java_arg[1:], "r") as f:
                     java_arg = f.read()
             assert java_arg[0] == "-", java_arg
-            return shlex.quote(f'--vm.{java_arg[1:]}')
+            return quote(f'--vm.{java_arg[1:]}')
 
         agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments. We also disable compilation, it hardly helps for this use case
         original_launcher = os.path.abspath(os.path.realpath(launcher))
-        bash_launcher = f'{original_launcher}.sh'
-        with open(bash_launcher, "w") as f:
-            f.write("#!/bin/sh\n")
-            exe_arg = shlex.quote(f"--python.Executable={bash_launcher}")
-            f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
-        os.chmod(bash_launcher, 0o775)
-        mx.log(f"Replaced {launcher} with {bash_launcher} to collect coverage")
-        launcher = bash_launcher
+        if sys.platform != 'win32':
+            coverage_launcher = original_launcher + '.sh'
+            preamble = '#!/bin/sh'
+            pass_args = '"$@"'
+        else:
+            coverage_launcher = original_launcher.replace('.exe', '.cmd')
+            preamble = '@echo off'
+            pass_args = '%*'
+        with open(coverage_launcher, "w") as f:
+            f.write(f'{preamble}\n')
+            exe_arg = quote(f"--python.Executable={coverage_launcher}")
+            f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} {pass_args}\n')
+        if sys.platform != 'win32':
+            os.chmod(coverage_launcher, 0o775)
+        mx.log(f"Replaced {launcher} with {coverage_launcher} to collect coverage")
+        launcher = coverage_launcher
     return launcher
 
 
@@ -956,8 +965,6 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
             args += ['--ignore', file]
 
     if is_collecting_coverage() and mx_gate.get_jacoco_agent_args():
-        with open(python_binary, "r") as f:
-            assert f.read(9) == "#!/bin/sh"
         if not use_pytest:
             # jacoco only dumps the data on exit, and when we run all our unittests
             # at once it generates so much data we run out of heap space
