@@ -41,6 +41,7 @@ from functools import wraps
 from pathlib import Path
 from textwrap import dedent
 
+import mx_graalpython_gradleproject
 import mx_urlrewrites
 
 if sys.version_info[0] < 3:
@@ -1276,9 +1277,11 @@ def graalpython_gate_runner(args, tasks):
                 mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
 
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties", ["distributionUrl"])
-            if "distributionUrl" in urls:
-                env["GRADLE_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+            override_path = os.path.join(SUITE.get_mx_output_dir(), 'gradle-properties-override')
+            original_props_file = "graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties"
+            mx.copyfile(original_props_file, override_path)
+            mx_graalpython_gradleproject.patch_distributionUrl(override_path, original_props_file)
+            env['GRADLE_PROPERTIES_OVERRIDE'] = override_path
 
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
@@ -1309,9 +1312,11 @@ def graalpython_gate_runner(args, tasks):
                 mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
             ])
 
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
-            if "distributionUrl" in urls:
-                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+            override_path = os.path.join(SUITE.get_mx_output_dir(), 'maven-properties-override')
+            original_props_file = "graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties"
+            mx.copyfile(original_props_file, override_path)
+            mx_graalpython_gradleproject.patch_distributionUrl(override_path, original_props_file, escape_colon=False)
+            env['MAVEN_PROPERTIES_OVERRIDE'] = override_path
 
             env["org.graalvm.maven.downloader.version"] = version
             env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"

@@ -48,6 +48,36 @@ import mx
 import mx_urlrewrites
 
 
+def gradle_wrapper_properties(project_root):
+    return os.path.join(project_root, "gradle", "wrapper", "gradle-wrapper.properties")
+
+
+def patch_distributionUrl(properties_file, original_file=None, escape_colon=True):
+    def escape(s):
+        return s.replace(':', '\\:') if escape_colon else s
+
+    def unescape(s):
+        return s.replace('\\:', ':') if escape_colon else s
+
+    original_file = original_file if original_file else properties_file
+    with open(properties_file, 'r') as f:
+        wrapper_properties = [l.strip() for l in f.readlines()]
+    found = False
+    for i, line in enumerate(wrapper_properties):
+        if line.strip().startswith('distributionUrl='):
+            url = unescape(line[len('distributionUrl='):])
+            new_url = mx_urlrewrites.rewriteurl(url)
+            mx.logv("Rewritten Gradle distribution URL to: " + new_url)
+            wrapper_properties[i] = 'distributionUrl=' + escape(new_url)
+            found = True
+            break
+    if not found:
+        mx.abort("Could not find 'distributionUrl' in " + original_file)
+    mx.logvv(f'Patched gradle-wrapper.properties to:\n' + '\n'.join(wrapper_properties))
+    with open(properties_file, 'w') as f:
+        f.write('\n'.join(wrapper_properties) + '\n')
+
+
 class GradlePluginProject(mx.Distribution, mx.ClasspathDependency):  # pylint: disable=too-many-instance-attributes
     """
     Mx project and distribution for Gradle plugins projects. These have properties of both mx Java projects and
@@ -274,24 +304,8 @@ class _GradleBuildTask(mx.ProjectBuildTask):
         """
         # Gradle wrapper
         shutil.copytree(os.path.join(self.subject.gradle_directory, "wrapper"), self.subject.get_output_root(), dirs_exist_ok=True)
-        properties_path = os.path.join("gradle", "wrapper", "gradle-wrapper.properties")
-        wrapper_properties_file = os.path.join(self.subject.get_output_root(), properties_path)
-        with open(wrapper_properties_file, 'r') as f:
-            wrapper_properties = [l.strip() for l in f.readlines()]
-        found = False
-        for i, line in enumerate(wrapper_properties):
-            if line.strip().startswith('distributionUrl='):
-                url = line[len('distributionUrl='):].replace('\\:', ':')
-                new_url = mx_urlrewrites.rewriteurl(url)
-                mx.logv("Rewritten Gradle distribution URL to: " + new_url)
-                wrapper_properties[i] = 'distributionUrl=' + new_url.replace(':', '\\:')
-                found = True
-                break
-        if not found:
-            mx.abort("Could not find 'distributionUrl' in " + os.path.join(self.subject.gradle_directory, "wrapper", properties_path))
-        mx.logvv(f'Patched {properties_path} to:\n' + '\n'.join(wrapper_properties))
-        with open(wrapper_properties_file, 'w') as f:
-            f.write('\n'.join(wrapper_properties))
+        patch_distributionUrl(gradle_wrapper_properties(self.subject.get_output_root()),
+                             original_file=gradle_wrapper_properties(os.path.join(self.subject.gradle_directory, "wrapper")))
 
         # build.gradle
         deps_decls = []

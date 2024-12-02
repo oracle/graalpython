@@ -333,15 +333,12 @@ def replace_in_file(file, str, replace_str):
     with open(file, "w") as f:
         f.write(contents.replace(str, replace_str))
 
-def patch_properties_file(properties_file, distribution_url_override):
-    if distribution_url_override:
-        new_lines = []
-        with(open(properties_file)) as f:
-            while line := f.readline():
-                line.strip()
-                if not line.startswith("#") and "distributionUrl" in line:
-                    new_lines.append(f"distributionUrl={distribution_url_override}\n")
-                else:
-                    new_lines.append(line)
-        with(open(properties_file, "w")) as f:
-            f.writelines(new_lines)
+
+def override_gradle_properties_file(gradle_project_root):
+    if override_file:=os.environ.get('GRADLE_PROPERTIES_OVERRIDE'):
+        shutil.copy(override_file, os.path.join(gradle_project_root, "gradle", "wrapper", "gradle-wrapper.properties"))
+
+
+def override_maven_properties_file(maven_project_root):
+    if override_file:=os.environ.get('MAVEN_PROPERTIES_OVERRIDE'):
+        shutil.copy(override_file, os.path.join(maven_project_root, ".mvn", "wrapper", "maven-wrapper.properties"))

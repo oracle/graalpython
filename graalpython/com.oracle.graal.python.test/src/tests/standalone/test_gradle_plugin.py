@@ -98,8 +98,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
                 if file.endswith(".j"):
                     shutil.move(os.path.join(root, file), os.path.join(root, file[0:len(file)- 1] + "java"))
 
-        util.patch_properties_file(os.path.join(target_dir, "gradle", "wrapper", "gradle-wrapper.properties"), self.env.get("GRADLE_DISTRIBUTION_URL_OVERRIDE"))
-
+        util.override_gradle_properties_file(target_dir)
         self.copy_build_files(target_dir)
 
     def check_filelist(self, target_dir, log, check_lib=True):
