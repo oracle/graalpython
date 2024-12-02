@@ -394,6 +394,8 @@ def punittest(ars, report=False):
     if "--no-leak-tests" in args:
         skip_leak_tests = True
         args.remove("--no-leak-tests")
+    if is_collecting_coverage():
+        skip_leak_tests = True
 
     vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
 
