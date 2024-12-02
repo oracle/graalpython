@@ -783,22 +783,33 @@ public final class CApiContext extends CExtContext {
      * extensions - this can only be loaded once per process.
      */
     private static final AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
-    private static final AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;
 
     @TruffleBoundary
-    public static CApiContext ensureCapiWasLoaded() {
+    public static CApiContext ensureCapiWasLoaded(String reason) {
         try {
-            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
+            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING, reason);
         } catch (Exception e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
     @TruffleBoundary
+    public static Object ensureCApiLLVMLibrary(PythonContext context) throws IOException, ImportException, ApiInitException {
+        CApiContext cApiContext = ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING, " load LLVM library (this is an internal bug)");
+        return cApiContext.getLLVMLibrary();
+    }
+
+    @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
+        return ensureCapiWasLoaded(node, context, name, path, null);
+    }
+
+    @TruffleBoundary
+    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
+        assert PythonContext.get(null).ownsGil(); // unsafe lazy initialization
         if (!context.hasCApiContext()) {
             Env env = context.getEnv();
             InteropLibrary U = InteropLibrary.getUncached();
@@ -809,17 +820,25 @@ public final class CApiContext extends CExtContext {
             TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
             try {
                 SourceBuilder capiSrcBuilder;
-                final boolean useNative;
-                if (PythonOptions.NativeModules.getValue(env.getOptions())) {
-                    useNative = nativeCAPILoaded.compareAndSet(false, true);
-                    if (!useNative && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
-                        LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
-                                        "but only one context in the process can use native modules, " +
-                                        "second and other contexts fallback to NativeModules=false and " +
-                                        "will use LLVM bitcode execution via GraalVM LLVM.");
+                final boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
+                if (useNative) {
+                    boolean canUseNative = nativeCAPILoaded.compareAndSet(false, true);
+                    if (!canUseNative) {
+                        String actualReason = "initialize native extensions support";
+                        if (reason != null) {
+                            actualReason = reason;
+                        } else if (name != null && path != null) {
+                            actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
+                        }
+                        throw new ApiInitException(TruffleString.fromJavaStringUncached(
+                                        String.format("Option python.NativeModules is set to 'true' and a second GraalPy context attempted to %s. " +
+                                                        "GraalPy currently only supports loading and using native extensions from one context when python.NativeModules is enabled. " +
+                                                        "To resolve this issue, ensure that native extensions are used only in one GraalPy context per process or" +
+                                                        "set python.NativeModules to 'false' to run native extensions in LLVM mode, which is recommended only " +
+                                                        "for extensions included in the Python standard library. Running a 3rd party extension in LLVM mode requires " +
+                                                        "a custom build of the extension and is generally discouraged due to compatibility reasons.", actualReason),
+                                        PythonUtils.TS_ENCODING));
                     }
-                } else {
-                    useNative = false;
                 }
                 if (useNative) {
                     context.ensureNFILanguage(node, "NativeModules", "true");

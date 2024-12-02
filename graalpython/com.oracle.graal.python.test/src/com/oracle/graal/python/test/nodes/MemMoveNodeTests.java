@@ -65,7 +65,7 @@ public class MemMoveNodeTests {
     public void setUp() {
         PythonTests.enterContext();
         this.gil = GilNode.uncachedAcquire();
-        CApiContext.ensureCapiWasLoaded();
+        CApiContext.ensureCapiWasLoaded("internal");
     }
 
     @After

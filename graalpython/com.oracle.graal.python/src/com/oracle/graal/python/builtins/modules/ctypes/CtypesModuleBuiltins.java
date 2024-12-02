@@ -72,7 +72,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_GLOBAL;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_LOCAL;
@@ -286,8 +285,8 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             }
         } else {
             try {
-                CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
-                handle = new DLHandler(cApiContext.getLLVMLibrary(), 0, J_EMPTY_STRING, true);
+                Object llvmLibrary = CApiContext.ensureCApiLLVMLibrary(context);
+                handle = new DLHandler(llvmLibrary, 0, J_EMPTY_STRING, true);
                 setCtypeLLVMHelpers(this, handle);
             } catch (ApiInitException e) {
                 throw e.reraise(null, null, PConstructAndRaiseNode.Lazy.getUncached());
@@ -715,8 +714,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         protected static Object loadLLVMLibrary(PythonContext context, Node nodeForRaise, TruffleString path) throws ImportException, ApiInitException, IOException {
             context.ensureLLVMLanguage(nodeForRaise);
             if (path.isEmpty()) {
-                CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
-                return cApiContext.getLLVMLibrary();
+                return CApiContext.ensureCApiLLVMLibrary(context);
             }
             Source loadSrc = Source.newBuilder(J_LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path)).build();
             return context.getEnv().parseInternal(loadSrc).call();
@@ -747,7 +745,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             }
 
             // The loaded library can link against libpython, so we have to make sure it is loaded
-            CApiContext.ensureCapiWasLoaded();
+            CApiContext.ensureCapiWasLoaded("support ctypes module");
 
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
@@ -1703,7 +1701,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(Object arg) {
-            CApiContext.ensureCapiWasLoaded();
+            CApiContext.ensureCapiWasLoaded("support ctypes module");
             CApiTransitions.PythonToNativeNewRefNode.executeUncached(arg);
             return arg;
         }
@@ -1716,7 +1714,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(Object arg) {
-            CApiContext.ensureCapiWasLoaded();
+            CApiContext.ensureCapiWasLoaded("support ctypes module");
             Object nativePointer = CApiTransitions.PythonToNativeNode.executeUncached(arg);
             CExtNodes.XDecRefPointerNode.executeUncached(nativePointer);
             return arg;
