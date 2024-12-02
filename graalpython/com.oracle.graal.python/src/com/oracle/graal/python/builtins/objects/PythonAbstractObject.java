@@ -186,6 +186,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.RegionEqualNode;
 import com.oracle.truffle.api.utilities.TriState;
@@ -1308,15 +1309,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode,
                         @Cached MappingToKeywordsNode toKeywordsNode,
                         @Cached ExecutePositionalStarargsNode positionalStarargsNode,
-                        @CachedLibrary(limit = "1") InteropLibrary iLib1,
-                        @CachedLibrary(limit = "1") InteropLibrary iLib2,
+                        @CachedLibrary(limit = "1") InteropLibrary iLibKwArgs,
+                        @CachedLibrary(limit = "1") InteropLibrary iLibPosArgs,
+                        @CachedLibrary(limit = "1") InteropLibrary iLibIterator,
                         @Cached InlinedConditionProfile argsLenProfile,
                         @Cached InlinedConditionProfile isKwargsProfile,
                         @Cached InlinedConditionProfile isIndexZeroProfile,
                         @Cached InlinedConditionProfile isStarargsProfile1,
                         @Cached InlinedConditionProfile isStarargsProfile2,
                         @Cached InlinedConditionProfile isStarargsDefinedProfile,
-                        @Cached InlinedConditionProfile isIndexNotZeroProfile) throws UnsupportedMessageException {
+                        @Cached InlinedConditionProfile hasMembersProfile,
+                        @Cached InlinedConditionProfile isIndexNotZeroProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile) throws UnsupportedMessageException {
             if (!callableCheck.execute(inliningTarget, receiver)) {
                 throw UnsupportedMessageException.create();
             }
@@ -1326,16 +1330,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             int index = arguments.length - 1;
             if (argsLenProfile.profile(inliningTarget, index >= 0)) {
                 Object last = arguments[index];
-                Object[] starArgs = null;
+                Object posArgs = null;
                 try {
-                    if (isKwargsProfile.profile(inliningTarget, iLib1.hasMembers(last) && iLib1.isMemberReadable(last, KWARGS_MEMBER) && iLib1.readMember(last, KWARGS_MEMBER) == Boolean.TRUE)) {
+                    boolean lastHasMembers = hasMembersProfile.profile(inliningTarget, iLibKwArgs.hasMembers(last));
+                    if (lastHasMembers && isKwargsProfile.profile(inliningTarget, iLibKwArgs.isMemberReadable(last, KWARGS_MEMBER) && iLibKwArgs.readMember(last, KWARGS_MEMBER) == Boolean.TRUE)) {
                         kwArgs = toKeywordsNode.execute(null, inliningTarget, last);
                         --index;
                         if (isIndexZeroProfile.profile(inliningTarget, index >= 0)) {
                             last = arguments[index];
                             if (isStarargsProfile1.profile(inliningTarget,
-                                            iLib2.hasMembers(last) && iLib2.isMemberReadable(last, POSARGS_MEMBER) && iLib2.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
-                                starArgs = positionalStarargsNode.executeWith(null, last);
+                                            iLibPosArgs.hasMembers(last) && iLibPosArgs.isMemberReadable(last, POSARGS_MEMBER) && iLibPosArgs.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
+                                posArgs = last;
                             } else {
                                 // no starargs are in arguments
                                 newArgs = PythonUtils.arrayCopyOf(arguments, arguments.length - 1);
@@ -1344,11 +1349,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                             // only kwargs are in arguments
                             newArgs = new Object[0];
                         }
-                    } else if (isStarargsProfile2.profile(inliningTarget,
-                                    iLib1.hasMembers(last) && iLib1.isMemberReadable(last, POSARGS_MEMBER) && iLib1.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
-                        starArgs = positionalStarargsNode.executeWith(null, last);
+                    } else if (lastHasMembers
+                            && isStarargsProfile2.profile(inliningTarget, iLibPosArgs.isMemberReadable(last, POSARGS_MEMBER) && iLibPosArgs.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
+                        posArgs = last;
                     }
-                    if (isStarargsDefinedProfile.profile(inliningTarget, starArgs != null)) {
+
+                    if (isStarargsDefinedProfile.profile(inliningTarget, posArgs != null)) {
+                        long length = iLibPosArgs.getArraySize(posArgs);
+                        Object iterator = iLibPosArgs.getIterator(posArgs);
+                        loopProfile.profileCounted(inliningTarget, length);
+                        Object[] starArgs = new Object[(int)length];
+                        for (int i = 0; loopProfile.inject(inliningTarget, i < length); i++) {
+                            starArgs[i] = iLibIterator.getIteratorNextElement(iterator);
+                        }
                         if (isIndexNotZeroProfile.profile(inliningTarget, index > 0)) {
                             newArgs = new Object[index + starArgs.length];
                             PythonUtils.arraycopy(arguments, 0, newArgs, 0, index);
@@ -1358,7 +1371,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                             newArgs = starArgs;
                         }
                     }
-                } catch (UnknownIdentifierException | SameDictKeyException | NonMappingException e) {
+                } catch (UnknownIdentifierException | SameDictKeyException | NonMappingException | StopIterationException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }

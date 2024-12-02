@@ -103,7 +103,7 @@ import java.util.List;
  */
 public sealed abstract class PositionalArguments permits PositionalArguments.Implementation {
 
-    protected static final class Implementation extends PositionalArguments implements ProxyArray, ProxyObject {
+    static final class Implementation extends PositionalArguments implements ProxyArray, ProxyObject {
 
         public static final String MEMBER_KEY = "org.graalvm.python.embedding.PositionalArguments.is_positional_arguments";
         private final Object[] values;

@@ -54,40 +54,94 @@ import java.util.NoSuchElementException;
  * Represents a set of keyword arguments, typically used for interfacing with Python functions that
  * accept {@code **kwargs}.
  *
- * <p>
- * The {@link KeywordArguments} class provides factory methods to create instances from a
- * {@link Map} or by directly specifying key-value pairs.
- * </p>
- *
- * <h3>Usage</h3>
- * 
- * <pre>{@code
- * // Create using a map
- * Map<String, Object> kwargsMap = Map.of("arg1", 10, "arg2", "value");
- * KeywordArguments kwargs = KeywordArguments.from(kwargsMap);
- *
- * // Create using key-value pairs
- * KeywordArguments kwargs2 = KeywordArguments.of("arg1", 10, "arg2", "value");
- *
- * // Using a builder for predefined keys
- * KeywordArguments args = new MyCustomKwArgsBuilder("mandatoryValue")
- *     .optionalKey("optionalValue")
- *     .add("dynamicKey", 42)
- *     .build();
- * }</pre>
- *
- * <h3>When to Use</h3> {@link KeywordArguments} must be used whenever a Python function accepts
+ * <h3>When to Use</h3>
+ * {@link KeywordArguments} must be used whenever a Python function accepts
  * named arguments (both required and optional). This ensures proper mapping of Java arguments to
  * Python function parameters, especially when working with Python methods that utilize
  * {@code **kwargs}.
  *
- * <p>
- * <b>Important:</b> An instance of {@link KeywordArguments} must always be the last argument when
+ * <p><b>Important:</b> An instance of {@link KeywordArguments} must always be the last argument when
  * invoking a Python function. It may be preceded by an instance of {@link PositionalArguments}, but
  * {@link KeywordArguments} must always be the final argument. This ensures proper alignment with
- * Python's argument structure.
- * </p>
+ * Python's argument structure.</p>
  *
+ * <p>The {@link KeywordArguments} class provides factory methods to create instances from a
+ * {@link Map} or by directly specifying key-value pairs.</p>
+ *
+ * <h3>Usage</h3>
+ *
+ * <p>Consider the following Python function:</p>
+ * <pre>{@code
+ * def example_function(*, named1, named2, named3=None, named4=42):
+ *     ...
+ * }</pre>
+ *
+ * <p>In this function, <code>named1</code> and <code>named2</code> are required keyword arguments,
+ * while <code>named3</code> and <code>named4</code> are optional because they have default values.</p>
+ *
+ * <p>From Java, this function can be invoked as:</p>
+ * <pre>{@code
+ * value.invokeMember("example_function", kwArgs);
+ * }</pre>
+ *
+ * <p>The variable <code>kwArgs</code> can be created in several ways:</p>
+ *
+ * <p><b>Using a map:</b></p>
+ * <pre>{@code
+ * KeywordArguments kwargs = KeywordArguments.from(
+ *     Map.of("named1", 10, "named2", "value", "named4", 100)
+ * );
+ * }</pre>
+ *
+ * <p><b>Using key-value pairs:</b></p>
+ * <pre>{@code
+ * KeywordArguments kwargs = KeywordArguments.of(
+ *     "named1", 10, "named2", "value", "named4", 100
+ * );
+ * }</pre>
+ *
+ * <p><b>Using a builder:</b></p>
+ * <pre>{@code
+ * public static final class ExampleFunctionKwArgsBuilder {
+ *     private final Map<String, Object> values = new HashMap<>();
+ *
+ *     // Constructor includes all required arguments
+ *     public ExampleFunctionKwArgsBuilder(Object named1, Object named2) {
+ *         values.put("named1", named1);
+ *         values.put("named2", named2);
+ *     }
+ *
+ *     // Methods for optional arguments
+ *     public ExampleFunctionKwArgsBuilder named3(Object named3) {
+ *         values.put("named3", named3);
+ *         return this;
+ *     }
+ *
+ *     public ExampleFunctionKwArgsBuilder named4(Object named4) {
+ *         values.put("named4", named4);
+ *         return this;
+ *     }
+ *
+ *     // Add dynamic arguments
+ *     public ExampleFunctionKwArgsBuilder add(String key, Object value) {
+ *         values.put(key, value);
+ *         return this;
+ *     }
+ *
+ *     // Build the KeywordArguments instance
+ *     public KeywordArguments build() {
+ *         return KeywordArguments.from(values);
+ *     }
+ * }
+ * }</pre>
+ *
+ * <p><b>Using the builder to create the arguments:</b></p>
+ * <pre>{@code
+ * KeywordArguments kwargs = new ExampleFunctionKwArgsBuilder("value1", "value2") // Required keys
+ *     .named4(100)                                       // Optional key
+ *     .add("dynamicKey", 42)                             // Dynamic key
+ *     .build();
+ * }</pre>
  *
  * @see PositionalArguments
  */
@@ -100,7 +154,7 @@ public sealed abstract class KeywordArguments permits KeywordArguments.Implement
      * and object protocols via {@link ProxyHashMap} and {@link ProxyObject}.
      * </p>
      */
-    protected static final class Implementation extends KeywordArguments implements ProxyHashMap, ProxyObject {
+    static final class Implementation extends KeywordArguments implements ProxyHashMap, ProxyObject {
 
         public static final String MEMBER_KEY = "org.graalvm.python.embedding.KeywordArguments.is_keyword_arguments";
         private final Map<String, Object> kwArgs;
