@@ -636,6 +636,11 @@ public final class PythonContext extends Python3Core {
             this.asyncgenFirstIter = asyncgenFirstIter;
         }
 
+        public void resetNativeThreadLocalVarPointer() {
+            nativeThreadLocalVarRawPointer = 0;
+            nativeThreadLocalVarPointer = null;
+        }
+
         public void setNativeThreadLocalVarPointer(InteropLibrary interop, Object ptr) {
             // either unset or same
             assert nativeThreadLocalVarPointer == null || nativeThreadLocalVarPointer == ptr ||

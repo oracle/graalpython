@@ -177,6 +177,12 @@ PyGILState_Release(PyGILState_STATE oldstate)
 {
     if (oldstate == PyGILState_UNLOCKED) {
         GraalPyTruffleGILState_Release();
+        /* In the GraalPyTruffleGILState_Release up-call, we cleaned-up the pointer saved in
+         * Java level Python thread state to avoid setting it to NULL in Truffle thread disposal
+         * code, because it is not clear if the native thread is guaranteed to still be around
+         * when the Truffle thread is being disposed.
+         */
+        tstate_current = NULL;
     }
     if (TRUFFLE_CONTEXT) {
         graalpy_gilstate_counter--;
