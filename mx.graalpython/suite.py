@@ -168,12 +168,6 @@ suite = {
             ],
             "digest": "sha256:660c7eb2eda888897f20aa5c5927ccfed924f3b86d5f2a2477a7b0235cdc94bb"
         },
-        "GRADLE" : {
-            "urls" : [
-                "https://services.gradle.org/distributions/gradle-8.9-bin.zip"
-            ],
-            "digest": "sha256:d725d707bfabd4dfdc958c624003b3c80accc03f7037b5122c4b1d0ef15cecab"
-        },
     },
 
     # --------------------------------------------------------------------------------------------------------------
