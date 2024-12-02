@@ -53,6 +53,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -120,6 +121,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
+import com.oracle.graal.python.util.dynamic_libraries.macho.MachOFile;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -864,9 +866,10 @@ public final class CApiContext extends CExtContext {
                 }
                 break;
             case PLATFORM_DARWIN:
-                runAndWait("install_name_tool", "-id", target.getName(), target.getPath());
+                MachOFile file = new MachOFile(ByteBuffer.wrap(target.readAllBytes()));
+                file.setId(target.getPath());
                 if (additionalDependencyPath != null) {
-                    // TODO: Add an LC_LOAD_DYLIB command to load the additional lib
+                    file.insertDylib(additionalDependencyPath);
                 }
                 break;
             default:
