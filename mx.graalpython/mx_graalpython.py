@@ -70,18 +70,18 @@ from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
 from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=unused-import
 
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, JAVA_DRIVER_BENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JAVA_DRIVER_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
     GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
     CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
-    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, \
+    PythonVmWarmupBenchmarkSuite, \
     CONFIGURATION_INTERPRETER, CONFIGURATION_INTERPRETER_MULTI, CONFIGURATION_NATIVE_INTERPRETER, \
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA
+    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA, PythonJMHDistMxBenchmarkSuite
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -2194,8 +2194,7 @@ def _register_bench_suites(namespace):
         mx_benchmark.add_bm_suite(py_bench_suite)
     for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
-    for java_bench_suite in PythonInteropBenchmarkSuite.get_benchmark_suites(JBENCHMARKS):
-        mx_benchmark.add_bm_suite(java_bench_suite)
+    mx_benchmark.add_bm_suite(PythonJMHDistMxBenchmarkSuite())
 
 
 class CharsetFilteringPariticpant:
@@ -2929,6 +2928,16 @@ def graalpy_standalone_wrapper(args_in):
             mx.abort("You must add --dynamicimports graalpython-enterprise for EE edition")
     print(graalpy_standalone(args.type, enterprise=args.edition == 'ee', build=not args.no_build))
 
+def graalpy_jmh(args):
+    """
+    JMH benchmarks launcher for manual benchmark execution during development.
+    The real benchmark runs are drive by "mx benchmark python-jmh:GRAALPYTHON_BENCH".
+    All arguments are forwarded to the JMH launcher entry point. Run with "-help" to
+    get more info. Example arguments: "-f 0 -i 5 -wi 5 -w 5 -r 5 initCtx".
+    """
+    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_BENCH'])
+    mx.run_java(vm_args + ['org.openjdk.jmh.Main'] + args)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -2963,4 +2972,5 @@ mx.update_commands(SUITE, {
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
     'tox-example': [tox_example, ''],
+    'graalpy-jmh': [graalpy_jmh, ''],
 })
