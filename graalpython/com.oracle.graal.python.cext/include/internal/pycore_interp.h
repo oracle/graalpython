@@ -1,3 +1,8 @@
+/* Copyright (c) 2024, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2024 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 #ifndef Py_INTERNAL_INTERP_H
 #define Py_INTERNAL_INTERP_H
 #ifdef __cplusplus
@@ -174,7 +179,6 @@ struct _is {
 
 #if 0 // GraalPy change
     PyFunction_WatchCallback func_watchers[FUNC_MAX_WATCHERS];
-#endif // GraalPy change
     // One bit is set for each non-NULL entry in func_watchers
     uint8_t active_func_watchers;
 
@@ -187,22 +191,17 @@ struct _is {
     PyObject *after_forkers_child;
 #endif
 
-#if 0 // GraalPy change
     struct _warnings_runtime_state warnings;
     struct atexit_state atexit;
 
     struct _obmalloc_state obmalloc;
-#endif // GraalPy change
 
     PyObject *audit_hooks;
-#if 0 // GraalPy change
     PyType_WatchCallback type_watchers[TYPE_MAX_WATCHERS];
     PyCode_WatchCallback code_watchers[CODE_MAX_WATCHERS];
-#endif // GraalPy change
     // One bit is set for each non-NULL entry in code_watchers
     uint8_t active_code_watchers;
 
-#if 0 // GraalPy change
     struct _py_object_state object_state;
     struct _Py_unicode_state unicode;
     struct _Py_float_state float_state;
@@ -211,13 +210,11 @@ struct _is {
     struct _dtoa_state dtoa;
 #if 0 // GraalPy change
     struct _py_func_state func_state;
-#endif // GraalPy change
     /* Using a cache is very effective since typically only a single slice is
        created and then deleted again. */
     PySliceObject *slice_cache;
 
     struct _Py_tuple_state tuple;
-#if 0 // GraalPy change
     struct _Py_list_state list;
     struct _Py_dict_state dict_state;
     struct _Py_async_gen_state async_gen;

@@ -19,9 +19,7 @@ extern "C" {
 #include "pycore_interp.h"        // PyInterpreterState.gc
 #endif
 #include "pycore_pystate.h"       // _PyInterpreterState_GET()
-#if 0 // GraalPy change
 #include "pycore_runtime.h"       // _PyRuntime
-#endif
 #include "pycore_typeobject.h"      // struct types_runtime_state
 
 #define _PyObject_IMMORTAL_INIT(type) \

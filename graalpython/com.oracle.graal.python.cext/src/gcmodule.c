@@ -2663,11 +2663,11 @@ PyObject_IS_GC(PyObject *obj)
 void
 _Py_ScheduleGC(PyInterpreterState *interp)
 {
+#if 0 // GraalPy change
     GCState *gcstate = &interp->gc;
     if (gcstate->collecting == 1) {
         return;
     }
-#if 0 // GraalPy change
     struct _ceval_state *ceval = &interp->ceval;
     if (!_Py_atomic_load_relaxed(&ceval->gc_scheduled)) {
         _Py_atomic_store_relaxed(&ceval->gc_scheduled, 1);

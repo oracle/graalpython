@@ -133,6 +133,9 @@ static inline PyInterpreterState* _PyInterpreterState_GET(void) {
 #ifdef Py_DEBUG
     _Py_EnsureTstateNotNULL(tstate);
 #endif
+    if (tstate->interp == NULL) {
+        tstate->interp = &_PyRuntime._main_interpreter;
+    }
     return tstate->interp;
 }
 

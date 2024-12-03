@@ -10,8 +10,8 @@
 #include "Python.h"
 #if 0 // GraalPy change
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
-#include "pycore_runtime.h"       // _PyRuntime
 #endif // GraalPy change
+#include "pycore_runtime.h"       // _PyRuntime
 
 #if defined(HAVE_GETC_UNLOCKED) && !defined(_Py_MEMORY_SANITIZER)
 /* clang MemorySanitizer doesn't yet understand getc_unlocked. */

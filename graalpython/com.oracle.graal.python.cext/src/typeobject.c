@@ -1636,20 +1636,22 @@ subtype_traverse(PyObject *self, visitproc visit, void *arg)
         assert(base);
     }
 
-#if 0 // GraalPy change: we don't have inlined managed dict values
+    if (type->tp_dictoffset != base->tp_dictoffset) {
+        assert(base->tp_dictoffset == 0);
         if (type->tp_flags & Py_TPFLAGS_MANAGED_DICT) {
-            assert(type->tp_dictoffset);
+#if 0 // GraalPy change: we don't have inlined managed dict values
+            assert(type->tp_dictoffset == -1);
             int err = _PyObject_VisitInstanceAttributes(self, visit, arg);
             if (err) {
                 return err;
             }
-        }
 #endif // GraalPy change
-
-    if (type->tp_dictoffset != base->tp_dictoffset) {
-        PyObject **dictptr = _PyObject_DictPointer(self);
-        if (dictptr && *dictptr)
-            Py_VISIT(*dictptr);
+        }
+        else {
+            PyObject **dictptr = _PyObject_DictPointer(self);
+            if (dictptr && *dictptr)
+                Py_VISIT(*dictptr);
+        }
     }
 
     if (type->tp_flags & Py_TPFLAGS_HEAPTYPE

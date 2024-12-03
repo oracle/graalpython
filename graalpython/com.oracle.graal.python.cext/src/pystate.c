@@ -1,3 +1,8 @@
+/* Copyright (c) 2024, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2024 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 
 /* Thread and interpreter state structures and their interfaces */
 
@@ -418,6 +423,7 @@ _Py_COMP_DIAG_POP
         &(runtime)->allocators.mutex, \
     }
 
+#if 0 // GraalPy change
 static int
 alloc_for_runtime(PyThread_type_lock locks[NUMLOCKS])
 {
@@ -442,7 +448,6 @@ alloc_for_runtime(PyThread_type_lock locks[NUMLOCKS])
     return 0;
 }
 
-#if 0 //
 static void
 init_runtime(_PyRuntimeState *runtime,
              void *open_code_hook, void *open_code_userdata,
@@ -647,6 +652,7 @@ _PyInterpreterState_Enable(_PyRuntimeState *runtime)
 
     return _PyStatus_OK();
 }
+#endif // GraalPy change
 
 
 static PyInterpreterState *
@@ -655,6 +661,7 @@ alloc_interpreter(void)
     return PyMem_RawCalloc(1, sizeof(PyInterpreterState));
 }
 
+#if 0 // GraalPy change
 static void
 free_interpreter(PyInterpreterState *interp)
 {
