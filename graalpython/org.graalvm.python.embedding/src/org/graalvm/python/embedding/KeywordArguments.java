@@ -168,7 +168,7 @@ import java.util.NoSuchElementException;
  *
  * @see PositionalArguments
  */
-public sealed abstract class KeywordArguments permits KeywordArguments.Implementation {
+public abstract sealed class KeywordArguments permits KeywordArguments.Implementation {
 
     /**
      * Internal implementation of the {@link KeywordArguments} class.

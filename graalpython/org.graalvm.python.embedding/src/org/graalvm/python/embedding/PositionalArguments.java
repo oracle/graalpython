@@ -101,7 +101,7 @@ import java.util.List;
  *
  * @see KeywordArguments
  */
-public sealed abstract class PositionalArguments permits PositionalArguments.Implementation {
+public abstract sealed class PositionalArguments permits PositionalArguments.Implementation {
 
     static final class Implementation extends PositionalArguments implements ProxyArray, ProxyObject {
 

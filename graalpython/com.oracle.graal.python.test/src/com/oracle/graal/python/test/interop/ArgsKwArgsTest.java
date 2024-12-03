@@ -90,13 +90,15 @@ public class ArgsKwArgsTest extends PythonTests {
 
         assertEquals(0, module.invokeMember("sum").asInt());
         assertEquals(22, module.invokeMember("sum", 22).asInt());
-        assertEquals(60, module.invokeMember("sum",10, 20, 30).asInt());
-        assertEquals(6, module.invokeMember("sum", PositionalArguments.of(1,2,3)).asInt());
+        assertEquals(60, module.invokeMember("sum", 10, 20, 30).asInt());
+        assertEquals(6, module.invokeMember("sum", PositionalArguments.of(1, 2, 3)).asInt());
 
         assertEquals(0, module.invokeMember("sum", PositionalArguments.of()).asInt());
         assertEquals(0, module.invokeMember("sum", KeywordArguments.from(Map.of())).asInt());
 
-        PolyglotException pe = assertThrows(PolyglotException.class, () -> {assertEquals(0, module.invokeMember("sum", KeywordArguments.of("one", 1)).asInt());});
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {
+            assertEquals(0, module.invokeMember("sum", KeywordArguments.of("one", 1)).asInt());
+        });
         assertEquals("TypeError: sum() got an unexpected keyword argument 'one'", pe.getMessage());
 
     }
@@ -116,22 +118,24 @@ public class ArgsKwArgsTest extends PythonTests {
         );
 
         assertEquals("a=0,", module.invokeMember("text", 0).asString());
-        assertEquals("a=22,args[0]=33,", module.invokeMember("text", 22,33).asString());
-        assertEquals("a='hello',args[0]=ahoj,args[1]=cau,", module.invokeMember("text","hello", "ahoj", "cau").asString());
-        assertEquals("a='6',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text", "6",  PositionalArguments.of(1,2,3)).asString());
-        assertEquals("a=1,args[0]=2,args[1]=3,", module.invokeMember("text", PositionalArguments.of(1,2,3)).asString());
+        assertEquals("a=22,args[0]=33,", module.invokeMember("text", 22, 33).asString());
+        assertEquals("a='hello',args[0]=ahoj,args[1]=cau,", module.invokeMember("text", "hello", "ahoj", "cau").asString());
+        assertEquals("a='6',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text", "6",  PositionalArguments.of(1, 2, 3)).asString());
+        assertEquals("a=1,args[0]=2,args[1]=3,", module.invokeMember("text", PositionalArguments.of(1, 2, 3)).asString());
         assertEquals("a=1,", module.invokeMember("text", PositionalArguments.of(1)).asString());
 
         assertEquals("a=1,", module.invokeMember("text", KeywordArguments.of("a", 1)).asString());
 
-        PolyglotException pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", KeywordArguments.of("a", 1, "b", 2));});
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {
+            module.invokeMember("text", KeywordArguments.of("a", 1, "b", 2));
+        });
         assertEquals("TypeError: text() got an unexpected keyword argument 'b'", pe.getMessage());
     }
 
     @Test
     public void testPositionalArgs03() {
         // @formatter:off
-        Value module = run( """
+        Value module = run("""
                 def text(a,b=44, *args):
                     result = f'{a=},{b=},'
                     index = 0
@@ -143,13 +147,13 @@ public class ArgsKwArgsTest extends PythonTests {
         );
 
         assertEquals("a=0,b=44,", module.invokeMember("text", 0).asString());
-        assertEquals("a=22,b=33,", module.invokeMember("text", 22,33).asString());
-        assertEquals("a='hello',b='ahoj',args[0]=cau,", module.invokeMember("text","hello", "ahoj", "cau").asString());
-        assertEquals("a='6',b=1,args[0]=2,args[1]=3,", module.invokeMember("text", "6",  PositionalArguments.of(1,2,3)).asString());
+        assertEquals("a=22,b=33,", module.invokeMember("text", 22, 33).asString());
+        assertEquals("a='hello',b='ahoj',args[0]=cau,", module.invokeMember("text", "hello", "ahoj", "cau").asString());
+        assertEquals("a='6',b=1,args[0]=2,args[1]=3,", module.invokeMember("text", "6",  PositionalArguments.of(1, 2, 3)).asString());
         assertEquals("a=1,b=44,", module.invokeMember("text", PositionalArguments.of(1)).asString());
-        assertEquals("a=1,b=2,", module.invokeMember("text", PositionalArguments.of(1,2)).asString());
-        assertEquals("a=1,b=2,args[0]=3,", module.invokeMember("text", PositionalArguments.of(1,2,3)).asString());
-        assertEquals("a='a',b='b',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text","a", "b", PositionalArguments.of(1,2,3)).asString());
+        assertEquals("a=1,b=2,", module.invokeMember("text", PositionalArguments.of(1, 2)).asString());
+        assertEquals("a=1,b=2,args[0]=3,", module.invokeMember("text", PositionalArguments.of(1, 2, 3)).asString());
+        assertEquals("a='a',b='b',args[0]=1,args[1]=2,args[2]=3,", module.invokeMember("text", "a", "b", PositionalArguments.of(1, 2, 3)).asString());
     }
 
     private static String assertAllKeysInText(String text, Map<String, Object> kwArgs) {
@@ -157,8 +161,8 @@ public class ArgsKwArgsTest extends PythonTests {
         for (Map.Entry<String, Object> entry : kwArgs.entrySet()) {
             String key = entry.getKey();
             Object val = entry.getValue();
-            String keyVal = "[" + key + ":" + val.toString() +"],";
-            assertTrue("The string \"" + keyVal + "\" was not found in \"" + text + "\"" ,  text.contains(keyVal));
+            String keyVal = "[" + key + ":" + val.toString() + "],";
+            assertTrue("The string \"" + keyVal + "\" was not found in \"" + text + "\"", text.contains(keyVal));
             rest = rest.replace(keyVal, "");
         }
         return rest;
@@ -167,7 +171,7 @@ public class ArgsKwArgsTest extends PythonTests {
     @Test
     public void testKwArgs01() {
         // @formatter:off
-        Value module = run( """
+        Value module = run("""
                 def text(**kwArgs):
                     result = ''
                     for key, value in kwArgs.items():
@@ -189,14 +193,16 @@ public class ArgsKwArgsTest extends PythonTests {
 
         assertTrue(module.invokeMember("text", PositionalArguments.of()).asString().isEmpty());
 
-        PolyglotException pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", PositionalArguments.of(44)).asString();});
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {
+            module.invokeMember("text", PositionalArguments.of(44)).asString();
+        });
         assertEquals("TypeError: text() takes 0 positional arguments but 1 was given", pe.getMessage());
     }
 
     @Test
     public void testKwArgs02() {
         // @formatter:off
-        Value module = run( """
+        Value module = run("""
                 def text(*,named1, **kwArgs):
                     result = f'[named1:{str(named1)}],'
                     for key, value in kwArgs.items():
@@ -213,26 +219,36 @@ public class ArgsKwArgsTest extends PythonTests {
         remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
         assertTrue(remaining.isEmpty());
 
-        PolyglotException pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text").asString();});
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {
+            module.invokeMember("text").asString();
+        });
         assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
 
-        pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", KeywordArguments.from(Map.of())).asString();});
+        pe = assertThrows(PolyglotException.class, () -> {
+            module.invokeMember("text", KeywordArguments.from(Map.of())).asString();
+        });
         assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
 
-        pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", KeywordArguments.of("named2", 10)).asString();});
+        pe = assertThrows(PolyglotException.class, () -> {
+            module.invokeMember("text", KeywordArguments.of("named2", 10)).asString();
+        });
         assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
 
-        pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", PositionalArguments.of()).asString();});
+        pe = assertThrows(PolyglotException.class, () -> {
+            module.invokeMember("text", PositionalArguments.of()).asString();
+        });
         assertEquals("TypeError: text() missing 1 required keyword-only argument: 'named1'", pe.getMessage());
 
-        pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text", PositionalArguments.of(10)).asString();});
+        pe = assertThrows(PolyglotException.class, () -> {
+            module.invokeMember("text", PositionalArguments.of(10)).asString();
+        });
         assertEquals("TypeError: text() takes 0 positional arguments but 1 was given", pe.getMessage());
     }
 
     @Test
     public void testKwArgs03() {
         // @formatter:off
-        Value module = run( """
+        Value module = run("""
                 def text(*,named1, named2=44,  **kwArgs):
                     result = f'[named1:{str(named1)}],[named2:{str(named2)}],'
                     for key, value in kwArgs.items():
@@ -243,7 +259,7 @@ public class ArgsKwArgsTest extends PythonTests {
 
         Map<String, Object> kwargsMap = Map.of("named1", 1);
         String  remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
-        assertEquals("[named2:44],",remaining);
+        assertEquals("[named2:44],", remaining);
 
         kwargsMap = Map.of("named1", 1, "named2", 2);
         remaining = assertAllKeysInText(module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString(), kwargsMap);
@@ -253,7 +269,7 @@ public class ArgsKwArgsTest extends PythonTests {
     @Test
     public void testKwArgs04() {
         // @formatter:off
-        Value module = run( """
+        Value module = run("""
                 def text(*,named1, named2=44):
                     result = f'[named1:{str(named1)}],[named2:{str(named2)}],'
                     return result
@@ -262,14 +278,16 @@ public class ArgsKwArgsTest extends PythonTests {
 
         Map<String, Object> kwargsMap = Map.of("named1", 1);
         String  remaining = module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString();
-        assertEquals("[named1:1],[named2:44],",remaining);
+        assertEquals("[named1:1],[named2:44],", remaining);
 
         kwargsMap = Map.of("named1", 1, "named2", 2);
         remaining = module.invokeMember("text", KeywordArguments.from(kwargsMap)).asString();
-        assertEquals("[named1:1],[named2:2],",remaining);
+        assertEquals("[named1:1],[named2:2],", remaining);
 
-        PolyglotException pe = assertThrows(PolyglotException.class, () -> {module.invokeMember("text",
-                module.invokeMember("text", KeywordArguments.of("named1", 1, "named2", 2, "named3", 3))).asString();});
+        PolyglotException pe = assertThrows(PolyglotException.class, () -> {
+            module.invokeMember("text",
+                module.invokeMember("text", KeywordArguments.of("named1", 1, "named2", 2, "named3", 3))).asString();
+        });
         assertEquals("TypeError: text() got an unexpected keyword argument 'named3'", pe.getMessage());
     }
 }
