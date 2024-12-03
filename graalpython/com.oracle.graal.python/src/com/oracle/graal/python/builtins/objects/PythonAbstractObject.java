@@ -1372,7 +1372,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         }
                     }
                 } catch (UnknownIdentifierException | SameDictKeyException | NonMappingException | StopIterationException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
             Object[] convertedArgs = convertArgsNode.execute(inliningTarget, newArgs);

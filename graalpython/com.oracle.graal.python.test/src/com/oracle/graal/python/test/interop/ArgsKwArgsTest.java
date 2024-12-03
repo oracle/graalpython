@@ -44,19 +44,13 @@ import com.oracle.graal.python.test.PythonTests;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
-import org.graalvm.polyglot.proxy.ProxyArray;
-import org.graalvm.polyglot.proxy.ProxyHashMap;
-import org.graalvm.polyglot.proxy.ProxyIterator;
-import org.graalvm.polyglot.proxy.ProxyObject;
 import org.graalvm.python.embedding.KeywordArguments;
 import org.graalvm.python.embedding.PositionalArguments;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
