@@ -51,10 +51,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+// See also NativeExtTest
 public class ShutdownTest extends PythonTests {
     @Test
     public void testCloseWithBackgroundThreadsRunningSucceeds() {
-        Context context = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).build();
+        Context context = createContext();
         try {
             loadNativeExtension(context);
             asyncStartPythonThreadsThatSleep(context);
@@ -65,7 +66,7 @@ public class ShutdownTest extends PythonTests {
 
     @Test
     public void testCloseFromAnotherThreadThrowsCancelledEx() {
-        Context context = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).build();
+        Context context = createContext();
         PolyglotException thrownEx = null;
         try {
             loadNativeExtension(context);
@@ -93,7 +94,7 @@ public class ShutdownTest extends PythonTests {
 
     @Test
     public void testJavaThreadGetsCancelledException() throws InterruptedException {
-        Context context = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).build();
+        Context context = createContext();
         AtomicReference<PolyglotException> thrownEx = new AtomicReference<>();
         CountDownLatch gotException = new CountDownLatch(1);
         try {
@@ -125,7 +126,7 @@ public class ShutdownTest extends PythonTests {
 
     @Test
     public void testJavaThreadNotExecutingPythonAnymore() throws InterruptedException {
-        Context context = Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).build();
+        Context context = createContext();
         var javaThreadDone = new CountDownLatch(1);
         var javaThreadCanEnd = new CountDownLatch(1);
         var javaThread = new Thread(() -> {
@@ -152,11 +153,15 @@ public class ShutdownTest extends PythonTests {
         Assert.assertNull(uncaughtEx.get());
     }
 
+    private static Context createContext() {
+        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).option("python.NativeModules", "false").build();
+    }
+
     private static void loadNativeExtension(Context context) {
         context.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
     }
 
-    private static void asyncStartPythonThreadsThatSleep(Context context) {
+    public static void asyncStartPythonThreadsThatSleep(Context context) {
         for (int i = 0; i < 10; i++) {
             context.eval("python", "import threading; import time; threading.Thread(target=lambda: time.sleep(10000)).start()");
         }

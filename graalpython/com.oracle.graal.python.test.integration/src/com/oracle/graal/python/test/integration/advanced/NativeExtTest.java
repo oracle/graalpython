@@ -40,58 +40,66 @@
  */
 package com.oracle.graal.python.test.integration.advanced;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.PolyglotException;
+import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.test.integration.PythonTests;
-
-public class MultiContextTest extends PythonTests {
+/**
+ * This should be the only test using native extensions. We must test everything in one long test,
+ * because we cannot create multiple contexts that would load native extensions.
+ */
+public class NativeExtTest {
     @Test
-    public void testSharingWithMemoryview() {
+    public void testSharingErrorWithCpythonSre() throws InterruptedException {
+        // The first context is the one that will use native extensions
         Engine engine = Engine.newBuilder().build();
-        for (int i = 0; i < 10; i++) {
-            try (Context context = newContext(engine)) {
-                context.eval("python", "memoryview(b'abc')");
-            }
-        }
-    }
+        Context cextContext = newContext(engine);
+        try {
+            cextContext.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
 
-    @Test
-    public void testSharingWithCpythonSreAndLLVM() {
-        // This test is going to use the Sulong backend.This is why we need "sulong:SULONG_NATIVE"
-        // among the dependencies for GRAALPYTHON_UNIT_TESTS distribution, and
-        // org.graalvm.polyglot:llvm-community dependency in the pom.xml
-        Engine engine = Engine.newBuilder().build();
-        for (int i = 0; i < 10; i++) {
-            try (Context context = newContextWithNativeModulesFalse(engine)) {
-                context.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
+            // Check that second context that tries to load native extension fails
+            try (Context secondCtx = newContext(engine)) {
+                try {
+                    secondCtx.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
+                } catch (PolyglotException ex) {
+                    Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("Option python.NativeModules is set to 'true' and a second GraalPy context attempted"));
+                }
             }
-        }
-    }
 
-    @Test
-    public void testTryCatch() {
-        Engine engine = Engine.newBuilder().build();
-        for (int i = 0; i < 10; i++) {
-            try (Context context = newContext(engine)) {
-                context.eval("python", "last_val = -1\n" +
-                                "try:\n" +
-                                "    riter = iter(range(1000000))\n" +
-                                "    while True:\n" +
-                                "        last_val = next(riter)\n" +
-                                "except StopIteration:\n" +
-                                "    pass\n" +
-                                "last_val");
-            }
+            // To test cancellation we are going to spawn some Python threads...
+            ShutdownTest.asyncStartPythonThreadsThatSleep(cextContext);
+
+            // A java thread that attaches to GraalPy and finishes before the cancellation
+            CountDownLatch latch = new CountDownLatch(1);
+            new Thread(() -> {
+                cextContext.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
+                latch.countDown();
+            }).start();
+            latch.await();
+
+            // A java thread that attaches to GraalPy and sleeps forever in Java
+            CountDownLatch latch2 = new CountDownLatch(1);
+            new Thread(() -> {
+                cextContext.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
+                latch2.countDown();
+                try {
+                    Thread.sleep(100000000);
+                } catch (InterruptedException e) {
+                    // expected
+                }
+            }).start();
+            latch2.await();
+
+        } finally {
+            cextContext.close(true);
         }
     }
 
     private static Context newContext(Engine engine) {
         return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
-    }
-
-    private static Context newContextWithNativeModulesFalse(Engine engine) {
-        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).option("python.NativeModules", "false").build();
     }
 }
