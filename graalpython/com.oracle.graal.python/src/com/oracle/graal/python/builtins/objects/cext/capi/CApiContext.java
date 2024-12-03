@@ -48,19 +48,20 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -68,10 +69,11 @@ import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
+import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
@@ -105,12 +107,15 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -121,17 +126,18 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
-import com.oracle.graal.python.util.dynamic_libraries.macho.MachOFile;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -147,11 +153,14 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 import sun.misc.Unsafe;
 
 public final class CApiContext extends CExtContext {
+    private static final TruffleString T_PY_INIT = PythonUtils.tsLiteral("PyInit_");
+    private static final TruffleString T_PY_INIT_U = PythonUtils.tsLiteral("PyInitU_");
 
     public static final String LOGGER_CAPI_NAME = "capi";
 
@@ -168,15 +177,6 @@ public final class CApiContext extends CExtContext {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
-
-    /**
-     * Path to this context's local copy of the C API library. This may be null, in which case the
-     * library was loaded with RTLD_GLOBAL (or equivalent) and there's no isolation between
-     * contexts in this operating system process. If non-null, any C extension library is copied
-     * and patched before load to add a DT_NEEDED dynamic dependency on this specific file, so that
-     * libraries are isolated between Python contexts.
-     */
-    public final String capiFileCopy;
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs;
@@ -241,6 +241,71 @@ public final class CApiContext extends CExtContext {
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
 
+    /**
+     * A simple helper object that just remembers the name and the path of the original module spec
+     * object and also keeps a reference to it. This should avoid redundant attribute reads.
+     */
+    @ValueType
+    public static final class ModuleSpec {
+        public final TruffleString name;
+        public final TruffleString path;
+        public final Object originalModuleSpec;
+        private TruffleString encodedName;
+        private boolean ascii;
+
+        public ModuleSpec(TruffleString name, TruffleString path, Object originalModuleSpec) {
+            this.name = name;
+            this.path = path;
+            this.originalModuleSpec = originalModuleSpec;
+        }
+
+        /**
+         * Get the variable part of a module's export symbol name. Returns a bytes instance. For
+         * non-ASCII-named modules, the name is encoded as per PEP 489. The hook_prefix pointer is
+         * set to either ascii_only_prefix or nonascii_prefix, as appropriate.
+         */
+        @TruffleBoundary
+        TruffleString getEncodedName() {
+            if (encodedName != null) {
+                return encodedName;
+            }
+
+            // Get the short name (substring after last dot)
+            TruffleString basename = getBaseName(name);
+
+            boolean canEncode = canEncode(basename);
+
+            if (canEncode) {
+                ascii = true;
+            } else {
+                ascii = false;
+                try {
+                    basename = TruffleString.fromJavaStringUncached(Punycode.encode(basename.toJavaStringUncached(), null).toString(), PythonUtils.TS_ENCODING);
+                } catch (StringPrepParseException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+
+            // replace '-' by '_'; note: this is fast and does not use regex
+            return (encodedName = StringNodes.StringReplaceNode.getUncached().execute(basename, T_DASH, T_UNDERSCORE, -1));
+        }
+
+        @TruffleBoundary
+        private static boolean canEncode(TruffleString basename) {
+            return TruffleString.GetCodeRangeNode.getUncached().execute(basename, PythonUtils.TS_ENCODING) == CodeRange.ASCII;
+        }
+
+        @TruffleBoundary
+        public TruffleString getInitFunctionName() {
+            /*
+             * n.b.: 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii'
+             * is queried
+             */
+            TruffleString s = getEncodedName();
+            return StringUtils.cat((ascii ? T_PY_INIT : T_PY_INIT_U), s);
+        }
+    }
+
     /*
      * The key is the executable instance, i.e., an instance of a class that exports the
      * InteropLibrary.
@@ -279,7 +344,6 @@ public final class CApiContext extends CExtContext {
 
     public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend, String capiFilePath) {
         super(context, llvmLibrary, useNativeBackend);
-        this.capiFileCopy = capiFilePath;
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
 
         /*
@@ -582,9 +646,9 @@ public final class CApiContext extends CExtContext {
      * @return The C API symbol cache.
      */
     private static Object[] getSymbolCache(Node caller) {
-        Object[] nativeSymbolCacheSingleContext = CApiContext.nativeSymbolCacheSingleContext;
-        if (nativeSymbolCacheSingleContext != null) {
-            return nativeSymbolCacheSingleContext;
+        Object[] cache = nativeSymbolCacheSingleContext;
+        if (cache != null) {
+            return cache;
         }
         return PythonContext.get(caller).getCApiContext().nativeSymbolCache;
     }
@@ -809,85 +873,6 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    public static String copyToTempFile(Env env, TruffleFile src, TruffleFile targetDirOrNull, String additionalDependencyPath) throws IOException {
-        TruffleFile targetDir;
-        if (targetDirOrNull == null) {
-            targetDir = env.createTempDirectory(null, "graalpy-capi-temp");
-        } else {
-            targetDir = targetDirOrNull;
-        }
-        String[] nameParts = src.getName().split("\\.");
-        String stem = nameParts[0];
-        String extension = "." + nameParts[nameParts.length - 1];
-        TruffleFile target = env.createTempFile(targetDir, stem, extension).getAbsoluteFile();
-        LOGGER.info(() -> "Copying " + src.getPath() + " to " + target.getPath());
-        if (targetDirOrNull == null) {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    try {
-                        target.delete();
-                    } catch (NoSuchFileException e) {
-                        // ok, this is what we wanted
-                    } catch (IOException e) {
-                        LOGGER.warning("Failed to delete temporary file " + target.getPath());
-                    }
-                    try {
-                        target.getParent().delete();
-                    } catch (IOException e) {
-                        LOGGER.warning("Failed to delete temporary directory " + target.getParent().getPath());
-                    }
-            }));
-        } else {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    try {
-                        target.delete();
-                    } catch (NoSuchFileException e) {
-                        // ok, this is what we wanted
-                    } catch (IOException e) {
-                        LOGGER.warning("Failed to delete temporary file " + target.getPath());
-                    }
-            }));
-        }
-        synchronized (CApiContext.class) {
-            target.delete();
-            src.copy(target);
-        }
-        switch (PythonOS.getPythonOS()) {
-            case PLATFORM_WIN32:
-                // TODO: change dll name?
-                if (additionalDependencyPath != null) {
-                    // TOOD: Change the dependency from python3.11.dll to whatever name Use
-                    // SetDllDirectoryA to load it
-                }
-                break;
-            case PLATFORM_LINUX:
-                runAndWait("patchelf", "--debug", "--set-soname", target.getName(), target.getPath());
-                if (additionalDependencyPath != null) {
-                    runAndWait("patchelf", "--debug", "--add-needed", additionalDependencyPath, target.getPath());
-                }
-                break;
-            case PLATFORM_DARWIN:
-                MachOFile file = new MachOFile(ByteBuffer.wrap(target.readAllBytes()));
-                file.setId(target.getPath());
-                if (additionalDependencyPath != null) {
-                    file.insertDylib(additionalDependencyPath);
-                }
-                break;
-            default:
-                throw CompilerDirectives.shouldNotReachHere("Unsupported OS");
-        }
-        return target.getPath();
-    }
-
-    private static void runAndWait(String... cmdArgs) throws IOException {
-        var proc = Runtime.getRuntime().exec(cmdArgs);
-        try {
-            proc.waitFor();
-        } catch (InterruptedException e) {
-        }
-        proc.getInputStream().transferTo(System.out);
-        proc.getErrorStream().transferTo(System.err);
-    }
-
     @TruffleBoundary
     public static Object ensureCApiLLVMLibrary(PythonContext context) throws IOException, ImportException, ApiInitException {
         assert !PythonOptions.NativeModules.getValue(context.getEnv().getOptions());
@@ -940,7 +925,7 @@ public final class CApiContext extends CExtContext {
                         capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
                         LOGGER.config(() -> "loading CAPI from " + capiFile + " as native");
                     } else {
-                        capiFilePath = copyToTempFile(env, capiFile, null, null);
+                        capiFilePath = findRelocatedCopy(env, capiFile);
                         capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_LOCAL) \"" + capiFilePath + "\"", "<libpython>");
                         LOGGER.config(() -> "loading CAPI copy from " + capiFilePath + " as native");
                     }
@@ -1019,6 +1004,133 @@ public final class CApiContext extends CExtContext {
             }
         }
         return context.getCApiContext();
+    }
+
+    private static final Set<String> C_EXT_SUPPORTED_LIST = Set.of(
+                // Stdlib modules are considered supported
+                "_cpython_sre",
+                "_cpython_unicodedata",
+                "_sha3",
+                "_sqlite3",
+                "termios",
+                "pyexpat");
+
+
+    private static String dlopenFlagsToString(int flags) {
+        String str = "RTLD_NOW";
+        if ((flags & PosixConstants.RTLD_LAZY.value) != 0) {
+            str = "RTLD_LAZY";
+        }
+        if ((flags & PosixConstants.RTLD_GLOBAL.value) != 0) {
+            str += "|RTLD_GLOBAL";
+        }
+        return str;
+    }
+
+    /**
+     * This method loads a C extension module (C API) and will initialize the corresponding native
+     * contexts if necessary.
+     *
+     * @param location The node that's requesting this operation. This is required for reporting
+     *            correct source code location in case exceptions occur.
+     * @param context The Python context object.
+     * @param spec The name and path of the module (also containing the original module spec
+     *            object).
+     * @param checkFunctionResultNode An adopted node instance. This is necessary because the result
+     *            check could raise an exception and only an adopted node will report useful source
+     *            locations.
+     * @return A Python module.
+     * @throws IOException If the specified file cannot be loaded.
+     * @throws ApiInitException If the corresponding native context could not be initialized.
+     * @throws ImportException If an exception occurred during C extension initialization.
+     */
+    @TruffleBoundary
+    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
+                    throws IOException, ApiInitException, ImportException {
+        if (getLogger(CApiContext.class).isLoggable(Level.WARNING) && context.getOption(PythonOptions.WarnExperimentalFeatures)) {
+            if (!C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
+                String message = "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.";
+                if (!(boolean) context.getOption(PythonOptions.RunViaLauncher)) {
+                    message += " See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions/#embedding-limitations for the limitations. " +
+                                    "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'.";
+                }
+                getLogger(CApiContext.class).warning(message.formatted(spec.name, spec.path));
+            }
+        }
+
+        // we always need to load the CPython C API
+        CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
+        Object library;
+        InteropLibrary interopLib;
+
+        if (cApiContext.useNativeBackend) {
+            TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
+            String loadPath = realPath.getPath();
+            // if (cApiContext.capiRelocationSuffix != null) {
+            //     try {
+            //         loadPath = findRelocatedCopy(context.getEnv(), realPath);
+            //     } catch (IOException e) {
+            //         // It is unlikely that loading from the real path will work at this point, but
+            //         // the handling below is still the best that we want
+            //     }
+            // }
+
+            getLogger(CApiContext.class).config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
+            if (context.getOption(PythonOptions.IsolateNativeModules)) {
+            } else {
+            }
+            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), loadPath);
+            if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
+                loadExpr = "with panama " + loadExpr;
+            }
+            try {
+                Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
+                library = context.getEnv().parseInternal(librarySource).call();
+                interopLib = InteropLibrary.getUncached(library);
+            } catch (PException e) {
+                throw e;
+            } catch (AbstractTruffleException e) {
+                if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
+                    // file does not exist and it is from VirtualFileSystem
+                    // => we probably failed to extract it due to unconventional libs location
+                    getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
+                                    "!!! Please try to run with java system property graalpy.vfs.extractOnStartup=true !!!\n", spec.path, realPath));
+
+                }
+
+                throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
+            }
+        } else {
+            library = loadLLVMLibrary(location, context, spec.name, spec.path);
+            interopLib = InteropLibrary.getUncached(library);
+            try {
+                if (interopLib.getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
+                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
+                }
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        try {
+            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, interopLib, checkFunctionResultNode);
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
+        }
+    }
+
+    /**
+     * Indices used as suffixes for copied C extensions when using {@link PythonOptions#IsolateNativeModules}.
+     */
+    private static AtomicLong CEXT_COPY_INDICES = new AtomicLong(0);
+
+    protected static String findRelocatedCopy(Env env, TruffleFile original) throws IOException {
+        TruffleFile targetDir;
+        String[] nameParts = original.getName().split("\\.");
+        String stem = nameParts[0];
+        String extension = "." + nameParts[nameParts.length - 1];
+        // LOGGER.info(() -> "Found usable copy of " + original.getPath() + " at " + target.getPath());
+        return original.getPath();
     }
 
     /**
@@ -1138,9 +1250,9 @@ public final class CApiContext extends CExtContext {
          * after this can use it.
          */
         synchronized (CApiContext.class) {
-            if (CApiContext.nativeSymbolCacheSingleContext != null) {
-                CApiContext.nativeSymbolCacheSingleContext = null;
-                CApiContext.nativeSymbolCacheSingleContextUsed = false;
+            if (nativeSymbolCacheSingleContext != null) {
+                nativeSymbolCacheSingleContext = null;
+                nativeSymbolCacheSingleContextUsed = false;
             }
         }
     }

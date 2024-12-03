@@ -42,73 +42,33 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.util.Set;
-import java.util.logging.Level;
 
-import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
-import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
-
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 public abstract class CExtContext {
-
-    // Due to the cycle CExtContext -> CApiContext < CExtContext this needs to be done lazily
-    private static TruffleLogger LOGGER;
-
-    private static TruffleLogger getLogger() {
-        if (LOGGER == null) {
-            LOGGER = CApiContext.getLogger(CExtContext.class);
-        }
-        return LOGGER;
-    }
-
-    private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
-    private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
-
     public static final int METH_VARARGS = 0x0001;
     public static final int METH_KEYWORDS = 0x0002;
     public static final int METH_NOARGS = 0x0004;
@@ -181,71 +141,6 @@ public abstract class CExtContext {
         return flags > 0 && (flags & (METH_CLASS | METH_STATIC)) != 0;
     }
 
-    /**
-     * A simple helper object that just remembers the name and the path of the original module spec
-     * object and also keeps a reference to it. This should avoid redundant attribute reads.
-     */
-    @ValueType
-    public static final class ModuleSpec {
-        public final TruffleString name;
-        public final TruffleString path;
-        public final Object originalModuleSpec;
-        private TruffleString encodedName;
-        private boolean ascii;
-
-        public ModuleSpec(TruffleString name, TruffleString path, Object originalModuleSpec) {
-            this.name = name;
-            this.path = path;
-            this.originalModuleSpec = originalModuleSpec;
-        }
-
-        /**
-         * Get the variable part of a module's export symbol name. Returns a bytes instance. For
-         * non-ASCII-named modules, the name is encoded as per PEP 489. The hook_prefix pointer is
-         * set to either ascii_only_prefix or nonascii_prefix, as appropriate.
-         */
-        @TruffleBoundary
-        TruffleString getEncodedName() {
-            if (encodedName != null) {
-                return encodedName;
-            }
-
-            // Get the short name (substring after last dot)
-            TruffleString basename = getBaseName(name);
-
-            boolean canEncode = canEncode(basename);
-
-            if (canEncode) {
-                ascii = true;
-            } else {
-                ascii = false;
-                try {
-                    basename = TruffleString.fromJavaStringUncached(Punycode.encode(basename.toJavaStringUncached(), null).toString(), TS_ENCODING);
-                } catch (StringPrepParseException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            }
-
-            // replace '-' by '_'; note: this is fast and does not use regex
-            return (encodedName = StringNodes.StringReplaceNode.getUncached().execute(basename, T_DASH, T_UNDERSCORE, -1));
-        }
-
-        @TruffleBoundary
-        private static boolean canEncode(TruffleString basename) {
-            return TruffleString.GetCodeRangeNode.getUncached().execute(basename, TS_ENCODING) == CodeRange.ASCII;
-        }
-
-        @TruffleBoundary
-        public TruffleString getInitFunctionName() {
-            /*
-             * n.b.: 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii'
-             * is queried
-             */
-            TruffleString s = getEncodedName();
-            return StringUtils.cat((ascii ? T_PY_INIT : T_PY_INIT_U), s);
-        }
-    }
-
     @TruffleBoundary
     protected static TruffleString getBaseName(TruffleString name) {
         int len = TruffleString.CodePointLengthNode.getUncached().execute(name, TS_ENCODING);
@@ -260,118 +155,6 @@ public abstract class CExtContext {
             return T_EMPTY_STRING;
         }
         return name.substringUncached(idx + 1, len - idx - 1, TS_ENCODING, true);
-    }
-
-    private static String dlopenFlagsToString(int flags) {
-        String str = "RTLD_NOW";
-        if ((flags & PosixConstants.RTLD_LAZY.value) != 0) {
-            str = "RTLD_LAZY";
-        }
-        if ((flags & PosixConstants.RTLD_GLOBAL.value) != 0) {
-            str += "|RTLD_GLOBAL";
-        }
-        return str;
-    }
-
-    private static final Set<String> C_EXT_SUPPORTED_LIST = Set.of(
-                    // Stdlib modules are considered supported
-                    "_cpython_sre",
-                    "_cpython_unicodedata",
-                    "_sha3",
-                    "_sqlite3",
-                    "termios",
-                    "pyexpat");
-
-    /**
-     * This method loads a C extension module (C API) and will initialize the corresponding native
-     * contexts if necessary.
-     *
-     * @param location The node that's requesting this operation. This is required for reporting
-     *            correct source code location in case exceptions occur.
-     * @param context The Python context object.
-     * @param spec The name and path of the module (also containing the original module spec
-     *            object).
-     * @param checkFunctionResultNode An adopted node instance. This is necessary because the result
-     *            check could raise an exception and only an adopted node will report useful source
-     *            locations.
-     * @return A Python module.
-     * @throws IOException If the specified file cannot be loaded.
-     * @throws ApiInitException If the corresponding native context could not be initialized.
-     * @throws ImportException If an exception occurred during C extension initialization.
-     */
-    @TruffleBoundary
-    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
-                    throws IOException, ApiInitException, ImportException {
-        if (getLogger().isLoggable(Level.WARNING) && context.getOption(PythonOptions.WarnExperimentalFeatures)) {
-            if (!C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
-                String message = "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.";
-                if (!(boolean) context.getOption(PythonOptions.RunViaLauncher)) {
-                    message += " See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions/#embedding-limitations for the limitations. " +
-                                    "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'.";
-                }
-                getLogger().warning(message.formatted(spec.name, spec.path));
-            }
-        }
-
-        // we always need to load the CPython C API
-        CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
-        Object library;
-        InteropLibrary interopLib;
-
-        if (cApiContext.useNativeBackend) {
-            TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
-            String loadPath = realPath.getPath();
-            if (cApiContext.capiFileCopy != null) {
-                try {
-                    loadPath = CApiContext.copyToTempFile(context.getEnv(), realPath, realPath.getParent(), cApiContext.capiFileCopy);
-                } catch (IOException e) {
-                    // It is unlikely that loading from the real path will work at this point, but
-                    // the handling below is still the best that we want
-                }
-            }
-
-            getLogger().config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
-            if (context.getOption(PythonOptions.IsolateNativeModules)) {
-            } else {
-            }
-            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), loadPath);
-            if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
-                loadExpr = "with panama " + loadExpr;
-            }
-            try {
-                Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
-                library = context.getEnv().parseInternal(librarySource).call();
-                interopLib = InteropLibrary.getUncached(library);
-            } catch (PException e) {
-                throw e;
-            } catch (AbstractTruffleException e) {
-                if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
-                    // file does not exist and it is from VirtualFileSystem
-                    // => we probably failed to extract it due to unconventional libs location
-                    getLogger().severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
-                                    "!!! Please try to run with java system property graalpy.vfs.extractOnStartup=true !!!\n", spec.path, realPath));
-
-                }
-
-                throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
-            }
-        } else {
-            library = loadLLVMLibrary(location, context, spec.name, spec.path);
-            interopLib = InteropLibrary.getUncached(library);
-            try {
-                if (interopLib.getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
-                    throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
-                }
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        try {
-            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, interopLib, checkFunctionResultNode);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
-        }
     }
 
     public static Object loadLLVMLibrary(Node location, PythonContext context, TruffleString name, TruffleString path) throws ImportException, IOException {
