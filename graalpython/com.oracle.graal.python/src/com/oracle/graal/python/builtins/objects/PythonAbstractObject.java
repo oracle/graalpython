@@ -1349,8 +1349,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                             // only kwargs are in arguments
                             newArgs = new Object[0];
                         }
-                    } else if (lastHasMembers
-                            && isStarargsProfile2.profile(inliningTarget, iLibPosArgs.isMemberReadable(last, POSARGS_MEMBER) && iLibPosArgs.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
+                    } else if (lastHasMembers &&
+                                    isStarargsProfile2.profile(inliningTarget, iLibPosArgs.isMemberReadable(last, POSARGS_MEMBER) && iLibPosArgs.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
                         posArgs = last;
                     }
 
@@ -1358,7 +1358,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         long length = iLibPosArgs.getArraySize(posArgs);
                         Object iterator = iLibPosArgs.getIterator(posArgs);
                         loopProfile.profileCounted(inliningTarget, length);
-                        Object[] starArgs = new Object[(int)length];
+                        Object[] starArgs = new Object[(int) length];
                         for (int i = 0; loopProfile.inject(inliningTarget, i < length); i++) {
                             starArgs[i] = iLibIterator.getIteratorNextElement(iterator);
                         }
