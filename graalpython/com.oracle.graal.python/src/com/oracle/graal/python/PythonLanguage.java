@@ -1028,7 +1028,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void disposeThread(PythonContext context, Thread thread) {
-        context.disposeThread(thread);
+        context.disposeThread(thread, false);
     }
 
     public Shape getEmptyShape() {

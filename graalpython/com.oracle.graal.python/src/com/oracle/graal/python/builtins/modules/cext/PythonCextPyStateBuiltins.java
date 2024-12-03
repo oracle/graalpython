@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -103,10 +102,6 @@ public final class PythonCextPyStateBuiltins {
         static Object restore(
                         @Cached GilNode gil) {
             gil.release(true);
-            // The C API that makes this up-call should reset the thread local variable to NULL
-            // and here, on the Java side, we can clean up the pointers, because there is no need
-            // to reset the native thread local on Truffle thread disposal
-            getContext(gil).getThreadState(PythonLanguage.get(gil)).resetNativeThreadLocalVarPointer();
             return PNone.NO_VALUE;
         }
     }
@@ -119,9 +114,19 @@ public final class PythonCextPyStateBuiltins {
                         @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
             PythonThreadState pythonThreadState = getContext().getThreadState(getLanguage());
             if (!lib.isNull(tstateCurrentPtr)) {
-                pythonThreadState.setNativeThreadLocalVarPointer(lib, tstateCurrentPtr);
+                pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
             }
             return PThreadState.getOrCreateNativeThreadState(pythonThreadState);
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {}, call = Ignored)
+    abstract static class PyTruffleBeforeThreadDetach extends CApiNullaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object doIt() {
+            getContext().disposeThread(Thread.currentThread(), true);
+            return PNone.NO_VALUE;
         }
     }
 
