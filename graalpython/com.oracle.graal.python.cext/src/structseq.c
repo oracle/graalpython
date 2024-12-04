@@ -458,9 +458,18 @@ error:
     return -1;
 }
 
-static void
-initialize_members(PyStructSequence_Desc *desc, PyMemberDef* members,
-                   Py_ssize_t n_members) {
+static PyMemberDef *
+initialize_members(PyStructSequence_Desc *desc,
+                   Py_ssize_t n_members, Py_ssize_t n_unnamed_members)
+{
+    PyMemberDef *members;
+
+    members = PyMem_NEW(PyMemberDef, n_members - n_unnamed_members + 1);
+    if (members == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+
     Py_ssize_t i, k;
     for (i = k = 0; i < n_members; ++i) {
         if (desc->fields[i].name == PyStructSequence_UnnamedField) {
@@ -608,12 +617,10 @@ _PyStructSequence_NewType(PyStructSequence_Desc *desc, unsigned long tp_flags)
 
     /* Initialize MemberDefs */
     n_members = count_members(desc, &n_unnamed_members);
-    members = PyMem_NEW(PyMemberDef, n_members - n_unnamed_members + 1);
+    members = initialize_members(desc, n_members, n_unnamed_members);
     if (members == NULL) {
-        PyErr_NoMemory();
         return NULL;
     }
-    initialize_members(desc, members, n_members);
 
     /* Initialize Slots */
     slots[0] = (PyType_Slot){Py_tp_dealloc, (destructor)structseq_dealloc};
@@ -629,7 +636,8 @@ _PyStructSequence_NewType(PyStructSequence_Desc *desc, unsigned long tp_flags)
     /* The name in this PyType_Spec is statically allocated so it is */
     /* expected that it'll outlive the PyType_Spec */
     spec.name = desc->name;
-    spec.basicsize = sizeof(PyStructSequence) - sizeof(PyObject *);
+    Py_ssize_t hidden = n_members - desc->n_in_sequence;
+    spec.basicsize = (int)(sizeof(PyStructSequence) + (hidden - 1) * sizeof(PyObject *));
     spec.itemsize = sizeof(PyObject *);
     spec.flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
     spec.slots = slots;
