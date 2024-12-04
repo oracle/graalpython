@@ -356,9 +356,6 @@ public class GraalPyResources {
                         // Force to automatically import site.py module, to make Python packages
                         // available
                         option("python.ForceImportSite", "true").
-                        // Do not warn if running without JIT. This can be desirable for short
-                        // running scripts to reduce memory footprint.
-                        option("engine.WarnInterpreterOnly", "false").
                         // causes the interpreter to always assume hash-based pycs are valid
                         option("python.CheckHashPycsMode", "never");
     }
