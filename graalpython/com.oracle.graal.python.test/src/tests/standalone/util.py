@@ -184,29 +184,19 @@ class BuildToolTestBase(unittest.TestCase):
                 assert return_code == 0, out
                 break
 
-def run_cmd(cmd, env, cwd=None, print_out=False, gradle=False, logger:LoggerBase=NullLogger()):
+def run_cmd(cmd, env, cwd=None, print_out=False, logger:LoggerBase=NullLogger()):
     if print_out:
         logger = StdOutLogger(logger)
     out = []
     out.append(f"Executing:\n    {cmd=}\n")
-    prev_java_home = None     
-    if gradle:
-        gradle_java_home = env.get("GRADLE_JAVA_HOME")
-        assert gradle_java_home, "in order to run standalone gradle tests, the 'GRADLE_JAVA_HOME' env var has to be set to a jdk <= 22"
-        prev_java_home = env["JAVA_HOME"]
-        env["JAVA_HOME"] = env["GRADLE_JAVA_HOME"]
     
-    try:
-        logger.log(f"Executing command: {' '.join(cmd)}")
-        process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
-        for line in iter(process.stdout.readline, ""):
-            out.append(line)
-        out_str = "".join(out)
-        logger.log_block("output", out_str)
-        return out_str, process.wait()
-    finally:
-        if prev_java_home:
-            env["JAVA_HOME"] = prev_java_home
+    logger.log(f"Executing command: {' '.join(cmd)}")
+    process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
+    for line in iter(process.stdout.readline, ""):
+        out.append(line)
+    out_str = "".join(out)
+    logger.log_block("output", out_str)
+    return out_str, process.wait()
 
 def check_ouput(txt, out, contains=True, logger: Optional[LoggerBase] =None):
     # if logger is passed, we assume that it already contains the output
