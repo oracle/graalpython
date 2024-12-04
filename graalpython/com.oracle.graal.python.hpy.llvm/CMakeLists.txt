@@ -97,8 +97,6 @@ target_include_directories(${TARGET_LIB} PRIVATE
     "${TRUFFLE_H_INC}"
 )
 
-add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
-
 target_compile_definitions(${TARGET_LIB} PRIVATE
     HPY_ABI_HYBRID
     NDEBUG
@@ -119,7 +117,7 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    target_compile_options(${TARGET_LIB} PRIVATE /Z7 /O2 /WX)
+    target_compile_options(${TARGET_LIB} PRIVATE /O2 /WX)
 else()
     if(NOT WIN32)
         target_compile_options(${TARGET_LIB} PRIVATE
@@ -127,6 +125,7 @@ else()
         )
     endif()
     target_compile_options(${TARGET_LIB} PRIVATE
+        -ffile-prefix-map=${GRAALPY_PARENT_DIR}=.
         -Wno-int-to-pointer-cast
         -Wno-int-conversion
         -Wno-void-pointer-to-int-cast
