@@ -989,6 +989,7 @@ suite = {
                 "exports": [
                     "org.graalvm.python.embedding.tools.vfs",
                     "org.graalvm.python.embedding.tools.exec",
+                    "org.graalvm.python.embedding.tools.capi",
                 ]
             },
             "useModulePath": True,

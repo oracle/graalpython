@@ -38,71 +38,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.util.dynamic_libraries.macho;
+package org.graalvm.python.embedding.tools.capi;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
-final class MachOHeader {
+/**
+ * A load command, without much interpretation. Stores the entire command as a byte array, and the
+ * cmd id and size as fields.
+ *
+ * <pre>
+ * struct load_command {
+ *  uint32_t cmd;
+ *  uint32_t cmdsize;
+ *  ...
+ * };
+ * </pre>
+*/
+final class MachOLoadCommand {
+    static final int LC_CODE_SIGNATURE = 0x0000001D;
 
-    static final int SIZE64 = 8 * Integer.BYTES;
-    static final int MAGIC64 = 0xFEEDFACF;
-    static final int CIGAM_64 = 0xCFFAEDFE;
+    final int cmd;
+    final int cmdSize;
+    final ByteBuffer content;
 
-    // see e.g. https://llvm.org/doxygen/structllvm_1_1MachO_1_1mach__header__64.html
-    final int magic;
-    final int cpuType;
-    final int cpuSubType;
-    final int fileType;
-    int nCmds;
-    int sizeOfCmds;
-    final int flags;
-    final int reserved;
-
-    MachOHeader(int magic, int cpuType, int cpuSubType, int fileType, int nrOfCmds, int sizeOfCmds, int flags, int reserved) {
-        this.magic = magic;
-        this.cpuType = cpuType;
-        this.cpuSubType = cpuSubType;
-        this.fileType = fileType;
-        this.nCmds = nrOfCmds;
-        this.sizeOfCmds = sizeOfCmds;
-        this.flags = flags;
-        this.reserved = reserved;
+    MachOLoadCommand(int cmd, int cmdSize, ByteBuffer content) {
+        this.cmd = cmd;
+        this.cmdSize = cmdSize;
+        this.content = content;
     }
 
-    static MachOHeader read(ByteBuffer f) throws IOException {
-        int magic = f.getInt();
-        switch (magic) {
-            case MAGIC64:
-                // Ok
-                break;
-            case CIGAM_64:
-                f.order(f.order() == ByteOrder.BIG_ENDIAN ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
-                magic = MAGIC64;
-                break;
-            default:
-                throw new IOException("Unsupported magic");
-        }
-        int cpuType = f.getInt();
-        int cpuSubType = f.getInt();
-        int fileType = f.getInt();
-        int nrOfCmds = f.getInt();
-        int sizeOfCmds = f.getInt();
-        int flags = f.getInt();
-        int reserved = f.getInt();
-
-        return new MachOHeader(magic, cpuType, cpuSubType, fileType, nrOfCmds, sizeOfCmds, flags, reserved);
+    static MachOLoadCommand get(ByteBuffer buffer) {
+        int pos = buffer.position();
+        int cmd = buffer.getInt();
+        int cmdSize = buffer.getInt();
+        var content = buffer.slice(pos, cmdSize);
+        content.order(buffer.order());
+        buffer.position(pos + cmdSize);
+        return new MachOLoadCommand(cmd, cmdSize, content);
     }
 
     void put(ByteBuffer f) {
-        f.putInt(magic);
-        f.putInt(cpuType);
-        f.putInt(cpuSubType);
-        f.putInt(fileType);
-        f.putInt(nCmds);
-        f.putInt(sizeOfCmds);
-        f.putInt(flags);
-        f.putInt(reserved);
+        f.put(content);
     }
 }

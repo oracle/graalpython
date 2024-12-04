@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.util.dynamic_libraries.macho;
+package org.graalvm.python.embedding.tools.capi;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -127,5 +127,9 @@ final class MachODylibCommand {
         f.putInt(currentVersion);
         f.putInt(compatibilityVersion);
         f.put(paddedName);
+    }
+
+    public String getName() {
+        return new String(paddedName, Charset.forName("UTF-8")).trim();
     }
 }

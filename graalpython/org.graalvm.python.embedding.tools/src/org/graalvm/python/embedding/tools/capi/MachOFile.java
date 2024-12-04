@@ -38,29 +38,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.util.dynamic_libraries.macho;
+package org.graalvm.python.embedding.tools.capi;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MachOFile {
+import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+
+final class MachOFile extends SharedObject {
     private final ByteBuffer buffer;
     private final MachOHeader mh;
     private final List<MachOLoadCommand> loadCommands;
     private int emptySpace;
 
-    public MachOFile(ByteBuffer f) throws IOException {
-        this.buffer = f;
-        this.mh = MachOHeader.read(f);
+    MachOFile(Path venv, byte[] f, SubprocessLog log) throws IOException {
+        this.buffer = ByteBuffer.wrap(f);
+        this.mh = MachOHeader.read(buffer);
         this.loadCommands = new ArrayList<>();
         for (int i = 0; i < mh.nCmds; i++) {
-            loadCommands.add(MachOLoadCommand.get(f));
+            loadCommands.add(MachOLoadCommand.get(buffer));
         }
-        f.position(MachOHeader.SIZE64 + mh.sizeOfCmds);
+        buffer.position(MachOHeader.SIZE64 + mh.sizeOfCmds);
         int zeroBytes = 0;
-        while (f.get() == 0) {
+        while (buffer.get() == 0) {
             zeroBytes++;
         }
         this.emptySpace = zeroBytes;
@@ -77,7 +80,9 @@ public class MachOFile {
         }
     }
 
+    @Override
     public void setId(String newId) throws IOException {
+        removeCodeSignature();
         MachOLoadCommand oldIdCommand = null;
         for (int i = 0; i < loadCommands.size(); ++i) {
             var cmd = loadCommands.get(i);
@@ -114,9 +119,24 @@ public class MachOFile {
         mh.sizeOfCmds += newCmd.cmdSize;
     }
 
-    public void insertDylib(String dylibPath) throws IOException {
+    @Override
+    public void changeOrAddDependency(String oldName, String newName) throws IOException {
+        removeCodeSignature();
+
+        for (int i = 0; i < loadCommands.size(); ++i) {
+            var cmd = loadCommands.get(i);
+            if (cmd.cmd == MachODylibCommand.LC_LOAD_DYLIB) {
+                var loadCmd = MachODylibCommand.get(cmd.content);
+                if (loadCmd.getName().equals(oldName)) {
+                    loadCommands.remove(i);
+                    emptySpace += cmd.cmdSize;
+                    break;
+                }
+            }
+        }
+
         var newCmd = new MachODylibCommand(MachODylibCommand.LC_LOAD_DYLIB, MachODylibCommand.SIZE, new byte[0], MachODylibCommand.SIZE, 0, 0, 0);
-        newCmd.setName(dylibPath);
+        newCmd.setName(newName);
 
         if (newCmd.cmdSize > emptySpace) {
             throw new IOException("Not enough empty space to add dependency");
@@ -132,8 +152,10 @@ public class MachOFile {
         emptySpace -= newCmd.cmdSize;
     }
 
-    public void write() {
+    @Override
+    public byte[] write() {
         buffer.position(0);
         mh.put(buffer);
+        return buffer.array();
     }
 }
