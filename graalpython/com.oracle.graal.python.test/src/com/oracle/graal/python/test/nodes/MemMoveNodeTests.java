@@ -57,13 +57,15 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
+
 public class MemMoveNodeTests {
 
     private GilNode.UncachedAcquire gil;
 
     @Before
     public void setUp() {
-        PythonTests.enterContext();
+        PythonTests.enterContext(Map.of("python.NativeModules", "false"), new String[0]);
         this.gil = GilNode.uncachedAcquire();
         CApiContext.ensureCapiWasLoaded("internal");
     }
