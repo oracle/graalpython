@@ -169,6 +169,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -704,14 +705,13 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             return toTruffleStringUncached(errmsg);
         }
 
+        @TruffleBoundary
         @Specialization
-        static Object py_dl_open(VirtualFrame frame, PythonModule self, TruffleString name, int m,
+        static Object py_dl_open(PythonModule self, TruffleString name, int m,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectHashNode hashNode,
-                        @Cached AuditNode auditNode,
-                        @Cached EqualNode eqNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached AuditNode auditNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonObjectSlowPathFactory factory = context.factory();
             auditNode.audit(inliningTarget, "ctypes.dlopen", name);
             if (name.isEmpty()) {
                 return factory.createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
@@ -722,13 +722,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
-            PythonContext context = PythonContext.get(inliningTarget);
             DLHandler handle;
             Exception exception = null;
             try {
                 if (!context.getEnv().isNativeAccessAllowed() && !PythonOptions.NativeModules.getValue(context.getEnv().getOptions())) {
                     Object handler = loadLLVMLibrary(context, inliningTarget, name);
-                    long adr = hashNode.execute(frame, inliningTarget, handler);
+                    long adr = PyObjectHashNode.executeUncached(handler);
                     handle = new DLHandler(handler, adr, name.toJavaStringUncached(), true);
                     registerAddress(context, handle.adr, handle);
                     return factory.createNativeVoidPtr(handle);
@@ -737,6 +736,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                     /*-
                      TODO: (mq) cryptography in macos isn't always compatible with ctypes.
                      */
+                    EqualNode eqNode = EqualNode.getUncached();
                     if (!eqNode.execute(name, MACOS_Security_LIB, TS_ENCODING) && !eqNode.execute(name, MACOS_CoreFoundation_LIB, TS_ENCODING)) {
                         handle = loadNFILibrary(context, ctypes.backendType, name.toJavaStringUncached(), mode);
                         registerAddress(context, handle.adr, handle);
@@ -746,7 +746,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             } catch (Exception e) {
                 exception = e;
             }
-            throw raiseNode.get(inliningTarget).raise(OSError, getErrMsg(exception));
+            throw PRaiseNode.raiseUncached(inliningTarget, OSError, getErrMsg(exception));
         }
     }
 
