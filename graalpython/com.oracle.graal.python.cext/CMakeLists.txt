@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -43,7 +43,8 @@ endif()
 
 if(WIN32)
     require_var(GRAALVM_LLVM_LIB_DIR)
-  endif()
+endif()
+require_var(GRAALPY_PARENT_DIR)
 require_var(CAPI_INC_DIR)
 require_var(PYCONFIG_INCLUDE_DIR)
 require_var(TRUFFLE_H_INC)
@@ -68,6 +69,8 @@ set(CFLAGS_WARNINGS -Wall -Werror,-Wunknown-warning-option -Wno-unused-function 
                     -Wno-int-to-pointer-cast -Wno-int-conversion -Wno-void-pointer-to-int-cast
                     -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
                     -Wno-braced-scalar-init -Wno-deprecated-declarations)
+
+add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
 
 # preprocessor defines for all platforms
 add_compile_definitions(

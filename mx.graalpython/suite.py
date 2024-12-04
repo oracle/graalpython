@@ -701,6 +701,7 @@ suite = {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
                         "results": [
@@ -721,6 +722,7 @@ suite = {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
                         "results": [
@@ -777,6 +779,7 @@ suite = {
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                         },
                     },
                 },
@@ -788,6 +791,7 @@ suite = {
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                         },
                     },
                 },
@@ -811,8 +815,8 @@ suite = {
                     "<others>": {
                         "cflags": [
                             "-DHPY_ABI_HYBRID", "-DHPY_EMBEDDED_MODULES", "-DNDEBUG", "-DMS_WINDOWS",
-                            # cflags equivalent to -g -O3 -Wall (/W3, could be /Wall) -Werror (/WX)
-                            "-D_CRT_SECURE_NO_WARNINGS", "/Z7", "/O2", "/W3", "/WX",
+                            # cflags equivalent to -O3 -Wall (/W3, could be /Wall) -Werror (/WX)
+                            "-D_CRT_SECURE_NO_WARNINGS", "/O2", "/W3", "/WX",
                             "-I\"<path:com.oracle.graal.python.cext>/include\"",
                             "-I\"<path:com.oracle.graal.python.cext>/include/internal\"",
                             "-I\"<path:com.oracle.graal.python.cext>/src\"",
@@ -847,13 +851,13 @@ suite = {
             "deliverable": "zsupport",
             "buildDependencies": [],
             "cflags": [
-                "-DNDEBUG", "-g", "-O3", "-Werror",
+                "-DNDEBUG", "-O3", "-Werror",
             ],
             "ldlibs": ["-lz"],
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        # "/Z7", "/O2", "/WX", # cflags to replace -g -O3 -Werror
+                        # "/O2", "/WX", # cflags to replace -O3 -Werror
                         "defaultBuild": False,
                     },
                 },
@@ -871,12 +875,12 @@ suite = {
             "deliverable": "posix",
             "buildDependencies": [],
             "cflags": [
-                "-DNDEBUG", "-g", "-O3", "-Wall", "-Werror",
+                "-DNDEBUG", "-O3", "-Wall", "-Werror",
             ],
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        # "/Z7", "/O2", "/WX", # cflags to replace -g -O3 -Werror
+                        # "/O2", "/WX", # cflags to replace -O3 -Werror
                         "defaultBuild": False,
                     },
                 },
