@@ -604,8 +604,6 @@ _PyTypes_Fini(PyInterpreterState *interp)
         assert(interp->types.builtins[i].type == NULL);
     }
 }
-#endif // GraalPy change
-
 
 int
 PyType_AddWatcher(PyType_WatchCallback callback)
@@ -683,6 +681,7 @@ PyType_Unwatch(int watcher_id, PyObject* obj)
     type->tp_watched &= ~(1 << watcher_id);
     return 0;
 }
+#endif // GraalPy change
 
 void
 PyType_Modified(PyTypeObject *type)
@@ -7314,6 +7313,7 @@ PyType_Ready(PyTypeObject *type)
     return type_ready(type, 0);
 }
 
+#if 0 // GraalPy change
 int
 _PyStaticType_InitBuiltin(PyInterpreterState *interp, PyTypeObject *self)
 {
@@ -7347,6 +7347,7 @@ _PyStaticType_InitBuiltin(PyInterpreterState *interp, PyTypeObject *self)
 
     return res;
 }
+#endif // GraalPy change
 
 
 static int

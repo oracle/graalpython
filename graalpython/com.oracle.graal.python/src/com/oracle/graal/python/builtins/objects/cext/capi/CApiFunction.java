@@ -1035,7 +1035,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyEval_GetBuiltin", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_GetBuiltinId", ret = PyObject, args = {PY_IDENTIFIER}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_GetSwitchInterval", ret = UNSIGNED_LONG, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyEval_RequestCodeExtraIndex", ret = Py_ssize_t, args = {FREEFUNC}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_SetProfile", ret = Int, args = {PyThreadState, PY_TRACEFUNC, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_SetSwitchInterval", ret = Void, args = {UNSIGNED_LONG}, call = NotImplemented)
     @CApiBuiltin(name = "_PyEval_SetTrace", ret = Int, args = {PyThreadState, PY_TRACEFUNC, PyObject}, call = NotImplemented)

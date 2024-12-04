@@ -948,7 +948,6 @@ _PyEval_EvalFrameDefault;PyObject*;PyThreadState*|struct _PyInterpreterFrame*|in
 _PyEval_GetBuiltin;PyObject*;PyObject*
 _PyEval_GetBuiltinId;PyObject*;_Py_Identifier*
 _PyEval_GetSwitchInterval;unsigned long;void
-_PyEval_RequestCodeExtraIndex;Py_ssize_t;freefunc
 _PyEval_SetProfile;int;PyThreadState*|Py_tracefunc|PyObject*
 _PyEval_SetSwitchInterval;void;unsigned long
 _PyEval_SetTrace;int;PyThreadState*|Py_tracefunc|PyObject*
