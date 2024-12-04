@@ -114,8 +114,8 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Function;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
@@ -798,7 +798,9 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     public static Object ensureCApiLLVMLibrary(PythonContext context) throws IOException, ImportException, ApiInitException {
-        CApiContext cApiContext = ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING, " load LLVM library (this is an internal bug)");
+        assert !PythonOptions.NativeModules.getValue(context.getEnv().getOptions());
+        CApiContext cApiContext = ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING,
+                        " load LLVM library (this is an internal bug, LLVM library should not be loaded when running on native backend)");
         return cApiContext.getLLVMLibrary();
     }
 
