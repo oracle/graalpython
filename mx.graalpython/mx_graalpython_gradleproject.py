@@ -40,15 +40,42 @@
 from __future__ import annotations
 
 import pathlib
-import stat
-import tempfile
 import textwrap
 import os
 import shutil
-from zipfile import ZipFile
 
 import mx
 import mx_urlrewrites
+
+
+def gradle_wrapper_properties(project_root):
+    return os.path.join(project_root, "gradle", "wrapper", "gradle-wrapper.properties")
+
+
+def patch_distributionUrl(properties_file, original_file=None, escape_colon=True):
+    def escape(s):
+        return s.replace(':', '\\:') if escape_colon else s
+
+    def unescape(s):
+        return s.replace('\\:', ':') if escape_colon else s
+
+    original_file = original_file if original_file else properties_file
+    with open(properties_file, 'r') as f:
+        wrapper_properties = [l.strip() for l in f.readlines()]
+    found = False
+    for i, line in enumerate(wrapper_properties):
+        if line.strip().startswith('distributionUrl='):
+            url = unescape(line[len('distributionUrl='):])
+            new_url = mx_urlrewrites.rewriteurl(url)
+            mx.logv("Rewritten Gradle distribution URL to: " + new_url)
+            wrapper_properties[i] = 'distributionUrl=' + escape(new_url)
+            found = True
+            break
+    if not found:
+        mx.abort("Could not find 'distributionUrl' in " + original_file)
+    mx.logvv(f'Patched gradle-wrapper.properties to:\n' + '\n'.join(wrapper_properties))
+    with open(properties_file, 'w') as f:
+        f.write('\n'.join(wrapper_properties) + '\n')
 
 
 class GradlePluginProject(mx.Distribution, mx.ClasspathDependency):  # pylint: disable=too-many-instance-attributes
@@ -204,42 +231,8 @@ class GradlePluginProject(mx.Distribution, mx.ClasspathDependency):  # pylint: d
         """
         self.getBuildTask([])._create_build_script()
 
-def _download_gradle():
-    mx.logv('Could not find local installation of Gradle. Downloading Gradle...')
-    zip_path = mx.library('GRADLE', False).get_path(resolve = True)
-    oldpwd = os.getcwd()
-    work_dir = os.path.join(tempfile.gettempdir(), tempfile.mkdtemp())
-    os.chdir(work_dir)
-    try:
-        mx.logv('Extracted Gradle to: ' + work_dir)
-        with ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall(work_dir)
 
-        folders = os.listdir(work_dir)
-        gradle_executable = os.path.join(work_dir, folders[0], "bin", "gradle")
-        if mx.is_windows():
-            gradle_executable += '.bat'
-        else:
-            os.chmod(gradle_executable, stat.S_IRWXU)
-        return gradle_executable
-    finally:
-        os.chdir(oldpwd)
-
-
-_gradle_command_cache = None
-def _run_gradle(args, **kwargs):
-    global _gradle_command_cache
-    for provider in [
-        lambda: _gradle_command_cache,
-        lambda: os.getenv('GRADLE_COMMAND'),
-        lambda: shutil.which('gradle'),
-        lambda: shutil.which('gradle.bat'),
-        _download_gradle]:
-        gradle_command = provider()
-        if gradle_command:
-            break
-    _gradle_command_cache =  gradle_command
-    mx.logv('Using Gradle executable: ' + gradle_command)
+def _run_gradlew(args, **kwargs):
     kwargs.setdefault('env', os.environ.copy())
     env = kwargs.pop('env')
     if 'GRADLE_JAVA_HOME' not in env:
@@ -253,7 +246,11 @@ def _run_gradle(args, **kwargs):
     else:
         env['JAVA_HOME'] = env['GRADLE_JAVA_HOME']
     mx.logv("Building Gradle project using java: " + env['GRADLE_JAVA_HOME'])
-    mx.run([gradle_command, *args], env=env, **kwargs)
+    command = './gradlew'
+    if mx.is_windows():
+        command = 'gradle.bat'
+    mx.run([command, *args], env=env, **kwargs)
+
 
 # Gradle uses forward slashes in paths even on Windows
 def _as_gradle_path(p:str) -> str:
@@ -284,7 +281,7 @@ class _GradleBuildTask(mx.ProjectBuildTask):
         os.makedirs(self.subject.get_output_root(), exist_ok=True)
         os.makedirs(os.path.dirname(self.subject.path), exist_ok=True)
         self._create_build_script(version=version)
-        _run_gradle(['jar', 'validatePlugins', 'mxJars'], cwd=self.subject.get_output_root())
+        _run_gradlew(['jar', 'validatePlugins', 'mxJars'], cwd=self.subject.get_output_root())
         self.subject.make_archive()
 
     def _create_build_script(self, version: str | None = None):
@@ -305,6 +302,12 @@ class _GradleBuildTask(mx.ProjectBuildTask):
         Tasks to copy the resulting jars from the build directory where Gradle puts
         them by default into the project directory where MX expects them (mxJars task).
         """
+        # Gradle wrapper
+        shutil.copytree(os.path.join(self.subject.gradle_directory, "wrapper"), self.subject.get_output_root(), dirs_exist_ok=True)
+        patch_distributionUrl(gradle_wrapper_properties(self.subject.get_output_root()),
+                             original_file=gradle_wrapper_properties(os.path.join(self.subject.gradle_directory, "wrapper")))
+
+        # build.gradle
         deps_decls = []
         for d in self.subject.deps:
             if d.isLayoutDirDistribution() or d.suite.internal:
@@ -400,6 +403,7 @@ class _GradleBuildTask(mx.ProjectBuildTask):
         mx.logv(f"Gradle build script written to {self.build_script_path}")
         mx.logvv(script)
 
+        # org.graalvm.python.properties: plugin properties file
         properties = textwrap.dedent(f'''
             implementation-class={self.subject.gradlePluginImplementation}
             version={version}
@@ -413,6 +417,7 @@ class _GradleBuildTask(mx.ProjectBuildTask):
         mx.logv(f"Gradle plugin properties file written to {properties_file_path}")
         mx.logvv(properties)
 
+        # settings.gradle
         settings = f'rootProject.name = "{self.subject.gradleProjectName}"'
         plugin_repo = mx_urlrewrites.rewriteurl(_GradleBuildTask.PLUGIN_PORTAL_URL)
         if plugin_repo != _GradleBuildTask.PLUGIN_PORTAL_URL:
