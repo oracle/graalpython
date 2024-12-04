@@ -49,7 +49,9 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -159,8 +161,8 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
 import sun.misc.Unsafe;
 
 public final class CApiContext extends CExtContext {
-    private static final TruffleString T_PY_INIT = PythonUtils.tsLiteral("PyInit_");
-    private static final TruffleString T_PY_INIT_U = PythonUtils.tsLiteral("PyInitU_");
+    private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
+    private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
 
     public static final String LOGGER_CAPI_NAME = "capi";
 
@@ -338,12 +340,20 @@ public final class CApiContext extends CExtContext {
     public final BackgroundGCTask gcTask;
     private Thread backgroundGCTaskThread;
 
+    /**
+     * The suffix to add to C extensions when loading. This allows us to support native module
+     * isolation with {@link PythonOptions#IsolateNativeModules}. If the value is {@code -1}, it
+     * means we are not using isolation.
+     */
+    private final int capiSlot;
+
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend, String capiFilePath) {
+    public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend, int capiSlot) {
         super(context, llvmLibrary, useNativeBackend);
+        this.capiSlot = capiSlot;
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
 
         /*
@@ -896,9 +906,8 @@ public final class CApiContext extends CExtContext {
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             // e.g. "libpython-native.so"
             String libName = context.getLLVMSupportExt("python");
-            TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
+            final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
             try {
-                final String capiFilePath;
                 SourceBuilder capiSrcBuilder;
                 boolean useNative;
                 boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
@@ -918,19 +927,30 @@ public final class CApiContext extends CExtContext {
                 } else {
                     useNative = false;
                 }
+                int capiSlot = -1;
                 if (useNative) {
                     context.ensureNFILanguage(node, "NativeModules", "true");
                     if (!isolateNative) {
-                        capiFilePath = null;
                         capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
                         LOGGER.config(() -> "loading CAPI from " + capiFile + " as native");
                     } else {
-                        capiFilePath = findRelocatedCopy(env, capiFile);
-                        capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_LOCAL) \"" + capiFilePath + "\"", "<libpython>");
-                        LOGGER.config(() -> "loading CAPI copy from " + capiFilePath + " as native");
+                        capiSlot = Long.numberOfTrailingZeros(Long.lowestOneBit(CEXT_COPY_INDICES.getAndUpdate((oldValue) -> oldValue ^ Long.lowestOneBit(oldValue))));
+                        if (capiSlot == Long.SIZE) {
+                            throw new ApiInitException(ErrorMessages.CAPI_ISOLATION_CAPPED_AT_D, Long.SIZE);
+                        }
+                        Object sysPrefix = context.getSysModule().getAttribute(T_PREFIX);
+                        if (sysPrefix instanceof TruffleString tsSysPrefix) {
+                            final String relocatedCapiFilePath = resolveSharedObjectLoadPath(env, env.getPublicTruffleFile(tsSysPrefix.toJavaStringUncached()).resolve(capiFile.getName()), capiSlot);
+                            if (relocatedCapiFilePath == null) {
+                                throw new ApiInitException(ErrorMessages.RELOCATED_S_D_NOT_FOUND, capiFile.getPath(), capiSlot);
+                            }
+                            capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_LOCAL) \"" + relocatedCapiFilePath + "\"", "<libpython>");
+                            LOGGER.config(() -> "loading CAPI copy from " + relocatedCapiFilePath + " as native");
+                        } else {
+                            throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION, sysPrefix);
+                        }
                     }
                 } else {
-                    capiFilePath = null;
                     context.ensureLLVMLanguage(node);
                     capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
                     LOGGER.config(() -> "loading CAPI from " + capiFile + " as bitcode");
@@ -942,7 +962,7 @@ public final class CApiContext extends CExtContext {
 
                 Object capiLibrary = capiLibraryCallTarget.call();
                 Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
-                CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative, capiFilePath);
+                CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative, capiSlot);
                 context.setCApiContext(cApiContext);
                 try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
                     /*
@@ -1024,6 +1044,9 @@ public final class CApiContext extends CExtContext {
         if ((flags & PosixConstants.RTLD_GLOBAL.value) != 0) {
             str += "|RTLD_GLOBAL";
         }
+        if ((flags & PosixConstants.RTLD_LOCAL.value) != 0) {
+            str += "|RTLD_LOCAL";
+        }
         return str;
     }
 
@@ -1065,21 +1088,22 @@ public final class CApiContext extends CExtContext {
 
         if (cApiContext.useNativeBackend) {
             TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
-            String loadPath = realPath.getPath();
-            // if (cApiContext.capiRelocationSuffix != null) {
-            //     try {
-            //         loadPath = findRelocatedCopy(context.getEnv(), realPath);
-            //     } catch (IOException e) {
-            //         // It is unlikely that loading from the real path will work at this point, but
-            //         // the handling below is still the best that we want
-            //     }
-            // }
-
-            getLogger(CApiContext.class).config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
-            if (context.getOption(PythonOptions.IsolateNativeModules)) {
-            } else {
+            String loadPath = resolveSharedObjectLoadPath(context.getEnv(), realPath, cApiContext.capiSlot);
+            if (loadPath == null) {
+                throw new ImportException(null, spec.name, spec.path, ErrorMessages.RELOCATED_S_D_NOT_FOUND, realPath.getPath(), cApiContext.capiSlot);
             }
-            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), loadPath);
+            getLogger(CApiContext.class).config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
+            int dlopenFlags = context.getDlopenFlags();
+            if (context.getOption(PythonOptions.IsolateNativeModules)) {
+                if ((dlopenFlags & PosixConstants.RTLD_GLOBAL.value) != 0) {
+                    getLogger(CApiContext.class).warning("The IsolateNativeModules option was specified, but the dlopen flags were set to include RTLD_GLOBAL " +
+                    "(likely via some call to sys.setdlopenflags). This will probably lead to broken isolation and possibly incorrect results and crashing. " +
+                    "You can patch sys.setdlopenflags to trace callers and/or prevent setting the RTLD_GLOBAL flags. " +
+                    "See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for more details.");
+                }
+                dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
+            }
+            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(dlopenFlags), loadPath);
             if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
                 loadExpr = "with panama " + loadExpr;
             }
@@ -1120,17 +1144,27 @@ public final class CApiContext extends CExtContext {
     }
 
     /**
-     * Indices used as suffixes for copied C extensions when using {@link PythonOptions#IsolateNativeModules}.
+     * Bitset for which copied C extension to use when {@link PythonOptions#IsolateNativeModules} is enabled.
      */
-    private static AtomicLong CEXT_COPY_INDICES = new AtomicLong(0);
+    private static AtomicLong CEXT_COPY_INDICES = new AtomicLong(-1);
 
-    protected static String findRelocatedCopy(Env env, TruffleFile original) throws IOException {
-        TruffleFile targetDir;
-        String[] nameParts = original.getName().split("\\.");
-        String stem = nameParts[0];
-        String extension = "." + nameParts[nameParts.length - 1];
-        // LOGGER.info(() -> "Found usable copy of " + original.getPath() + " at " + target.getPath());
-        return original.getPath();
+    /**
+     * Determine path of actual shared object to load for the given capi slot. If the capi slot is
+     * {@code -1}, return the {@code original} argument's path. Otherwise, look for a sibling
+     * corresponding to the desired slot.
+     *
+     * @see PythonOptions#IsolateNativeModules
+     */
+    @TruffleBoundary
+    protected static String resolveSharedObjectLoadPath(Env env, TruffleFile original, int capiSlot) {
+        if (capiSlot < 0) {
+            return original.getPath();
+        }
+        TruffleFile copy = original.resolveSibling(original.getName() + "." + Integer.toHexString(capiSlot));
+        if (copy.isReadable()) {
+            return copy.getPath();
+        }
+        return null;
     }
 
     /**
@@ -1255,6 +1289,9 @@ public final class CApiContext extends CExtContext {
                 nativeSymbolCacheSingleContextUsed = false;
             }
         }
+
+        // Return the C API slot for subsequent contexts to use.
+        CEXT_COPY_INDICES.updateAndGet((oldValue) -> oldValue | (1L << capiSlot));
     }
 
     @TruffleBoundary

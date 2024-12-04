@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.builtins.PythonOS;
+
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -1668,4 +1670,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_CREATE_P_OBJECTS = tsLiteral("Cannot create %p objects");
     public static final TruffleString ARROW_ARRAY_ALREADY_RELEASED = tsLiteral("Cannot release already released ArrowArray");
     public static final TruffleString ARROW_SCHEMA_ALREADY_RELEASED = tsLiteral("Cannot release already released ArrowSchema");
+    public static final TruffleString CAPI_ISOLATION_CAPPED_AT_D = tsLiteral("There is no available slot for C API isolation. The current limit for concurrent Python contexts accessing the Python C API is %d.");
+    public static final TruffleString RELOCATED_S_D_NOT_FOUND = tsLiteral("Could not find the relocated module %s.%d needed to use the `IsolateNativeModules' option. Creating the relocated C APIs is a build-time task. Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation and how to create the necessary relocated files.");
+    public static final TruffleString SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION = tsLiteral("The sys.prefix attribute must be a str, not '%p' when the `IsolateNativeModules' option is used, because it is the base path for searching the relocated C API. Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
 }

@@ -120,6 +120,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
@@ -285,7 +286,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         COMPILE_TIME = compile_time;
     }
 
-    private static final TruffleString[] SYS_PREFIX_ATTRIBUTES = tsArray("prefix", "exec_prefix");
+    private static final TruffleString[] SYS_PREFIX_ATTRIBUTES = new TruffleString[]{T_PREFIX, tsLiteral("exec_prefix")};
     private static final TruffleString[] BASE_PREFIX_ATTRIBUTES = tsArray("base_prefix", "base_exec_prefix");
 
     static final StructSequence.BuiltinTypeDescriptor VERSION_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
