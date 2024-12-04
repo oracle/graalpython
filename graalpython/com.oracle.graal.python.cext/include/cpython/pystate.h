@@ -186,8 +186,7 @@ struct _ts {
      */
     unsigned long native_thread_id;
 
-    int trash_delete_nesting;
-    PyObject *trash_delete_later;
+    struct _py_trashcan trash;
 
     /* Called when a thread state is deleted normally, but not when it
      * is destroyed after fork().

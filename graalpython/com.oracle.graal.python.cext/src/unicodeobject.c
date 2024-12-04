@@ -2465,10 +2465,11 @@ PyUnicode_AsUCS4Copy(PyObject *string)
     return as_ucs4(string, NULL, 0, 1);
 }
 
-/* maximum number of characters required for output of %lld or %p.
-   We need at most ceil(log10(256)*SIZEOF_LONG_LONG) digits,
-   plus 1 for the sign.  53/22 is an upper bound for log10(256). */
-#define MAX_LONG_LONG_CHARS (2 + (SIZEOF_LONG_LONG*53-1) / 22)
+/* maximum number of characters required for output of %jo or %jd or %p.
+   We need at most ceil(log8(256)*sizeof(intmax_t)) digits,
+   plus 1 for the sign, plus 2 for the 0x prefix (for %p),
+   plus 1 for the terminal NUL. */
+#define MAX_INTMAX_CHARS (5 + (sizeof(intmax_t)*8-1) / 3)
 
 static int
 unicode_fromformat_write_str(_PyUnicodeWriter *writer, PyObject *str,
