@@ -239,23 +239,6 @@ license = "BSD-3-Clause"
 install-priority = 0  # Don't make pip install prefer this version
 dist-type = "sdist"
 
-[[matplotlib.rules]]
-version = '== 3.5.3'
-patch = 'matplotlib-3.5.3.patch'
-license = 'PSF-2.0'
-
-[[matplotlib.rules]]
-version = '== 3.6.3'
-patch = 'matplotlib-3.6.3.patch'
-license = 'PSF-2.0'
-
-[[matplotlib.rules]]
-# pin 3.7.0
-install-priority = 10
-version = '== 3.7.0'
-patch = 'matplotlib-3.7.0.patch'
-license = 'PSF-2.0'
-
 [[meson-python.rules]]
 # Upstreamed
 version = '<= 0.16.0'
