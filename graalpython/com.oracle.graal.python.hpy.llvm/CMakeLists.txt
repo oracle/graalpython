@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -45,6 +45,7 @@ set(TARGET_LIB "hpy-native")
 # don't install into the system but into the MX project's output dir
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
+require_var(GRAALPY_PARENT_DIR)
 require_var(GRAALVM_HPY_INCLUDE_DIR)
 require_var(GRAALVM_PYTHON_INCLUDE_DIR)
 require_var(PYCONFIG_INCLUDE_DIR)
@@ -95,6 +96,8 @@ target_include_directories(${TARGET_LIB} PRIVATE
     "${PYCONFIG_INCLUDE_DIR}"
     "${TRUFFLE_H_INC}"
 )
+
+add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
 
 target_compile_definitions(${TARGET_LIB} PRIVATE
     HPY_ABI_HYBRID

@@ -707,6 +707,7 @@ suite = {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
                         "results": [
@@ -727,6 +728,7 @@ suite = {
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext:native>",
                         },
                         "results": [
@@ -783,6 +785,7 @@ suite = {
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                         },
                     },
                 },
@@ -794,6 +797,7 @@ suite = {
                             "GRAALVM_PYTHON_INCLUDE_DIR": "<path:com.oracle.graal.python.cext>/include",
                             "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                             "CMAKE_C_COMPILER": "<toolchainGetToolPath:native,CC>",
+                            "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                         },
                     },
                 },

@@ -1668,6 +1668,10 @@ def _get_suite_dir(suitename):
     return mx.suite(suitename).dir
 
 
+def _get_suite_parent_dir(suitename):
+    return os.path.dirname(mx.suite(suitename).dir)
+
+
 def _get_src_dir(projectname):
     for suite in mx.suites():
         for p in suite.projects:
@@ -1784,6 +1788,7 @@ def dev_tag(arg=None, **kwargs):
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
+mx_subst.path_substitutions.register_with_arg('suite_parent', _get_suite_parent_dir)
 mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
 mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
