@@ -154,16 +154,6 @@ license = 'Apache-2.0'
 patch = 'h2o.patch'
 license = 'Apache-2.0'
 
-[[h5py.rules]]
-version = '== 2.10.0'
-patch = 'h5py-2.10.0.patch'
-license = 'BSD-3-Clause'
-
-[[h5py.rules]]
-version = '== 3.10.0'
-patch = 'h5py-3.10.0.patch'
-license = 'BSD-3-Clause'
-
 [[hmmlearn.rules]]
 # Need to specify pybind11 build dependency, otherwise setuptools will install it unpatched
 patch = 'hmmlearn.patch'
