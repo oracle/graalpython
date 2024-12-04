@@ -71,7 +71,7 @@ class TestPystate(CPyExtTestCase):
 
     # This seems to get the native extensions into some inconsistent state on GraalPy, giving:
     # refcnt below zero during managed adjustment for 0000aaae18fca780 (9 0000000000000009 - 10)
-    def ignored_test_SetAsyncExc(self):
+    def test_SetAsyncExc(self):
         SetAsyncExcCaller = CPyExtType(
             "SetAsyncExcCaller",
             """

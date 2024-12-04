@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
@@ -146,23 +148,31 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {ArgDescriptor.UNSIGNED_LONG, ArgDescriptor.PyObjectTransfer}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {ArgDescriptor.UNSIGNED_LONG, PyObject}, call = Direct)
     abstract static class PyThreadState_SetAsyncExc extends CApiBinaryBuiltinNode {
         public static final TruffleLogger LOGGER = CApiContext.getLogger(PyThreadState_SetAsyncExc.class);
 
         @Specialization
         @TruffleBoundary
         int doIt(long id, Object exceptionObject) {
-            LOGGER.warning("The application uses PyThreadState_SetAsyncExc, which is not reliably supported by GraalPy");
             for (Thread thread : getContext().getThreads()) {
                 if (PThread.getThreadId(thread) == id) {
-                    // We do not want to raise in some internal code, it could corrupt internal data
-                    // structures.
+                    if (PGuards.isNoValue(exceptionObject)) {
+                        LOGGER.warning("The application used PyThreadState_SetAsyncExc to clear an exception on another thread. " +
+                                        "This is not supported and ignored by GraalPy.");
+                        return 1;
+                    }
                     ThreadLocalAction action = new ThreadLocalAction(true, false) {
+                        static final int MAX_MISSED_COUNT = 20;
                         int missedCount = 0;
 
                         @Override
                         protected void perform(Access access) {
+                            if (missedCount == MAX_MISSED_COUNT) {
+                                throw PRaiseNode.raiseExceptionObject(null, exceptionObject);
+                            }
+                            // If possible, we do not want to raise in some internal code, it could
+                            // corrupt internal data structures.
                             Node location = access.getLocation();
                             if (location != null) {
                                 RootNode rootNode = location.getRootNode();
@@ -170,7 +180,14 @@ public final class PythonCextPyStateBuiltins {
                                     throw PRaiseNode.raiseExceptionObject(null, exceptionObject);
                                 }
                             }
-                            if (missedCount++ < 20) {
+                            // Heuristic fabricated out of thin air:
+                            if (missedCount++ < MAX_MISSED_COUNT) {
+                                if (missedCount % 2 == 0) {
+                                    try {
+                                        Thread.sleep(1);
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                }
                                 getContext().getEnv().submitThreadLocal(new Thread[]{thread}, this);
                             }
                         }
