@@ -34,7 +34,7 @@ patch = 'cffi-1.15.1.patch'
 license = 'MIT'
 
 [[cffi.rules]]
-version = '== 1.16.0'
+version = '>= 1.16.0'
 patch = 'cffi-1.16.0.patch'
 license = 'MIT'
 
@@ -186,7 +186,7 @@ patch = 'jiter.patch'
 license = 'MIT'
 
 [[joblib.rules]]
-version = '==1.4.0'
+version = '==1.4.*'
 patch = 'joblib-1.4.0.patch'
 license = 'BSD-3-Clause'
 
