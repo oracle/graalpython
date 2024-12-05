@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
@@ -279,6 +280,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute(tsLiteral("ForeignType"), core.lookupType(PythonBuiltinClassType.ForeignObject));
         mod.setAttribute(tsLiteral("use_system_toolchain"), context.getOption(PythonOptions.UseSystemToolchain));
         mod.setAttribute(tsLiteral("ext_mode"), context.getOption(PythonOptions.NativeModules) ? T_NATIVE : T_LLVM_LANGUAGE);
+        mod.setAttribute(tsLiteral("capi_library"), toTruffleStringUncached(PythonContext.getSupportLibName("python-" + J_NATIVE)));
+        mod.setAttribute(tsLiteral("soabi"), context.getSoAbi());
 
         if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
             mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
