@@ -40,10 +40,11 @@
  */
 package org.graalvm.python.embedding.utils;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 
-public final class VirtualFileSystem {
+public final class VirtualFileSystem implements AutoCloseable {
 
     final VirtualFileSystemImpl impl;
 
@@ -141,9 +142,12 @@ public final class VirtualFileSystem {
          * libraries, shared objects, and Python C extension files, because these need to be
          * accessed by the operating system loader. Setting this filter to <code>null</code> denies
          * any extraction. Any other filter is combined with the default filter.
+         *
+         * @param filter the extraction filter, where the provided path is an absolute path from the
+         *            VirtualFileSystem.
          */
         public Builder extractFilter(Predicate<Path> filter) {
-            if (extractFilter == null) {
+            if (filter == null) {
                 extractFilter = null;
             } else {
                 extractFilter = (p) -> filter.test(p) || DEFAULT_EXTRACT_FILTER.test(p);
@@ -192,6 +196,16 @@ public final class VirtualFileSystem {
      */
     public String getMountPoint() {
         return this.impl.mountPoint.toString();
+    }
+
+    /**
+     * Closes the VirtualFileSystem and frees up potentially allocated resources.
+     *
+     * @throws IOException if the resources could not be freed.
+     */
+    @Override
+    public void close() throws IOException {
+        impl.close();
     }
 
 }
