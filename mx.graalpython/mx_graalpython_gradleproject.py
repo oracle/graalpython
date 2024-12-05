@@ -232,9 +232,8 @@ class GradlePluginProject(mx.Distribution, mx.ClasspathDependency):  # pylint: d
         self.getBuildTask([])._create_build_script()
 
 
-def _run_gradlew(args, **kwargs):
-    kwargs.setdefault('env', os.environ.copy())
-    env = kwargs.pop('env')
+def _run_gradlew(args, cwd):
+    env = os.environ.copy()
     if 'GRADLE_JAVA_HOME' not in env:
         def abortCallback(msg):
             mx.abort("Could not find a JDK of version between 17 and 21 to build a Gradle project.\n"
@@ -246,10 +245,8 @@ def _run_gradlew(args, **kwargs):
     else:
         env['JAVA_HOME'] = env['GRADLE_JAVA_HOME']
     mx.logv("Building Gradle project using java: " + env['GRADLE_JAVA_HOME'])
-    command = './gradlew'
-    if mx.is_windows():
-        command = '.\gradlew.bat'
-    mx.run([command, *args], env=env, **kwargs)
+    command = os.path.join(cwd, 'gradlew.bat' if mx.is_windows() else 'gradlew')
+    mx.run([command, *args], env=env, cwd=cwd)
 
 
 # Gradle uses forward slashes in paths even on Windows
