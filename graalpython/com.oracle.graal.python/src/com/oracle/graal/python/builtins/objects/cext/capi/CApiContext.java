@@ -938,17 +938,12 @@ public final class CApiContext extends CExtContext {
                         if (capiSlot == Long.SIZE) {
                             throw new ApiInitException(ErrorMessages.CAPI_ISOLATION_CAPPED_AT_D, Long.SIZE);
                         }
-                        Object sysPrefix = context.getSysModule().getAttribute(T_PREFIX);
-                        if (sysPrefix instanceof TruffleString tsSysPrefix) {
-                            final String relocatedCapiFilePath = resolveSharedObjectLoadPath(env, env.getPublicTruffleFile(tsSysPrefix.toJavaStringUncached()).resolve(capiFile.getName()), capiSlot);
-                            if (relocatedCapiFilePath == null) {
-                                throw new ApiInitException(ErrorMessages.RELOCATED_S_D_NOT_FOUND, capiFile.getPath(), capiSlot);
-                            }
-                            capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_LOCAL) \"" + relocatedCapiFilePath + "\"", "<libpython>");
-                            LOGGER.config(() -> "loading CAPI copy from " + relocatedCapiFilePath + " as native");
-                        } else {
-                            throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION, sysPrefix);
+                        final String relocatedCapiFilePath = resolveSharedObjectLoadPath(context, capiFile, capiSlot);
+                        if (relocatedCapiFilePath == null) {
+                            throw new ApiInitException(ErrorMessages.RELOCATED_S_D_NOT_FOUND, capiFile.getPath(), capiSlot);
                         }
+                        capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_LOCAL) \"" + relocatedCapiFilePath + "\"", "<libpython>");
+                        LOGGER.config(() -> "loading CAPI copy from " + relocatedCapiFilePath + " as native");
                     }
                 } else {
                     context.ensureLLVMLanguage(node);
@@ -1088,7 +1083,7 @@ public final class CApiContext extends CExtContext {
 
         if (cApiContext.useNativeBackend) {
             TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
-            String loadPath = resolveSharedObjectLoadPath(context.getEnv(), realPath, cApiContext.capiSlot);
+            String loadPath = resolveSharedObjectLoadPath(context, realPath, cApiContext.capiSlot);
             if (loadPath == null) {
                 throw new ImportException(null, spec.name, spec.path, ErrorMessages.RELOCATED_S_D_NOT_FOUND, realPath.getPath(), cApiContext.capiSlot);
             }
@@ -1150,17 +1145,31 @@ public final class CApiContext extends CExtContext {
 
     /**
      * Determine path of actual shared object to load for the given capi slot. If the capi slot is
-     * {@code -1}, return the {@code original} argument's path. Otherwise, look for a sibling
-     * corresponding to the desired slot.
+     * {@code -1}, return the {@code original} argument's path. Otherwise, look for a relocated
+     * copy corresponding to the desired slot.
      *
      * @see PythonOptions#IsolateNativeModules
      */
     @TruffleBoundary
-    protected static String resolveSharedObjectLoadPath(Env env, TruffleFile original, int capiSlot) {
+    protected static String resolveSharedObjectLoadPath(PythonContext context, TruffleFile original, int capiSlot) throws ApiInitException {
         if (capiSlot < 0) {
             return original.getPath();
         }
-        TruffleFile copy = original.resolveSibling(original.getName() + "." + Integer.toHexString(capiSlot));
+        Env env = context.getEnv();
+        TruffleFile copy;
+        String newName = original.getName() + "." + Integer.toHexString(capiSlot);
+
+        if (original.getAbsoluteFile().startsWith(context.getCoreHome().toJavaStringUncached())) {
+            // must be relocated to venv
+            Object sysPrefix = context.getSysModule().getAttribute(T_PREFIX);
+            if (sysPrefix instanceof TruffleString tsSysPrefix) {
+                copy = env.getPublicTruffleFile(tsSysPrefix.toJavaStringUncached()).resolve(newName);
+            } else {
+                throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION, sysPrefix);
+            }
+        } else {
+            copy = original.resolveSibling(newName);
+        }
         if (copy.isReadable()) {
             return copy.getPath();
         }
