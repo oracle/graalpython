@@ -790,7 +790,9 @@ def make_coverage_launcher_if_needed(launcher):
             pass_args = '"$@"'
         else:
             coverage_launcher = original_launcher.replace('.exe', '.cmd')
-            preamble = '@echo off'
+            # Windows looks for libraries on PATH, we need to add the jvm bin dir there or it won't find the instrumentation dlls
+            jvm_bindir = os.path.join(os.path.dirname(os.path.dirname(original_launcher)), 'jvm', 'bin')
+            preamble = f'@echo off\nset PATH=%PATH%;{jvm_bindir}'
             pass_args = '%*'
         with open(coverage_launcher, "w") as f:
             f.write(f'{preamble}\n')
