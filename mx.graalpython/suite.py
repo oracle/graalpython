@@ -498,6 +498,7 @@ suite = {
             "sourceDirs": ["src"],
             "dependencies": [
                 "GRAALPYTHON_EMBEDDING",
+                "GRAALPYTHON_EMBEDDING_TOOLS",
                 "mx:JUNIT",
                 "sdk:GRAAL_SDK",
             ],
@@ -1255,6 +1256,7 @@ suite = {
                 "GRAALPYTHON",
                 "GRAALPYTHON_RESOURCES",
                 "GRAALPYTHON_EMBEDDING",
+                "GRAALPYTHON_EMBEDDING_TOOLS",
                 "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
                 "sdk:GRAAL_SDK",
             ],
