@@ -248,7 +248,7 @@ def _run_gradlew(args, **kwargs):
     mx.logv("Building Gradle project using java: " + env['GRADLE_JAVA_HOME'])
     command = './gradlew'
     if mx.is_windows():
-        command = 'gradle.bat'
+        command = '.\gradlew.bat'
     mx.run([command, *args], env=env, **kwargs)
 
 
