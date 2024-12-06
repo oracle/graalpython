@@ -2456,22 +2456,8 @@ def python_coverage(args):
                     cmdargs += ["-a", f]
                 else:
                     mx.warn(f"Skipping {f}")
-
         # actually run the merge command
         mx.run(cmdargs)
-
-    # upload coverage data
-    out = mx.OutputCapture()
-    mx.run_mx(['sversions', '--print-repositories', '--json'], out=out)
-    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8') as f:
-        f.write(out.data)
-        f.flush()
-        print(f"Associated data", out.data, sep="\n")
-        if os.environ.get('CI'):
-            mx.run(['coverage-uploader.py', '--associated-repos', f.name])
-        else:
-            mx.run(['genhtml', '--output-directory', 'coverage-html', '--source-directory', os.path.abspath(os.path.join(SUITE.dir, '..')), '--quiet', 'coverage/lcov.info'])
-            print('Generated html report in ./coverage-html')
 
 
 class GraalpythonBuildTask(mx.ProjectBuildTask):
