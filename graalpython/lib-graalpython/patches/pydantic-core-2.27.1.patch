@@ -1,0 +1,165 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 3b3b8a9..718029a 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -29,7 +29,7 @@ rust-version = "1.75"
+ [dependencies]
+ # TODO it would be very nice to remove the "py-clone" feature as it can panic,
+ # but needs a bit of work to make sure it's not used in the codebase
+-pyo3 = { version = "0.22.6", features = ["generate-import-lib", "num-bigint", "py-clone"] }
++pyo3 = { version = "0.22.6", features = ["generate-import-lib", "num-bigint", "py-clone"], path = "patched_crates/pyo3" }
+ regex = "1.11.1"
+ strum = { version = "0.26.3", features = ["derive"] }
+ strum_macros = "0.26.4"
+@@ -46,7 +46,7 @@ base64 = "0.22.1"
+ num-bigint = "0.4.6"
+ python3-dll-a = "0.2.10"
+ uuid = "1.11.0"
+-jiter = { version = "0.7.1", features = ["python"] }
++jiter = { version = "0.7.1", features = ["python"], path = "patched_crates/jiter/crates/jiter" }
+ hex = "0.4.3"
+ 
+ [lib]
+@@ -74,12 +74,12 @@ debug = true
+ strip = false
+ 
+ [dev-dependencies]
+-pyo3 = { version = "0.22.6", features = ["auto-initialize"] }
++pyo3 = { version = "0.22.6", features = ["auto-initialize"], path = "patched_crates/pyo3" }
+ 
+ [build-dependencies]
+ version_check = "0.9.5"
+ # used where logic has to be version/distribution specific, e.g. pypy
+-pyo3-build-config = { version = "0.22.6" }
++pyo3-build-config = { version = "0.22.6", path = "patched_crates/pyo3/pyo3-build-config" }
+ 
+ [lints.clippy]
+ dbg_macro = "warn"
+diff --git a/build_backend.py b/build_backend.py
+new file mode 100644
+index 0000000..bf9c44a
+--- /dev/null
++++ b/build_backend.py
+@@ -0,0 +1,23 @@
++import maturin
++import os
++import shutil
++import subprocess
++
++build_sdist = maturin.build_sdist
++
++def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
++    shutil.rmtree('patched_crates', ignore_errors=True)
++    os.makedirs('patched_crates')
++    subprocess.check_call([
++        'git', 'clone', 'https://github.com/PyO3/pyo3.git',
++        'patched_crates/pyo3',
++        '--branch', 'v0.22.6',
++    ])
++    subprocess.check_call(['patch', '-p1', '-d', 'patched_crates/pyo3', '-i', '../../patches/pyo3.patch'])
++    subprocess.check_call([
++        'git', 'clone', 'https://github.com/pydantic/jiter.git',
++        'patched_crates/jiter',
++        '--branch', 'v0.7.1',
++    ])
++    subprocess.check_call(['patch', '-p1', '-d', 'patched_crates/jiter', '-i', '../../patches/jiter.patch'])
++    return maturin.build_wheel(wheel_directory, config_settings, metadata_directory)
+diff --git a/patches/jiter.patch b/patches/jiter.patch
+new file mode 100644
+index 0000000..3fc59ee
+--- /dev/null
++++ b/patches/jiter.patch
+@@ -0,0 +1,12 @@
++diff --git a/Cargo.toml b/Cargo.toml
++index 122e111..9ec9e6d 100644
++--- a/Cargo.toml
+++++ b/Cargo.toml
++@@ -29,5 +29,5 @@ inherits = "release"
++ debug = true
++ 
++ [workspace.dependencies]
++-pyo3 = { version = "0.22.0" }
++-pyo3-build-config = { version = "0.22.0" }
+++pyo3 = { version = "0.22.6", path = "../pyo3" }
+++pyo3-build-config = { version = "0.22.6", path = "../pyo3/pyo3-build-config" }
+diff --git a/patches/pyo3.patch b/patches/pyo3.patch
+new file mode 100644
+index 0000000..e488ffb
+--- /dev/null
++++ b/patches/pyo3.patch
+@@ -0,0 +1,31 @@
++diff --git a/pyo3-ffi/src/cpython/pyerrors.rs b/pyo3-ffi/src/cpython/pyerrors.rs
++index 6d17ebc812..1d206f9b18 100644
++--- a/pyo3-ffi/src/cpython/pyerrors.rs
+++++ b/pyo3-ffi/src/cpython/pyerrors.rs
++@@ -6,19 +6,19 @@ use crate::Py_ssize_t;
++ #[derive(Debug)]
++ pub struct PyBaseExceptionObject {
++     pub ob_base: PyObject,
++-    #[cfg(not(any(PyPy, GraalPy)))]
+++    #[cfg(not(PyPy))]
++     pub dict: *mut PyObject,
++-    #[cfg(not(any(PyPy, GraalPy)))]
+++    #[cfg(not(PyPy))]
++     pub args: *mut PyObject,
++-    #[cfg(all(Py_3_11, not(any(PyPy, GraalPy))))]
+++    #[cfg(all(Py_3_11, not(PyPy)))]
++     pub notes: *mut PyObject,
++-    #[cfg(not(any(PyPy, GraalPy)))]
+++    #[cfg(not(PyPy))]
++     pub traceback: *mut PyObject,
++-    #[cfg(not(any(PyPy, GraalPy)))]
+++    #[cfg(not(PyPy))]
++     pub context: *mut PyObject,
++-    #[cfg(not(any(PyPy, GraalPy)))]
+++    #[cfg(not(PyPy))]
++     pub cause: *mut PyObject,
++-    #[cfg(not(any(PyPy, GraalPy)))]
+++    #[cfg(not(PyPy))]
++     pub suppress_context: char,
++ }
++ 
+diff --git a/pyproject.toml b/pyproject.toml
+index de04a39..8db6756 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -3,7 +3,8 @@ requires = [
+     'maturin>=1,<2',
+     'typing-extensions >=4.6.0,!=4.7.0'
+ ]
+-build-backend = 'maturin'
++backend-path = ['.']
++build-backend = 'build_backend'
+ 
+ [project]
+ name = 'pydantic_core'
+diff --git a/src/input/return_enums.rs b/src/input/return_enums.rs
+index c91a6e2..d0da05a 100644
+--- a/src/input/return_enums.rs
++++ b/src/input/return_enums.rs
+@@ -10,7 +10,7 @@ use pyo3::exceptions::PyTypeError;
+ use pyo3::ffi;
+ use pyo3::intern;
+ use pyo3::prelude::*;
+-#[cfg(not(PyPy))]
++#[cfg(all(not(PyPy),not(GraalPy)))]
+ use pyo3::types::PyFunction;
+ use pyo3::types::{PyBytes, PyComplex, PyFloat, PyFrozenSet, PyIterator, PyMapping, PySet, PyString};
+ 
+@@ -330,14 +330,14 @@ pub(crate) fn iterate_attributes<'a, 'py>(
+                 // the PyFunction::is_type_of(attr) catches `staticmethod`, but also any other function,
+                 // I think that's better than including static methods in the yielded attributes,
+                 // if someone really wants fields, they can use an explicit field, or a function to modify input
+-                #[cfg(not(PyPy))]
++                #[cfg(all(not(PyPy),not(GraalPy)))]
+                 if !is_bound && !attr.is_instance_of::<PyFunction>() {
+                     return Some(Ok((name, attr)));
+                 }
+                 // MASSIVE HACK! PyFunction doesn't exist for PyPy,
+                 // is_instance_of::<PyFunction> crashes with a null pointer, hence this hack, see
+                 // https://github.com/pydantic/pydantic-core/pull/161#discussion_r917257635
+-                #[cfg(PyPy)]
++                #[cfg(any(PyPy,GraalPy))]
+                 if !is_bound && attr.get_type().to_string() != "<class 'function'>" {
+                     return Some(Ok((name, attr)));
+                 }
