@@ -930,6 +930,10 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if parallel is None:
         parallel = 4 if paths is None else 1
 
+    if sys.platform == 'win32':
+        # Windows machines don't seem to have much memory
+        parallel = min(parallel, 2)
+
     args = args or []
     args = [
         "--vm.ea",
