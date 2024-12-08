@@ -11,57 +11,37 @@
 
 /* --- Internal Unicode Operations ---------------------------------------- */
 
-#ifndef USE_UNICODE_WCHAR_CACHE
-#  define USE_UNICODE_WCHAR_CACHE 1
-#endif /* USE_UNICODE_WCHAR_CACHE */
+// Static inline functions to work with surrogates
+static inline int Py_UNICODE_IS_SURROGATE(Py_UCS4 ch) {
+    return (0xD800 <= ch && ch <= 0xDFFF);
+}
+static inline int Py_UNICODE_IS_HIGH_SURROGATE(Py_UCS4 ch) {
+    return (0xD800 <= ch && ch <= 0xDBFF);
+}
+static inline int Py_UNICODE_IS_LOW_SURROGATE(Py_UCS4 ch) {
+    return (0xDC00 <= ch && ch <= 0xDFFF);
+}
 
-/* Since splitting on whitespace is an important use case, and
-   whitespace in most situations is solely ASCII whitespace, we
-   optimize for the common case by using a quick look-up table
-   _Py_ascii_whitespace (see below) with an inlined check.
+// Join two surrogate characters and return a single Py_UCS4 value.
+static inline Py_UCS4 Py_UNICODE_JOIN_SURROGATES(Py_UCS4 high, Py_UCS4 low)  {
+    assert(Py_UNICODE_IS_HIGH_SURROGATE(high));
+    assert(Py_UNICODE_IS_LOW_SURROGATE(low));
+    return 0x10000 + (((high & 0x03FF) << 10) | (low & 0x03FF));
+}
 
- */
-#define Py_UNICODE_ISSPACE(ch) \
-    ((Py_UCS4)(ch) < 128U ? _Py_ascii_whitespace[(ch)] : _PyUnicode_IsWhitespace(ch))
+// High surrogate = top 10 bits added to 0xD800.
+// The character must be in the range [U+10000; U+10ffff].
+static inline Py_UCS4 Py_UNICODE_HIGH_SURROGATE(Py_UCS4 ch) {
+    assert(0x10000 <= ch && ch <= 0x10ffff);
+    return (0xD800 - (0x10000 >> 10) + (ch >> 10));
+}
 
-#define Py_UNICODE_ISLOWER(ch) _PyUnicode_IsLowercase(ch)
-#define Py_UNICODE_ISUPPER(ch) _PyUnicode_IsUppercase(ch)
-#define Py_UNICODE_ISTITLE(ch) _PyUnicode_IsTitlecase(ch)
-#define Py_UNICODE_ISLINEBREAK(ch) _PyUnicode_IsLinebreak(ch)
-
-#define Py_UNICODE_TOLOWER(ch) _PyUnicode_ToLowercase(ch)
-#define Py_UNICODE_TOUPPER(ch) _PyUnicode_ToUppercase(ch)
-#define Py_UNICODE_TOTITLE(ch) _PyUnicode_ToTitlecase(ch)
-
-#define Py_UNICODE_ISDECIMAL(ch) _PyUnicode_IsDecimalDigit(ch)
-#define Py_UNICODE_ISDIGIT(ch) _PyUnicode_IsDigit(ch)
-#define Py_UNICODE_ISNUMERIC(ch) _PyUnicode_IsNumeric(ch)
-#define Py_UNICODE_ISPRINTABLE(ch) _PyUnicode_IsPrintable(ch)
-
-#define Py_UNICODE_TODECIMAL(ch) _PyUnicode_ToDecimalDigit(ch)
-#define Py_UNICODE_TODIGIT(ch) _PyUnicode_ToDigit(ch)
-#define Py_UNICODE_TONUMERIC(ch) _PyUnicode_ToNumeric(ch)
-
-#define Py_UNICODE_ISALPHA(ch) _PyUnicode_IsAlpha(ch)
-
-#define Py_UNICODE_ISALNUM(ch) \
-   (Py_UNICODE_ISALPHA(ch) || \
-    Py_UNICODE_ISDECIMAL(ch) || \
-    Py_UNICODE_ISDIGIT(ch) || \
-    Py_UNICODE_ISNUMERIC(ch))
-
-/* macros to work with surrogates */
-#define Py_UNICODE_IS_SURROGATE(ch) (0xD800 <= (ch) && (ch) <= 0xDFFF)
-#define Py_UNICODE_IS_HIGH_SURROGATE(ch) (0xD800 <= (ch) && (ch) <= 0xDBFF)
-#define Py_UNICODE_IS_LOW_SURROGATE(ch) (0xDC00 <= (ch) && (ch) <= 0xDFFF)
-/* Join two surrogate characters and return a single Py_UCS4 value. */
-#define Py_UNICODE_JOIN_SURROGATES(high, low)  \
-    (((((Py_UCS4)(high) & 0x03FF) << 10) |      \
-      ((Py_UCS4)(low) & 0x03FF)) + 0x10000)
-/* high surrogate = top 10 bits added to D800 */
-#define Py_UNICODE_HIGH_SURROGATE(ch) (0xD800 - (0x10000 >> 10) + ((ch) >> 10))
-/* low surrogate = bottom 10 bits added to DC00 */
-#define Py_UNICODE_LOW_SURROGATE(ch) (0xDC00 + ((ch) & 0x3FF))
+// Low surrogate = bottom 10 bits added to 0xDC00.
+// The character must be in the range [U+10000; U+10ffff].
+static inline Py_UCS4 Py_UNICODE_LOW_SURROGATE(Py_UCS4 ch) {
+    assert(0x10000 <= ch && ch <= 0x10ffff);
+    return (0xDC00 + (ch & 0x3FF));
+}
 
 /* --- Unicode Type ------------------------------------------------------- */
 
@@ -160,16 +140,12 @@ typedef struct {
            and the kind is PyUnicode_1BYTE_KIND. If ascii is set and compact is
            set, use the PyASCIIObject structure. */
         unsigned int ascii:1;
-        /* The ready flag indicates whether the object layout is initialized
-           completely. This means that this is either a compact object, or
-           the data pointer is filled out. The bit is redundant, and helps
-           to minimize the test in PyUnicode_IS_READY(). */
-        unsigned int ready:1;
+        /* The object is statically allocated. */
+        unsigned int statically_allocated:1;
         /* Padding to ensure that PyUnicode_DATA() is always aligned to
            4 bytes (see issue #19537 on m68k). */
         unsigned int :24;
     } state;
-    wchar_t *wstr;              /* wchar_t representation (null-terminated) */
 } PyASCIIObject;
 
 /* Non-ASCII strings allocated through PyUnicode_New use the
@@ -180,8 +156,6 @@ typedef struct {
     Py_ssize_t utf8_length;     /* Number of bytes in utf8, excluding the
                                  * terminating \0. */
     char *utf8;                 /* UTF-8 representation (null-terminated) */
-    Py_ssize_t wstr_length;     /* Number of code points in wstr, possible
-                                 * surrogates count as two code points. */
 } PyCompactUnicodeObject;
 
 /* Object format for Unicode subclasses. */
@@ -510,114 +484,12 @@ PyAPI_FUNC(Py_UCS4) _PyUnicode_FindMaxChar (
     Py_ssize_t start,
     Py_ssize_t end);
 
-/* --- Legacy deprecated API ---------------------------------------------- */
-
-/* Return a read-only pointer to the Unicode object's internal
-   Py_UNICODE buffer.
-   If the wchar_t/Py_UNICODE representation is not yet available, this
-   function will calculate it. */
-Py_DEPRECATED(3.3) PyAPI_FUNC(Py_UNICODE *) PyUnicode_AsUnicode(
-    PyObject *unicode           /* Unicode object */
-    );
-
-/* Similar to PyUnicode_AsUnicode(), but raises a ValueError if the string
-   contains null characters. */
-PyAPI_FUNC(const Py_UNICODE *) _PyUnicode_AsUnicode(
-    PyObject *unicode           /* Unicode object */
-    );
-
-/* Fast access macros */
-
-Py_DEPRECATED(3.3)
-static inline Py_ssize_t PyUnicode_WSTR_LENGTH(PyObject *op)
-{
-    if (PyUnicode_IS_COMPACT_ASCII(op)) {
-        return _PyASCIIObject_CAST(op)->length;
-    }
-    else {
-        return _PyCompactUnicodeObject_CAST(op)->wstr_length;
-    }
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_WSTR_LENGTH(op) PyUnicode_WSTR_LENGTH(_PyObject_CAST(op))
-#endif
-
-/* Returns the deprecated Py_UNICODE representation's size in code units
-   (this includes surrogate pairs as 2 units).
-   If the Py_UNICODE representation is not available, it will be computed
-   on request.  Use PyUnicode_GET_LENGTH() for the length in code points. */
-
-Py_DEPRECATED(3.3)
-static inline Py_ssize_t PyUnicode_GET_SIZE(PyObject *op)
-{
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    if (_PyASCIIObject_CAST(op)->wstr == _Py_NULL) {
-        (void)PyUnicode_AsUnicode(op);
-        assert(_PyASCIIObject_CAST(op)->wstr != _Py_NULL);
-    }
-    return PyUnicode_WSTR_LENGTH(op);
-    _Py_COMP_DIAG_POP
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_GET_SIZE(op) PyUnicode_GET_SIZE(_PyObject_CAST(op))
-#endif
-
-Py_DEPRECATED(3.3)
-static inline Py_ssize_t PyUnicode_GET_DATA_SIZE(PyObject *op)
-{
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    return PyUnicode_GET_SIZE(op) * Py_UNICODE_SIZE;
-    _Py_COMP_DIAG_POP
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_GET_DATA_SIZE(op) PyUnicode_GET_DATA_SIZE(_PyObject_CAST(op))
-#endif
-
-/* Alias for PyUnicode_AsUnicode().  This will create a wchar_t/Py_UNICODE
-   representation on demand.  Using this macro is very inefficient now,
-   try to port your code to use the new PyUnicode_*BYTE_DATA() macros or
-   use PyUnicode_WRITE() and PyUnicode_READ(). */
-
-Py_DEPRECATED(3.3)
-static inline Py_UNICODE* PyUnicode_AS_UNICODE(PyObject *op)
-{
-    wchar_t *wstr = _PyASCIIObject_CAST(op)->wstr;
-    if (wstr != _Py_NULL) {
-        return wstr;
-    }
-
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    return PyUnicode_AsUnicode(op);
-    _Py_COMP_DIAG_POP
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_AS_UNICODE(op) PyUnicode_AS_UNICODE(_PyObject_CAST(op))
-#endif
-
-Py_DEPRECATED(3.3)
-static inline const char* PyUnicode_AS_DATA(PyObject *op)
-{
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    Py_UNICODE *data = PyUnicode_AS_UNICODE(op);
-    // In C++, casting directly PyUnicode* to const char* is not valid
-    return _Py_STATIC_CAST(const char*, _Py_STATIC_CAST(const void*, data));
-    _Py_COMP_DIAG_POP
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_AS_DATA(op) PyUnicode_AS_DATA(_PyObject_CAST(op))
-#endif
-
-
 /* --- _PyUnicodeWriter API ----------------------------------------------- */
 
 typedef struct {
     PyObject *buffer;
     void *data;
-    enum PyUnicode_Kind kind;
+    int kind;
     Py_UCS4 maxchar;
     Py_ssize_t size;
     Py_ssize_t pos;
@@ -668,8 +540,7 @@ _PyUnicodeWriter_PrepareInternal(_PyUnicodeWriter *writer,
 
    Return 0 on success, raise an exception and return -1 on error. */
 #define _PyUnicodeWriter_PrepareKind(WRITER, KIND)                    \
-    (assert((KIND) != PyUnicode_WCHAR_KIND),                          \
-     (KIND) <= (WRITER)->kind                                         \
+    ((KIND) <= (WRITER)->kind                                         \
      ? 0                                                              \
      : _PyUnicodeWriter_PrepareKindInternal((WRITER), (KIND)))
 
@@ -677,7 +548,7 @@ _PyUnicodeWriter_PrepareInternal(_PyUnicodeWriter *writer,
    macro instead. */
 PyAPI_FUNC(int)
 _PyUnicodeWriter_PrepareKindInternal(_PyUnicodeWriter *writer,
-                                     enum PyUnicode_Kind kind);
+                                     int kind);
 
 /* Append a Unicode character.
    Return 0 on success, raise an exception and return -1 on error. */
