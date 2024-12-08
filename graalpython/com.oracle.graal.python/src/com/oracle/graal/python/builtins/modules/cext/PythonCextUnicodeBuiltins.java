@@ -1109,10 +1109,8 @@ public final class PythonCextUnicodeBuiltins {
         static Object doNative(PythonAbstractNativeObject s,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
-                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteByteNode writeByteNode) {
             int wcharSize = CStructs.wchar_t.size();
@@ -1120,8 +1118,6 @@ public final class PythonCextUnicodeBuiltins {
             int len = bufferLib.getBufferLength(bytes);
             Object mem = allocateNode.alloc(len + wcharSize, true);
             writeByteNode.writeByteArray(mem, bufferLib.getInternalOrCopiedByteArray(bytes), len, 0, 0);
-            writePointerNode.writeToObj(s, CFields.PyASCIIObject__wstr, mem);
-            writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__wstr_length, len / wcharSize);
             return 0;
         }
     }
