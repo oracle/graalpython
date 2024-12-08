@@ -650,6 +650,15 @@ update_refs(PyGC_Head *containers)
 
     while (gc != containers) {
         next = GC_NEXT(gc);
+        /* Move any object that might have become immortal to the
+         * permanent generation as the reference count is not accurately
+         * reflecting the actual number of live references to this object
+         */
+        if (_Py_IsImmortal(FROM_GC(gc))) {
+           gc_list_move(gc, &get_gc_state()->permanent_generation.head);
+           gc = next;
+           continue;
+        }
         gc_reset_refs(gc, Py_REFCNT(FROM_GC(gc)));
         /* Python's cyclic gc should never see an incoming refcount
          * of 0:  if something decref'ed to 0, it should have been
@@ -1150,9 +1159,12 @@ handle_weakrefs(PyGC_Head *unreachable, PyGC_Head *old)
         if (! _PyType_SUPPORTS_WEAKREFS(Py_TYPE(op)))
             continue;
 
-        /* It supports weakrefs.  Does it have any? */
-        wrlist = (PyWeakReference **)
-                                _PyObject_GET_WEAKREFS_LISTPTR(op);
+        /* It supports weakrefs.  Does it have any?
+         *
+         * This is never triggered for static types so we can avoid the
+         * (slightly) more costly _PyObject_GET_WEAKREFS_LISTPTR().
+         */
+        wrlist = _PyObject_GET_WEAKREFS_LISTPTR_FROM_OFFSET(op);
 
         /* `op` may have some weakrefs.  March over the list, clear
          * all the weakrefs, and move the weakrefs with callbacks
@@ -1767,10 +1779,19 @@ invoke_gc_callback(PyThreadState *tstate, const char *phase,
             return;
         }
     }
+
+    PyObject *phase_obj = PyUnicode_FromString(phase);
+    if (phase_obj == NULL) {
+        Py_XDECREF(info);
+        PyErr_WriteUnraisable(NULL);
+        return;
+    }
+
+    PyObject *stack[] = {phase_obj, info};
     for (Py_ssize_t i=0; i<PyList_GET_SIZE(gcstate->callbacks); i++) {
         PyObject *r, *cb = PyList_GET_ITEM(gcstate->callbacks, i);
         Py_INCREF(cb); /* make sure cb doesn't go away */
-        r = PyObject_CallFunction(cb, "sO", phase, info);
+        r = PyObject_Vectorcall(cb, stack, 2, NULL);
         if (r == NULL) {
             PyErr_WriteUnraisable(cb);
         }
@@ -1779,6 +1800,7 @@ invoke_gc_callback(PyThreadState *tstate, const char *phase,
         }
         Py_DECREF(cb);
     }
+    Py_DECREF(phase_obj);
     Py_XDECREF(info);
     assert(!_PyErr_Occurred(tstate));
 }
@@ -2550,21 +2572,12 @@ _PyGC_DumpShutdownStats(PyInterpreterState *interp)
 }
 #endif // GraalPy change
 
-
 static void
-gc_fini_untrack(PyGC_Head *list)
-{
-    PyGC_Head *gc;
-    for (gc = GC_NEXT(list); gc != list; gc = GC_NEXT(list)) {
-        PyObject *op = FROM_GC(gc);
-        _PyObject_GC_UNTRACK(op);
-        // gh-92036: If a deallocator function expect the object to be tracked
-        // by the GC (ex: func_dealloc()), it can crash if called on an object
-        // which is no longer tracked by the GC. Leak one strong reference on
-        // purpose so the object is never deleted and its deallocator is not
-        // called.
-        Py_INCREF(op);
-    }
+finalize_unlink_gc_head(PyGC_Head *gc) {
+    PyGC_Head *prev = GC_PREV(gc);
+    PyGC_Head *next = GC_NEXT(gc);
+    _PyGCHead_SET_NEXT(prev, next);
+    _PyGCHead_SET_PREV(next, prev);
 }
 
 
@@ -2576,17 +2589,25 @@ _PyGC_Fini(PyInterpreterState *interp)
     Py_CLEAR(gcstate->garbage);
     Py_CLEAR(gcstate->callbacks);
 
-    if (!_Py_IsMainInterpreter(interp)) {
-        // bpo-46070: Explicitly untrack all objects currently tracked by the
-        // GC. Otherwise, if an object is used later by another interpreter,
-        // calling PyObject_GC_UnTrack() on the object crashs if the previous
-        // or the next object of the PyGC_Head structure became a dangling
-        // pointer.
-        for (int i = 0; i < NUM_GENERATIONS; i++) {
-            PyGC_Head *gen = GEN_HEAD(gcstate, i);
-            gc_fini_untrack(gen);
-        }
+    /* Prevent a subtle bug that affects sub-interpreters that use basic
+     * single-phase init extensions (m_size == -1).  Those extensions cause objects
+     * to be shared between interpreters, via the PyDict_Update(mdict, m_copy) call
+     * in import_find_extension().
+     *
+     * If they are GC objects, their GC head next or prev links could refer to
+     * the interpreter _gc_runtime_state PyGC_Head nodes.  Those nodes go away
+     * when the interpreter structure is freed and so pointers to them become
+     * invalid.  If those objects are still used by another interpreter and
+     * UNTRACK is called on them, a crash will happen.  We untrack the nodes
+     * here to avoid that.
+     *
+     * This bug was originally fixed when reported as gh-90228.  The bug was
+     * re-introduced in gh-94673.
+     */
+    for (int i = 0; i < NUM_GENERATIONS; i++) {
+        finalize_unlink_gc_head(&gcstate->generations[i].head);
     }
+    finalize_unlink_gc_head(&gcstate->permanent_generation.head);
 }
 #endif // GraalPy change
 
@@ -2780,15 +2801,15 @@ _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
     const size_t basicsize = _PyObject_VAR_SIZE(Py_TYPE(op), nitems);
     const size_t presize = _PyType_PreHeaderSize(((PyObject *)op)->ob_type);
     _PyObject_ASSERT((PyObject *)op, !_PyObject_GC_IS_TRACKED(op));
-    if (basicsize > PY_SSIZE_T_MAX - sizeof(PyGC_Head)) {
+    if (basicsize > (size_t)PY_SSIZE_T_MAX - presize) {
         return (PyVarObject *)PyErr_NoMemory();
     }
-
-    PyGC_Head *g = AS_GC(op);
-    g = (PyGC_Head *)PyObject_Realloc(g,  sizeof(PyGC_Head) + basicsize);
-    if (g == NULL)
+    char *mem = (char *)op - presize;
+    mem = (char *)PyObject_Realloc(mem,  presize + basicsize);
+    if (mem == NULL) {
         return (PyVarObject *)PyErr_NoMemory();
-    op = (PyVarObject *) FROM_GC(g);
+    }
+    op = (PyVarObject *) (mem + presize);
     Py_SET_SIZE(op, nitems);
     return op;
 }

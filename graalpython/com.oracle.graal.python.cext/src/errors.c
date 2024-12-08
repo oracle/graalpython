@@ -45,6 +45,85 @@ _PyErr_SetRaisedException(PyThreadState *tstate, PyObject *exc)
     Py_XDECREF(old_exc);
 }
 
+static PyObject*
+_PyErr_CreateException(PyObject *exception_type, PyObject *value)
+{
+    PyObject *exc;
+
+    if (value == NULL || value == Py_None) {
+        exc = _PyObject_CallNoArgs(exception_type);
+    }
+    else if (PyTuple_Check(value)) {
+        exc = PyObject_Call(exception_type, value, NULL);
+    }
+    else {
+        exc = PyObject_CallOneArg(exception_type, value);
+    }
+
+    if (exc != NULL && !PyExceptionInstance_Check(exc)) {
+        PyErr_Format(PyExc_TypeError,
+                     "calling %R should have returned an instance of "
+                     "BaseException, not %s",
+                     exception_type, Py_TYPE(exc)->tp_name);
+        Py_CLEAR(exc);
+    }
+
+    return exc;
+}
+
+void
+_PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
+               PyObject *traceback)
+{
+    if (type == NULL) {
+        assert(value == NULL);
+        assert(traceback == NULL);
+        _PyErr_SetRaisedException(tstate, NULL);
+        return;
+    }
+    assert(PyExceptionClass_Check(type));
+    if (value != NULL && type == (PyObject *)Py_TYPE(value)) {
+        /* Already normalized */
+        assert(((PyBaseExceptionObject *)value)->traceback != Py_None);
+    }
+    else {
+        PyObject *exc = _PyErr_CreateException(type, value);
+        Py_XDECREF(value);
+        if (exc == NULL) {
+            Py_DECREF(type);
+            Py_XDECREF(traceback);
+            return;
+        }
+        value = exc;
+    }
+    assert(PyExceptionInstance_Check(value));
+    if (traceback != NULL && !PyTraceBack_Check(traceback)) {
+        if (traceback == Py_None) {
+            Py_DECREF(Py_None);
+            traceback = NULL;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "traceback must be a Traceback or None");
+            Py_XDECREF(value);
+            Py_DECREF(type);
+            Py_XDECREF(traceback);
+            return;
+        }
+    }
+    PyObject *old_traceback = ((PyBaseExceptionObject *)value)->traceback;
+    ((PyBaseExceptionObject *)value)->traceback = traceback;
+    Py_XDECREF(old_traceback);
+    _PyErr_SetRaisedException(tstate, value);
+    Py_DECREF(type);
+}
+
+void
+PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    _PyErr_Restore(tstate, type, value, traceback);
+}
+
 void
 PyErr_SetRaisedException(PyObject *exc)
 {
@@ -918,9 +997,10 @@ PyObject *PyErr_SetFromWindowsErrWithFilename(
 #endif /* MS_WINDOWS */
 
 #if 0 // GraalPy change
-PyObject *
-PyErr_SetImportErrorSubclass(PyObject *exception, PyObject *msg,
-    PyObject *name, PyObject *path)
+static PyObject *
+_PyErr_SetImportErrorSubclassWithNameFrom(
+    PyObject *exception, PyObject *msg,
+    PyObject *name, PyObject *path, PyObject* from_name)
 {
     PyThreadState *tstate = _PyThreadState_GET();
     int issubclass;
@@ -948,6 +1028,10 @@ PyErr_SetImportErrorSubclass(PyObject *exception, PyObject *msg,
     if (path == NULL) {
         path = Py_None;
     }
+    if (from_name == NULL) {
+        from_name = Py_None;
+    }
+
 
     kwargs = PyDict_New();
     if (kwargs == NULL) {
@@ -957,6 +1041,9 @@ PyErr_SetImportErrorSubclass(PyObject *exception, PyObject *msg,
         goto done;
     }
     if (PyDict_SetItemString(kwargs, "path", path) < 0) {
+        goto done;
+    }
+    if (PyDict_SetItemString(kwargs, "name_from", from_name) < 0) {
         goto done;
     }
 
@@ -969,6 +1056,20 @@ PyErr_SetImportErrorSubclass(PyObject *exception, PyObject *msg,
 done:
     Py_DECREF(kwargs);
     return NULL;
+}
+
+
+PyObject *
+PyErr_SetImportErrorSubclass(PyObject *exception, PyObject *msg,
+    PyObject *name, PyObject *path)
+{
+    return _PyErr_SetImportErrorSubclassWithNameFrom(exception, msg, name, path, NULL);
+}
+
+PyObject *
+_PyErr_SetImportErrorWithNameFrom(PyObject *msg, PyObject *name, PyObject *path, PyObject* from_name)
+{
+    return _PyErr_SetImportErrorSubclassWithNameFrom(PyExc_ImportError, msg, name, path, from_name);
 }
 
 PyObject *
@@ -1708,44 +1809,44 @@ PyErr_SyntaxLocationEx(const char *filename, int lineno, int col_offset)
    functionality in tb_displayline() in traceback.c. */
 
 static PyObject *
-err_programtext(PyThreadState *tstate, FILE *fp, int lineno, const char* encoding)
+err_programtext(FILE *fp, int lineno, const char* encoding)
 {
-    int i;
     char linebuf[1000];
-    if (fp == NULL) {
-        return NULL;
-    }
+    size_t line_size = 0;
 
-    for (i = 0; i < lineno; i++) {
-        char *pLastChar = &linebuf[sizeof(linebuf) - 2];
-        do {
-            *pLastChar = '\0';
-            if (Py_UniversalNewlineFgets(linebuf, sizeof linebuf,
-                                         fp, NULL) == NULL) {
-                goto after_loop;
-            }
-            /* fgets read *something*; if it didn't get as
-               far as pLastChar, it must have found a newline
-               or hit the end of the file; if pLastChar is \n,
-               it obviously found a newline; else we haven't
-               yet seen a newline, so must continue */
-        } while (*pLastChar != '\0' && *pLastChar != '\n');
-    }
-
-after_loop:
-    fclose(fp);
-    if (i == lineno) {
-        PyObject *res;
-        if (encoding != NULL) {
-            res = PyUnicode_Decode(linebuf, strlen(linebuf), encoding, "replace");
-        } else {
-            res = PyUnicode_FromString(linebuf);
+    for (int i = 0; i < lineno; ) {
+        line_size = 0;
+        if (_Py_UniversalNewlineFgetsWithSize(linebuf, sizeof(linebuf),
+                                              fp, NULL, &line_size) == NULL)
+        {
+            /* Error or EOF. */
+            return NULL;
         }
-        if (res == NULL)
-            _PyErr_Clear(tstate);
-        return res;
+        /* fgets read *something*; if it didn't fill the
+           whole buffer, it must have found a newline
+           or hit the end of the file; if the last character is \n,
+           it obviously found a newline; else we haven't
+           yet seen a newline, so must continue */
+        if (i + 1 < lineno
+            && line_size == sizeof(linebuf) - 1
+            && linebuf[sizeof(linebuf) - 2] != '\n')
+        {
+            continue;
+        }
+        i++;
     }
-    return NULL;
+
+    const char *line = linebuf;
+    /* Skip BOM. */
+    if (lineno == 1 && line_size >= 3 && memcmp(line, "\xef\xbb\xbf", 3) == 0) {
+        line += 3;
+        line_size -= 3;
+    }
+    PyObject *res = PyUnicode_Decode(line, line_size, encoding, "replace");
+    if (res == NULL) {
+        PyErr_Clear();
+    }
+    return res;
 }
 
 PyObject *
@@ -1765,20 +1866,41 @@ PyErr_ProgramText(const char *filename, int lineno)
     return res;
 }
 
+/* Function from Parser/tokenizer/file_tokenizer.c */
+extern char* _PyTokenizer_FindEncodingFilename(int, PyObject *);
+
 PyObject *
 _PyErr_ProgramDecodedTextObject(PyObject *filename, int lineno, const char* encoding)
 {
+    char *found_encoding = NULL;
     if (filename == NULL || lineno <= 0) {
         return NULL;
     }
 
-    PyThreadState *tstate = _PyThreadState_GET();
     FILE *fp = _Py_fopen_obj(filename, "r" PY_STDIOTEXTMODE);
     if (fp == NULL) {
-        _PyErr_Clear(tstate);
+        PyErr_Clear();
         return NULL;
     }
-    return err_programtext(tstate, fp, lineno, encoding);
+    if (encoding == NULL) {
+        int fd = fileno(fp);
+        found_encoding = _PyTokenizer_FindEncodingFilename(fd, filename);
+        encoding = found_encoding;
+        if (encoding == NULL) {
+            PyErr_Clear();
+            encoding = "utf-8";
+        }
+        /* Reset position */
+        if (lseek(fd, 0, SEEK_SET) == (off_t)-1) {
+            fclose(fp);
+            PyMem_Free(found_encoding);
+            return NULL;
+        }
+    }
+    PyObject *res = err_programtext(fp, lineno, encoding);
+    fclose(fp);
+    PyMem_Free(found_encoding);
+    return res;
 }
 
 PyObject *

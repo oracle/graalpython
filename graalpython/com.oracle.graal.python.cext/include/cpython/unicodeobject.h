@@ -145,16 +145,12 @@ typedef struct {
            and the kind is PyUnicode_1BYTE_KIND. If ascii is set and compact is
            set, use the PyASCIIObject structure. */
         unsigned int ascii:1;
-        /* The ready flag indicates whether the object layout is initialized
-           completely. This means that this is either a compact object, or
-           the data pointer is filled out. The bit is redundant, and helps
-           to minimize the test in PyUnicode_IS_READY(). */
-        unsigned int ready:1;
+        /* The object is statically allocated. */
+        unsigned int statically_allocated:1;
         /* Padding to ensure that PyUnicode_DATA() is always aligned to
            4 bytes (see issue #19537 on m68k). */
         unsigned int :24;
     } state;
-    wchar_t *wstr;              /* wchar_t representation (null-terminated) */
 } PyASCIIObject;
 
 /* Non-ASCII strings allocated through PyUnicode_New use the
@@ -165,8 +161,6 @@ typedef struct {
     Py_ssize_t utf8_length;     /* Number of bytes in utf8, excluding the
                                  * terminating \0. */
     char *utf8;                 /* UTF-8 representation (null-terminated) */
-    Py_ssize_t wstr_length;     /* Number of code points in wstr, possible
-                                 * surrogates count as two code points. */
 } PyCompactUnicodeObject;
 
 /* Object format for Unicode subclasses. */
@@ -495,107 +489,12 @@ PyAPI_FUNC(Py_UCS4) _PyUnicode_FindMaxChar (
     Py_ssize_t start,
     Py_ssize_t end);
 
-/* --- Legacy deprecated API ---------------------------------------------- */
-
-/* Return a read-only pointer to the Unicode object's internal
-   Py_UNICODE buffer.
-   If the wchar_t/Py_UNICODE representation is not yet available, this
-   function will calculate it. */
-Py_DEPRECATED(3.3) PyAPI_FUNC(Py_UNICODE *) PyUnicode_AsUnicode(
-    PyObject *unicode           /* Unicode object */
-    );
-
-/* Similar to PyUnicode_AsUnicode(), but raises a ValueError if the string
-   contains null characters. */
-PyAPI_FUNC(const Py_UNICODE *) _PyUnicode_AsUnicode(
-    PyObject *unicode           /* Unicode object */
-    );
-
-/* Fast access macros */
-
-PyAPI_FUNC(Py_ssize_t) PyTruffleUnicode_WSTR_LENGTH(PyObject *op);
-Py_DEPRECATED(3.3)
-static inline Py_ssize_t PyUnicode_WSTR_LENGTH(PyObject *op)
-{
-    return PyTruffleUnicode_WSTR_LENGTH(op);
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_WSTR_LENGTH(op) PyUnicode_WSTR_LENGTH(_PyObject_CAST(op))
-#endif
-
-/* Returns the deprecated Py_UNICODE representation's size in code units
-   (this includes surrogate pairs as 2 units).
-   If the Py_UNICODE representation is not available, it will be computed
-   on request.  Use PyUnicode_GET_LENGTH() for the length in code points. */
-
-Py_DEPRECATED(3.3)
-static inline Py_ssize_t PyUnicode_GET_SIZE(PyObject *op)
-{
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    /* Truffle change: not necessary
-    if (_PyASCIIObject_CAST(op)->wstr == _Py_NULL) {
-        (void)PyUnicode_AsUnicode(op);
-        assert(_PyASCIIObject_CAST(op)->wstr != _Py_NULL);
-    }
-    */
-    return PyUnicode_WSTR_LENGTH(op);
-    _Py_COMP_DIAG_POP
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_GET_SIZE(op) PyUnicode_GET_SIZE(_PyObject_CAST(op))
-#endif
-
-Py_DEPRECATED(3.3)
-static inline Py_ssize_t PyUnicode_GET_DATA_SIZE(PyObject *op)
-{
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    return PyUnicode_GET_SIZE(op) * Py_UNICODE_SIZE;
-    _Py_COMP_DIAG_POP
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_GET_DATA_SIZE(op) PyUnicode_GET_DATA_SIZE(_PyObject_CAST(op))
-#endif
-
-/* Alias for PyUnicode_AsUnicode().  This will create a wchar_t/Py_UNICODE
-   representation on demand.  Using this macro is very inefficient now,
-   try to port your code to use the new PyUnicode_*BYTE_DATA() macros or
-   use PyUnicode_WRITE() and PyUnicode_READ(). */
-
-Py_DEPRECATED(3.3)
-static inline Py_UNICODE* PyUnicode_AS_UNICODE(PyObject *op)
-{
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    return PyUnicode_AsUnicode(op);
-    _Py_COMP_DIAG_POP
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_AS_UNICODE(op) PyUnicode_AS_UNICODE(_PyObject_CAST(op))
-#endif
-
-Py_DEPRECATED(3.3)
-static inline const char* PyUnicode_AS_DATA(PyObject *op)
-{
-    _Py_COMP_DIAG_PUSH
-    _Py_COMP_DIAG_IGNORE_DEPR_DECLS
-    Py_UNICODE *data = PyUnicode_AS_UNICODE(op);
-    // In C++, casting directly PyUnicode* to const char* is not valid
-    return _Py_STATIC_CAST(const char*, _Py_STATIC_CAST(const void*, data));
-    _Py_COMP_DIAG_POP
-}
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_AS_DATA(op) PyUnicode_AS_DATA(_PyObject_CAST(op))
-#endif
-
-
 /* --- _PyUnicodeWriter API ----------------------------------------------- */
 
 typedef struct {
     PyObject *buffer;
     void *data;
-    enum PyUnicode_Kind kind;
+    int kind;
     Py_UCS4 maxchar;
     Py_ssize_t size;
     Py_ssize_t pos;
@@ -646,8 +545,7 @@ _PyUnicodeWriter_PrepareInternal(_PyUnicodeWriter *writer,
 
    Return 0 on success, raise an exception and return -1 on error. */
 #define _PyUnicodeWriter_PrepareKind(WRITER, KIND)                    \
-    (assert((KIND) != PyUnicode_WCHAR_KIND),                          \
-     (KIND) <= (WRITER)->kind                                         \
+    ((KIND) <= (WRITER)->kind                                         \
      ? 0                                                              \
      : _PyUnicodeWriter_PrepareKindInternal((WRITER), (KIND)))
 
@@ -655,7 +553,7 @@ _PyUnicodeWriter_PrepareInternal(_PyUnicodeWriter *writer,
    macro instead. */
 PyAPI_FUNC(int)
 _PyUnicodeWriter_PrepareKindInternal(_PyUnicodeWriter *writer,
-                                     enum PyUnicode_Kind kind);
+                                     int kind);
 
 /* Append a Unicode character.
    Return 0 on success, raise an exception and return -1 on error. */

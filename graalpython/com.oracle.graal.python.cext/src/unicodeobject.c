@@ -135,17 +135,7 @@ extern "C" {
      PyUnicode_IS_COMPACT_ASCII(op) ?                   \
          _PyASCIIObject_CAST(op)->length :              \
          _PyUnicode_UTF8_LENGTH(op))
-#define _PyUnicode_WSTR(op)                             \
-    (_PyASCIIObject_CAST(op)->wstr)
 
-/* Don't use deprecated macro of unicodeobject.h */
-#undef PyUnicode_WSTR_LENGTH
-#define PyUnicode_WSTR_LENGTH(op) \
-    (PyUnicode_IS_COMPACT_ASCII(op) ?                   \
-     _PyASCIIObject_CAST(op)->length :                  \
-     _PyCompactUnicodeObject_CAST(op)->wstr_length)
-#define _PyUnicode_WSTR_LENGTH(op)                      \
-    (_PyCompactUnicodeObject_CAST(op)->wstr_length)
 #define _PyUnicode_LENGTH(op)                           \
     (_PyASCIIObject_CAST(op)->length)
 #define _PyUnicode_STATE(op)                            \
@@ -161,20 +151,10 @@ extern "C" {
 #define _PyUnicode_DATA_ANY(op)                         \
     (_PyUnicodeObject_CAST(op)->data.any)
 
-#undef PyUnicode_READY
-#define PyUnicode_READY(op)                             \
-    (assert(_PyUnicode_CHECK(op)),                      \
-     (PyUnicode_IS_READY(op) ?                          \
-      0 :                                               \
-      _PyUnicode_Ready(op)))
-
 #define _PyUnicode_SHARE_UTF8(op)                       \
     (assert(_PyUnicode_CHECK(op)),                      \
      assert(!PyUnicode_IS_COMPACT_ASCII(op)),           \
      (_PyUnicode_UTF8(op) == PyUnicode_DATA(op)))
-#define _PyUnicode_SHARE_WSTR(op)                       \
-    (assert(_PyUnicode_CHECK(op)),                      \
-     (_PyUnicode_WSTR(unicode) == PyUnicode_DATA(op)))
 
 /* true if the Unicode object has an allocated UTF-8 memory block
    (not shared with other data) */
@@ -1646,44 +1626,70 @@ unicode_dealloc(PyObject *unicode)
         _Py_FatalRefcountError("deallocating an Unicode singleton");
     }
 #endif
-
     // GraalPy change
     if (points_to_py_handle_space(unicode)) {
         return;
     }
 
 #if 0 // GraalPy change
-    switch (PyUnicode_CHECK_INTERNED(unicode)) {
-    case SSTATE_NOT_INTERNED:
-        break;
-    case SSTATE_INTERNED_MORTAL:
-    {
-        /* Revive the dead object temporarily. PyDict_DelItem() removes two
-           references (key and value) which were ignored by
-           PyUnicode_InternInPlace(). Use refcnt=3 rather than refcnt=2
-           to prevent calling unicode_dealloc() again. Adjust refcnt after
-           PyDict_DelItem(). */
-        assert(Py_REFCNT(unicode) == 0);
-        Py_SET_REFCNT(unicode, 3);
-        if (PyDict_DelItem(interned, unicode) != 0) {
-            _PyErr_WriteUnraisableMsg("deletion of interned string failed",
-                                      NULL);
-        }
-        assert(Py_REFCNT(unicode) == 1);
-        Py_SET_REFCNT(unicode, 0);
-        break;
-    }
-
-    case SSTATE_INTERNED_IMMORTAL:
-        _PyObject_ASSERT_FAILED_MSG(unicode, "Immortal interned string died");
-        break;
-
-    default:
+    if (_PyUnicode_STATE(unicode).statically_allocated) {
+        /* This should never get called, but we also don't want to SEGV if
+        * we accidentally decref an immortal string out of existence. Since
+        * the string is an immortal object, just re-set the reference count.
+        */
+#ifdef Py_DEBUG
         Py_UNREACHABLE();
+#endif
+        _Py_SetImmortal(unicode);
+        return;
     }
-
-    if (_PyUnicode_HAS_WSTR_MEMORY(unicode)) {
-        PyObject_Free(_PyUnicode_WSTR(unicode));
+    switch (_PyUnicode_STATE(unicode).interned) {
+        case SSTATE_NOT_INTERNED:
+            break;
+        case SSTATE_INTERNED_MORTAL:
+            /* Remove the object from the intern dict.
+             * Before doing so, we set the refcount to 3: the key and value
+             * in the interned_dict, plus one to work with.
+             */
+            assert(Py_REFCNT(unicode) == 0);
+            Py_SET_REFCNT(unicode, 3);
+#ifdef Py_REF_DEBUG
+            /* let's be pedantic with the ref total */
+            _Py_IncRefTotal(_PyInterpreterState_GET());
+            _Py_IncRefTotal(_PyInterpreterState_GET());
+            _Py_IncRefTotal(_PyInterpreterState_GET());
+#endif
+            PyInterpreterState *interp = _PyInterpreterState_GET();
+            PyObject *interned = get_interned_dict(interp);
+            assert(interned != NULL);
+            int r = PyDict_DelItem(interned, unicode);
+            if (r == -1) {
+                PyErr_WriteUnraisable(unicode);
+                // We don't know what happened to the string. It's probably
+                // best to leak it:
+                // - if it was not found, something is very wrong
+                // - if it was deleted, there are no more references to it
+                //   so it can't cause trouble (except wasted memory)
+                // - if it wasn't deleted, it'll remain interned
+                _Py_SetImmortal(unicode);
+                _PyUnicode_STATE(unicode).interned = SSTATE_INTERNED_IMMORTAL;
+                return;
+            }
+            // Only our work reference should be left; remove it too.
+            assert(Py_REFCNT(unicode) == 1);
+            Py_SET_REFCNT(unicode, 0);
+#ifdef Py_REF_DEBUG
+            /* let's be pedantic with the ref total */
+            _Py_DecRefTotal(_PyInterpreterState_GET());
+#endif
+            break;
+        default:
+            // As with `statically_allocated` above.
+#ifdef Py_REF_DEBUG
+            Py_UNREACHABLE();
+#endif
+            _Py_SetImmortal(unicode);
+            return;
     }
 #endif // GraalPy change
 
@@ -14006,8 +14012,8 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
 {
     PyObject *self;
     Py_ssize_t length, char_size;
-    int share_wstr, share_utf8;
-    unsigned int kind;
+    int share_utf8;
+    int kind;
     void *data;
 
     assert(PyType_IsSubtype(type, &PyUnicode_Type));
@@ -14028,11 +14034,9 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
     _PyUnicode_STATE(self).compact = 0;
     // GraalPy change
     _PyUnicode_STATE(self).ascii = GET_SLOT_SPECIAL(unicode, PyASCIIObject, state_ascii, state.ascii);
-    _PyUnicode_STATE(self).ready = 1;
-    _PyUnicode_WSTR(self) = NULL;
+    _PyUnicode_STATE(self).statically_allocated = 0;
     _PyUnicode_UTF8_LENGTH(self) = 0;
     _PyUnicode_UTF8(self) = NULL;
-    _PyUnicode_WSTR_LENGTH(self) = 0;
     _PyUnicode_DATA_ANY(self) = NULL;
 
     share_utf8 = 0;
@@ -14228,10 +14232,50 @@ _PyUnicode_InitTypes(PyInterpreterState *interp)
 error:
     return _PyStatus_ERR("Can't initialize unicode types");
 }
+
+static /* non-null */ PyObject*
+intern_static(PyInterpreterState *interp, PyObject *s /* stolen */)
+{
+    // Note that this steals a reference to `s`, but in many cases that
+    // stolen ref is returned, requiring no decref/incref.
+
+    assert(s != NULL);
+    assert(_PyUnicode_CHECK(s));
+    assert(_PyUnicode_STATE(s).statically_allocated);
+    assert(!PyUnicode_CHECK_INTERNED(s));
+
+#ifdef Py_DEBUG
+    /* We must not add process-global interned string if there's already a
+     * per-interpreter interned_dict, which might contain duplicates.
+     */
+    PyObject *interned = get_interned_dict(interp);
+    assert(interned == NULL);
+#endif
+
+    /* Look in the global cache first. */
+    PyObject *r = (PyObject *)_Py_hashtable_get(INTERNED_STRINGS, s);
+    /* We should only init each string once */
+    assert(r == NULL);
+    /* but just in case (for the non-debug build), handle this */
+    if (r != NULL && r != s) {
+        assert(_PyUnicode_STATE(r).interned == SSTATE_INTERNED_IMMORTAL_STATIC);
+        assert(_PyUnicode_CHECK(r));
+        Py_DECREF(s);
+        return Py_NewRef(r);
+    }
+
+    if (_Py_hashtable_set(INTERNED_STRINGS, s, s) < -1) {
+        Py_FatalError("failed to intern static string");
+    }
+
+    _PyUnicode_STATE(s).interned = SSTATE_INTERNED_IMMORTAL_STATIC;
+    return s;
+}
 #endif // GraalPy change
 
+
 void
-PyUnicode_InternInPlace(PyObject **p)
+_PyUnicode_InternStatic(PyInterpreterState *interp, PyObject **p)
 {
     // GraalPy change: different implementation
     PyObject *s = *p;
@@ -14240,35 +14284,198 @@ PyUnicode_InternInPlace(PyObject **p)
     }
 
     PyObject *t = GraalPyTruffleUnicode_LookupAndIntern(s);
-    if (t == NULL) {
-        PyErr_Clear();
-        return;
-    }
+#if 0 // GraalPy change
+    // This should only be called as part of runtime initialization
+    assert(!Py_IsInitialized());
 
+    *p = intern_static(interp, *p);
+    assert(*p);
+#else // GraalPy change
     if (t != s) {
         *p = t;
     }
     Py_DECREF(s);
+#endif // GraalPy change
 }
 
 #if 0 // GraalPy change
+static void
+immortalize_interned(PyObject *s)
+{
+    assert(PyUnicode_CHECK_INTERNED(s) == SSTATE_INTERNED_MORTAL);
+    assert(!_Py_IsImmortal(s));
+#ifdef Py_REF_DEBUG
+    /* The reference count value should be excluded from the RefTotal.
+       The decrements to these objects will not be registered so they
+       need to be accounted for in here. */
+    for (Py_ssize_t i = 0; i < Py_REFCNT(s); i++) {
+        _Py_DecRefTotal(_PyInterpreterState_GET());
+    }
+#endif
+    _PyUnicode_STATE(s).interned = SSTATE_INTERNED_IMMORTAL;
+    _Py_SetImmortal(s);
+}
+
+static /* non-null */ PyObject*
+intern_common(PyInterpreterState *interp, PyObject *s /* stolen */,
+              bool immortalize)
+{
+    // Note that this steals a reference to `s`, but in many cases that
+    // stolen ref is returned, requiring no decref/incref.
+
+#ifdef Py_DEBUG
+    assert(s != NULL);
+    assert(_PyUnicode_CHECK(s));
+#else
+    if (s == NULL || !PyUnicode_Check(s)) {
+        return s;
+    }
+#endif
+
+    /* If it's a subclass, we don't really know what putting
+       it in the interned dict might do. */
+    if (!PyUnicode_CheckExact(s)) {
+        return s;
+    }
+
+    /* Is it already interned? */
+    switch (PyUnicode_CHECK_INTERNED(s)) {
+        case SSTATE_NOT_INTERNED:
+            // no, go on
+            break;
+        case SSTATE_INTERNED_MORTAL:
+            // yes but we might need to make it immortal
+            if (immortalize) {
+                immortalize_interned(s);
+            }
+            return s;
+        default:
+            // all done
+            return s;
+    }
+
+    if (_PyUnicode_STATE(s).statically_allocated) {
+        return intern_static(interp, s);
+    }
+
+    /* If it's already immortal, intern it as such */
+    if (_Py_IsImmortal(s)) {
+        immortalize = 1;
+    }
+
+    /* if it's a short string, get the singleton */
+    if (PyUnicode_GET_LENGTH(s) == 1 &&
+                PyUnicode_KIND(s) == PyUnicode_1BYTE_KIND) {
+        PyObject *r = LATIN1(*(unsigned char*)PyUnicode_DATA(s));
+        assert(PyUnicode_CHECK_INTERNED(r));
+        Py_DECREF(s);
+        return r;
+    }
+#ifdef Py_DEBUG
+    assert(!unicode_is_singleton(s));
+#endif
+
+    /* Look in the global cache now. */
+    {
+        PyObject *r = (PyObject *)_Py_hashtable_get(INTERNED_STRINGS, s);
+        if (r != NULL) {
+            assert(_Py_IsImmortal(r));
+            assert(r != s);  // r must be statically_allocated; s is not
+            Py_DECREF(s);
+            return Py_NewRef(r);
+        }
+    }
+
+    /* Do a setdefault on the per-interpreter cache. */
+    PyObject *interned = get_interned_dict(interp);
+    assert(interned != NULL);
+
+    PyObject *t = PyDict_SetDefault(interned, s, s);  // t is borrowed
+    if (t == NULL) {
+        PyErr_Clear();
+        return s;
+    }
+
+    if (t != s) {
+        // value was already present (not inserted)
+        Py_INCREF(t);
+        Py_DECREF(s);
+        if (immortalize &&
+                PyUnicode_CHECK_INTERNED(t) == SSTATE_INTERNED_MORTAL) {
+            immortalize_interned(t);
+        }
+        return t;
+    }
+    else {
+        // value was newly inserted
+    }
+
+    /* NOT_INTERNED -> INTERNED_MORTAL */
+
+    assert(_PyUnicode_STATE(s).interned == SSTATE_NOT_INTERNED);
+
+    if (!_Py_IsImmortal(s)) {
+        /* The two references in interned dict (key and value) are not counted.
+        unicode_dealloc() and _PyUnicode_ClearInterned() take care of this. */
+        Py_SET_REFCNT(s, Py_REFCNT(s) - 2);
+#ifdef Py_REF_DEBUG
+        /* let's be pedantic with the ref total */
+        _Py_DecRefTotal(_PyInterpreterState_GET());
+        _Py_DecRefTotal(_PyInterpreterState_GET());
+#endif
+    }
+    _PyUnicode_STATE(s).interned = SSTATE_INTERNED_MORTAL;
+
+    /* INTERNED_MORTAL -> INTERNED_IMMORTAL (if needed) */
+
+#ifdef Py_DEBUG
+    if (_Py_IsImmortal(s)) {
+        assert(immortalize);
+    }
+#endif
+    if (immortalize) {
+        immortalize_interned(s);
+    }
+
+    return s;
+}
+
+void
+_PyUnicode_InternImmortal(PyInterpreterState *interp, PyObject **p)
+{
+    *p = intern_common(interp, *p, 1);
+    assert(*p);
+}
+
+void
+_PyUnicode_InternMortal(PyInterpreterState *interp, PyObject **p)
+{
+    *p = intern_common(interp, *p, 0);
+    assert(*p);
+}
+
+
+void
+_PyUnicode_InternInPlace(PyInterpreterState *interp, PyObject **p)
+{
+    _PyUnicode_InternImmortal(interp, p);
+    return;
+}
+
+void
+PyUnicode_InternInPlace(PyObject **p)
+{
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    _PyUnicode_InternMortal(interp, p);
+}
+
+// Public-looking name kept for the stable ABI; user should not call this:
+PyAPI_FUNC(void) PyUnicode_InternImmortal(PyObject **);
 void
 PyUnicode_InternImmortal(PyObject **p)
 {
-    if (PyErr_WarnEx(PyExc_DeprecationWarning,
-            "PyUnicode_InternImmortal() is deprecated; "
-            "use PyUnicode_InternInPlace() instead", 1) < 0)
-    {
-        // The function has no return value, the exception cannot
-        // be reported to the caller, so just log it.
-        PyErr_WriteUnraisable(NULL);
-    }
-
-    PyUnicode_InternInPlace(p);
-    if (PyUnicode_CHECK_INTERNED(*p) != SSTATE_INTERNED_IMMORTAL) {
-        _PyUnicode_STATE(*p).interned = SSTATE_INTERNED_IMMORTAL;
-        Py_INCREF(*p);
-    }
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    _PyUnicode_InternImmortal(interp, p);
 }
 #endif // GraalPy change
 
@@ -14276,9 +14483,11 @@ PyObject *
 PyUnicode_InternFromString(const char *cp)
 {
     PyObject *s = PyUnicode_FromString(cp);
-    if (s == NULL)
+    if (s == NULL) {
         return NULL;
-    PyUnicode_InternInPlace(&s);
+    }
+    PyInterpreterState *interp = _PyInterpreterState_GET();
+    _PyUnicode_InternMortal(interp, &s);
     return s;
 }
 
