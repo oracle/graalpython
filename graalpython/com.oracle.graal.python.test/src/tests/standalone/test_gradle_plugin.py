@@ -42,11 +42,9 @@ import shutil
 import sys
 import textwrap
 import unittest
-import platform
 
 from tests.standalone import util
 from tests.standalone.util import TemporaryTestDirectory, Logger
-
 
 def append(file, txt):
     with open(file, "a") as f:
@@ -101,6 +99,11 @@ class GradlePluginTestBase(util.BuildToolTestBase):
         util.override_gradle_properties_file(target_dir)
         self.copy_build_files(target_dir)
 
+        # at the moment the gradle demon does not run with jdk <= 22
+        gradle_java_home = self.env.get("GRADLE_JAVA_HOME")
+        assert gradle_java_home, "in order to run standalone gradle tests, the 'GRADLE_JAVA_HOME' env var has to be set to a jdk <= 22"
+        util.replace_in_file(os.path.join(target_dir, "gradle.properties"), "{GRADLE_JAVA_HOME}", gradle_java_home.replace("\\", "\\\\"))
+
     def check_filelist(self, target_dir, log, check_lib=True):
         fl_path = os.path.join(target_dir, "build", "resources", "main", util.VFS_PREFIX, "fileslist.txt")
         with open(fl_path) as f:
@@ -125,26 +128,20 @@ class GradlePluginTestBase(util.BuildToolTestBase):
 
             # build
             cmd = gradlew_cmd + ["build"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             self.check_filelist(target_dir, log, check_lib=True)
 
-            if not (sys.platform == 'darwin' and (platform.machine() == 'aarch64' or platform.machine() == 'arm64')):
-                # TODO: temporarily disabled native image build as it is causing timeouts on gate
-                cmd = gradlew_cmd + ["nativeCompile"]
-                # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher,
-                # which is fine, because we need to build the native binary with a graalvm build
-                # and the one we have set in JAVA_HOME is at least jdk24
-                # => run without gradle = True
-                out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
-                util.check_ouput("BUILD SUCCESS", out, logger=log)
-                self.check_filelist(target_dir, log, check_lib=True)
+            cmd = gradlew_cmd + ["nativeCompile"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
+            util.check_ouput("BUILD SUCCESS", out, logger=log)
+            self.check_filelist(target_dir, log, check_lib=True)
 
-                # execute and check native image
-                cmd = [os.path.join(target_dir, "build", "native", "nativeCompile", "graalpy-gradle-test-project")]
-                out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
-                util.check_ouput("hello java", out, logger=log)
-                self.check_filelist(target_dir, log, check_lib=True)
+            # execute and check native image
+            cmd = [os.path.join(target_dir, "build", "native", "nativeCompile", "graalpy-gradle-test-project")]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
+            util.check_ouput("hello java", out, logger=log)
+            self.check_filelist(target_dir, log, check_lib=True)
 
             # import struct from python file triggers extract of native extension files in VirtualFileSystem
             hello_src = os.path.join(target_dir, "src", "main", "resources", "org.graalvm.python.vfs", "src", "hello.py")
@@ -155,7 +152,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
 
             # rebuild and exec
             cmd = gradlew_cmd + ["build", "run"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("hello java", out, logger=log)
             self.check_filelist(target_dir, log, check_lib=True)
@@ -174,7 +171,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
 
             gradlew_cmd2 = util.get_gradle_wrapper(target_dir2, self.env)
             cmd = gradlew_cmd2 + ["build", "run"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2, gradle = True, logger=log)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir2, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("hello java", out, logger=log)
             self.check_filelist(target_dir2, log, check_lib=True)
@@ -209,33 +206,27 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
             cmd = gradle_cmd + ["clean", "build"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
 
             # check java exec
             cmd = gradle_cmd + ["run"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("hello java", out)
 
-            if not (sys.platform == 'darwin' and (platform.machine() == 'aarch64' or platform.machine() == 'arm64')):
-                # TODO: temporarily disabled native image build as it is causing timeouts on gate
-                # prepare for native build
-                meta_inf = os.path.join(target_dir, "src", "main", "resources", "META-INF", "native-image")
-                os.makedirs(meta_inf, exist_ok=True)
-                shutil.copyfile(os.path.join(self.test_prj_path, "src", "main", "resources", "META-INF", "native-image", "proxy-config.json"), os.path.join(meta_inf, "proxy-config.json"))
+            # prepare for native build
+            meta_inf = os.path.join(target_dir, "src", "main", "resources", "META-INF", "native-image")
+            os.makedirs(meta_inf, exist_ok=True)
+            shutil.copyfile(os.path.join(self.test_prj_path, "src", "main", "resources", "META-INF", "native-image", "proxy-config.json"), os.path.join(meta_inf, "proxy-config.json"))
 
-                # gradle needs jdk <= 22, but it looks like the 'gradle nativeCompile' cmd does not complain if higher,
-                # which is fine, because we need to build the native binary with a graalvm build
-                # and the one we have set in JAVA_HOME is at least jdk24
-                # => run without gradle = True
-                cmd = gradle_cmd + ["nativeCompile"]
-                out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-                util.check_ouput("BUILD SUCCESS", out)
+            cmd = gradle_cmd + ["nativeCompile"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
 
-                # execute and check native image
-                cmd = [os.path.join(target_dir, "build", "native", "nativeCompile", "graalpy-gradle-test-project")]
-                out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-                util.check_ouput("hello java", out)
+            # execute and check native image
+            cmd = [os.path.join(target_dir, "build", "native", "nativeCompile", "graalpy-gradle-test-project")]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("hello java", out)
 
     def check_gradle_fail_with_mismatching_graalpy_dep(self):
         pass # TODO: once the CI job builds enterprise
@@ -252,7 +243,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             append(build_file, self.packages_termcolor_ujson(community))
 
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("-m venv", out)
             util.check_ouput("-m ensurepip",out)
             util.check_ouput("ujson", out)
@@ -260,7 +251,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
 
             # run again and assert that we do not regenerate the venv
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("-m venv", out, False)
             util.check_ouput("-m ensurepip", out, False)
             util.check_ouput("ujson", out, False)
@@ -271,7 +262,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             append(build_file, self.packages_termcolor(community))
 
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("-m venv", out, False)
             util.check_ouput("-m ensurepip", out, False)
             util.check_ouput("Uninstalling ujson", out)
@@ -296,7 +287,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
 
             # 1. process-resources with no pythonHome config
             append(build_file, self.empty_plugin(community))
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("Copying std lib to ", out, logger=log)
 
@@ -313,7 +304,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             # 2. process-resources with empty pythonHome
             self.copy_build_files(target_dir)
             append(build_file, self.empty_python_home(community))
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("Copying std lib to ", out, False, logger=log)
             self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'], log=log)
@@ -321,7 +312,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             # 3. process-resources with empty pythonHome includes and excludes
             self.copy_build_files(target_dir)
             append(build_file, self.empty_home_includes(community))
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("Copying std lib to ", out, False, logger=log)
             self.check_tagfile(home_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'], log=log)
@@ -329,7 +320,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             # 4. process-resources with pythonHome includes and excludes
             self.copy_build_files(target_dir)
             append(build_file, self.home_includes(community))
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, gradle = True, logger=log)
+            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("Deleting GraalPy home due to changed includes or excludes", out, logger=log)
             util.check_ouput("Copying std lib to ", out, logger=log)
@@ -337,7 +328,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
 
             # 5. check fileslist.txt
             # XXX build vs graalPyVFSFilesList task?
-            out, return_code = util.run_cmd(gradle_cmd + ["build"], self.env, cwd=target_dir, gradle = True, logger=log)
+            out, return_code = util.run_cmd(gradle_cmd + ["build"], self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             fl_path = os.path.join(target_dir, "build", "resources", "main", util.VFS_PREFIX, "fileslist.txt")
             with open(fl_path) as f:
@@ -362,7 +353,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
             cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, gradle = True)
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
 
 class GradlePluginGroovyTest(GradlePluginTestBase):
