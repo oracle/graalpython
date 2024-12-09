@@ -530,7 +530,7 @@ public final class PythonContext extends Python3Core {
             this.contextVarsContext = contextVarsContext;
         }
 
-        public void dispose(PythonContext context) {
+        public void dispose(PythonContext context, boolean canRunGuestCode) {
             // This method may be called twice on the same object.
 
             /*
@@ -551,9 +551,11 @@ public final class PythonContext extends Python3Core {
             }
             /*
              * Write 'NULL' to the native thread-local variable used to store the PyThreadState
-             * struct such that it cannot accidentally be reused.
+             * struct such that it cannot accidentally be reused. Since this is done as a
+             * precaution, we just skip this if we cannot run guest code, because it may invoke
+             * LLVM.
              */
-            if (nativeThreadLocalVarPointer != null) {
+            if (nativeThreadLocalVarPointer != null && canRunGuestCode) {
                 CStructAccess.WritePointerNode.writeUncached(nativeThreadLocalVarPointer, 0, context.getNativeNull());
                 nativeThreadLocalVarPointer = null;
             }
@@ -2167,7 +2169,7 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     private void disposeThreadStates() {
         for (PythonThreadState ts : threadStateMapping.values()) {
-            ts.dispose(this);
+            ts.dispose(this, true);
         }
         threadStateMapping.clear();
     }
@@ -2246,7 +2248,7 @@ public final class PythonContext extends Python3Core {
                     // they are still running some GraalPython code, if they are embedder threads
                     // that are not running GraalPython code anymore, they will just never receive
                     // PythonThreadKillException and continue as if nothing happened.
-                    disposeThread(thread);
+                    disposeThread(thread, true);
                     boolean isOurThread = runViaLauncher || thread.getThreadGroup() == threadGroup;
                     // Do not try so hard when running in embedded mode and the thread may not be
                     // running any GraalPython code anymore
@@ -2340,6 +2342,11 @@ public final class PythonContext extends Python3Core {
         env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
             @Override
             protected void perform(ThreadLocalAction.Access access) {
+                // just in case the thread holds GIL
+                PythonContext ctx = PythonContext.get(null);
+                if (ctx.ownsGil()) {
+                    ctx.releaseGil();
+                }
                 throw new PythonThreadKillException();
             }
         });
@@ -2606,7 +2613,7 @@ public final class PythonContext extends Python3Core {
         threadStateMapping.put(thread, threadState.get(thread));
     }
 
-    public synchronized void disposeThread(Thread thread) {
+    public synchronized void disposeThread(Thread thread, boolean canRunGuestCode) {
         CompilerAsserts.neverPartOfCompilation();
         // check if there is a live sentinel lock
         PythonThreadState ts = threadStateMapping.get(thread);
@@ -2616,7 +2623,7 @@ public final class PythonContext extends Python3Core {
         }
         ts.shutdown();
         threadStateMapping.remove(thread);
-        ts.dispose(this);
+        ts.dispose(this, canRunGuestCode);
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }

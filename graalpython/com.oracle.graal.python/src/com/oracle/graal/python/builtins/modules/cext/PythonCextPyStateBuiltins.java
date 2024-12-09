@@ -131,6 +131,16 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Void, args = {}, call = Ignored)
+    abstract static class PyTruffleBeforeThreadDetach extends CApiNullaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object doIt() {
+            getContext().disposeThread(Thread.currentThread(), true);
+            return PNone.NO_VALUE;
+        }
+    }
+
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
     abstract static class PyThreadState_GetDict extends CApiNullaryBuiltinNode {
 

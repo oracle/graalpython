@@ -87,21 +87,20 @@ class TestNativeThread(unittest.TestCase):
             name="TestThread",
             includes="#include <pthread.h>",
             code=r'''
-            void* thread_entrypoint(void* arg) {
+            void test_attach_detach(PyObject *callable) {
                 // This check is important not just to check that the function works without the thread attached,
                 // but also because the thread attaching logic in it can break the following PyGILState_Ensure call
                 if (PyGILState_Check()) {
                     PyErr_SetString(PyExc_RuntimeError, "Thread shouldn't be holding the GIL at this point");
                     PyErr_WriteUnraisable(NULL);
-                    return NULL;
+                    return;
                 }
-                PyObject* callable = (PyObject*)arg;
                 PyGILState_STATE gstate;
                 gstate = PyGILState_Ensure();
                 if (!PyGILState_Check()) {
                     PyErr_SetString(PyExc_RuntimeError, "GIL not acquired");
                     PyErr_WriteUnraisable(NULL);
-                    return NULL;
+                    return;
                 }
                 if (!PyObject_CallNoArgs(callable)) {
                     PyErr_WriteUnraisable(callable);
@@ -113,8 +112,12 @@ class TestNativeThread(unittest.TestCase):
                 if (PyGILState_Check()) {
                     PyErr_SetString(PyExc_RuntimeError, "GIL not released");
                     PyErr_WriteUnraisable(NULL);
-                    return NULL;
                 }
+            }
+            void* thread_entrypoint(void* arg) {
+                test_attach_detach((PyObject*)arg);
+                test_attach_detach((PyObject*)arg);
+                test_attach_detach((PyObject*)arg);
                 return NULL;
             }
             PyObject* run_in_thread(PyObject* self, PyObject* callable) {
