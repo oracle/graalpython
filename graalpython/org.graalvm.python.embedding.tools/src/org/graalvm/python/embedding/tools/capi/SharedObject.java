@@ -66,4 +66,18 @@ abstract class SharedObject {
                 throw new IOException("Unknown shared object format");
         }
     }
+
+    static void deleteDirOnShutdown(Path tmpdir) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                Files.walk(tmpdir).forEach(t -> {
+                    try {
+                        Files.delete(t);
+                    } catch (IOException e) {
+                    }
+                });
+            } catch (IOException e) {
+            }
+        }));
+    }
 }

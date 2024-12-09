@@ -57,7 +57,7 @@ final class PEFile extends SharedObject {
     private synchronized Path getMachomachomanglerVenv() throws IOException, InterruptedException {
         if (machomachomanglerVenv == null) {
             Path tempdir = Files.createTempDirectory("graalpy_capi_patcher");
-            tempdir.toFile().deleteOnExit();
+            deleteDirOnShutdown(tempdir);
             machomachomanglerVenv = tempdir.resolve("venv");
             GraalPyRunner.runVenvBin(venv, "python", new SubprocessLog() {}, "-m", "venv", tempdir.resolve("venv").toString());
             GraalPyRunner.runPip(machomachomanglerVenv, "install", new SubprocessLog() {}, "machomachomangler");

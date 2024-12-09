@@ -57,7 +57,7 @@ final class ElfFile extends SharedObject {
     private synchronized Path getPatchelfVenv() throws IOException, InterruptedException {
         if (patchelfVenv == null) {
             Path tempdir = Files.createTempDirectory("graalpy_capi_patcher");
-            tempdir.toFile().deleteOnExit();
+            deleteDirOnShutdown(tempdir);
             patchelfVenv = tempdir.resolve("venv");
             GraalPyRunner.runVenvBin(venv, "python", new SubprocessLog() {}, "-m", "venv", tempdir.resolve("venv").toString());
             GraalPyRunner.runPip(patchelfVenv, "install", new SubprocessLog() {}, "patchelf");
