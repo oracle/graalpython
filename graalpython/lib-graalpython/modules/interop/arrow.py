@@ -40,9 +40,13 @@
 import polyglot
 import java
 
-if not __graalpython__.is_arrow_vector_on_class_path():
-    raise KeyError("It is not possible to import Apache Arrow Vector classes because arrow-vector package is not on the class path. Please add this library to your project.")
-elif not __graalpython__.host_import_enabled:
+
+try:
+    java.type("org.apache.arrow.vector.BaseFixedWidthVector")
+except KeyError:
+    raise ImportError("It is not possible to import Apache Arrow Vector classes because arrow-vector package is not on the class path. Please add this library to your project.")
+
+if not __graalpython__.host_import_enabled:
     raise NotImplementedError("Host lookup is not allowed. You can allow it while building python context.")
 else:
     class TinyIntVector:

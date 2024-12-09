@@ -1321,13 +1321,4 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return createArrowCapsuleNode.execute(inliningTarget, arrowArray, arrowSchema);
         }
     }
-
-    @Builtin(name = "is_arrow_vector_on_class_path", minNumOfPositionalArgs = 0)
-    @GenerateNodeFactory
-    public abstract static class IsArrowVectorLoaded extends PythonBuiltinNode {
-        @Specialization
-        static boolean doSearch(@Bind("this") Node inliningTarget) {
-            return getContext(inliningTarget).arrowVectorSupport.isJavaArrowImplOnClassPath;
-        }
-    }
 }
