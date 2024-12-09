@@ -349,7 +349,7 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> NativeModules = new OptionKey<>(true);
 
     @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Whether the context isolate its loading C extension modules to allow more than one context to access C extensions. Note that all contexts in the operating system process must set this option to true to cooperatively allow this feature to work.")
-    public static final OptionKey<Boolean> IsolateNativeModules = new OptionKey<>(true);
+    public static final OptionKey<Boolean> IsolateNativeModules = new OptionKey<>(false);
 
     @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether the Python GC should be enabled (default) or not.") //
     public static final OptionKey<Boolean> PythonGC = new OptionKey<>(true);
