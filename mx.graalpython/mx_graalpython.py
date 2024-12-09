@@ -2900,6 +2900,8 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.python.embedding/*=ALL-UNNAMED'])
         if not PythonMxUnittestConfig.useResources:
             vmArgs.append('-Dorg.graalvm.language.python.home=' + mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
+        if mx._opts.verbose:
+            vmArgs.append('-Dcom.oracle.graal.python.test.verbose=true')
         return (vmArgs, mainClass, mainClassArgs)
 
     def processDeps(self, deps):
