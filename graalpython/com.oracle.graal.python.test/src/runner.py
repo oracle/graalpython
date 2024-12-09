@@ -149,7 +149,7 @@ class TestId:
                     test_id = f'<{action}>'
                 else:
                     test_id = f'{class_name}.<{action}>'
-        elif type(test).id is not unittest.TestCase.id:
+        elif type(test).id is not unittest.TestCase.id and type(test) is not unittest.FunctionTestCase:
             # Qualify doctests so that we know what they are
             test_id = f'{type(test).__qualname__}.{test_id}'
         return cls(test_file, test_id)
