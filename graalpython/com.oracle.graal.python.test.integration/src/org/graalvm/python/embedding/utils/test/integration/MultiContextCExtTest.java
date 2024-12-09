@@ -42,6 +42,8 @@
 package org.graalvm.python.embedding.utils.test.integration;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +53,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Source;
 import org.graalvm.python.embedding.tools.capi.NativeExtensionReplicator;
 import org.graalvm.python.embedding.tools.exec.SubprocessLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
@@ -65,45 +71,59 @@ public class MultiContextCExtTest {
         final StringBuilder stdout = new StringBuilder();
         final StringBuilder info = new StringBuilder();
 
+        static void println(CharSequence... args) {
+            if (isVerbose()) {
+                System.out.println(String.join(" ", args));
+            }
+        }
+
         public void log(CharSequence txt) {
-            System.out.print("[log] ");
-            System.out.println(txt);
+            println("[log]", txt);
             logCharSequence.append(txt);
         }
 
         public void log(CharSequence txt, Throwable t) {
-            System.out.print("[log] ");
-            System.out.println(txt);
-            System.out.print("[throwable] ");
-            System.out.println(t.getMessage());
+            println("[log]", txt);
+            println("[throwable]", t.getMessage());
             logThrowable.append(txt).append(t.getMessage());
         }
 
         public void subProcessErr(CharSequence err) {
-            System.out.print("[err] ");
-            System.out.println(err);
+            println("[err]", err);
             stderr.append(err);
         }
 
         public void subProcessOut(CharSequence out) {
-            System.out.print("[out] ");
-            System.out.println(out);
+            println("[out]", out);
             stdout.append(out);
         }
 
         public void info(String s) {
-            System.out.print("[info] ");
-            System.out.println(s);
+            println("[info]", s);
             info.append(s);
         }
     }
 
     private static Path createVenv(TestLog log) throws IOException {
         var tmpdir = Files.createTempDirectory("graalpytest");
-        tmpdir.toFile().deleteOnExit();
+        deleteDirOnShutdown(tmpdir);
         var venvdir = tmpdir.resolve("venv");
         VFSUtils.createVenv(venvdir, List.of(), tmpdir.resolve("graalpy.exe"), () -> getClasspath(), "", log, log);
         return venvdir;
+    }
+
+    private static void deleteDirOnShutdown(Path tmpdir) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                Files.walk(tmpdir).forEach(t -> {
+                    try {
+                        Files.delete(t);
+                    } catch (IOException e) {
+                    }
+                });
+            } catch (IOException e) {
+            }
+        }));
     }
 
     private static Set<String> getClasspath() {
@@ -122,5 +142,73 @@ public class MultiContextCExtTest {
         var log = new TestLog();
         var venv = createVenv(log);
         NativeExtensionReplicator.replicate(venv, log, 2);
+        var engine = Engine.create("python");
+        var builder = Context.newBuilder().engine(engine).allowAllAccess(true);
+        var c0 = builder.build();
+        builder
+            .option("python.IsolateNativeModules", "true")
+            .option("python.Sha3ModuleBackend", "native")
+            .option("python.ForceImportSite", "true")
+            .option("python.Executable", venv.resolve("bin").resolve("python").toString());
+        if (isVerbose()) {
+            builder.option("log.python.level", "FINE");
+        }
+        var c1 = builder.build();
+        var c2 = builder.build();
+        var c3 = builder.build();
+        var c4 = builder.build();
+        builder.option("python.Executable", "");
+        var c5 = builder.build();
+        c0.initialize("python");
+        c1.initialize("python");
+        c2.initialize("python");
+        c3.initialize("python");
+        c4.initialize("python");
+        c5.initialize("python");
+        var code = Source.create("python", "import _sha3; _sha3.implementation");
+        // First one works
+        var r1 = c1.eval(code);
+        assertEquals("tiny_sha3", r1.asString());
+        // Second one works because of isolation
+        var r2 = c2.eval(code);
+        assertEquals("tiny_sha3", r2.asString());
+        c2.eval("python", "import _sha3; _sha3.implementation = '12'");
+        r2 = c2.eval(code);
+        assertEquals("12", r2.asString());
+        // first context is unaffected
+        r1 = c1.eval(code);
+        assertEquals("tiny_sha3", r1.asString());
+        // Third one does not work because we do not have enough relocated copies
+        try {
+            c3.eval(code);
+            fail("should not reach here");
+        } catch (PolyglotException e) {
+            assertTrue("We need prepared modules", e.getMessage().contains("relocated module"));
+        }
+        // Fourth one does not work because we changed the sys.prefix
+        c4.eval("python", "import sys; sys.prefix = 12");
+        try {
+            c4.eval(code);
+            fail("should not reach here");
+        } catch (PolyglotException e) {
+            assertTrue("We rely on sys.prefix", e.getMessage().contains("sys.prefix"));
+        }
+        // Fifth one does not work because we don't have the venv configured
+        try {
+            c5.eval(code);
+            fail("should not reach here");
+        } catch (PolyglotException e) {
+            assertTrue("We need a venv", e.getMessage().contains("relocated module"));
+        }
+        // Using a context without isolation in the same process forces LLVM
+        try {
+            c0.eval(code);
+        } catch (PolyglotException e) {
+            assertTrue("LLVM mode does not have this", e.getMessage().contains("has no attribute 'implementation'"));
+        }
+    }
+
+    private static boolean isVerbose() {
+        return Boolean.getBoolean("com.oracle.graal.python.test.verbose");
     }
 }
