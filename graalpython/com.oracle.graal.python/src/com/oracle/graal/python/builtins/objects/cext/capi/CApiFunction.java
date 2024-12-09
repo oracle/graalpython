@@ -1160,7 +1160,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyUnicodeWriter_Finish", ret = PyObject, args = {_PYUNICODEWRITER_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicodeWriter_Init", ret = Void, args = {_PYUNICODEWRITER_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicodeWriter_PrepareInternal", ret = Int, args = {_PYUNICODEWRITER_PTR, Py_ssize_t, PY_UCS4}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyUnicodeWriter_PrepareKindInternal", ret = Int, args = {_PYUNICODEWRITER_PTR, PYUNICODE_KIND}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyUnicodeWriter_PrepareKindInternal", ret = Int, args = {_PYUNICODEWRITER_PTR, Int}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteASCIIString", ret = Int, args = {_PYUNICODEWRITER_PTR, ConstCharPtrAsTruffleString, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteChar", ret = Int, args = {_PYUNICODEWRITER_PTR, PY_UCS4}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteLatin1String", ret = Int, args = {_PYUNICODEWRITER_PTR, ConstCharPtrAsTruffleString, Py_ssize_t}, call = NotImplemented)

@@ -242,6 +242,28 @@ _PyObject_GET_WEAKREFS_LISTPTR(PyObject *op)
     return (PyObject **)((char *)op + offset);
 }
 
+/* This is a special case of _PyObject_GET_WEAKREFS_LISTPTR().
+ * Only the most fundamental lookup path is used.
+ * Consequently, static types should not be used.
+ *
+ * For static builtin types the returned pointer will always point
+ * to a NULL tp_weaklist.  This is fine for any deallocation cases,
+ * since static types are never deallocated and static builtin types
+ * are only finalized at the end of runtime finalization.
+ *
+ * If the weaklist for static types is actually needed then use
+ * _PyObject_GET_WEAKREFS_LISTPTR().
+ */
+static inline PyWeakReference **
+_PyObject_GET_WEAKREFS_LISTPTR_FROM_OFFSET(PyObject *op)
+{
+    assert(!PyType_Check(op) ||
+            ((PyTypeObject *)op)->tp_flags & Py_TPFLAGS_HEAPTYPE);
+    Py_ssize_t offset = Py_TYPE(op)->tp_weaklistoffset;
+    return (PyWeakReference **)((char *)op + offset);
+}
+
+
 // Fast inlined version of PyObject_IS_GC()
 static inline int
 _PyObject_IS_GC(PyObject *obj)

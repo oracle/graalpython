@@ -29,7 +29,11 @@ _Py_IsMainThread(void)
 static inline PyInterpreterState *
 _PyInterpreterState_Main(void)
 {
+#if 0 // GraalPy change
     return _PyRuntime.interpreters.main;
+#else // GraalPy change
+    return PyThreadState_Get()->interp;
+#endif // GraalPy change
 }
 
 static inline int

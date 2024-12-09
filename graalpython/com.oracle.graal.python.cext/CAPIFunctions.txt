@@ -1118,7 +1118,7 @@ _PyUnicodeWriter_Dealloc;void;_PyUnicodeWriter*
 _PyUnicodeWriter_Finish;PyObject*;_PyUnicodeWriter*
 _PyUnicodeWriter_Init;void;_PyUnicodeWriter*
 _PyUnicodeWriter_PrepareInternal;int;_PyUnicodeWriter*|Py_ssize_t|Py_UCS4
-_PyUnicodeWriter_PrepareKindInternal;int;_PyUnicodeWriter*|enum PyUnicode_Kind
+_PyUnicodeWriter_PrepareKindInternal;int;_PyUnicodeWriter*|int
 _PyUnicodeWriter_WriteASCIIString;int;_PyUnicodeWriter*|const char*|Py_ssize_t
 _PyUnicodeWriter_WriteChar;int;_PyUnicodeWriter*|Py_UCS4
 _PyUnicodeWriter_WriteLatin1String;int;_PyUnicodeWriter*|const char*|Py_ssize_t

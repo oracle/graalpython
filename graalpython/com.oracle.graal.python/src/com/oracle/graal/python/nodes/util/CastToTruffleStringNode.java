@@ -42,10 +42,8 @@ package com.oracle.graal.python.nodes.util;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__length;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__state;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__state_ready_shift;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyUnicodeObject__data;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.isBitSet;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -134,10 +132,6 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
                         @Cached TruffleString.FromNativePointerNode fromNative,
                         @Cached TruffleString.FromByteArrayNode fromBytes) {
             int state = readI32.read(pointer, PyASCIIObject__state);
-            boolean ready = isBitSet(state, PyASCIIObject__state_ready_shift);
-            if (!ready) {
-                throw CompilerDirectives.shouldNotReachHere("not implemented - need to call _PyUnicode_Ready for native string");
-            }
             int kind = (state >> CFields.PyASCIIObject__state_kind_shift) & 0x7;
             Object data = readPointer.read(pointer, PyUnicodeObject__data);
             long length = readI64.read(pointer, PyASCIIObject__length);

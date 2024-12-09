@@ -58,7 +58,9 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 #include "pycore_pathconfig.h"    // _Py_DumpPathConfig()
 #include "pycore_pylifecycle.h"   // _Py_SetFileSystemEncoding()
+#endif // GraalPy change
 #include "pycore_pystate.h"       // _PyInterpreterState_GET()
+#if 0 // GraalPy change
 #include "pycore_ucnhash.h"       // _PyUnicode_Name_CAPI
 #include "pycore_unicodeobject.h" // struct _Py_unicode_state
 #include "pycore_unicodeobject_generated.h"  // _PyUnicode_InitStaticStrings()
@@ -14439,6 +14441,15 @@ intern_common(PyInterpreterState *interp, PyObject *s /* stolen */,
 
     return s;
 }
+#else // GraalPy change
+static /* non-null */ PyObject*
+intern_common(PyInterpreterState *interp, PyObject *s /* stolen */,
+              bool immortalize) {
+    _PyUnicode_InternStatic(interp, &s);
+    return s;
+}
+
+#endif // GraalPy change
 
 void
 _PyUnicode_InternImmortal(PyInterpreterState *interp, PyObject **p)
@@ -14477,7 +14488,6 @@ PyUnicode_InternImmortal(PyObject **p)
     PyInterpreterState *interp = _PyInterpreterState_GET();
     _PyUnicode_InternImmortal(interp, p);
 }
-#endif // GraalPy change
 
 PyObject *
 PyUnicode_InternFromString(const char *cp)
@@ -15072,10 +15082,6 @@ Py_ssize_t PyTruffleUnicode_GET_LENGTH(PyObject* op) {
 	return PyASCIIObject_length(op);
 }
 
-Py_ssize_t PyTruffleUnicode_WSTR_LENGTH(PyObject *op) {
-    return PyCompactUnicodeObject_wstr_length(op);
-}
-
 unsigned int PyTruffleUnicode_IS_ASCII(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ascii, state.ascii);
 }
@@ -15086,10 +15092,6 @@ unsigned int PyTruffleUnicode_IS_COMPACT(PyObject* op) {
 
 int _PyTruffleUnicode_KIND(PyObject* op) {
 	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_kind, state.kind);
-}
-
-unsigned int PyTruffleUnicode_IS_READY(PyObject* op) {
-	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ready, state.ready);
 }
 
 void* _PyTruffleUnicode_NONCOMPACT_DATA(PyObject* op) {

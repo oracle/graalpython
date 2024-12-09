@@ -45,6 +45,7 @@ _PyErr_SetRaisedException(PyThreadState *tstate, PyObject *exc)
     Py_XDECREF(old_exc);
 }
 
+#if 0 // GraalPy change
 static PyObject*
 _PyErr_CreateException(PyObject *exception_type, PyObject *value)
 {
@@ -70,11 +71,13 @@ _PyErr_CreateException(PyObject *exception_type, PyObject *value)
 
     return exc;
 }
+#endif // GraalPy change
 
 void
 _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
                PyObject *traceback)
 {
+#if 0 // GraalPy change
     if (type == NULL) {
         assert(value == NULL);
         assert(traceback == NULL);
@@ -115,14 +118,19 @@ _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
     Py_XDECREF(old_traceback);
     _PyErr_SetRaisedException(tstate, value);
     Py_DECREF(type);
+#else // GraalPy change: different implementation
+    PyErr_Restore(type, value, traceback);
+#endif // GraalPy change
 }
 
+#if 0 // GraalPy change
 void
 PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
 {
     PyThreadState *tstate = _PyThreadState_GET();
     _PyErr_Restore(tstate, type, value, traceback);
 }
+#endif // GraalPy change
 
 void
 PyErr_SetRaisedException(PyObject *exc)
@@ -131,13 +139,6 @@ PyErr_SetRaisedException(PyObject *exc)
     _PyErr_SetRaisedException(tstate, exc);
 }
 
-void
-_PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
-               PyObject *traceback)
-{
-    // GraalPy change: different implementation
-    PyErr_Restore(type, value, traceback);
-}
 
 #if 0 // GraalPy change
 void

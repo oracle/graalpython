@@ -2028,12 +2028,7 @@ PyInterpreterState_Head(void)
 PyInterpreterState *
 PyInterpreterState_Main(void)
 {
-#if 0 // GraalPy change
     return _PyInterpreterState_Main();
-#else // GraalPy change
-    // TODO: not yet supported
-    return NULL;
-#endif // GraalPy change
 }
 
 PyInterpreterState *

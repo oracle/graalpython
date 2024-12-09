@@ -12,6 +12,7 @@
 #include "pycore_pylifecycle.h"   // _PyArg_Fini
 #else // GraalPy change
 #include "pycore_runtime.h"       // _PyRuntime
+#include "pycore_pystate.h"       // _PyInterpreterState_GET()
 #endif // GraalPy change
 
 #include <ctype.h>

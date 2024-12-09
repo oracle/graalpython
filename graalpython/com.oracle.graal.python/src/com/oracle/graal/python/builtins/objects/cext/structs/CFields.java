@@ -364,7 +364,6 @@ public enum CFields {
     public static final int PyASCIIObject__state_kind_shift = 2;
     public static final int PyASCIIObject__state_compact_shift = 5;
     public static final int PyASCIIObject__state_ascii_shift = 6;
-    public static final int PyASCIIObject__state_ready_shift = 7;
 
     @CompilationFinal(dimensions = 1) public static final CFields[] VALUES = values();
 
