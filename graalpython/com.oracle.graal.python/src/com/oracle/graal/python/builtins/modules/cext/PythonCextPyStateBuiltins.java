@@ -45,19 +45,27 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -67,12 +75,15 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PythonCextPyStateBuiltins {
 
@@ -134,6 +145,58 @@ public final class PythonCextPyStateBuiltins {
                 threadState.setDict(threadStateDict);
             }
             return threadStateDict;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {ArgDescriptor.UNSIGNED_LONG, PyObject}, call = Direct)
+    abstract static class PyThreadState_SetAsyncExc extends CApiBinaryBuiltinNode {
+        public static final TruffleLogger LOGGER = CApiContext.getLogger(PyThreadState_SetAsyncExc.class);
+
+        @Specialization
+        @TruffleBoundary
+        int doIt(long id, Object exceptionObject) {
+            for (Thread thread : getContext().getThreads()) {
+                if (PThread.getThreadId(thread) == id) {
+                    if (PGuards.isNoValue(exceptionObject)) {
+                        LOGGER.warning("The application used PyThreadState_SetAsyncExc to clear an exception on another thread. " +
+                                        "This is not supported and ignored by GraalPy.");
+                        return 1;
+                    }
+                    ThreadLocalAction action = new ThreadLocalAction(true, false) {
+                        static final int MAX_MISSED_COUNT = 20;
+                        int missedCount = 0;
+
+                        @Override
+                        protected void perform(Access access) {
+                            if (missedCount == MAX_MISSED_COUNT) {
+                                throw PRaiseNode.raiseExceptionObject(null, exceptionObject);
+                            }
+                            // If possible, we do not want to raise in some internal code, it could
+                            // corrupt internal data structures.
+                            Node location = access.getLocation();
+                            if (location != null) {
+                                RootNode rootNode = location.getRootNode();
+                                if (rootNode instanceof PRootNode && !rootNode.isInternal()) {
+                                    throw PRaiseNode.raiseExceptionObject(null, exceptionObject);
+                                }
+                            }
+                            // Heuristic fabricated out of thin air:
+                            if (missedCount++ < MAX_MISSED_COUNT) {
+                                if (missedCount % 2 == 0) {
+                                    try {
+                                        Thread.sleep(1);
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                }
+                                getContext().getEnv().submitThreadLocal(new Thread[]{thread}, this);
+                            }
+                        }
+                    };
+                    getContext().getEnv().submitThreadLocal(new Thread[]{thread}, action);
+                    return 1;
+                }
+            }
+            return 0;
         }
     }
 
