@@ -83,7 +83,8 @@ test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_run_after
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_shutdown_no_wait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_submit_after_interpreter_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_thread_names_assigned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_thread_names_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Transiently times out GR-52666
+!test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_thread_names_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_shutdown.ThreadPoolShutdownTest.test_threads_terminate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_default_workers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_executor_map_current_future_cancel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

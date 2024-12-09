@@ -615,7 +615,7 @@ lib2to3.tests.test_refactor.TestRefactoringTool.test_crlf_unchanged @ darwin-arm
 lib2to3.tests.test_refactor.TestRefactoringTool.test_detect_future_features @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_refactor.TestRefactoringTool.test_exec_function_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_refactor.TestRefactoringTool.test_explicit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-lib2to3.tests.test_refactor.TestRefactoringTool.test_false_file_encoding @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+lib2to3.tests.test_refactor.TestRefactoringTool.test_false_file_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_refactor.TestRefactoringTool.test_file_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_refactor.TestRefactoringTool.test_fixer_loading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_refactor.TestRefactoringTool.test_fixer_loading_helpers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
