@@ -213,6 +213,7 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 import sun.misc.Unsafe;
 
+@Bind.DefaultExpression("get($node)")
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
     public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
