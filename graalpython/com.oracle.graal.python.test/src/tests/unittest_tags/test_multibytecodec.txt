@@ -1,8 +1,10 @@
-test.test_multibytecodec.TestStateful.test_encode
-test.test_multibytecodec.Test_ISO2022.test_bug1572832
-test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs
-test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs_keep_buffer
-test.test_multibytecodec.Test_IncrementalEncoder.test_issue5640
-test.test_multibytecodec.Test_IncrementalEncoder.test_stateless
-test.test_multibytecodec.Test_IncrementalEncoder.test_subinterp
-test.test_multibytecodec.Test_MultibyteCodec.test_codingspec
+test.test_multibytecodec.TestStateful.test_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_ISO2022.test_bug1572832 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_IncrementalDecoder.test_dbcs_keep_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_IncrementalEncoder.test_issue5640 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_IncrementalEncoder.test_stateless @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_MultibyteCodec.test_codingspec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_StreamWriter.test_gb18030 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_StreamWriter.test_streamwriter_strwrite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_multibytecodec.Test_StreamWriter.test_utf_8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

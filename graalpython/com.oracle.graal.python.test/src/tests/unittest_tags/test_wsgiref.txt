@@ -1,36 +1,34 @@
-test.test_wsgiref.HandlerTests.testAbstractMethods
-test.test_wsgiref.HandlerTests.testBasicErrorOutput
-test.test_wsgiref.HandlerTests.testBytesData
-test.test_wsgiref.HandlerTests.testCGIEnviron
-test.test_wsgiref.HandlerTests.testClientConnectionTerminations
-test.test_wsgiref.HandlerTests.testCloseOnError
-test.test_wsgiref.HandlerTests.testContentLength
-test.test_wsgiref.HandlerTests.testDontResetInternalStateOnException
-test.test_wsgiref.HandlerTests.testEnviron
-test.test_wsgiref.HandlerTests.testErrorAfterOutput
-test.test_wsgiref.HandlerTests.testHeaderFormats
-test.test_wsgiref.HandlerTests.testPartialWrite
-test.test_wsgiref.HandlerTests.testScheme
-test.test_wsgiref.HeaderTests.testExtras
-test.test_wsgiref.HeaderTests.testMappingInterface
-test.test_wsgiref.HeaderTests.testRequireList
-test.test_wsgiref.IntegrationTests.test_bytes_validation
-test.test_wsgiref.IntegrationTests.test_cp1252_url
-test.test_wsgiref.IntegrationTests.test_environ
-test.test_wsgiref.IntegrationTests.test_interrupted_write
-test.test_wsgiref.IntegrationTests.test_plain_hello
-test.test_wsgiref.IntegrationTests.test_request_length
-test.test_wsgiref.IntegrationTests.test_simple_validation_error
-test.test_wsgiref.IntegrationTests.test_status_validation_errors
-test.test_wsgiref.IntegrationTests.test_validated_hello
-test.test_wsgiref.IntegrationTests.test_wsgi_input
-test.test_wsgiref.UtilityTests.testAppURIs
-test.test_wsgiref.UtilityTests.testCrossDefaults
-test.test_wsgiref.UtilityTests.testDefaults
-test.test_wsgiref.UtilityTests.testFileWrapper
-test.test_wsgiref.UtilityTests.testGuessScheme
-test.test_wsgiref.UtilityTests.testHopByHop
-test.test_wsgiref.UtilityTests.testNormalizedShifts
-test.test_wsgiref.UtilityTests.testReqURIs
-test.test_wsgiref.UtilityTests.testSimpleShifts
-test.test_wsgiref.UtilityTests.test_filewrapper_getitem_deprecation
+test.test_wsgiref.HandlerTests.testAbstractMethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testBasicErrorOutput @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testBytesData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testCGIEnviron @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testClientConnectionTerminations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testCloseOnError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testContentLength @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testDontResetInternalStateOnException @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testEnviron @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testErrorAfterOutput @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testHeaderFormats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testPartialWrite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HandlerTests.testScheme @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HeaderTests.testExtras @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HeaderTests.testMappingInterface @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.HeaderTests.testRequireList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_bytes_validation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_cp1252_url @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_environ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_plain_hello @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_request_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_simple_validation_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_status_validation_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_validated_hello @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.IntegrationTests.test_wsgi_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testAppURIs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testCrossDefaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testDefaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testFileWrapper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testGuessScheme @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testHopByHop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testNormalizedShifts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testReqURIs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wsgiref.UtilityTests.testSimpleShifts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

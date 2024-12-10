@@ -1,19 +1,55 @@
-DocTestCase.test.test_pdb.test_list_commands
-DocTestCase.test.test_pdb.test_next_until_return_at_return_event
-DocTestCase.test.test_pdb.test_pdb_alias_command
-DocTestCase.test.test_pdb.test_pdb_breakpoint_commands
-DocTestCase.test.test_pdb.test_pdb_breakpoints_preserved_across_interactive_sessions
-DocTestCase.test.test_pdb.test_pdb_continue_in_bottomframe
-DocTestCase.test.test_pdb.test_pdb_display_command
-DocTestCase.test.test_pdb.test_pdb_displayhook
-DocTestCase.test.test_pdb.test_pdb_issue_20766
-DocTestCase.test.test_pdb.test_pdb_issue_43318
-DocTestCase.test.test_pdb.test_pdb_issue_gh_101673
-DocTestCase.test.test_pdb.test_pdb_issue_gh_103225
-DocTestCase.test.test_pdb.test_pdb_issue_gh_65052
-DocTestCase.test.test_pdb.test_pdb_issue_gh_91742
-DocTestCase.test.test_pdb.test_pdb_pp_repr_exc
-DocTestCase.test.test_pdb.test_pdb_run_with_code_object
-DocTestCase.test.test_pdb.test_pdb_skip_modules
-DocTestCase.test.test_pdb.test_pdb_skip_modules_with_callback
-DocTestCase.test.test_pdb.test_pdb_whatis_command
+DocTestCase.test.test_pdb.test_list_commands @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_next_until_return_at_return_event @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_alias_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_breakpoint_commands @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_breakpoints_preserved_across_interactive_sessions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_continue_in_bottomframe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_display_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_displayhook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_issue_20766 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_issue_43318 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_issue_gh_101673 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_issue_gh_103225 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_issue_gh_65052 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_issue_gh_91742 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_pp_repr_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_run_with_code_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_skip_modules @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_skip_modules_with_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_whatis_command @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.ChecklineTests.test_checkline_after_reset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.ChecklineTests.test_checkline_before_debugging @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.ChecklineTests.test_checkline_is_not_executable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_blocks_at_first_code_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_breakpoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_dir_as_script @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_find_function_empty_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_find_function_found @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_find_function_found_with_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_find_function_found_with_encoding_cookie @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_gh_93696_frozen_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_gh_94215_crash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_invalid_cmd_line_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue13120 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue13183 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue16180 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue26053 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue34266 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue36250 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue42383 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue42384 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue42384_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pdb.PdbTestCase.test_issue46434 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue7964 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_module_is_run_as_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_module_without_a_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_non_utf8_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_nonexistent_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pdb.PdbTestCase.test_package_without_a_main @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_readrc_homedir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_readrc_kwarg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_relative_imports @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_relative_imports_on_plain_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_run_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_run_pdb_with_pdb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

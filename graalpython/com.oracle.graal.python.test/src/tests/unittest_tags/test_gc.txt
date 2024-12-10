@@ -1,14 +1,4 @@
-test.test_gc.GCCallbackTests.test_collect_garbage
-test.test_gc.GCCallbackTests.test_refcount_errors
-test.test_gc.GCTests.test_bug1055820b
-test.test_gc.GCTests.test_bug21435
-test.test_gc.GCTests.test_collect_generations
-test.test_gc.GCTests.test_frame
-test.test_gc.GCTests.test_garbage_at_shutdown
-test.test_gc.GCTests.test_get_count
-test.test_gc.GCTests.test_is_finalized
-test.test_gc.GCTests.test_legacy_finalizer
-test.test_gc.GCTests.test_legacy_finalizer_newclass
-test.test_gc.GCTests.test_trash_weakref_clear
-test.test_gc.GCTests.test_trashcan
-test.test_gc.PythonFinalizationTests.test_ast_fini
+test.test_gc.GCTests.test_bug21435 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_gc.GCTests.test_trash_weakref_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_gc.GCTests.test_trashcan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_gc.PythonFinalizationTests.test_ast_fini @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -1,8 +1,8 @@
-test.test_pstats.AddCallersTestCase.test_combine_results
-test.test_pstats.StatsTestCase.test_SortKey_enum
-test.test_pstats.StatsTestCase.test_add
-test.test_pstats.StatsTestCase.test_sort_starts_mix
-test.test_pstats.StatsTestCase.test_sort_stats_enum
-test.test_pstats.StatsTestCase.test_sort_stats_int
-test.test_pstats.StatsTestCase.test_sort_stats_partial
-test.test_pstats.StatsTestCase.test_sort_stats_string
+test.test_pstats.AddCallersTestCase.test_combine_results @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pstats.StatsTestCase.test_SortKey_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pstats.StatsTestCase.test_add @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pstats.StatsTestCase.test_sort_starts_mix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pstats.StatsTestCase.test_sort_stats_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pstats.StatsTestCase.test_sort_stats_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pstats.StatsTestCase.test_sort_stats_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pstats.StatsTestCase.test_sort_stats_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

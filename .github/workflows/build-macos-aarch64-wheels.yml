@@ -1,4 +1,4 @@
-name: build-macos-amd64-wheels
+name: build-macos-aarch64-wheels
 'on':
   workflow_dispatch:
     inputs:
@@ -12,7 +12,7 @@ name: build-macos-amd64-wheels
         required: true
 jobs:
   build_wheels:
-    runs-on: macos-12
+    runs-on: macos-latest
     env:
       PACKAGES_TO_BUILD: ${{ inputs.packages }}
     steps:
@@ -23,7 +23,9 @@ jobs:
         with:
           python-version: 3.12
       - name: Build wheels
-        run: python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
+        run: |
+          export PIP_EXTRA_INDEX_URL=https://pypi.org/simple
+          python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
         uses: actions/upload-artifact@main
         with:

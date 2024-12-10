@@ -1,92 +1,78 @@
-test.test_enumerate.EnumerateStartTestCase.test_argumentcheck
-test.test_enumerate.EnumerateStartTestCase.test_basicfunction
-test.test_enumerate.EnumerateStartTestCase.test_enumerate_result_gc
-test.test_enumerate.EnumerateStartTestCase.test_exception_propagation
-test.test_enumerate.EnumerateStartTestCase.test_getitemseqn
-test.test_enumerate.EnumerateStartTestCase.test_illformediterable
-test.test_enumerate.EnumerateStartTestCase.test_iteratorgenerator
-test.test_enumerate.EnumerateStartTestCase.test_iteratorseqn
-test.test_enumerate.EnumerateStartTestCase.test_kwargs
-test.test_enumerate.EnumerateStartTestCase.test_noniterable
-test.test_enumerate.EnumerateStartTestCase.test_pickle
-test.test_enumerate.EnumerateStartTestCase.test_tuple_reuse
-test.test_enumerate.EnumerateTestCase.test_argumentcheck
-test.test_enumerate.EnumerateTestCase.test_basicfunction
-test.test_enumerate.EnumerateTestCase.test_enumerate_result_gc
-test.test_enumerate.EnumerateTestCase.test_exception_propagation
-test.test_enumerate.EnumerateTestCase.test_getitemseqn
-test.test_enumerate.EnumerateTestCase.test_illformediterable
-test.test_enumerate.EnumerateTestCase.test_iteratorgenerator
-test.test_enumerate.EnumerateTestCase.test_iteratorseqn
-test.test_enumerate.EnumerateTestCase.test_kwargs
-test.test_enumerate.EnumerateTestCase.test_noniterable
-test.test_enumerate.EnumerateTestCase.test_pickle
-test.test_enumerate.EnumerateTestCase.test_tuple_reuse
-test.test_enumerate.SubclassTestCase.test_argumentcheck
-test.test_enumerate.SubclassTestCase.test_basicfunction
-test.test_enumerate.SubclassTestCase.test_enumerate_result_gc
-test.test_enumerate.SubclassTestCase.test_exception_propagation
-test.test_enumerate.SubclassTestCase.test_getitemseqn
-test.test_enumerate.SubclassTestCase.test_illformediterable
-test.test_enumerate.SubclassTestCase.test_iteratorgenerator
-test.test_enumerate.SubclassTestCase.test_iteratorseqn
-test.test_enumerate.SubclassTestCase.test_kwargs
-test.test_enumerate.SubclassTestCase.test_noniterable
-test.test_enumerate.SubclassTestCase.test_pickle
-test.test_enumerate.SubclassTestCase.test_tuple_reuse
-test.test_enumerate.TestBig.test_argumentcheck
-test.test_enumerate.TestBig.test_basicfunction
-test.test_enumerate.TestBig.test_enumerate_result_gc
-test.test_enumerate.TestBig.test_exception_propagation
-test.test_enumerate.TestBig.test_getitemseqn
-test.test_enumerate.TestBig.test_illformediterable
-test.test_enumerate.TestBig.test_iteratorgenerator
-test.test_enumerate.TestBig.test_iteratorseqn
-test.test_enumerate.TestBig.test_kwargs
-test.test_enumerate.TestBig.test_noniterable
-test.test_enumerate.TestBig.test_pickle
-test.test_enumerate.TestBig.test_tuple_reuse
-test.test_enumerate.TestEmpty.test_argumentcheck
-test.test_enumerate.TestEmpty.test_basicfunction
-test.test_enumerate.TestEmpty.test_enumerate_result_gc
-test.test_enumerate.TestEmpty.test_exception_propagation
-test.test_enumerate.TestEmpty.test_getitemseqn
-test.test_enumerate.TestEmpty.test_illformediterable
-test.test_enumerate.TestEmpty.test_iteratorgenerator
-test.test_enumerate.TestEmpty.test_iteratorseqn
-test.test_enumerate.TestEmpty.test_kwargs
-test.test_enumerate.TestEmpty.test_noniterable
-test.test_enumerate.TestEmpty.test_pickle
-test.test_enumerate.TestEmpty.test_tuple_reuse
-test.test_enumerate.TestLongStart.test_argumentcheck
-test.test_enumerate.TestLongStart.test_basicfunction
-test.test_enumerate.TestLongStart.test_enumerate_result_gc
-test.test_enumerate.TestLongStart.test_exception_propagation
-test.test_enumerate.TestLongStart.test_getitemseqn
-test.test_enumerate.TestLongStart.test_illformediterable
-test.test_enumerate.TestLongStart.test_iteratorgenerator
-test.test_enumerate.TestLongStart.test_iteratorseqn
-test.test_enumerate.TestLongStart.test_kwargs
-test.test_enumerate.TestLongStart.test_noniterable
-test.test_enumerate.TestLongStart.test_pickle
-test.test_enumerate.TestLongStart.test_tuple_reuse
-test.test_enumerate.TestReversed.test_args
-test.test_enumerate.TestReversed.test_bug1229429
-test.test_enumerate.TestReversed.test_gc
-test.test_enumerate.TestReversed.test_len
-test.test_enumerate.TestReversed.test_objmethods
-test.test_enumerate.TestReversed.test_pickle
-test.test_enumerate.TestReversed.test_range_optimization
-test.test_enumerate.TestReversed.test_simple
-test.test_enumerate.TestStart.test_argumentcheck
-test.test_enumerate.TestStart.test_basicfunction
-test.test_enumerate.TestStart.test_enumerate_result_gc
-test.test_enumerate.TestStart.test_exception_propagation
-test.test_enumerate.TestStart.test_getitemseqn
-test.test_enumerate.TestStart.test_illformediterable
-test.test_enumerate.TestStart.test_iteratorgenerator
-test.test_enumerate.TestStart.test_iteratorseqn
-test.test_enumerate.TestStart.test_kwargs
-test.test_enumerate.TestStart.test_noniterable
-test.test_enumerate.TestStart.test_pickle
-test.test_enumerate.TestStart.test_tuple_reuse
+test.test_enumerate.EnumerateStartTestCase.test_argumentcheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_basicfunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_exception_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_getitemseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_illformediterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_iteratorgenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_iteratorseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_noniterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateStartTestCase.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_argumentcheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_basicfunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_exception_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_getitemseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_illformediterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_iteratorgenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_iteratorseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_noniterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.EnumerateTestCase.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_argumentcheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_basicfunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_exception_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_getitemseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_illformediterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_iteratorgenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_iteratorseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_noniterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.SubclassTestCase.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_argumentcheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_basicfunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_exception_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_getitemseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_illformediterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_iteratorgenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_iteratorseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_noniterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestBig.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_argumentcheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_basicfunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_exception_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_getitemseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_illformediterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_iteratorgenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_iteratorseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_noniterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestEmpty.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_argumentcheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_basicfunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_exception_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_getitemseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_illformediterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_iteratorgenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_iteratorseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_noniterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestLongStart.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestReversed.test_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestReversed.test_bug1229429 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestReversed.test_gc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestReversed.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestReversed.test_objmethods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestReversed.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestReversed.test_range_optimization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestReversed.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_argumentcheck @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_basicfunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_exception_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_getitemseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_illformediterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_iteratorgenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_iteratorseqn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_noniterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_enumerate.TestStart.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -3141,7 +3141,9 @@ public final class IntBuiltins extends PythonBuiltins {
     @Builtin(name = "bit_length", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class BitLengthNode extends PythonBuiltinNode {
+    public abstract static class BitLengthNode extends PythonUnaryBuiltinNode {
+        public abstract int execute(Object argument);
+
         @Specialization
         static int bitLength(int argument) {
             return Integer.SIZE - Integer.numberOfLeadingZeros(Math.abs(argument));
@@ -3156,6 +3158,22 @@ public final class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static int bitLength(PInt argument) {
             return argument.getValue().abs().bitLength();
+        }
+    }
+
+    @Builtin(name = "is_integer", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class IsIntegerNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean doLong(long argument) {
+            return true;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static boolean doPInt(PInt argument) {
+            return true;
         }
     }
 

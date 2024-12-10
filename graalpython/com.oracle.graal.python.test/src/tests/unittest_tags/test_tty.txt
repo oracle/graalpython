@@ -1,2 +1,2 @@
-test.test_tty.TestTty.test_setcbreak
-test.test_tty.TestTty.test_setraw
+test.test_tty.TestTty.test_setcbreak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tty.TestTty.test_setraw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -456,10 +456,11 @@ public abstract class CApiTransitions {
                             assert handleContext.referenceQueuePollActive;
                         }
                         count++;
+                        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s, no remaining managed references", entry));
                         if (entry instanceof PythonObjectReference reference) {
-                            LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
                             if (HandlePointerConverter.pointsToPyHandleSpace(reference.pointer)) {
                                 assert nativeStubLookupGet(handleContext, reference.pointer, reference.handleTableIndex) != null : Long.toHexString(reference.pointer);
+                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object %x => %s", reference.pointer, reference));
                                 nativeStubLookupRemove(handleContext, reference);
                                 /*
                                  * We may only free native object stubs if their reference count is
@@ -468,9 +469,12 @@ public abstract class CApiTransitions {
                                  * be free'd at context finalization.
                                  */
                                 long stubPointer = HandlePointerConverter.pointerToStub(reference.pointer);
-                                if (subNativeRefCount(stubPointer, MANAGED_REFCNT) == 0) {
+                                long newRefCount = subNativeRefCount(stubPointer, MANAGED_REFCNT);
+                                if (newRefCount == 0) {
+                                    LOGGER.finer(() -> PythonUtils.formatJString("No more references for %s (refcount->0): freeing native stub", reference));
                                     freeNativeStub(reference);
                                 } else {
+                                    LOGGER.finer(() -> PythonUtils.formatJString("Some native references to %s remain (refcount=%d): not freeing native stub yet", reference, newRefCount));
                                     /*
                                      * In this case, the object is no longer referenced from managed
                                      * but still from native code (since the reference count is
@@ -493,12 +497,15 @@ public abstract class CApiTransitions {
                                 }
                             } else {
                                 assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
+                                LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
                                 nativeLookupRemove(handleContext, reference.pointer);
                                 if (reference.isFreeAtCollection()) {
+                                    LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
                                     freeNativeStruct(reference);
                                 }
                             }
                         } else if (entry instanceof NativeObjectReference reference) {
+                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
                             nativeLookupRemove(handleContext, reference.pointer);
                             processNativeObjectReference(reference, referencesToBeFreed);
                         } else if (entry instanceof NativeStorageReference reference) {

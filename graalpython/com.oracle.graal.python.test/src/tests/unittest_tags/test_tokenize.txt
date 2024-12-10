@@ -1,95 +1,95 @@
-test.test_tokenize.CTokenizeTest.test_additive
-test.test_tokenize.CTokenizeTest.test_async
-test.test_tokenize.CTokenizeTest.test_comparison
-test.test_tokenize.CTokenizeTest.test_continuation_lines_indentation
-test.test_tokenize.CTokenizeTest.test_float
-test.test_tokenize.CTokenizeTest.test_function
-test.test_tokenize.CTokenizeTest.test_int
-test.test_tokenize.CTokenizeTest.test_invalid_syntax
-test.test_tokenize.CTokenizeTest.test_max_indent
-test.test_tokenize.CTokenizeTest.test_method
-test.test_tokenize.CTokenizeTest.test_multiplicative
-test.test_tokenize.CTokenizeTest.test_selector
-test.test_tokenize.CTokenizeTest.test_string
-test.test_tokenize.CTokenizeTest.test_tabs
-test.test_tokenize.CTokenizeTest.test_unary
-test.test_tokenize.CTokenizerBufferTests.test_newline_at_the_end_of_buffer
-test.test_tokenize.GenerateTokensTest.test_additive
-test.test_tokenize.GenerateTokensTest.test_async
-test.test_tokenize.GenerateTokensTest.test_basic
-test.test_tokenize.GenerateTokensTest.test_comparison
-test.test_tokenize.GenerateTokensTest.test_float
-test.test_tokenize.GenerateTokensTest.test_function
-test.test_tokenize.GenerateTokensTest.test_implicit_newline
-test.test_tokenize.GenerateTokensTest.test_int
-test.test_tokenize.GenerateTokensTest.test_long
-test.test_tokenize.GenerateTokensTest.test_method
-test.test_tokenize.GenerateTokensTest.test_multiplicative
-test.test_tokenize.GenerateTokensTest.test_non_ascii_identifiers
-test.test_tokenize.GenerateTokensTest.test_selector
-test.test_tokenize.GenerateTokensTest.test_shift
-test.test_tokenize.GenerateTokensTest.test_string
-test.test_tokenize.GenerateTokensTest.test_tabs
-test.test_tokenize.GenerateTokensTest.test_unary
-test.test_tokenize.GenerateTokensTest.test_underscore_literals
-test.test_tokenize.GenerateTokensTest.test_unicode
-test.test_tokenize.TestDetectEncoding.test_bom_no_cookie
-test.test_tokenize.TestDetectEncoding.test_cookie_first_line_no_bom
-test.test_tokenize.TestDetectEncoding.test_cookie_second_line_commented_first_line
-test.test_tokenize.TestDetectEncoding.test_cookie_second_line_empty_first_line
-test.test_tokenize.TestDetectEncoding.test_cookie_second_line_no_bom
-test.test_tokenize.TestDetectEncoding.test_cookie_second_line_noncommented_first_line
-test.test_tokenize.TestDetectEncoding.test_false_encoding
-test.test_tokenize.TestDetectEncoding.test_filename_in_exception
-test.test_tokenize.TestDetectEncoding.test_latin1_normalization
-test.test_tokenize.TestDetectEncoding.test_matched_bom_and_cookie_first_line
-test.test_tokenize.TestDetectEncoding.test_matched_bom_and_cookie_second_line
-test.test_tokenize.TestDetectEncoding.test_mismatched_bom_and_cookie_first_line_raises_syntaxerror
-test.test_tokenize.TestDetectEncoding.test_mismatched_bom_and_cookie_second_line_raises_syntaxerror
-test.test_tokenize.TestDetectEncoding.test_no_bom_no_encoding_cookie
-test.test_tokenize.TestDetectEncoding.test_open
-test.test_tokenize.TestDetectEncoding.test_open_error
-test.test_tokenize.TestDetectEncoding.test_short_files
-test.test_tokenize.TestDetectEncoding.test_syntaxerror_latin1
-test.test_tokenize.TestDetectEncoding.test_utf8_normalization
-test.test_tokenize.TestMisc.test_decistmt
-test.test_tokenize.TestRoundtrip.test_backslash_continuation
-test.test_tokenize.TestRoundtrip.test_continuation
-test.test_tokenize.TestRoundtrip.test_indentation_semantics_retained
-test.test_tokenize.TestRoundtrip.test_random_files
-test.test_tokenize.TestRoundtrip.test_roundtrip
-test.test_tokenize.TestRoundtrip.test_string_concatenation
-test.test_tokenize.TestTokenize.test_comment_at_the_end_of_the_source_without_newline
-test.test_tokenize.TestTokenize.test_exact_type
-test.test_tokenize.TestTokenize.test_oneline_defs
-test.test_tokenize.TestTokenize.test_pathological_trailing_whitespace
-test.test_tokenize.TestTokenize.test_tokenize
-test.test_tokenize.TestTokenizerAdheresToPep0263.test_bad_coding_cookie
-test.test_tokenize.TestTokenizerAdheresToPep0263.test_latin1_coding_cookie_and_utf8_bom
-test.test_tokenize.TestTokenizerAdheresToPep0263.test_no_coding_cookie_and_utf8_bom
-test.test_tokenize.TestTokenizerAdheresToPep0263.test_utf8_coding_cookie_and_no_utf8_bom
-test.test_tokenize.TestTokenizerAdheresToPep0263.test_utf8_coding_cookie_and_utf8_bom
-test.test_tokenize.Test_Tokenize.test__tokenize_decodes_with_specified_encoding
-test.test_tokenize.Test_Tokenize.test__tokenize_does_not_decode_with_encoding_none
-test.test_tokenize.TokenizeTest.test_additive
-test.test_tokenize.TokenizeTest.test_async
-test.test_tokenize.TokenizeTest.test_basic
-test.test_tokenize.TokenizeTest.test_comparison
-test.test_tokenize.TokenizeTest.test_float
-test.test_tokenize.TokenizeTest.test_function
-test.test_tokenize.TokenizeTest.test_implicit_newline
-test.test_tokenize.TokenizeTest.test_int
-test.test_tokenize.TokenizeTest.test_long
-test.test_tokenize.TokenizeTest.test_method
-test.test_tokenize.TokenizeTest.test_multiplicative
-test.test_tokenize.TokenizeTest.test_non_ascii_identifiers
-test.test_tokenize.TokenizeTest.test_selector
-test.test_tokenize.TokenizeTest.test_shift
-test.test_tokenize.TokenizeTest.test_string
-test.test_tokenize.TokenizeTest.test_tabs
-test.test_tokenize.TokenizeTest.test_unary
-test.test_tokenize.TokenizeTest.test_underscore_literals
-test.test_tokenize.TokenizeTest.test_unicode
-test.test_tokenize.UntokenizeTest.test_backslash_continuation
-test.test_tokenize.UntokenizeTest.test_bad_input_order
-test.test_tokenize.UntokenizeTest.test_iter_compat
+test.test_tokenize.CTokenizeTest.test_additive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_async @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_continuation_lines_indentation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_invalid_syntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_max_indent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_multiplicative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_selector @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_tabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizeTest.test_unary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.CTokenizerBufferTests.test_newline_at_the_end_of_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_additive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_async @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_implicit_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_multiplicative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_non_ascii_identifiers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_selector @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_shift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_tabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_unary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_underscore_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.GenerateTokensTest.test_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_bom_no_cookie @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_cookie_first_line_no_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_cookie_second_line_commented_first_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_cookie_second_line_empty_first_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_cookie_second_line_no_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_cookie_second_line_noncommented_first_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_false_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_filename_in_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_latin1_normalization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_matched_bom_and_cookie_first_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_matched_bom_and_cookie_second_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_mismatched_bom_and_cookie_first_line_raises_syntaxerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_mismatched_bom_and_cookie_second_line_raises_syntaxerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_no_bom_no_encoding_cookie @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_open_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_short_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_syntaxerror_latin1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestDetectEncoding.test_utf8_normalization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestMisc.test_decistmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestRoundtrip.test_backslash_continuation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestRoundtrip.test_continuation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestRoundtrip.test_indentation_semantics_retained @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestRoundtrip.test_random_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestRoundtrip.test_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestRoundtrip.test_string_concatenation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenize.test_comment_at_the_end_of_the_source_without_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenize.test_exact_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenize.test_oneline_defs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenize.test_pathological_trailing_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenize.test_tokenize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenizerAdheresToPep0263.test_bad_coding_cookie @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenizerAdheresToPep0263.test_latin1_coding_cookie_and_utf8_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenizerAdheresToPep0263.test_no_coding_cookie_and_utf8_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenizerAdheresToPep0263.test_utf8_coding_cookie_and_no_utf8_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TestTokenizerAdheresToPep0263.test_utf8_coding_cookie_and_utf8_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.Test_Tokenize.test__tokenize_decodes_with_specified_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.Test_Tokenize.test__tokenize_does_not_decode_with_encoding_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_additive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_async @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_implicit_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_method @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_multiplicative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_non_ascii_identifiers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_selector @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_shift @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_tabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_unary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_underscore_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.TokenizeTest.test_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.UntokenizeTest.test_backslash_continuation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.UntokenizeTest.test_bad_input_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tokenize.UntokenizeTest.test_iter_compat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

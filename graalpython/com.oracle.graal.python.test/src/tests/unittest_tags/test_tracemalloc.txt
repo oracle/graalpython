@@ -1,19 +1,19 @@
-test.test_tracemalloc.TestFilters.test_filter_attributes
-test.test_tracemalloc.TestFilters.test_filter_match
-test.test_tracemalloc.TestFilters.test_filter_match_filename
-test.test_tracemalloc.TestFilters.test_filter_match_filename_joker
-test.test_tracemalloc.TestFilters.test_filter_match_trace
-test.test_tracemalloc.TestSnapshot.test_filter_traces
-test.test_tracemalloc.TestSnapshot.test_filter_traces_domain
-test.test_tracemalloc.TestSnapshot.test_filter_traces_domain_filter
-test.test_tracemalloc.TestSnapshot.test_format_traceback
-test.test_tracemalloc.TestSnapshot.test_slices
-test.test_tracemalloc.TestSnapshot.test_snapshot_group_by_cumulative
-test.test_tracemalloc.TestSnapshot.test_snapshot_group_by_file
-test.test_tracemalloc.TestSnapshot.test_snapshot_group_by_line
-test.test_tracemalloc.TestSnapshot.test_snapshot_group_by_traceback
-test.test_tracemalloc.TestSnapshot.test_statistic_diff_format
-test.test_tracemalloc.TestSnapshot.test_statistic_format
-test.test_tracemalloc.TestSnapshot.test_trace_format
-test.test_tracemalloc.TestTraceback.test_repr
-test.test_tracemalloc.TestTracemallocEnabled.test_fork
+test.test_tracemalloc.TestCommandLine.test_pymem_alloc0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tracemalloc.TestFilters.test_filter_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestFilters.test_filter_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestFilters.test_filter_match_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestFilters.test_filter_match_filename_joker @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestFilters.test_filter_match_trace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_filter_traces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_filter_traces_domain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_filter_traces_domain_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_format_traceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_slices @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_snapshot_group_by_cumulative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_snapshot_group_by_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_snapshot_group_by_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_snapshot_group_by_traceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_statistic_diff_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_statistic_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestSnapshot.test_trace_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_tracemalloc.TestTraceback.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

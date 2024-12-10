@@ -1,7 +1,7 @@
-test.test_augassign.AugAssignTest.testBasic
-test.test_augassign.AugAssignTest.testCustomMethods1
-test.test_augassign.AugAssignTest.testCustomMethods2
-test.test_augassign.AugAssignTest.testInDict
-test.test_augassign.AugAssignTest.testInList
-test.test_augassign.AugAssignTest.testSequences
-test.test_augassign.AugAssignTest.test_with_unpacking
+test.test_augassign.AugAssignTest.testBasic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_augassign.AugAssignTest.testCustomMethods1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_augassign.AugAssignTest.testCustomMethods2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_augassign.AugAssignTest.testInDict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_augassign.AugAssignTest.testInList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_augassign.AugAssignTest.testSequences @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_augassign.AugAssignTest.test_with_unpacking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

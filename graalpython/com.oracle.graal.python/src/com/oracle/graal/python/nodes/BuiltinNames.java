@@ -167,8 +167,6 @@ public abstract class BuiltinNames {
 
     public static final String J_OBJECT = "object";
 
-    public static final String J_FOREIGN = "foreign";
-
     public static final String J_SORTED = "sorted";
 
     public static final String J_ASCII = "ascii";

@@ -1,6 +1,6 @@
-test.test_typechecks.TypeChecksTest.testIsInstanceActual
-test.test_typechecks.TypeChecksTest.testIsInstanceBuiltin
-test.test_typechecks.TypeChecksTest.testIsSubclassActual
-test.test_typechecks.TypeChecksTest.testIsSubclassBuiltin
-test.test_typechecks.TypeChecksTest.testIsSubclassInternal
-test.test_typechecks.TypeChecksTest.testSubclassBehavior
+test.test_typechecks.TypeChecksTest.testIsInstanceActual @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_typechecks.TypeChecksTest.testIsInstanceBuiltin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_typechecks.TypeChecksTest.testIsSubclassActual @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_typechecks.TypeChecksTest.testIsSubclassBuiltin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_typechecks.TypeChecksTest.testIsSubclassInternal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_typechecks.TypeChecksTest.testSubclassBehavior @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

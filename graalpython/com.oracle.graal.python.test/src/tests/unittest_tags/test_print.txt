@@ -1,9 +1,9 @@
-test.test_print.TestPrint.test_print
-test.test_print.TestPrint.test_print_flush
-test.test_print.TestPy2MigrationHint.test_normal_string
-test.test_print.TestPy2MigrationHint.test_stream_redirection_hint_for_py2_migration
-test.test_print.TestPy2MigrationHint.test_string_in_loop_on_same_line
-test.test_print.TestPy2MigrationHint.test_string_with_excessive_whitespace
-test.test_print.TestPy2MigrationHint.test_string_with_leading_whitespace
-test.test_print.TestPy2MigrationHint.test_string_with_semicolon
-test.test_print.TestPy2MigrationHint.test_string_with_soft_space
+test.test_print.TestPrint.test_print @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_print.TestPrint.test_print_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_print.TestPy2MigrationHint.test_normal_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_print.TestPy2MigrationHint.test_stream_redirection_hint_for_py2_migration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_print.TestPy2MigrationHint.test_string_in_loop_on_same_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_print.TestPy2MigrationHint.test_string_with_excessive_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_print.TestPy2MigrationHint.test_string_with_leading_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_print.TestPy2MigrationHint.test_string_with_semicolon @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_print.TestPy2MigrationHint.test_string_with_soft_space @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

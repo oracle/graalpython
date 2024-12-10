@@ -260,9 +260,6 @@ version = '== 3.7.0'
 patch = 'matplotlib-3.7.0.patch'
 license = 'PSF-2.0'
 
-[[meson.rules]]
-version = '== 1.2.2'
-
 [[meson-python.rules]]
 # Upstreamed
 version = '<= 0.16.0'
@@ -461,6 +458,10 @@ version = '== 2.10.1'
 patch = 'pydantic-core-2.10.1.patch'
 license = 'MIT'
 
+[[pydantic-core.rules]]
+version = '== 2.26.0'
+patch = 'pydantic-core-2.26.0.patch'
+license = 'MIT'
 
 [[PyDriller.rules]]
 patch = 'PyDriller.patch'
@@ -512,9 +513,13 @@ patch = 'pythran-0.12.0.patch'
 license = 'BSD-3-Clause'
 
 [[pythran.rules]]
-install-priority = 10
 version = '== 0.13.*'
 patch = 'pythran-0.13.patch'
+license = 'BSD-3-Clause'
+
+[[pythran.rules]]
+version = '>= 0.14'
+patch = 'pythran-0.15.patch'
 license = 'BSD-3-Clause'
 
 [[pyzmq.rules]]
@@ -576,6 +581,9 @@ version = '== 1.1.3'
 patch = 'scikit-learn-1.1.3.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
+
+[[scipy.rules]]
+version = '== 1.13.1'
 
 [[scipy.rules]]
 version = '== 1.10.1'

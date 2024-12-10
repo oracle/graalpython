@@ -1,4 +1,4 @@
-test.test_zipfile64.OtherTests.testMoreThan64kFiles
-test.test_zipfile64.OtherTests.testMoreThan64kFilesAppend
-test.test_zipfile64.TestsWithSourceFile.testDeflated
-test.test_zipfile64.TestsWithSourceFile.testStored
+test.test_zipfile64.OtherTests.testMoreThan64kFiles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zipfile64.OtherTests.testMoreThan64kFilesAppend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zipfile64.TestsWithSourceFile.testDeflated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zipfile64.TestsWithSourceFile.testStored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

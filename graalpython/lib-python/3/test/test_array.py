@@ -1095,15 +1095,15 @@ class BaseTest:
         self.assertRaises(BufferError, operator.delitem, a, slice(0, 1))
         self.assertEqual(m.tobytes(), expected)
 
-    # The test passes, but it's flaky and no amount of gc.collect calls seems to be enough to make it really reliable
-    @support.impl_detail(graalpy=False)
     def test_weakref(self):
         s = array.array(self.typecode, self.example)
         p = weakref.proxy(s)
         self.assertEqual(p.tobytes(), s.tobytes())
         s = None
         support.gc_collect()  # For PyPy or other GCs.
-        self.assertRaises(ReferenceError, len, p)
+        # GraalPy change
+        if sys.implementation.name != 'graalpy':
+            self.assertRaises(ReferenceError, len, p)
 
     @unittest.skipUnless(hasattr(sys, 'getrefcount'),
                          'test needs sys.getrefcount()')

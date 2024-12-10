@@ -1,40 +1,40 @@
-test.test_source_encoding.BytesSourceEncodingTest.test_crcrcrlf
-test.test_source_encoding.BytesSourceEncodingTest.test_crcrcrlf2
-test.test_source_encoding.BytesSourceEncodingTest.test_crcrlf
-test.test_source_encoding.BytesSourceEncodingTest.test_crlf
-test.test_source_encoding.BytesSourceEncodingTest.test_default_coding
-test.test_source_encoding.BytesSourceEncodingTest.test_double_coding_line
-test.test_source_encoding.BytesSourceEncodingTest.test_double_coding_same_line
-test.test_source_encoding.BytesSourceEncodingTest.test_first_coding_line
-test.test_source_encoding.BytesSourceEncodingTest.test_first_non_utf8_coding_line
-test.test_source_encoding.BytesSourceEncodingTest.test_second_coding_line
-test.test_source_encoding.BytesSourceEncodingTest.test_second_non_utf8_coding_line
-test.test_source_encoding.BytesSourceEncodingTest.test_third_coding_line
-test.test_source_encoding.BytesSourceEncodingTest.test_utf8_bom
-test.test_source_encoding.BytesSourceEncodingTest.test_utf8_bom_and_utf8_coding_line
-test.test_source_encoding.FileSourceEncodingTest.test_crcrcrlf
-test.test_source_encoding.FileSourceEncodingTest.test_crcrcrlf2
-test.test_source_encoding.FileSourceEncodingTest.test_crcrlf
-test.test_source_encoding.FileSourceEncodingTest.test_crlf
-test.test_source_encoding.FileSourceEncodingTest.test_default_coding
-test.test_source_encoding.FileSourceEncodingTest.test_double_coding_line
-test.test_source_encoding.FileSourceEncodingTest.test_double_coding_same_line
-test.test_source_encoding.FileSourceEncodingTest.test_first_coding_line
-test.test_source_encoding.FileSourceEncodingTest.test_first_non_utf8_coding_line
-test.test_source_encoding.FileSourceEncodingTest.test_second_coding_line
-test.test_source_encoding.FileSourceEncodingTest.test_second_non_utf8_coding_line
-test.test_source_encoding.FileSourceEncodingTest.test_third_coding_line
-test.test_source_encoding.FileSourceEncodingTest.test_utf8_bom
-test.test_source_encoding.FileSourceEncodingTest.test_utf8_bom_and_utf8_coding_line
-test.test_source_encoding.MiscSourceEncodingTest.test_20731
-test.test_source_encoding.MiscSourceEncodingTest.test_bad_coding
-test.test_source_encoding.MiscSourceEncodingTest.test_bad_coding2
-test.test_source_encoding.MiscSourceEncodingTest.test_compilestring
-test.test_source_encoding.MiscSourceEncodingTest.test_error_message
-test.test_source_encoding.MiscSourceEncodingTest.test_exec_valid_coding
-test.test_source_encoding.MiscSourceEncodingTest.test_file_parse
-test.test_source_encoding.MiscSourceEncodingTest.test_issue2301
-test.test_source_encoding.MiscSourceEncodingTest.test_issue3297
-test.test_source_encoding.MiscSourceEncodingTest.test_issue4626
-test.test_source_encoding.MiscSourceEncodingTest.test_issue7820
-test.test_source_encoding.MiscSourceEncodingTest.test_pep263
+test.test_source_encoding.BytesSourceEncodingTest.test_crcrcrlf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_crcrcrlf2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_crcrlf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_crlf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_default_coding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_double_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_double_coding_same_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_first_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_first_non_utf8_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_second_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_second_non_utf8_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_third_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_utf8_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.BytesSourceEncodingTest.test_utf8_bom_and_utf8_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_crcrcrlf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_crcrcrlf2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_crcrlf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_crlf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_default_coding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_double_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_double_coding_same_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_first_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_first_non_utf8_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_second_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_second_non_utf8_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_third_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_utf8_bom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.FileSourceEncodingTest.test_utf8_bom_and_utf8_coding_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_20731 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_bad_coding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_bad_coding2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_compilestring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_error_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_exec_valid_coding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_file_parse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_issue2301 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_issue3297 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_issue4626 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_issue7820 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_source_encoding.MiscSourceEncodingTest.test_pep263 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

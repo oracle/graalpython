@@ -1,97 +1,87 @@
-DocTestCase.builtins.zip
-test.test_builtin.BuiltinTest.test_abs
-test.test_builtin.BuiltinTest.test_all
-test.test_builtin.BuiltinTest.test_any
-test.test_builtin.BuiltinTest.test_ascii
-test.test_builtin.BuiltinTest.test_bin
-test.test_builtin.BuiltinTest.test_bug_27936
-test.test_builtin.BuiltinTest.test_bytearray_extend_error
-test.test_builtin.BuiltinTest.test_bytearray_join_with_custom_iterator
-test.test_builtin.BuiltinTest.test_bytearray_translate
-test.test_builtin.BuiltinTest.test_callable
-test.test_builtin.BuiltinTest.test_chr
-test.test_builtin.BuiltinTest.test_cmp
-test.test_builtin.BuiltinTest.test_compile_async_generator
-test.test_builtin.BuiltinTest.test_compile_top_level_await
-test.test_builtin.BuiltinTest.test_compile_top_level_await_invalid_cases
-test.test_builtin.BuiltinTest.test_compile_top_level_await_no_coro
-test.test_builtin.BuiltinTest.test_construct_singletons
-test.test_builtin.BuiltinTest.test_delattr
-test.test_builtin.BuiltinTest.test_dir
-test.test_builtin.BuiltinTest.test_divmod
-test.test_builtin.BuiltinTest.test_eval
-test.test_builtin.BuiltinTest.test_exec
-test.test_builtin.BuiltinTest.test_exec_redirected
-test.test_builtin.BuiltinTest.test_filter
-test.test_builtin.BuiltinTest.test_filter_dealloc
-test.test_builtin.BuiltinTest.test_filter_pickle
-test.test_builtin.BuiltinTest.test_format
-test.test_builtin.BuiltinTest.test_general_eval
-test.test_builtin.BuiltinTest.test_getattr
-test.test_builtin.BuiltinTest.test_hasattr
-test.test_builtin.BuiltinTest.test_hash
-test.test_builtin.BuiltinTest.test_hex
-test.test_builtin.BuiltinTest.test_id
-test.test_builtin.BuiltinTest.test_import
-test.test_builtin.BuiltinTest.test_input
-test.test_builtin.BuiltinTest.test_isinstance
-test.test_builtin.BuiltinTest.test_issubclass
-test.test_builtin.BuiltinTest.test_iter
-test.test_builtin.BuiltinTest.test_len
-test.test_builtin.BuiltinTest.test_map
-test.test_builtin.BuiltinTest.test_map_pickle
-test.test_builtin.BuiltinTest.test_max
-test.test_builtin.BuiltinTest.test_min
-test.test_builtin.BuiltinTest.test_neg
-test.test_builtin.BuiltinTest.test_next
-test.test_builtin.BuiltinTest.test_oct
-test.test_builtin.BuiltinTest.test_open
-test.test_builtin.BuiltinTest.test_open_default_encoding
-test.test_builtin.BuiltinTest.test_open_non_inheritable
-test.test_builtin.BuiltinTest.test_ord
-test.test_builtin.BuiltinTest.test_pow
-test.test_builtin.BuiltinTest.test_repr
-test.test_builtin.BuiltinTest.test_round
-test.test_builtin.BuiltinTest.test_round_large
-test.test_builtin.BuiltinTest.test_setattr
-test.test_builtin.BuiltinTest.test_sum
-test.test_builtin.BuiltinTest.test_type
-test.test_builtin.BuiltinTest.test_vars
-test.test_builtin.BuiltinTest.test_zip
-test.test_builtin.BuiltinTest.test_zip_bad_iterable
-test.test_builtin.BuiltinTest.test_zip_pickle
-test.test_builtin.BuiltinTest.test_zip_pickle_strict
-test.test_builtin.BuiltinTest.test_zip_pickle_strict_fail
-test.test_builtin.BuiltinTest.test_zip_result_gc
-test.test_builtin.BuiltinTest.test_zip_strict
-test.test_builtin.BuiltinTest.test_zip_strict_error_handling
-test.test_builtin.BuiltinTest.test_zip_strict_error_handling_stopiteration
-test.test_builtin.BuiltinTest.test_zip_strict_iterators
-test.test_builtin.PtyTests.test_input_no_stdout_fileno
-test.test_builtin.PtyTests.test_input_tty
-test.test_builtin.PtyTests.test_input_tty_non_ascii
-test.test_builtin.PtyTests.test_input_tty_non_ascii_unicode_errors
-test.test_builtin.ShutdownTest.test_cleanup
-test.test_builtin.TestBreakpoint.test_breakpoint
-test.test_builtin.TestBreakpoint.test_breakpoint_with_args_and_keywords
-test.test_builtin.TestBreakpoint.test_breakpoint_with_breakpointhook_reset
-test.test_builtin.TestBreakpoint.test_breakpoint_with_breakpointhook_set
-test.test_builtin.TestBreakpoint.test_breakpoint_with_passthru_error
-test.test_builtin.TestBreakpoint.test_envar_good_path_builtin
-test.test_builtin.TestBreakpoint.test_envar_good_path_empty_string
-test.test_builtin.TestBreakpoint.test_envar_good_path_noop_0
-test.test_builtin.TestBreakpoint.test_envar_good_path_other
-test.test_builtin.TestBreakpoint.test_envar_ignored_when_hook_is_set
-test.test_builtin.TestBreakpoint.test_envar_unimportable
-test.test_builtin.TestSorted.test_bad_arguments
-test.test_builtin.TestSorted.test_baddecorator
-test.test_builtin.TestSorted.test_basic
-test.test_builtin.TestSorted.test_inputtypes
-test.test_builtin.TestType.test_bad_args
-test.test_builtin.TestType.test_bad_slots
-test.test_builtin.TestType.test_namespace_order
-test.test_builtin.TestType.test_new_type
-test.test_builtin.TestType.test_type_doc
-test.test_builtin.TestType.test_type_name
-test.test_builtin.TestType.test_type_nokwargs
-test.test_builtin.TestType.test_type_qualname
+DocTestCase.builtins.zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_any @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_bin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_bug_27936 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_bytearray_extend_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_bytearray_join_with_custom_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_bytearray_translate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_chr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_cmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_construct_singletons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_delattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_divmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_eval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_exec_redirected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_filter_dealloc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_filter_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_general_eval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_hasattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_hex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_id @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_isinstance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_issubclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_map_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_max @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_min @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_neg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_next @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_oct @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_open_default_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_open_non_inheritable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_ord @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_pow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_round @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_round_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_setattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_sum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_vars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip_bad_iterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip_pickle_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip_pickle_strict_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip_strict_error_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip_strict_error_handling_stopiteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.BuiltinTest.test_zip_strict_iterators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_breakpoint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_breakpoint_with_args_and_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_breakpoint_with_breakpointhook_reset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_breakpoint_with_breakpointhook_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_breakpoint_with_passthru_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_envar_good_path_builtin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_envar_good_path_empty_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_envar_good_path_noop_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_envar_good_path_other @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_envar_ignored_when_hook_is_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestBreakpoint.test_envar_unimportable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestSorted.test_bad_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestSorted.test_baddecorator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestSorted.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestSorted.test_inputtypes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_bad_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_namespace_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_new_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_type_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_type_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_type_nokwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_builtin.TestType.test_type_qualname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

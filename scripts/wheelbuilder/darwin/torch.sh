@@ -44,4 +44,8 @@ if [ -n "$GITHUB_RUN_ID" ]; then
 fi
 export MAX_JOBS=4
 export BUILD_TEST=0
-pip wheel "torch==$1"
+if [ -n "$1" ]; then
+    pip wheel "torch==$1"
+else
+    pip wheel torch
+fi

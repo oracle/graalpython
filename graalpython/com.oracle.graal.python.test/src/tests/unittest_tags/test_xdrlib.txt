@@ -1,6 +1,6 @@
-test.test_xdrlib.ConversionErrorTest.test_double
-test.test_xdrlib.ConversionErrorTest.test_float
-test.test_xdrlib.ConversionErrorTest.test_pack_int
-test.test_xdrlib.ConversionErrorTest.test_pack_uint
-test.test_xdrlib.ConversionErrorTest.test_uhyper
-test.test_xdrlib.XDRTest.test_xdr
+test.test_xdrlib.ConversionErrorTest.test_double @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xdrlib.ConversionErrorTest.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xdrlib.ConversionErrorTest.test_pack_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xdrlib.ConversionErrorTest.test_pack_uint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xdrlib.ConversionErrorTest.test_uhyper @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xdrlib.XDRTest.test_xdr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

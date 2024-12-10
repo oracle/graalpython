@@ -1,105 +1,91 @@
-test.test_dict.CAPITest.test_getitem_knownhash
-test.test_dict.DictTest.test_bad_key
-test.test_dict.DictTest.test_bool
-test.test_dict.DictTest.test_clear
-test.test_dict.DictTest.test_constructor
-test.test_dict.DictTest.test_container_iterator
-test.test_dict.DictTest.test_contains
-test.test_dict.DictTest.test_copy
-test.test_dict.DictTest.test_copy_fuzz
-test.test_dict.DictTest.test_copy_maintains_tracking
-test.test_dict.DictTest.test_copy_noncompact
-test.test_dict.DictTest.test_dict_contain_use_after_free
-test.test_dict.DictTest.test_dict_copy_order
-test.test_dict.DictTest.test_dict_items_result_gc
-test.test_dict.DictTest.test_dict_items_result_gc_reversed
-test.test_dict.DictTest.test_dictitems_contains_use_after_free
-test.test_dict.DictTest.test_dictview_mixed_set_operations
-test.test_dict.DictTest.test_dictview_set_operations_on_items
-test.test_dict.DictTest.test_dictview_set_operations_on_keys
-test.test_dict.DictTest.test_empty_presized_dict_in_freelist
-test.test_dict.DictTest.test_eq
-test.test_dict.DictTest.test_equal_operator_modifying_operand
-test.test_dict.DictTest.test_errors_in_view_containment_check
-test.test_dict.DictTest.test_fromkeys
-test.test_dict.DictTest.test_fromkeys_operator_modifying_dict_operand
-test.test_dict.DictTest.test_fromkeys_operator_modifying_set_operand
-test.test_dict.DictTest.test_get
-test.test_dict.DictTest.test_getitem
-test.test_dict.DictTest.test_init_use_after_free
-test.test_dict.DictTest.test_instance_dict_getattr_str_subclass
-test.test_dict.DictTest.test_invalid_keyword_arguments
-test.test_dict.DictTest.test_itemiterator_pickling
-test.test_dict.DictTest.test_items
-test.test_dict.DictTest.test_items_symmetric_difference
-test.test_dict.DictTest.test_iterator_pickling
-test.test_dict.DictTest.test_keys
-test.test_dict.DictTest.test_keys_contained
-test.test_dict.DictTest.test_len
-test.test_dict.DictTest.test_literal_constructor
-test.test_dict.DictTest.test_merge_and_mutate
-test.test_dict.DictTest.test_merge_operator
-test.test_dict.DictTest.test_missing
-test.test_dict.DictTest.test_mutating_iteration
-test.test_dict.DictTest.test_mutating_lookup
-test.test_dict.DictTest.test_object_set_item_single_instance_non_str_key
-test.test_dict.DictTest.test_pop
-test.test_dict.DictTest.test_popitem
-test.test_dict.DictTest.test_reentrant_insertion
-test.test_dict.DictTest.test_repr
-test.test_dict.DictTest.test_repr_deep
-test.test_dict.DictTest.test_resize1
-test.test_dict.DictTest.test_resize2
-test.test_dict.DictTest.test_reverse_iterator_for_empty_dict
-test.test_dict.DictTest.test_reverse_iterator_for_shared_shared_dicts
-test.test_dict.DictTest.test_reversed
-test.test_dict.DictTest.test_reverseitemiterator_pickling
-test.test_dict.DictTest.test_reverseiterator_pickling
-test.test_dict.DictTest.test_reversevaluesiterator_pickling
-test.test_dict.DictTest.test_setdefault
-test.test_dict.DictTest.test_setitem_atomic_at_resize
-test.test_dict.DictTest.test_splittable_del
-test.test_dict.DictTest.test_splittable_pop
-test.test_dict.DictTest.test_splittable_pop_pending
-test.test_dict.DictTest.test_splittable_popitem
-test.test_dict.DictTest.test_splittable_setattr_after_pop
-test.test_dict.DictTest.test_splittable_setdefault
-test.test_dict.DictTest.test_splittable_update
-test.test_dict.DictTest.test_str_nonstr
-test.test_dict.DictTest.test_string_keys_can_track_values
-test.test_dict.DictTest.test_track_dynamic
-test.test_dict.DictTest.test_track_literals
-test.test_dict.DictTest.test_track_subtypes
-test.test_dict.DictTest.test_tuple_keyerror
-test.test_dict.DictTest.test_update
-test.test_dict.DictTest.test_values
-test.test_dict.DictTest.test_valuesiterator_pickling
-test.test_dict.DictTest.test_views_mapping
-test.test_dict.GeneralMappingTests.test_bool
-test.test_dict.GeneralMappingTests.test_constructor
-test.test_dict.GeneralMappingTests.test_get
-test.test_dict.GeneralMappingTests.test_getitem
-test.test_dict.GeneralMappingTests.test_items
-test.test_dict.GeneralMappingTests.test_keys
-test.test_dict.GeneralMappingTests.test_len
-test.test_dict.GeneralMappingTests.test_pop
-test.test_dict.GeneralMappingTests.test_popitem
-test.test_dict.GeneralMappingTests.test_read
-test.test_dict.GeneralMappingTests.test_setdefault
-test.test_dict.GeneralMappingTests.test_update
-test.test_dict.GeneralMappingTests.test_values
-test.test_dict.GeneralMappingTests.test_write
-test.test_dict.SubclassMappingTests.test_bool
-test.test_dict.SubclassMappingTests.test_constructor
-test.test_dict.SubclassMappingTests.test_get
-test.test_dict.SubclassMappingTests.test_getitem
-test.test_dict.SubclassMappingTests.test_items
-test.test_dict.SubclassMappingTests.test_keys
-test.test_dict.SubclassMappingTests.test_len
-test.test_dict.SubclassMappingTests.test_pop
-test.test_dict.SubclassMappingTests.test_popitem
-test.test_dict.SubclassMappingTests.test_read
-test.test_dict.SubclassMappingTests.test_setdefault
-test.test_dict.SubclassMappingTests.test_update
-test.test_dict.SubclassMappingTests.test_values
-test.test_dict.SubclassMappingTests.test_write
+test.test_dict.DictTest.test_bad_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_copy_fuzz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_copy_maintains_tracking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_copy_noncompact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_dict_contain_use_after_free @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_dict_copy_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_dictitems_contains_use_after_free @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_dictview_mixed_set_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_dictview_set_operations_on_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_dictview_set_operations_on_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_empty_presized_dict_in_freelist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_equal_operator_modifying_operand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_errors_in_view_containment_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_fromkeys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_fromkeys_operator_modifying_dict_operand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_fromkeys_operator_modifying_set_operand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_init_use_after_free @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_instance_dict_getattr_str_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_invalid_keyword_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_itemiterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_items_symmetric_difference @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_iterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_keys_contained @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_literal_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_merge_and_mutate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_merge_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_missing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_mutating_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_mutating_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_object_set_item_single_instance_non_str_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_reentrant_insertion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_repr_deep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_resize1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_resize2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_reverse_iterator_for_empty_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_reverse_iterator_for_shared_shared_dicts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_reverseitemiterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_reverseiterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_reversevaluesiterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_setitem_atomic_at_resize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_str_nonstr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_string_keys_can_track_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_tuple_keyerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_valuesiterator_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.DictTest.test_views_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.GeneralMappingTests.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dict.SubclassMappingTests.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

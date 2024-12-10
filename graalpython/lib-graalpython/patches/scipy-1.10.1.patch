@@ -1,8 +1,13 @@
 diff --git a/pyproject.toml b/pyproject.toml
-index 454a3c2e..7c96eb11 100644
+index 454a3c2e..b23c98eb 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -15,48 +15,11 @@ requires = [
+@@ -11,52 +11,16 @@
+ build-backend = 'mesonpy'
+ requires = [
+     "meson-python>=0.11.0,<0.13.0",
++    "pyproject-metadata<0.9",
+     "Cython>=0.29.32,<3.0",
      # conservatively avoid issues from
      # https://github.com/pybind/pybind11/issues/4420
      "pybind11==2.10.1",

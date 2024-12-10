@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.builtins.PythonOS;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
@@ -351,7 +351,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
     public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
     public static final TruffleString S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S = tsLiteral("%s() got multiple sub-patterns for attribute '%s'");
-    public static final TruffleString S_PAREN_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
+    public static final TruffleString S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG = tsLiteral("%s() got multiple values for argument '%s'");
     public static final TruffleString S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = tsLiteral("%s() got some positional-only arguments passed as keyword arguments: '%s'");
@@ -566,7 +566,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NUMBER_IS_REQUIRED = tsLiteral("a number is required");
     public static final TruffleString NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = tsLiteral("number %s cannot fit into index-sized integer");
     public static final TruffleString OBJ_INDEX_MUST_BE_INT_OR_SLICES = tsLiteral("%s indices must be integers or slices, not %p");
-    public static final TruffleString OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = tsLiteral("'%p' object cannot be interpreted as an int");
+    public static final TruffleString OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = tsLiteral("'%p' object cannot be interpreted as an integer");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_INDEXING = tsLiteral("'%p' object does not support indexing");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = tsLiteral("'%s' object does not support item assignment");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_ITEM_DELETION = tsLiteral("'%s' object does not support item deletion");
@@ -1031,6 +1031,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL_AEXIT = tsLiteral(
                     "'%N' object does not support the asynchronous context manager protocol (missed __aexit__ method)");
     public static final TruffleString IOCTL_STRING_ARG_TOO_LONG = tsLiteral("ioctl string arg too long");
+    public static final TruffleString S_NOT_SUPPORTED_ON_JAVA_POSIX_BACKEND = tsLiteral("'%s' not supported when using 'java' posix backend");
 
     // mmap
     public static final TruffleString MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = tsLiteral("memory mapped length must be positive");

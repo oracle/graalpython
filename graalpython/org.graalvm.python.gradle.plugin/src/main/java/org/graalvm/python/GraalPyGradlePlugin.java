@@ -41,33 +41,46 @@
 package org.graalvm.python;
 
 import org.graalvm.python.dsl.GraalPyExtension;
-import org.graalvm.python.tasks.VFSFilesListTask;
 import org.graalvm.python.tasks.MetaInfTask;
 import org.graalvm.python.tasks.ResourcesTask;
+import org.graalvm.python.tasks.VFSFilesListTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
-import org.gradle.language.jvm.tasks.ProcessResources;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
+import java.util.function.BiFunction;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
 
 public abstract class GraalPyGradlePlugin implements Plugin<Project> {
+    private static final String LAUNCHER_CONFIGURATION_NAME = "pythonLauncherClasspath";
+
+    private static final String GRADLE_PLUGIN_PROPERTIES = "META-INF/gradle-plugins/org.graalvm.python.properties";
     private static final String PYTHON_LAUNCHER_ARTIFACT_ID = "python-launcher";
     private static final String PYTHON_EMBEDDING_ARTIFACT_ID = "python-embedding";
     private static final String POLYGLOT_GROUP_ID = "org.graalvm.polyglot";
+    private static final String POLYGLOT_ARTIFACT_ID = "polyglot";
     private static final String PYTHON_COMMUNITY_ARTIFACT_ID = "python-community";
     private static final String PYTHON_ARTIFACT_ID = "python";
     private static final String GRAALPY_GRADLE_PLUGIN_TASK_GROUP = "graalPy";
     private static final String DEFAULT_RESOURCES_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "resources";
+    private static final String DEFAULT_FILESLIST_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "fileslist";
     private static final String GRAALPY_META_INF_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "META-INF";
     private static final String GRAALPY_RESOURCES_TASK = "graalPyResources";
     private static final String GRAALPY_META_INF_TASK_TASK = "graalPyMetaInf";
@@ -76,19 +89,71 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     GraalPyExtension extension;
     Project project;
 
+    private static String graalPyVersion;
+
     @Override
     public void apply(Project project) {
         this.project = project;
         project.getPluginManager().apply(JavaPlugin.class);
 
-        this.extension = project.getExtensions().create("graalPy", GraalPyExtension.class);
-        extension.getPythonHome().getIncludes().convention(List.of(".*"));
-        extension.getPythonHome().getExcludes().convention(Collections.emptyList());
-        extension.getPackages().convention(Collections.emptyList());
+        createExtension();
 
-        TaskProvider<ResourcesTask> resourcesTask = project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class);
-        resourcesTask.configure(t -> {
-            if(extension.getPythonHome().getIncludes().get().isEmpty()) {
+        var launcherClasspath = createLauncherClasspath();
+        var javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+        var resourcesTask = registerResourcesTask(project, launcherClasspath, extension);
+        registerMetaInfTask();
+
+        var vfsFilesListTask = registerCreateVfsFilesListTask(resourcesTask, javaPluginExtension);
+        var mainSourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        mainSourceSet.getResources().srcDir(resourcesTask);
+        addDependencies();
+
+        project.afterEvaluate(proj -> {
+            // Run the vfsFilesListTask conditionally only if 'gythonResourcesDirectory' is not set
+            if (!extension.getPythonResourcesDirectory().isPresent()) {
+                mainSourceSet.getResources().srcDir(vfsFilesListTask);
+            }
+        });
+    }
+
+    /**
+     * Registers the VFS files list creation task.
+     *
+     * @param resourcesTask the resources task
+     * @return the task provider
+     */
+    private TaskProvider<VFSFilesListTask> registerCreateVfsFilesListTask(TaskProvider<ResourcesTask> resourcesTask, JavaPluginExtension javaPluginExtension) {
+        var srcDirs = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
+        return project.getTasks().register(GRAALPY_VFS_FILESLIST_TASK, VFSFilesListTask.class, t -> {
+            t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
+            t.getVfsDirectories().from(resourcesTask.flatMap(ResourcesTask::getOutput));
+            srcDirs.forEach(t.getVfsDirectories()::from);
+            t.getVfsFilesListOutputDir().convention(project.getLayout().getBuildDirectory().dir(DEFAULT_FILESLIST_DIRECTORY));
+        });
+    }
+
+    /**
+     * Registers the task which generates META-INF metadata.
+     */
+    private void registerMetaInfTask() {
+        var metaInfTask = project.getTasks().register(GRAALPY_META_INF_TASK_TASK, MetaInfTask.class, t -> {
+            t.getManifestOutputDir().convention(project.getLayout().getBuildDirectory().dir(GRAALPY_META_INF_DIRECTORY));
+            t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
+        });
+        project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME, t -> ((Jar) t).getMetaInf().from(metaInfTask));
+    }
+
+    /**
+     * Registers the task which prepares the Python dependencies.
+     *
+     * @param launcherClasspath the classpath of the Python launcher
+     * @return the resources task provider
+     */
+    private TaskProvider<ResourcesTask> registerResourcesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
+        return project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class, t -> {
+            t.getLauncherClasspath().from(launcherClasspath);
+            t.getLauncherDirectory().convention(project.getLayout().getBuildDirectory().dir("python-launcher"));
+            if (extension.getPythonHome().getIncludes().get().isEmpty()) {
                 t.getIncludes().set(List.of(".*"));
             } else {
                 t.getIncludes().set(extension.getPythonHome().getIncludes());
@@ -97,61 +162,106 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
             t.getExcludes().set(extension.getPythonHome().getExcludes());
             t.getPackages().set(extension.getPackages());
 
-            if(extension.getPythonResourcesDirectory().isPresent()) {
-                t.getOutput().set(extension.getPythonResourcesDirectory());
-                t.getIncludeVfsRoot().set(false);
-            } else {
-                t.getOutput().set(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY));
-                t.getIncludeVfsRoot().set(true);
+            t.getOutput().convention(extension.getPythonResourcesDirectory().orElse(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY)));
+            t.getIncludeVfsRoot().convention(extension.getPythonResourcesDirectory().map(d -> false).orElse(true));
+
+            t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
+        });
+    }
+
+    /**
+     * Creates the configuration which is used by the Python launcher.
+     *
+     * @return the launcher classpath configuration
+     */
+    private Configuration createLauncherClasspath() {
+        return project.getConfigurations().create(LAUNCHER_CONFIGURATION_NAME, conf -> {
+            conf.setCanBeConsumed(false);
+            conf.setCanBeResolved(true);
+        });
+    }
+
+    /**
+     * Creates the GraalPy extension on the project
+     */
+    private void createExtension() {
+        this.extension = project.getExtensions().create("graalPy", GraalPyExtension.class);
+        extension.getPythonHome().getIncludes().convention(List.of(".*"));
+        extension.getPythonHome().getExcludes().convention(Collections.emptyList());
+        extension.getPackages().convention(Collections.emptyList());
+        extension.getCommunity().convention(false);
+    }
+
+    /**
+     * Adds implicit dependencies to the project based on the extension configuration.
+     */
+    private void addDependencies() {
+        var configurations = project.getConfigurations();
+        var implementation = configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+        implementation.getDependencies().addAllLater(dependencyList(project, extension, (version, community) -> List.of(
+                        dependency(POLYGLOT_GROUP_ID, POLYGLOT_ARTIFACT_ID, version),
+                        dependency(GRAALPY_GROUP_ID, PYTHON_EMBEDDING_ARTIFACT_ID, version))));
+        var runtimeOnly = configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME);
+        runtimeOnly.getDependencies().addAllLater(dependencyList(project, extension, (version, community) -> List.of(
+                        dependency(GRAALPY_GROUP_ID, community ? PYTHON_COMMUNITY_ARTIFACT_ID : PYTHON_ARTIFACT_ID, version))));
+        var launcher = configurations.getByName(LAUNCHER_CONFIGURATION_NAME);
+        launcher.getDependencies().addAllLater(dependencyList(project, extension, (version, community) -> List.of(
+                        dependency(GRAALPY_GROUP_ID, PYTHON_LAUNCHER_ARTIFACT_ID, version),
+                        dependency(GRAALPY_GROUP_ID, community ? PYTHON_COMMUNITY_ARTIFACT_ID : PYTHON_ARTIFACT_ID, version))));
+        makeSureBothEditionsAreNotOnClasspathSimultaneously(configurations);
+    }
+
+    private static void makeSureBothEditionsAreNotOnClasspathSimultaneously(ConfigurationContainer configurations) {
+        configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).getIncoming().afterResolve(resolved -> {
+            var deps = resolved.getDependencies();
+            boolean hasCommunityEdition = false;
+            boolean hasOracleEdition = false;
+            for (Dependency dep : deps) {
+                if (dep instanceof ExternalModuleDependency emd) {
+                    if (GRAALPY_GROUP_ID.equals(emd.getModule().getGroup())) {
+                        hasCommunityEdition |= PYTHON_COMMUNITY_ARTIFACT_ID.equals(emd.getModule().getName());
+                        hasOracleEdition |= PYTHON_ARTIFACT_ID.equals(emd.getModule().getName());
+                    }
+                }
             }
-
-            t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
-        });
-
-        TaskProvider<MetaInfTask> metaInfTask = project.getTasks().register(GRAALPY_META_INF_TASK_TASK, MetaInfTask.class);
-        project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME, t -> ((Jar) t).getMetaInf().from(metaInfTask));
-        metaInfTask.configure(t -> {
-            t.getManifestOutputDir().convention(project.getLayout().getBuildDirectory().dir(GRAALPY_META_INF_DIRECTORY));
-            t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
-        });
-
-        TaskProvider<VFSFilesListTask> vfsFilesListTask = project.getTasks().register(GRAALPY_VFS_FILESLIST_TASK, VFSFilesListTask.class);
-        vfsFilesListTask.configure(t -> {
-            t.getResourcesDir().convention((((ProcessResources) project.getTasks().getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)).getDestinationDir()));
-            t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
-        });
-        project.getTasks().getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME, t -> t.finalizedBy(GRAALPY_VFS_FILESLIST_TASK));
-
-        project.afterEvaluate(p -> {
-            checkAndAddDependencies();
-            if (!extension.getPythonResourcesDirectory().isPresent()) {
-                ((ProcessResources) project.getTasks().getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)).with(project.copySpec().from(resourcesTask));
-            } else {
-                project.getTasks().getByName(JavaPlugin.CLASSES_TASK_NAME, t -> t.dependsOn(GRAALPY_RESOURCES_TASK));
+            if (hasCommunityEdition && hasOracleEdition) {
+                throw new GradleException(
+                                "You have both 'org.graalvm.python:python' and 'org.graalvm.python:python-community' on the classpath. " +
+                                                "This is likely due to an explicit dependency added, or duplicate dependencies. You may configure " +
+                                                "the GraalPy plugin to inject the 'python-community' artifact by using the graalPy { community = true } " +
+                                                "configuration block instead.");
             }
         });
     }
 
-    private void checkAndAddDependencies() {
-        project.getDependencies().add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, "%s:%s:%s".formatted(GRAALPY_GROUP_ID, PYTHON_LAUNCHER_ARTIFACT_ID, getGraalPyVersion(project)));
-        project.getDependencies().add(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, "%s:%s:%s".formatted(GRAALPY_GROUP_ID, PYTHON_EMBEDDING_ARTIFACT_ID, getGraalPyVersion(project)));
+    private static String dependency(String groupId, String artifactId, String version) {
+        return "%s:%s:%s".formatted(groupId, artifactId, version);
     }
 
-    public static String getGraalPyVersion(Project project) {
-        return getGraalPyDependency(project).getVersion();
+    private Provider<? extends Iterable<Dependency>> dependencyList(Project project, GraalPyExtension extension, BiFunction<String, Boolean, List<String>> generator) {
+        var dependencies = project.getDependencies();
+        var version = determineGraalPyVersion();
+        return project.getProviders().provider(() -> {
+            boolean community = extension.getCommunity().convention(false).get();
+            return generator.apply(version, community).stream().map(dependencies::create).toList();
+        });
     }
 
-    public static Dependency getGraalPyDependency(Project project) {
-        return resolveProjectDependencies(project).stream().filter(GraalPyGradlePlugin::isPythonArtifact).findFirst().orElseThrow(() -> new GradleException("Missing GraalPy dependency. Please add to your build.gradle either %s:%s or %s:%s".formatted(POLYGLOT_GROUP_ID, PYTHON_COMMUNITY_ARTIFACT_ID, POLYGLOT_GROUP_ID, PYTHON_ARTIFACT_ID)));
+    public static String determineGraalPyVersion() {
+        String version = graalPyVersion;
+        if (version == null) {
+            try {
+                InputStream propertiesStream = GraalPyGradlePlugin.class.getClassLoader().getResourceAsStream(GRADLE_PLUGIN_PROPERTIES);
+                Properties properties = new Properties();
+                properties.load(propertiesStream);
+                graalPyVersion = version = properties.getProperty("version");
+                if (version == null) {
+                    throw new NullPointerException();
+                }
+            } catch (IOException | NullPointerException e) {
+                throw new IllegalStateException("Failed to read the GraalPy version from the gradle-plugins/org.graalvm.python.properties file in resources", e);
+            }
+        }
+        return version;
     }
-
-    private static boolean isPythonArtifact(Dependency dependency) {
-        return (POLYGLOT_GROUP_ID.equals(dependency.getGroup()) || GRAALPY_GROUP_ID.equals(dependency.getGroup())) &&
-                (PYTHON_COMMUNITY_ARTIFACT_ID.equals(dependency.getName()) || PYTHON_ARTIFACT_ID.equals(dependency.getName()));
-    }
-
-    private static DependencySet resolveProjectDependencies(Project project) {
-        return project.getConfigurations().getByName("implementation").getAllDependencies();
-    }
-
 }

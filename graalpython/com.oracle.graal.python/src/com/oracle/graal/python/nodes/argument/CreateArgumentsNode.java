@@ -623,7 +623,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, CreateArgumentsNode.getName(callee), name);
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
                         }
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
@@ -679,7 +679,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, CreateArgumentsNode.getName(callee), name);
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
                         }
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }

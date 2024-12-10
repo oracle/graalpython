@@ -60,7 +60,13 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForN
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -180,6 +186,42 @@ public class ClinicTests {
         assertEquals(T_DONE, callTarget.call(T_A_INPUT, T_B_INPUT));
     }
 
+    @Builtin(name = "my_vararg_builtin", parameterNames = {"x", "a"}, takesVarArgs = true, keywordOnlyNames = {"b"})
+    @ArgumentClinic(name = "a", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "b", conversion = ClinicConversion.Int, defaultValue = "7")
+    public abstract static class MyVarArgBuiltinWithDefaultValues extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ClinicTestsClinicProviders.MyVarArgBuiltinWithDefaultValuesClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doDefaults(Object x, int a, Object[] varArgs, int b) {
+            assertEquals("abc", x);
+            assertEquals(42, a);
+            assertEquals(1, varArgs.length);
+            assertEquals(7, b);
+            return varArgs[0];
+        }
+    }
+
+    @Test
+    public void testVarArgDefaultValues() {
+        CallTarget callTarget = createCallTarget(ClinicTestsFactory.MyVarArgBuiltinWithDefaultValuesNodeGen.create(
+                        new ReadArgumentNode[]{
+                                        ReadIndexedArgumentNode.create(0),
+                                        ReadIndexedArgumentNode.create(1),
+                                        ReadVarArgsNode.create(true),
+                                        ReadIndexedArgumentNode.create(2)
+                        }));
+        Object[] scope_w = PArguments.create(2);
+        scope_w[PArguments.USER_ARGUMENTS_OFFSET] = "abc";
+        scope_w[PArguments.USER_ARGUMENTS_OFFSET + 1] = 42;
+        PArguments.setVariableArguments(scope_w, 666);
+        PArguments.setKeywordArguments(scope_w, new PKeyword[]{new PKeyword(tsLiteral("b"), PNone.NO_VALUE)});
+        assertEquals(666, callTarget.call(scope_w));
+    }
+
     private static CallTarget createCallTarget(PythonBinaryClinicBuiltinNode node) {
         return new BinaryBuiltinRoot(node).getCallTarget();
     }
@@ -207,4 +249,23 @@ public class ClinicTests {
             }
         }
     }
+
+    private static CallTarget createCallTarget(PythonClinicBuiltinNode node) {
+        return new BuiltinRoot(node).getCallTarget();
+    }
+
+    private static final class BuiltinRoot extends RootNode {
+        @Child PythonClinicBuiltinNode node;
+
+        BuiltinRoot(PythonClinicBuiltinNode node) {
+            super(null);
+            this.node = node;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(frame);
+        }
+    }
+
 }

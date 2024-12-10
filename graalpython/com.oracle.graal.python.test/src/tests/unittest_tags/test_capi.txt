@@ -1,98 +1,138 @@
-test.test_capi.test_codecs.CAPITest.test_decodeutf8
-test.test_capi.test_codecs.CAPITest.test_decodeutf8stateful
-test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_simple
-test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_args
-test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_closure
-test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_default
-test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_kwarg_default
-test.test_capi.test_getargs.Boolean_TestCase.test_p
-test.test_capi.test_getargs.Bytes_TestCase.test_c
-test.test_capi.test_getargs.Bytes_TestCase.test_w_star
-test.test_capi.test_getargs.Bytes_TestCase.test_y_hash
-test.test_capi.test_getargs.Bytes_TestCase.test_y_star
-test.test_capi.test_getargs.Float_TestCase.test_d
-test.test_capi.test_getargs.Float_TestCase.test_f
-test.test_capi.test_getargs.Float_TestCase.test_f_rounding
-test.test_capi.test_getargs.KeywordOnly_TestCase.test_keyword_args
-test.test_capi.test_getargs.KeywordOnly_TestCase.test_mixed_args
-test.test_capi.test_getargs.KeywordOnly_TestCase.test_optional_args
-test.test_capi.test_getargs.KeywordOnly_TestCase.test_positional_args
-test.test_capi.test_getargs.Keywords_TestCase.test_keyword_args
-test.test_capi.test_getargs.Keywords_TestCase.test_kwargs
-test.test_capi.test_getargs.Keywords_TestCase.test_mixed_args
-test.test_capi.test_getargs.Keywords_TestCase.test_optional_args
-test.test_capi.test_getargs.Keywords_TestCase.test_positional_args
-test.test_capi.test_getargs.Object_TestCase.test_S
-test.test_capi.test_getargs.Object_TestCase.test_Y
-test.test_capi.test_getargs.ParseTupleAndKeywords_Test.test_parse_tuple_and_keywords
-test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_mixed_args
-test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_optional_args
-test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_positional_args
-test.test_capi.test_getargs.Test_testcapi.test_L_code
-test.test_capi.test_getargs.Test_testcapi.test_k_code
-test.test_capi.test_getargs.Test_testcapi.test_s_code
-test.test_capi.test_getargs.Tuple_TestCase.test_args
-test.test_capi.test_getargs.Tuple_TestCase.test_tuple
-test.test_capi.test_misc.CAPITest.test_c_type_with_ipow
-test.test_capi.test_misc.CAPITest.test_c_type_with_matrix_multiplication
-test.test_capi.test_misc.CAPITest.test_getitem_with_error
-test.test_capi.test_misc.CAPITest.test_heaptype_with_buffer
-test.test_capi.test_misc.CAPITest.test_heaptype_with_dict
-test.test_capi.test_misc.CAPITest.test_heaptype_with_negative_dict
-test.test_capi.test_misc.CAPITest.test_instancemethod
-test.test_capi.test_misc.CAPITest.test_mapping_keys_values_items
-test.test_capi.test_misc.CAPITest.test_mapping_keys_values_items_bad_arg
-test.test_capi.test_misc.CAPITest.test_memoryview_from_NULL_pointer
-test.test_capi.test_misc.CAPITest.test_negative_refcount
-test.test_capi.test_misc.CAPITest.test_null_type_doc
-test.test_capi.test_misc.CAPITest.test_pynumber_tobase
-test.test_capi.test_misc.CAPITest.test_pyobject_bytes_from_null
-test.test_capi.test_misc.CAPITest.test_pyobject_repr_from_null
-test.test_capi.test_misc.CAPITest.test_pyobject_str_from_null
-test.test_capi.test_misc.CAPITest.test_return_null_without_error
-test.test_capi.test_misc.CAPITest.test_return_result_with_error
-test.test_capi.test_misc.CAPITest.test_subprocess_fork_exec
-test.test_capi.test_misc.PyMemDefaultTests.test_api_misuse
-test.test_capi.test_misc.PyMemDefaultTests.test_buffer_overflow
-test.test_capi.test_misc.PyMemDefaultTests.test_pymem_malloc_without_gil
-test.test_capi.test_misc.PyMemDefaultTests.test_pyobject_forbidden_bytes_is_freed
-test.test_capi.test_misc.PyMemDefaultTests.test_pyobject_freed_is_freed
-test.test_capi.test_misc.PyMemDefaultTests.test_pyobject_malloc_without_gil
-test.test_capi.test_misc.PyMemDefaultTests.test_pyobject_null_is_freed
-test.test_capi.test_misc.PyMemDefaultTests.test_pyobject_uninitialized_is_freed
-test.test_capi.test_misc.PyMemPymallocDebugTests.test_api_misuse
-test.test_capi.test_misc.PyMemPymallocDebugTests.test_buffer_overflow
-test.test_capi.test_misc.PyMemPymallocDebugTests.test_pymem_malloc_without_gil
-test.test_capi.test_misc.PyMemPymallocDebugTests.test_pyobject_forbidden_bytes_is_freed
-test.test_capi.test_misc.PyMemPymallocDebugTests.test_pyobject_freed_is_freed
-test.test_capi.test_misc.PyMemPymallocDebugTests.test_pyobject_malloc_without_gil
-test.test_capi.test_misc.PyMemPymallocDebugTests.test_pyobject_null_is_freed
-test.test_capi.test_misc.PyMemPymallocDebugTests.test_pyobject_uninitialized_is_freed
-test.test_capi.test_misc.Test_testcapi.test_buildvalue_issue38913
-test.test_capi.test_misc.Test_testcapi.test_config
-test.test_capi.test_misc.Test_testcapi.test_datetime_capi
-test.test_capi.test_misc.Test_testcapi.test_decref_doesnt_leak
-test.test_capi.test_misc.Test_testcapi.test_dict_iteration
-test.test_capi.test_misc.Test_testcapi.test_empty_argparse
-test.test_capi.test_misc.Test_testcapi.test_incref_decref_API
-test.test_capi.test_misc.Test_testcapi.test_incref_doesnt_leak
-test.test_capi.test_misc.Test_testcapi.test_long_api
-test.test_capi.test_misc.Test_testcapi.test_long_as_size_t
-test.test_capi.test_misc.Test_testcapi.test_long_as_unsigned_long_long_mask
-test.test_capi.test_misc.Test_testcapi.test_longlong_api
-test.test_capi.test_misc.Test_testcapi.test_null_strings
-test.test_capi.test_misc.Test_testcapi.test_sizeof_c_types
-test.test_capi.test_misc.Test_testcapi.test_string_from_format
-test.test_capi.test_misc.Test_testcapi.test_structseq_newtype_doesnt_leak
-test.test_capi.test_misc.Test_testcapi.test_with_docstring
-test.test_capi.test_misc.Test_testcapi.test_xdecref_doesnt_leak
-test.test_capi.test_misc.Test_testcapi.test_xincref_doesnt_leak
-test.test_capi.test_structmembers.ReadWriteTests.test_bad_assignments
-test.test_capi.test_structmembers.ReadWriteTests.test_bool
-test.test_capi.test_structmembers.ReadWriteTests.test_byte
-test.test_capi.test_structmembers.ReadWriteTests.test_inplace_string
-test.test_capi.test_structmembers.ReadWriteTests.test_int
-test.test_capi.test_structmembers.ReadWriteTests.test_long
-test.test_capi.test_structmembers.ReadWriteTests.test_longlong
-test.test_capi.test_structmembers.ReadWriteTests.test_py_ssize_t
-test.test_capi.test_structmembers.ReadWriteTests.test_short
+test.test_capi.test_codecs.CAPITest.test_decodeutf8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_codecs.CAPITest.test_decodeutf8stateful @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_closure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_kwarg_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Boolean_TestCase.test_p @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Bytes_TestCase.test_c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Bytes_TestCase.test_w_star @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Bytes_TestCase.test_y @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Bytes_TestCase.test_y_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Bytes_TestCase.test_y_star @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Float_TestCase.test_D @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Float_TestCase.test_d @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Float_TestCase.test_f @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Float_TestCase.test_f_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.KeywordOnly_TestCase.test_invalid_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.KeywordOnly_TestCase.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.KeywordOnly_TestCase.test_mixed_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.KeywordOnly_TestCase.test_optional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.KeywordOnly_TestCase.test_positional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.KeywordOnly_TestCase.test_required_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.KeywordOnly_TestCase.test_surrogate_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.KeywordOnly_TestCase.test_too_many_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_invalid_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_kwargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_mixed_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_optional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_positional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_required_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_surrogate_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Keywords_TestCase.test_too_many_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Object_TestCase.test_S @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Object_TestCase.test_Y @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.ParseTupleAndKeywords_Test.test_bad_use @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.ParseTupleAndKeywords_Test.test_nested_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.ParseTupleAndKeywords_Test.test_parse_tuple_and_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.ParseTupleAndKeywords_Test.test_positional_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_empty_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_mixed_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_optional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_positional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_required_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.SkipitemTest.test_skipitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.SkipitemTest.test_skipitem_with_suffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_C @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_gh_99240_clear_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_s @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_s_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_s_hash_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_s_star @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_z @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_z_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.String_TestCase.test_z_star @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Test_testcapi.test_L_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Test_testcapi.test_k_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Test_testcapi.test_s_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Tuple_TestCase.test_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Tuple_TestCase.test_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_c_type_with_ipow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_c_type_with_matrix_multiplication @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_export_symbols @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_getitem_with_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_heaptype_with_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_heaptype_with_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_heaptype_with_negative_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_heaptype_with_setattro @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_instancemethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_mapping_keys_values_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_mapping_keys_values_items_bad_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_memoryview_from_NULL_pointer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_multiple_inheritance_ctypes_with_weakref_or_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_null_type_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_pynumber_tobase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_pyobject_bytes_from_null @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_pyobject_repr_from_null @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_pyobject_str_from_null @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_return_null_without_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_return_result_with_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_sequence_set_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_subprocess_fork_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.CAPITest.test_sys_getobject @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Segfaults most of the time
+!test.test_capi.test_misc.CAPITest.test_trashcan_subclass
+test.test_capi.test_misc.Test_FrameAPI.test_frame_fback_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_FrameAPI.test_frame_getters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_ModuleStateAccess.test_get_module_bad_def @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_ModuleStateAccess.test_get_module_static_in_mro @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_ModuleStateAccess.test_subclass_get_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_ModuleStateAccess.test_subclass_get_module_with_super @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_buildvalue_issue38913 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_config @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_datetime_capi @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_decref_doesnt_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_dict_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_empty_argparse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_from_contiguous @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_gc_control @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_get_statictype_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_get_type_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_get_type_qualname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_incref_decref_API @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_incref_doesnt_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_lazy_hash_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_list_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_long_and_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64
+test.test_capi.test_misc.Test_testcapi.test_long_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_long_as_double @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_long_as_size_t @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_long_as_unsigned_long_long_mask @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_long_long_and_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64
+test.test_capi.test_misc.Test_testcapi.test_long_numbits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_longlong_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_py_is_funcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_py_is_macros @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_pymem_alloc0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_pythread_tss_key_state @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_set_type_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_sizeof_c_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_string_from_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_string_to_double @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_structseq_newtype_doesnt_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_type_from_ephemeral_spec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_unicode_compare_with_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_with_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_xdecref_doesnt_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.Test_testcapi.test_xincref_doesnt_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_bad_assignments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_byte @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_inplace_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_long @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_longlong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_py_ssize_t @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_structmembers.ReadWriteTests.test_short @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

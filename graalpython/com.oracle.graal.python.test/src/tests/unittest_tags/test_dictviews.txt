@@ -1,16 +1,16 @@
-test.test_dictviews.DictSetTest.test_abc_registry
-test.test_dictviews.DictSetTest.test_compare_error
-test.test_dictviews.DictSetTest.test_constructors_not_callable
-test.test_dictviews.DictSetTest.test_copy
-test.test_dictviews.DictSetTest.test_deeply_nested_repr
-test.test_dictviews.DictSetTest.test_dict_items
-test.test_dictviews.DictSetTest.test_dict_keys
-test.test_dictviews.DictSetTest.test_dict_mixed_keys_items
-test.test_dictviews.DictSetTest.test_dict_repr
-test.test_dictviews.DictSetTest.test_dict_values
-test.test_dictviews.DictSetTest.test_items_set_operations
-test.test_dictviews.DictSetTest.test_keys_set_operations
-test.test_dictviews.DictSetTest.test_pickle
-test.test_dictviews.DictSetTest.test_recursive_repr
-test.test_dictviews.DictSetTest.test_set_operations_with_iterator
-test.test_dictviews.DictSetTest.test_set_operations_with_noniterable
+test.test_dictviews.DictSetTest.test_abc_registry @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_compare_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_constructors_not_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_deeply_nested_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_dict_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_dict_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_dict_mixed_keys_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_dict_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_dict_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_items_set_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_keys_set_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_recursive_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_set_operations_with_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dictviews.DictSetTest.test_set_operations_with_noniterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

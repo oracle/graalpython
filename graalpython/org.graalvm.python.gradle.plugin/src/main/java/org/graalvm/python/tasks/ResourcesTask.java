@@ -40,34 +40,46 @@
  */
 package org.graalvm.python.tasks;
 
+import org.graalvm.python.GraalPyGradlePlugin;
 import org.graalvm.python.GradleLogger;
+import org.graalvm.python.dsl.GraalPyExtension;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.provider.*;
-import org.gradle.api.tasks.*;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Classpath;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.TaskAction;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.graalvm.python.GraalPyGradlePlugin.getGraalPyDependency;
-import static org.graalvm.python.GraalPyGradlePlugin.getGraalPyVersion;
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.LAUNCHER_NAME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 
-
+/**
+ * This task is responsible for setting up the Python launcher and installing the dependencies which
+ * were requested by the user. This is either done in generated resources folder or in external
+ * directory provided by the user in {@link GraalPyExtension#getPythonResourcesDirectory()}.
+ */
+@CacheableTask
 public abstract class ResourcesTask extends DefaultTask {
-
-    private Set<String> launcherClassPath;
 
     @Input
     @Optional
@@ -82,11 +94,23 @@ public abstract class ResourcesTask extends DefaultTask {
     @Input
     public abstract ListProperty<String> getExcludes();
 
+    @Internal
+    public abstract DirectoryProperty getLauncherDirectory();
+
+    @Classpath
+    public abstract ConfigurableFileCollection getLauncherClasspath();
+
     @OutputDirectory
     public abstract DirectoryProperty getOutput();
 
+    @Input
+    protected String getOperatingSystem() {
+        return System.getProperty("os.name");
+    }
+
     @TaskAction
-    public void exec() {
+    public void exec() throws IOException {
+        Files.createDirectories(computeLauncherDirectory());
         manageHome();
         manageVenv();
     }
@@ -98,7 +122,8 @@ public abstract class ResourcesTask extends DefaultTask {
         List<String> excludes = new ArrayList<>(getExcludes().get());
 
         try {
-            VFSUtils.createHome(homeDirectory, getGraalPyVersion(getProject()), includes, excludes, () -> calculateLauncherClasspath(), GradleLogger.of(getLogger()), (s) -> getLogger().lifecycle(s));
+            VFSUtils.createHome(homeDirectory, GraalPyGradlePlugin.determineGraalPyVersion(), includes, excludes, this::calculateLauncherClasspath, GradleLogger.of(getLogger()),
+                            (s) -> getLogger().lifecycle(s));
         } catch (IOException e) {
             throw new GradleException(String.format("failed to copy graalpy home %s", homeDirectory), e);
         }
@@ -107,23 +132,24 @@ public abstract class ResourcesTask extends DefaultTask {
     private void manageVenv() {
         List<String> packages = getPackages().getOrElse(null);
         try {
-            VFSUtils.createVenv(getVenvDirectory(), new ArrayList<String>(packages), getLauncherPath(),() ->  calculateLauncherClasspath(), getGraalPyVersion(getProject()), GradleLogger.of(getLogger()), (s) -> getLogger().lifecycle(s));
+            VFSUtils.createVenv(getVenvDirectory(), new ArrayList<String>(packages), getLauncherPath(), this::calculateLauncherClasspath, GraalPyGradlePlugin.determineGraalPyVersion(),
+                            GradleLogger.of(getLogger()), (s) -> getLogger().lifecycle(s));
         } catch (IOException e) {
             throw new GradleException(String.format("failed to create venv %s", getVenvDirectory()), e);
         }
     }
 
     private Set<String> calculateLauncherClasspath() {
-        if (launcherClassPath == null) {
-            var addedPluginDependency = getProject().getConfigurations().getByName("runtimeClasspath").getAllDependencies().stream().filter(d -> d.getGroup().equals(GRAALPY_GROUP_ID) && d.getName().equals("python-launcher") && d.getVersion().equals(getGraalPyVersion(getProject()))).findFirst().orElseThrow();
-            launcherClassPath = getProject().getConfigurations().getByName("runtimeClasspath").files(addedPluginDependency).stream().map(File::toString).collect(Collectors.toSet());
-            launcherClassPath.addAll(getProject().getConfigurations().getByName("runtimeClasspath").files(getGraalPyDependency(getProject())).stream().map(File::toString).collect(Collectors.toSet()));
-        }
-        return launcherClassPath;
+        return getLauncherClasspath().getFiles().stream().map(File::getAbsolutePath).collect(Collectors.toUnmodifiableSet());
     }
 
     private Path getLauncherPath() {
-        return Paths.get(getProject().getBuildDir().getAbsolutePath(), LAUNCHER_NAME);
+        return computeLauncherDirectory().resolve(LAUNCHER_NAME);
+    }
+
+    @NotNull
+    private Path computeLauncherDirectory() {
+        return getLauncherDirectory().get().getAsFile().toPath();
     }
 
     private Path getHomeDirectory() {

@@ -1,12 +1,12 @@
-test.test_urllibnet.URLTimeoutTest.testURLread
-test.test_urllibnet.urlopenNetworkTests.test_bad_address
-test.test_urllibnet.urlopenNetworkTests.test_basic
-test.test_urllibnet.urlopenNetworkTests.test_getcode
-test.test_urllibnet.urlopenNetworkTests.test_geturl
-test.test_urllibnet.urlopenNetworkTests.test_info
-test.test_urllibnet.urlopenNetworkTests.test_readlines
-test.test_urllibnet.urlretrieveNetworkTests.test_basic
-test.test_urllibnet.urlretrieveNetworkTests.test_data_header
-test.test_urllibnet.urlretrieveNetworkTests.test_header
-test.test_urllibnet.urlretrieveNetworkTests.test_reporthook
-test.test_urllibnet.urlretrieveNetworkTests.test_specified_path
+test.test_urllibnet.URLTimeoutTest.testURLread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlopenNetworkTests.test_bad_address @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlopenNetworkTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlopenNetworkTests.test_getcode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlopenNetworkTests.test_geturl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlopenNetworkTests.test_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlopenNetworkTests.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlretrieveNetworkTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlretrieveNetworkTests.test_data_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlretrieveNetworkTests.test_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlretrieveNetworkTests.test_reporthook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllibnet.urlretrieveNetworkTests.test_specified_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

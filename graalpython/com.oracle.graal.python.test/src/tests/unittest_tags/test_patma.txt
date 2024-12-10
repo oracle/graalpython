@@ -1,310 +1,310 @@
-test.test_patma.TestCompiler.test_refleaks
-test.test_patma.TestInheritance.test_late_registration_mapping
-test.test_patma.TestInheritance.test_late_registration_sequence
-test.test_patma.TestInheritance.test_multiple_inheritance_mapping
-test.test_patma.TestInheritance.test_multiple_inheritance_sequence
-test.test_patma.TestPatma.test_patma_000
-test.test_patma.TestPatma.test_patma_001
-test.test_patma.TestPatma.test_patma_002
-test.test_patma.TestPatma.test_patma_003
-test.test_patma.TestPatma.test_patma_004
-test.test_patma.TestPatma.test_patma_005
-test.test_patma.TestPatma.test_patma_006
-test.test_patma.TestPatma.test_patma_007
-test.test_patma.TestPatma.test_patma_008
-test.test_patma.TestPatma.test_patma_009
-test.test_patma.TestPatma.test_patma_010
-test.test_patma.TestPatma.test_patma_011
-test.test_patma.TestPatma.test_patma_012
-test.test_patma.TestPatma.test_patma_013
-test.test_patma.TestPatma.test_patma_014
-test.test_patma.TestPatma.test_patma_015
-test.test_patma.TestPatma.test_patma_016
-test.test_patma.TestPatma.test_patma_017
-test.test_patma.TestPatma.test_patma_018
-test.test_patma.TestPatma.test_patma_019
-test.test_patma.TestPatma.test_patma_020
-test.test_patma.TestPatma.test_patma_021
-test.test_patma.TestPatma.test_patma_022
-test.test_patma.TestPatma.test_patma_023
-test.test_patma.TestPatma.test_patma_024
-test.test_patma.TestPatma.test_patma_025
-test.test_patma.TestPatma.test_patma_026
-test.test_patma.TestPatma.test_patma_027
-test.test_patma.TestPatma.test_patma_028
-test.test_patma.TestPatma.test_patma_029
-test.test_patma.TestPatma.test_patma_030
-test.test_patma.TestPatma.test_patma_031
-test.test_patma.TestPatma.test_patma_032
-test.test_patma.TestPatma.test_patma_033
-test.test_patma.TestPatma.test_patma_034
-test.test_patma.TestPatma.test_patma_035
-test.test_patma.TestPatma.test_patma_036
-test.test_patma.TestPatma.test_patma_037
-test.test_patma.TestPatma.test_patma_038
-test.test_patma.TestPatma.test_patma_039
-test.test_patma.TestPatma.test_patma_040
-test.test_patma.TestPatma.test_patma_041
-test.test_patma.TestPatma.test_patma_042
-test.test_patma.TestPatma.test_patma_043
-test.test_patma.TestPatma.test_patma_044
-test.test_patma.TestPatma.test_patma_045
-test.test_patma.TestPatma.test_patma_046
-test.test_patma.TestPatma.test_patma_047
-test.test_patma.TestPatma.test_patma_048
-test.test_patma.TestPatma.test_patma_049
-test.test_patma.TestPatma.test_patma_050
-test.test_patma.TestPatma.test_patma_051
-test.test_patma.TestPatma.test_patma_052
-test.test_patma.TestPatma.test_patma_053
-test.test_patma.TestPatma.test_patma_054
-test.test_patma.TestPatma.test_patma_055
-test.test_patma.TestPatma.test_patma_056
-test.test_patma.TestPatma.test_patma_057
-test.test_patma.TestPatma.test_patma_058
-test.test_patma.TestPatma.test_patma_059
-test.test_patma.TestPatma.test_patma_060
-test.test_patma.TestPatma.test_patma_061
-test.test_patma.TestPatma.test_patma_062
-test.test_patma.TestPatma.test_patma_063
-test.test_patma.TestPatma.test_patma_064
-test.test_patma.TestPatma.test_patma_065
-test.test_patma.TestPatma.test_patma_066
-test.test_patma.TestPatma.test_patma_067
-test.test_patma.TestPatma.test_patma_068
-test.test_patma.TestPatma.test_patma_069
-test.test_patma.TestPatma.test_patma_070
-test.test_patma.TestPatma.test_patma_071
-test.test_patma.TestPatma.test_patma_072
-test.test_patma.TestPatma.test_patma_073
-test.test_patma.TestPatma.test_patma_074
-test.test_patma.TestPatma.test_patma_075
-test.test_patma.TestPatma.test_patma_076
-test.test_patma.TestPatma.test_patma_077
-test.test_patma.TestPatma.test_patma_078
-test.test_patma.TestPatma.test_patma_079
-test.test_patma.TestPatma.test_patma_080
-test.test_patma.TestPatma.test_patma_081
-test.test_patma.TestPatma.test_patma_082
-test.test_patma.TestPatma.test_patma_083
-test.test_patma.TestPatma.test_patma_084
-test.test_patma.TestPatma.test_patma_085
-test.test_patma.TestPatma.test_patma_086
-test.test_patma.TestPatma.test_patma_087
-test.test_patma.TestPatma.test_patma_088
-test.test_patma.TestPatma.test_patma_089
-test.test_patma.TestPatma.test_patma_090
-test.test_patma.TestPatma.test_patma_091
-test.test_patma.TestPatma.test_patma_092
-test.test_patma.TestPatma.test_patma_093
-test.test_patma.TestPatma.test_patma_094
-test.test_patma.TestPatma.test_patma_095
-test.test_patma.TestPatma.test_patma_096
-test.test_patma.TestPatma.test_patma_097
-test.test_patma.TestPatma.test_patma_098
-test.test_patma.TestPatma.test_patma_099
-test.test_patma.TestPatma.test_patma_100
-test.test_patma.TestPatma.test_patma_101
-test.test_patma.TestPatma.test_patma_102
-test.test_patma.TestPatma.test_patma_103
-test.test_patma.TestPatma.test_patma_104
-test.test_patma.TestPatma.test_patma_105
-test.test_patma.TestPatma.test_patma_106
-test.test_patma.TestPatma.test_patma_107
-test.test_patma.TestPatma.test_patma_108
-test.test_patma.TestPatma.test_patma_109
-test.test_patma.TestPatma.test_patma_110
-test.test_patma.TestPatma.test_patma_111
-test.test_patma.TestPatma.test_patma_112
-test.test_patma.TestPatma.test_patma_113
-test.test_patma.TestPatma.test_patma_114
-test.test_patma.TestPatma.test_patma_115
-test.test_patma.TestPatma.test_patma_116
-test.test_patma.TestPatma.test_patma_117
-test.test_patma.TestPatma.test_patma_118
-test.test_patma.TestPatma.test_patma_119
-test.test_patma.TestPatma.test_patma_120
-test.test_patma.TestPatma.test_patma_121
-test.test_patma.TestPatma.test_patma_122
-test.test_patma.TestPatma.test_patma_123
-test.test_patma.TestPatma.test_patma_124
-test.test_patma.TestPatma.test_patma_125
-test.test_patma.TestPatma.test_patma_126
-test.test_patma.TestPatma.test_patma_127
-test.test_patma.TestPatma.test_patma_128
-test.test_patma.TestPatma.test_patma_129
-test.test_patma.TestPatma.test_patma_130
-test.test_patma.TestPatma.test_patma_131
-test.test_patma.TestPatma.test_patma_132
-test.test_patma.TestPatma.test_patma_133
-test.test_patma.TestPatma.test_patma_134
-test.test_patma.TestPatma.test_patma_135
-test.test_patma.TestPatma.test_patma_136
-test.test_patma.TestPatma.test_patma_137
-test.test_patma.TestPatma.test_patma_138
-test.test_patma.TestPatma.test_patma_139
-test.test_patma.TestPatma.test_patma_140
-test.test_patma.TestPatma.test_patma_141
-test.test_patma.TestPatma.test_patma_142
-test.test_patma.TestPatma.test_patma_143
-test.test_patma.TestPatma.test_patma_144
-test.test_patma.TestPatma.test_patma_145
-test.test_patma.TestPatma.test_patma_146
-test.test_patma.TestPatma.test_patma_147
-test.test_patma.TestPatma.test_patma_148
-test.test_patma.TestPatma.test_patma_149
-test.test_patma.TestPatma.test_patma_150
-test.test_patma.TestPatma.test_patma_151
-test.test_patma.TestPatma.test_patma_152
-test.test_patma.TestPatma.test_patma_153
-test.test_patma.TestPatma.test_patma_154
-test.test_patma.TestPatma.test_patma_155
-test.test_patma.TestPatma.test_patma_156
-test.test_patma.TestPatma.test_patma_157
-test.test_patma.TestPatma.test_patma_158
-test.test_patma.TestPatma.test_patma_159
-test.test_patma.TestPatma.test_patma_160
-test.test_patma.TestPatma.test_patma_161
-test.test_patma.TestPatma.test_patma_162
-test.test_patma.TestPatma.test_patma_163
-test.test_patma.TestPatma.test_patma_164
-test.test_patma.TestPatma.test_patma_165
-test.test_patma.TestPatma.test_patma_166
-test.test_patma.TestPatma.test_patma_167
-test.test_patma.TestPatma.test_patma_168
-test.test_patma.TestPatma.test_patma_169
-test.test_patma.TestPatma.test_patma_170
-test.test_patma.TestPatma.test_patma_171
-test.test_patma.TestPatma.test_patma_172
-test.test_patma.TestPatma.test_patma_173
-test.test_patma.TestPatma.test_patma_174
-test.test_patma.TestPatma.test_patma_175
-test.test_patma.TestPatma.test_patma_176
-test.test_patma.TestPatma.test_patma_177
-test.test_patma.TestPatma.test_patma_178
-test.test_patma.TestPatma.test_patma_179
-test.test_patma.TestPatma.test_patma_180
-test.test_patma.TestPatma.test_patma_181
-test.test_patma.TestPatma.test_patma_182
-test.test_patma.TestPatma.test_patma_183
-test.test_patma.TestPatma.test_patma_184
-test.test_patma.TestPatma.test_patma_185
-test.test_patma.TestPatma.test_patma_186
-test.test_patma.TestPatma.test_patma_187
-test.test_patma.TestPatma.test_patma_188
-test.test_patma.TestPatma.test_patma_189
-test.test_patma.TestPatma.test_patma_190
-test.test_patma.TestPatma.test_patma_191
-test.test_patma.TestPatma.test_patma_192
-test.test_patma.TestPatma.test_patma_193
-test.test_patma.TestPatma.test_patma_194
-test.test_patma.TestPatma.test_patma_195
-test.test_patma.TestPatma.test_patma_196
-test.test_patma.TestPatma.test_patma_197
-test.test_patma.TestPatma.test_patma_198
-test.test_patma.TestPatma.test_patma_199
-test.test_patma.TestPatma.test_patma_200
-test.test_patma.TestPatma.test_patma_201
-test.test_patma.TestPatma.test_patma_202
-test.test_patma.TestPatma.test_patma_203
-test.test_patma.TestPatma.test_patma_204
-test.test_patma.TestPatma.test_patma_205
-test.test_patma.TestPatma.test_patma_206
-test.test_patma.TestPatma.test_patma_207
-test.test_patma.TestPatma.test_patma_208
-test.test_patma.TestPatma.test_patma_209
-test.test_patma.TestPatma.test_patma_210
-test.test_patma.TestPatma.test_patma_211
-test.test_patma.TestPatma.test_patma_212
-test.test_patma.TestPatma.test_patma_213
-test.test_patma.TestPatma.test_patma_214
-test.test_patma.TestPatma.test_patma_215
-test.test_patma.TestPatma.test_patma_216
-test.test_patma.TestPatma.test_patma_217
-test.test_patma.TestPatma.test_patma_218
-test.test_patma.TestPatma.test_patma_219
-test.test_patma.TestPatma.test_patma_220
-test.test_patma.TestPatma.test_patma_221
-test.test_patma.TestPatma.test_patma_222
-test.test_patma.TestPatma.test_patma_223
-test.test_patma.TestPatma.test_patma_224
-test.test_patma.TestPatma.test_patma_225
-test.test_patma.TestPatma.test_patma_226
-test.test_patma.TestPatma.test_patma_227
-test.test_patma.TestPatma.test_patma_228
-test.test_patma.TestPatma.test_patma_229
-test.test_patma.TestPatma.test_patma_230
-test.test_patma.TestPatma.test_patma_231
-test.test_patma.TestPatma.test_patma_232
-test.test_patma.TestPatma.test_patma_233
-test.test_patma.TestPatma.test_patma_234
-test.test_patma.TestPatma.test_patma_235
-test.test_patma.TestPatma.test_patma_236
-test.test_patma.TestPatma.test_patma_237
-test.test_patma.TestPatma.test_patma_238
-test.test_patma.TestPatma.test_patma_239
-test.test_patma.TestPatma.test_patma_240
-test.test_patma.TestPatma.test_patma_241
-test.test_patma.TestPatma.test_patma_242
-test.test_patma.TestPatma.test_patma_243
-test.test_patma.TestPatma.test_patma_244
-test.test_patma.TestPatma.test_patma_245
-test.test_patma.TestPatma.test_patma_246
-test.test_patma.TestPatma.test_patma_247
-test.test_patma.TestPatma.test_patma_248
-test.test_patma.TestSyntaxErrors.test_alternative_patterns_bind_different_names_0
-test.test_patma.TestSyntaxErrors.test_alternative_patterns_bind_different_names_1
-test.test_patma.TestSyntaxErrors.test_attribute_name_repeated_in_class_pattern
-test.test_patma.TestSyntaxErrors.test_imaginary_number_required_in_complex_literal_0
-test.test_patma.TestSyntaxErrors.test_imaginary_number_required_in_complex_literal_1
-test.test_patma.TestSyntaxErrors.test_invalid_syntax_0
-test.test_patma.TestSyntaxErrors.test_invalid_syntax_1
-test.test_patma.TestSyntaxErrors.test_invalid_syntax_2
-test.test_patma.TestSyntaxErrors.test_invalid_syntax_3
-test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key
-test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key_edge_case0
-test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key_edge_case1
-test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key_edge_case2
-test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key_edge_case3
-test.test_patma.TestSyntaxErrors.test_mapping_pattern_keys_may_only_match_literals_and_attribute_lookups
-test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_0
-test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_1
-test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_2
-test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_3
-test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_4
-test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_5
-test.test_patma.TestSyntaxErrors.test_multiple_starred_names_in_sequence_pattern_0
-test.test_patma.TestSyntaxErrors.test_multiple_starred_names_in_sequence_pattern_1
-test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_0
-test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_1
-test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_2
-test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_3
-test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_4
-test.test_patma.TestSyntaxErrors.test_patterns_may_only_match_literals_and_attribute_lookups_0
-test.test_patma.TestSyntaxErrors.test_patterns_may_only_match_literals_and_attribute_lookups_1
-test.test_patma.TestSyntaxErrors.test_real_number_required_in_complex_literal_0
-test.test_patma.TestSyntaxErrors.test_real_number_required_in_complex_literal_1
-test.test_patma.TestSyntaxErrors.test_real_number_required_in_complex_literal_2
-test.test_patma.TestSyntaxErrors.test_real_number_required_in_complex_literal_3
-test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_0
-test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_1
-test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_2
-test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_3
-test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_4
-test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_5
-test.test_patma.TestTracing.test_default_capture
-test.test_patma.TestTracing.test_default_wildcard
-test.test_patma.TestTracing.test_no_default
-test.test_patma.TestTracing.test_only_default_capture
-test.test_patma.TestTracing.test_only_default_wildcard
-test.test_patma.TestTracing.test_parser_deeply_nested_patterns
-test.test_patma.TestTracing.test_unreachable_code
-test.test_patma.TestTypeErrors.test_accepts_positional_subpatterns_0
-test.test_patma.TestTypeErrors.test_accepts_positional_subpatterns_1
-test.test_patma.TestTypeErrors.test_got_multiple_subpatterns_for_attribute_0
-test.test_patma.TestTypeErrors.test_got_multiple_subpatterns_for_attribute_1
-test.test_patma.TestTypeErrors.test_match_args_elements_must_be_strings
-test.test_patma.TestTypeErrors.test_match_args_must_be_a_tuple_0
-test.test_patma.TestTypeErrors.test_match_args_must_be_a_tuple_1
-test.test_patma.TestTypeErrors.test_match_args_must_be_a_tuple_2
-test.test_patma.TestValueErrors.test_mapping_pattern_checks_duplicate_key_1
+test.test_patma.TestCompiler.test_refleaks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestInheritance.test_late_registration_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestInheritance.test_late_registration_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestInheritance.test_multiple_inheritance_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestInheritance.test_multiple_inheritance_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_000 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_001 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_002 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_003 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_004 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_005 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_006 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_007 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_008 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_009 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_010 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_011 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_012 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_013 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_014 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_015 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_016 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_017 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_018 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_019 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_020 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_021 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_022 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_023 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_024 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_025 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_026 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_027 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_028 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_029 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_030 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_031 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_032 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_033 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_034 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_035 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_036 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_037 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_038 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_039 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_040 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_041 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_042 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_043 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_044 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_045 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_046 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_047 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_048 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_049 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_050 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_051 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_052 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_053 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_054 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_055 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_056 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_057 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_058 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_059 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_060 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_061 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_062 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_063 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_064 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_065 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_066 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_067 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_068 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_069 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_070 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_071 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_072 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_073 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_074 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_075 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_076 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_077 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_078 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_079 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_080 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_081 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_082 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_083 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_084 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_085 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_086 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_087 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_088 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_089 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_090 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_091 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_092 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_093 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_094 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_095 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_096 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_097 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_098 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_099 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_100 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_101 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_102 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_103 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_104 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_105 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_106 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_107 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_108 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_109 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_110 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_111 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_112 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_113 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_114 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_115 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_116 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_117 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_118 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_119 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_120 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_121 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_122 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_123 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_124 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_125 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_126 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_127 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_128 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_129 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_130 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_131 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_132 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_133 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_134 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_135 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_136 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_137 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_138 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_139 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_140 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_141 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_142 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_143 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_144 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_145 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_146 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_147 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_148 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_149 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_150 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_151 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_152 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_153 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_154 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_155 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_156 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_157 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_158 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_159 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_160 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_161 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_162 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_163 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_164 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_165 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_166 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_167 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_168 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_169 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_170 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_171 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_172 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_173 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_174 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_175 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_176 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_177 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_178 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_179 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_180 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_181 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_182 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_183 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_184 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_185 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_186 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_187 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_188 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_189 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_190 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_191 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_192 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_193 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_194 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_195 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_196 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_197 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_198 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_199 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_200 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_201 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_202 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_203 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_204 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_205 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_206 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_207 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_208 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_209 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_210 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_211 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_212 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_213 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_214 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_215 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_216 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_217 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_218 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_219 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_220 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_221 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_222 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_223 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_224 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_225 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_226 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_227 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_228 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_229 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_230 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_231 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_232 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_233 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_234 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_235 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_236 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_237 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_238 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_239 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_240 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_241 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_242 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_243 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_244 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_245 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_246 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_247 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestPatma.test_patma_248 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_alternative_patterns_bind_different_names_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_alternative_patterns_bind_different_names_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_attribute_name_repeated_in_class_pattern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_imaginary_number_required_in_complex_literal_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_imaginary_number_required_in_complex_literal_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_invalid_syntax_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_invalid_syntax_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_invalid_syntax_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_invalid_syntax_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key_edge_case0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key_edge_case1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key_edge_case2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_mapping_pattern_duplicate_key_edge_case3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_mapping_pattern_keys_may_only_match_literals_and_attribute_lookups @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_multiple_assignments_to_name_in_pattern_5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_multiple_starred_names_in_sequence_pattern_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_multiple_starred_names_in_sequence_pattern_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_name_capture_makes_remaining_patterns_unreachable_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_patterns_may_only_match_literals_and_attribute_lookups_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_patterns_may_only_match_literals_and_attribute_lookups_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_real_number_required_in_complex_literal_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_real_number_required_in_complex_literal_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_real_number_required_in_complex_literal_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_real_number_required_in_complex_literal_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestSyntaxErrors.test_wildcard_makes_remaining_patterns_unreachable_5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTracing.test_default_capture @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTracing.test_default_wildcard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTracing.test_no_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTracing.test_only_default_capture @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTracing.test_only_default_wildcard @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTracing.test_parser_deeply_nested_patterns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTracing.test_unreachable_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTypeErrors.test_accepts_positional_subpatterns_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTypeErrors.test_accepts_positional_subpatterns_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTypeErrors.test_got_multiple_subpatterns_for_attribute_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTypeErrors.test_got_multiple_subpatterns_for_attribute_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTypeErrors.test_match_args_elements_must_be_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTypeErrors.test_match_args_must_be_a_tuple_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTypeErrors.test_match_args_must_be_a_tuple_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestTypeErrors.test_match_args_must_be_a_tuple_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_patma.TestValueErrors.test_mapping_pattern_checks_duplicate_key_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

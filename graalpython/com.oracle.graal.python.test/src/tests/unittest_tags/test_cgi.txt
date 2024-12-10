@@ -1,23 +1,23 @@
-test.test_cgi.CgiTests.testQSAndFormData
-test.test_cgi.CgiTests.testQSAndFormDataFile
-test.test_cgi.CgiTests.testQSAndUrlEncode
-test.test_cgi.CgiTests.test_all
-test.test_cgi.CgiTests.test_field_storage_multipart_no_content_length
-test.test_cgi.CgiTests.test_fieldstorage_as_context_manager
-test.test_cgi.CgiTests.test_fieldstorage_invalid
-test.test_cgi.CgiTests.test_fieldstorage_multipart
-test.test_cgi.CgiTests.test_fieldstorage_multipart_leading_whitespace
-test.test_cgi.CgiTests.test_fieldstorage_multipart_maxline
-test.test_cgi.CgiTests.test_fieldstorage_multipart_non_ascii
-test.test_cgi.CgiTests.test_fieldstorage_multipart_w3c
-test.test_cgi.CgiTests.test_fieldstorage_part_content_length
-test.test_cgi.CgiTests.test_fieldstorage_properties
-test.test_cgi.CgiTests.test_fieldstorage_readline
-test.test_cgi.CgiTests.test_log
-test.test_cgi.CgiTests.test_max_num_fields
-test.test_cgi.CgiTests.test_parse_header
-test.test_cgi.CgiTests.test_parse_multipart
-test.test_cgi.CgiTests.test_parse_multipart_invalid_encoding
-test.test_cgi.CgiTests.test_parse_multipart_without_content_length
-test.test_cgi.CgiTests.test_separator
-test.test_cgi.CgiTests.test_strict
+test.test_cgi.CgiTests.testQSAndFormData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.testQSAndFormDataFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.testQSAndUrlEncode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_field_storage_multipart_no_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_as_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_multipart @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_multipart_leading_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_multipart_maxline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_multipart_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_multipart_w3c @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_part_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_fieldstorage_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_log @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_max_num_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_parse_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_parse_multipart @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_parse_multipart_invalid_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_parse_multipart_without_content_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgi.CgiTests.test_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

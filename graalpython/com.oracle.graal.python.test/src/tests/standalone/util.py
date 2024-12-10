@@ -43,6 +43,9 @@ import subprocess
 import sys
 import unittest
 import urllib.parse
+import tempfile
+from abc import ABC, abstractmethod
+from typing import Optional
 
 MAVEN_VERSION = "3.9.8"
 GLOBAL_MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
@@ -54,7 +57,60 @@ VFS_PREFIX = "org.graalvm.python.vfs"
 is_maven_plugin_test_enabled = 'ENABLE_MAVEN_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_UNITTESTS'] == "true"
 is_gradle_plugin_test_enabled = 'ENABLE_GRADLE_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_PLUGIN_UNITTESTS'] == "true"
 
-class PolyglotAppTestBase(unittest.TestCase):
+
+class TemporaryTestDirectory():
+    def __init__(self):
+        if 'GRAALPY_UNITTESTS_TMPDIR_NO_CLEAN' in os.environ:
+            self.ctx = None
+            self.name = tempfile.mkdtemp()
+            print(f"Running test in {self.name}")
+        else:
+            self.ctx = tempfile.TemporaryDirectory()
+            self.name = self.ctx.name
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.ctx:
+            self.ctx.__exit__(exc_type, exc_val, exc_tb)
+
+class LoggerBase(ABC):
+    def log_block(self, name, text):
+        self.log("=" * 80)
+        self.log(f"==> {name}:")
+        self.log(text)
+        self.log("=" * 80)
+
+    @abstractmethod
+    def log(self, msg, newline=True):
+        pass
+
+class Logger(LoggerBase):
+    def __init__(self):
+        self.data = ''
+
+    def log(self, msg, newline=True):
+        self.data += msg + ('\n' if newline else '')
+
+    def __str__(self):
+        two_lines = ("=" * 80 + "\n") * 2
+        return two_lines + "Test execution log:\n" + self.data + "\n" + two_lines
+
+class NullLogger(LoggerBase):
+    def log(self, msg, newline=True):
+        pass
+
+class StdOutLogger(LoggerBase):
+    def __init__(self, delegate:LoggerBase):
+        self.delegate = delegate
+
+    def log(self, msg, newline=True):
+        print(msg)
+        self.delegate.log(msg, newline=newline)
+
+
+class BuildToolTestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not is_maven_plugin_test_enabled and not is_gradle_plugin_test_enabled:
@@ -72,14 +128,14 @@ class PolyglotAppTestBase(unittest.TestCase):
             url = urllib.parse.urlparse(custom_repo)
             if url.scheme == "file":
                 jar = os.path.join(
-                    url.path,
+                    urllib.parse.unquote(url.path),
                     cls.archetypeGroupId.replace(".", os.path.sep),
                     cls.archetypeArtifactId,
                     cls.graalvmVersion,
                     f"{cls.archetypeArtifactId}-{cls.graalvmVersion}.jar",
                 )
                 pom = os.path.join(
-                    url.path,
+                    urllib.parse.unquote(url.path),
                     cls.archetypeGroupId.replace(".", os.path.sep),
                     cls.archetypeArtifactId,
                     cls.graalvmVersion,
@@ -96,10 +152,10 @@ class PolyglotAppTestBase(unittest.TestCase):
                     "-DcreateChecksum=true",
                 ]
                 out, return_code = run_cmd(cmd, cls.env)
-                assert return_code == 0
+                assert return_code == 0, out
 
                 jar = os.path.join(
-                    url.path,
+                    urllib.parse.unquote(url.path),
                     cls.archetypeGroupId.replace(".", os.path.sep),
                     cls.pluginArtifactId,
                     cls.graalvmVersion,
@@ -107,7 +163,7 @@ class PolyglotAppTestBase(unittest.TestCase):
                 )
 
                 pom = os.path.join(
-                    url.path,
+                    urllib.parse.unquote(url.path),
                     cls.archetypeGroupId.replace(".", os.path.sep),
                     cls.pluginArtifactId,
                     cls.graalvmVersion,
@@ -125,41 +181,33 @@ class PolyglotAppTestBase(unittest.TestCase):
                     "-DcreateChecksum=true",
                 ]
                 out, return_code = run_cmd(cmd, cls.env)
-                assert return_code == 0
+                assert return_code == 0, out
                 break
 
-def run_cmd(cmd, env, cwd=None, print_out=False, gradle=False):
+def run_cmd(cmd, env, cwd=None, print_out=False, logger:LoggerBase=NullLogger()):
+    if print_out:
+        logger = StdOutLogger(logger)
     out = []
     out.append(f"Executing:\n    {cmd=}\n")
-    prev_java_home = None     
-    if gradle:
-        gradle_java_home = env.get("GRADLE_JAVA_HOME")
-        assert gradle_java_home, "in order to run standalone gradle tests, the 'GRADLE_JAVA_HOME' env var has to be set to a jdk <= 22"
-        prev_java_home = env["JAVA_HOME"]
-        env["JAVA_HOME"] = env["GRADLE_JAVA_HOME"]
     
-    try:
-        process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
-        if print_out:
-            print("============== output =============")
-        for line in iter(process.stdout.readline, ""):
-            out.append(line)
-            if print_out:
-                print(line, end="")
-        if print_out:
-            print("\n========== end of output ==========")
-        return "".join(out), process.wait()
-    finally:
-        if prev_java_home:
-            env["JAVA_HOME"] = prev_java_home
+    logger.log(f"Executing command: {' '.join(cmd)}")
+    process = subprocess.Popen(cmd, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, text=True, errors='backslashreplace')
+    for line in iter(process.stdout.readline, ""):
+        out.append(line)
+    out_str = "".join(out)
+    logger.log_block("output", out_str)
+    return out_str, process.wait()
 
-def check_ouput(txt, out, contains=True):
+def check_ouput(txt, out, contains=True, logger: Optional[LoggerBase] =None):
+    # if logger is passed, we assume that it already contains the output
     if contains and txt not in out:
-        print_output(out, f"expected '{txt}' in output")
-        assert False
+        if not logger:
+            print_output(out, f"expected '{txt}' in output")
+        assert False, f"expected '{txt}' in output. \n{logger}"
     elif not contains and txt in out:
-        print_output(out, f"did not expect '{txt}' in output")
-        assert False
+        if not logger:
+            print_output(out, f"did not expect '{txt}' in output")
+        assert False, f"did not expect '{txt}' in output. {logger}"
 
 def print_output(out, err_msg=None):
     print("============== output =============")
@@ -275,15 +323,12 @@ def replace_in_file(file, str, replace_str):
     with open(file, "w") as f:
         f.write(contents.replace(str, replace_str))
 
-def patch_properties_file(properties_file, distribution_url_override):
-    if distribution_url_override:
-        new_lines = []
-        with(open(properties_file)) as f:
-            while line := f.readline():
-                line.strip()
-                if not line.startswith("#") and "distributionUrl" in line:
-                    new_lines.append(f"distributionUrl={distribution_url_override}\n")
-                else:
-                    new_lines.append(line)
-        with(open(properties_file, "w")) as f:
-            f.writelines(new_lines)
+
+def override_gradle_properties_file(gradle_project_root):
+    if override_file:=os.environ.get('GRADLE_PROPERTIES_OVERRIDE'):
+        shutil.copy(override_file, os.path.join(gradle_project_root, "gradle", "wrapper", "gradle-wrapper.properties"))
+
+
+def override_maven_properties_file(maven_project_root):
+    if override_file:=os.environ.get('MAVEN_PROPERTIES_OVERRIDE'):
+        shutil.copy(override_file, os.path.join(maven_project_root, ".mvn", "wrapper", "maven-wrapper.properties"))

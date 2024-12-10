@@ -1,18 +1,18 @@
-test.test_shlex.ShlexTest.testCompat
-test.test_shlex.ShlexTest.testEmptyStringHandling
-test.test_shlex.ShlexTest.testJoin
-test.test_shlex.ShlexTest.testJoinRoundtrip
-test.test_shlex.ShlexTest.testPunctuationCharsReadOnly
-test.test_shlex.ShlexTest.testPunctuationInWordChars
-test.test_shlex.ShlexTest.testPunctuationWithPosix
-test.test_shlex.ShlexTest.testPunctuationWithWhitespaceSplit
-test.test_shlex.ShlexTest.testQuote
-test.test_shlex.ShlexTest.testSplitNoneDeprecation
-test.test_shlex.ShlexTest.testSplitPosix
-test.test_shlex.ShlexTest.testSyntaxSplitAmpersandAndPipe
-test.test_shlex.ShlexTest.testSyntaxSplitCustom
-test.test_shlex.ShlexTest.testSyntaxSplitParen
-test.test_shlex.ShlexTest.testSyntaxSplitRedirect
-test.test_shlex.ShlexTest.testSyntaxSplitSemicolon
-test.test_shlex.ShlexTest.testTokenTypes
-test.test_shlex.ShlexTest.testUnicodeHandling
+test.test_shlex.ShlexTest.testCompat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testEmptyStringHandling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testJoin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testJoinRoundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testPunctuationCharsReadOnly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testPunctuationInWordChars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testPunctuationWithPosix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testPunctuationWithWhitespaceSplit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testQuote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testSplitNoneDeprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testSplitPosix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testSyntaxSplitAmpersandAndPipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testSyntaxSplitCustom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testSyntaxSplitParen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testSyntaxSplitRedirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testSyntaxSplitSemicolon @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testTokenTypes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_shlex.ShlexTest.testUnicodeHandling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

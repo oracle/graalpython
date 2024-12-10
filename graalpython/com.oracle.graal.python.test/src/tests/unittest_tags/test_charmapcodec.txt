@@ -1,4 +1,4 @@
-test.test_charmapcodec.CharmapCodecTest.test_constructorx
-test.test_charmapcodec.CharmapCodecTest.test_constructory
-test.test_charmapcodec.CharmapCodecTest.test_encodex
-test.test_charmapcodec.CharmapCodecTest.test_maptoundefined
+test.test_charmapcodec.CharmapCodecTest.test_constructorx @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_charmapcodec.CharmapCodecTest.test_constructory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_charmapcodec.CharmapCodecTest.test_encodex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_charmapcodec.CharmapCodecTest.test_maptoundefined @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

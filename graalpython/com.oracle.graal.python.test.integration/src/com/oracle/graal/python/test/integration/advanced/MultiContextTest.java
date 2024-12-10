@@ -58,16 +58,13 @@ public class MultiContextTest extends PythonTests {
     }
 
     @Test
-    public void testSharingWithCpythonSre() {
-        // With the default value of NativeModules=true, this test is going to use the NFI C API
-        // backend for the first context, but then it is going to use the Sulong backend for
-        // consecutive contexts (as long as this is the only test that executes native code,
-        // which it seems to be). This is why we need "sulong:SULONG_NATIVE" among the
-        // dependencies for GRAALPYTHON_UNIT_TESTS distribution, and
+    public void testSharingWithCpythonSreAndLLVM() {
+        // This test is going to use the Sulong backend.This is why we need "sulong:SULONG_NATIVE"
+        // among the dependencies for GRAALPYTHON_UNIT_TESTS distribution, and
         // org.graalvm.polyglot:llvm-community dependency in the pom.xml
         Engine engine = Engine.newBuilder().build();
         for (int i = 0; i < 10; i++) {
-            try (Context context = newContext(engine)) {
+            try (Context context = newContextWithNativeModulesFalse(engine)) {
                 context.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
             }
         }
@@ -92,5 +89,9 @@ public class MultiContextTest extends PythonTests {
 
     private static Context newContext(Engine engine) {
         return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
+    }
+
+    private static Context newContextWithNativeModulesFalse(Engine engine) {
+        return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).option("python.NativeModules", "false").build();
     }
 }

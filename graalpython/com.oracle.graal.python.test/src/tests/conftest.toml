@@ -3,7 +3,7 @@ run_top_level_functions = true
 
 [[test_rules]]
 selector = ['standalone/*']
-per_test_timeout = 1800
+per_test_timeout = 2400
 partial_splits_individual_tests = true
 
 [[test_rules]]

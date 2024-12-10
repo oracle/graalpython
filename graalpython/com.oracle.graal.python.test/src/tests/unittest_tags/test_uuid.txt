@@ -1,70 +1,23 @@
-test.test_uuid.TestInternalsWithExtModule.test_arp_getnode
-test.test_uuid.TestInternalsWithExtModule.test_find_mac
-test.test_uuid.TestInternalsWithExtModule.test_find_mac_near_keyword
-test.test_uuid.TestInternalsWithExtModule.test_find_under_heading
-test.test_uuid.TestInternalsWithExtModule.test_find_under_heading_ipv6
-test.test_uuid.TestInternalsWithExtModule.test_ifconfig_getnode
-test.test_uuid.TestInternalsWithExtModule.test_ip_getnode
-test.test_uuid.TestInternalsWithExtModule.test_ipconfig_getnode
-test.test_uuid.TestInternalsWithExtModule.test_lanscan_getnode
-test.test_uuid.TestInternalsWithExtModule.test_netbios_getnode
-test.test_uuid.TestInternalsWithExtModule.test_netstat_getnode
-test.test_uuid.TestInternalsWithExtModule.test_parse_mac
-test.test_uuid.TestInternalsWithExtModule.test_parse_mac_aix
-test.test_uuid.TestInternalsWithExtModule.test_random_getnode
-test.test_uuid.TestInternalsWithExtModule.test_unix_getnode
-test.test_uuid.TestInternalsWithExtModule.test_windll_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_arp_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_find_mac
-test.test_uuid.TestInternalsWithoutExtModule.test_find_mac_near_keyword
-test.test_uuid.TestInternalsWithoutExtModule.test_find_under_heading
-test.test_uuid.TestInternalsWithoutExtModule.test_find_under_heading_ipv6
-test.test_uuid.TestInternalsWithoutExtModule.test_ifconfig_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_ip_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_ipconfig_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_lanscan_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_netbios_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_netstat_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac
-test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac_aix
-test.test_uuid.TestInternalsWithoutExtModule.test_random_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_unix_getnode
-test.test_uuid.TestInternalsWithoutExtModule.test_windll_getnode
-test.test_uuid.TestUUIDWithExtModule.testIssue8621
-test.test_uuid.TestUUIDWithExtModule.test_UUID
-test.test_uuid.TestUUIDWithExtModule.test_exceptions
-test.test_uuid.TestUUIDWithExtModule.test_getnode
-test.test_uuid.TestUUIDWithExtModule.test_pickle_roundtrip
-test.test_uuid.TestUUIDWithExtModule.test_safe_uuid_enum
-test.test_uuid.TestUUIDWithExtModule.test_unpickle_previous_python_versions
-test.test_uuid.TestUUIDWithExtModule.test_uuid1
-test.test_uuid.TestUUIDWithExtModule.test_uuid1_bogus_return_value
-test.test_uuid.TestUUIDWithExtModule.test_uuid1_eui64
-test.test_uuid.TestUUIDWithExtModule.test_uuid1_is_safe
-test.test_uuid.TestUUIDWithExtModule.test_uuid1_is_unsafe
-test.test_uuid.TestUUIDWithExtModule.test_uuid1_safe
-test.test_uuid.TestUUIDWithExtModule.test_uuid1_time
-test.test_uuid.TestUUIDWithExtModule.test_uuid1_unknown
-test.test_uuid.TestUUIDWithExtModule.test_uuid3
-test.test_uuid.TestUUIDWithExtModule.test_uuid4
-test.test_uuid.TestUUIDWithExtModule.test_uuid5
-test.test_uuid.TestUUIDWithExtModule.test_uuid_weakref
-test.test_uuid.TestUUIDWithoutExtModule.testIssue8621
-test.test_uuid.TestUUIDWithoutExtModule.test_UUID
-test.test_uuid.TestUUIDWithoutExtModule.test_exceptions
-test.test_uuid.TestUUIDWithoutExtModule.test_getnode
-test.test_uuid.TestUUIDWithoutExtModule.test_pickle_roundtrip
-test.test_uuid.TestUUIDWithoutExtModule.test_safe_uuid_enum
-test.test_uuid.TestUUIDWithoutExtModule.test_unpickle_previous_python_versions
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid1
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_bogus_return_value
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_eui64
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_is_safe
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_is_unsafe
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_safe
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_time
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_unknown
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid3
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid4
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid5
-test.test_uuid.TestUUIDWithoutExtModule.test_uuid_weakref
+test.test_uuid.TestInternalsWithoutExtModule.test_arp_getnode @ darwin-arm64,darwin-x86_64
+test.test_uuid.TestInternalsWithoutExtModule.test_find_mac_near_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestInternalsWithoutExtModule.test_find_under_heading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestInternalsWithoutExtModule.test_find_under_heading_ipv6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestInternalsWithoutExtModule.test_ifconfig_getnode @ darwin-arm64,darwin-x86_64
+test.test_uuid.TestInternalsWithoutExtModule.test_ip_getnode @ linux-aarch64,linux-x86_64
+test.test_uuid.TestInternalsWithoutExtModule.test_netstat_getnode @ darwin-arm64,darwin-x86_64
+test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac_aix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestInternalsWithoutExtModule.test_random_getnode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_UUID @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_getnode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_pickle_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_safe_uuid_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_unpickle_previous_python_versions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_uuid1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_eui64 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_uuid1_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_uuid3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_uuid4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_uuid5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uuid.TestUUIDWithoutExtModule.test_uuid_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

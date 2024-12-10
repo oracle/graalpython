@@ -72,7 +72,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_GLOBAL;
 import static com.oracle.graal.python.runtime.PosixConstants.RTLD_LOCAL;
@@ -103,12 +102,12 @@ import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClinicProviders.DyldSharedCacheContainsPathClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
@@ -132,7 +131,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -171,6 +169,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -205,7 +204,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 import com.oracle.truffle.api.strings.TruffleString.EqualNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -227,8 +225,6 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     private DLHandler rtldDefault;
     private Object dyldSharedCacheContainsPathFunction;
-    @CompilationFinal private Object strlenFunction;
-    @CompilationFinal private Object memcpyFunction;
 
     protected static final int FUNCFLAG_STDCALL = 0x0;
     protected static final int FUNCFLAG_CDECL = 0x1;
@@ -273,22 +269,23 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         PythonContext context = core.getContext();
 
-        DLHandler handle;
+        DLHandler handle = null;
+        // We use directly native if available
         if (context.getEnv().isNativeAccessAllowed()) {
             handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, J_DEFAULT_LIBRARY, rtldLocal);
-            setCtypeNFIHelpers(this, context, handle);
-
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 PythonModule sysModule = context.getSysModule();
                 Object loadLibraryMethod = ReadAttributeFromObjectNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
                 Object pythonLib = CallNode.executeUncached(loadLibraryMethod, toTruffleStringUncached(GraalHPyJNIContext.getJNILibrary()), 0);
                 WriteAttributeToPythonObjectNode.getUncached().execute(sysModule, toTruffleStringUncached("dllhandle"), pythonLib);
             }
-        } else {
+        } else if (!PythonOptions.NativeModules.getValue(context.getEnv().getOptions())) {
+            // If native is not available, we can use the C API support library only if it was
+            // loaded through LLVM and not NFI. This limitation can be lifted: we can reload the
+            // library with LLVM here.
             try {
-                CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
-                handle = new DLHandler(cApiContext.getLLVMLibrary(), 0, J_EMPTY_STRING, true);
-                setCtypeLLVMHelpers(this, handle);
+                Object llvmLibrary = CApiContext.ensureCApiLLVMLibrary(context);
+                handle = new DLHandler(llvmLibrary, 0, J_EMPTY_STRING, true);
             } catch (ApiInitException e) {
                 throw e.reraise(null, null, PConstructAndRaiseNode.Lazy.getUncached());
             } catch (ImportException e) {
@@ -297,38 +294,16 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 throw PConstructAndRaiseNode.getUncached().raiseOSError(null, e, EqualNode.getUncached());
             }
         }
-        NativeFunction memmove = MemMoveFunction.create(handle, context);
-        ctypesModule.setAttribute(tsLiteral("_memmove_addr"), factory.createNativeVoidPtr(memmove, memmove.adr));
-        NativeFunction memset = MemSetFunction.create(handle, context);
-        ctypesModule.setAttribute(tsLiteral("_memset_addr"), factory.createNativeVoidPtr(memset, memset.adr));
+        if (handle != null) {
+            NativeFunction memmove = MemMoveFunction.create(handle, context);
+            ctypesModule.setAttribute(tsLiteral("_memmove_addr"), factory.createNativeVoidPtr(memmove, memmove.adr));
+            NativeFunction memset = MemSetFunction.create(handle, context);
+            ctypesModule.setAttribute(tsLiteral("_memset_addr"), factory.createNativeVoidPtr(memset, memset.adr));
+        }
+        // If handle == null, and we don't set the attributes, ctypes module is going to fail in
+        // __init__.py on importing those attributes from _ctypes. This way the failure will happen
+        // only when ctypes are actually imported
         rtldDefault = handle;
-    }
-
-    Object getStrlenFunction() {
-        return strlenFunction;
-    }
-
-    Object getMemcpyFunction() {
-        return memcpyFunction;
-    }
-
-    private static void setCtypeLLVMHelpers(CtypesModuleBuiltins ctypesModuleBuiltins, DLHandler h) {
-        try {
-            InteropLibrary lib = InteropLibrary.getUncached(h.library);
-            ctypesModuleBuiltins.strlenFunction = lib.readMember(h.library, NativeCAPISymbol.FUN_STRLEN.getName());
-            ctypesModuleBuiltins.memcpyFunction = lib.readMember(h.library, NativeCAPISymbol.FUN_MEMCPY.getName());
-        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    private static void setCtypeNFIHelpers(CtypesModuleBuiltins ctypesModuleBuiltins, PythonContext context, DLHandler h) {
-        try {
-            ctypesModuleBuiltins.strlenFunction = createNFIHelperFunction(context, h, "strlen", "(POINTER):UINT32");
-            ctypesModuleBuiltins.memcpyFunction = createNFIHelperFunction(context, h, "memcpy", "([UINT8], POINTER, UINT32):POINTER");
-        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
     }
 
     @TruffleBoundary
@@ -715,8 +690,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         protected static Object loadLLVMLibrary(PythonContext context, Node nodeForRaise, TruffleString path) throws ImportException, ApiInitException, IOException {
             context.ensureLLVMLanguage(nodeForRaise);
             if (path.isEmpty()) {
-                CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
-                return cApiContext.getLLVMLibrary();
+                return CApiContext.ensureCApiLLVMLibrary(context);
             }
             Source loadSrc = Source.newBuilder(J_LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path)).build();
             return context.getEnv().parseInternal(loadSrc).call();
@@ -731,44 +705,38 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             return toTruffleStringUncached(errmsg);
         }
 
+        @TruffleBoundary
         @Specialization
-        static Object py_dl_open(VirtualFrame frame, PythonModule self, TruffleString name, int m,
+        static Object py_dl_open(PythonModule self, TruffleString name, int m,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectHashNode hashNode,
-                        @Cached AuditNode auditNode,
-                        @Cached CodePointLengthNode codePointLengthNode,
-                        @Cached PrefixSuffixNode prefixSuffixNode,
-                        @Cached EqualNode eqNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached AuditNode auditNode) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonObjectSlowPathFactory factory = context.factory();
             auditNode.audit(inliningTarget, "ctypes.dlopen", name);
             if (name.isEmpty()) {
                 return factory.createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
             }
 
             // The loaded library can link against libpython, so we have to make sure it is loaded
-            CApiContext.ensureCapiWasLoaded();
+            CApiContext.ensureCapiWasLoaded("support ctypes module");
 
             int mode = m != Integer.MIN_VALUE ? m : RTLD_LOCAL.getValueIfDefined();
             mode |= RTLD_NOW.getValueIfDefined();
-            PythonContext context = PythonContext.get(inliningTarget);
             DLHandler handle;
             Exception exception = null;
-            boolean loadWithLLVM = !context.getEnv().isNativeAccessAllowed() || //
-                            (!context.getOption(PythonOptions.UseSystemToolchain) &&
-                                            prefixSuffixNode.endsWith(name, context.getSoAbi(), 0, codePointLengthNode.execute(name, TS_ENCODING)));
             try {
-                if (loadWithLLVM) {
+                if (!context.getEnv().isNativeAccessAllowed() && !PythonOptions.NativeModules.getValue(context.getEnv().getOptions())) {
                     Object handler = loadLLVMLibrary(context, inliningTarget, name);
-                    long adr = hashNode.execute(frame, inliningTarget, handler);
+                    long adr = PyObjectHashNode.executeUncached(handler);
                     handle = new DLHandler(handler, adr, name.toJavaStringUncached(), true);
                     registerAddress(context, handle.adr, handle);
                     return factory.createNativeVoidPtr(handle);
-                } else {
+                } else if (context.getEnv().isNativeAccessAllowed()) {
                     CtypesThreadState ctypes = CtypesThreadState.get(context, PythonLanguage.get(inliningTarget));
                     /*-
                      TODO: (mq) cryptography in macos isn't always compatible with ctypes.
                      */
+                    EqualNode eqNode = EqualNode.getUncached();
                     if (!eqNode.execute(name, MACOS_Security_LIB, TS_ENCODING) && !eqNode.execute(name, MACOS_CoreFoundation_LIB, TS_ENCODING)) {
                         handle = loadNFILibrary(context, ctypes.backendType, name.toJavaStringUncached(), mode);
                         registerAddress(context, handle.adr, handle);
@@ -778,7 +746,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             } catch (Exception e) {
                 exception = e;
             }
-            throw raiseNode.get(inliningTarget).raise(OSError, getErrMsg(exception));
+            throw PRaiseNode.raiseUncached(inliningTarget, OSError, getErrMsg(exception));
         }
     }
 
@@ -1703,7 +1671,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(Object arg) {
-            CApiContext.ensureCapiWasLoaded();
+            CApiContext.ensureCapiWasLoaded("support ctypes module");
             CApiTransitions.PythonToNativeNewRefNode.executeUncached(arg);
             return arg;
         }
@@ -1716,7 +1684,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object doGeneric(Object arg) {
-            CApiContext.ensureCapiWasLoaded();
+            CApiContext.ensureCapiWasLoaded("support ctypes module");
             Object nativePointer = CApiTransitions.PythonToNativeNode.executeUncached(arg);
             CExtNodes.XDecRefPointerNode.executeUncached(nativePointer);
             return arg;
