@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -869,7 +870,6 @@ public final class CApiContext extends CExtContext {
     private static final byte NO_NATIVE_CONTEXT = 0;
     private static final byte ISOLATED_NATIVE_CONTEXT = 1;
     private static final byte GLOBAL_NATIVE_CONTEXT = 2;
-    private static final AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;
@@ -909,28 +909,31 @@ public final class CApiContext extends CExtContext {
             final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
             try {
                 SourceBuilder capiSrcBuilder;
-                boolean useNative;
+                boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
                 boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
-                if (PythonOptions.NativeModules.getValue(env.getOptions())) {
+                final NativeLibraryLocator loc;
+                if (useNative) {
                     if (!isolateNative) {
                         useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
                     } else {
                         useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
                     }
-                    if (!useNative && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
-                        LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
-                                        "and at least one context runs with 'IsolateNativeModules' " +
-                                        "set to false. Depending on the order of context creation, " +
-                                        "this means some contexts in the process cannot use native " +
-                                        "module, all other contexts must fall back to set " +
-                                        "NativeModules=false and use LLVM bitcode execution via " +
-                                        "GraalVM LLVM.");
+                    if (!useNative) {
+                        String actualReason = "initialize native extensions support";
+                        if (reason != null) {
+                            actualReason = reason;
+                        } else if (name != null && path != null) {
+                            actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
+                        }
+                        throw new ApiInitException(toTruffleStringUncached(
+                                        String.format("Option python.NativeModules is set to 'true' and a second GraalPy context attempted to %s. " +
+                                                        "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
+                                                        "Depending on the order of context creation, this means some contexts in the process " +
+                                                        "cannot use native module, all other contexts must fall back and set python.NativeModules " +
+                                                        "to 'false' to run native extensions in LLVM mode. This is recommended only " +
+                                                        "for extensions included in the Python standard library. Running a 3rd party extension in LLVM mode requires " +
+                                                        "a custom build of the extension and is generally discouraged due to compatibility reasons.", actualReason)));
                     }
-                } else {
-                    useNative = false;
-                }
-                final NativeLibraryLocator loc;
-                if (useNative) {
                     loc = new NativeLibraryLocator(context, capiFile, isolateNative);
                     context.ensureNFILanguage(node, "NativeModules", "true");
                     String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";

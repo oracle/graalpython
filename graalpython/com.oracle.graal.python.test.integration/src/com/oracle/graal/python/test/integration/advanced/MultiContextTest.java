@@ -40,12 +40,6 @@
  */
 package com.oracle.graal.python.test.integration.advanced;
 
-import static org.junit.Assert.assertTrue;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.junit.Test;
@@ -64,27 +58,16 @@ public class MultiContextTest extends PythonTests {
     }
 
     @Test
-    public void testSharingWithCpythonSre() throws InterruptedException {
-        // This tests if we can execute the same native extension library in multiple contexts if
-        // that library is subinterpreter safe.
+    public void testSharingWithCpythonSreAndLLVM() {
+        // This test is going to use the Sulong backend.This is why we need "sulong:SULONG_NATIVE"
+        // among the dependencies for GRAALPYTHON_UNIT_TESTS distribution, and
+        // org.graalvm.polyglot:llvm-community dependency in the pom.xml
         Engine engine = Engine.newBuilder().build();
-        ExecutorService s = Executors.newFixedThreadPool(40);
-        for (int i = 0; i < 100; i++) {
-            s.execute(() -> {
-                try (Context context = newContext(engine)) {
-                    context.eval("python", """
-                                    import _cpython_sre, time
-                                    assert _cpython_sre.ascii_tolower(88) == 120
-                                    time.sleep(1)
-                                    assert _cpython_sre.ascii_tolower(89) == 121
-                                    time.sleep(1)
-                                    assert _cpython_sre.ascii_tolower(90) == 122
-                                    """);
-                }
-            });
+        for (int i = 0; i < 10; i++) {
+            try (Context context = newContextWithNativeModulesFalse(engine)) {
+                context.eval("python", "import _cpython_sre\nassert _cpython_sre.ascii_tolower(88) == 120\n");
+            }
         }
-        s.shutdown();
-        assertTrue("Threads finished in time", s.awaitTermination(1, TimeUnit.MINUTES));
     }
 
     @Test

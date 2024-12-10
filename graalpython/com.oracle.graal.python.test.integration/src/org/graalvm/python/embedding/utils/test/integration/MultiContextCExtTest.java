@@ -235,11 +235,14 @@ public class MultiContextCExtTest {
         } catch (PolyglotException e) {
             assertTrue("We need a venv", e.getMessage().contains("sys.prefix must point to a venv"));
         }
-        // Using a context without isolation in the same process forces LLVM
+        // Using a context without isolation in the same process needs to use LLVM
         assertFalse("have not had a context use LLVM, yet", log.truffleLog.toString().contains("as bitcode"));
-        var r0 = c0.eval(code);
-        assertEquals("tiny_sha3", r0.asString());
-        assertTrue("switched to LLVM", log.truffleLog.toString().contains("as bitcode"));
+        try {
+            c0.eval(code);
+            fail("should not reach here");
+        } catch (PolyglotException e) {
+            assertTrue("needs LLVM", e.getMessage().contains("LLVM"));
+        }
     }
 
     private static boolean isVerbose() {
