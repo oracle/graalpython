@@ -140,8 +140,6 @@ typedef struct {
     PyObject *co_exceptiontable;   /* Byte string encoding exception handling  \
                                       table */                                 \
     int co_flags;                  /* CO_..., see below */                     \
-    short co_warmup;                 /* Warmup counter for quickening */       \
-    short _co_linearray_entry_size;  /* Size of each entry in _co_linearray */ \
                                                                                \
     /* The rest are not so impactful on performance. */                        \
     int co_argcount;              /* #arguments, except *args */               \
@@ -152,12 +150,12 @@ typedef struct {
                                                                                \
     /* redundant values (derived from co_localsplusnames and                   \
        co_localspluskinds) */                                                  \
-    int co_nlocalsplus;           /* number of local + cell + free variables   \
-                                  */                                           \
+    int co_nlocalsplus;           /* number of local + cell + free variables */ \
+    int co_framesize;             /* Size of frame in words */                 \
     int co_nlocals;               /* number of local variables */              \
-    int co_nplaincellvars;        /* number of non-arg cell variables */       \
     int co_ncellvars;             /* total number of cell variables */         \
     int co_nfreevars;             /* number of free variables */               \
+    uint32_t co_version;          /* version number */                         \
                                                                                \
     PyObject *co_localsplusnames; /* tuple mapping offsets to names */         \
     PyObject *co_localspluskinds; /* Bytes mapping to local kinds (one byte    \
@@ -167,8 +165,9 @@ typedef struct {
     PyObject *co_qualname;        /* unicode (qualname, for reference) */      \
     PyObject *co_linetable;       /* bytes object that holds location info */  \
     PyObject *co_weakreflist;     /* to support weakrefs to code objects */    \
-    PyObject *_co_code;           /* cached co_code object/attribute */        \
-    char *_co_linearray;          /* array of line offsets */                  \
+    _PyCoCached *_co_cached;      /* cached co_* attributes */                 \
+    uint64_t _co_instrumentation_version; /* current instrumentation version */  \
+    _PyCoMonitoringData *_co_monitoring; /* Monitoring data */                 \
     int _co_firsttraceable;       /* index of first traceable instruction */   \
     /* Scratch space for extra data relating to the code object.               \
        Type is a void* to keep the format private in codeobject.c to force     \
@@ -218,9 +217,18 @@ struct PyCodeObject _PyCode_DEF(1);
 PyAPI_DATA(PyTypeObject) PyCode_Type;
 
 #define PyCode_Check(op) Py_IS_TYPE((op), &PyCode_Type)
-#define PyCode_GetNumFree(op) ((op)->co_nfreevars)
-#define _PyCode_CODE(CO) ((_Py_CODEUNIT *)(CO)->co_code_adaptive)
 
+static inline Py_ssize_t PyCode_GetNumFree(PyCodeObject *op) {
+    assert(PyCode_Check(op));
+    return op->co_nfreevars;
+}
+
+static inline int PyCode_GetFirstFree(PyCodeObject *op) {
+    assert(PyCode_Check(op));
+    return op->co_nlocalsplus - op->co_nfreevars;
+}
+
+#define _PyCode_CODE(CO) _Py_RVALUE((_Py_CODEUNIT *)(CO)->co_code_adaptive)
 #define _PyCode_NBYTES(CO) (Py_SIZE(CO) * (Py_ssize_t)sizeof(_Py_CODEUNIT))
 
 /* Unstable public interface */

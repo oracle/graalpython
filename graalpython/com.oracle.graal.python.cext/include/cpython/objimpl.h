@@ -7,7 +7,9 @@
 #  error "this header file must not be included directly"
 #endif
 
-#define _PyObject_SIZE(typeobj) ( (typeobj)->tp_basicsize )
+static inline size_t _PyObject_SIZE(PyTypeObject *type) {
+    return _Py_STATIC_CAST(size_t, type->tp_basicsize);
+}
 
 /* _PyObject_VAR_SIZE returns the number of bytes (as size_t) allocated for a
    vrbl-size object with nitems items, exclusive of gc overhead (if any).  The
