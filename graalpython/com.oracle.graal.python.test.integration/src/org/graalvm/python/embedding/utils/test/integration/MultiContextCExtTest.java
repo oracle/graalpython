@@ -51,7 +51,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -122,11 +121,11 @@ public class MultiContextCExtTest {
         }
     }
 
-    private static Path createVenv(TestLog log) throws IOException {
+    private static Path createVenv(TestLog log, String... packages) throws IOException {
         var tmpdir = Files.createTempDirectory("graalpytest");
         deleteDirOnShutdown(tmpdir);
         var venvdir = tmpdir.resolve("venv");
-        VFSUtils.createVenv(venvdir, List.of(), tmpdir.resolve("graalpy.exe"), () -> getClasspath(), "", log, log);
+        VFSUtils.createVenv(venvdir, Arrays.asList(packages), tmpdir.resolve("graalpy.exe"), () -> getClasspath(), "", log, log);
         return venvdir;
     }
 
@@ -157,7 +156,19 @@ public class MultiContextCExtTest {
     @Test
     public void testCreatingVenvForMulticontext() throws IOException {
         var log = new TestLog();
-        var venv = createVenv(log);
+        Path venv;
+
+        String pythonNative;
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            pythonNative = "python-native.dll";
+            venv = createVenv(log, "machomachomangler");
+        } else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+            pythonNative = "libpython-native.dylib";
+            venv = createVenv(log);
+        } else {
+            pythonNative = "libpython-native.so";
+            venv = createVenv(log, "patchelf");
+        }
 
         var engine = Engine.newBuilder("python")
             .logHandler(log)
@@ -171,15 +182,6 @@ public class MultiContextCExtTest {
         var c0 = builder.build();
         c0.initialize("python");
         c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venv.toString()));
-
-        String pythonNative;
-        if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            pythonNative = "python-native.dll";
-        } else if (System.getProperty("os.name").toLowerCase().contains("darwin")) {
-            pythonNative = "libpython-native.dylib";
-        } else {
-            pythonNative = "libpython-native.so";
-        }
 
         assertTrue("created a copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".0")));
         assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".1")));
