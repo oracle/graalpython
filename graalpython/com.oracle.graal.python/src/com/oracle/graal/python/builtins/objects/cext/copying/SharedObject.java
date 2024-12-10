@@ -38,13 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.tools.capi;
+package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.TruffleFile;
 
 abstract class SharedObject {
     abstract void setId(String newId) throws IOException, InterruptedException;
@@ -53,31 +52,17 @@ abstract class SharedObject {
 
     abstract byte[] write() throws IOException;
 
-    static SharedObject open(Path venv, Path filename, SubprocessLog log) throws IOException {
-        var f = Files.readAllBytes(filename);
+    static SharedObject open(TruffleFile file, PythonContext context) throws IOException {
+        var f = file.readAllBytes();
         switch (f[0]) {
             case 0x7f:
-                return new ElfFile(venv, f, log);
+                return new ElfFile(f, context);
             case 0x4d, 0x5a:
-                return new PEFile(venv, f, log);
+                return new PEFile(f, context);
             case (byte) 0xca, (byte) 0xfe, (byte) 0xce, (byte) 0xcf:
-                return new MachOFile(venv, f, log);
+                return new MachOFile(f, context);
             default:
                 throw new IOException("Unknown shared object format");
         }
-    }
-
-    static void deleteDirOnShutdown(Path tmpdir) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                Files.walk(tmpdir).forEach(t -> {
-                    try {
-                        Files.delete(t);
-                    } catch (IOException e) {
-                    }
-                });
-            } catch (IOException e) {
-            }
-        }));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,56 +38,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.builtins.objects.cext.copying;
 
-package org.graalvm.python.embedding.tools.capi;
+import java.nio.ByteBuffer;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+/**
+ * A load command, without much interpretation. Stores the entire command as a byte array, and the
+ * cmd id and size as fields.
+ *
+ * <pre>
+ * struct load_command {
+ *  uint32_t cmd;
+ *  uint32_t cmdsize;
+ *  ...
+ * };
+ * </pre>
+*/
+final class MachOLoadCommand {
+    static final int LC_CODE_SIGNATURE = 0x0000001D;
 
-import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+    final int cmd;
+    final int cmdSize;
+    final ByteBuffer content;
 
-final class PEFile extends SharedObject {
-    private static Path machomachomanglerVenv;
-    private final Path venv;
-    private final Path tempfile;
-    private final SubprocessLog log;
-
-    private synchronized Path getMachomachomanglerVenv() throws IOException, InterruptedException {
-        if (machomachomanglerVenv == null) {
-            Path tempdir = Files.createTempDirectory("graalpy_capi_patcher");
-            deleteDirOnShutdown(tempdir);
-            machomachomanglerVenv = tempdir.resolve("venv");
-            GraalPyRunner.runVenvBin(venv, "python", new SubprocessLog() {}, "-m", "venv", tempdir.resolve("venv").toString());
-            GraalPyRunner.runPip(machomachomanglerVenv, "install", new SubprocessLog() {}, "machomachomangler");
-        }
-        return machomachomanglerVenv;
+    MachOLoadCommand(int cmd, int cmdSize, ByteBuffer content) {
+        this.cmd = cmd;
+        this.cmdSize = cmdSize;
+        this.content = content;
     }
 
-    PEFile(Path venv, byte[] b, SubprocessLog log) throws IOException {
-        this.venv = venv;
-        this.log = log;
-        this.tempfile = Files.createTempFile("temp", ".dll");
-        tempfile.toFile().deleteOnExit();
-        Files.write(tempfile, b);
+    static MachOLoadCommand get(ByteBuffer buffer) {
+        int pos = buffer.position();
+        int cmd = buffer.getInt();
+        int cmdSize = buffer.getInt();
+        var content = buffer.slice(pos, cmdSize);
+        content.order(buffer.order());
+        buffer.position(pos + cmdSize);
+        return new MachOLoadCommand(cmd, cmdSize, content);
     }
 
-    @Override
-    public void setId(String newId) throws IOException {
-        // TODO
-    }
-
-    @Override
-    public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
-        GraalPyRunner.runVenvBin(getMachomachomanglerVenv(), "python", log,
-                        "-m", "machomachomangler.cmd.redll",
-                        tempfile.toString(), tempfile.toString(),
-                        oldName, newName);
-    }
-
-    @Override
-    public byte[] write() throws IOException {
-        return Files.readAllBytes(tempfile);
+    void put(ByteBuffer f) {
+        f.put(content);
     }
 }

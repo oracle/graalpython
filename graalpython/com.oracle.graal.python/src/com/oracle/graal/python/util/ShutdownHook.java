@@ -42,6 +42,7 @@ package com.oracle.graal.python.util;
 
 import com.oracle.graal.python.runtime.PythonContext;
 
+@FunctionalInterface
 public interface ShutdownHook {
     void call(PythonContext context);
 }

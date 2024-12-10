@@ -38,15 +38,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.tools.capi;
+package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import com.oracle.graal.python.runtime.PythonContext;
 
 final class MachOFile extends SharedObject {
     private final ByteBuffer buffer;
@@ -54,7 +53,7 @@ final class MachOFile extends SharedObject {
     private final List<MachOLoadCommand> loadCommands;
     private int emptySpace;
 
-    MachOFile(Path venv, byte[] f, SubprocessLog log) throws IOException {
+    MachOFile(byte[] f, PythonContext context) throws IOException {
         this.buffer = ByteBuffer.wrap(f);
         this.mh = MachOHeader.read(buffer);
         this.loadCommands = new ArrayList<>();

@@ -39,53 +39,54 @@
  * SOFTWARE.
  */
 
-package org.graalvm.python.embedding.tools.capi;
+package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
-import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.TruffleFile;
 
-final class ElfFile extends SharedObject {
-    private static Path patchelfVenv;
-    private final Path tempfile;
-    private final Path venv;
-    private final SubprocessLog log;
+final class PEFile extends SharedObject {
+    private final PythonContext context;
+    private final TruffleFile tempfile;
 
-    private synchronized Path getPatchelfVenv() throws IOException, InterruptedException {
-        if (patchelfVenv == null) {
-            Path tempdir = Files.createTempDirectory("graalpy_capi_patcher");
-            deleteDirOnShutdown(tempdir);
-            patchelfVenv = tempdir.resolve("venv");
-            GraalPyRunner.runVenvBin(venv, "python", new SubprocessLog() {}, "-m", "venv", tempdir.resolve("venv").toString());
-            GraalPyRunner.runPip(patchelfVenv, "install", new SubprocessLog() {}, "patchelf");
+    PEFile(byte[] b, PythonContext context) throws IOException {
+        this.context = context;
+        this.tempfile = context.getEnv().createTempFile(null, null, ".dll");
+        this.context.registerAtexitHook((ctx) -> {
+            try {
+                this.tempfile.delete();
+            } catch (IOException e) {
+                // ignore
+            }
+        });
+        try (var os = this.tempfile.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            os.write(b);
         }
-        return patchelfVenv;
-    }
-
-    ElfFile(Path venv, byte[] b, SubprocessLog log) throws IOException {
-        this.venv = venv;
-        this.log = log;
-        this.tempfile = Files.createTempFile("temp", ".so");
-        tempfile.toFile().deleteOnExit();
-        Files.write(tempfile, b);
     }
 
     @Override
-    public void setId(String newId) throws IOException, InterruptedException {
-        GraalPyRunner.runVenvBin(getPatchelfVenv(), "patchelf", log, "--debug", "--set-soname", newId, tempfile.toString());
+    public void setId(String newId) throws IOException {
+        // TODO
     }
 
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
-        GraalPyRunner.runVenvBin(getPatchelfVenv(), "patchelf", log, "--debug", "--remove-needed", oldName, tempfile.toString());
-        GraalPyRunner.runVenvBin(getPatchelfVenv(), "patchelf", log, "--debug", "--add-needed", newName, tempfile.toString());
+        var pb = context.getEnv().newProcessBuilder(context.getOption(PythonOptions.Executable).toJavaStringUncached(),
+                        "-m", "machomachomangler.cmd.redll",
+                        tempfile.toString(), tempfile.toString(),
+                        oldName, newName);
+        pb.inheritIO(true);
+        var proc = pb.start();
+        if (proc.waitFor() != 0) {
+            throw new IOException("Failed to run `machomachomangler` to copy required DLL. Make sure you have it installed in your venv.");
+        }
     }
 
     @Override
     public byte[] write() throws IOException {
-        return Files.readAllBytes(tempfile);
+        return tempfile.readAllBytes();
     }
 }

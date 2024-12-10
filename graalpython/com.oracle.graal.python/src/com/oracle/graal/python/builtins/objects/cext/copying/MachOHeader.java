@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.tools.capi;
+package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

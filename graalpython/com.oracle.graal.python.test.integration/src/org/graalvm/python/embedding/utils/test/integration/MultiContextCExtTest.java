@@ -57,7 +57,6 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
-import org.graalvm.python.embedding.tools.capi.NativeExtensionReplicator;
 import org.graalvm.python.embedding.tools.exec.SubprocessLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils.Log;
@@ -141,18 +140,20 @@ public class MultiContextCExtTest {
     public void testCreatingVenvForMulticontext() throws IOException, InterruptedException {
         var log = new TestLog();
         var venv = createVenv(log);
-        NativeExtensionReplicator.replicate(venv, log, 2);
+
         var engine = Engine.create("python");
         var builder = Context.newBuilder().engine(engine).allowAllAccess(true);
+        if (isVerbose()) {
+            builder.option("log.python.level", "FINE");
+        }
         var c0 = builder.build();
+        c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s')", venv.toString()));
+
         builder
             .option("python.IsolateNativeModules", "true")
             .option("python.Sha3ModuleBackend", "native")
             .option("python.ForceImportSite", "true")
             .option("python.Executable", venv.resolve("bin").resolve("python").toString());
-        if (isVerbose()) {
-            builder.option("log.python.level", "FINE");
-        }
         var c1 = builder.build();
         var c2 = builder.build();
         var c3 = builder.build();
