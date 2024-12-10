@@ -155,13 +155,6 @@ public class MultiContextCExtTest {
     }
 
     @Test
-    public void testCreatingVenv() throws IOException {
-        var log = new TestLog();
-        createVenv(log);
-        assertEquals("", log.stderr.toString());
-    }
-
-    @Test
     public void testCreatingVenvForMulticontext() throws IOException {
         var log = new TestLog();
         var venv = createVenv(log);
