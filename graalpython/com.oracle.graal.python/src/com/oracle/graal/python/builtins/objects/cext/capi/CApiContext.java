@@ -65,6 +65,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
@@ -862,9 +863,13 @@ public final class CApiContext extends CExtContext {
 
     /**
      * This represents whether the current process has already loaded an instance of the native CAPI
-     * extensions - this can only be loaded once per process.
+     * extensions - this can only be loaded globally once per process or in isolation multiple times.
      */
-    private static final AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
+    private static final AtomicInteger nativeCAPILoaded = new AtomicInteger();
+    private static final byte NO_NATIVE_CONTEXT = 0;
+    private static final byte ISOLATED_NATIVE_CONTEXT = 1;
+    private static final byte GLOBAL_NATIVE_CONTEXT = 2;
+    private static final AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;
@@ -908,16 +913,18 @@ public final class CApiContext extends CExtContext {
                 boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
                 if (PythonOptions.NativeModules.getValue(env.getOptions())) {
                     if (!isolateNative) {
-                        useNative = nativeCAPILoaded.compareAndSet(false, true);
-                        if (!useNative && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
-                            LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
-                                            "and 'IsolateNativeModules' is set to false, which " +
-                                            "means only one context in the process can use native modules, " +
-                                            "second and other contexts fallback to NativeModules=false and " +
-                                            "will use LLVM bitcode execution via GraalVM LLVM.");
-                        }
+                        useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
                     } else {
-                        useNative = true;
+                        useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
+                    }
+                    if (!useNative && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
+                        LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
+                                        "and at least one context runs with 'IsolateNativeModules' " +
+                                        "set to false. Depending on the order of context creation, " +
+                                        "this means some contexts in the process cannot use native " +
+                                        "module, all other contexts must fall back to set " +
+                                        "NativeModules=false and use LLVM bitcode execution via " +
+                                        "GraalVM LLVM.");
                     }
                 } else {
                     useNative = false;
@@ -928,7 +935,7 @@ public final class CApiContext extends CExtContext {
                     context.ensureNFILanguage(node, "NativeModules", "true");
                     String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";
                     capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, String.format("load(%s) \"%s\"", dlopenFlags, loc.getCapiLibrary()), "<libpython>");
-                    LOGGER.config(() -> "loading CAPI copy from " + loc.getCapiLibrary() + " as native");
+                    LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
                 } else {
                     loc = null;
                     context.ensureLLVMLanguage(node);
