@@ -52,6 +52,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.AccessMode;
@@ -63,6 +64,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.nio.file.NotLinkException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -74,6 +76,7 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -87,6 +90,7 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.NONE;
 
 final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
@@ -289,6 +293,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         this.allowHostIO = allowHostIO;
     }
 
+    /**
+     * Used to access files which were extracted, see e.g. checkAccess(). Since VFS is read-only, we
+     * also limit the access to extracted files as read-only.
+     */
+    private FileSystem extractedFilesFS = FileSystem.newReadOnlyFileSystem(FileSystem.newDefaultFileSystem());
+
     static FileSystem createDelegatingFileSystem(VirtualFileSystemImpl vfs) {
         FileSystem d = switch (vfs.allowHostIO) {
             case NONE -> FileSystem.newDenyIOFileSystem();
@@ -488,6 +498,17 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         return ret;
     }
 
+    private static boolean followLinks(LinkOption... linkOptions) {
+        if (linkOptions != null) {
+            for (Object o : linkOptions) {
+                if (Objects.requireNonNull(o) == NOFOLLOW_LINKS) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /**
      * Extracts a file or directory from the resource to the temporary directory and returns the
      * path to the extracted file. Nonexistent parent directories will also be created
@@ -507,7 +528,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
              */
             BaseEntry entry = getEntry(path);
             if (entry == null) {
-                warn("no entry for '%s'", path);
                 return null;
             }
             Path relPath = mountPoint.relativize(Paths.get(entry.getPlatformPath()));
@@ -648,9 +668,26 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(modes);
 
         Path path = toAbsoluteNormalizedPath(p);
+
+        boolean extractable = shouldExtract(path);
+        if (extractable && followLinks(linkOptions)) {
+            Path extractedPath = getExtractedPath(path);
+            if (extractedPath != null) {
+                extractedFilesFS.checkAccess(extractedPath, modes, linkOptions);
+                return;
+            } else {
+                finer("VFS.checkAccess could not extract path '%s'", p);
+                throw new NoSuchFileException(String.format("no such file or directory: '%s'", path));
+            }
+        }
+
         if (modes.contains(AccessMode.WRITE)) {
             throw securityException("VFS.checkAccess", String.format("read-only filesystem, write access not supported '%s'", path));
         }
+        if (modes.contains(AccessMode.EXECUTE)) {
+            throw securityException("VFS.checkAccess", String.format("execute access not supported for  '%s'", p));
+        }
+
         if (getEntry(path) == null) {
             String msg = String.format("no such file or directory: '%s'", path);
             finer("VFS.checkAccess %s", msg);
@@ -673,85 +710,129 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     public SeekableByteChannel newByteChannel(Path p, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         Objects.requireNonNull(p);
         Objects.requireNonNull(options);
+        // some instances of Set throw NPE on .contains(null)
+        for (OpenOption o : options) {
+            Objects.requireNonNull(o);
+        }
         Objects.requireNonNull(attrs);
 
         Path path = toAbsoluteNormalizedPath(p);
-        if (options.isEmpty() || (options.size() == 1 && options.contains(StandardOpenOption.READ))) {
-            BaseEntry entry = getEntry(path);
-            if (entry == null) {
-                String msg = String.format("No such file or directory: '%s'", path);
-                finer("VFS.newByteChannel '%s'", path);
-                throw new FileNotFoundException(msg);
-            }
-            if (!(entry instanceof FileEntry fileEntry)) {
-                finer("VFS.newByteChannel Is a directory '%s'", path);
-                // this constructor is used since we rely on the error message to convert to the
-                // appropriate python error
-                throw new FileSystemException(path.toString(), null, "Is a directory");
-            }
-            return new SeekableByteChannel() {
-                long position = 0;
 
-                final byte[] bytes = fileEntry.getData();
+        boolean extractable = shouldExtract(path);
+        if (extractable) {
+            if (!options.contains(NOFOLLOW_LINKS)) {
+                Path extractedPath = getExtractedPath(path);
+                if (extractedPath != null) {
+                    return extractedFilesFS.newByteChannel(extractedPath, options);
+                } else {
+                    finer("VFS.newByteChannel could not extract path '%s'", p);
+                    throw new FileNotFoundException(String.format("no such file or directory: '%s'", p));
+                }
+            } else {
+                String msg = String.format("can't create byte channel for '%s' (NOFOLLOW_LINKS specified)", p);
+                finer("VFS.newByteChannel '%s'", msg);
+                throw new IOException(msg);
+            }
+        }
 
-                @Override
-                public int read(ByteBuffer dst) throws IOException {
-                    if (position > bytes.length) {
-                        return -1;
-                    } else if (position == bytes.length) {
-                        return 0;
-                    } else {
-                        int length = Math.min(bytes.length - (int) position, dst.remaining());
-                        dst.put(bytes, (int) position, length);
-                        position += length;
-                        if (dst.hasRemaining()) {
-                            position++;
-                        }
-                        return length;
+        checkNoWriteOption(options, p);
+
+        BaseEntry entry = getEntry(path);
+        if (entry == null) {
+            String msg = String.format("No such file or directory: '%s'", path);
+            finer("VFS.newByteChannel '%s'", path);
+            throw new FileNotFoundException(msg);
+        }
+        if (!(entry instanceof FileEntry fileEntry)) {
+            finer("VFS.newByteChannel Is a directory '%s'", path);
+            // this constructor is used since we rely on the error message to convert to the
+            // appropriate python error
+            throw new FileSystemException(path.toString(), null, "Is a directory");
+        }
+        return new SeekableByteChannel() {
+            long position = 0;
+
+            final byte[] bytes = fileEntry.getData();
+
+            @Override
+            public int read(ByteBuffer dst) throws IOException {
+                if (position > bytes.length) {
+                    return -1;
+                } else if (position == bytes.length) {
+                    return 0;
+                } else {
+                    int length = Math.min(bytes.length - (int) position, dst.remaining());
+                    dst.put(bytes, (int) position, length);
+                    position += length;
+                    if (dst.hasRemaining()) {
+                        position++;
                     }
+                    return length;
                 }
+            }
 
-                @Override
-                public int write(ByteBuffer src) throws IOException {
-                    String msg = String.format("read-only filesystem: '%s'", path);
-                    finer("VFS.newByteChannel '%s'", msg);
-                    throw new IOException(msg);
-                }
+            @Override
+            public int write(ByteBuffer src) throws IOException {
+                finer("VFS.newByteChannel '%s'", String.format("read-only filesystem: '%s'", path));
+                throw new NonWritableChannelException();
+            }
 
-                @Override
-                public long position() throws IOException {
-                    return position;
-                }
+            @Override
+            public long position() throws IOException {
+                return position;
+            }
 
-                @Override
-                public SeekableByteChannel position(long newPosition) throws IOException {
-                    position = Math.max(0, newPosition);
-                    return this;
-                }
+            @Override
+            public SeekableByteChannel position(long newPosition) throws IOException {
+                position = Math.max(0, newPosition);
+                return this;
+            }
 
-                @Override
-                public long size() throws IOException {
-                    return bytes.length;
-                }
+            @Override
+            public long size() throws IOException {
+                return bytes.length;
+            }
 
-                @Override
-                public SeekableByteChannel truncate(long size) throws IOException {
-                    String msg = String.format("read-only filesystem: '%s'", path);
-                    finer("VFS.newByteChannel '%s'", msg);
-                    throw new IOException(msg);
-                }
+            @Override
+            public SeekableByteChannel truncate(long size) throws IOException {
+                finer("VFS.newByteChannel '%s'", String.format("read-only filesystem: '%s'", path));
+                throw new NonWritableChannelException();
+            }
 
-                @Override
-                public boolean isOpen() {
-                    return true;
-                }
+            @Override
+            public boolean isOpen() {
+                return true;
+            }
 
-                @Override
-                public void close() throws IOException {
-                }
-            };
-        } else {
-            throw securityException("VFS.newByteChannel", String.format("read-only filesystem, can create byte channel only for READ: '%s'", path));
+            @Override
+            public void close() throws IOException {
+            }
+        };
+    }
+
+    private static final Set<? extends OpenOption> READ_OPTIONS = Set.of(
+                    StandardOpenOption.READ,
+                    StandardOpenOption.DSYNC,
+                    StandardOpenOption.SPARSE,
+                    StandardOpenOption.SYNC,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    LinkOption.NOFOLLOW_LINKS);
+
+    /**
+     * copied from FileSystems.ReadOnlyFileSystem
+     */
+    private static void checkNoWriteOption(Set<? extends OpenOption> options, Path path) {
+        Set<OpenOption> writeOptions = new HashSet<>(options);
+        boolean read = writeOptions.contains(StandardOpenOption.READ);
+        writeOptions.removeAll(READ_OPTIONS);
+        // The APPEND option is ignored in case of read but without explicit READ option it
+        // implies write. Remove the APPEND option only when options contain READ.
+        if (read) {
+            writeOptions.remove(StandardOpenOption.APPEND);
+        }
+        boolean write = !writeOptions.isEmpty();
+        if (write) {
+            throw securityException("VFS.newByteChannel", String.format("read-only filesystem, can't create byte channel for write access: '%s'", path));
         }
     }
 
@@ -827,11 +908,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         Path path = toAbsoluteNormalizedPath(p);
         Path result = path;
-        if (shouldExtract(path)) {
+        if (shouldExtract(path) && followLinks(linkOptions)) {
             result = getExtractedPath(path);
             if (result == null) {
-                finer("VFS.toRealPath could not extract '%s'", path);
-                result = path;
+                warn("no VFS entry for '%s'", p);
+                throw new NoSuchFileException(String.format("no such file or directory: '%s'", p));
             }
         }
         finer("VFS.toRealPath '%s' -> '%s'", path, result);
@@ -843,6 +924,18 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(p);
 
         Path path = toAbsoluteNormalizedPath(p);
+
+        boolean extractable = shouldExtract(path);
+        if (extractable && followLinks(options)) {
+            Path extractedPath = getExtractedPath(path);
+            if (extractedPath != null) {
+                return extractedFilesFS.readAttributes(extractedPath, attributes, options);
+            } else {
+                finer("VFS.readAttributes could not extract path '%s'", p);
+                throw new NoSuchFileException(String.format("no such file or directory: '%s'", path));
+            }
+        }
+
         BaseEntry entry = getEntry(path);
         if (entry == null) {
             String msg = String.format("no such file or directory: '%s'", path);
@@ -858,9 +951,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         attrs.put("creationTime", FileTime.fromMillis(0));
         attrs.put("lastModifiedTime", FileTime.fromMillis(0));
         attrs.put("lastAccessTime", FileTime.fromMillis(0));
-        attrs.put("isRegularFile", entry instanceof FileEntry);
+        attrs.put("isRegularFile", !extractable && entry instanceof FileEntry);
         attrs.put("isDirectory", entry instanceof DirEntry);
-        attrs.put("isSymbolicLink", false);
+        attrs.put("isSymbolicLink", extractable);
         attrs.put("isOther", false);
         attrs.put("size", (long) (entry instanceof FileEntry fileEntry ? fileEntry.getData().length : 0));
         attrs.put("mode", 0555);
@@ -915,9 +1008,24 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     @Override
-    public Path readSymbolicLink(Path l) throws IOException {
-        Objects.requireNonNull(l);
-        throw securityException("VFS.readSymbolicLink", String.format("reading symbolic links in VirtualFileSystem not supported %s", l));
+    public Path readSymbolicLink(Path link) throws IOException {
+        Objects.requireNonNull(link);
+
+        Path path = toAbsoluteNormalizedPath(link);
+        if (shouldExtract(path)) {
+            Path result = getExtractedPath(path);
+            if (result != null) {
+                finer("VFS.readSymbolicLink '%s' '%s'", link, result);
+                return result;
+            }
+            finer("VFS.readSymbolicLink could not extract path '%s'", link);
+            throw new NoSuchFileException(String.format("no such file or directory: '%s'", path));
+        }
+        if (getEntry(path) == null) {
+            finer("VFS.readSymbolicLink no entry for path '%s'", link);
+            throw new NoSuchFileException(String.format("no such file or directory: '%s'", path));
+        }
+        throw new NotLinkException(link.toString());
     }
 
     @Override
