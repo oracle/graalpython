@@ -681,14 +681,10 @@ PyType_Unwatch(int watcher_id, PyObject* obj)
     type->tp_watched &= ~(1 << watcher_id);
     return 0;
 }
-#endif // GraalPy change
 
 void
 PyType_Modified(PyTypeObject *type)
 {
-    // GraalPy change: different implementation
-    GraalPyTruffle_Type_Modified(type, type->tp_name, type->tp_mro);
-#if 0 // GraalPy change
     /* Invalidate any cached data for the specified type and all
        subclasses.  This function is called after the base
        classes, mro, or attributes of the type are altered.
@@ -748,7 +744,6 @@ PyType_Modified(PyTypeObject *type)
         // comment on struct _specialization_cache):
         ((PyHeapTypeObject *)type)->_spec_cache.getitem = NULL;
     }
-#endif // GraalPy change
 }
 
 static void
@@ -7277,9 +7272,6 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
     stop_readying(type);
 
     assert(_PyType_CheckConsistency(type));
-
-    // GraalPy change: it may be that the type was used uninitialized
-	GraalPyTruffle_Type_Modified(type, type->tp_name, NULL);
 
     // GraalPy change
 	GraalPyTruffle_InitializeOldStyleSlots(type);
