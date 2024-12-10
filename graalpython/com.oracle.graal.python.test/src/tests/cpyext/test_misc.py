@@ -41,9 +41,9 @@ import builtins
 import os
 import pathlib
 import sys
+import unittest
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
-
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
 __global_builtins_dict = builtins.__dict__
 
@@ -370,3 +370,30 @@ class TestMisc(CPyExtTestCase):
         arguments=["PyObject* value"],
         cmpfunc=unhandled_error_compare
     )
+
+
+@unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-only")
+def test_graalpy_version():
+    tester = CPyExtType(
+        "VersionTester",
+        code='''
+        static PyObject* get_version_str(PyObject* unused) {
+            return PyUnicode_FromString(GRAALPY_VERSION);
+        }
+        static PyObject* get_version_num(PyObject* unused) {
+            return PyLong_FromLong(GRAALPY_VERSION_NUM);
+        }
+        ''',
+        tp_methods='''
+        {"get_version_str", (PyCFunction)get_version_str, METH_NOARGS | METH_STATIC, ""},
+        {"get_version_num", (PyCFunction)get_version_num, METH_NOARGS | METH_STATIC, ""}
+        ''',
+    )
+    expected_version = __graalpython__.get_graalvm_version().removesuffix('-dev')
+    assert tester.get_version_str() == expected_version
+    parts = [int(v) for v in expected_version.split('.')] + [0]
+    expected_num = 0
+    for i in range(3):
+        expected_num <<= 8
+        expected_num |= parts[i]
+    assert tester.get_version_num() == expected_num

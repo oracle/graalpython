@@ -1,5 +1,5 @@
-test.test_popen.PopenTest.test_contextmanager
-test.test_popen.PopenTest.test_iterating
-test.test_popen.PopenTest.test_keywords
-test.test_popen.PopenTest.test_popen
-test.test_popen.PopenTest.test_return_code
+test.test_popen.PopenTest.test_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_popen.PopenTest.test_iterating @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_popen.PopenTest.test_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_popen.PopenTest.test_popen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_popen.PopenTest.test_return_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

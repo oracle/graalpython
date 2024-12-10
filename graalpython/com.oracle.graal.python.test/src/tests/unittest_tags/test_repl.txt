@@ -1,2 +1,1 @@
-test.test_repl.TestInteractiveInterpreter.test_multiline_string_parsing
-test.test_repl.TestInteractiveInterpreter.test_no_memory
+test.test_repl.TestInteractiveInterpreter.test_close_stdin @ win32-AMD64

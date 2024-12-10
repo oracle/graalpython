@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,67 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.benchmarks.interop;
+package com.oracle.graal.python.benchmarks.jmh;
 
-import org.graalvm.polyglot.Value;
+import java.util.concurrent.TimeUnit;
+
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
 
-public class PyEuler31 extends BenchRunner {
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Warmup(iterations = 10, time = 5)
+@Measurement(iterations = 5, time = 5)
+@State(Scope.Thread)
+public class ContextInitSharedEngineBenchmark {
+    private Engine engine;
+    private Context context;
 
-    @Param({"100"}) public int arg1;
+    @Setup(Level.Trial)
+    public void setupEngine() {
+        engine = Engine.newBuilder().option("engine.WarnInterpreterOnly", "false").build();
+    }
 
-    private Value newpat;
-    private Value EMPTY;
-    private Value COINS;
-
-    @Setup
+    @Setup(Level.Invocation)
     public void setup() {
-        System.out.println("### setup ...");
-        this.newpat = this.context.eval("python", //
-                        "def newpat(t, end, p):" + //
-                                        "  return t[:end] + (p,)\n" + //
-                                        "newpat");
-        this.COINS = this.context.eval("python", "[1, 2, 5, 10, 20, 50, 100, 200]");
-        this.EMPTY = this.context.eval("python", "()");
+        context = Context.newBuilder("python").engine(engine).build();
+    }
+
+    @TearDown(Level.Invocation)
+    public void tearDown() {
+        context.close(true);
+        context = null;
     }
 
     @Benchmark
-    public void euler31(Blackhole bh) {
-        int result = gen(EMPTY, 0, arg1);
-        bh.consume(result);
-        System.out.println("total number of different ways: " + result);
-    }
-
-    private int gen(Value pattern, int coinnum, int num) {
-        int count = 0;
-        int coin = geti(COINS, coinnum);
-        for (int p = 0; p < (num / coin + 1); p++) {
-            Value newpattern = newpat(pattern, coinnum, p);
-            int bal = balance(newpattern);
-            if (bal > num) {
-                return count;
-            } else if (bal == num) {
-                count++;
-            } else if (coinnum < (COINS.getArraySize() - 1)) {
-                count += gen(newpattern, coinnum + 1, num);
-            }
-        }
-        return count;
-    }
-
-    private int balance(Value pattern) {
-        long size = pattern.getArraySize();
-        int sum = 0;
-        for (int i = 0; i < size; i++) {
-            sum += geti(COINS, i) * geti(pattern, i);
-        }
-        return sum;
-    }
-
-    private Value newpat(Value t, int end, int p) {
-        return this.newpat.execute(t, this.context.asValue(end), this.context.asValue(p));
+    public void initCtx() {
+        context.initialize("python");
     }
 }

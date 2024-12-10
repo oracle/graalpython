@@ -1,3 +1,0 @@
-test.test_unicode_file.TestMain.test_main
-test.test_unicode_file.TestUnicodeFiles.test_directories
-test.test_unicode_file.TestUnicodeFiles.test_single_files

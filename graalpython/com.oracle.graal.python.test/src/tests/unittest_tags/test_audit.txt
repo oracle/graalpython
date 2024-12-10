@@ -1,2 +1,0 @@
-test.test_audit.AuditTest.test_syslog
-test.test_audit.AuditTest.test_winreg

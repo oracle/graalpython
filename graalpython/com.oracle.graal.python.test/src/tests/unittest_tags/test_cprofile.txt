@@ -1,8 +1,10 @@
-test.test_cprofile.CProfileTest.test_output_file_when_changing_directory
-test.test_cprofile.TestCommandLine.test_sort
-test.test_profile.ProfileTest.test_calling_conventions
-test.test_profile.ProfileTest.test_cprofile
-test.test_profile.ProfileTest.test_output_file_when_changing_directory
-test.test_profile.ProfileTest.test_run
-test.test_profile.ProfileTest.test_run_profile_as_module
-test.test_profile.ProfileTest.test_runctx
+test.test_cprofile.CProfileTest.test_output_file_when_changing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cprofile.CProfileTest.test_run_profile_as_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cprofile.TestCommandLine.test_sort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_profile.ProfileTest.test_calling_conventions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_profile.ProfileTest.test_cprofile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_profile.ProfileTest.test_output_file_when_changing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_profile.ProfileTest.test_run @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# This test times out in the gate even though it succeeds locally and in the retagger. Race condition?
+!test.test_profile.ProfileTest.test_run_profile_as_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_profile.ProfileTest.test_runctx @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

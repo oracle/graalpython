@@ -1379,13 +1379,18 @@ public abstract class ExternalFunctionNodes {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             Object[] fastcallArgs = new Object[args.length + kwargs.length];
-            Object[] fastcallKwnames = new Object[kwargs.length];
+            Object kwnamesTuple = PNone.NO_VALUE;
             PythonUtils.arraycopy(args, 0, fastcallArgs, 0, args.length);
-            for (int i = 0; i < kwargs.length; i++) {
-                fastcallKwnames[i] = kwargs[i].getName();
-                fastcallArgs[args.length + i] = kwargs[i].getValue();
+            // Note: PyO3 doesn't like it when we put an empty tuple there if there are no args
+            if (kwargs.length > 0) {
+                Object[] fastcallKwnames = new Object[kwargs.length];
+                for (int i = 0; i < kwargs.length; i++) {
+                    fastcallKwnames[i] = kwargs[i].getName();
+                    fastcallArgs[args.length + i] = kwargs[i].getValue();
+                }
+                kwnamesTuple = factory.createTuple(fastcallKwnames);
             }
-            return new Object[]{self, new CPyObjectArrayWrapper(fastcallArgs), args.length, factory.createTuple(fastcallKwnames)};
+            return new Object[]{self, new CPyObjectArrayWrapper(fastcallArgs), args.length, kwnamesTuple};
         }
 
         @Override

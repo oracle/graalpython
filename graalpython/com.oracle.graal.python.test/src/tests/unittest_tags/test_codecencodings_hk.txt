@@ -1,2 +1,2 @@
-test.test_codecencodings_hk.Test_Big5HKSCS.test_streamwriter_reset_no_pending
-test.test_codecencodings_hk.Test_Big5HKSCS.test_xmlcharrefreplace
+test.test_codecencodings_hk.Test_Big5HKSCS.test_streamwriter_reset_no_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecencodings_hk.Test_Big5HKSCS.test_xmlcharrefreplace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

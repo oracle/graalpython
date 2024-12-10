@@ -25,9 +25,7 @@ selector = [
     # trying to avoid transient issues there, not sure about the reason
     'test_unittest',
     'test_logging',
-    # test_int contains a denial-of-service prevention test that requires to finish within a certain time.
-    # We are actually fast enough but the parallel execution overhead can cause transient failures.
-    'test_int',
+    'test_zipfile',
 ]
 
 [[test_rules]]
@@ -35,4 +33,25 @@ partial_splits_individual_tests = true
 selector = [
     'test_multiprocessing_spawn',
     'test_multiprocessing_main_handling',
+]
+
+
+[[test_rules]]
+exclude_on = ['graalpy']
+selector = [
+    # Tests for CPython-specific bytecode optimizations. Unapplicable to GraalPy and prone to breaking on random bytecode changes
+    'test_peepholer',
+    # We don't have fork, so although we pass surprisingly many tests in there, it's not going to cover anything useful
+    'test_multiprocessing_fork',
+    # Transiently fails with java.lang.IllegalStateException: There is an active child contexts after finalizeContext!
+    # when the runner exits. We don't know which tests can trigger this, so we exclude the whole file.
+    'test_multiprocessing_graalpy',
+]
+
+[[test_rules]]
+exclude_on = ['win32']
+selector = [
+    # TODO fails to load bz2 library
+    # java.lang.UnsatisfiedLinkError: ...\lib-graalpython\bz2support.dll GetLastError: 126
+    'test_bz2',
 ]

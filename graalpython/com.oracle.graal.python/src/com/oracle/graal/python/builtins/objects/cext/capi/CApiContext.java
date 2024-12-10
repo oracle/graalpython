@@ -114,6 +114,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Function;
+import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
@@ -613,9 +614,10 @@ public final class CApiContext extends CExtContext {
         // TODO(fa): implement untracking of container objects
     }
 
-    private static final class BackgroundGCTask implements Runnable {
+    private static final class BackgroundGCTask extends PythonSystemThreadTask {
 
         private BackgroundGCTask(PythonContext context) {
+            super("Python GC", LOGGER);
             this.ctx = new WeakReference<>(context);
             this.rssInterval = context.getOption(PythonOptions.BackgroundGCTaskInterval);
             this.gcRSSThreshold = context.getOption(PythonOptions.BackgroundGCTaskThreshold) / (double) 100;
@@ -667,15 +669,23 @@ public final class CApiContext extends CExtContext {
         }
 
         @Override
-        public void run() {
-            try {
-                while (true) {
-                    Thread.sleep(rssInterval);
-                    perform();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        protected void doRun() {
+            Node location = getSafepointLocation();
+            if (location == null) {
+                return;
             }
+            while (true) {
+                TruffleSafepoint.setBlockedThreadInterruptible(location, Thread::sleep, rssInterval);
+                perform();
+            }
+        }
+
+        private Node getSafepointLocation() {
+            PythonContext context = ctx.get();
+            if (context == null) {
+                return null;
+            }
+            return context.getLanguage().unavailableSafepointLocation;
         }
 
         private void perform() {
@@ -764,9 +774,7 @@ public final class CApiContext extends CExtContext {
                         || !context.getOption(PythonOptions.BackgroundGCTask)) {
             return;
         }
-        backgroundGCTaskThread = context.getEnv().newTruffleThreadBuilder(gcTask).context(context.getEnv().getContext()).build();
-        backgroundGCTaskThread.setDaemon(true);
-        backgroundGCTaskThread.setName("python-gc-task");
+        backgroundGCTaskThread = context.createSystemThread(gcTask);
         backgroundGCTaskThread.start();
     }
 
@@ -775,22 +783,35 @@ public final class CApiContext extends CExtContext {
      * extensions - this can only be loaded once per process.
      */
     private static final AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
-    private static final AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;
 
     @TruffleBoundary
-    public static CApiContext ensureCapiWasLoaded() {
+    public static CApiContext ensureCapiWasLoaded(String reason) {
         try {
-            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
+            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING, reason);
         } catch (Exception e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
     @TruffleBoundary
+    public static Object ensureCApiLLVMLibrary(PythonContext context) throws IOException, ImportException, ApiInitException {
+        assert !PythonOptions.NativeModules.getValue(context.getEnv().getOptions());
+        CApiContext cApiContext = ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING,
+                        " load LLVM library (this is an internal bug, LLVM library should not be loaded when running on native backend)");
+        return cApiContext.getLLVMLibrary();
+    }
+
+    @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
+        return ensureCapiWasLoaded(node, context, name, path, null);
+    }
+
+    @TruffleBoundary
+    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
+        assert PythonContext.get(null).ownsGil(); // unsafe lazy initialization
         if (!context.hasCApiContext()) {
             Env env = context.getEnv();
             InteropLibrary U = InteropLibrary.getUncached();
@@ -801,17 +822,25 @@ public final class CApiContext extends CExtContext {
             TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
             try {
                 SourceBuilder capiSrcBuilder;
-                final boolean useNative;
-                if (PythonOptions.NativeModules.getValue(env.getOptions())) {
-                    useNative = nativeCAPILoaded.compareAndSet(false, true);
-                    if (!useNative && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
-                        LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
-                                        "but only one context in the process can use native modules, " +
-                                        "second and other contexts fallback to NativeModules=false and " +
-                                        "will use LLVM bitcode execution via GraalVM LLVM.");
+                final boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
+                if (useNative) {
+                    boolean canUseNative = nativeCAPILoaded.compareAndSet(false, true);
+                    if (!canUseNative) {
+                        String actualReason = "initialize native extensions support";
+                        if (reason != null) {
+                            actualReason = reason;
+                        } else if (name != null && path != null) {
+                            actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
+                        }
+                        throw new ApiInitException(TruffleString.fromJavaStringUncached(
+                                        String.format("Option python.NativeModules is set to 'true' and a second GraalPy context attempted to %s. " +
+                                                        "GraalPy currently only supports loading and using native extensions from one context when python.NativeModules is enabled. " +
+                                                        "To resolve this issue, ensure that native extensions are used only in one GraalPy context per process or" +
+                                                        "set python.NativeModules to 'false' to run native extensions in LLVM mode, which is recommended only " +
+                                                        "for extensions included in the Python standard library. Running a 3rd party extension in LLVM mode requires " +
+                                                        "a custom build of the extension and is generally discouraged due to compatibility reasons.", actualReason),
+                                        PythonUtils.TS_ENCODING));
                     }
-                } else {
-                    useNative = false;
                 }
                 if (useNative) {
                     context.ensureNFILanguage(node, "NativeModules", "true");
@@ -865,7 +894,7 @@ public final class CApiContext extends CExtContext {
                     Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
                     Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
                     try {
-                        cApiContext.addNativeFinalizer(env, finalizingPointer);
+                        cApiContext.addNativeFinalizer(context, finalizingPointer);
                         cApiContext.runBackgroundGCTask(context);
                     } catch (RuntimeException e) {
                         // This can happen when other languages restrict multithreading
@@ -898,14 +927,16 @@ public final class CApiContext extends CExtContext {
      * We need to do it in a VM shutdown hook to make sure C atexit won't crash even if our context
      * finalization didn't run.
      */
-    private void addNativeFinalizer(Env env, Object finalizingPointerObj) {
-        final Unsafe unsafe = getContext().getUnsafe();
+    private void addNativeFinalizer(PythonContext context, Object finalizingPointerObj) {
+        final Unsafe unsafe = context.getUnsafe();
         InteropLibrary lib = InteropLibrary.getUncached(finalizingPointerObj);
         if (!lib.isNull(finalizingPointerObj) && lib.isPointer(finalizingPointerObj)) {
             try {
                 long finalizingPointer = lib.asPointer(finalizingPointerObj);
+                // We are writing off heap memory and registering a VM shutdown hook, there is no
+                // point in creating this thread via Truffle sandbox at this point
                 nativeFinalizerRunnable = () -> unsafe.putInt(finalizingPointer, 1);
-                nativeFinalizerShutdownHook = env.newTruffleThreadBuilder(nativeFinalizerRunnable).build();
+                nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
                 Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
             } catch (UnsupportedMessageException e) {
                 throw new RuntimeException(e);
@@ -946,14 +977,16 @@ public final class CApiContext extends CExtContext {
     @SuppressWarnings("try")
     public void finalizeCApi() {
         CompilerAsserts.neverPartOfCompilation();
-        HandleContext handleContext = getContext().nativeContext;
+        PythonContext context = getContext();
+        HandleContext handleContext = context.nativeContext;
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
+            context.killSystemThread(backgroundGCTaskThread);
             try {
-                backgroundGCTaskThread.interrupt();
-                backgroundGCTaskThread.join();
+                backgroundGCTaskThread.join(10);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                LOGGER.finest("got interrupt while joining GC thread before cleaning up C API state");
             }
+            backgroundGCTaskThread = null;
         }
 
         /*

@@ -51,8 +51,8 @@ class JList:
     def append(self, value):
         self.add(value)
 
-    def __getitem__(self, item):
-        return self.get(item)
+    # def __getitem__(self, item):
+    #     return self.get(item)
 
     def get_value(self):
         return sum(self)

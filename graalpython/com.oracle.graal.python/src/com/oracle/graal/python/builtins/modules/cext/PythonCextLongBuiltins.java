@@ -483,4 +483,13 @@ public final class PythonCextLongBuiltins {
             return fromByteArray.execute(inliningTarget, bytes, littleEndian != 0, signed != 0);
         }
     }
+
+    @CApiBuiltin(ret = SIZE_T, args = {PyObject}, call = Direct)
+    abstract static class _PyLong_NumBits extends CApiUnaryBuiltinNode {
+        @Specialization
+        static long numBits(Object obj,
+                        @Cached IntBuiltins.BitLengthNode bitLengthNode) {
+            return bitLengthNode.execute(obj);
+        }
+    }
 }

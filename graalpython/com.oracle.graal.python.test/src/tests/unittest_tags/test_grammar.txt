@@ -1,77 +1,77 @@
-test.test_grammar.GrammarTests.test_additive_ops
-test.test_grammar.GrammarTests.test_annotations_inheritance
-test.test_grammar.GrammarTests.test_assert
-test.test_grammar.GrammarTests.test_assert_failures
-test.test_grammar.GrammarTests.test_assert_syntax_warnings
-test.test_grammar.GrammarTests.test_assert_warning_promotes_to_syntax_error
-test.test_grammar.GrammarTests.test_async_await
-test.test_grammar.GrammarTests.test_async_for
-test.test_grammar.GrammarTests.test_async_with
-test.test_grammar.GrammarTests.test_atoms
-test.test_grammar.GrammarTests.test_binary_mask_ops
-test.test_grammar.GrammarTests.test_break_continue_loop
-test.test_grammar.GrammarTests.test_break_in_finally
-test.test_grammar.GrammarTests.test_break_in_finally_after_return
-test.test_grammar.GrammarTests.test_break_stmt
-test.test_grammar.GrammarTests.test_classdef
-test.test_grammar.GrammarTests.test_comparison
-test.test_grammar.GrammarTests.test_comparison_is_literal
-test.test_grammar.GrammarTests.test_comprehension_specials
-test.test_grammar.GrammarTests.test_continue_in_finally
-test.test_grammar.GrammarTests.test_continue_in_finally_after_return
-test.test_grammar.GrammarTests.test_continue_stmt
-test.test_grammar.GrammarTests.test_del_stmt
-test.test_grammar.GrammarTests.test_dictcomps
-test.test_grammar.GrammarTests.test_eval_input
-test.test_grammar.GrammarTests.test_expr_stmt
-test.test_grammar.GrammarTests.test_for
-test.test_grammar.GrammarTests.test_former_statements_refer_to_builtins
-test.test_grammar.GrammarTests.test_funcdef
-test.test_grammar.GrammarTests.test_genexps
-test.test_grammar.GrammarTests.test_global
-test.test_grammar.GrammarTests.test_if
-test.test_grammar.GrammarTests.test_if_else_expr
-test.test_grammar.GrammarTests.test_import
-test.test_grammar.GrammarTests.test_lambdef
-test.test_grammar.GrammarTests.test_listcomps
-test.test_grammar.GrammarTests.test_matrix_mul
-test.test_grammar.GrammarTests.test_multiplicative_ops
-test.test_grammar.GrammarTests.test_nonlocal
-test.test_grammar.GrammarTests.test_paren_evaluation
-test.test_grammar.GrammarTests.test_pass_stmt
-test.test_grammar.GrammarTests.test_raise
-test.test_grammar.GrammarTests.test_return
-test.test_grammar.GrammarTests.test_return_in_finally
-test.test_grammar.GrammarTests.test_selectors
-test.test_grammar.GrammarTests.test_shift_ops
-test.test_grammar.GrammarTests.test_simple_stmt
-test.test_grammar.GrammarTests.test_suite
-test.test_grammar.GrammarTests.test_test
-test.test_grammar.GrammarTests.test_try
-test.test_grammar.GrammarTests.test_unary_ops
-test.test_grammar.GrammarTests.test_var_annot_basic_semantics
-test.test_grammar.GrammarTests.test_var_annot_basics
-test.test_grammar.GrammarTests.test_var_annot_custom_maps
-test.test_grammar.GrammarTests.test_var_annot_in_module
-test.test_grammar.GrammarTests.test_var_annot_metaclass_semantics
-test.test_grammar.GrammarTests.test_var_annot_module_semantics
-test.test_grammar.GrammarTests.test_var_annot_refleak
-test.test_grammar.GrammarTests.test_var_annot_rhs
-test.test_grammar.GrammarTests.test_var_annot_simple_exec
-test.test_grammar.GrammarTests.test_var_annot_syntax_errors
-test.test_grammar.GrammarTests.test_warn_missed_comma
-test.test_grammar.GrammarTests.test_while
-test.test_grammar.GrammarTests.test_with_statement
-test.test_grammar.GrammarTests.test_yield
-test.test_grammar.GrammarTests.test_yield_in_comprehensions
-test.test_grammar.TokenTests.test_backslash
-test.test_grammar.TokenTests.test_bad_numerical_literals
-test.test_grammar.TokenTests.test_ellipsis
-test.test_grammar.TokenTests.test_end_of_numerical_literals
-test.test_grammar.TokenTests.test_eof_error
-test.test_grammar.TokenTests.test_float_exponent_tokenization
-test.test_grammar.TokenTests.test_floats
-test.test_grammar.TokenTests.test_long_integers
-test.test_grammar.TokenTests.test_plain_integers
-test.test_grammar.TokenTests.test_string_literals
-test.test_grammar.TokenTests.test_underscore_literals
+test.test_grammar.GrammarTests.test_additive_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_annotations_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_assert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_assert_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_assert_syntax_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_assert_warning_promotes_to_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_async_await @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_async_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_async_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_atoms @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_binary_mask_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_break_continue_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_break_in_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_break_in_finally_after_return @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_break_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_classdef @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_comparison_is_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_comprehension_specials @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_continue_in_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_continue_in_finally_after_return @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_continue_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_del_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_dictcomps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_eval_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_expr_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_former_statements_refer_to_builtins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_funcdef @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_genexps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_global @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_if @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_if_else_expr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_lambdef @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_listcomps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_matrix_mul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_multiplicative_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_nonlocal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_paren_evaluation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_pass_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_raise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_return @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_return_in_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_selectors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_shift_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_simple_stmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_suite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_try @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_unary_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_basic_semantics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_custom_maps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_in_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_metaclass_semantics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_module_semantics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_refleak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_rhs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_simple_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_var_annot_syntax_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_warn_missed_comma @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_while @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_with_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_yield @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_yield_in_comprehensions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_backslash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_bad_numerical_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_ellipsis @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_end_of_numerical_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_eof_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_float_exponent_tokenization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_long_integers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_plain_integers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_string_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.TokenTests.test_underscore_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -1,26 +1,24 @@
-test.test_linecache.BadUnicode.test_getline
-test.test_linecache.BadUnicode.test_getlines
-test.test_linecache.BadUnicode_NoDeclaration.test_getline
-test.test_linecache.BadUnicode_NoDeclaration.test_getlines
-test.test_linecache.BadUnicode_WithDeclaration.test_getline
-test.test_linecache.BadUnicode_WithDeclaration.test_getlines
-test.test_linecache.EmptyFile.test_getline
-test.test_linecache.EmptyFile.test_getlines
-test.test_linecache.GoodUnicode.test_getline
-test.test_linecache.GoodUnicode.test_getlines
-test.test_linecache.LineCacheInvalidationTests.test_checkcache_for_deleted_file
-test.test_linecache.LineCacheInvalidationTests.test_checkcache_for_modified_file
-test.test_linecache.LineCacheInvalidationTests.test_checkcache_with_no_parameter
-test.test_linecache.LineCacheTests.test_checkcache
-test.test_linecache.LineCacheTests.test_clearcache
-test.test_linecache.LineCacheTests.test_getline
-test.test_linecache.LineCacheTests.test_lazycache_already_cached
-test.test_linecache.LineCacheTests.test_lazycache_bad_filename
-test.test_linecache.LineCacheTests.test_lazycache_check
-test.test_linecache.LineCacheTests.test_lazycache_no_globals
-test.test_linecache.LineCacheTests.test_lazycache_provide_after_failed_lookup
-test.test_linecache.LineCacheTests.test_lazycache_smoke
-test.test_linecache.LineCacheTests.test_memoryerror
-test.test_linecache.LineCacheTests.test_no_ending_newline
-test.test_linecache.SingleEmptyLine.test_getline
-test.test_linecache.SingleEmptyLine.test_getlines
+test.test_linecache.BadUnicode_NoDeclaration.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.BadUnicode_NoDeclaration.test_getlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.BadUnicode_WithDeclaration.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.BadUnicode_WithDeclaration.test_getlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.EmptyFile.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.EmptyFile.test_getlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.GoodUnicode.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.GoodUnicode.test_getlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheInvalidationTests.test_checkcache_for_deleted_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheInvalidationTests.test_checkcache_for_modified_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheInvalidationTests.test_checkcache_with_no_parameter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_checkcache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_clearcache @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_lazycache_already_cached @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_lazycache_bad_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_lazycache_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_lazycache_no_globals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_lazycache_provide_after_failed_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_lazycache_smoke @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_memoryerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.LineCacheTests.test_no_ending_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.SingleEmptyLine.test_getline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_linecache.SingleEmptyLine.test_getlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

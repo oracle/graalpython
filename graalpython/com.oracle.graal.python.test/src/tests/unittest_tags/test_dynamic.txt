@@ -1,11 +1,11 @@
-test.test_dynamic.RebindBuiltinsTests.test_cannot_change_globals_or_builtins_with_eval
-test.test_dynamic.RebindBuiltinsTests.test_cannot_change_globals_or_builtins_with_exec
-test.test_dynamic.RebindBuiltinsTests.test_cannot_replace_builtins_dict_between_calls
-test.test_dynamic.RebindBuiltinsTests.test_cannot_replace_builtins_dict_while_active
-test.test_dynamic.RebindBuiltinsTests.test_eval_gives_lambda_custom_globals
-test.test_dynamic.RebindBuiltinsTests.test_globals_shadow_builtins
-test.test_dynamic.RebindBuiltinsTests.test_load_global_specialization_failure_keeps_oparg
-test.test_dynamic.RebindBuiltinsTests.test_modify_builtins
-test.test_dynamic.RebindBuiltinsTests.test_modify_builtins_from_leaf_function
-test.test_dynamic.RebindBuiltinsTests.test_modify_builtins_while_generator_active
-test.test_dynamic.TestTracing.test_after_specialization
+test.test_dynamic.RebindBuiltinsTests.test_cannot_change_globals_or_builtins_with_eval @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_cannot_change_globals_or_builtins_with_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_cannot_replace_builtins_dict_between_calls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_cannot_replace_builtins_dict_while_active @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_eval_gives_lambda_custom_globals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_globals_shadow_builtins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_load_global_specialization_failure_keeps_oparg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_modify_builtins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_modify_builtins_from_leaf_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.RebindBuiltinsTests.test_modify_builtins_while_generator_active @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_dynamic.TestTracing.test_after_specialization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

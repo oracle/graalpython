@@ -42,15 +42,21 @@ package org.graalvm.python.dsl;
 
 import org.gradle.api.Action;
 import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Nested;
 
 public interface GraalPyExtension {
+    /**
+     * Tells whether to use the community version.
+     *
+     * @return {@code true} if the community artifacts should be used, default is false
+     */
+    Property<Boolean> getCommunity();
 
     /**
-     * External directory supposed to be populated with python resources, namely graalpy stdlib and venv.
-     * It is either present or not.
+     * External directory supposed to be populated with python resources, namely graalpy stdlib and
+     * venv. It is either present or not.
      */
     DirectoryProperty getPythonResourcesDirectory();
 
@@ -65,8 +71,12 @@ public interface GraalPyExtension {
     @Nested
     PythonHomeInfo getPythonHome();
 
+    /**
+     * Configures the PythonHome object using provided closure. This provides support for closure
+     * based configuration, i.e.: {@code pythonHome { ... }}.
+     */
+    @SuppressWarnings("unused")
     default void pythonHome(Action<? super PythonHomeInfo> action) {
         action.execute(getPythonHome());
     }
-
 }

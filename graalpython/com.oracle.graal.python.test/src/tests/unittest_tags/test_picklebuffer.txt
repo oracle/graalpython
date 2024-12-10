@@ -1,9 +1,8 @@
-test.test_picklebuffer.PickleBufferTest.test_basics
-test.test_picklebuffer.PickleBufferTest.test_constructor_failure
-test.test_picklebuffer.PickleBufferTest.test_cycle
-test.test_picklebuffer.PickleBufferTest.test_ndarray_2d
-test.test_picklebuffer.PickleBufferTest.test_raw
-test.test_picklebuffer.PickleBufferTest.test_raw_ndarray
-test.test_picklebuffer.PickleBufferTest.test_raw_non_contiguous
-test.test_picklebuffer.PickleBufferTest.test_raw_released
-test.test_picklebuffer.PickleBufferTest.test_release
+test.test_picklebuffer.PickleBufferTest.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_picklebuffer.PickleBufferTest.test_constructor_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_picklebuffer.PickleBufferTest.test_ndarray_2d @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_picklebuffer.PickleBufferTest.test_raw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_picklebuffer.PickleBufferTest.test_raw_ndarray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_picklebuffer.PickleBufferTest.test_raw_non_contiguous @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_picklebuffer.PickleBufferTest.test_raw_released @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_picklebuffer.PickleBufferTest.test_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

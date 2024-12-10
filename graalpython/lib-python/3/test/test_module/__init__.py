@@ -124,7 +124,9 @@ a = A(destroyed)"""
         self.assertIs(wr(), m)
         del m
         gc_collect()
-        self.assertIs(wr(), None)
+        # GraalPy change
+        if sys.implementation.name != 'graalpy':
+            self.assertIs(wr(), None)
 
     def test_module_getattr(self):
         import test.test_module.good_getattr as gga

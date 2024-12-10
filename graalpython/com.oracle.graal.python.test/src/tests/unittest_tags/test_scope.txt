@@ -1,40 +1,36 @@
-test.test_scope.ScopeTests.testBoundAndFree
-test.test_scope.ScopeTests.testCellIsArgAndEscapes
-test.test_scope.ScopeTests.testCellIsKwonlyArg
-test.test_scope.ScopeTests.testCellIsLocalAndEscapes
-test.test_scope.ScopeTests.testCellLeak
-test.test_scope.ScopeTests.testClassAndGlobal
-test.test_scope.ScopeTests.testClassNamespaceOverridesClosure
-test.test_scope.ScopeTests.testComplexDefinitions
-test.test_scope.ScopeTests.testEvalExecFreeVars
-test.test_scope.ScopeTests.testEvalFreeVars
-test.test_scope.ScopeTests.testExtraNesting
-test.test_scope.ScopeTests.testFreeVarInMethod
-test.test_scope.ScopeTests.testFreeingCell
-test.test_scope.ScopeTests.testGlobalInParallelNestedFunctions
-test.test_scope.ScopeTests.testInteractionWithTraceFunc
-test.test_scope.ScopeTests.testLambdas
-test.test_scope.ScopeTests.testLeaks
-test.test_scope.ScopeTests.testListCompLocalVars
-test.test_scope.ScopeTests.testLocalsClass
-test.test_scope.ScopeTests.testLocalsClass_WithTrace
-test.test_scope.ScopeTests.testLocalsFunction
-test.test_scope.ScopeTests.testMixedFreevarsAndCellvars
-test.test_scope.ScopeTests.testNearestEnclosingScope
-test.test_scope.ScopeTests.testNestedNonLocal
-test.test_scope.ScopeTests.testNestingGlobalNoFree
-test.test_scope.ScopeTests.testNestingPlusFreeRefToGlobal
-test.test_scope.ScopeTests.testNestingThroughClass
-test.test_scope.ScopeTests.testNonLocalClass
-test.test_scope.ScopeTests.testNonLocalFunction
-test.test_scope.ScopeTests.testNonLocalGenerator
-test.test_scope.ScopeTests.testNonLocalMethod
-test.test_scope.ScopeTests.testRecursion
-test.test_scope.ScopeTests.testScopeOfGlobalStmt
-test.test_scope.ScopeTests.testSimpleAndRebinding
-test.test_scope.ScopeTests.testSimpleNesting
-test.test_scope.ScopeTests.testTopIsNotSignificant
-test.test_scope.ScopeTests.testUnboundLocal
-test.test_scope.ScopeTests.testUnboundLocal_AfterDel
-test.test_scope.ScopeTests.testUnboundLocal_AugAssign
-test.test_scope.ScopeTests.testUnoptimizedNamespaces
+test.test_scope.ScopeTests.testBoundAndFree @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testCellIsArgAndEscapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testCellIsKwonlyArg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testCellIsLocalAndEscapes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testClassAndGlobal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testClassNamespaceOverridesClosure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testComplexDefinitions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testEvalExecFreeVars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testEvalFreeVars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testExtraNesting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testFreeVarInMethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testFreeingCell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testGlobalInParallelNestedFunctions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testLambdas @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testListCompLocalVars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testLocalsClass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testLocalsFunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testMixedFreevarsAndCellvars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNearestEnclosingScope @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNestedNonLocal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNestingGlobalNoFree @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNestingPlusFreeRefToGlobal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNestingThroughClass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNonLocalClass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNonLocalFunction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNonLocalGenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testNonLocalMethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testRecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testScopeOfGlobalStmt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testSimpleAndRebinding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testSimpleNesting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testTopIsNotSignificant @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testUnboundLocal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testUnboundLocal_AfterDel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testUnboundLocal_AugAssign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_scope.ScopeTests.testUnoptimizedNamespaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

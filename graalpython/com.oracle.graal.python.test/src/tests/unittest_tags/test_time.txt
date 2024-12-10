@@ -1,55 +1,35 @@
-test.test_time.TestAsctime4dyear.test_large_year
-test.test_time.TestAsctime4dyear.test_negative
-test.test_time.TestAsctime4dyear.test_year
-test.test_time.TestCPyTime.test_AsMicroseconds
-test.test_time.TestCPyTime.test_AsMilliseconds
-test.test_time.TestCPyTime.test_AsSecondsDouble
-test.test_time.TestCPyTime.test_AsTimespec
-test.test_time.TestCPyTime.test_AsTimespec_clamp
-test.test_time.TestCPyTime.test_AsTimeval
-test.test_time.TestCPyTime.test_AsTimeval_clamp
-test.test_time.TestCPyTime.test_FromSeconds
-test.test_time.TestCPyTime.test_FromSecondsObject
-test.test_time.TestLocale.test_bug_3061
-test.test_time.TestOldPyTime.test_object_to_time_t
-test.test_time.TestOldPyTime.test_object_to_timespec
-test.test_time.TestOldPyTime.test_object_to_timeval
-test.test_time.TestPytime.test_localtime_timezone
-test.test_time.TestPytime.test_short_times
-test.test_time.TestStrftime4dyear.test_large_year
-test.test_time.TestStrftime4dyear.test_negative
-test.test_time.TestStrftime4dyear.test_year
-test.test_time.TestTimeWeaklinking.test_clock_functions
-test.test_time.TimeTestCase.test_asctime
-test.test_time.TimeTestCase.test_asctime_bounding_check
-test.test_time.TimeTestCase.test_clock_getres
-test.test_time.TimeTestCase.test_clock_monotonic
-test.test_time.TimeTestCase.test_clock_realtime
-test.test_time.TimeTestCase.test_clock_settime
-test.test_time.TimeTestCase.test_conversions
-test.test_time.TimeTestCase.test_ctime
-test.test_time.TimeTestCase.test_ctime_without_arg
-test.test_time.TimeTestCase.test_data_attributes
-test.test_time.TimeTestCase.test_default_values_for_zero
-test.test_time.TimeTestCase.test_epoch
-test.test_time.TimeTestCase.test_get_clock_info
-test.test_time.TimeTestCase.test_gmtime_without_arg
-test.test_time.TimeTestCase.test_insane_timestamps
-test.test_time.TimeTestCase.test_localtime_failure
-test.test_time.TimeTestCase.test_localtime_without_arg
-test.test_time.TimeTestCase.test_mktime
-test.test_time.TimeTestCase.test_mktime_error
-test.test_time.TimeTestCase.test_monotonic
-test.test_time.TimeTestCase.test_monotonic_settime
-test.test_time.TimeTestCase.test_perf_counter
-test.test_time.TimeTestCase.test_process_time
-test.test_time.TimeTestCase.test_pthread_getcpuclockid
-test.test_time.TimeTestCase.test_sleep
-test.test_time.TimeTestCase.test_strftime
-test.test_time.TimeTestCase.test_strftime_bounding_check
-test.test_time.TimeTestCase.test_strftime_format_check
-test.test_time.TimeTestCase.test_strptime_bytes
-test.test_time.TimeTestCase.test_strptime_exception_context
-test.test_time.TimeTestCase.test_thread_time
-test.test_time.TimeTestCase.test_time
-test.test_time.TimeTestCase.test_time_ns_type
+test.test_time.TestAsctime4dyear.test_large_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TestAsctime4dyear.test_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TestAsctime4dyear.test_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TestLocale.test_bug_3061 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TestPytime.test_localtime_timezone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TestPytime.test_short_times @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TestPytime.test_strptime_timezone @ darwin-arm64,darwin-x86_64,win32-AMD64
+test.test_time.TestStrftime4dyear.test_large_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TestStrftime4dyear.test_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TestStrftime4dyear.test_year @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_asctime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_asctime_bounding_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_conversions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_ctime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_ctime_without_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_data_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_default_values_for_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_epoch @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_get_clock_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_insane_timestamps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_mktime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_mktime_error @ darwin-arm64,darwin-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_monotonic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_perf_counter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_process_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_sleep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_strftime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_strftime_bounding_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_strftime_format_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_strptime @ darwin-arm64,darwin-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_strptime_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_strptime_exception_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_thread_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_time @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_time.TimeTestCase.test_time_ns_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

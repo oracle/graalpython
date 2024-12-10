@@ -1,2 +1,2 @@
-test.test_generator_stop.TestPEP479.test_stopiteration_wrapping
-test.test_generator_stop.TestPEP479.test_stopiteration_wrapping_context
+test.test_generator_stop.TestPEP479.test_stopiteration_wrapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_generator_stop.TestPEP479.test_stopiteration_wrapping_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

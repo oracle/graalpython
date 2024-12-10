@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,18 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.benchmarks.interop;
+package com.oracle.graal.python.benchmarks.jmh;
 
+import java.util.concurrent.TimeUnit;
+
+import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.IOAccess;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
 
-public class PyEuler11 extends BenchRunner {
-
-    @Param({"1000"}) public int arg1;
-
+/**
+ * PyEuler11 benchmark rewritten as mix of Python and Java. Exercises following interop: function
+ * call with 2 positional primitive arguments, and array reads.
+ */
+@State(Scope.Benchmark)
+@Warmup(iterations = 5, time = 5)
+@Measurement(iterations = 5, time = 5)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@BenchmarkMode(Mode.AverageTime)
+public class PyEuler11Benchmark {
+    private Context context;
     private Value sub_list1;
     private Value sub_list2;
     private Value sub_list3;
@@ -58,7 +75,7 @@ public class PyEuler11 extends BenchRunner {
 
     @Setup
     public void setup() {
-        System.out.println("### setup ...");
+        this.context = Context.newBuilder().allowIO(IOAccess.ALL).build();
         this.sub_list1 = this.context.eval("python", "def sub_list1(nums, row, col): return list(nums[i][col] for i in range(row, row+4))\nsub_list1");
         this.sub_list2 = this.context.eval("python", "def sub_list2(nums, row, col): return list(nums[row][i] for i in range(col, col+4))\nsub_list2");
         this.sub_list3 = this.context.eval("python", "def sub_list3(nums, row, col): return list(nums[row+i][col+i] for i in range(0, 4))\nsub_list3");
@@ -84,18 +101,35 @@ public class PyEuler11 extends BenchRunner {
                         "[20,69,36,41,72,30,23,88,34,62,99,69,82,67,59,85,74, 4,36,16,],\n" +
                         "[20,73,35,29,78,31,90, 1,74,31,49,71,48,86,81,16,23,57, 5,54,],\n" +
                         "[ 1,70,54,71,83,51,54,69,16,92,33,48,61,43,52, 1,89,19,67,48,],\n" +
+                        "[ 1,70,54,71,83,51,54,69,16,92,33,48,61,43,52, 1,89,19,67,48,],\n" +
+                        "[ 4,42,16,73,38,25,39,11,24,94,72,18, 8,46,29,32,40,62,76,36,],\n" +
+                        "[32,98,81,28,64,23,67,10,26,38,40,67,59,54,70,66,18,38,64,70,],\n" +
+                        "[32,98,81,28,64,23,67,10,26,38,40,67,59,54,70,66,18,38,64,70,],\n" +
+                        "[22,31,16,71,51,67,63,89,41,92,36,54,22,40,40,28,66,33,13,80,],\n" +
+                        "[20,69,36,41,72,30,23,88,34,62,99,69,82,67,59,85,74, 4,36,16,],\n" +
+                        "[52,70,95,23, 4,60,11,42,69,24,68,56, 1,32,56,71,37, 2,36,91,],\n" +
+                        "[22,31,16,71,51,67,63,89,41,92,36,54,22,40,40,28,66,33,13,80,],\n" +
+                        "[ 4,42,16,73,38,25,39,11,24,94,72,18, 8,46,29,32,40,62,76,36,],\n" +
+                        "[88,36,68,87,57,62,20,72, 3,46,33,67,46,55,12,32,63,93,53,69,],\n" +
+                        "[20,69,36,41,72,30,23,88,34,62,99,69,82,67,59,85,74, 4,36,16,],\n" +
+                        "[78,17,53,28,22,75,31,67,15,94, 3,80, 4,62,16,14, 9,53,56,92,],\n" +
+                        "[ 4,52, 8,83,97,35,99,16, 7,97,57,32,16,26,26,79,33,27,98,66,],\n" +
+                        "[52,70,95,23, 4,60,11,42,69,24,68,56, 1,32,56,71,37, 2,36,91,],\n" +
+                        "[ 4,42,16,73,38,25,39,11,24,94,72,18, 8,46,29,32,40,62,76,36,],\n" +
+                        "[88,36,68,87,57,62,20,72, 3,46,33,67,46,55,12,32,63,93,53,69,],\n" +
+                        "[78,17,53,28,22,75,31,67,15,94, 3,80, 4,62,16,14, 9,53,56,92,],\n" +
                         "]");
     }
 
-    @Benchmark
-    public int euler11(Blackhole bh) {
-        for (int i = 0; i < arg1; i++) {
-            bh.consume(solve());
-        }
+    @TearDown
+    public void tearDown() {
+        context.close(true);
+        context = null;
+    }
 
-        int max = solve();
-        System.out.println("max: " + max);
-        return max;
+    @Benchmark
+    public int euler11() {
+        return solve();
     }
 
     private int solve() {
@@ -124,12 +158,12 @@ public class PyEuler11 extends BenchRunner {
     private static int product(Value seq) {
         int n = 1;
         for (int i = 0; i < seq.getArraySize(); i++) {
-            n *= geti(seq, i);
+            n *= seq.getArrayElement(i).asInt();
         }
         return n;
     }
 
     private Value call(Value func, int row, int col) {
-        return func.execute(NUMS, context.asValue(row), context.asValue(col));
+        return func.execute(NUMS, row, col);
     }
 }

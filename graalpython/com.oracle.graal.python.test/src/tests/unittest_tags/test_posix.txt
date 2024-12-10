@@ -1,174 +1,47 @@
-test.test_posix.PosixGroupsTester.test_initgroups
-test.test_posix.PosixGroupsTester.test_setgroups
-test.test_posix.PosixTester.testNoArgFunctions
-test.test_posix.PosixTester.test_access
-test.test_posix.PosixTester.test_access_dir_fd
-test.test_posix.PosixTester.test_chdir
-test.test_posix.PosixTester.test_chflags
-test.test_posix.PosixTester.test_chmod_dir_fd
-test.test_posix.PosixTester.test_chown
-test.test_posix.PosixTester.test_chown_dir_fd
-test.test_posix.PosixTester.test_cld_xxxx_constants
-test.test_posix.PosixTester.test_confstr
-test.test_posix.PosixTester.test_dup
-test.test_posix.PosixTester.test_dup2
-test.test_posix.PosixTester.test_environ
-test.test_posix.PosixTester.test_fchown
-test.test_posix.PosixTester.test_fexecve
-test.test_posix.PosixTester.test_fs_holes
-test.test_posix.PosixTester.test_fstat
-test.test_posix.PosixTester.test_fstatvfs
-test.test_posix.PosixTester.test_ftruncate
-test.test_posix.PosixTester.test_get_and_set_scheduler_and_param
-test.test_posix.PosixTester.test_getcwd_long_pathnames
-test.test_posix.PosixTester.test_getgrouplist
-test.test_posix.PosixTester.test_getgroups
-test.test_posix.PosixTester.test_getresgid
-test.test_posix.PosixTester.test_getresuid
-test.test_posix.PosixTester.test_initgroups
-test.test_posix.PosixTester.test_lchflags_regular_file
-test.test_posix.PosixTester.test_lchflags_symlink
-test.test_posix.PosixTester.test_lchown
-test.test_posix.PosixTester.test_link_dir_fd
-test.test_posix.PosixTester.test_listdir
-test.test_posix.PosixTester.test_listdir_bytes
-test.test_posix.PosixTester.test_listdir_bytes_like
-test.test_posix.PosixTester.test_listdir_default
-test.test_posix.PosixTester.test_listdir_fd
-test.test_posix.PosixTester.test_lockf
-test.test_posix.PosixTester.test_makedev
-test.test_posix.PosixTester.test_mkdir_dir_fd
-test.test_posix.PosixTester.test_mkfifo
-test.test_posix.PosixTester.test_mkfifo_dir_fd
-test.test_posix.PosixTester.test_mknod
-test.test_posix.PosixTester.test_mknod_dir_fd
-test.test_posix.PosixTester.test_open_dir_fd
-test.test_posix.PosixTester.test_oscloexec
-test.test_posix.PosixTester.test_osexlock
-test.test_posix.PosixTester.test_osshlock
-test.test_posix.PosixTester.test_path_error2
-test.test_posix.PosixTester.test_path_with_null_byte
-test.test_posix.PosixTester.test_path_with_null_character
-test.test_posix.PosixTester.test_pidfd_open
-test.test_posix.PosixTester.test_pipe
-test.test_posix.PosixTester.test_pipe2
-test.test_posix.PosixTester.test_pipe2_c_limits
-test.test_posix.PosixTester.test_posix_fadvise
-test.test_posix.PosixTester.test_posix_fadvise_errno
-test.test_posix.PosixTester.test_posix_fallocate
-test.test_posix.PosixTester.test_posix_fallocate_errno
-test.test_posix.PosixTester.test_pread
-test.test_posix.PosixTester.test_preadv
-test.test_posix.PosixTester.test_preadv_flags
-test.test_posix.PosixTester.test_preadv_overflow_32bits
-test.test_posix.PosixTester.test_putenv
-test.test_posix.PosixTester.test_pwrite
-test.test_posix.PosixTester.test_pwritev
-test.test_posix.PosixTester.test_pwritev_flags
-test.test_posix.PosixTester.test_pwritev_overflow_32bits
-test.test_posix.PosixTester.test_readlink_dir_fd
-test.test_posix.PosixTester.test_readv
-test.test_posix.PosixTester.test_readv_overflow_32bits
-test.test_posix.PosixTester.test_register_at_fork
-test.test_posix.PosixTester.test_rename_dir_fd
-test.test_posix.PosixTester.test_rtld_constants
-test.test_posix.PosixTester.test_sched_getaffinity
-test.test_posix.PosixTester.test_sched_priority
-test.test_posix.PosixTester.test_sched_rr_get_interval
-test.test_posix.PosixTester.test_sched_setaffinity
-test.test_posix.PosixTester.test_sched_yield
-test.test_posix.PosixTester.test_setresgid
-test.test_posix.PosixTester.test_setresgid_exception
-test.test_posix.PosixTester.test_setresuid
-test.test_posix.PosixTester.test_setresuid_exception
-test.test_posix.PosixTester.test_stat
-test.test_posix.PosixTester.test_stat_dir_fd
-test.test_posix.PosixTester.test_statvfs
-test.test_posix.PosixTester.test_strerror
-test.test_posix.PosixTester.test_symlink_dir_fd
-test.test_posix.PosixTester.test_truncate
-test.test_posix.PosixTester.test_umask
-test.test_posix.PosixTester.test_unlink_dir_fd
-test.test_posix.PosixTester.test_utime
-test.test_posix.PosixTester.test_utime_dir_fd
-test.test_posix.PosixTester.test_utime_nofollow_symlinks
-test.test_posix.PosixTester.test_utime_with_fd
-test.test_posix.PosixTester.test_waitid
-test.test_posix.PosixTester.test_writev
-test.test_posix.PosixTester.test_writev_overflow_32bits
-test.test_posix.TestMain.test_main
-test.test_posix.TestPosixDirFd.test_access_dir_fd
-test.test_posix.TestPosixDirFd.test_chmod_dir_fd
-test.test_posix.TestPosixDirFd.test_chown_dir_fd
-test.test_posix.TestPosixDirFd.test_link_dir_fd
-test.test_posix.TestPosixDirFd.test_mkdir_dir_fd
-test.test_posix.TestPosixDirFd.test_mkfifo_dir_fd
-test.test_posix.TestPosixDirFd.test_mknod_dir_fd
-test.test_posix.TestPosixDirFd.test_open_dir_fd
-test.test_posix.TestPosixDirFd.test_readlink_dir_fd
-test.test_posix.TestPosixDirFd.test_rename_dir_fd
-test.test_posix.TestPosixDirFd.test_stat_dir_fd
-test.test_posix.TestPosixDirFd.test_symlink_dir_fd
-test.test_posix.TestPosixDirFd.test_unlink_dir_fd
-test.test_posix.TestPosixDirFd.test_utime_dir_fd
-test.test_posix.TestPosixSpawn.test_bad_file_actions
-test.test_posix.TestPosixSpawn.test_close_file
-test.test_posix.TestPosixSpawn.test_dup2
-test.test_posix.TestPosixSpawn.test_empty_file_actions
-test.test_posix.TestPosixSpawn.test_multiple_file_actions
-test.test_posix.TestPosixSpawn.test_no_such_executable
-test.test_posix.TestPosixSpawn.test_none_file_actions
-test.test_posix.TestPosixSpawn.test_open_file
-test.test_posix.TestPosixSpawn.test_resetids
-test.test_posix.TestPosixSpawn.test_resetids_explicit_default
-test.test_posix.TestPosixSpawn.test_resetids_wrong_type
-test.test_posix.TestPosixSpawn.test_returns_pid
-test.test_posix.TestPosixSpawn.test_setpgroup
-test.test_posix.TestPosixSpawn.test_setpgroup_wrong_type
-test.test_posix.TestPosixSpawn.test_setscheduler_only_param
-test.test_posix.TestPosixSpawn.test_setscheduler_with_policy
-test.test_posix.TestPosixSpawn.test_setsid
-test.test_posix.TestPosixSpawn.test_setsigdef
-test.test_posix.TestPosixSpawn.test_setsigdef_wrong_type
-test.test_posix.TestPosixSpawn.test_setsigmask
-test.test_posix.TestPosixSpawn.test_setsigmask_wrong_type
-test.test_posix.TestPosixSpawn.test_specify_environment
-test.test_posix.TestPosixSpawnP.test_bad_file_actions
-test.test_posix.TestPosixSpawnP.test_close_file
-test.test_posix.TestPosixSpawnP.test_dup2
-test.test_posix.TestPosixSpawnP.test_empty_file_actions
-test.test_posix.TestPosixSpawnP.test_multiple_file_actions
-test.test_posix.TestPosixSpawnP.test_no_such_executable
-test.test_posix.TestPosixSpawnP.test_none_file_actions
-test.test_posix.TestPosixSpawnP.test_open_file
-test.test_posix.TestPosixSpawnP.test_posix_spawnp
-test.test_posix.TestPosixSpawnP.test_resetids
-test.test_posix.TestPosixSpawnP.test_resetids_explicit_default
-test.test_posix.TestPosixSpawnP.test_resetids_wrong_type
-test.test_posix.TestPosixSpawnP.test_returns_pid
-test.test_posix.TestPosixSpawnP.test_setpgroup
-test.test_posix.TestPosixSpawnP.test_setpgroup_wrong_type
-test.test_posix.TestPosixSpawnP.test_setscheduler_only_param
-test.test_posix.TestPosixSpawnP.test_setscheduler_with_policy
-test.test_posix.TestPosixSpawnP.test_setsid
-test.test_posix.TestPosixSpawnP.test_setsigdef
-test.test_posix.TestPosixSpawnP.test_setsigdef_wrong_type
-test.test_posix.TestPosixSpawnP.test_setsigmask
-test.test_posix.TestPosixSpawnP.test_setsigmask_wrong_type
-test.test_posix.TestPosixSpawnP.test_specify_environment
-test.test_posix.TestPosixWeaklinking.test_access
-test.test_posix.TestPosixWeaklinking.test_chmod
-test.test_posix.TestPosixWeaklinking.test_chown
-test.test_posix.TestPosixWeaklinking.test_link
-test.test_posix.TestPosixWeaklinking.test_listdir_scandir
-test.test_posix.TestPosixWeaklinking.test_mkdir
-test.test_posix.TestPosixWeaklinking.test_mkfifo
-test.test_posix.TestPosixWeaklinking.test_mknod
-test.test_posix.TestPosixWeaklinking.test_open
-test.test_posix.TestPosixWeaklinking.test_pwritev
-test.test_posix.TestPosixWeaklinking.test_readlink
-test.test_posix.TestPosixWeaklinking.test_rename_replace
-test.test_posix.TestPosixWeaklinking.test_stat
-test.test_posix.TestPosixWeaklinking.test_symlink
-test.test_posix.TestPosixWeaklinking.test_unlink_rmdir
-test.test_posix.TestPosixWeaklinking.test_utime
+test.test_posix.PosixTester.testNoArgFunctions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_access @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_chdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_chown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_dup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_dup2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_environ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_fchown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_fs_holes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_fstat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_fstatvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_ftruncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_getcwd_long_pathnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_getgroups @ linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_lchown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_listdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_listdir_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_listdir_bytes_like @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_listdir_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_listdir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_oscloexec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_osexlock @ darwin-arm64,darwin-x86_64
+test.test_posix.PosixTester.test_osshlock @ darwin-arm64,darwin-x86_64
+test.test_posix.PosixTester.test_path_error2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_path_with_null_byte @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_path_with_null_character @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_putenv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_rtld_constants @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_stat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_statvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_strerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_umask @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_utime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posix.PosixTester.test_utime_nofollow_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.PosixTester.test_utime_with_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_access_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_chmod_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_mkdir_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_open_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_readlink_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_rename_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_stat_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_symlink_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_unlink_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posix.TestPosixDirFd.test_utime_dir_fd @ linux-aarch64,linux-x86_64
