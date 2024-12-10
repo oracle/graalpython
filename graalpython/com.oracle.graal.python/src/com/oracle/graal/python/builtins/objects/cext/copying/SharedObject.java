@@ -41,9 +41,13 @@
 package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.io.TruffleProcessBuilder;
 
 abstract class SharedObject {
     abstract void setId(String newId) throws IOException, InterruptedException;
@@ -64,5 +68,33 @@ abstract class SharedObject {
             default:
                 throw new IOException("Unknown shared object format");
         }
+    }
+
+    protected static final class LoggingOutputStream extends OutputStream {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger("NativeLibraryLocator");
+        private final StringBuffer sb = new StringBuffer();
+
+        @Override
+        public void write(int b) throws IOException {
+            sb.append((char) b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            sb.append(new String(b, off, len));
+        }
+
+        @Override
+        public void flush() throws IOException {
+            LOGGER.fine(() -> sb.toString());
+            sb.setLength(0);
+        }
+    }
+
+    protected static TruffleProcessBuilder newProcessBuilder(PythonContext context) {
+        var pb = context.getEnv().newProcessBuilder();
+        pb.redirectOutput(pb.createRedirectToStream(new LoggingOutputStream()));
+        pb.redirectError(pb.createRedirectToStream(new LoggingOutputStream()));
+        return pb;
     }
 }

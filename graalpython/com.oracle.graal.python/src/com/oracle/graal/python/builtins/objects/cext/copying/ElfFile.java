@@ -82,8 +82,8 @@ final class ElfFile extends SharedObject {
 
     @Override
     public void setId(String newId) throws IOException, InterruptedException {
-        var pb = context.getEnv().newProcessBuilder(getPatchelf(), "--debug", "--set-soname", newId, tempfile.toString());
-        pb.inheritIO(true);
+        var pb = newProcessBuilder(context);
+        pb.command(getPatchelf(), "--debug", "--set-soname", newId, tempfile.toString());
         var proc = pb.start();
         if (proc.waitFor() != 0) {
             throw new IOException("Failed to run `patchelf` command. Make sure you have it on your PATH or installed in your venv.");
@@ -92,8 +92,8 @@ final class ElfFile extends SharedObject {
 
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
-        var pb = context.getEnv().newProcessBuilder(getPatchelf(), "--debug", "--remove-needed", oldName, tempfile.toString());
-        pb.inheritIO(true);
+        var pb = newProcessBuilder(context);
+        pb.command(getPatchelf(), "--debug", "--remove-needed", oldName, tempfile.toString());
         var proc = pb.start();
         if (proc.waitFor() != 0) {
             throw new IOException("Failed to run `patchelf` command. Make sure you have it on your PATH or installed in your venv.");

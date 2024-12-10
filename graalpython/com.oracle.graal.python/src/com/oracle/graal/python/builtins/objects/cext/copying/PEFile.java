@@ -74,11 +74,11 @@ final class PEFile extends SharedObject {
 
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
-        var pb = context.getEnv().newProcessBuilder(context.getOption(PythonOptions.Executable).toJavaStringUncached(),
+        var pb = newProcessBuilder(context);
+        pb.command(context.getOption(PythonOptions.Executable).toJavaStringUncached(),
                         "-m", "machomachomangler.cmd.redll",
                         tempfile.toString(), tempfile.toString(),
                         oldName, newName);
-        pb.inheritIO(true);
         var proc = pb.start();
         if (proc.waitFor() != 0) {
             throw new IOException("Failed to run `machomachomangler` to copy required DLL. Make sure you have it installed in your venv.");
