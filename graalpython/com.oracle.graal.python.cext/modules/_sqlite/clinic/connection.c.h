@@ -150,8 +150,15 @@ static PyObject *
 pysqlite_connection_cursor(pysqlite_Connection *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"factory", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "cursor", 0};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "cursor",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
     PyObject *argsbuf[1];
     Py_ssize_t noptargs = nargs + (kwnames ? PyTuple_GET_SIZE(kwnames) : 0) - 0;
     PyObject *factory = NULL;
@@ -200,6 +207,7 @@ blobopen(pysqlite_Connection *self, PyObject *const *args, Py_ssize_t nargs, PyO
 {
     PyObject *return_value = NULL;
     #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"", "", "", "readonly", "name", NULL};
     static _PyArg_Parser _parser = {
         .keywords = _keywords,
@@ -360,6 +368,7 @@ pysqlite_connection_create_function(pysqlite_Connection *self, PyTypeObject *cls
 {
     PyObject *return_value = NULL;
     #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"name", "narg", "func", "deterministic", NULL};
     static _PyArg_Parser _parser = {
         .keywords = _keywords,
@@ -440,6 +449,7 @@ create_window_function(pysqlite_Connection *self, PyTypeObject *cls, PyObject *c
 {
     PyObject *return_value = NULL;
     #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"", "", "", NULL};
     static _PyArg_Parser _parser = {
         .keywords = _keywords,
@@ -1126,6 +1136,7 @@ deserialize(pysqlite_Connection *self, PyObject *const *args, Py_ssize_t nargs, 
 {
     PyObject *return_value = NULL;
     #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"", "name", NULL};
     static _PyArg_Parser _parser = {
         .keywords = _keywords,

@@ -46,6 +46,49 @@ extern void _Py_DecRefTotal(PyInterpreterState *);
     interp->object_state.reftotal--
 #endif
 
+// Increment reference count by n
+static inline void _Py_RefcntAdd(PyObject* op, Py_ssize_t n)
+{
+    if (_Py_IsImmortal(op)) {
+        return;
+    }
+#ifdef Py_REF_DEBUG
+    _Py_AddRefTotal(_PyInterpreterState_GET(), n);
+#endif
+    op->ob_refcnt += n;
+}
+#define _Py_RefcntAdd(op, n) _Py_RefcntAdd(_PyObject_CAST(op), n)
+
+static inline void _Py_SetImmortal(PyObject *op)
+{
+#ifdef Py_DEBUG
+    // For strings, use _PyUnicode_InternImmortal instead.
+    if (PyUnicode_CheckExact(op)) {
+        assert(PyUnicode_CHECK_INTERNED(op) == SSTATE_INTERNED_IMMORTAL
+            || PyUnicode_CHECK_INTERNED(op) == SSTATE_INTERNED_IMMORTAL_STATIC);
+    }
+#endif
+    if (op) {
+        op->ob_refcnt = _Py_IMMORTAL_REFCNT;
+    }
+}
+#define _Py_SetImmortal(op) _Py_SetImmortal(_PyObject_CAST(op))
+
+/* _Py_ClearImmortal() should only be used during runtime finalization. */
+static inline void _Py_ClearImmortal(PyObject *op)
+{
+    if (op) {
+        assert(_Py_IsImmortal(op));
+        op->ob_refcnt = 1;
+        Py_DECREF(op);
+    }
+}
+#define _Py_ClearImmortal(op) \
+    do { \
+        _Py_ClearImmortal(_PyObject_CAST(op)); \
+        op = NULL; \
+    } while (0)
+
 static inline void
 _Py_DECREF_SPECIALIZED(PyObject *op, const destructor destruct)
 {
@@ -76,6 +119,11 @@ _Py_DECREF_NO_DEALLOC(PyObject *op)
     }
 #endif
 }
+
+#ifdef Py_REF_DEBUG
+#  undef _Py_DEC_REFTOTAL
+#endif
+
 
 PyAPI_FUNC(int) _PyType_CheckConsistency(PyTypeObject *type);
 PyAPI_FUNC(int) _PyDict_CheckConsistency(PyObject *mp, int check_content);
@@ -218,12 +266,45 @@ extern void _Py_PrintReferences(PyInterpreterState *, FILE *);
 extern void _Py_PrintReferenceAddresses(PyInterpreterState *, FILE *);
 #endif
 
+
+/* Return the *address* of the object's weaklist.  The address may be
+ * dereferenced to get the current head of the weaklist.  This is useful
+ * for iterating over the linked list of weakrefs, especially when the
+ * list is being modified externally (e.g. refs getting removed).
+ *
+ * The returned pointer should not be used to change the head of the list
+ * nor should it be used to add, remove, or swap any refs in the list.
+ * That is the sole responsibility of the code in weakrefobject.c.
+ */
 static inline PyObject **
 _PyObject_GET_WEAKREFS_LISTPTR(PyObject *op)
 {
+    // Essentially _PyObject_GET_WEAKREFS_LISTPTR_FROM_OFFSET():
     Py_ssize_t offset = Py_TYPE(op)->tp_weaklistoffset;
     return (PyObject **)((char *)op + offset);
 }
+
+/* This is a special case of _PyObject_GET_WEAKREFS_LISTPTR().
+ * Only the most fundamental lookup path is used.
+ * Consequently, static types should not be used.
+ *
+ * For static builtin types the returned pointer will always point
+ * to a NULL tp_weaklist.  This is fine for any deallocation cases,
+ * since static types are never deallocated and static builtin types
+ * are only finalized at the end of runtime finalization.
+ *
+ * If the weaklist for static types is actually needed then use
+ * _PyObject_GET_WEAKREFS_LISTPTR().
+ */
+static inline PyWeakReference **
+_PyObject_GET_WEAKREFS_LISTPTR_FROM_OFFSET(PyObject *op)
+{
+    assert(!PyType_Check(op) ||
+            ((PyTypeObject *)op)->tp_flags & Py_TPFLAGS_HEAPTYPE);
+    Py_ssize_t offset = Py_TYPE(op)->tp_weaklistoffset;
+    return (PyWeakReference **)((char *)op + offset);
+}
+
 
 // Fast inlined version of PyObject_IS_GC()
 static inline int

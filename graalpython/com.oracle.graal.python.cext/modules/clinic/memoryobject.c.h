@@ -22,6 +22,7 @@ memoryview(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
     PyObject *return_value = NULL;
     #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"object", NULL};
     static _PyArg_Parser _parser = {
         .keywords = _keywords,
@@ -40,6 +41,50 @@ memoryview(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     }
     object = fastargs[0];
     return_value = memoryview_impl(type, object);
+
+exit:
+    return return_value;
+}
+
+PyDoc_STRVAR(memoryview__from_flags__doc__,
+"_from_flags($type, /, object, flags)\n"
+"--\n"
+"\n"
+"Create a new memoryview object which references the given object.");
+
+#define MEMORYVIEW__FROM_FLAGS_METHODDEF    \
+    {"_from_flags", _PyCFunction_CAST(memoryview__from_flags), METH_FASTCALL|METH_KEYWORDS|METH_CLASS, memoryview__from_flags__doc__},
+
+static PyObject *
+memoryview__from_flags_impl(PyTypeObject *type, PyObject *object, int flags);
+
+static PyObject *
+memoryview__from_flags(PyTypeObject *type, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    PyObject *return_value = NULL;
+
+    #  define KWTUPLE NULL
+
+    static const char * const _keywords[] = {"object", "flags", NULL};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "_from_flags",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
+    PyObject *argsbuf[2];
+    PyObject *object;
+    int flags;
+
+    args = _PyArg_UnpackKeywords(args, nargs, NULL, kwnames, &_parser, 2, 2, 0, argsbuf);
+    if (!args) {
+        goto exit;
+    }
+    object = args[0];
+    flags = _PyLong_AsInt(args[1]);
+    if (flags == -1 && PyErr_Occurred()) {
+        goto exit;
+    }
 
 exit:
     return return_value;
@@ -81,6 +126,7 @@ memoryview_cast(PyMemoryViewObject *self, PyObject *const *args, Py_ssize_t narg
 {
     PyObject *return_value = NULL;
     #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"format", "shape", NULL};
     static _PyArg_Parser _parser = {
         .keywords = _keywords,
@@ -254,6 +300,7 @@ memoryview_hex(PyMemoryViewObject *self, PyObject *const *args, Py_ssize_t nargs
 {
     PyObject *return_value = NULL;
     #  define KWTUPLE NULL
+
     static const char * const _keywords[] = {"sep", "bytes_per_sep", NULL};
     static _PyArg_Parser _parser = {
         .keywords = _keywords,
