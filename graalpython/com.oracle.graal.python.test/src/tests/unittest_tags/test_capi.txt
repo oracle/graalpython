@@ -111,6 +111,7 @@ test.test_capi.test_misc.Test_testcapi.test_long_as_double @ darwin-arm64,darwin
 test.test_capi.test_misc.Test_testcapi.test_long_as_size_t @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_long_as_unsigned_long_long_mask @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_long_long_and_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64
+test.test_capi.test_misc.Test_testcapi.test_long_numbits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_longlong_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_py_is_funcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_py_is_macros @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -629,7 +629,7 @@ test.test_asyncio.test_ssl.TestSSL.test_start_tls_client_reg_proto_1 @ darwin-ar
 test.test_asyncio.test_ssl.TestSSL.test_start_tls_server_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_ssl.TestSSL.test_start_tls_slow_client_cancel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sslproto.SelectorStartTLSTests.test_buf_feed_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_sslproto.SelectorStartTLSTests.test_create_connection_memory_leak @ darwin-arm64,darwin-x86_64
+test.test_asyncio.test_sslproto.SelectorStartTLSTests.test_create_connection_memory_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sslproto.SelectorStartTLSTests.test_create_connection_ssl_failed_certificate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sslproto.SelectorStartTLSTests.test_create_connection_ssl_slow_handshake @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sslproto.SelectorStartTLSTests.test_handshake_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -726,6 +726,8 @@ test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_create_subproc
 test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_popen_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_popen_error_with_stdin_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_read_stdout_after_process_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# Transiently times out GR-52666
+!test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_shell @ darwin-x86_64,linux-aarch64,linux-x86_64
 !test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_start_new_session
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_cancel_make_subprocess_transport_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_cancel_post_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
