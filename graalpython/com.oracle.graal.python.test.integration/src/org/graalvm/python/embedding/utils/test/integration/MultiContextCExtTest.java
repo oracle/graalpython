@@ -53,6 +53,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -64,12 +66,13 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils.Log;
 import org.junit.Test;
 
 public class MultiContextCExtTest {
-    static final class TestLog implements SubprocessLog, Log {
+    static final class TestLog extends Handler implements SubprocessLog, Log {
         final StringBuilder logCharSequence = new StringBuilder();
         final StringBuilder logThrowable = new StringBuilder();
         final StringBuilder stderr = new StringBuilder();
         final StringBuilder stdout = new StringBuilder();
         final StringBuilder info = new StringBuilder();
+        final StringBuilder truffleLog = new StringBuilder();
 
         static void println(CharSequence... args) {
             if (isVerbose()) {
@@ -101,6 +104,21 @@ public class MultiContextCExtTest {
         public void info(String s) {
             println("[info]", s);
             info.append(s);
+        }
+
+        @Override
+        public void publish(LogRecord record) {
+            var msg = String.format("[%s] %s: %s", record.getLoggerName(), record.getLevel().getName(), String.format(record.getMessage(), record.getParameters()));
+            println(msg);
+            truffleLog.append(msg);
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() {
         }
     }
 
@@ -148,15 +166,15 @@ public class MultiContextCExtTest {
         var log = new TestLog();
         var venv = createVenv(log);
 
-        var engine = Engine.create("python");
+        var engine = Engine.newBuilder("python")
+            .logHandler(log)
+            .build();
         var builder = Context.newBuilder()
             .engine(engine)
             .allowAllAccess(true)
             .option("python.Sha3ModuleBackend", "native")
-            .option("python.ForceImportSite", "true");
-        if (isVerbose()) {
-            builder.option("log.python.level", "FINE");
-        }
+            .option("python.ForceImportSite", "true")
+            .option("log.python.level", "CONFIG");
         var c0 = builder.build();
         c0.initialize("python");
         c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venv.toString()));
@@ -220,14 +238,13 @@ public class MultiContextCExtTest {
             c5.eval(code);
             fail("should not reach here");
         } catch (PolyglotException e) {
-            assertTrue("We need a venv", e.getMessage().contains("relocated module"));
+            assertTrue("We need a venv", e.getMessage().contains("sys.prefix attribute must point to a venv"));
         }
-        // Using a context without isolation in the same process forces LLVM, and then sha3 doesn't work the same
-        try {
-            c0.eval(code);
-        } catch (PolyglotException e) {
-            assertTrue("LLVM mode does not have this", e.getMessage().contains("has no attribute 'implementation'"));
-        }
+        // Using a context without isolation in the same process forces LLVM
+        assertFalse("have not had a context use LLVM, yet", log.truffleLog.toString().contains("as bitcode"));
+        var r0 = c0.eval(code);
+        assertEquals("tiny_sha3", r0.asString());
+        assertTrue("switched to LLVM", log.truffleLog.toString().contains("as bitcode"));
     }
 
     private static boolean isVerbose() {
