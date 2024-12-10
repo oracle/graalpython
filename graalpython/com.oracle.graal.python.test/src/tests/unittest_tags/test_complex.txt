@@ -1,29 +1,29 @@
-test.test_complex.ComplexTest.test___complex__
-test.test_complex.ComplexTest.test_abs
-test.test_complex.ComplexTest.test_boolcontext
-test.test_complex.ComplexTest.test_conjugate
-test.test_complex.ComplexTest.test_constructor
-test.test_complex.ComplexTest.test_constructor_special_numbers
-test.test_complex.ComplexTest.test_divmod
-test.test_complex.ComplexTest.test_divmod_zero_division
-test.test_complex.ComplexTest.test_floordiv
-test.test_complex.ComplexTest.test_floordiv_zero_division
-test.test_complex.ComplexTest.test_format
-test.test_complex.ComplexTest.test_getnewargs
-test.test_complex.ComplexTest.test_hash
-test.test_complex.ComplexTest.test_mod
-test.test_complex.ComplexTest.test_mod_zero_division
-test.test_complex.ComplexTest.test_neg
-test.test_complex.ComplexTest.test_negated_imaginary_literal
-test.test_complex.ComplexTest.test_negative_zero_repr_str
-test.test_complex.ComplexTest.test_overflow
-test.test_complex.ComplexTest.test_plus_minus_0j
-test.test_complex.ComplexTest.test_pow
-test.test_complex.ComplexTest.test_pow_with_small_integer_exponents
-test.test_complex.ComplexTest.test_repr_roundtrip
-test.test_complex.ComplexTest.test_repr_str
-test.test_complex.ComplexTest.test_richcompare
-test.test_complex.ComplexTest.test_richcompare_boundaries
-test.test_complex.ComplexTest.test_truediv
-test.test_complex.ComplexTest.test_truediv_zero_division
-test.test_complex.ComplexTest.test_underscores
+test.test_complex.ComplexTest.test___complex__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_abs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_boolcontext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_conjugate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_constructor_special_numbers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_divmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_divmod_zero_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_floordiv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_floordiv_zero_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_getnewargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_mod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_mod_zero_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_neg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_negated_imaginary_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_negative_zero_repr_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_plus_minus_0j @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_pow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_pow_with_small_integer_exponents @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_repr_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_repr_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_richcompare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_richcompare_boundaries @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_truediv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_truediv_zero_division @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_complex.ComplexTest.test_underscores @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

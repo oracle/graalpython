@@ -2420,11 +2420,14 @@ PyGILState_Release(PyGILState_STATE oldstate)
     if (TRUFFLE_CONTEXT) {
         graalpy_gilstate_counter--;
         if (graalpy_gilstate_counter == 0 && graalpy_attached_thread) {
+            GraalPyTruffleBeforeThreadDetach();
             (*TRUFFLE_CONTEXT)->detachCurrentThread(TRUFFLE_CONTEXT);
             graalpy_attached_thread = 0;
             /*
-             * The thread state on the Java-side can get garbage collected after the thread is detached,
-             * so we need to make sure to fetch a fresh pointer the next time we attach.
+             * The thread state on the Java-side is cleared in GraalPyTruffleBeforeThreadDetach.
+             * As part of that the tstate_current pointer should have been set to NULL to make
+             * sure to fetch a fresh pointer the next time we attach. Just to be sure, we clear
+             * it here too:
              */
             tstate_current = NULL;
         }

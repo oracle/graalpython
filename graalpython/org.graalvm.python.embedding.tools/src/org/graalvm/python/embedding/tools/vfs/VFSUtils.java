@@ -40,9 +40,6 @@
  */
 package org.graalvm.python.embedding.tools.vfs;
 
-import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -55,17 +52,21 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
+import org.graalvm.python.embedding.tools.exec.SubprocessLog;
 
 public final class VFSUtils {
 
@@ -121,34 +122,46 @@ public final class VFSUtils {
     }
 
     public static void generateVFSFilesList(Path vfs) throws IOException {
+        TreeSet<String> entriesSorted = new TreeSet<>();
+        generateVFSFilesList(vfs, entriesSorted, null);
         Path filesList = vfs.resolve(VFS_FILESLIST);
+        Files.write(filesList, entriesSorted);
+    }
+
+    // Note: forward slash is not valid file/dir name character on Windows,
+    // but backslash is valid file/dir name character on UNIX
+    private static final boolean REPLACE_BACKSLASHES = File.separatorChar == '\\';
+
+    private static String normalizeResourcePath(String path) {
+        return REPLACE_BACKSLASHES ? path.replace("\\", "/") : path;
+    }
+
+    /**
+     * Adds the VFS filelist entries to given set. Caller may provide a non-empty set.
+     */
+    public static void generateVFSFilesList(Path vfs, Set<String> ret, Consumer<String> duplicateHandler) throws IOException {
         if (!Files.isDirectory(vfs)) {
-            throw new IOException(String.format("'%s' has to exist and be a directory.\n", vfs.toString()));
+            throw new IOException(String.format("'%s' has to exist and be a directory.\n", vfs));
         }
-        var ret = new HashSet<String>();
         String rootPath = makeDirPath(vfs.toAbsolutePath());
         int rootEndIdx = rootPath.lastIndexOf(File.separator, rootPath.lastIndexOf(File.separator) - 1);
-        ret.add(rootPath.substring(rootEndIdx));
+        ret.add(normalizeResourcePath(rootPath.substring(rootEndIdx)));
         try (var s = Files.walk(vfs)) {
             s.forEach(p -> {
+                String entry = null;
                 if (Files.isDirectory(p)) {
                     String dirPath = makeDirPath(p.toAbsolutePath());
-                    ret.add(dirPath.substring(rootEndIdx));
+                    entry = dirPath.substring(rootEndIdx);
                 } else if (Files.isRegularFile(p)) {
-                    ret.add(p.toAbsolutePath().toString().substring(rootEndIdx));
+                    entry = p.toAbsolutePath().toString().substring(rootEndIdx);
+                }
+                if (entry != null) {
+                    entry = normalizeResourcePath(entry);
+                    if (!ret.add(entry) && duplicateHandler != null) {
+                        duplicateHandler.accept(entry);
+                    }
                 }
             });
-        }
-        String[] a = ret.toArray(new String[ret.size()]);
-        Arrays.sort(a);
-        try (var wr = new FileWriter(filesList.toFile())) {
-            for (String f : a) {
-                if (f.charAt(0) == '\\') {
-                    f = f.replace("\\", "/");
-                }
-                wr.write(f);
-                wr.write("\n");
-            }
         }
     }
 

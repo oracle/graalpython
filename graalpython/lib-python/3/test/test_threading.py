@@ -1260,6 +1260,7 @@ class ThreadingExceptionTests(BaseTestCase):
         lock = threading.Lock()
         self.assertRaises(RuntimeError, lock.release)
 
+    @support.impl_detail("recursion", graalpy=False)
     @requires_subprocess()
     def test_recursion_limit(self):
         # Issue 9670

@@ -1,11 +1,10 @@
-test.test_slice.SliceTest.test_cmp
-test.test_slice.SliceTest.test_constructor
-test.test_slice.SliceTest.test_copy
-test.test_slice.SliceTest.test_cycle
-test.test_slice.SliceTest.test_deepcopy
-test.test_slice.SliceTest.test_hash
-test.test_slice.SliceTest.test_indices
-test.test_slice.SliceTest.test_members
-test.test_slice.SliceTest.test_pickle
-test.test_slice.SliceTest.test_repr
-test.test_slice.SliceTest.test_setslice_without_getslice
+test.test_slice.SliceTest.test_cmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_indices @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_slice.SliceTest.test_setslice_without_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -44,9 +44,9 @@ add_library(${TARGET_BZIP2SUPPORT} SHARED)
 target_compile_definitions(${TARGET_BZIP2SUPPORT} PRIVATE NDEBUG)
 
 if(WIN32)
-    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE /Z7 /O2 /WX)
+    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE /O2 /WX)
 else()
-    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE -Wall -Werror -O3 -g)
+    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE -Wall -Werror -O3)
 endif()
 
 # don't install into the system but into the MX project's output dir

@@ -1,297 +1,215 @@
-test.test_os.BlockingTests.test_blocking
-test.test_os.BytesFwalkTests.test_compare_to_walk
-test.test_os.BytesFwalkTests.test_dir_fd
-test.test_os.BytesFwalkTests.test_fd_leak
-test.test_os.BytesFwalkTests.test_file_like_path
-test.test_os.BytesFwalkTests.test_walk_bad_dir
-test.test_os.BytesFwalkTests.test_walk_bottom_up
-test.test_os.BytesFwalkTests.test_walk_prune
-test.test_os.BytesFwalkTests.test_walk_symlink
-test.test_os.BytesFwalkTests.test_walk_topdown
-test.test_os.BytesFwalkTests.test_yields_correct_dir_fd
-test.test_os.BytesWalkTests.test_file_like_path
-test.test_os.BytesWalkTests.test_walk_bad_dir
-test.test_os.BytesWalkTests.test_walk_bottom_up
-test.test_os.BytesWalkTests.test_walk_many_open_files
-test.test_os.BytesWalkTests.test_walk_prune
-test.test_os.BytesWalkTests.test_walk_symlink
-test.test_os.BytesWalkTests.test_walk_topdown
-test.test_os.CPUCountTests.test_cpu_count
-test.test_os.ChownFileTests.test_chown_gid
-test.test_os.ChownFileTests.test_chown_uid_gid_arguments_must_be_index
-test.test_os.ChownFileTests.test_chown_with_root
-test.test_os.ChownFileTests.test_chown_without_permission
-test.test_os.DevNullTests.test_devnull
-test.test_os.DeviceEncodingTests.test_device_encoding
-test.test_os.EnvironTests.test___repr__
-test.test_os.EnvironTests.test_bool
-test.test_os.EnvironTests.test_constructor
-test.test_os.EnvironTests.test_environb
-test.test_os.EnvironTests.test_get
-test.test_os.EnvironTests.test_get_exec_path
-test.test_os.EnvironTests.test_getitem
-test.test_os.EnvironTests.test_ior_operator
-test.test_os.EnvironTests.test_ior_operator_invalid_dicts
-test.test_os.EnvironTests.test_ior_operator_key_value_iterable
-test.test_os.EnvironTests.test_items
-test.test_os.EnvironTests.test_iter_error_when_changing_os_environ
-test.test_os.EnvironTests.test_iter_error_when_changing_os_environ_items
-test.test_os.EnvironTests.test_iter_error_when_changing_os_environ_values
-test.test_os.EnvironTests.test_key_type
-test.test_os.EnvironTests.test_keys
-test.test_os.EnvironTests.test_keyvalue_types
-test.test_os.EnvironTests.test_len
-test.test_os.EnvironTests.test_or_operator
-test.test_os.EnvironTests.test_os_popen_iter
-test.test_os.EnvironTests.test_pop
-test.test_os.EnvironTests.test_popitem
-test.test_os.EnvironTests.test_putenv_unsetenv
-test.test_os.EnvironTests.test_putenv_unsetenv_error
-test.test_os.EnvironTests.test_read
-test.test_os.EnvironTests.test_ror_operator
-test.test_os.EnvironTests.test_setdefault
-test.test_os.EnvironTests.test_update
-test.test_os.EnvironTests.test_update2
-test.test_os.EnvironTests.test_values
-test.test_os.EnvironTests.test_write
-test.test_os.EventfdTests.test_eventfd_initval
-test.test_os.EventfdTests.test_eventfd_select
-test.test_os.EventfdTests.test_eventfd_semaphore
-test.test_os.ExecTests.test_execv_with_bad_arglist
-test.test_os.ExecTests.test_execve_with_empty_path
-test.test_os.ExecTests.test_execvpe_with_bad_program
-test.test_os.ExportsTests.test_os_all
-test.test_os.ExtendedAttributeTests.test_fds
-test.test_os.ExtendedAttributeTests.test_lpath
-test.test_os.ExtendedAttributeTests.test_simple
-test.test_os.FDInheritanceTests.test_dup
-test.test_os.FDInheritanceTests.test_dup2
-test.test_os.FDInheritanceTests.test_dup_nul
-test.test_os.FDInheritanceTests.test_dup_standard_stream
-test.test_os.FDInheritanceTests.test_get_set_inheritable
-test.test_os.FDInheritanceTests.test_get_set_inheritable_badf
-test.test_os.FDInheritanceTests.test_get_set_inheritable_o_path
-test.test_os.FDInheritanceTests.test_open
-test.test_os.FDInheritanceTests.test_openpty
-test.test_os.FDInheritanceTests.test_pipe
-test.test_os.FSEncodingTests.test_identity
-test.test_os.FSEncodingTests.test_nop
-test.test_os.FileTests.test_access
-test.test_os.FileTests.test_copy_file_range
-test.test_os.FileTests.test_copy_file_range_invalid_values
-test.test_os.FileTests.test_copy_file_range_offset
-test.test_os.FileTests.test_fdopen
-test.test_os.FileTests.test_large_read
-test.test_os.FileTests.test_open_keywords
-test.test_os.FileTests.test_read
-test.test_os.FileTests.test_rename
-test.test_os.FileTests.test_replace
-test.test_os.FileTests.test_splice
-test.test_os.FileTests.test_splice_invalid_values
-test.test_os.FileTests.test_splice_offset_in
-test.test_os.FileTests.test_splice_offset_out
-test.test_os.FileTests.test_symlink_keywords
-test.test_os.FileTests.test_write
-test.test_os.FileTests.test_write_windows_console
-test.test_os.ForkTests.test_fork
-test.test_os.FwalkTests.test_compare_to_walk
-test.test_os.FwalkTests.test_dir_fd
-test.test_os.FwalkTests.test_fd_leak
-test.test_os.FwalkTests.test_file_like_path
-test.test_os.FwalkTests.test_walk_bad_dir
-test.test_os.FwalkTests.test_walk_bottom_up
-test.test_os.FwalkTests.test_walk_prune
-test.test_os.FwalkTests.test_walk_symlink
-test.test_os.FwalkTests.test_walk_topdown
-test.test_os.FwalkTests.test_yields_correct_dir_fd
-test.test_os.GetRandomTests.test_getrandom0
-test.test_os.GetRandomTests.test_getrandom_nonblock
-test.test_os.GetRandomTests.test_getrandom_random
-test.test_os.GetRandomTests.test_getrandom_type
-test.test_os.GetRandomTests.test_getrandom_value
-test.test_os.LinkTests.test_link
-test.test_os.LinkTests.test_link_bytes
-test.test_os.LinkTests.test_unicode_name
-test.test_os.LoginTests.test_getlogin
-test.test_os.MakedirTests.test_exist_ok_existing_directory
-test.test_os.MakedirTests.test_exist_ok_existing_regular_file
-test.test_os.MakedirTests.test_exist_ok_s_isgid_directory
-test.test_os.MakedirTests.test_makedir
-test.test_os.MakedirTests.test_mode
-test.test_os.MemfdCreateTests.test_memfd_create
-test.test_os.MiscTests.test_getcwd
-test.test_os.MiscTests.test_getcwd_long_path
-test.test_os.MiscTests.test_getcwdb
-test.test_os.NonLocalSymlinkTests.test_directory_link_nonlocal
-test.test_os.OSErrorTests.test_oserror_filename
-test.test_os.PathTConverterTests.test_path_t_converter
-test.test_os.PathTConverterTests.test_path_t_converter_and_custom_class
-test.test_os.PidTests.test_getppid
-test.test_os.PidTests.test_waitpid_windows
-test.test_os.PidTests.test_waitstatus_to_exitcode_windows
-test.test_os.PosixUidGidTests.test_setegid
-test.test_os.PosixUidGidTests.test_seteuid
-test.test_os.PosixUidGidTests.test_setgid
-test.test_os.PosixUidGidTests.test_setregid
-test.test_os.PosixUidGidTests.test_setregid_neg1
-test.test_os.PosixUidGidTests.test_setreuid
-test.test_os.PosixUidGidTests.test_setreuid_neg1
-test.test_os.PosixUidGidTests.test_setuid
-test.test_os.ProgramPriorityTests.test_set_get_priority
-test.test_os.ReadlinkTests.test_bytes
-test.test_os.ReadlinkTests.test_missing_link
-test.test_os.ReadlinkTests.test_not_symlink
-test.test_os.ReadlinkTests.test_pathlike
-test.test_os.ReadlinkTests.test_pathlike_bytes
-test.test_os.RemoveDirsTests.test_remove_all
-test.test_os.RemoveDirsTests.test_remove_nothing
-test.test_os.RemoveDirsTests.test_remove_partial
-test.test_os.SpawnTests.test_nowait
-test.test_os.SpawnTests.test_spawnl
-test.test_os.SpawnTests.test_spawnl_noargs
-test.test_os.SpawnTests.test_spawnle
-test.test_os.SpawnTests.test_spawnle_noargs
-test.test_os.SpawnTests.test_spawnlp
-test.test_os.SpawnTests.test_spawnlpe
-test.test_os.SpawnTests.test_spawnv
-test.test_os.SpawnTests.test_spawnv_noargs
-test.test_os.SpawnTests.test_spawnve
-test.test_os.SpawnTests.test_spawnve_bytes
-test.test_os.SpawnTests.test_spawnve_invalid_env
-test.test_os.SpawnTests.test_spawnve_noargs
-test.test_os.SpawnTests.test_spawnvp
-test.test_os.SpawnTests.test_spawnvpe
-test.test_os.SpawnTests.test_spawnvpe_invalid_env
-test.test_os.StatAttributeTests.test_15261
-test.test_os.StatAttributeTests.test_1686475
-test.test_os.StatAttributeTests.test_access_denied
-test.test_os.StatAttributeTests.test_file_attributes
-test.test_os.StatAttributeTests.test_stat_attributes
-test.test_os.StatAttributeTests.test_stat_attributes_bytes
-test.test_os.StatAttributeTests.test_stat_block_device
-test.test_os.StatAttributeTests.test_stat_result_pickle
-test.test_os.StatAttributeTests.test_statvfs_attributes
-test.test_os.StatAttributeTests.test_statvfs_result_pickle
-test.test_os.TermsizeTests.test_does_not_crash
-test.test_os.TermsizeTests.test_stty_match
-test.test_os.TestDirEntry.test_uninstantiable
-test.test_os.TestDirEntry.test_unpickable
-test.test_os.TestInvalidFD.test_blocking
-test.test_os.TestInvalidFD.test_closerange
-test.test_os.TestInvalidFD.test_dup
-test.test_os.TestInvalidFD.test_dup2
-test.test_os.TestInvalidFD.test_fchdir
-test.test_os.TestInvalidFD.test_fchmod
-test.test_os.TestInvalidFD.test_fchown
-test.test_os.TestInvalidFD.test_fdatasync
-test.test_os.TestInvalidFD.test_fdopen
-test.test_os.TestInvalidFD.test_fpathconf
-test.test_os.TestInvalidFD.test_fstat
-test.test_os.TestInvalidFD.test_fstatvfs
-test.test_os.TestInvalidFD.test_fsync
-test.test_os.TestInvalidFD.test_inheritable
-test.test_os.TestInvalidFD.test_isatty
-test.test_os.TestInvalidFD.test_lseek
-test.test_os.TestInvalidFD.test_read
-test.test_os.TestInvalidFD.test_readv
-test.test_os.TestInvalidFD.test_tcgetpgrp
-test.test_os.TestInvalidFD.test_tcsetpgrpt
-test.test_os.TestInvalidFD.test_ttyname
-test.test_os.TestInvalidFD.test_write
-test.test_os.TestInvalidFD.test_writev
-test.test_os.TestPEP519.test_argument_required
-test.test_os.TestPEP519.test_bad_pathlike
-test.test_os.TestPEP519.test_fsencode_fsdecode
-test.test_os.TestPEP519.test_garbage_in_exception_out
-test.test_os.TestPEP519.test_pathlike
-test.test_os.TestPEP519.test_pathlike_class_getitem
-test.test_os.TestPEP519.test_pathlike_subclasshook
-test.test_os.TestPEP519.test_return_bytes
-test.test_os.TestPEP519.test_return_string
-test.test_os.TestPEP519PurePython.test_argument_required
-test.test_os.TestPEP519PurePython.test_bad_pathlike
-test.test_os.TestPEP519PurePython.test_fsencode_fsdecode
-test.test_os.TestPEP519PurePython.test_garbage_in_exception_out
-test.test_os.TestPEP519PurePython.test_pathlike
-test.test_os.TestPEP519PurePython.test_pathlike_class_getitem
-test.test_os.TestPEP519PurePython.test_pathlike_subclasshook
-test.test_os.TestPEP519PurePython.test_return_bytes
-test.test_os.TestPEP519PurePython.test_return_string
-test.test_os.TestScandir.test_attributes
-test.test_os.TestScandir.test_bad_path_type
-test.test_os.TestScandir.test_broken_symlink
-test.test_os.TestScandir.test_bytes
-test.test_os.TestScandir.test_bytes_like
-test.test_os.TestScandir.test_close
-test.test_os.TestScandir.test_consume_iterator_twice
-test.test_os.TestScandir.test_context_manager
-test.test_os.TestScandir.test_context_manager_close
-test.test_os.TestScandir.test_context_manager_exception
-test.test_os.TestScandir.test_current_directory
-test.test_os.TestScandir.test_empty_path
-test.test_os.TestScandir.test_fd
-test.test_os.TestScandir.test_fspath_protocol
-test.test_os.TestScandir.test_fspath_protocol_bytes
-test.test_os.TestScandir.test_removed_dir
-test.test_os.TestScandir.test_removed_file
-test.test_os.TestScandir.test_repr
-test.test_os.TestScandir.test_resource_warning
-test.test_os.TestScandir.test_uninstantiable
-test.test_os.TestScandir.test_unpickable
-test.test_os.TestSendfile.test_flags
-test.test_os.TestSendfile.test_headers
-test.test_os.TestSendfile.test_headers_overflow_32bits
-test.test_os.TestSendfile.test_invalid_offset
-test.test_os.TestSendfile.test_keywords
-test.test_os.TestSendfile.test_offset_overflow
-test.test_os.TestSendfile.test_send_at_certain_offset
-test.test_os.TestSendfile.test_send_whole_file
-test.test_os.TestSendfile.test_trailers
-test.test_os.TestSendfile.test_trailers_overflow_32bits
-test.test_os.URandomTests.test_urandom_length
-test.test_os.URandomTests.test_urandom_subprocess
-test.test_os.URandomTests.test_urandom_value
-test.test_os.UtimeTests.test_issue31577
-test.test_os.UtimeTests.test_large_time
-test.test_os.UtimeTests.test_utime
-test.test_os.UtimeTests.test_utime_by_indexed
-test.test_os.UtimeTests.test_utime_by_times
-test.test_os.UtimeTests.test_utime_current
-test.test_os.UtimeTests.test_utime_current_old
-test.test_os.UtimeTests.test_utime_dir_fd
-test.test_os.UtimeTests.test_utime_directory
-test.test_os.UtimeTests.test_utime_fd
-test.test_os.UtimeTests.test_utime_invalid_arguments
-test.test_os.UtimeTests.test_utime_nofollow_symlinks
-test.test_os.WalkTests.test_file_like_path
-test.test_os.WalkTests.test_walk_bad_dir
-test.test_os.WalkTests.test_walk_bottom_up
-test.test_os.WalkTests.test_walk_many_open_files
-test.test_os.WalkTests.test_walk_prune
-test.test_os.WalkTests.test_walk_symlink
-test.test_os.WalkTests.test_walk_topdown
-test.test_os.Win32ErrorTests.test_chdir
-test.test_os.Win32ErrorTests.test_chmod
-test.test_os.Win32ErrorTests.test_mkdir
-test.test_os.Win32ErrorTests.test_remove
-test.test_os.Win32ErrorTests.test_rename
-test.test_os.Win32ErrorTests.test_utime
-test.test_os.Win32JunctionTests.test_create_junction
-test.test_os.Win32JunctionTests.test_unlink_removes_junction
-test.test_os.Win32KillTests.test_CTRL_BREAK_EVENT
-test.test_os.Win32KillTests.test_CTRL_C_EVENT
-test.test_os.Win32KillTests.test_kill_int
-test.test_os.Win32KillTests.test_kill_sigterm
-test.test_os.Win32ListdirTests.test_listdir_extended_path
-test.test_os.Win32ListdirTests.test_listdir_no_extended_path
-test.test_os.Win32NtTests.test_getfinalpathname_handles
-test.test_os.Win32NtTests.test_stat_unlink_race
-test.test_os.Win32SymlinkTests.test_12084
-test.test_os.Win32SymlinkTests.test_29248
-test.test_os.Win32SymlinkTests.test_appexeclink
-test.test_os.Win32SymlinkTests.test_buffer_overflow
-test.test_os.Win32SymlinkTests.test_directory_link
-test.test_os.Win32SymlinkTests.test_file_link
-test.test_os.Win32SymlinkTests.test_isdir_on_directory_link_to_missing_target
-test.test_os.Win32SymlinkTests.test_remove_directory_link_to_missing_target
-test.test_os.Win32SymlinkTests.test_rmdir_on_directory_link_to_missing_target
+test.test_os.BlockingTests.test_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_compare_to_walk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_fd_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_file_like_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_walk_bad_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_walk_bottom_up @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_walk_prune @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_walk_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_walk_topdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesFwalkTests.test_yields_correct_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesWalkTests.test_file_like_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesWalkTests.test_walk_bad_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.BytesWalkTests.test_walk_bottom_up @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.BytesWalkTests.test_walk_many_open_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.BytesWalkTests.test_walk_prune @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.BytesWalkTests.test_walk_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.BytesWalkTests.test_walk_topdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.CPUCountTests.test_cpu_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.ChownFileTests.test_chown_uid_gid_arguments_must_be_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.ChownFileTests.test_chown_without_permission @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.DevNullTests.test_devnull @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.DeviceEncodingTests.test_bad_fd @ win32-AMD64
+test.test_os.EnvironTests.test___repr__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_environb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.EnvironTests.test_get @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_get_exec_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_ior_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_ior_operator_invalid_dicts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_ior_operator_key_value_iterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_iter_error_when_changing_os_environ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_iter_error_when_changing_os_environ_items @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_iter_error_when_changing_os_environ_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_key_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_keyvalue_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_or_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_os_popen_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.EnvironTests.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_popitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_putenv_unsetenv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.EnvironTests.test_putenv_unsetenv_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.EnvironTests.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_ror_operator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_update2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.EnvironTests.test_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.EnvironTests.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.ExecTests.test_execv_with_bad_arglist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.ExecTests.test_execvpe_with_bad_program @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.ExportsTests.test_os_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FDInheritanceTests.test_dup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FDInheritanceTests.test_dup2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FDInheritanceTests.test_dup_nul @ win32-AMD64
+test.test_os.FDInheritanceTests.test_dup_standard_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FDInheritanceTests.test_get_set_inheritable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FDInheritanceTests.test_get_set_inheritable_badf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FDInheritanceTests.test_get_set_inheritable_o_path @ linux-aarch64,linux-x86_64
+test.test_os.FDInheritanceTests.test_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FDInheritanceTests.test_openpty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FDInheritanceTests.test_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FSEncodingTests.test_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FSEncodingTests.test_nop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FileTests.test_access @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FileTests.test_fdopen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FileTests.test_open_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FileTests.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FileTests.test_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FileTests.test_symlink_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.FileTests.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_compare_to_walk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_fd_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_file_like_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_walk_bad_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_walk_bottom_up @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_walk_prune @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_walk_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_walk_topdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.FwalkTests.test_yields_correct_dir_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.LinkTests.test_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.LinkTests.test_link_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.LinkTests.test_unicode_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.MakedirTests.test_exist_ok_existing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.MakedirTests.test_exist_ok_existing_regular_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.MakedirTests.test_exist_ok_s_isgid_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.MakedirTests.test_makedir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.MakedirTests.test_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.MiscTests.test_getcwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.MiscTests.test_getcwd_long_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.MiscTests.test_getcwdb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.NonLocalSymlinkTests.test_directory_link_nonlocal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.OSErrorTests.test_oserror_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.PathTConverterTests.test_path_t_converter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.PathTConverterTests.test_path_t_converter_and_custom_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.Pep383Tests.test_listdir @ darwin-arm64,darwin-x86_64
+test.test_os.Pep383Tests.test_open @ darwin-arm64,darwin-x86_64
+test.test_os.Pep383Tests.test_stat @ darwin-arm64,darwin-x86_64
+test.test_os.Pep383Tests.test_statvfs @ darwin-arm64,darwin-x86_64
+test.test_os.PidTests.test_getppid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.ReadlinkTests.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.ReadlinkTests.test_missing_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.ReadlinkTests.test_not_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.ReadlinkTests.test_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.ReadlinkTests.test_pathlike_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.RemoveDirsTests.test_remove_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.RemoveDirsTests.test_remove_nothing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.RemoveDirsTests.test_remove_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.StatAttributeTests.test_15261 @ win32-AMD64
+test.test_os.StatAttributeTests.test_1686475 @ win32-AMD64
+test.test_os.StatAttributeTests.test_stat_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.StatAttributeTests.test_stat_attributes_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.StatAttributeTests.test_stat_result_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.StatAttributeTests.test_statvfs_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.StatAttributeTests.test_statvfs_result_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TermsizeTests.test_does_not_crash @ win32-AMD64
+test.test_os.TestDirEntry.test_uninstantiable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestDirEntry.test_unpickable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestInvalidFD.test_dup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestInvalidFD.test_dup2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestInvalidFD.test_fchdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_fchmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_fchown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestInvalidFD.test_fdatasync @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_fdopen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_fstat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_fstatvfs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestInvalidFD.test_fsync @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestInvalidFD.test_ftruncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_inheritable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestInvalidFD.test_isatty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_lseek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_tcgetpgrp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_ttyname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestInvalidFD.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_argument_required @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_bad_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_fsencode_fsdecode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_garbage_in_exception_out @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_pathlike_class_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_pathlike_subclasshook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_return_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519.test_return_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_argument_required @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_bad_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_fsencode_fsdecode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_garbage_in_exception_out @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_pathlike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_pathlike_class_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_pathlike_subclasshook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_return_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestPEP519PurePython.test_return_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestScandir.test_bad_path_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_broken_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_bytes_like @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_consume_iterator_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_context_manager_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_context_manager_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_current_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_empty_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestScandir.test_fspath_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_fspath_protocol_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_removed_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestScandir.test_removed_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.TestScandir.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_uninstantiable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.TestScandir.test_unpickable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.URandomTests.test_urandom_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.URandomTests.test_urandom_subprocess @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.URandomTests.test_urandom_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.UtimeTests.test_large_time @ win32-AMD64
+test.test_os.UtimeTests.test_utime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.UtimeTests.test_utime_by_indexed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.UtimeTests.test_utime_by_times @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.UtimeTests.test_utime_current @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.UtimeTests.test_utime_current_old @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.UtimeTests.test_utime_dir_fd @ linux-aarch64,linux-x86_64
+test.test_os.UtimeTests.test_utime_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.UtimeTests.test_utime_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.UtimeTests.test_utime_invalid_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.UtimeTests.test_utime_nofollow_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.WalkTests.test_file_like_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.WalkTests.test_walk_bad_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.WalkTests.test_walk_bottom_up @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.WalkTests.test_walk_many_open_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.WalkTests.test_walk_prune @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.WalkTests.test_walk_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_os.WalkTests.test_walk_topdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_os.Win32ErrorTests.test_chdir @ win32-AMD64
+test.test_os.Win32ErrorTests.test_mkdir @ win32-AMD64
+test.test_os.Win32ErrorTests.test_remove @ win32-AMD64
+test.test_os.Win32ErrorTests.test_rename @ win32-AMD64
+test.test_os.Win32ErrorTests.test_utime @ win32-AMD64
+test.test_os.Win32ListdirTests.test_listdir_extended_path @ win32-AMD64
+test.test_os.Win32ListdirTests.test_listdir_no_extended_path @ win32-AMD64
+# Transiently gets different count of file handles
+!test.test_os.Win32NtTests.test_getfinalpathname_handles @ win32-AMD64
+test.test_os.Win32NtTests.test_stat_unlink_race @ win32-AMD64
+test.test_os.Win32SymlinkTests.test_12084 @ win32-AMD64
+test.test_os.Win32SymlinkTests.test_29248 @ win32-AMD64
+test.test_os.Win32SymlinkTests.test_buffer_overflow @ win32-AMD64

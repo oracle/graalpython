@@ -751,7 +751,6 @@ PyType_Modified(PyTypeObject *type)
 #endif // GraalPy change
 }
 
-#if 0 // GraalPy change
 static void
 type_mro_modified(PyTypeObject *type, PyObject *bases) {
     /*
@@ -7281,6 +7280,9 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
 
     // GraalPy change: it may be that the type was used uninitialized
 	GraalPyTruffle_Type_Modified(type, type->tp_name, NULL);
+
+    // GraalPy change
+	GraalPyTruffle_InitializeOldStyleSlots(type);
 	
     // GraalPy change: for reason, see first call to Py_INCREF in this function
 	Py_DECREF(type);    
@@ -7305,9 +7307,9 @@ PyType_Ready(PyTypeObject *type)
         type->tp_flags |= Py_TPFLAGS_IMMUTABLETYPE;
     }
 
-    /* GraalPy change: Types are often just static mem; so register them to be able to rule out invalid accesses.  */
+    // GraalPy change
     if (PyTruffle_Trace_Memory()) {
-        GraalPyTruffle_Trace_Type(type, type->tp_name != NULL);
+        GraalPyTruffle_Trace_Type(type);
     }
 
     return type_ready(type, 0);

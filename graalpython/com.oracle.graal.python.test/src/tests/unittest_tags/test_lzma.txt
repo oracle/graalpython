@@ -1,117 +1,112 @@
-test.test_lzma.CompressDecompressFunctionTestCase.test_bad_args
-test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_bad_input
-test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_good_input
-test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_incomplete_input
-test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_memlimit
-test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_multistream
-test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_multistream_trailing_junk
-test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_trailing_junk
-test.test_lzma.CompressDecompressFunctionTestCase.test_roundtrip
-test.test_lzma.CompressorDecompressorTestCase.test_bad_filter_spec
-test.test_lzma.CompressorDecompressorTestCase.test_compressor_bigmem
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_after_eof
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_alone
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_auto
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_bad_input
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_bigmem
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_bug_28275
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_chunks
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_chunks_empty
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_chunks_maxsize
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_inputbuf_1
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_inputbuf_2
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_inputbuf_3
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_memlimit
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_multistream
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_1
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_2
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_3
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_4
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_unused_data
-test.test_lzma.CompressorDecompressorTestCase.test_decompressor_xz
-test.test_lzma.CompressorDecompressorTestCase.test_pickle
-test.test_lzma.CompressorDecompressorTestCase.test_refleaks_in_decompressor___init__
-test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_alone
-test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_chunks
-test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_empty_chunks
-test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_raw
-test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_raw_empty
-test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_xz
-test.test_lzma.CompressorDecompressorTestCase.test_simple_bad_args
-test.test_lzma.FileTestCase.test_close
-test.test_lzma.FileTestCase.test_closed
-test.test_lzma.FileTestCase.test_decompress_limited
-test.test_lzma.FileTestCase.test_fileno
-test.test_lzma.FileTestCase.test_init
-test.test_lzma.FileTestCase.test_init_bad_check
-test.test_lzma.FileTestCase.test_init_bad_filter_spec
-test.test_lzma.FileTestCase.test_init_bad_mode
-test.test_lzma.FileTestCase.test_init_bad_preset
-test.test_lzma.FileTestCase.test_init_mode
-test.test_lzma.FileTestCase.test_init_with_PathLike_filename
-test.test_lzma.FileTestCase.test_init_with_filename
-test.test_lzma.FileTestCase.test_init_with_preset_and_filters
-test.test_lzma.FileTestCase.test_init_with_x_mode
-test.test_lzma.FileTestCase.test_issue21872
-test.test_lzma.FileTestCase.test_issue44439
-test.test_lzma.FileTestCase.test_iterator
-test.test_lzma.FileTestCase.test_peek
-test.test_lzma.FileTestCase.test_peek_bad_args
-test.test_lzma.FileTestCase.test_read
-test.test_lzma.FileTestCase.test_read1
-test.test_lzma.FileTestCase.test_read1_0
-test.test_lzma.FileTestCase.test_read1_10
-test.test_lzma.FileTestCase.test_read1_bad_args
-test.test_lzma.FileTestCase.test_read1_multistream
-test.test_lzma.FileTestCase.test_read_0
-test.test_lzma.FileTestCase.test_read_10
-test.test_lzma.FileTestCase.test_read_bad_args
-test.test_lzma.FileTestCase.test_read_bad_data
-test.test_lzma.FileTestCase.test_read_from_file
-test.test_lzma.FileTestCase.test_read_from_file_with_bytes_filename
-test.test_lzma.FileTestCase.test_read_incomplete
-test.test_lzma.FileTestCase.test_read_multistream
-test.test_lzma.FileTestCase.test_read_multistream_buffer_size_aligned
-test.test_lzma.FileTestCase.test_read_multistream_trailing_junk
-test.test_lzma.FileTestCase.test_read_trailing_junk
-test.test_lzma.FileTestCase.test_read_truncated
-test.test_lzma.FileTestCase.test_readable
-test.test_lzma.FileTestCase.test_readline
-test.test_lzma.FileTestCase.test_readlines
-test.test_lzma.FileTestCase.test_seek_backward
-test.test_lzma.FileTestCase.test_seek_backward_across_streams
-test.test_lzma.FileTestCase.test_seek_backward_relative_to_end
-test.test_lzma.FileTestCase.test_seek_bad_args
-test.test_lzma.FileTestCase.test_seek_forward
-test.test_lzma.FileTestCase.test_seek_forward_across_streams
-test.test_lzma.FileTestCase.test_seek_forward_relative_to_current
-test.test_lzma.FileTestCase.test_seek_forward_relative_to_end
-test.test_lzma.FileTestCase.test_seek_past_end
-test.test_lzma.FileTestCase.test_seek_past_start
-test.test_lzma.FileTestCase.test_seekable
-test.test_lzma.FileTestCase.test_tell
-test.test_lzma.FileTestCase.test_tell_bad_args
-test.test_lzma.FileTestCase.test_writable
-test.test_lzma.FileTestCase.test_write
-test.test_lzma.FileTestCase.test_write_10
-test.test_lzma.FileTestCase.test_write_append
-test.test_lzma.FileTestCase.test_write_append_to_file
-test.test_lzma.FileTestCase.test_write_bad_args
-test.test_lzma.FileTestCase.test_write_to_file
-test.test_lzma.FileTestCase.test_write_to_file_with_bytes_filename
-test.test_lzma.FileTestCase.test_writelines
-test.test_lzma.MiscellaneousTestCase.test__decode_filter_properties
-test.test_lzma.MiscellaneousTestCase.test__encode_filter_properties
-test.test_lzma.MiscellaneousTestCase.test_filter_properties_roundtrip
-test.test_lzma.MiscellaneousTestCase.test_is_check_supported
-test.test_lzma.OpenTestCase.test_bad_params
-test.test_lzma.OpenTestCase.test_binary_modes
-test.test_lzma.OpenTestCase.test_encoding
-test.test_lzma.OpenTestCase.test_encoding_error_handler
-test.test_lzma.OpenTestCase.test_filename
-test.test_lzma.OpenTestCase.test_format_and_filters
-test.test_lzma.OpenTestCase.test_newline
-test.test_lzma.OpenTestCase.test_text_modes
-test.test_lzma.OpenTestCase.test_with_pathlike_filename
-test.test_lzma.OpenTestCase.test_x_mode
-test.test_lzma.TestMain.test_main
+test.test_lzma.CompressDecompressFunctionTestCase.test_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_bad_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_good_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_incomplete_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_memlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_multistream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_multistream_trailing_junk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressDecompressFunctionTestCase.test_decompress_trailing_junk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressDecompressFunctionTestCase.test_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_bad_filter_spec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressorDecompressorTestCase.test_compressor_bigmem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_after_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_alone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_auto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_bad_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_bigmem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_bug_28275 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_chunks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_chunks_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_chunks_maxsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_inputbuf_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_inputbuf_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_inputbuf_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_memlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_multistream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_raw_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_unused_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_decompressor_xz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_alone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_chunks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_empty_chunks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_raw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_raw_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_roundtrip_xz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.CompressorDecompressorTestCase.test_simple_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_decompress_limited @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_init_bad_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_init_bad_filter_spec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_init_bad_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_init_bad_preset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_init_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_init_with_PathLike_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_init_with_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_init_with_preset_and_filters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_init_with_x_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_issue21872 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_issue44439 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_peek_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read1_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read1_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read1_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read1_multistream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_bad_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_from_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_incomplete @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_read_multistream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_read_multistream_buffer_size_aligned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_multistream_trailing_junk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_trailing_junk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_read_truncated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_readable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_backward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_backward_across_streams @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_backward_relative_to_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_forward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_forward_across_streams @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_forward_relative_to_current @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_forward_relative_to_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_past_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seek_past_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_seekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_tell_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.FileTestCase.test_write_10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_write_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_write_append_to_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_write_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_write_to_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.FileTestCase.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.MiscellaneousTestCase.test__decode_filter_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.MiscellaneousTestCase.test__encode_filter_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.MiscellaneousTestCase.test_filter_properties_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.MiscellaneousTestCase.test_is_check_supported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.OpenTestCase.test_bad_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.OpenTestCase.test_binary_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.OpenTestCase.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.OpenTestCase.test_encoding_error_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.OpenTestCase.test_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.OpenTestCase.test_format_and_filters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.OpenTestCase.test_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.OpenTestCase.test_text_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.OpenTestCase.test_with_pathlike_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_lzma.OpenTestCase.test_x_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

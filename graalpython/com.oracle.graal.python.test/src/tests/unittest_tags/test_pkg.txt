@@ -1,8 +1,8 @@
-test.test_pkg.TestPkg.test_1
-test.test_pkg.TestPkg.test_2
-test.test_pkg.TestPkg.test_3
-test.test_pkg.TestPkg.test_4
-test.test_pkg.TestPkg.test_5
-test.test_pkg.TestPkg.test_6
-test.test_pkg.TestPkg.test_7
-test.test_pkg.TestPkg.test_8
+test.test_pkg.TestPkg.test_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pkg.TestPkg.test_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pkg.TestPkg.test_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pkg.TestPkg.test_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pkg.TestPkg.test_5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pkg.TestPkg.test_6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pkg.TestPkg.test_7 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pkg.TestPkg.test_8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

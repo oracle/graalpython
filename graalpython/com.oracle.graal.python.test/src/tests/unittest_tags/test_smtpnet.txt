@@ -1,5 +1,0 @@
-test.test_smtpnet.SmtpSSLTest.test_connect
-test.test_smtpnet.SmtpSSLTest.test_connect_default_port
-test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext
-test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext_verified
-test.test_smtpnet.SmtpTest.test_connect_starttls

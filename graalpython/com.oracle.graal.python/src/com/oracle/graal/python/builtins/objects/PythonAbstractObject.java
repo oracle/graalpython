@@ -119,6 +119,10 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
+import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
+import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -153,6 +157,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -181,6 +186,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.RegionEqualNode;
 import com.oracle.truffle.api.utilities.TriState;
@@ -1292,17 +1298,85 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             return callVarargsMethodNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS);
         }
 
+        private static String POSARGS_MEMBER = "org.graalvm.python.embedding.PositionalArguments.is_positional_arguments";
+        private static String KWARGS_MEMBER = "org.graalvm.python.embedding.KeywordArguments.is_keyword_arguments";
+
         @Specialization(replaces = "doVarargsBuiltinMethod")
         static Object doExecute(Object receiver, Object[] arguments,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached CallNode callNode,
-                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
+                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode,
+                        @Cached MappingToKeywordsNode toKeywordsNode,
+                        @Cached ExecutePositionalStarargsNode positionalStarargsNode,
+                        @CachedLibrary(limit = "1") InteropLibrary iLibKwArgs,
+                        @CachedLibrary(limit = "1") InteropLibrary iLibPosArgs,
+                        @CachedLibrary(limit = "1") InteropLibrary iLibIterator,
+                        @Cached InlinedConditionProfile argsLenProfile,
+                        @Cached InlinedConditionProfile isKwargsProfile,
+                        @Cached InlinedConditionProfile isIndexZeroProfile,
+                        @Cached InlinedConditionProfile isStarargsProfile1,
+                        @Cached InlinedConditionProfile isStarargsProfile2,
+                        @Cached InlinedConditionProfile isStarargsDefinedProfile,
+                        @Cached InlinedConditionProfile hasMembersProfile,
+                        @Cached InlinedConditionProfile isIndexNotZeroProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile) throws UnsupportedMessageException {
             if (!callableCheck.execute(inliningTarget, receiver)) {
                 throw UnsupportedMessageException.create();
             }
-            Object[] convertedArgs = convertArgsNode.execute(inliningTarget, arguments);
-            return callNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS);
+
+            PKeyword[] kwArgs = PKeyword.EMPTY_KEYWORDS;
+            Object[] newArgs = arguments;
+            int index = arguments.length - 1;
+            if (argsLenProfile.profile(inliningTarget, index >= 0)) {
+                Object last = arguments[index];
+                Object posArgs = null;
+                try {
+                    boolean lastHasMembers = hasMembersProfile.profile(inliningTarget, iLibKwArgs.hasMembers(last));
+                    if (lastHasMembers && isKwargsProfile.profile(inliningTarget, iLibKwArgs.isMemberReadable(last, KWARGS_MEMBER) && iLibKwArgs.readMember(last, KWARGS_MEMBER) == Boolean.TRUE)) {
+                        kwArgs = toKeywordsNode.execute(null, inliningTarget, last);
+                        --index;
+                        if (isIndexZeroProfile.profile(inliningTarget, index >= 0)) {
+                            last = arguments[index];
+                            if (isStarargsProfile1.profile(inliningTarget,
+                                            iLibPosArgs.hasMembers(last) && iLibPosArgs.isMemberReadable(last, POSARGS_MEMBER) && iLibPosArgs.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
+                                posArgs = last;
+                            } else {
+                                // no starargs are in arguments
+                                newArgs = PythonUtils.arrayCopyOf(arguments, arguments.length - 1);
+                            }
+                        } else {
+                            // only kwargs are in arguments
+                            newArgs = new Object[0];
+                        }
+                    } else if (lastHasMembers &&
+                                    isStarargsProfile2.profile(inliningTarget, iLibPosArgs.isMemberReadable(last, POSARGS_MEMBER) && iLibPosArgs.readMember(last, POSARGS_MEMBER) == Boolean.TRUE)) {
+                        posArgs = last;
+                    }
+
+                    if (isStarargsDefinedProfile.profile(inliningTarget, posArgs != null)) {
+                        long length = iLibPosArgs.getArraySize(posArgs);
+                        Object iterator = iLibPosArgs.getIterator(posArgs);
+                        loopProfile.profileCounted(inliningTarget, length);
+                        Object[] starArgs = new Object[(int) length];
+                        for (int i = 0; loopProfile.inject(inliningTarget, i < length); i++) {
+                            starArgs[i] = iLibIterator.getIteratorNextElement(iterator);
+                        }
+                        if (isIndexNotZeroProfile.profile(inliningTarget, index > 0)) {
+                            newArgs = new Object[index + starArgs.length];
+                            PythonUtils.arraycopy(arguments, 0, newArgs, 0, index);
+                            PythonUtils.arraycopy(starArgs, 0, newArgs, index, starArgs.length);
+                        } else {
+                            // only starargs and kwargs are in arguments
+                            newArgs = starArgs;
+                        }
+                    }
+                } catch (UnknownIdentifierException | SameDictKeyException | NonMappingException | StopIterationException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            Object[] convertedArgs = convertArgsNode.execute(inliningTarget, newArgs);
+            return callNode.execute(null, receiver, convertedArgs, kwArgs);
         }
 
         static boolean isBuiltinFunctionOrMethod(Object object) {

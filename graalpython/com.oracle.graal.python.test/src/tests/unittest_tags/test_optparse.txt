@@ -1,153 +1,151 @@
-test.test_optparse.MiscTestCase.test__all__
-test.test_optparse.TestBool.test_bool_default
-test.test_optparse.TestBool.test_bool_false
-test.test_optparse.TestBool.test_bool_flicker_on_and_off
-test.test_optparse.TestBool.test_bool_true
-test.test_optparse.TestCallback.test_callback
-test.test_optparse.TestCallback.test_callback_help
-test.test_optparse.TestCallbackCheckAbbrev.test_abbrev_callback_expansion
-test.test_optparse.TestCallbackExtraArgs.test_callback_extra_args
-test.test_optparse.TestCallbackManyArgs.test_many_args
-test.test_optparse.TestCallbackMeddleArgs.test_callback_meddle_args
-test.test_optparse.TestCallbackMeddleArgs.test_callback_meddle_args_separator
-test.test_optparse.TestCallbackVarArgs.test_consume_separator_stop_at_option
-test.test_optparse.TestCallbackVarArgs.test_positional_arg_and_variable_args
-test.test_optparse.TestCallbackVarArgs.test_stop_at_invalid_option
-test.test_optparse.TestCallbackVarArgs.test_stop_at_option
-test.test_optparse.TestCallbackVarArgs.test_variable_args
-test.test_optparse.TestChoice.test_add_choice_option
-test.test_optparse.TestChoice.test_invalid_choice
-test.test_optparse.TestChoice.test_valid_choice
-test.test_optparse.TestConflict.test_conflict_error
-test.test_optparse.TestConflict.test_conflict_error_group
-test.test_optparse.TestConflict.test_no_such_conflict_handler
-test.test_optparse.TestConflictOverride.test_conflict_override_args
-test.test_optparse.TestConflictOverride.test_conflict_override_help
-test.test_optparse.TestConflictOverride.test_conflict_override_opts
-test.test_optparse.TestConflictResolve.test_conflict_resolve
-test.test_optparse.TestConflictResolve.test_conflict_resolve_help
-test.test_optparse.TestConflictResolve.test_conflict_resolve_long_opt
-test.test_optparse.TestConflictResolve.test_conflict_resolve_long_opts
-test.test_optparse.TestConflictResolve.test_conflict_resolve_short_opt
-test.test_optparse.TestConflictingDefaults.test_conflict_default
-test.test_optparse.TestConflictingDefaults.test_conflict_default_none
-test.test_optparse.TestCount.test_count_interspersed_args
-test.test_optparse.TestCount.test_count_no_interspersed_args
-test.test_optparse.TestCount.test_count_no_such_option
-test.test_optparse.TestCount.test_count_one
-test.test_optparse.TestCount.test_count_option_no_value
-test.test_optparse.TestCount.test_count_override_amount
-test.test_optparse.TestCount.test_count_override_quiet
-test.test_optparse.TestCount.test_count_overriding
-test.test_optparse.TestCount.test_count_overriding_default
-test.test_optparse.TestCount.test_count_three
-test.test_optparse.TestCount.test_count_three_apart
-test.test_optparse.TestCount.test_count_with_default
-test.test_optparse.TestCount.test_empty
-test.test_optparse.TestDefaultValues.test_basic_defaults
-test.test_optparse.TestDefaultValues.test_mixed_defaults_post
-test.test_optparse.TestDefaultValues.test_mixed_defaults_pre
-test.test_optparse.TestDefaultValues.test_process_default
-test.test_optparse.TestExpandDefaults.test_alt_expand
-test.test_optparse.TestExpandDefaults.test_default_none_1
-test.test_optparse.TestExpandDefaults.test_default_none_2
-test.test_optparse.TestExpandDefaults.test_float_default
-test.test_optparse.TestExpandDefaults.test_no_default
-test.test_optparse.TestExpandDefaults.test_no_expand
-test.test_optparse.TestExpandDefaults.test_option_default
-test.test_optparse.TestExpandDefaults.test_parser_default_1
-test.test_optparse.TestExpandDefaults.test_parser_default_2
-test.test_optparse.TestExtendAddActions.test_extend_add_action
-test.test_optparse.TestExtendAddActions.test_extend_add_action_normal
-test.test_optparse.TestExtendAddTypes.test_filetype_noexist
-test.test_optparse.TestExtendAddTypes.test_filetype_notfile
-test.test_optparse.TestExtendAddTypes.test_filetype_ok
-test.test_optparse.TestHelp.test_help
-test.test_optparse.TestHelp.test_help_description_groups
-test.test_optparse.TestHelp.test_help_long_opts_first
-test.test_optparse.TestHelp.test_help_old_usage
-test.test_optparse.TestHelp.test_help_title_formatter
-test.test_optparse.TestHelp.test_help_unicode
-test.test_optparse.TestHelp.test_help_unicode_description
-test.test_optparse.TestHelp.test_wrap_columns
-test.test_optparse.TestMain.test_main
-test.test_optparse.TestMatchAbbrev.test_match_abbrev
-test.test_optparse.TestMatchAbbrev.test_match_abbrev_error
-test.test_optparse.TestMultipleArgs.test_nargs_invalid_float_value
-test.test_optparse.TestMultipleArgs.test_nargs_long_opt
-test.test_optparse.TestMultipleArgs.test_nargs_required_values
-test.test_optparse.TestMultipleArgs.test_nargs_with_positional_args
-test.test_optparse.TestMultipleArgsAppend.test_nargs_append
-test.test_optparse.TestMultipleArgsAppend.test_nargs_append_const
-test.test_optparse.TestMultipleArgsAppend.test_nargs_append_required_values
-test.test_optparse.TestMultipleArgsAppend.test_nargs_append_simple
-test.test_optparse.TestOptionChecks.test_action_invalid
-test.test_optparse.TestOptionChecks.test_attr_invalid
-test.test_optparse.TestOptionChecks.test_bad_choices_list
-test.test_optparse.TestOptionChecks.test_callback_args_no_tuple
-test.test_optparse.TestOptionChecks.test_callback_kwargs_no_dict
-test.test_optparse.TestOptionChecks.test_callback_not_callable
-test.test_optparse.TestOptionChecks.test_no_callback_args_for_action
-test.test_optparse.TestOptionChecks.test_no_callback_for_action
-test.test_optparse.TestOptionChecks.test_no_callback_kwargs_for_action
-test.test_optparse.TestOptionChecks.test_no_choices_for_type
-test.test_optparse.TestOptionChecks.test_no_choices_list
-test.test_optparse.TestOptionChecks.test_no_const_for_action
-test.test_optparse.TestOptionChecks.test_no_nargs_for_action
-test.test_optparse.TestOptionChecks.test_no_single_dash
-test.test_optparse.TestOptionChecks.test_no_type_for_action
-test.test_optparse.TestOptionChecks.test_opt_string_empty
-test.test_optparse.TestOptionChecks.test_opt_string_long_invalid
-test.test_optparse.TestOptionChecks.test_opt_string_short_invalid
-test.test_optparse.TestOptionChecks.test_opt_string_too_short
-test.test_optparse.TestOptionChecks.test_type_invalid
-test.test_optparse.TestOptionGroup.test_add_group_invalid_arguments
-test.test_optparse.TestOptionGroup.test_add_group_no_group
-test.test_optparse.TestOptionGroup.test_add_group_wrong_parser
-test.test_optparse.TestOptionGroup.test_group_manipulate
-test.test_optparse.TestOptionGroup.test_option_group_create_instance
-test.test_optparse.TestOptionParser.test_add_option_invalid_arguments
-test.test_optparse.TestOptionParser.test_add_option_no_Option
-test.test_optparse.TestOptionParser.test_get_option
-test.test_optparse.TestOptionParser.test_get_option_equals
-test.test_optparse.TestOptionParser.test_has_option
-test.test_optparse.TestOptionParser.test_refleak
-test.test_optparse.TestOptionParser.test_remove_long_opt
-test.test_optparse.TestOptionParser.test_remove_nonexistent
-test.test_optparse.TestOptionParser.test_remove_short_opt
-test.test_optparse.TestOptionValues.test_basics
-test.test_optparse.TestParseNumber.test_numeric_options
-test.test_optparse.TestParseNumber.test_parse_num_fail
-test.test_optparse.TestParseNumber.test_parse_num_ok
-test.test_optparse.TestProgName.test_custom_progname
-test.test_optparse.TestProgName.test_default_progname
-test.test_optparse.TestStandard.test_abbrev_long_option
-test.test_optparse.TestStandard.test_ambiguous_option
-test.test_optparse.TestStandard.test_combined_single_invalid_option
-test.test_optparse.TestStandard.test_defaults
-test.test_optparse.TestStandard.test_empty
-test.test_optparse.TestStandard.test_hyphen_becomes_positional_arg
-test.test_optparse.TestStandard.test_invalid_integer
-test.test_optparse.TestStandard.test_long_invalid_integer
-test.test_optparse.TestStandard.test_long_option_append
-test.test_optparse.TestStandard.test_long_option_argument_joined
-test.test_optparse.TestStandard.test_long_option_argument_split
-test.test_optparse.TestStandard.test_long_option_short_option
-test.test_optparse.TestStandard.test_no_append_versus_append
-test.test_optparse.TestStandard.test_no_such_option
-test.test_optparse.TestStandard.test_option_argument_joined
-test.test_optparse.TestStandard.test_option_argument_joined_integer
-test.test_optparse.TestStandard.test_option_argument_split
-test.test_optparse.TestStandard.test_option_argument_split_negative_integer
-test.test_optparse.TestStandard.test_option_consumes_optionlike_string
-test.test_optparse.TestStandard.test_required_value
-test.test_optparse.TestStandard.test_short_and_long_option_split
-test.test_optparse.TestStandard.test_short_option_consumes_separator
-test.test_optparse.TestStandard.test_short_option_joined_and_separator
-test.test_optparse.TestStandard.test_short_option_split_long_option_append
-test.test_optparse.TestStandard.test_short_option_split_one_positional_arg
-test.test_optparse.TestStandard.test_shortopt_empty_longopt_append
-test.test_optparse.TestTypeAliases.test_str_aliases_string
-test.test_optparse.TestTypeAliases.test_type_object
-test.test_optparse.TestVersion.test_no_version
-test.test_optparse.TestVersion.test_version
+test.test_optparse.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestBool.test_bool_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestBool.test_bool_false @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestBool.test_bool_flicker_on_and_off @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestBool.test_bool_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallback.test_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallback.test_callback_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackCheckAbbrev.test_abbrev_callback_expansion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackExtraArgs.test_callback_extra_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackManyArgs.test_many_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackMeddleArgs.test_callback_meddle_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackMeddleArgs.test_callback_meddle_args_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackVarArgs.test_consume_separator_stop_at_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackVarArgs.test_positional_arg_and_variable_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackVarArgs.test_stop_at_invalid_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackVarArgs.test_stop_at_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCallbackVarArgs.test_variable_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestChoice.test_add_choice_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestChoice.test_invalid_choice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestChoice.test_valid_choice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflict.test_conflict_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflict.test_conflict_error_group @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflict.test_no_such_conflict_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictOverride.test_conflict_override_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictOverride.test_conflict_override_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictOverride.test_conflict_override_opts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictResolve.test_conflict_resolve @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictResolve.test_conflict_resolve_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictResolve.test_conflict_resolve_long_opt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictResolve.test_conflict_resolve_long_opts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictResolve.test_conflict_resolve_short_opt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictingDefaults.test_conflict_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestConflictingDefaults.test_conflict_default_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_interspersed_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_no_interspersed_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_no_such_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_one @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_option_no_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_override_amount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_override_quiet @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_overriding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_overriding_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_three @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_three_apart @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_count_with_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestCount.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestDefaultValues.test_basic_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestDefaultValues.test_mixed_defaults_post @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestDefaultValues.test_mixed_defaults_pre @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestDefaultValues.test_process_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_alt_expand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_default_none_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_default_none_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_float_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_no_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_no_expand @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_option_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_parser_default_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExpandDefaults.test_parser_default_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExtendAddActions.test_extend_add_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExtendAddActions.test_extend_add_action_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExtendAddTypes.test_filetype_noexist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExtendAddTypes.test_filetype_notfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestExtendAddTypes.test_filetype_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestHelp.test_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestHelp.test_help_description_groups @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestHelp.test_help_long_opts_first @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestHelp.test_help_old_usage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestHelp.test_help_title_formatter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestHelp.test_help_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestHelp.test_help_unicode_description @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestHelp.test_wrap_columns @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMatchAbbrev.test_match_abbrev @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMatchAbbrev.test_match_abbrev_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMultipleArgs.test_nargs_invalid_float_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMultipleArgs.test_nargs_long_opt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMultipleArgs.test_nargs_required_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMultipleArgs.test_nargs_with_positional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMultipleArgsAppend.test_nargs_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMultipleArgsAppend.test_nargs_append_const @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMultipleArgsAppend.test_nargs_append_required_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestMultipleArgsAppend.test_nargs_append_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_action_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_attr_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_bad_choices_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_callback_args_no_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_callback_kwargs_no_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_callback_not_callable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_callback_args_for_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_callback_for_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_callback_kwargs_for_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_choices_for_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_choices_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_const_for_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_nargs_for_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_single_dash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_no_type_for_action @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_opt_string_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_opt_string_long_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_opt_string_short_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_opt_string_too_short @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionChecks.test_type_invalid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionGroup.test_add_group_invalid_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionGroup.test_add_group_no_group @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionGroup.test_add_group_wrong_parser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionGroup.test_group_manipulate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionGroup.test_option_group_create_instance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionParser.test_add_option_invalid_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionParser.test_add_option_no_Option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionParser.test_get_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionParser.test_get_option_equals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionParser.test_has_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionParser.test_remove_long_opt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionParser.test_remove_nonexistent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionParser.test_remove_short_opt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestOptionValues.test_basics @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestParseNumber.test_numeric_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestParseNumber.test_parse_num_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestParseNumber.test_parse_num_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestProgName.test_custom_progname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestProgName.test_default_progname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_abbrev_long_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_ambiguous_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_combined_single_invalid_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_hyphen_becomes_positional_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_invalid_integer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_long_invalid_integer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_long_option_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_long_option_argument_joined @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_long_option_argument_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_long_option_short_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_no_append_versus_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_no_such_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_option_argument_joined @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_option_argument_joined_integer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_option_argument_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_option_argument_split_negative_integer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_option_consumes_optionlike_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_required_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_short_and_long_option_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_short_option_consumes_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_short_option_joined_and_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_short_option_split_long_option_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_short_option_split_one_positional_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestStandard.test_shortopt_empty_longopt_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestTypeAliases.test_str_aliases_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestTypeAliases.test_type_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestVersion.test_no_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_optparse.TestVersion.test_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

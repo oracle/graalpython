@@ -1,11 +1,11 @@
-test.test_imghdr.TestImghdr.test_bad_args
-test.test_imghdr.TestImghdr.test_closed_file
-test.test_imghdr.TestImghdr.test_data
-test.test_imghdr.TestImghdr.test_file_pos
-test.test_imghdr.TestImghdr.test_invalid_headers
-test.test_imghdr.TestImghdr.test_missing_file
-test.test_imghdr.TestImghdr.test_output_stream
-test.test_imghdr.TestImghdr.test_pathlike_filename
-test.test_imghdr.TestImghdr.test_register_test
-test.test_imghdr.TestImghdr.test_string_data
-test.test_imghdr.TestImghdr.test_unseekable
+test.test_imghdr.TestImghdr.test_bad_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_closed_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_file_pos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_invalid_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_missing_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_output_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_pathlike_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_register_test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_string_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imghdr.TestImghdr.test_unseekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

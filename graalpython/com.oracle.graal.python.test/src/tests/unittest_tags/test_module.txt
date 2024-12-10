@@ -1,68 +1,34 @@
-test.test_module.ModuleTests.test_annotations_are_created_correctly
-test.test_module.ModuleTests.test_ascii_docstring
-test.test_module.ModuleTests.test_clear_dict_in_ref_cycle
-test.test_module.ModuleTests.test_descriptor_errors_propagate
-test.test_module.ModuleTests.test_dont_clear_dict
-test.test_module.ModuleTests.test_lazy_create_annotations
-test.test_module.ModuleTests.test_missing_getattr
-test.test_module.ModuleTests.test_module_dir
-test.test_module.ModuleTests.test_module_dir_errors
-test.test_module.ModuleTests.test_module_finalization_at_shutdown
-test.test_module.ModuleTests.test_module_getattr
-test.test_module.ModuleTests.test_module_getattr_errors
-test.test_module.ModuleTests.test_module_getattr_tricky
-test.test_module.ModuleTests.test_module_repr_builtin
-test.test_module.ModuleTests.test_module_repr_minimal
-test.test_module.ModuleTests.test_module_repr_source
-test.test_module.ModuleTests.test_module_repr_with_bare_loader
-test.test_module.ModuleTests.test_module_repr_with_bare_loader_and_filename
-test.test_module.ModuleTests.test_module_repr_with_bare_loader_but_no_name
-test.test_module.ModuleTests.test_module_repr_with_filename_only
-test.test_module.ModuleTests.test_module_repr_with_full_loader
-test.test_module.ModuleTests.test_module_repr_with_full_loader_and_filename
-test.test_module.ModuleTests.test_module_repr_with_full_loader_but_no_name
-test.test_module.ModuleTests.test_module_repr_with_loader_as_None
-test.test_module.ModuleTests.test_module_repr_with_name
-test.test_module.ModuleTests.test_module_repr_with_name_and_filename
-test.test_module.ModuleTests.test_no_docstring
-test.test_module.ModuleTests.test_reinit
-test.test_module.ModuleTests.test_setting_annotations
-test.test_module.ModuleTests.test_unicode_docstring
-test.test_module.ModuleTests.test_uninitialized
-test.test_module.ModuleTests.test_uninitialized_missing_getattr
-test.test_module.__init__.ModuleTests.test_annotations_are_created_correctly
-test.test_module.__init__.ModuleTests.test_annotations_getset_raises
-test.test_module.__init__.ModuleTests.test_ascii_docstring
-test.test_module.__init__.ModuleTests.test_clear_dict_in_ref_cycle
-test.test_module.__init__.ModuleTests.test_descriptor_errors_propagate
-test.test_module.__init__.ModuleTests.test_dont_clear_dict
-test.test_module.__init__.ModuleTests.test_lazy_create_annotations
-test.test_module.__init__.ModuleTests.test_missing_getattr
-test.test_module.__init__.ModuleTests.test_module_dir
-test.test_module.__init__.ModuleTests.test_module_dir_errors
-test.test_module.__init__.ModuleTests.test_module_finalization_at_shutdown
-test.test_module.__init__.ModuleTests.test_module_getattr
-test.test_module.__init__.ModuleTests.test_module_getattr_errors
-test.test_module.__init__.ModuleTests.test_module_getattr_tricky
-test.test_module.__init__.ModuleTests.test_module_repr_builtin
-test.test_module.__init__.ModuleTests.test_module_repr_minimal
-test.test_module.__init__.ModuleTests.test_module_repr_source
-test.test_module.__init__.ModuleTests.test_module_repr_with_bare_loader
-test.test_module.__init__.ModuleTests.test_module_repr_with_bare_loader_and_filename
-test.test_module.__init__.ModuleTests.test_module_repr_with_bare_loader_but_no_name
-test.test_module.__init__.ModuleTests.test_module_repr_with_filename_only
-test.test_module.__init__.ModuleTests.test_module_repr_with_full_loader
-test.test_module.__init__.ModuleTests.test_module_repr_with_full_loader_and_filename
-test.test_module.__init__.ModuleTests.test_module_repr_with_full_loader_but_no_name
-test.test_module.__init__.ModuleTests.test_module_repr_with_loader_as_None
-test.test_module.__init__.ModuleTests.test_module_repr_with_name
-test.test_module.__init__.ModuleTests.test_module_repr_with_name_and_filename
-test.test_module.__init__.ModuleTests.test_no_docstring
-test.test_module.__init__.ModuleTests.test_reinit
-test.test_module.__init__.ModuleTests.test_repeated_attribute_pops
-test.test_module.__init__.ModuleTests.test_setting_annotations
-test.test_module.__init__.ModuleTests.test_subclass_with_slots
-test.test_module.__init__.ModuleTests.test_unicode_docstring
-test.test_module.__init__.ModuleTests.test_uninitialized
-test.test_module.__init__.ModuleTests.test_uninitialized_missing_getattr
-test.test_module.__init__.ModuleTests.test_weakref
+test.test_module.ModuleTests.test_annotations_are_created_correctly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_annotations_getset_raises @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_ascii_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_descriptor_errors_propagate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_dont_clear_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_lazy_create_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_missing_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_dir_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_getattr_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_getattr_tricky @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_builtin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_minimal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_source @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_bare_loader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_bare_loader_and_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_bare_loader_but_no_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_filename_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_full_loader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_full_loader_and_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_full_loader_but_no_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_loader_as_None @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_module_repr_with_name_and_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_no_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_reinit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_repeated_attribute_pops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_setting_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_subclass_with_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_unicode_docstring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_uninitialized_missing_getattr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_module.ModuleTests.test_weakref @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

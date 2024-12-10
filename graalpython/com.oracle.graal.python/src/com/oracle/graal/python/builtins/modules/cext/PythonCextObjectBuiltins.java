@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
@@ -120,6 +121,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -429,14 +431,16 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached PyLongCheckNode longCheckNode,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PyObjectAsFileDescriptor asFileDescriptorNode) {
+                        @Cached PyObjectAsFileDescriptor asFileDescriptorNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (!longCheckNode.execute(inliningTarget, obj)) {
                 Object posixSupport = PythonContext.get(inliningTarget).getPosixSupport();
                 if (eqNode.execute(T_JAVA, posixLib.getBackend(posixSupport), TS_ENCODING)) {
-                    // For non Python `int' objects, we refuse to hand out the fileno
-                    // field when using the emulated Posix backend, because it is likely
-                    // a fake.
-                    return -1;
+                    /*
+                     * For non Python 'int' objects, we refuse to hand out the fileno field when
+                     * using the emulated Posix backend, because it is likely a fake.
+                     */
+                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.S_NOT_SUPPORTED_ON_JAVA_POSIX_BACKEND, "PyObject_AsFileDescriptor");
                 }
             }
             return asFileDescriptorNode.execute(null, inliningTarget, obj);

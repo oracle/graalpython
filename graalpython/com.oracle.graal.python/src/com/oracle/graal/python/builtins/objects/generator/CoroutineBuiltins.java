@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.generator;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -49,6 +50,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -60,6 +63,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCoroutine)
 public final class CoroutineBuiltins extends PythonBuiltins {
@@ -125,6 +129,16 @@ public final class CoroutineBuiltins extends PythonBuiltins {
         static Object await(PGenerator self,
                         @Cached PythonObjectFactory factory) {
             return factory.createCoroutineWrapper(self);
+        }
+    }
+
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static TruffleString repr(PGenerator self,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<coroutine object %s at 0x%d>", self.getQualname(), PythonAbstractObject.objectHashCode(self));
         }
     }
 }

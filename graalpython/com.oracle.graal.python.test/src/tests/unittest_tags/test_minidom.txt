@@ -1,128 +1,128 @@
-test.test_minidom.MinidomTest.testAAA
-test.test_minidom.MinidomTest.testAAB
-test.test_minidom.MinidomTest.testAddAttr
-test.test_minidom.MinidomTest.testAltNewline
-test.test_minidom.MinidomTest.testAppendChild
-test.test_minidom.MinidomTest.testAppendChildFragment
-test.test_minidom.MinidomTest.testAttrListItem
-test.test_minidom.MinidomTest.testAttrListItemNS
-test.test_minidom.MinidomTest.testAttrListItems
-test.test_minidom.MinidomTest.testAttrListKeys
-test.test_minidom.MinidomTest.testAttrListKeysNS
-test.test_minidom.MinidomTest.testAttrListLength
-test.test_minidom.MinidomTest.testAttrListValues
-test.test_minidom.MinidomTest.testAttrList__getitem__
-test.test_minidom.MinidomTest.testAttrList__setitem__
-test.test_minidom.MinidomTest.testAttrModeSetsNonOptionalAttrs
-test.test_minidom.MinidomTest.testAttrModeSetsParamsAsAttrs
-test.test_minidom.MinidomTest.testAttributeRepr
-test.test_minidom.MinidomTest.testBug0777884
-test.test_minidom.MinidomTest.testBug1433694
-test.test_minidom.MinidomTest.testChangeAttr
-test.test_minidom.MinidomTest.testChildNodes
-test.test_minidom.MinidomTest.testCloneAttributeDeep
-test.test_minidom.MinidomTest.testCloneAttributeShallow
-test.test_minidom.MinidomTest.testCloneDocumentDeep
-test.test_minidom.MinidomTest.testCloneDocumentShallow
-test.test_minidom.MinidomTest.testCloneDocumentTypeDeepNotOk
-test.test_minidom.MinidomTest.testCloneDocumentTypeDeepOk
-test.test_minidom.MinidomTest.testCloneDocumentTypeShallowNotOk
-test.test_minidom.MinidomTest.testCloneDocumentTypeShallowOk
-test.test_minidom.MinidomTest.testCloneElementDeep
-test.test_minidom.MinidomTest.testCloneElementShallow
-test.test_minidom.MinidomTest.testCloneNodeEntity
-test.test_minidom.MinidomTest.testClonePIDeep
-test.test_minidom.MinidomTest.testClonePIShallow
-test.test_minidom.MinidomTest.testComment
-test.test_minidom.MinidomTest.testContext
-test.test_minidom.MinidomTest.testCreateAttributeNS
-test.test_minidom.MinidomTest.testCreateElementNS
-test.test_minidom.MinidomTest.testDeepcopiedDocument
-test.test_minidom.MinidomTest.testDeleteAttr
-test.test_minidom.MinidomTest.testDocRemoveChild
-test.test_minidom.MinidomTest.testDocumentAsyncAttr
-test.test_minidom.MinidomTest.testDocumentElement
-test.test_minidom.MinidomTest.testElement
-test.test_minidom.MinidomTest.testElementReprAndStr
-test.test_minidom.MinidomTest.testElementReprAndStrUnicode
-test.test_minidom.MinidomTest.testElementReprAndStrUnicodeNS
-test.test_minidom.MinidomTest.testEmptyXMLNSValue
-test.test_minidom.MinidomTest.testExceptionOnSpacesInXMLNSValue
-test.test_minidom.MinidomTest.testFirstChild
-test.test_minidom.MinidomTest.testGetAttrLength
-test.test_minidom.MinidomTest.testGetAttrList
-test.test_minidom.MinidomTest.testGetAttrValues
-test.test_minidom.MinidomTest.testGetAttribute
-test.test_minidom.MinidomTest.testGetAttributeNS
-test.test_minidom.MinidomTest.testGetAttributeNode
-test.test_minidom.MinidomTest.testGetElementsByTagName
-test.test_minidom.MinidomTest.testGetElementsByTagNameNS
-test.test_minidom.MinidomTest.testGetEmptyNodeListFromElementsByTagNameNS
-test.test_minidom.MinidomTest.testHasAttribute
-test.test_minidom.MinidomTest.testHasChildNodes
-test.test_minidom.MinidomTest.testImportDocumentDeep
-test.test_minidom.MinidomTest.testImportDocumentShallow
-test.test_minidom.MinidomTest.testImportDocumentTypeDeep
-test.test_minidom.MinidomTest.testImportDocumentTypeShallow
-test.test_minidom.MinidomTest.testInsertBefore
-test.test_minidom.MinidomTest.testInsertBeforeFragment
-test.test_minidom.MinidomTest.testLegalChildren
-test.test_minidom.MinidomTest.testNamedNodeMapSetItem
-test.test_minidom.MinidomTest.testNodeListItem
-test.test_minidom.MinidomTest.testNonZero
-test.test_minidom.MinidomTest.testNormalize
-test.test_minidom.MinidomTest.testNormalizeCombineAndNextSibling
-test.test_minidom.MinidomTest.testNormalizeDeleteAndCombine
-test.test_minidom.MinidomTest.testNormalizeDeleteWithNextSibling
-test.test_minidom.MinidomTest.testNormalizeDeleteWithPrevSibling
-test.test_minidom.MinidomTest.testNormalizeDeleteWithTwoNonTextSiblings
-test.test_minidom.MinidomTest.testNormalizeRecursion
-test.test_minidom.MinidomTest.testParents
-test.test_minidom.MinidomTest.testParse
-test.test_minidom.MinidomTest.testParseAttributeNamespaces
-test.test_minidom.MinidomTest.testParseAttributes
-test.test_minidom.MinidomTest.testParseElement
-test.test_minidom.MinidomTest.testParseElementNamespaces
-test.test_minidom.MinidomTest.testParseFromBinaryFile
-test.test_minidom.MinidomTest.testParseFromTextFile
-test.test_minidom.MinidomTest.testParseProcessingInstructions
-test.test_minidom.MinidomTest.testParseString
-test.test_minidom.MinidomTest.testPatch1094164
-test.test_minidom.MinidomTest.testPickledDocument
-test.test_minidom.MinidomTest.testProcessingInstruction
-test.test_minidom.MinidomTest.testProcessingInstructionNameError
-test.test_minidom.MinidomTest.testProcessingInstructionRepr
-test.test_minidom.MinidomTest.testRemoveAttr
-test.test_minidom.MinidomTest.testRemoveAttrNS
-test.test_minidom.MinidomTest.testRemoveAttributeNode
-test.test_minidom.MinidomTest.testRemoveNamedItem
-test.test_minidom.MinidomTest.testRemoveNamedItemNS
-test.test_minidom.MinidomTest.testRenameAttribute
-test.test_minidom.MinidomTest.testRenameElement
-test.test_minidom.MinidomTest.testRenameOther
-test.test_minidom.MinidomTest.testReplaceChildFragment
-test.test_minidom.MinidomTest.testReplaceWholeText
-test.test_minidom.MinidomTest.testSchemaType
-test.test_minidom.MinidomTest.testSerializeCommentNodeWithDoubleHyphen
-test.test_minidom.MinidomTest.testSetAttrValueandNodeValue
-test.test_minidom.MinidomTest.testSetIdAttribute
-test.test_minidom.MinidomTest.testSetIdAttributeNS
-test.test_minidom.MinidomTest.testSetIdAttributeNode
-test.test_minidom.MinidomTest.testSiblings
-test.test_minidom.MinidomTest.testStandalone
-test.test_minidom.MinidomTest.testTextNodeRepr
-test.test_minidom.MinidomTest.testTextRepr
-test.test_minidom.MinidomTest.testTooManyDocumentElements
-test.test_minidom.MinidomTest.testUnlink
-test.test_minidom.MinidomTest.testUserData
-test.test_minidom.MinidomTest.testWholeText
-test.test_minidom.MinidomTest.testWriteText
-test.test_minidom.MinidomTest.testWriteXML
-test.test_minidom.MinidomTest.test_cdata_parsing
-test.test_minidom.MinidomTest.test_minidom_attribute_order
-test.test_minidom.MinidomTest.test_toprettyxml_preserves_content_of_text_node
-test.test_minidom.MinidomTest.test_toprettyxml_with_adjacent_text_nodes
-test.test_minidom.MinidomTest.test_toprettyxml_with_attributes_ordered
-test.test_minidom.MinidomTest.test_toprettyxml_with_cdata
-test.test_minidom.MinidomTest.test_toprettyxml_with_text_nodes
-test.test_minidom.MinidomTest.test_toxml_with_attributes_ordered
+test.test_minidom.MinidomTest.testAAA @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAAB @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAddAttr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAltNewline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAppendChild @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAppendChildFragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrListItem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrListItemNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrListItems @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrListKeys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrListKeysNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrListLength @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrListValues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrList__getitem__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrList__setitem__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrModeSetsNonOptionalAttrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttrModeSetsParamsAsAttrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testAttributeRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testBug0777884 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testBug1433694 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testChangeAttr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testChildNodes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneAttributeDeep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneAttributeShallow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneDocumentDeep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneDocumentShallow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneDocumentTypeDeepNotOk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneDocumentTypeDeepOk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneDocumentTypeShallowNotOk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneDocumentTypeShallowOk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneElementDeep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneElementShallow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCloneNodeEntity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testClonePIDeep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testClonePIShallow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testComment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testContext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCreateAttributeNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testCreateElementNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testDeepcopiedDocument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testDeleteAttr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testDocRemoveChild @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testDocumentAsyncAttr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testDocumentElement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testElement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testElementReprAndStr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testElementReprAndStrUnicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testElementReprAndStrUnicodeNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testEmptyXMLNSValue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testExceptionOnSpacesInXMLNSValue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testFirstChild @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetAttrLength @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetAttrList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetAttrValues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetAttribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetAttributeNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetAttributeNode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetElementsByTagName @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetElementsByTagNameNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testGetEmptyNodeListFromElementsByTagNameNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testHasAttribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testHasChildNodes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testImportDocumentDeep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testImportDocumentShallow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testImportDocumentTypeDeep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testImportDocumentTypeShallow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testInsertBefore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testInsertBeforeFragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testLegalChildren @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNamedNodeMapSetItem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNodeListItem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNonZero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNormalize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNormalizeCombineAndNextSibling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNormalizeDeleteAndCombine @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNormalizeDeleteWithNextSibling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNormalizeDeleteWithPrevSibling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNormalizeDeleteWithTwoNonTextSiblings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testNormalizeRecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParents @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParseAttributeNamespaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParseAttributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParseElement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParseElementNamespaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParseFromBinaryFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParseFromTextFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParseProcessingInstructions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testParseString @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testPatch1094164 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testPickledDocument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testProcessingInstruction @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testProcessingInstructionNameError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testProcessingInstructionRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testRemoveAttr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testRemoveAttrNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testRemoveAttributeNode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testRemoveNamedItem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testRemoveNamedItemNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testRenameAttribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testRenameElement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testRenameOther @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testReplaceChildFragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testReplaceWholeText @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testSchemaType @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testSerializeCommentNodeWithDoubleHyphen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testSetAttrValueandNodeValue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testSetIdAttribute @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testSetIdAttributeNS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testSetIdAttributeNode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testSiblings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testStandalone @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testTextNodeRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testTextRepr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testTooManyDocumentElements @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testUnlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testUserData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testWholeText @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testWriteText @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.testWriteXML @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.test_cdata_parsing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.test_minidom_attribute_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.test_toprettyxml_preserves_content_of_text_node @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.test_toprettyxml_with_adjacent_text_nodes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.test_toprettyxml_with_attributes_ordered @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.test_toprettyxml_with_cdata @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.test_toprettyxml_with_text_nodes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_minidom.MinidomTest.test_toxml_with_attributes_ordered @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

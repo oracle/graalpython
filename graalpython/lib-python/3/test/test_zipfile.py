@@ -307,6 +307,8 @@ class AbstractTestsWithSourceFile:
         zipfp.writestr("b.txt", "hello world", compress_type=self.compression)
         info = zipfp.getinfo('b.txt')
         self.assertEqual(info.compress_type, self.compression)
+        # GraalPy change
+        zipfp.close()
 
     def test_writestr_compresslevel(self):
         zipfp = zipfile.ZipFile(TESTFN2, "w", compresslevel=1)
@@ -323,6 +325,8 @@ class AbstractTestsWithSourceFile:
         b_info = zipfp.getinfo('b.txt')
         self.assertEqual(b_info.compress_type, self.compression)
         self.assertEqual(b_info._compresslevel, 2)
+        # GraalPy change
+        zipfp.close()
 
     def test_read_return_size(self):
         # Issue #9837: ZipExtFile.read() shouldn't return more bytes
@@ -2075,6 +2079,8 @@ class OtherTests(unittest.TestCase):
         zipf.close()
         try:
             zipf = zipfile.ZipFile(TESTFN, mode="r")
+            # GraalPy change
+            zipf.close()
         except zipfile.BadZipFile:
             self.fail("Unable to create empty ZIP file in 'w' mode")
 
@@ -2082,6 +2088,8 @@ class OtherTests(unittest.TestCase):
         zipf.close()
         try:
             zipf = zipfile.ZipFile(TESTFN, mode="r")
+            # GraalPy change
+            zipf.close()
         except:
             self.fail("Unable to create empty ZIP file in 'a' mode")
 

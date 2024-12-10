@@ -1,28 +1,26 @@
-test.test_site.HelperFunctionsTests.test__getuserbase
-test.test_site.HelperFunctionsTests.test_addpackage
-test.test_site.HelperFunctionsTests.test_addpackage_empty_lines
-test.test_site.HelperFunctionsTests.test_addpackage_import_bad_exec
-test.test_site.HelperFunctionsTests.test_addpackage_import_bad_pth_file
-test.test_site.HelperFunctionsTests.test_addpackage_import_bad_syntax
-test.test_site.HelperFunctionsTests.test_addsitedir
-test.test_site.HelperFunctionsTests.test_get_path
-test.test_site.HelperFunctionsTests.test_getsitepackages
-test.test_site.HelperFunctionsTests.test_getuserbase
-test.test_site.HelperFunctionsTests.test_getusersitepackages
-test.test_site.HelperFunctionsTests.test_init_pathinfo
-test.test_site.HelperFunctionsTests.test_makepath
-test.test_site.HelperFunctionsTests.test_no_home_directory
-test.test_site.HelperFunctionsTests.test_s_option
-test.test_site.HelperFunctionsTests.test_trace
-test.test_site.ImportSideEffectTests.test_abs_paths_cached_None
-test.test_site.ImportSideEffectTests.test_add_build_dir
-test.test_site.ImportSideEffectTests.test_license_exists_at_url
-test.test_site.ImportSideEffectTests.test_no_duplicate_paths
-test.test_site.ImportSideEffectTests.test_setting_copyright
-test.test_site.ImportSideEffectTests.test_setting_help
-test.test_site.ImportSideEffectTests.test_setting_quit
-test.test_site.ImportSideEffectTests.test_sitecustomize_executed
-test.test_site.StartupImportTests.test_startup_interactivehook
-test.test_site.StartupImportTests.test_startup_interactivehook_isolated
-test.test_site.StartupImportTests.test_startup_interactivehook_isolated_explicit
-test.test_site._pthFileTests.test_underpth_dll_file
+test.test_site.HelperFunctionsTests.test__getuserbase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_addpackage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_addpackage_empty_lines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_addpackage_import_bad_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_addpackage_import_bad_pth_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_addpackage_import_bad_syntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_addsitedir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_get_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_getsitepackages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_getuserbase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_getusersitepackages @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_init_pathinfo @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_makepath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_no_home_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_s_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.HelperFunctionsTests.test_trace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.ImportSideEffectTests.test_abs_paths_cached_None @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.ImportSideEffectTests.test_license_exists_at_url @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.ImportSideEffectTests.test_no_duplicate_paths @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.ImportSideEffectTests.test_setting_copyright @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.ImportSideEffectTests.test_setting_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.ImportSideEffectTests.test_setting_quit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.ImportSideEffectTests.test_sitecustomize_executed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.StartupImportTests.test_startup_interactivehook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.StartupImportTests.test_startup_interactivehook_isolated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_site.StartupImportTests.test_startup_interactivehook_isolated_explicit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -1,1 +1,1 @@
-test.test_except_star.TestInvalidExceptStar.test_mixed_except_and_except_star_is_syntax_error
+test.test_except_star.TestInvalidExceptStar.test_mixed_except_and_except_star_is_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

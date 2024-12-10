@@ -1,6 +1,6 @@
-test.test_cgitb.TestCgitb.test_blanks
-test.test_cgitb.TestCgitb.test_fonts
-test.test_cgitb.TestCgitb.test_html
-test.test_cgitb.TestCgitb.test_syshook_no_logdir_default_format
-test.test_cgitb.TestCgitb.test_syshook_no_logdir_text_format
-test.test_cgitb.TestCgitb.test_text
+test.test_cgitb.TestCgitb.test_blanks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgitb.TestCgitb.test_fonts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgitb.TestCgitb.test_html @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgitb.TestCgitb.test_syshook_no_logdir_default_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgitb.TestCgitb.test_syshook_no_logdir_text_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_cgitb.TestCgitb.test_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

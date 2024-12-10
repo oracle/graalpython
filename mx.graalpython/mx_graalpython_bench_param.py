@@ -275,15 +275,6 @@ INTEROP_BENCHMARKS = {
 }
 
 
-_INTEROP_JAVA_PACKAGE = 'com.oracle.graal.python.benchmarks.interop.'
-INTEROP_JAVA_BENCHMARKS = {
-    'richards3': [_INTEROP_JAVA_PACKAGE + 'PyRichards'] + MESO_BENCHMARKS['richards3'],
-    'euler31': [_INTEROP_JAVA_PACKAGE + 'PyEuler31'] + MESO_BENCHMARKS['euler31'],
-    'euler11': [_INTEROP_JAVA_PACKAGE + 'PyEuler11'] + MESO_BENCHMARKS['euler11'],
-    'nbody3': [_INTEROP_JAVA_PACKAGE + 'PyNbody'] + MESO_BENCHMARKS['nbody3'],
-    'fannkuchredux3': [_INTEROP_JAVA_PACKAGE + 'PyFannkuchredux'] + MESO_BENCHMARKS['fannkuchredux3'],
-}
-
 JAVA_EMBEDDING_MESO_BENCHMARKS = {
     'chaos': ITER_6 + WARMUP_2 + [],
     'richards3': ITER_6 + WARMUP_2 + [],
@@ -298,9 +289,12 @@ JAVA_EMBEDDING_MESO_BENCHMARKS_SMALL = {
     'raytrace-simple': ITER_6 + WARMUP_2 + ['--', '110', '110'],
 }
 
+# NOTE: there are also JMH benchmarks, which are based on JMH support in MX
+# see PythonJMHDistMxBenchmarkSuite
+
 # -------------------------------------------------------
-# Parameters for parsing bench marks
-# Parameters for parsing bench marks
+# Parameters for parsing benchmarks
+# Parameters for parsing benchmarks
 # 1. full qualified name of class that define the benchmark
 # 2. -i number : is number of benchmark iterations (defualt 5)
 # 3. -w number : is number of warmup iterations, in these cases should not be necessary (default 0)
@@ -336,8 +330,4 @@ JAVA_DRIVER_BENCHMARKS = {
 
 WARMUP_BENCHMARKS = {
     "python-warmup": [PATH_WARMUP, WARMUP_BENCHMARKS],
-}
-
-JBENCHMARKS = {
-    "pyjava": [INTEROP_JAVA_BENCHMARKS],
 }

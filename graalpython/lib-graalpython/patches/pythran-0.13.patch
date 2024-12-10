@@ -1,26 +1,44 @@
 diff --git a/pythran/pythonic/python/core.hpp b/pythran/pythonic/python/core.hpp
-index ff44c01..23b4413 100644
+index 4cbe3e0..24340b0 100644
 --- a/pythran/pythonic/python/core.hpp
 +++ b/pythran/pythonic/python/core.hpp
-@@ -53,7 +53,7 @@ namespace python
+@@ -53,7 +53,14 @@ namespace python
  {
  
  #ifndef PyString_AS_STRING
 -#define PyString_AS_STRING (char *)_PyUnicode_COMPACT_DATA
-+#define PyString_AS_STRING PyBytes_AS_STRING
++  static inline const char* PyString_AS_STRING(PyObject* obj) {
++      const char* str = PyUnicode_AsUTF8(obj);
++      if (!str) {
++          PyErr_Clear();
++          str = "<invalid string>";
++      }
++      return str;
++  }
  #endif
  
    inline void PyObject_TypePrettyPrinter(std::ostream &oss, PyObject *obj)
 diff --git a/pythran/pythonic/types/str.hpp b/pythran/pythonic/types/str.hpp
-index 1f7a981..00440a9 100644
+index 1f7a981..e975333 100644
 --- a/pythran/pythonic/types/str.hpp
 +++ b/pythran/pythonic/types/str.hpp
-@@ -744,7 +744,7 @@ namespace std
- #define PyString_Check(x) PyUnicode_Check(x) && PyUnicode_IS_COMPACT_ASCII(x)
+@@ -741,10 +741,17 @@ namespace std
+ #define PyString_FromStringAndSize PyUnicode_FromStringAndSize
+ 
+ #ifndef PyString_Check
+-#define PyString_Check(x) PyUnicode_Check(x) && PyUnicode_IS_COMPACT_ASCII(x)
++#define PyString_Check(x) PyUnicode_Check(x)
  #endif
  #ifndef PyString_AS_STRING
 -#define PyString_AS_STRING (char *)_PyUnicode_COMPACT_DATA
-+#define PyString_AS_STRING PyBytes_AS_STRING
++  static inline const char* PyString_AS_STRING(PyObject* obj) {
++      const char* str = PyUnicode_AsUTF8(obj);
++      if (!str) {
++          PyErr_Clear();
++          str = "<invalid string>";
++      }
++      return str;
++  }
  #endif
  #ifndef PyString_GET_SIZE
  #define PyString_GET_SIZE PyUnicode_GET_LENGTH

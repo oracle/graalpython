@@ -1,97 +1,92 @@
-test.test_bz2.BZ2CompressorTest.testCompress
-test.test_bz2.BZ2CompressorTest.testCompress4G
-test.test_bz2.BZ2CompressorTest.testCompressChunks10
-test.test_bz2.BZ2CompressorTest.testCompressEmptyString
-test.test_bz2.BZ2CompressorTest.testPickle
-test.test_bz2.BZ2DecompressorTest.testDecompress
-test.test_bz2.BZ2DecompressorTest.testDecompress4G
-test.test_bz2.BZ2DecompressorTest.testDecompressChunks10
-test.test_bz2.BZ2DecompressorTest.testDecompressUnusedData
-test.test_bz2.BZ2DecompressorTest.testDecompressorChunksMaxsize
-test.test_bz2.BZ2DecompressorTest.testEOFError
-test.test_bz2.BZ2DecompressorTest.testPickle
-test.test_bz2.BZ2DecompressorTest.test_Constructor
-test.test_bz2.BZ2DecompressorTest.test_decompressor_inputbuf_1
-test.test_bz2.BZ2DecompressorTest.test_decompressor_inputbuf_2
-test.test_bz2.BZ2DecompressorTest.test_decompressor_inputbuf_3
-test.test_bz2.BZ2DecompressorTest.test_failure
-test.test_bz2.BZ2DecompressorTest.test_refleaks_in___init__
-test.test_bz2.BZ2FileTest.testAppend
-test.test_bz2.BZ2FileTest.testBadArgs
-test.test_bz2.BZ2FileTest.testClosedIteratorDeadlock
-test.test_bz2.BZ2FileTest.testContextProtocol
-test.test_bz2.BZ2FileTest.testDecompressLimited
-test.test_bz2.BZ2FileTest.testFileno
-test.test_bz2.BZ2FileTest.testIterator
-test.test_bz2.BZ2FileTest.testIteratorMultiStream
-test.test_bz2.BZ2FileTest.testMixedIterationAndReads
-test.test_bz2.BZ2FileTest.testMultiStreamOrdering
-test.test_bz2.BZ2FileTest.testOpenBytesFilename
-test.test_bz2.BZ2FileTest.testOpenDel
-test.test_bz2.BZ2FileTest.testOpenNonexistent
-test.test_bz2.BZ2FileTest.testOpenPathLikeFilename
-test.test_bz2.BZ2FileTest.testPeek
-test.test_bz2.BZ2FileTest.testPeekBytesIO
-test.test_bz2.BZ2FileTest.testRead
-test.test_bz2.BZ2FileTest.testRead0
-test.test_bz2.BZ2FileTest.testRead100
-test.test_bz2.BZ2FileTest.testReadBadFile
-test.test_bz2.BZ2FileTest.testReadBytesIO
-test.test_bz2.BZ2FileTest.testReadChunk10
-test.test_bz2.BZ2FileTest.testReadChunk10MultiStream
-test.test_bz2.BZ2FileTest.testReadInto
-test.test_bz2.BZ2FileTest.testReadLine
-test.test_bz2.BZ2FileTest.testReadLineMultiStream
-test.test_bz2.BZ2FileTest.testReadLines
-test.test_bz2.BZ2FileTest.testReadLinesMultiStream
-test.test_bz2.BZ2FileTest.testReadMonkeyMultiStream
-test.test_bz2.BZ2FileTest.testReadMultiStream
-test.test_bz2.BZ2FileTest.testReadMultiStreamTrailingJunk
-test.test_bz2.BZ2FileTest.testReadTrailingJunk
-test.test_bz2.BZ2FileTest.testReadable
-test.test_bz2.BZ2FileTest.testReadlinesNoNewline
-test.test_bz2.BZ2FileTest.testSeekBackwards
-test.test_bz2.BZ2FileTest.testSeekBackwardsAcrossStreams
-test.test_bz2.BZ2FileTest.testSeekBackwardsBytesIO
-test.test_bz2.BZ2FileTest.testSeekBackwardsFromEnd
-test.test_bz2.BZ2FileTest.testSeekBackwardsFromEndAcrossStreams
-test.test_bz2.BZ2FileTest.testSeekForward
-test.test_bz2.BZ2FileTest.testSeekForwardAcrossStreams
-test.test_bz2.BZ2FileTest.testSeekForwardBytesIO
-test.test_bz2.BZ2FileTest.testSeekPostEnd
-test.test_bz2.BZ2FileTest.testSeekPostEndMultiStream
-test.test_bz2.BZ2FileTest.testSeekPostEndTwice
-test.test_bz2.BZ2FileTest.testSeekPostEndTwiceMultiStream
-test.test_bz2.BZ2FileTest.testSeekPreStart
-test.test_bz2.BZ2FileTest.testSeekPreStartMultiStream
-test.test_bz2.BZ2FileTest.testSeekable
-test.test_bz2.BZ2FileTest.testThreading
-test.test_bz2.BZ2FileTest.testWritable
-test.test_bz2.BZ2FileTest.testWrite
-test.test_bz2.BZ2FileTest.testWriteBytesIO
-test.test_bz2.BZ2FileTest.testWriteChunks10
-test.test_bz2.BZ2FileTest.testWriteLines
-test.test_bz2.BZ2FileTest.testWriteMethodsOnReadOnlyFile
-test.test_bz2.BZ2FileTest.testWriteNonDefaultCompressLevel
-test.test_bz2.BZ2FileTest.test_issue44439
-test.test_bz2.BZ2FileTest.test_read_truncated
-test.test_bz2.CompressDecompressTest.testCompress
-test.test_bz2.CompressDecompressTest.testCompressEmptyString
-test.test_bz2.CompressDecompressTest.testDecompress
-test.test_bz2.CompressDecompressTest.testDecompressBadData
-test.test_bz2.CompressDecompressTest.testDecompressEmpty
-test.test_bz2.CompressDecompressTest.testDecompressIncomplete
-test.test_bz2.CompressDecompressTest.testDecompressMultiStream
-test.test_bz2.CompressDecompressTest.testDecompressMultiStreamTrailingJunk
-test.test_bz2.CompressDecompressTest.testDecompressToEmptyString
-test.test_bz2.CompressDecompressTest.testDecompressTrailingJunk
-test.test_bz2.OpenTest.test_bad_params
-test.test_bz2.OpenTest.test_binary_modes
-test.test_bz2.OpenTest.test_encoding
-test.test_bz2.OpenTest.test_encoding_error_handler
-test.test_bz2.OpenTest.test_fileobj
-test.test_bz2.OpenTest.test_implicit_binary_modes
-test.test_bz2.OpenTest.test_newline
-test.test_bz2.OpenTest.test_text_modes
-test.test_bz2.OpenTest.test_x_mode
-test.test_bz2.TestMain.test_main
+test.test_bz2.BZ2CompressorTest.testCompress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2CompressorTest.testCompress4G @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2CompressorTest.testCompressChunks10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2CompressorTest.testCompressEmptyString @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.testDecompress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.testDecompress4G @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.testDecompressChunks10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.testDecompressUnusedData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.testDecompressorChunksMaxsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.testEOFError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.test_Constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.test_decompressor_inputbuf_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.test_decompressor_inputbuf_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.test_decompressor_inputbuf_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2DecompressorTest.test_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testAppend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testBadArgs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testClosedIteratorDeadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testContextProtocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testDecompressLimited @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testFileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testIterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testIteratorMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testMixedIterationAndReads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testMultiStreamOrdering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testOpenBytesFilename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testOpenNonexistent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testOpenPathLikeFilename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testPeek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testPeekBytesIO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testRead @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testRead0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testRead100 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadBadFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadBytesIO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadChunk10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadChunk10MultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadInto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadLine @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadLineMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadLines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadLinesMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadMonkeyMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadMultiStreamTrailingJunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadTrailingJunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testReadlinesNoNewline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekBackwards @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekBackwardsAcrossStreams @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekBackwardsBytesIO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekBackwardsFromEnd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekBackwardsFromEndAcrossStreams @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekForward @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekForwardAcrossStreams @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekForwardBytesIO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekPostEnd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekPostEndMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekPostEndTwice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekPostEndTwiceMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekPreStart @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekPreStartMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testSeekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testThreading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testWritable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testWrite @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testWriteBytesIO @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testWriteChunks10 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testWriteLines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testWriteMethodsOnReadOnlyFile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.testWriteNonDefaultCompressLevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.test_issue44439 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.BZ2FileTest.test_read_truncated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testCompress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testCompressEmptyString @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testDecompress @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testDecompressBadData @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testDecompressEmpty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testDecompressIncomplete @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testDecompressMultiStream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testDecompressMultiStreamTrailingJunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testDecompressToEmptyString @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.CompressDecompressTest.testDecompressTrailingJunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_bad_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_binary_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_encoding_error_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_fileobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_implicit_binary_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_text_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_bz2.OpenTest.test_x_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

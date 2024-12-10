@@ -1,62 +1,50 @@
-test.test_marshal.BufferTestCase.test_array
-test.test_marshal.BufferTestCase.test_bytearray
-test.test_marshal.BufferTestCase.test_memoryview
-test.test_marshal.BugsTestCase.test_bad_reader
-test.test_marshal.BugsTestCase.test_bug_5888452
-test.test_marshal.BugsTestCase.test_deterministic_sets
-test.test_marshal.BugsTestCase.test_eof
-test.test_marshal.BugsTestCase.test_exact_type_match
-test.test_marshal.BugsTestCase.test_fuzz
-test.test_marshal.BugsTestCase.test_invalid_longs
-test.test_marshal.BugsTestCase.test_large_marshal
-test.test_marshal.BugsTestCase.test_loads_recursion
-test.test_marshal.BugsTestCase.test_loads_reject_unicode_strings
-test.test_marshal.BugsTestCase.test_multiple_dumps_and_loads
-test.test_marshal.BugsTestCase.test_patch_873224
-test.test_marshal.BugsTestCase.test_recursion_limit
-test.test_marshal.BugsTestCase.test_version_argument
-test.test_marshal.CAPI_TestCase.test_read_last_object_from_file
-test.test_marshal.CAPI_TestCase.test_read_long_from_file
-test.test_marshal.CAPI_TestCase.test_read_object_from_file
-test.test_marshal.CAPI_TestCase.test_read_short_from_file
-test.test_marshal.CAPI_TestCase.test_write_long_to_file
-test.test_marshal.CAPI_TestCase.test_write_object_to_file
-test.test_marshal.CodeTestCase.test_different_filenames
-test.test_marshal.CodeTestCase.test_many_codeobjects
-test.test_marshal.CodeTestCase.test_same_filename_used
-test.test_marshal.CompatibilityTestCase.test0To3
-test.test_marshal.CompatibilityTestCase.test1To3
-test.test_marshal.CompatibilityTestCase.test2To3
-test.test_marshal.CompatibilityTestCase.test3To3
-test.test_marshal.ContainerTestCase.test_dict
-test.test_marshal.ContainerTestCase.test_empty_frozenset_singleton
-test.test_marshal.ContainerTestCase.test_list
-test.test_marshal.ContainerTestCase.test_sets
-test.test_marshal.ContainerTestCase.test_tuple
-test.test_marshal.ExceptionTestCase.test_exceptions
-test.test_marshal.FloatTestCase.test_floats
-test.test_marshal.InstancingTestCase.testBytes
-test.test_marshal.InstancingTestCase.testDict
-test.test_marshal.InstancingTestCase.testFloat
-test.test_marshal.InstancingTestCase.testFrozenSet
-test.test_marshal.InstancingTestCase.testInt
-test.test_marshal.InstancingTestCase.testList
-test.test_marshal.InstancingTestCase.testRecursion
-test.test_marshal.InstancingTestCase.testSet
-test.test_marshal.InstancingTestCase.testStr
-test.test_marshal.InstancingTestCase.testTuple
-test.test_marshal.IntTestCase.test_bool
-test.test_marshal.IntTestCase.test_int64
-test.test_marshal.IntTestCase.test_ints
-test.test_marshal.InterningTestCase.testIntern
-test.test_marshal.InterningTestCase.testNoIntern
-test.test_marshal.LargeValuesTestCase.test_bytearray
-test.test_marshal.LargeValuesTestCase.test_bytes
-test.test_marshal.LargeValuesTestCase.test_frozenset
-test.test_marshal.LargeValuesTestCase.test_list
-test.test_marshal.LargeValuesTestCase.test_set
-test.test_marshal.LargeValuesTestCase.test_str
-test.test_marshal.LargeValuesTestCase.test_tuple
-test.test_marshal.StringTestCase.test_bytes
-test.test_marshal.StringTestCase.test_string
-test.test_marshal.StringTestCase.test_unicode
+test.test_marshal.BufferTestCase.test_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BufferTestCase.test_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BufferTestCase.test_memoryview @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_bad_reader @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_bug_5888452 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_deterministic_sets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_exact_type_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_fuzz @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_large_marshal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_loads_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_loads_reject_unicode_strings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_multiple_dumps_and_loads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_patch_873224 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_recursion_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.BugsTestCase.test_version_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# Disabled since code object comparison is not stable for us
+!test.test_marshal.CodeTestCase.test_code
+test.test_marshal.CodeTestCase.test_different_filenames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.CodeTestCase.test_many_codeobjects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.CompatibilityTestCase.test0To3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.CompatibilityTestCase.test1To3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.CompatibilityTestCase.test2To3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.CompatibilityTestCase.test3To3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.ContainerTestCase.test_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.ContainerTestCase.test_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.ContainerTestCase.test_sets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.ContainerTestCase.test_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.ExceptionTestCase.test_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.FloatTestCase.test_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testBytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testDict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testFloat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testFrozenSet @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testInt @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# Disabled since code object comparison is not stable for us
+!test.test_marshal.InstancingTestCase.testModule
+test.test_marshal.InstancingTestCase.testRecursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testSet @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testStr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InstancingTestCase.testTuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.IntTestCase.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.IntTestCase.test_int64 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.IntTestCase.test_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InterningTestCase.testIntern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.InterningTestCase.testNoIntern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.StringTestCase.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.StringTestCase.test_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_marshal.StringTestCase.test_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

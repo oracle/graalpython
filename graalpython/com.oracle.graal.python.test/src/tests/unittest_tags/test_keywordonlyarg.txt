@@ -1,11 +1,11 @@
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.testFunctionCall
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.testKwDefaults
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.testRaiseErrorFuncallWithUnexpectedKeywordArgument
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxErrorForFunctionCall
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxErrorForFunctionDefinition
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxForManyArguments
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.testTooManyPositionalErrorMessage
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_default_evaluation_order
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_issue13343
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_kwonly_methods
-test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_mangling
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testFunctionCall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testKwDefaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testRaiseErrorFuncallWithUnexpectedKeywordArgument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxErrorForFunctionCall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxErrorForFunctionDefinition @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxForManyArguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.testTooManyPositionalErrorMessage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_default_evaluation_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_issue13343 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_kwonly_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_mangling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

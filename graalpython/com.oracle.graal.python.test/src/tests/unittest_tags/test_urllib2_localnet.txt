@@ -1,22 +1,22 @@
-test.test_urllib2_localnet.BasicAuthTests.test_basic_auth_httperror
-test.test_urllib2_localnet.BasicAuthTests.test_basic_auth_success
-test.test_urllib2_localnet.ProxyAuthTests.test_proxy_qop_auth_int_works_or_throws_urlerror
-test.test_urllib2_localnet.ProxyAuthTests.test_proxy_qop_auth_works
-test.test_urllib2_localnet.ProxyAuthTests.test_proxy_with_bad_password_raises_httperror
-test.test_urllib2_localnet.ProxyAuthTests.test_proxy_with_no_password_raises_httperror
-test.test_urllib2_localnet.TestUrlopen.test_200
-test.test_urllib2_localnet.TestUrlopen.test_200_with_parameters
-test.test_urllib2_localnet.TestUrlopen.test_404
-test.test_urllib2_localnet.TestUrlopen.test_basic
-test.test_urllib2_localnet.TestUrlopen.test_chunked
-test.test_urllib2_localnet.TestUrlopen.test_geturl
-test.test_urllib2_localnet.TestUrlopen.test_https
-test.test_urllib2_localnet.TestUrlopen.test_https_with_cadefault
-test.test_urllib2_localnet.TestUrlopen.test_https_with_cafile
-test.test_urllib2_localnet.TestUrlopen.test_info
-test.test_urllib2_localnet.TestUrlopen.test_issue16464
-test.test_urllib2_localnet.TestUrlopen.test_iteration
-test.test_urllib2_localnet.TestUrlopen.test_line_iteration
-test.test_urllib2_localnet.TestUrlopen.test_redirection
-test.test_urllib2_localnet.TestUrlopen.test_sending_headers
-test.test_urllib2_localnet.TestUrlopen.test_sending_headers_camel
+test.test_urllib2_localnet.BasicAuthTests.test_basic_auth_httperror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.BasicAuthTests.test_basic_auth_success @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.ProxyAuthTests.test_proxy_qop_auth_int_works_or_throws_urlerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib2_localnet.ProxyAuthTests.test_proxy_qop_auth_works @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.ProxyAuthTests.test_proxy_with_bad_password_raises_httperror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.ProxyAuthTests.test_proxy_with_no_password_raises_httperror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_200 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_200_with_parameters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_404 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_chunked @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_geturl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_https @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_https_with_cadefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_https_with_cafile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_issue16464 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_line_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_redirection @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_sending_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_urllib2_localnet.TestUrlopen.test_sending_headers_camel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

@@ -1,4 +1,4 @@
-unittest.loader.ModuleSkipped.test.test_peg_generator.test_c_parser
-unittest.loader.ModuleSkipped.test.test_peg_generator.test_first_sets
-unittest.loader.ModuleSkipped.test.test_peg_generator.test_grammar_validator
-unittest.loader.ModuleSkipped.test.test_peg_generator.test_pegen
+unittest.loader.ModuleSkipped.test.test_peg_generator.test_c_parser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_peg_generator.test_first_sets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_peg_generator.test_grammar_validator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+unittest.loader.ModuleSkipped.test.test_peg_generator.test_pegen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

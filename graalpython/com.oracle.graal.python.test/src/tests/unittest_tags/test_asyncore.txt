@@ -1,98 +1,51 @@
-test.test_asyncore.DispatcherTests.test_basic
-test.test_asyncore.DispatcherTests.test_log
-test.test_asyncore.DispatcherTests.test_log_info
-test.test_asyncore.DispatcherTests.test_repr
-test.test_asyncore.DispatcherTests.test_strerror
-test.test_asyncore.DispatcherTests.test_unhandled
-test.test_asyncore.DispatcherWithSendTests.test_send
-test.test_asyncore.FileWrapperTest.test_close_twice
-test.test_asyncore.FileWrapperTest.test_dispatcher
-test.test_asyncore.FileWrapperTest.test_recv
-test.test_asyncore.FileWrapperTest.test_send
-test.test_asyncore.HelperFunctionTests.test_closeall
-test.test_asyncore.HelperFunctionTests.test_closeall_default
-test.test_asyncore.HelperFunctionTests.test_compact_traceback
-test.test_asyncore.HelperFunctionTests.test_readwrite
-test.test_asyncore.HelperFunctionTests.test_readwriteexc
-test.test_asyncore.TestAPI_UseIPv4Poll.test_bind
-test.test_asyncore.TestAPI_UseIPv4Poll.test_connection_attributes
-test.test_asyncore.TestAPI_UseIPv4Poll.test_create_socket
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_accept
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_accepted
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_close
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_close_after_conn_broken
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_connect
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_error
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_expt
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_read
-test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_write
-test.test_asyncore.TestAPI_UseIPv4Poll.test_quick_connect
-test.test_asyncore.TestAPI_UseIPv4Poll.test_set_reuse_addr
-test.test_asyncore.TestAPI_UseIPv4Select.test_bind
-test.test_asyncore.TestAPI_UseIPv4Select.test_connection_attributes
-test.test_asyncore.TestAPI_UseIPv4Select.test_create_socket
-test.test_asyncore.TestAPI_UseIPv4Select.test_handle_accept
-test.test_asyncore.TestAPI_UseIPv4Select.test_handle_accepted
-test.test_asyncore.TestAPI_UseIPv4Select.test_handle_close
-test.test_asyncore.TestAPI_UseIPv4Select.test_handle_close_after_conn_broken
-test.test_asyncore.TestAPI_UseIPv4Select.test_handle_connect
-test.test_asyncore.TestAPI_UseIPv4Select.test_handle_error
-test.test_asyncore.TestAPI_UseIPv4Select.test_handle_read
-test.test_asyncore.TestAPI_UseIPv4Select.test_handle_write
-test.test_asyncore.TestAPI_UseIPv4Select.test_quick_connect
-test.test_asyncore.TestAPI_UseIPv4Select.test_set_reuse_addr
-test.test_asyncore.TestAPI_UseIPv6Poll.test_bind
-test.test_asyncore.TestAPI_UseIPv6Poll.test_connection_attributes
-test.test_asyncore.TestAPI_UseIPv6Poll.test_create_socket
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_accept
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_accepted
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_close
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_close_after_conn_broken
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_connect
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_error
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_expt
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_read
-test.test_asyncore.TestAPI_UseIPv6Poll.test_handle_write
-test.test_asyncore.TestAPI_UseIPv6Poll.test_quick_connect
-test.test_asyncore.TestAPI_UseIPv6Poll.test_set_reuse_addr
-test.test_asyncore.TestAPI_UseIPv6Select.test_bind
-test.test_asyncore.TestAPI_UseIPv6Select.test_connection_attributes
-test.test_asyncore.TestAPI_UseIPv6Select.test_create_socket
-test.test_asyncore.TestAPI_UseIPv6Select.test_handle_accept
-test.test_asyncore.TestAPI_UseIPv6Select.test_handle_accepted
-test.test_asyncore.TestAPI_UseIPv6Select.test_handle_close
-test.test_asyncore.TestAPI_UseIPv6Select.test_handle_close_after_conn_broken
-test.test_asyncore.TestAPI_UseIPv6Select.test_handle_connect
-test.test_asyncore.TestAPI_UseIPv6Select.test_handle_error
-test.test_asyncore.TestAPI_UseIPv6Select.test_handle_read
-test.test_asyncore.TestAPI_UseIPv6Select.test_handle_write
-test.test_asyncore.TestAPI_UseIPv6Select.test_quick_connect
-test.test_asyncore.TestAPI_UseIPv6Select.test_set_reuse_addr
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_bind
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_connection_attributes
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_create_socket
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_accept
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_accepted
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_close
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_close_after_conn_broken
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_connect
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_error
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_expt
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_read
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_handle_write
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_quick_connect
-test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_set_reuse_addr
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_bind
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_connection_attributes
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_create_socket
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_accept
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_accepted
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_close
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_close_after_conn_broken
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_connect
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_error
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_expt
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_read
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_write
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_quick_connect
-test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_set_reuse_addr
+test.test_asyncore.DispatcherTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.DispatcherTests.test_log @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.DispatcherTests.test_log_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.DispatcherTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.DispatcherTests.test_strerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.DispatcherTests.test_unhandled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.DispatcherWithSendTests.test_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.FileWrapperTest.test_close_twice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.FileWrapperTest.test_dispatcher @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.FileWrapperTest.test_recv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.FileWrapperTest.test_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.HelperFunctionTests.test_closeall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.HelperFunctionTests.test_closeall_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.HelperFunctionTests.test_compact_traceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.HelperFunctionTests.test_readwriteexc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asyncore.TestAPI_UseIPv4Select.test_bind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_connection_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_create_socket @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_handle_accept @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_handle_accepted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_handle_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_handle_close_after_conn_broken @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_handle_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_handle_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_handle_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_handle_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_quick_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv4Select.test_set_reuse_addr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_bind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_connection_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_create_socket @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_handle_accept @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_handle_accepted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_handle_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_handle_close_after_conn_broken @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_handle_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_handle_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_handle_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_handle_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_quick_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseIPv6Select.test_set_reuse_addr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_connection_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_create_socket @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_accept @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_accepted @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_close_after_conn_broken @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_connect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

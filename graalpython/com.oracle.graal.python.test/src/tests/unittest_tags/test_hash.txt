@@ -1,21 +1,11 @@
-test.test_hash.BytesHashRandomizationTests.test_empty_string
-test.test_hash.BytesHashRandomizationTests.test_fixed_hash
-test.test_hash.BytesHashRandomizationTests.test_long_fixed_hash
-test.test_hash.HashBuiltinsTestCase.test_hashes
-test.test_hash.HashDistributionTestCase.test_hash_distribution
-test.test_hash.HashEqualityTestCase.test_coerced_floats
-test.test_hash.HashEqualityTestCase.test_coerced_integers
-test.test_hash.HashEqualityTestCase.test_numeric_literals
-test.test_hash.HashEqualityTestCase.test_unaligned_buffers
-test.test_hash.HashInheritanceTestCase.test_default_hash
-test.test_hash.HashInheritanceTestCase.test_error_hash
-test.test_hash.HashInheritanceTestCase.test_fixed_hash
-test.test_hash.HashInheritanceTestCase.test_hashable
-test.test_hash.HashInheritanceTestCase.test_not_hashable
-test.test_hash.MemoryviewHashRandomizationTests.test_empty_string
-test.test_hash.MemoryviewHashRandomizationTests.test_fixed_hash
-test.test_hash.MemoryviewHashRandomizationTests.test_long_fixed_hash
-test.test_hash.StrHashRandomizationTests.test_empty_string
-test.test_hash.StrHashRandomizationTests.test_fixed_hash
-test.test_hash.StrHashRandomizationTests.test_long_fixed_hash
-test.test_hash.StrHashRandomizationTests.test_ucs2_string
+test.test_hash.HashBuiltinsTestCase.test_hashes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashDistributionTestCase.test_hash_distribution @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashEqualityTestCase.test_coerced_floats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashEqualityTestCase.test_coerced_integers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashEqualityTestCase.test_numeric_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashEqualityTestCase.test_unaligned_buffers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashInheritanceTestCase.test_default_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashInheritanceTestCase.test_error_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashInheritanceTestCase.test_fixed_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashInheritanceTestCase.test_hashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hash.HashInheritanceTestCase.test_not_hashable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

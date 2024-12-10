@@ -1,17 +1,17 @@
-test.test_fnmatch.FilterTestCase.test_case
-test.test_fnmatch.FilterTestCase.test_filter
-test.test_fnmatch.FilterTestCase.test_mix_bytes_str
-test.test_fnmatch.FilterTestCase.test_sep
-test.test_fnmatch.FnmatchTestCase.test_bytes
-test.test_fnmatch.FnmatchTestCase.test_case
-test.test_fnmatch.FnmatchTestCase.test_char_set
-test.test_fnmatch.FnmatchTestCase.test_fnmatch
-test.test_fnmatch.FnmatchTestCase.test_fnmatchcase
-test.test_fnmatch.FnmatchTestCase.test_mix_bytes_str
-test.test_fnmatch.FnmatchTestCase.test_range
-test.test_fnmatch.FnmatchTestCase.test_sep
-test.test_fnmatch.FnmatchTestCase.test_sep_in_char_set
-test.test_fnmatch.FnmatchTestCase.test_sep_in_range
-test.test_fnmatch.FnmatchTestCase.test_slow_fnmatch
-test.test_fnmatch.FnmatchTestCase.test_warnings
-test.test_fnmatch.TranslateTestCase.test_translate
+test.test_fnmatch.FilterTestCase.test_case @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FilterTestCase.test_filter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FilterTestCase.test_mix_bytes_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FilterTestCase.test_sep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_case @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_char_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_fnmatch @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_fnmatchcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_mix_bytes_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_sep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_sep_in_char_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_sep_in_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_slow_fnmatch @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.FnmatchTestCase.test_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fnmatch.TranslateTestCase.test_translate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

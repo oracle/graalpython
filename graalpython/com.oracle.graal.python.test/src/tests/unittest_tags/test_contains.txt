@@ -1,4 +1,4 @@
-test.test_contains.TestContains.test_block_fallback
-test.test_contains.TestContains.test_builtin_sequence_types
-test.test_contains.TestContains.test_common_tests
-test.test_contains.TestContains.test_nonreflexive
+test.test_contains.TestContains.test_block_fallback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_contains.TestContains.test_builtin_sequence_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_contains.TestContains.test_common_tests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_contains.TestContains.test_nonreflexive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

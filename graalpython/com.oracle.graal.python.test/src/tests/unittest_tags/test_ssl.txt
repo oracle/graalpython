@@ -1,159 +1,113 @@
-test.test_ssl.BasicSocketTests.test_DER_to_PEM
-test.test_ssl.BasicSocketTests.test_cert_time_to_seconds
-test.test_ssl.BasicSocketTests.test_cert_time_to_seconds_locale
-test.test_ssl.BasicSocketTests.test_cert_time_to_seconds_timezone
-test.test_ssl.BasicSocketTests.test_connect_ex_error
-test.test_ssl.BasicSocketTests.test_empty_cert
-test.test_ssl.BasicSocketTests.test_enum_certificates
-test.test_ssl.BasicSocketTests.test_enum_crls
-test.test_ssl.BasicSocketTests.test_errors_sslwrap
-test.test_ssl.BasicSocketTests.test_get_default_verify_paths
-test.test_ssl.BasicSocketTests.test_malformed_cert
-test.test_ssl.BasicSocketTests.test_malformed_key
-test.test_ssl.BasicSocketTests.test_openssl_version
-test.test_ssl.BasicSocketTests.test_parse_cert
-test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2019_5010
-test.test_ssl.BasicSocketTests.test_private_init
-test.test_ssl.BasicSocketTests.test_purpose_enum
-test.test_ssl.BasicSocketTests.test_read_write_zero
-test.test_ssl.BasicSocketTests.test_refcycle
-test.test_ssl.BasicSocketTests.test_server_side
-test.test_ssl.BasicSocketTests.test_str_for_enums
-test.test_ssl.BasicSocketTests.test_timeout
-test.test_ssl.BasicSocketTests.test_tls_unique_channel_binding
-test.test_ssl.BasicSocketTests.test_unknown_channel_binding
-test.test_ssl.BasicSocketTests.test_unsupported_dtls
-test.test_ssl.BasicSocketTests.test_wrapped_unconnected
-test.test_ssl.ContextTests.test__create_stdlib_context
-test.test_ssl.ContextTests.test_cert_store_stats
-test.test_ssl.ContextTests.test_check_hostname
-test.test_ssl.ContextTests.test_ciphers
-test.test_ssl.ContextTests.test_constructor
-test.test_ssl.ContextTests.test_context_client_server
-test.test_ssl.ContextTests.test_context_custom_class
-test.test_ssl.ContextTests.test_create_default_context
-test.test_ssl.ContextTests.test_get_ca_certs
-test.test_ssl.ContextTests.test_get_ciphers
-test.test_ssl.ContextTests.test_hostname_checks_common_name
-test.test_ssl.ContextTests.test_load_cert_chain
-test.test_ssl.ContextTests.test_load_default_certs
-test.test_ssl.ContextTests.test_load_default_certs_env
-test.test_ssl.ContextTests.test_load_default_certs_env_windows
-test.test_ssl.ContextTests.test_load_verify_cadata
-test.test_ssl.ContextTests.test_load_verify_locations
-test.test_ssl.ContextTests.test_min_max_version
-test.test_ssl.ContextTests.test_num_tickest
-test.test_ssl.ContextTests.test_options
-test.test_ssl.ContextTests.test_protocol
-test.test_ssl.ContextTests.test_python_ciphers
-test.test_ssl.ContextTests.test_security_level
-test.test_ssl.ContextTests.test_set_default_verify_paths
-test.test_ssl.ContextTests.test_set_ecdh_curve
-test.test_ssl.ContextTests.test_sni_callback
-test.test_ssl.ContextTests.test_sni_callback_refcycle
-test.test_ssl.ContextTests.test_verify_mode_protocol
-test.test_ssl.MemoryBIOTests.test_buffer_types
-test.test_ssl.MemoryBIOTests.test_eof
-test.test_ssl.MemoryBIOTests.test_error_types
-test.test_ssl.MemoryBIOTests.test_pending
-test.test_ssl.MemoryBIOTests.test_read_write
-test.test_ssl.NetworkedTests.test_get_server_certificate_ipv6
-test.test_ssl.SSLErrorTests.test_bad_server_hostname
-test.test_ssl.SSLErrorTests.test_str
-test.test_ssl.SSLErrorTests.test_subclass
-test.test_ssl.SSLObjectTests.test_private_init
-test.test_ssl.SSLObjectTests.test_unwrap
-test.test_ssl.SimpleBackgroundTests.test_bio_handshake
-test.test_ssl.SimpleBackgroundTests.test_bio_read_write_data
-test.test_ssl.SimpleBackgroundTests.test_ciphers
-test.test_ssl.SimpleBackgroundTests.test_connect_cadata
-test.test_ssl.SimpleBackgroundTests.test_connect_capath
-test.test_ssl.SimpleBackgroundTests.test_connect_ex
-test.test_ssl.SimpleBackgroundTests.test_connect_fail
-test.test_ssl.SimpleBackgroundTests.test_connect_with_context_fail
-test.test_ssl.SimpleBackgroundTests.test_get_ca_certs_capath
-test.test_ssl.SimpleBackgroundTests.test_get_server_certificate
-test.test_ssl.SimpleBackgroundTests.test_get_server_certificate_fail
-test.test_ssl.SimpleBackgroundTests.test_makefile_close
-test.test_ssl.SimpleBackgroundTests.test_non_blocking_connect_ex
-test.test_ssl.SimpleBackgroundTests.test_non_blocking_handshake
-test.test_ssl.SimpleBackgroundTests.test_transport_eof
-test.test_ssl.TestEnumerations.test_alertdescription
-test.test_ssl.TestEnumerations.test_options
-test.test_ssl.TestEnumerations.test_sslerrornumber
-test.test_ssl.TestEnumerations.test_sslmethod
-test.test_ssl.TestEnumerations.test_tlsalerttype
-test.test_ssl.TestEnumerations.test_tlscontenttype
-test.test_ssl.TestEnumerations.test_tlsmessagetype
-test.test_ssl.TestEnumerations.test_tlsversion
-test.test_ssl.TestEnumerations.test_verifyflags
-test.test_ssl.TestEnumerations.test_verifymode
-test.test_ssl.TestPostHandshakeAuth.test_bpo37428_pha_cert_none
-test.test_ssl.TestPostHandshakeAuth.test_internal_chain_client
-test.test_ssl.TestPostHandshakeAuth.test_internal_chain_server
-test.test_ssl.TestPostHandshakeAuth.test_pha_no_pha_client
-test.test_ssl.TestPostHandshakeAuth.test_pha_no_pha_server
-test.test_ssl.TestPostHandshakeAuth.test_pha_not_tls13
-test.test_ssl.TestPostHandshakeAuth.test_pha_optional
-test.test_ssl.TestPostHandshakeAuth.test_pha_optional_nocert
-test.test_ssl.TestPostHandshakeAuth.test_pha_required
-test.test_ssl.TestPostHandshakeAuth.test_pha_required_nocert
-test.test_ssl.TestPostHandshakeAuth.test_pha_setter
-test.test_ssl.TestPreHandshakeClose.test_https_client_non_tls_response_ignored
-test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_client
-test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_server
-test.test_ssl.TestSSLDebug.test_keylog_defaults
-test.test_ssl.TestSSLDebug.test_keylog_env
-test.test_ssl.TestSSLDebug.test_keylog_filename
-test.test_ssl.TestSSLDebug.test_msg_callback
-test.test_ssl.TestSSLDebug.test_msg_callback_tls12
-test.test_ssl.ThreadedTests.test_PROTOCOL_TLS
-test.test_ssl.ThreadedTests.test_asyncore_server
-test.test_ssl.ThreadedTests.test_check_hostname
-test.test_ssl.ThreadedTests.test_check_hostname_idn
-test.test_ssl.ThreadedTests.test_compression
-test.test_ssl.ThreadedTests.test_compression_disabled
-test.test_ssl.ThreadedTests.test_crl_check
-test.test_ssl.ThreadedTests.test_default_ecdh_curve
-test.test_ssl.ThreadedTests.test_dh_params
-test.test_ssl.ThreadedTests.test_do_handshake_enotconn
-test.test_ssl.ThreadedTests.test_dual_rsa_ecc
-test.test_ssl.ThreadedTests.test_ecc_cert
-test.test_ssl.ThreadedTests.test_getpeercert
-test.test_ssl.ThreadedTests.test_getpeercert_enotconn
-test.test_ssl.ThreadedTests.test_handshake_timeout
-test.test_ssl.ThreadedTests.test_hostname_checks_common_name
-test.test_ssl.ThreadedTests.test_min_max_version_mismatch
-test.test_ssl.ThreadedTests.test_min_max_version_sslv3
-test.test_ssl.ThreadedTests.test_min_max_version_tlsv1_1
-test.test_ssl.ThreadedTests.test_min_max_version_tlsv1_2
-test.test_ssl.ThreadedTests.test_nonblocking_send
-test.test_ssl.ThreadedTests.test_npn_protocols
-test.test_ssl.ThreadedTests.test_protocol_sslv2
-test.test_ssl.ThreadedTests.test_protocol_sslv3
-test.test_ssl.ThreadedTests.test_protocol_tlsv1
-test.test_ssl.ThreadedTests.test_protocol_tlsv1_1
-test.test_ssl.ThreadedTests.test_protocol_tlsv1_2
-test.test_ssl.ThreadedTests.test_read_write_after_close_raises_valuerror
-test.test_ssl.ThreadedTests.test_recv_into_buffer_protocol_len
-test.test_ssl.ThreadedTests.test_recv_send
-test.test_ssl.ThreadedTests.test_recv_zero
-test.test_ssl.ThreadedTests.test_rude_shutdown
-test.test_ssl.ThreadedTests.test_selected_alpn_protocol
-test.test_ssl.ThreadedTests.test_selected_alpn_protocol_if_server_uses_alpn
-test.test_ssl.ThreadedTests.test_selected_npn_protocol
-test.test_ssl.ThreadedTests.test_sendfile
-test.test_ssl.ThreadedTests.test_server_accept
-test.test_ssl.ThreadedTests.test_shared_ciphers
-test.test_ssl.ThreadedTests.test_sni_callback
-test.test_ssl.ThreadedTests.test_sni_callback_alert
-test.test_ssl.ThreadedTests.test_sni_callback_raising
-test.test_ssl.ThreadedTests.test_sni_callback_wrong_return_type
-test.test_ssl.ThreadedTests.test_socketserver
-test.test_ssl.ThreadedTests.test_ssl_cert_verify_error
-test.test_ssl.ThreadedTests.test_starttls
-test.test_ssl.ThreadedTests.test_tls1_3
-test.test_ssl.ThreadedTests.test_tls_unique_channel_binding
-test.test_ssl.ThreadedTests.test_version_basic
-test.test_ssl.ThreadedTests.test_wrong_cert_tls12
-test.test_ssl.ThreadedTests.test_wrong_cert_tls13
+test.test_ssl.BasicSocketTests.test_DER_to_PEM @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_cert_time_to_seconds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_cert_time_to_seconds_timezone @ darwin-arm64,darwin-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_connect_ex_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.BasicSocketTests.test_empty_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_errors_sslwrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_get_default_verify_paths @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_malformed_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_malformed_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_parse_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2019_5010 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_private_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_purpose_enum @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_read_write_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.BasicSocketTests.test_server_side @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_str_for_enums @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_unknown_channel_binding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_unsupported_dtls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.BasicSocketTests.test_wrapped_unconnected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test__create_stdlib_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_cert_store_stats @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_check_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_ciphers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_context_client_server @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_context_custom_class @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_create_default_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_get_ca_certs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_get_ciphers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_hostname_checks_common_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_load_cert_chain @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_load_default_certs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_load_default_certs_env @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ContextTests.test_load_verify_cadata @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_load_verify_locations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_min_max_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_set_default_verify_paths @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ContextTests.test_verify_mode_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.MemoryBIOTests.test_buffer_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.MemoryBIOTests.test_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.MemoryBIOTests.test_error_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.MemoryBIOTests.test_pending @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.MemoryBIOTests.test_read_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# Connects to internet, sometimes can't reach
+!test.test_ssl.NetworkedTests.test_timeout_connect_ex
+test.test_ssl.SSLErrorTests.test_bad_server_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.SSLErrorTests.test_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.SSLErrorTests.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.SSLObjectTests.test_private_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.SSLObjectTests.test_unwrap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.SimpleBackgroundTests.test_bio_handshake @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_bio_read_write_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_ciphers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_connect_cadata @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_connect_capath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_connect_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_connect_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_connect_with_context_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_get_server_certificate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_get_server_certificate_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_makefile_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_non_blocking_connect_ex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_non_blocking_handshake @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.SimpleBackgroundTests.test_transport_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.TestEnumerations.test_alertdescription @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_sslerrornumber @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_sslmethod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_tlsalerttype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_tlscontenttype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_tlsmessagetype @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_tlsversion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_verifyflags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestEnumerations.test_verifymode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.TestPreHandshakeClose.test_https_client_non_tls_response_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_client @ linux-aarch64,linux-x86_64
+test.test_ssl.TestPreHandshakeClose.test_preauth_data_to_tls_server @ linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_PROTOCOL_TLS @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_asyncore_server @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_check_hostname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_check_hostname_idn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_compression @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_compression_disabled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_crl_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_default_ecdh_curve @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_do_handshake_enotconn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ThreadedTests.test_dual_rsa_ecc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_ecc_cert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_getpeercert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_getpeercert_enotconn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ThreadedTests.test_handshake_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_nonblocking_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_npn_protocols @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_ssl.ThreadedTests.test_protocol_tlsv1_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_read_write_after_close_raises_valuerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_recv_into_buffer_protocol_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_recv_send @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_recv_zero @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_rude_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_selected_alpn_protocol @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_selected_alpn_protocol_if_server_uses_alpn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_sendfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_server_accept @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_shared_ciphers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_socketserver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_ssl_cert_verify_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_starttls @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_tls1_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_version_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_wrong_cert_tls12 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ssl.ThreadedTests.test_wrong_cert_tls13 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

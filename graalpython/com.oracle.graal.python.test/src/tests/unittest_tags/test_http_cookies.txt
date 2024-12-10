@@ -1,28 +1,27 @@
-DocTestCase.http.cookies
-test.test_http_cookies.CookieTests.test_basic
-test.test_http_cookies.CookieTests.test_comment_quoting
-test.test_http_cookies.CookieTests.test_extended_encode
-test.test_http_cookies.CookieTests.test_extra_spaces
-test.test_http_cookies.CookieTests.test_illegal_chars
-test.test_http_cookies.CookieTests.test_invalid_cookies
-test.test_http_cookies.CookieTests.test_load
-test.test_http_cookies.CookieTests.test_pickle
-test.test_http_cookies.CookieTests.test_quoted_meta
-test.test_http_cookies.CookieTests.test_samesite_attrs
-test.test_http_cookies.CookieTests.test_secure_httponly_false_if_not_present
-test.test_http_cookies.CookieTests.test_secure_httponly_true_if_have_value
-test.test_http_cookies.CookieTests.test_secure_httponly_true_if_present
-test.test_http_cookies.CookieTests.test_set_secure_httponly_attrs
-test.test_http_cookies.CookieTests.test_special_attrs
-test.test_http_cookies.MorselTests.test_copy
-test.test_http_cookies.MorselTests.test_defaults
-test.test_http_cookies.MorselTests.test_eq
-test.test_http_cookies.MorselTests.test_pickle
-test.test_http_cookies.MorselTests.test_repr
-test.test_http_cookies.MorselTests.test_reserved_keys
-test.test_http_cookies.MorselTests.test_set_properties
-test.test_http_cookies.MorselTests.test_setdefault
-test.test_http_cookies.MorselTests.test_setitem
-test.test_http_cookies.MorselTests.test_setter
-test.test_http_cookies.MorselTests.test_update
-test.test_http_cookies.TestMain.test_main
+DocTestCase.http.cookies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_comment_quoting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_extended_encode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_extra_spaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_illegal_chars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_invalid_cookies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_load @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_quoted_meta @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_samesite_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_secure_httponly_false_if_not_present @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_secure_httponly_true_if_have_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_secure_httponly_true_if_present @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_set_secure_httponly_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.CookieTests.test_special_attrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_reserved_keys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_set_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_setter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_http_cookies.MorselTests.test_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

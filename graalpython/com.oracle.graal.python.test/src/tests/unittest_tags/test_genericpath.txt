@@ -1,24 +1,24 @@
-test.test_genericpath.PathLikeTests.test_path_commonprefix
-test.test_genericpath.PathLikeTests.test_path_exists
-test.test_genericpath.PathLikeTests.test_path_getctime
-test.test_genericpath.PathLikeTests.test_path_getmtime
-test.test_genericpath.PathLikeTests.test_path_getsize
-test.test_genericpath.PathLikeTests.test_path_isdir
-test.test_genericpath.PathLikeTests.test_path_isfile
-test.test_genericpath.PathLikeTests.test_path_samefile
-test.test_genericpath.TestGenericTest.test_commonprefix
-test.test_genericpath.TestGenericTest.test_exists
-test.test_genericpath.TestGenericTest.test_exists_fd
-test.test_genericpath.TestGenericTest.test_filetime
-test.test_genericpath.TestGenericTest.test_getsize
-test.test_genericpath.TestGenericTest.test_invalid_paths
-test.test_genericpath.TestGenericTest.test_isdir
-test.test_genericpath.TestGenericTest.test_isfile
-test.test_genericpath.TestGenericTest.test_no_argument
-test.test_genericpath.TestGenericTest.test_samefile
-test.test_genericpath.TestGenericTest.test_samefile_on_link
-test.test_genericpath.TestGenericTest.test_samefile_on_symlink
-test.test_genericpath.TestGenericTest.test_sameopenfile
-test.test_genericpath.TestGenericTest.test_samestat
-test.test_genericpath.TestGenericTest.test_samestat_on_link
-test.test_genericpath.TestGenericTest.test_samestat_on_symlink
+test.test_genericpath.PathLikeTests.test_path_commonprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.PathLikeTests.test_path_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.PathLikeTests.test_path_getctime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.PathLikeTests.test_path_getmtime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.PathLikeTests.test_path_getsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.PathLikeTests.test_path_isdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.PathLikeTests.test_path_isfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.PathLikeTests.test_path_samefile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_commonprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_exists_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_filetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_getsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_invalid_paths @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_isdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_isfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_no_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_samefile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_samefile_on_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericpath.TestGenericTest.test_samefile_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_sameopenfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_samestat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_genericpath.TestGenericTest.test_samestat_on_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_genericpath.TestGenericTest.test_samestat_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

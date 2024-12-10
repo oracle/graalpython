@@ -1,63 +1,54 @@
-test.test_zlib.ChecksumBigBufferTestCase.test_big_buffer
-test.test_zlib.ChecksumTestCase.test_adler32empty
-test.test_zlib.ChecksumTestCase.test_adler32start
-test.test_zlib.ChecksumTestCase.test_crc32_adler32_unsigned
-test.test_zlib.ChecksumTestCase.test_crc32empty
-test.test_zlib.ChecksumTestCase.test_crc32start
-test.test_zlib.ChecksumTestCase.test_penguins
-test.test_zlib.ChecksumTestCase.test_same_as_binascii_crc32
-test.test_zlib.CompressObjectTestCase.test_64bit_compress
-test.test_zlib.CompressObjectTestCase.test_badcompresscopy
-test.test_zlib.CompressObjectTestCase.test_baddecompresscopy
-test.test_zlib.CompressObjectTestCase.test_big_compress_buffer
-test.test_zlib.CompressObjectTestCase.test_big_decompress_buffer
-test.test_zlib.CompressObjectTestCase.test_clear_unconsumed_tail
-test.test_zlib.CompressObjectTestCase.test_compresscopy
-test.test_zlib.CompressObjectTestCase.test_compressincremental
-test.test_zlib.CompressObjectTestCase.test_compressoptions
-test.test_zlib.CompressObjectTestCase.test_compresspickle
-test.test_zlib.CompressObjectTestCase.test_decompimax
-test.test_zlib.CompressObjectTestCase.test_decompinc
-test.test_zlib.CompressObjectTestCase.test_decompincflush
-test.test_zlib.CompressObjectTestCase.test_decompress_eof
-test.test_zlib.CompressObjectTestCase.test_decompress_eof_incomplete_stream
-test.test_zlib.CompressObjectTestCase.test_decompress_incomplete_stream
-test.test_zlib.CompressObjectTestCase.test_decompress_raw_with_dictionary
-test.test_zlib.CompressObjectTestCase.test_decompress_unused_data
-test.test_zlib.CompressObjectTestCase.test_decompresscopy
-test.test_zlib.CompressObjectTestCase.test_decompressmaxlen
-test.test_zlib.CompressObjectTestCase.test_decompressmaxlenflush
-test.test_zlib.CompressObjectTestCase.test_decompresspickle
-test.test_zlib.CompressObjectTestCase.test_dictionary
-test.test_zlib.CompressObjectTestCase.test_dictionary_streaming
-test.test_zlib.CompressObjectTestCase.test_empty_flush
-test.test_zlib.CompressObjectTestCase.test_flush_custom_length
-test.test_zlib.CompressObjectTestCase.test_flush_large_length
-test.test_zlib.CompressObjectTestCase.test_flush_with_freed_input
-test.test_zlib.CompressObjectTestCase.test_flushes
-test.test_zlib.CompressObjectTestCase.test_keywords
-test.test_zlib.CompressObjectTestCase.test_large_unconsumed_tail
-test.test_zlib.CompressObjectTestCase.test_large_unused_data
-test.test_zlib.CompressObjectTestCase.test_maxlen_custom
-test.test_zlib.CompressObjectTestCase.test_maxlen_large
-test.test_zlib.CompressObjectTestCase.test_maxlenmisc
-test.test_zlib.CompressObjectTestCase.test_odd_flush
-test.test_zlib.CompressObjectTestCase.test_pair
-test.test_zlib.CompressObjectTestCase.test_wbits
-test.test_zlib.CompressTestCase.test_64bit_compress
-test.test_zlib.CompressTestCase.test_big_compress_buffer
-test.test_zlib.CompressTestCase.test_big_decompress_buffer
-test.test_zlib.CompressTestCase.test_custom_bufsize
-test.test_zlib.CompressTestCase.test_incomplete_stream
-test.test_zlib.CompressTestCase.test_keywords
-test.test_zlib.CompressTestCase.test_large_bufsize
-test.test_zlib.CompressTestCase.test_speech
-test.test_zlib.CompressTestCase.test_speech128
-test.test_zlib.ExceptionTestCase.test_badargs
-test.test_zlib.ExceptionTestCase.test_badcompressobj
-test.test_zlib.ExceptionTestCase.test_baddecompressobj
-test.test_zlib.ExceptionTestCase.test_badlevel
-test.test_zlib.ExceptionTestCase.test_decompressobj_badflush
-test.test_zlib.ExceptionTestCase.test_disallow_instantiation
-test.test_zlib.ExceptionTestCase.test_overflow
-test.test_zlib.VersionTestCase.test_library_version
+test.test_zlib.ChecksumTestCase.test_adler32empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ChecksumTestCase.test_adler32start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ChecksumTestCase.test_crc32_adler32_unsigned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ChecksumTestCase.test_crc32empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ChecksumTestCase.test_crc32start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ChecksumTestCase.test_penguins @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ChecksumTestCase.test_same_as_binascii_crc32 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_badcompresscopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_baddecompresscopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_big_compress_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_big_decompress_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_clear_unconsumed_tail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_compresscopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_compressincremental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_compressoptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompimax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompinc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompincflush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompress_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompress_eof_incomplete_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompress_incomplete_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompress_raw_with_dictionary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompress_unused_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompresscopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompressmaxlen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_decompressmaxlenflush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_dictionary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_dictionary_streaming @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_empty_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_flush_custom_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_flush_large_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_flush_with_freed_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_flushes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_maxlen_custom @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_maxlen_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_maxlenmisc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_odd_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_pair @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressObjectTestCase.test_wbits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zlib.CompressTestCase.test_big_compress_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressTestCase.test_big_decompress_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressTestCase.test_custom_bufsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressTestCase.test_incomplete_stream @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressTestCase.test_keywords @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressTestCase.test_large_bufsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressTestCase.test_speech @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.CompressTestCase.test_speech128 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ExceptionTestCase.test_badargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ExceptionTestCase.test_badcompressobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ExceptionTestCase.test_baddecompressobj @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.ExceptionTestCase.test_badlevel @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_zlib.ExceptionTestCase.test_decompressobj_badflush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_zlib.VersionTestCase.test_library_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

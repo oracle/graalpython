@@ -117,11 +117,23 @@ Remember to use the appropriate `GraalPyResources` API to create the Context.
 
 ## GraalPy Gradle Plugin Configuration
 
-> Note: GraalPy Gradle Plugin will become available as of GraalPy version 24.1.1, planned for October 15, 2024.
+The plugin must be added to the plugins section in the _build.gradle_ file.
+The **version** property defines which version of GraalPy to use.
+```
+plugins {
+    // other plugins ...
+    id 'org.graalvm.python' version '24.2.0'
+}
+```
 
-Add the plugin configuration in the `GraalPy` block in the _build.gradle_ file.
-The **packages** element declares a list of third-party Python packages to be downloaded and installed by the plugin.
-- The Python packages and their versions are specified as if used with `pip`.
+The plugin automatically injects these dependencies of the same version as the plugin version:
+  - `org.graalvm.python:python`
+  - `org.graalvm.python:python-embedding`
+
+The plugin can be configured in the `graalPy` block:
+
+- The **packages** element declares a list of third-party Python packages to be downloaded and installed by the plugin.
+  The Python packages and their versions are specified as if used with `pip`.
   ```
   graalPy {
     packages = ["termcolor==2.2"]
@@ -129,7 +141,6 @@ The **packages** element declares a list of third-party Python packages to be do
   }
   ```
 - The **pythonHome** subsection declares what parts of the standard library should be deployed.
-
   Each element in the `includes` and `excludes` list is interpreted as a Java-like regular expression specifying which file paths should be included or excluded.
   ```
   graalPy {
@@ -141,10 +152,18 @@ The **packages** element declares a list of third-party Python packages to be do
   }
   ```
 - If the **pythonResourcesDirectory** element is specified, then the given directory is used as an [external directory](#external-directory) and no Java resources are embedded. 
-Remember to use the appropriate `GraalPyResources` API to create the Context.
+  Remember to use the appropriate `GraalPyResources` API to create the Context.
   ```
   graalPy {
     pythonResourcesDirectory = file("$rootDir/python-resources")
+    ...
+  }
+  ```
+- Boolean flag **community** switches the automatically injected
+dependency `org.graalvm.python:python` to the community build: `org.graalvm.python:python-community`.
+  ```
+  graalPy {
+    community = true
     ...
   }
   ```

@@ -1,59 +1,58 @@
-test.test_plistlib.MiscTestCase.test__all__
-test.test_plistlib.TestBinaryPlistlib.test_cycles
-test.test_plistlib.TestBinaryPlistlib.test_dump_duplicates
-test.test_plistlib.TestBinaryPlistlib.test_identity
-test.test_plistlib.TestBinaryPlistlib.test_invalid_binary
-test.test_plistlib.TestBinaryPlistlib.test_large_timestamp
-test.test_plistlib.TestBinaryPlistlib.test_load_int
-test.test_plistlib.TestBinaryPlistlib.test_load_singletons
-test.test_plistlib.TestBinaryPlistlib.test_nonstandard_refs_size
-test.test_plistlib.TestBinaryPlistlib.test_unsupported
-test.test_plistlib.TestKeyedArchive.test_keyed_archive_data
-test.test_plistlib.TestPlistlib.test_appleformatting
-test.test_plistlib.TestPlistlib.test_appleformattingfromliteral
-test.test_plistlib.TestPlistlib.test_bytearray
-test.test_plistlib.TestPlistlib.test_bytes
-test.test_plistlib.TestPlistlib.test_bytesio
-test.test_plistlib.TestPlistlib.test_controlcharacters
-test.test_plistlib.TestPlistlib.test_create
-test.test_plistlib.TestPlistlib.test_dict_members
-test.test_plistlib.TestPlistlib.test_dump_invalid_format
-test.test_plistlib.TestPlistlib.test_indentation_array
-test.test_plistlib.TestPlistlib.test_indentation_dict
-test.test_plistlib.TestPlistlib.test_indentation_dict_mix
-test.test_plistlib.TestPlistlib.test_int
-test.test_plistlib.TestPlistlib.test_integer_notations
-test.test_plistlib.TestPlistlib.test_invalid_type
-test.test_plistlib.TestPlistlib.test_invalid_uid
-test.test_plistlib.TestPlistlib.test_invalidarray
-test.test_plistlib.TestPlistlib.test_invaliddict
-test.test_plistlib.TestPlistlib.test_invalidinteger
-test.test_plistlib.TestPlistlib.test_invalidreal
-test.test_plistlib.TestPlistlib.test_io
-test.test_plistlib.TestPlistlib.test_keys_no_string
-test.test_plistlib.TestPlistlib.test_keysort
-test.test_plistlib.TestPlistlib.test_keysort_bytesio
-test.test_plistlib.TestPlistlib.test_list_members
-test.test_plistlib.TestPlistlib.test_load_invalid_file
-test.test_plistlib.TestPlistlib.test_lone_surrogates
-test.test_plistlib.TestPlistlib.test_modified_uid_huge
-test.test_plistlib.TestPlistlib.test_modified_uid_negative
-test.test_plistlib.TestPlistlib.test_non_bmp_characters
-test.test_plistlib.TestPlistlib.test_nondictroot
-test.test_plistlib.TestPlistlib.test_skipkeys
-test.test_plistlib.TestPlistlib.test_tuple_members
-test.test_plistlib.TestPlistlib.test_uid
-test.test_plistlib.TestPlistlib.test_uid_copy
-test.test_plistlib.TestPlistlib.test_uid_data
-test.test_plistlib.TestPlistlib.test_uid_eq
-test.test_plistlib.TestPlistlib.test_uid_hash
-test.test_plistlib.TestPlistlib.test_uid_index
-test.test_plistlib.TestPlistlib.test_uid_pickle
-test.test_plistlib.TestPlistlib.test_uid_repr
-test.test_plistlib.TestPlistlib.test_xml_encodings
-test.test_plistlib.TestPlistlib.test_xml_plist_with_entity_decl
-test.test_plistlib.TestPlistlibDeprecated.test_bytes_deprecated
-test.test_plistlib.TestPlistlibDeprecated.test_dataobject_deprecated
-test.test_plistlib.TestPlistlibDeprecated.test_io_deprecated
-test.test_plistlib.TestPlutil.test_lint_status
-test.test_plistlib.TestPlutil.test_octal_and_hex
+test.test_plistlib.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestBinaryPlistlib.test_cycles @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# Disabled due to transient stack overflow that fails to get caught and crashes the VM
+!test.test_plistlib.TestBinaryPlistlib.test_deep_nesting @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestBinaryPlistlib.test_dump_duplicates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestBinaryPlistlib.test_identity @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestBinaryPlistlib.test_invalid_binary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestBinaryPlistlib.test_large_timestamp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestBinaryPlistlib.test_load_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestBinaryPlistlib.test_load_singletons @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestBinaryPlistlib.test_nonstandard_refs_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestBinaryPlistlib.test_unsupported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestKeyedArchive.test_keyed_archive_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_appleformatting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_appleformattingfromliteral @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_bytesio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_controlcharacters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_create @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_dict_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_dump_invalid_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_indentation_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_indentation_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_indentation_dict_mix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_int @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_integer_notations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_invalid_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_invalid_uid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_invalidarray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_invaliddict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_invalidinteger @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_invalidreal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_keys_no_string @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_keysort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_keysort_bytesio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_list_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_load_invalid_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_lone_surrogates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_modified_uid_huge @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_modified_uid_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_non_bmp_characters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_nondictroot @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_skipkeys @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_tuple_members @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_uid @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_uid_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_uid_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_uid_eq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_uid_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_uid_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_uid_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_uid_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_plistlib.TestPlistlib.test_xml_encodings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlistlib.test_xml_plist_with_entity_decl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_plistlib.TestPlutil.test_lint_status @ darwin-arm64,darwin-x86_64
+test.test_plistlib.TestPlutil.test_octal_and_hex @ darwin-arm64,darwin-x86_64

@@ -740,7 +740,9 @@ class MmapTests(unittest.TestCase):
         self.assertIs(wr(), mm)
         del mm
         gc_collect()
-        self.assertIs(wr(), None)
+        # GraalPy change
+        if sys.implementation.name != 'graalpy':
+            self.assertIs(wr(), None)
 
     def test_write_returning_the_number_of_bytes_written(self):
         mm = mmap.mmap(-1, 16)
