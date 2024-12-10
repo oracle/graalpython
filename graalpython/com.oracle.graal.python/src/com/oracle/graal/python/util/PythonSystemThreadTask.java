@@ -56,8 +56,8 @@ import com.oracle.truffle.api.TruffleLogger;
  * {@link PythonThreadKillException}. The Java interrupt should interrupt any blocking operation,
  * which should then poll a safepoint. This wrapper takes care of handling
  * {@link PythonThreadKillException} gracefully. Note that Truffle may also shut down this thread
- * via TLA that throws its own internal cancellation exception, which is handled in Truffle internal
- * code that wraps this Runnable.
+ * via TLA that throws its own internal cancellation exception (which inherits {@code ThreadDeath}
+ * exception), which is handled in Truffle internal code that wraps this Runnable.
  */
 public abstract class PythonSystemThreadTask implements Runnable {
     private final String name;
