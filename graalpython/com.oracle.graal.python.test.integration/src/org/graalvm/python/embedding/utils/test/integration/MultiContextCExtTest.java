@@ -42,6 +42,7 @@
 package org.graalvm.python.embedding.utils.test.integration;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -120,6 +121,12 @@ public class MultiContextCExtTest {
                     } catch (IOException e) {
                     }
                 });
+                Files.walk(tmpdir).forEach(t -> {
+                    try {
+                        Files.delete(t);
+                    } catch (IOException e) {
+                    }
+                });
             } catch (IOException e) {
             }
         }));
@@ -137,22 +144,38 @@ public class MultiContextCExtTest {
     }
 
     @Test
-    public void testCreatingVenvForMulticontext() throws IOException, InterruptedException {
+    public void testCreatingVenvForMulticontext() throws IOException {
         var log = new TestLog();
         var venv = createVenv(log);
 
         var engine = Engine.create("python");
-        var builder = Context.newBuilder().engine(engine).allowAllAccess(true);
+        var builder = Context.newBuilder()
+            .engine(engine)
+            .allowAllAccess(true)
+            .option("python.Sha3ModuleBackend", "native")
+            .option("python.ForceImportSite", "true");
         if (isVerbose()) {
             builder.option("log.python.level", "FINE");
         }
         var c0 = builder.build();
-        c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s')", venv.toString()));
+        c0.initialize("python");
+        c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venv.toString()));
+
+        String pythonNative;
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            pythonNative = "python-native.dll";
+        } else if (System.getProperty("os.name").toLowerCase().contains("darwin")) {
+            pythonNative = "libpython-native.dylib";
+        } else {
+            pythonNative = "libpython-native.so";
+        }
+
+        assertTrue("created a copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".0")));
+        assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".1")));
+        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
 
         builder
             .option("python.IsolateNativeModules", "true")
-            .option("python.Sha3ModuleBackend", "native")
-            .option("python.ForceImportSite", "true")
             .option("python.Executable", venv.resolve("bin").resolve("python").toString());
         var c1 = builder.build();
         var c2 = builder.build();
@@ -170,6 +193,7 @@ public class MultiContextCExtTest {
         // First one works
         var r1 = c1.eval(code);
         assertEquals("tiny_sha3", r1.asString());
+        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
         // Second one works because of isolation
         var r2 = c2.eval(code);
         assertEquals("tiny_sha3", r2.asString());
@@ -179,13 +203,10 @@ public class MultiContextCExtTest {
         // first context is unaffected
         r1 = c1.eval(code);
         assertEquals("tiny_sha3", r1.asString());
-        // Third one does not work because we do not have enough relocated copies
-        try {
-            c3.eval(code);
-            fail("should not reach here");
-        } catch (PolyglotException e) {
-            assertTrue("We need prepared modules", e.getMessage().contains("relocated module"));
-        }
+        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
+        // Third one works and triggers a dynamic relocation
+        c3.eval(code);
+        assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
         // Fourth one does not work because we changed the sys.prefix
         c4.eval("python", "import sys; sys.prefix = 12");
         try {
@@ -201,7 +222,7 @@ public class MultiContextCExtTest {
         } catch (PolyglotException e) {
             assertTrue("We need a venv", e.getMessage().contains("relocated module"));
         }
-        // Using a context without isolation in the same process forces LLVM
+        // Using a context without isolation in the same process forces LLVM, and then sha3 doesn't work the same
         try {
             c0.eval(code);
         } catch (PolyglotException e) {
