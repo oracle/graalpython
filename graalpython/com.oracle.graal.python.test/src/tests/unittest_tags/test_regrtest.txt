@@ -1,60 +1,47 @@
-test.test_regrtest.ArgsTestCase.test_crashed
-test.test_regrtest.ArgsTestCase.test_findleaks
-test.test_regrtest.ArgsTestCase.test_huntrleaks
-test.test_regrtest.ArgsTestCase.test_huntrleaks_fd_leak
-test.test_regrtest.ArgsTestCase.test_huntrleaks_mp
-test.test_regrtest.ArgsTestCase.test_uncollectable
-test.test_regrtest.ArgsTestCase.test_worker_output_on_failure
-test.test_regrtest.ParseArgsTestCase.test_arg
-test.test_regrtest.ParseArgsTestCase.test_arg_option_arg
-test.test_regrtest.ParseArgsTestCase.test_coverage
-test.test_regrtest.ParseArgsTestCase.test_coverdir
-test.test_regrtest.ParseArgsTestCase.test_dont_add_python_opts
-test.test_regrtest.ParseArgsTestCase.test_exclude
-test.test_regrtest.ParseArgsTestCase.test_failfast
-test.test_regrtest.ParseArgsTestCase.test_fast_ci
-test.test_regrtest.ParseArgsTestCase.test_fast_ci_python_cmd
-test.test_regrtest.ParseArgsTestCase.test_fast_ci_resource
-test.test_regrtest.ParseArgsTestCase.test_forever
-test.test_regrtest.ParseArgsTestCase.test_fromfile
-test.test_regrtest.ParseArgsTestCase.test_header
-test.test_regrtest.ParseArgsTestCase.test_help
-test.test_regrtest.ParseArgsTestCase.test_huntrleaks
-test.test_regrtest.ParseArgsTestCase.test_ignore
-test.test_regrtest.ParseArgsTestCase.test_long_option__partial
-test.test_regrtest.ParseArgsTestCase.test_match
-test.test_regrtest.ParseArgsTestCase.test_memlimit
-test.test_regrtest.ParseArgsTestCase.test_multiprocess
-test.test_regrtest.ParseArgsTestCase.test_nocoverdir
-test.test_regrtest.ParseArgsTestCase.test_nowindows
-test.test_regrtest.ParseArgsTestCase.test_option_and_arg
-test.test_regrtest.ParseArgsTestCase.test_option_with_empty_string_value
-test.test_regrtest.ParseArgsTestCase.test_quiet
-test.test_regrtest.ParseArgsTestCase.test_randomize
-test.test_regrtest.ParseArgsTestCase.test_randseed
-test.test_regrtest.ParseArgsTestCase.test_rerun
-test.test_regrtest.ParseArgsTestCase.test_runleaks
-test.test_regrtest.ParseArgsTestCase.test_single
-test.test_regrtest.ParseArgsTestCase.test_slow_ci
-test.test_regrtest.ParseArgsTestCase.test_slowest
-test.test_regrtest.ParseArgsTestCase.test_start
-test.test_regrtest.ParseArgsTestCase.test_testdir
-test.test_regrtest.ParseArgsTestCase.test_threshold
-test.test_regrtest.ParseArgsTestCase.test_timeout
-test.test_regrtest.ParseArgsTestCase.test_two_options
-test.test_regrtest.ParseArgsTestCase.test_unknown_option
-test.test_regrtest.ParseArgsTestCase.test_unrecognized_argument
-test.test_regrtest.ParseArgsTestCase.test_use
-test.test_regrtest.ParseArgsTestCase.test_verbose
-test.test_regrtest.ParseArgsTestCase.test_verbose2
-test.test_regrtest.ParseArgsTestCase.test_verbose3
-test.test_regrtest.ParseArgsTestCase.test_wait
-test.test_regrtest.ParseArgsTestCase.test_worker_args
-test.test_regrtest.ProgramsTestCase.test_pcbuild_rt
-test.test_regrtest.ProgramsTestCase.test_tools_buildbot_test
-test.test_regrtest.ProgramsTestCase.test_tools_script_run_tests
-test.test_regrtest.TestUtils.test_format_duration
-test.test_regrtest.TestUtils.test_format_resources
-test.test_regrtest.TestUtils.test_get_signal_name
-test.test_regrtest.TestUtils.test_match_test
-test.test_regrtest.TestUtils.test_normalize_test_name
+test.test_regrtest.ParseArgsTestCase.test_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_arg_option_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_coverage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_coverdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_dont_add_python_opts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_exclude @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_failfast @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_fast_ci @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_fast_ci_python_cmd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_fast_ci_resource @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_forever @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_fromfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_header @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_help @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_huntrleaks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_long_option__partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_memlimit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_multiprocess @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_nocoverdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_nowindows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_option_and_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_option_with_empty_string_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_quiet @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_randomize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_randseed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_rerun @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_runleaks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_single @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_slow_ci @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_slowest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_testdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_threshold @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_two_options @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_unknown_option @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_unrecognized_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_use @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_verbose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_verbose3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.ParseArgsTestCase.test_wait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.TestUtils.test_format_duration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.TestUtils.test_format_resources @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.TestUtils.test_get_signal_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.TestUtils.test_match_test @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_regrtest.TestUtils.test_normalize_test_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

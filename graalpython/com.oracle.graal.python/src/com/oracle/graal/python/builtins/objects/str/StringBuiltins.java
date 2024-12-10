@@ -75,7 +75,6 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.truffle.api.dsl.Fallback;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
@@ -179,6 +178,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -263,7 +263,7 @@ public final class StringBuiltins extends PythonBuiltins {
         private static Spec getAndValidateSpec(Node inliningTarget, TruffleString formatString, PRaiseNode.Lazy raiseNode) {
             Spec spec = InternalFormat.fromText(formatString, 's', '<', inliningTarget);
             if (Spec.specified(spec.type) && spec.type != 's') {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.UNKNOWN_FORMAT_CODE, spec.type, "str");
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNKNOWN_FORMAT_CODE, spec.type, "str");
             }
             if (Spec.specified(spec.sign)) {
                 if (spec.sign == ' ') {

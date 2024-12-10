@@ -42,12 +42,14 @@ import enum
 import fnmatch
 import json
 import math
-import multiprocessing
 import os
 import pickle
+import platform
 import re
+import select
 import shlex
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -66,9 +68,18 @@ from pathlib import Path
 from textwrap import dedent
 
 DIR = Path(__file__).parent.resolve()
+GRAALPYTHON_DIR = DIR.parent.parent.resolve()
 UNIT_TEST_ROOT = (DIR / 'tests').resolve()
-TAGGED_TEST_ROOT = (DIR.parent.parent / 'lib-python' / '3' / 'test').resolve()
+TAGGED_TEST_ROOT = (GRAALPYTHON_DIR / 'lib-python' / '3' / 'test').resolve()
 IS_GRAALPY = sys.implementation.name == 'graalpy'
+
+PLATFORM_KEYS = {sys.platform, platform.machine(), sys.implementation.name}
+if IS_GRAALPY:
+    # noinspection PyUnresolvedReferences
+    PLATFORM_KEYS.add('native_image' if __graalpython__.is_native else 'jvm')
+
+CURRENT_PLATFORM = f'{sys.platform}-{platform.machine()}'
+CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})
 
 
 class Logger:
@@ -117,6 +128,9 @@ class TestId:
     def __repr__(self):
         return f'{self.test_file}::{self.test_name}'
 
+    def normalized(self):
+        return TestId(self.test_file.resolve(), self.test_name)
+
     @classmethod
     def from_str(cls, s: str):
         test_file, _, test_id = s.partition('::')
@@ -127,7 +141,7 @@ class TestId:
     @classmethod
     def from_test_case(cls, test_file: Path, test: unittest.TestCase):
         test_id = test.id()
-        if type(test).__name__ == '_ErrorHolder':
+        if type(test).__module__ == 'unittest.suite' and type(test).__name__ == '_ErrorHolder':
             if match := re.match(r'(\S+) \(([^)]+)\)', test_id):
                 action = match.group(1)
                 class_name = match.group(2)
@@ -192,7 +206,7 @@ def out_tell():
     try:
         return os.lseek(1, 0, os.SEEK_CUR)
     except OSError:
-        return -1
+        return 0
 
 
 T = typing.TypeVar('T')
@@ -290,7 +304,7 @@ class AbstractRemoteResult(AbstractResult):
         )
 
 
-class PipeResult(AbstractRemoteResult):
+class ConnectionResult(AbstractRemoteResult):
     def __init__(self, test_suite: 'TestSuite', conn):
         super().__init__(test_suite)
         self.conn = conn
@@ -411,6 +425,9 @@ class TestRunner:
     def generate_mx_report(self, path: str):
         report_data = []
         for result in self.results:
+            # Skip synthetic results for failed class setups and such
+            if '<' in result.test_id.test_name:
+                continue
             match result.status:
                 case TestStatus.SUCCESS | TestStatus.EXPECTED_FAILURE:
                     status = 'PASSED'
@@ -419,7 +436,7 @@ class TestRunner:
                 case _:
                     status = 'FAILED'
             report_data.append({
-                'name': str(result.test_id),
+                'name': str(result.test_id).replace('\\', '/'),
                 'status': status,
                 'duration': result.duration,
             })
@@ -433,37 +450,84 @@ class TestRunner:
             by_file[result.test_id.test_file].append(result)
         for test_file, results in by_file.items():
             test_file = configure_test_file(test_file)
-            tag_file = test_file.get_tag_file()
-            if not tag_file:
-                log(f"WARNNING: no tag directory for test file {test_file}")
-                continue
-            tags = {result.test_id.test_name for result in results if result.status == TestStatus.SUCCESS}
-            if append:
-                tags |= {test.test_name for test in read_tags(test_file)}
-            with open(tag_file, 'w') as f:
-                for test_name in sorted(tags):
-                    f.write(f'{test_name}\n')
+            update_tags(
+                test_file,
+                results,
+                tag_platform=CURRENT_PLATFORM,
+                untag_failed=(not append),
+                untag_skipped=(not append),
+                untag_missing=(not append),
+            )
+
+
+def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: str,
+                untag_failed=False, untag_skipped=False, untag_missing=False):
+    current = read_tags(test_file, allow_exclusions=True)
+    exclusions, current = partition_list(current, lambda t: isinstance(t, TagExclusion))
+    status_by_id = {r.test_id.normalized(): r.status for r in results}
+    tag_by_id = {}
+    for tag in current:
+        if untag_missing and tag.test_id not in status_by_id:
+            tag = tag.without_key(tag_platform)
+        if tag:
+            tag_by_id[tag.test_id] = tag
+
+    for test_id, status in status_by_id.items():
+        if tag := tag_by_id.get(test_id):
+            if status == TestStatus.SUCCESS:
+                tag_by_id[test_id] = tag.with_key(tag_platform)
+            elif (untag_skipped and status == TestStatus.SKIPPED
+                  or untag_failed and status == TestStatus.FAILURE):
+                tag = tag.without_key(tag_platform)
+                if tag:
+                    tag_by_id[test_id] = tag
+                else:
+                    del tag_by_id[test_id]
+        elif status == TestStatus.SUCCESS:
+            tag_by_id[test_id] = Tag.for_key(test_id, tag_platform)
+
+    for exclusion in exclusions:
+        tag_by_id.pop(exclusion.test_id, None)
+
+    tags = set(tag_by_id.values()) | set(exclusions)
+    write_tags(test_file, tags)
+
+
+def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
+    tag_file = test_file.get_tag_file()
+    if not tag_file:
+        log(f"WARNING: no tag directory for test file {test_file}")
+        return
+    if not tags:
+        tag_file.unlink(missing_ok=True)
+        return
+    with open(tag_file, 'w') as f:
+        for tag in sorted(tags, key=lambda t: t.test_id.test_name):
+            f.write(f'{tag}\n')
 
 
 def interrupt_process(process: subprocess.Popen):
-    sig = signal.SIGINT if sys.platform != 'win32' else signal.CTRL_C_EVENT
-    process.send_signal(sig)
+    if hasattr(signal, 'SIGINT'):
+        try:
+            process.send_signal(signal.SIGINT)
+            process.wait(3)
+            return
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    process.terminate()
     try:
         process.wait(3)
     except subprocess.TimeoutExpired:
-        process.terminate()
-        try:
-            process.wait(3)
-        except subprocess.TimeoutExpired:
-            process.kill()
+        process.kill()
 
 
 class ParallelTestRunner(TestRunner):
-    def __init__(self, *, num_processes, subprocess_args, separate_workers, **kwargs):
+    def __init__(self, *, num_processes, subprocess_args, separate_workers, timeout_factor, **kwargs):
         super().__init__(**kwargs)
         self.num_processes = num_processes
         self.subprocess_args = subprocess_args
         self.separate_workers = separate_workers
+        self.timeout_factor = timeout_factor
         self.stop_event = threading.Event()
         self.crashes = []
         self.default_test_timeout = 600
@@ -611,10 +675,10 @@ class SubprocessWorker:
                     self.last_test_id_for_blame = test_id
                     self.last_out_pos = event['out_pos']
                     if test_id.test_name.endswith('>'):
-                        class_name = test_id.test_name[:test_id.test_name.find('<')]
+                        class_name = test_id.test_name[:test_id.test_name.find('<')].rstrip('.')
                         specifier = TestSpecifier(test_id.test_file, class_name or None)
                         self.remaining_test_ids = [
-                            test for test in self.remaining_test_ids if not specifier.match(test_id)
+                            test for test in self.remaining_test_ids if not specifier.match(test)
                         ]
 
     def get_status(self):
@@ -654,24 +718,18 @@ class SubprocessWorker:
 
     def run_in_subprocess_and_watch(self):
         self.thread = threading.current_thread()
-        # noinspection PyUnresolvedReferences
-        use_pipe = sys.platform != 'win32' and (not IS_GRAALPY or __graalpython__.posix_module_backend() == 'native')
-        with tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir:
+        with (
+            tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir,
+            socket.create_server(('0.0.0.0', 0)) as server,
+        ):
             tmp_dir = Path(tmp_dir)
-            env = os.environ.copy()
-            env['IN_PROCESS'] = '1'
 
-            if use_pipe:
-                pipe, child_pipe = multiprocessing.Pipe()
-            else:
-                result_file = tmp_dir / 'result'
+            port = server.getsockname()[1]
+            assert port
 
             while self.remaining_test_ids and not self.stop_event.is_set():
                 last_remaining_count = len(self.remaining_test_ids)
-                with (
-                    open(tmp_dir / 'out', 'w+') as self.out_file,
-                    open(tmp_dir / 'tests', 'w+') as tests_file,
-                ):
+                with open(tmp_dir / 'out', 'w+') as self.out_file:
                     self.last_out_pos = 0
                     self.last_started_time = time.time()
                     cmd = [
@@ -679,67 +737,55 @@ class SubprocessWorker:
                         '-u',
                         *self.runner.subprocess_args,
                         __file__,
-                        '--tests-file', str(tests_file.name),
+                        'worker',
+                        '--port', str(port),
                     ]
-                    if use_pipe:
-                        cmd += ['--pipe-fd', str(child_pipe.fileno())]
-                    else:
-                        cmd += ['--result-file', str(result_file)]
                     if self.runner.failfast:
                         cmd.append('--failfast')
-                    # We communicate the tests through a temp file to avoid running into too long commandlines on windows
-                    tests_file.seek(0)
-                    tests_file.truncate()
-                    tests_file.write('\n'.join(map(str, self.remaining_test_ids)))
-                    tests_file.flush()
-                    popen_kwargs: dict = dict(
-                        stdout=self.out_file,
-                        stderr=self.out_file,
-                        env=env,
-                    )
-                    if use_pipe:
-                        popen_kwargs.update(pass_fds=[child_pipe.fileno()])
-                    self.process = subprocess.Popen(cmd, **popen_kwargs)
+                    self.process = subprocess.Popen(cmd, stdout=self.out_file, stderr=self.out_file)
 
-                    timed_out = None
+                    server.settimeout(600.0)
+                    with server.accept()[0] as sock:
+                        conn = Connection(sock)
 
-                    if use_pipe:
-                        while self.process.poll() is None:
-                            while pipe.poll(0.1):
-                                self.process_event(pipe.recv())
-                            if self.stop_event.is_set():
-                                interrupt_process(self.process)
-                                break
-                            if self.last_started_test_id:
-                                last_started_test = self.tests_by_id.get(self.last_started_test_id)
-                                timeout = last_started_test.test_file.test_config.per_test_timeout
-                            else:
-                                timeout = self.runner.default_test_timeout
+                        conn.send([TestSpecifier(t.test_file, t.test_name) for t in self.remaining_test_ids])
 
-                            if time.time() - self.last_started_time >= timeout:
-                                interrupt_process(self.process)
-                                timed_out = timeout
-                                # Drain the pipe
-                                while pipe.poll(0.1):
-                                    pipe.recv()
-                                break
+                        timed_out = None
+
                         try:
-                            self.process.wait(self.runner.default_test_timeout)
-                        except subprocess.TimeoutExpired:
-                            log("Warning: Worker didn't shutdown in a timely manner, interrupting it")
-                            interrupt_process(self.process)
+                            while True:
+                                while conn.poll(0.1):
+                                    event = conn.recv()
+                                    self.process_event(event)
+                                if self.stop_event.is_set():
+                                    interrupt_process(self.process)
+                                    break
+                                if self.last_started_test_id:
+                                    last_started_test = self.tests_by_id.get(self.last_started_test_id)
+                                    timeout = (
+                                            last_started_test.test_file.test_config.per_test_timeout
+                                            or self.runner.default_test_timeout
+                                    )
+                                else:
+                                    timeout = self.runner.default_test_timeout
+                                timeout *= self.runner.timeout_factor
+                                if time.time() - self.last_started_time >= timeout:
+                                    interrupt_process(self.process)
+                                    timed_out = timeout
+                                    break
+                        except (ConnectionClosed, OSError):
+                            # The socket closed or got connection reset, that's normal if the worker exitted or crashed
+                            pass
+                    try:
+                        self.process.wait(self.runner.default_test_timeout)
+                    except subprocess.TimeoutExpired:
+                        log("Warning: Worker didn't shutdown in a timely manner, interrupting it")
+                        interrupt_process(self.process)
 
                     returncode = self.process.wait()
 
                     if self.stop_event.is_set():
                         return
-                    if use_pipe:
-                        while pipe.poll(0.1):
-                            self.process_event(pipe.recv())
-                    else:
-                        with open(result_file, 'rb') as f:
-                            for file_event in pickle.load(f):
-                                self.process_event(file_event)
 
                     if returncode != 0 or timed_out is not None:
                         self.out_file.seek(self.last_out_pos)
@@ -760,6 +806,7 @@ class SubprocessWorker:
                             status=TestStatus.ERROR,
                             param=message,
                             output=output,
+                            duration=(time.time() - self.last_started_time),
                         ))
                         if blame_id is not self.last_started_test_id:
                             # If we're here, it means we didn't know exactly which test we were executing, we were
@@ -775,34 +822,34 @@ class SubprocessWorker:
                                     del self.remaining_test_ids[0]
                     self.last_started_test_id = None
                     if last_remaining_count == len(self.remaining_test_ids):
-                        raise RuntimeError("Worker is not making progress")
+                        log(f"Worker is not making progress, remaining: {self.remaining_test_ids}")
+
+
+def platform_keys_match(items: typing.Iterable[str]):
+    return any(all(key in PLATFORM_KEYS for key in item.split('-')) for item in items)
 
 
 @dataclass
 class TestFileConfig:
-    serial: bool = False
-    partial_splits: bool = False
-    per_test_timeout: float = 300
+    serial: bool | None = None
+    partial_splits: bool | None = None
+    per_test_timeout: float | None = None
     exclude: bool = False
 
     @classmethod
     def from_dict(cls, config: dict):
-        exclude_keys = {sys.platform}
-        if IS_GRAALPY:
-            # noinspection PyUnresolvedReferences
-            exclude_keys.add('native_image' if __graalpython__.is_native else 'jvm')
         return cls(
             serial=config.get('serial', cls.serial),
             partial_splits=config.get('partial_splits_individual_tests', cls.partial_splits),
             per_test_timeout=config.get('per_test_timeout', cls.per_test_timeout),
-            exclude=bool(set(config.get('exclude_on', set())) & exclude_keys),
+            exclude=platform_keys_match(config.get('exclude_on', ())),
         )
 
     def combine(self, other: 'TestFileConfig'):
         return TestFileConfig(
-            serial=self.serial or other.serial,
-            partial_splits=self.partial_splits or other.partial_splits,
-            per_test_timeout=max(self.per_test_timeout, other.per_test_timeout),
+            serial=(self.serial if other.serial is None else other.serial),
+            partial_splits=(self.partial_splits if other.partial_splits is None else other.partial_splits),
+            per_test_timeout=(self.per_test_timeout if other.per_test_timeout is None else other.per_test_timeout),
             exclude=self.exclude or other.exclude,
         )
 
@@ -925,22 +972,26 @@ class Test:
 
 
 def filter_tree(test_file: TestFile, test_suite: unittest.TestSuite, specifiers: list[TestSpecifier],
-                tags: list[TestId] | None):
+                tagged_ids: list[TestId] | None):
     keep_tests = []
     collected_tests = []
     for test in test_suite:
         # When test loading fails, unittest just creates an instance of _FailedTest
         if exception := getattr(test, '_exception', None):
             raise exception
+        if type(test).__module__ == 'unittest.loader' and type(test).__name__ == 'ModuleSkipped':
+            skipped_test, reason = test().skipped[0]
+            log(f"Test module {skipped_test.id().removeprefix('unittest.loader.ModuleSkipped.')} skipped: {reason}")
+            return
         if hasattr(test, '__iter__'):
-            sub_collected = filter_tree(test_file, test, specifiers, tags)
+            sub_collected = filter_tree(test_file, test, specifiers, tagged_ids)
             if sub_collected:
                 keep_tests.append(test)
                 collected_tests += sub_collected
         else:
             test_id = TestId.from_test_case(test_file.path, test)
             if any(s.match(test_id) for s in specifiers):
-                if tags is None or test_id in tags:
+                if tagged_ids is None or test_id.normalized() in tagged_ids:
                     keep_tests.append(test)
                     collected_tests.append(Test(test_id, test_file))
     test_suite._tests = keep_tests
@@ -991,10 +1042,10 @@ def collect_module(test_file: TestFile, specifiers: list[TestSpecifier], use_tag
     sys.path.insert(0, str(config.rootdir))
     try:
         loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.TestLoader()
-        tags = None
+        tagged_ids = None
         if use_tags and config.tags_dir:
-            tags = read_tags(test_file)
-            if not tags:
+            tagged_ids = [tag.test_id for tag in read_tags(test_file) if platform_keys_match(tag.keys)]
+            if not tagged_ids:
                 return None
         test_module = test_path_to_module(test_file)
         try:
@@ -1002,7 +1053,7 @@ def collect_module(test_file: TestFile, specifiers: list[TestSpecifier], use_tag
         except unittest.SkipTest as e:
             log(f"Test file {test_file} skipped: {e}")
             return
-        collected_tests = filter_tree(test_file, test_suite, specifiers, tags)
+        collected_tests = filter_tree(test_file, test_suite, specifiers, tagged_ids)
         if partial and test_file.test_config.partial_splits:
             selected, total = partial
             collected_tests = collected_tests[selected::total]
@@ -1066,15 +1117,76 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
     return to_run
 
 
-def read_tags(test_file: TestFile) -> list[TestId]:
+@dataclass(frozen=True)
+class Tag:
+    test_id: TestId
+    keys: frozenset[str]
+
+    @classmethod
+    def for_key(cls, test_id, key):
+        return Tag(test_id, frozenset({key}))
+
+    def with_key(self, key: str):
+        return Tag(self.test_id, self.keys | {key})
+
+    def without_key(self, key: str):
+        if key not in self.keys:
+            return self
+        keys = self.keys - {key}
+        if keys:
+            return Tag(self.test_id, keys)
+
+    def __str__(self):
+        return f'{self.test_id.test_name} @ {",".join(sorted(self.keys))}'
+
+
+@dataclass(frozen=True)
+class TagExclusion(Tag):
+    comment: str | None
+
+    def __str__(self):
+        s = f'!{self.test_id.test_name}'
+        if self.keys:
+            s += f' @ {",".join(sorted(self.keys))}'
+        if self.comment:
+            s = f'{self.comment}{s}'
+        return s
+
+
+def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
+    # To make them easily comparable
+    test_path = test_file.path.resolve()
     tag_file = test_file.get_tag_file()
     tags = []
     if tag_file.exists():
         with open(tag_file) as f:
+            comment = None
             for line in f:
-                test = line.strip()
-                tags.append(TestId(test_file.path, test))
-        return tags
+                if line.startswith('#'):
+                    if comment:
+                        comment += line
+                    else:
+                        comment = line
+                    continue
+                test, _, keys = line.partition('@')
+                test = test.strip()
+                keys = keys.strip()
+                if test.startswith('!'):
+                    if allow_exclusions:
+                        test = test.removeprefix('!')
+                        tags.append(TagExclusion(
+                            TestId(test_path, test),
+                            frozenset(keys.split(',')) if keys else frozenset(),
+                            comment,
+                        ))
+                else:
+                    if not keys:
+                        log(f'WARNING: invalid tag {test}: missing platform keys')
+                    tags.append(Tag(
+                        TestId(test_path, test),
+                        frozenset(keys.split(',')),
+                    ))
+                comment = None
     return tags
 
 
@@ -1087,39 +1199,82 @@ class TopLevelFunctionLoader(unittest.loader.TestLoader):
         return test_suite
 
 
-def in_process():
-    parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--pipe-fd', type=int)
-    group.add_argument('--result-file', type=Path)
-    parser.add_argument('--tests-file', type=Path, required=True)
-    parser.add_argument('--failfast', action='store_true')
-    args = parser.parse_args()
-    tests = []
-    with open(args.tests_file) as f:
-        for line in f:
-            tests.append(TestSpecifier.from_str(line.strip()))
+class ConnectionClosed(Exception):
+    pass
 
-    data = []
-    if args.pipe_fd:
-        import multiprocessing.connection
-        conn = multiprocessing.connection.Connection(args.pipe_fd)
 
-        def result_factory(suite):
-            return PipeResult(suite, conn)
-    else:
-        def result_factory(suite):
-            return SimpleResult(suite, data)
+class Connection:
+    def __init__(self, sock):
+        self.socket = sock
 
-    for test_suite in collect(tests, no_excludes=True):
-        result = result_factory(test_suite)
-        result.failfast = args.failfast
-        test_suite.run(result)
+    def send(self, obj):
+        data = pickle.dumps(obj)
+        header = len(data).to_bytes(8, byteorder='big')
+        self.socket.sendall(header)
+        self.socket.sendall(data)
 
-    if args.result_file:
-        with open(args.result_file, 'wb') as f:
-            # noinspection PyTypeChecker
-            pickle.dump(data, f)
+    def _recv(self, size):
+        data = b''
+        while len(data) < size:
+            read = self.socket.recv(size - len(data))
+            if not read:
+                return data
+            data += read
+        return data
+
+    def recv(self):
+        size = int.from_bytes(self._recv(8), byteorder='big')
+        if not size:
+            raise ConnectionClosed
+        data = self._recv(size)
+        return pickle.loads(data)
+
+    def poll(self, timeout=None):
+        rlist, wlist, xlist = select.select([self.socket], [], [], timeout)
+        return bool(rlist)
+
+
+def main_worker(args):
+    with socket.create_connection(('localhost', args.port)) as sock:
+        conn = Connection(sock)
+
+        tests = conn.recv()
+
+        for test_suite in collect(tests, no_excludes=True):
+            result = ConnectionResult(test_suite, conn)
+            result.failfast = args.failfast
+            test_suite.run(result)
+
+
+def main_merge_tags(args):
+    with open(args.report_path) as f:
+        report = json.load(f)
+    status_map = {
+        'PASSED': TestStatus.SUCCESS,
+        'FAILED': TestStatus.FAILURE,
+        'IGNORED': TestStatus.SKIPPED,
+    }
+    all_results = [
+        TestResult(
+            test_id=TestId.from_str(result['name']),
+            status=status_map[result['status']],
+        )
+        for result in report
+        if '<' not in result['name']
+    ]
+    by_file = defaultdict(list)
+    for result in all_results:
+        by_file[result.test_id.test_file].append(result)
+    for test_file, results in by_file.items():
+        test_file = configure_test_file(test_file)
+        update_tags(
+            test_file,
+            results,
+            tag_platform=args.platform,
+            untag_failed=False,
+            untag_skipped=True,
+            untag_missing=True,
+        )
 
 
 def get_bool_env(name: str):
@@ -1128,40 +1283,90 @@ def get_bool_env(name: str):
 
 def main():
     is_mx_graalpytest = get_bool_env('MX_GRAALPYTEST')
-    parser = argparse.ArgumentParser(
+    parent_parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    subparsers = parent_parser.add_subparsers()
+
+    # run command declaration
+    run_parser = subparsers.add_parser(
+        'run',
         prog=('mx graalpytest' if is_mx_graalpytest else None),
-        formatter_class=argparse.RawTextHelpFormatter,
+        help="Run GraalPy unittests or CPython unittest with tagging",
     )
+    run_parser.set_defaults(main=main_run)
     if is_mx_graalpytest:
         # mx graalpytest takes this option, but it forwards --help here, so pretend we take it
-        parser.add_argument('--python', help="Run tests with given Python binary")
-    parser.add_argument('-t', '--tagged', action='store_true',
-                        help="Interpret test file names relative to tagged test directory")
-    parser.add_argument('-n', '--num-processes', type=int,
-                        help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling")
-    parser.add_argument('--separate-workers', action='store_true',
-                        help="Create a new worker process for each test file (when -n is specified). Default for tagged unit tests")
-    parser.add_argument('--ignore', type=Path, action='append', default=[],
-                        help="Ignore path during collection (multi-allowed)")
-    parser.add_argument('--no-excludes', action='store_true',
-                        help="Don't apply configuration exclusions")
-    parser.add_argument('-f', '--failfast', action='store_true',
-                        help="Exit immediately after the first failure")
-    parser.add_argument('--all', action='store_true',
-                        help="Run tests that are normally not enabled due to tags. Implies --tagged")
-    parser.add_argument('--retag', dest='retag_mode', action='store_const', const='replace',
-                        help="Run tests and regenerate tags based on the results. Implies --all, --tagged and -n")
-    parser.add_argument('--retag-append', dest='retag_mode', action='store_const', const='append',
-                        help="Like --retag, but doesn't remove existing tags. Useful for regtagging subsets of tests")
-    parser.add_argument('--collect-only', action='store_true',
-                        help="Print found tests IDs without running tests")
-    parser.add_argument('--continue-on-collection-errors', action='store_true',
-                        help="Collection errors are not fatal")
-    parser.add_argument('--durations', type=int, default=0,
-                        help="Show durations of N slowest tests (-1 to show all)")
-    parser.add_argument('--mx-report',
-                        help="Produce a json report file in format expected by mx_gate.make_test_report")
-    parser.add_argument(
+        run_parser.add_argument('--python', help="Run tests with given Python binary")
+        run_parser.add_argument('--svm', action='store_true', help="Use SVM standalone")
+    run_parser.add_argument(
+        '-t', '--tagged', action='store_true',
+        help="Interpret test file names relative to tagged test directory",
+    )
+    run_parser.add_argument(
+        '-n', '--num-processes', type=int,
+        help="Run tests in N subprocess workers. Adds crash recovery, output capture and timeout handling",
+    )
+    run_parser.add_argument(
+        '--separate-workers', action='store_true',
+        help="Create a new worker process for each test file (when -n is specified). Default for tagged unit tests",
+    )
+    run_parser.add_argument(
+        '--ignore', type=Path, action='append', default=[],
+        help="Ignore path during collection (multi-allowed)",
+    )
+    run_parser.add_argument(
+        '--no-excludes', action='store_true',
+        help="Don't apply configuration exclusions",
+    )
+    run_parser.add_argument(
+        '-f', '--failfast', action='store_true',
+        help="Exit immediately after the first failure",
+    )
+    run_parser.add_argument(
+        '--all', action='store_true',
+        help="Run tests that are normally not enabled due to tags. Implies --tagged",
+    )
+    run_parser.add_argument(
+        '--retag', dest='retag_mode', action='store_const', const='replace',
+        help="Run tests and regenerate tags based on the results. Implies --all, --tagged and -n",
+    )
+    run_parser.add_argument(
+        '--retag-append', dest='retag_mode', action='store_const', const='append',
+        help="Like --retag, but doesn't remove existing tags. Useful for regtagging subsets of tests",
+    )
+    run_parser.add_argument(
+        '--collect-only', action='store_true',
+        help="Print found tests IDs without running tests",
+    )
+    run_parser.add_argument(
+        '--continue-on-collection-errors', action='store_true',
+        help="Collection errors are not fatal",
+    )
+    run_parser.add_argument(
+        '--durations', type=int, default=0,
+        help="Show durations of N slowest tests (-1 to show all)",
+    )
+    run_parser.add_argument(
+        '--mx-report',
+        help="Produce a json report file in format expected by mx_gate.make_test_report",
+    )
+    run_parser.add_argument(
+        '--untag-unmatched', action='store_true',
+        help="Remove tests that were not collected from tags. Useful for pruning removed tests",
+    )
+    run_parser.add_argument(
+        '--timeout-factor', type=float, default=1.0,
+        help="Multiply all timeouts by this number",
+    )
+    run_parser.add_argument(
+        '--exit-success-on-failures', action='store_true',
+        help=dedent(
+            """\
+            Exit successfully regardless of the test results. Useful to distinguish test failures
+            from runner crashes in jobs like retagger or coverage where failures are expected.
+            """
+        ),
+    )
+    run_parser.add_argument(
         '--subprocess-args',
         type=shlex.split,
         default=[
@@ -1169,22 +1374,43 @@ def main():
             "--experimental-options=true",
             "--python.EnableDebuggingBuiltins",
         ] if IS_GRAALPY else [],
-        help="Interpreter arguments to pass for subprocess invocation (when using -n)")
-    parser.add_argument('tests', nargs='+', type=TestSpecifier.from_str,
-                        help=dedent("""
-                        List of test specifiers. A specifier can be:
-                        - A test file name. It will be looked up in our unittests or, if you pass --tagged, in tagged tests. Example: test_int
-                        - A test file path. Example: graalpython/lib-python/3/test/test_int.py. Note you do not need to pass --tagged to refer to a tagged test by path
-                        - A test directory name or path. Example: cpyext
-                        - A test file name/path with a selector for a specific test. Example: test_int::tests.test_int.ToBytesTests.test_WrongTypes
-                        - A test file name/path with a selector for multiple tests. Example: test_int::tests.test_int.ToBytesTests
-                        - You can use wildcards in tests paths and selectors. Example: 'test_int::test_create*'
+        help="Interpreter arguments to pass for subprocess invocation (when using -n)",
+    )
+    run_parser.add_argument(
+        'tests', nargs='+', type=TestSpecifier.from_str,
+        help=dedent(
+            """\
+            List of test specifiers. A specifier can be:
+            - A test file name. It will be looked up in our unittests or, if you pass --tagged, in tagged tests. Example: test_int
+            - A test file path. Example: graalpython/lib-python/3/test/test_int.py. Note you do not need to pass --tagged to refer to a tagged test by path
+            - A test directory name or path. Example: cpyext
+            - A test file name/path with a selector for a specific test. Example: test_int::tests.test_int.ToBytesTests.test_WrongTypes
+            - A test file name/path with a selector for multiple tests. Example: test_int::tests.test_int.ToBytesTests
+            - You can use wildcards in tests paths and selectors. Example: 'test_int::test_create*'
 
-                        Tip: the test IDs printed in test results directly work as specifiers here.
-                        """))
+            Tip: the test IDs printed in test results directly work as specifiers here.
+            """
+        ),
+    )
 
-    args = parser.parse_args()
+    # worker command declaration
+    worker_parser = subparsers.add_parser('worker', help="Internal command for subprocess workers")
+    worker_parser.set_defaults(main=main_worker)
+    worker_parser.add_argument('--port', type=int)
+    worker_parser.add_argument('--failfast', action='store_true')
 
+    # merge-tags-from-report command declaration
+    merge_tags_parser = subparsers.add_parser('merge-tags-from-report', help="Merge tags from automated retagger")
+    merge_tags_parser.set_defaults(main=main_merge_tags)
+    merge_tags_parser.add_argument('platform')
+    merge_tags_parser.add_argument('report_path')
+
+    # run the appropriate command
+    args = parent_parser.parse_args()
+    args.main(args)
+
+
+def main_run(args):
     if args.retag_mode:
         args.all = True
         args.tagged = True
@@ -1197,7 +1423,7 @@ def main():
         args.failfast = True
 
     if IS_GRAALPY:
-        if get_bool_env('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS'):
+        if not get_bool_env('GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS'):
             # noinspection PyUnresolvedReferences
             if not __graalpython__.java_assert():
                 sys.exit(
@@ -1206,13 +1432,13 @@ def main():
         if not hasattr(__graalpython__, 'tdebug'):
             sys.exit("Needs to be run with --experimental-options --python.EnableDebuggingBuiltins\n")
 
-    implicit_root = (TAGGED_TEST_ROOT if args.tagged else UNIT_TEST_ROOT).relative_to(Path('.').resolve())
+    implicit_root = Path(os.path.relpath(TAGGED_TEST_ROOT if args.tagged else UNIT_TEST_ROOT))
     for i, test in enumerate(args.tests):
-        if not test.test_file.is_absolute() and not test.test_file.resolve().is_relative_to(DIR.parent.parent):
+        if not test.test_file.is_absolute() and not test.test_file.resolve().is_relative_to(GRAALPYTHON_DIR):
             args.tests[i] = test.with_test_file(implicit_root / test.test_file)
     for i, ignore in enumerate(args.ignore):
         ignore_path = Path(ignore)
-        if not ignore_path.is_absolute() and not ignore_path.resolve().is_relative_to(DIR.parent.parent):
+        if not ignore_path.is_absolute() and not ignore_path.resolve().is_relative_to(GRAALPYTHON_DIR):
             args.ignore[i] = implicit_root / ignore_path
 
     partial = None
@@ -1239,6 +1465,20 @@ def main():
     if not tests:
         sys.exit("No tests matched\n")
 
+    if args.untag_unmatched:
+        for test_suite in tests:
+            test_file = test_suite.test_file
+            tags = read_tags(test_file)
+            if tags:
+                filtered_tags = []
+                for tag in tags:
+                    if not any(tag.test_id.test_name == test.test_id.test_name for test in test_suite.collected_tests):
+                        log(f"Removing tag for {test_file}::{tag.test_id.test_name}")
+                    else:
+                        filtered_tags.append(tag)
+                write_tags(test_file, filtered_tags)
+        return
+
     runner_args = dict(
         failfast=args.failfast,
         report_durations=args.durations,
@@ -1251,6 +1491,7 @@ def main():
             num_processes=args.num_processes,
             subprocess_args=args.subprocess_args,
             separate_workers=args.separate_workers,
+            timeout_factor=args.timeout_factor,
         )
 
     runner.run_tests(tests)
@@ -1259,12 +1500,9 @@ def main():
     if args.retag_mode:
         runner.generate_tags(append=(args.retag_mode == 'append'))
         return
-    if runner.tests_failed():
+    if runner.tests_failed() and not args.exit_success_on_failures:
         sys.exit(1)
 
 
 if __name__ == '__main__':
-    if os.environ.get('IN_PROCESS') == '1':
-        in_process()
-    else:
-        main()
+    main()

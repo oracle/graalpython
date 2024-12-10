@@ -1,51 +1,48 @@
-test.test_userlist.UserListTest.test_add_specials
-test.test_userlist.UserListTest.test_addmul
-test.test_userlist.UserListTest.test_append
-test.test_userlist.UserListTest.test_bigrepeat
-test.test_userlist.UserListTest.test_clear
-test.test_userlist.UserListTest.test_constructor_exception_handling
-test.test_userlist.UserListTest.test_constructors
-test.test_userlist.UserListTest.test_contains
-test.test_userlist.UserListTest.test_contains_fake
-test.test_userlist.UserListTest.test_contains_order
-test.test_userlist.UserListTest.test_copy
-test.test_userlist.UserListTest.test_count
-test.test_userlist.UserListTest.test_delitem
-test.test_userlist.UserListTest.test_delslice
-test.test_userlist.UserListTest.test_exhausted_iterator
-test.test_userlist.UserListTest.test_extend
-test.test_userlist.UserListTest.test_extendedslicing
-test.test_userlist.UserListTest.test_free_after_iterating
-test.test_userlist.UserListTest.test_getitem
-test.test_userlist.UserListTest.test_getitem_error
-test.test_userlist.UserListTest.test_getitemoverwriteiter
-test.test_userlist.UserListTest.test_getslice
-test.test_userlist.UserListTest.test_iadd
-test.test_userlist.UserListTest.test_imul
-test.test_userlist.UserListTest.test_index
-test.test_userlist.UserListTest.test_init
-test.test_userlist.UserListTest.test_insert
-test.test_userlist.UserListTest.test_len
-test.test_userlist.UserListTest.test_minmax
-test.test_userlist.UserListTest.test_mixedadd
-test.test_userlist.UserListTest.test_mixedcmp
-test.test_userlist.UserListTest.test_pickle
-test.test_userlist.UserListTest.test_pop
-test.test_userlist.UserListTest.test_print
-test.test_userlist.UserListTest.test_radd_specials
-test.test_userlist.UserListTest.test_remove
-test.test_userlist.UserListTest.test_repeat
-test.test_userlist.UserListTest.test_repr
-test.test_userlist.UserListTest.test_repr_deep
-test.test_userlist.UserListTest.test_reverse
-test.test_userlist.UserListTest.test_reversed
-test.test_userlist.UserListTest.test_set_subscript
-test.test_userlist.UserListTest.test_setitem
-test.test_userlist.UserListTest.test_setitem_error
-test.test_userlist.UserListTest.test_setslice
-test.test_userlist.UserListTest.test_slice
-test.test_userlist.UserListTest.test_slice_type
-test.test_userlist.UserListTest.test_sort
-test.test_userlist.UserListTest.test_subscript
-test.test_userlist.UserListTest.test_truth
-test.test_userlist.UserListTest.test_userlist_copy
+test.test_userlist.UserListTest.test_add_specials @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_addmul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_clear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_constructor_exception_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_constructors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_contains @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_contains_fake @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_contains_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_delslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_exhausted_iterator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_extend @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_extendedslicing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_getitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_getitemoverwriteiter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_getslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_iadd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_imul @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_insert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_len @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_minmax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_mixedadd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_mixedcmp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_radd_specials @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_repr_deep @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_reverse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_set_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_setitem_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_setslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_slice_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_sort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_subscript @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_truth @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_userlist_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

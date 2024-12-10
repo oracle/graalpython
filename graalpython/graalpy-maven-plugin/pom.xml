@@ -49,7 +49,7 @@ SOFTWARE.
   <packaging>maven-plugin</packaging>
   <!-- This version is always overridden when deploying using mx -->
   <version>24.2.0</version>
-  <url>http://www.graalvm.org/</url>
+  <url>http://www.graalvm.org/python</url>
   <name>graalpy-maven-plugin</name>
   <description>Handles python related resources in a maven GraalPy - Java polyglot application.</description>
 

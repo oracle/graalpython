@@ -1,9 +1,9 @@
-test.test_codecmaps_jp.TestCP932Map.test_errorhandle
-test.test_codecmaps_jp.TestEUCJISX0213Map.test_errorhandle
-test.test_codecmaps_jp.TestEUCJISX0213Map.test_mapping_supplemental
-test.test_codecmaps_jp.TestEUCJPCOMPATMap.test_errorhandle
-test.test_codecmaps_jp.TestEUCJPCOMPATMap.test_mapping_supplemental
-test.test_codecmaps_jp.TestSJISCOMPATMap.test_errorhandle
-test.test_codecmaps_jp.TestSJISCOMPATMap.test_mapping_supplemental
-test.test_codecmaps_jp.TestSJISX0213Map.test_errorhandle
-test.test_codecmaps_jp.TestSJISX0213Map.test_mapping_supplemental
+test.test_codecmaps_jp.TestCP932Map.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_jp.TestEUCJISX0213Map.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_jp.TestEUCJISX0213Map.test_mapping_supplemental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_jp.TestEUCJPCOMPATMap.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_jp.TestEUCJPCOMPATMap.test_mapping_supplemental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_jp.TestSJISCOMPATMap.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_jp.TestSJISCOMPATMap.test_mapping_supplemental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_jp.TestSJISX0213Map.test_errorhandle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_jp.TestSJISX0213Map.test_mapping_supplemental @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

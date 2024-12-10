@@ -1,54 +1,51 @@
-test.test_float.FormatFunctionsTestCase.test_getformat
-test.test_float.FormatFunctionsTestCase.test_setformat
-test.test_float.FormatTestCase.test_format
-test.test_float.FormatTestCase.test_format_testfile
-test.test_float.FormatTestCase.test_issue35560
-test.test_float.FormatTestCase.test_issue5864
-test.test_float.GeneralFloatCases.test_error_message
-test.test_float.GeneralFloatCases.test_float
-test.test_float.GeneralFloatCases.test_float_ceil
-test.test_float.GeneralFloatCases.test_float_containment
-test.test_float.GeneralFloatCases.test_float_floor
-test.test_float.GeneralFloatCases.test_float_memoryview
-test.test_float.GeneralFloatCases.test_float_mod
-test.test_float.GeneralFloatCases.test_float_pow
-test.test_float.GeneralFloatCases.test_float_with_comma
-test.test_float.GeneralFloatCases.test_floatasratio
-test.test_float.GeneralFloatCases.test_floatconversion
-test.test_float.GeneralFloatCases.test_hash
-test.test_float.GeneralFloatCases.test_is_integer
-test.test_float.GeneralFloatCases.test_keyword_args
-test.test_float.GeneralFloatCases.test_noargs
-test.test_float.GeneralFloatCases.test_non_numeric_input_types
-test.test_float.GeneralFloatCases.test_underscores
-test.test_float.HexFloatTestCase.test_ends
-test.test_float.HexFloatTestCase.test_from_hex
-test.test_float.HexFloatTestCase.test_invalid_inputs
-test.test_float.HexFloatTestCase.test_roundtrip
-test.test_float.HexFloatTestCase.test_subclass
-test.test_float.HexFloatTestCase.test_whitespace
-test.test_float.IEEEFormatTestCase.test_double_specials_do_unpack
-test.test_float.IEEEFormatTestCase.test_float_specials_do_unpack
-test.test_float.IEEEFormatTestCase.test_serialized_float_rounding
-test.test_float.InfNanTest.test_inf_as_str
-test.test_float.InfNanTest.test_inf_from_str
-test.test_float.InfNanTest.test_inf_signs
-test.test_float.InfNanTest.test_nan_as_str
-test.test_float.InfNanTest.test_nan_from_str
-test.test_float.InfNanTest.test_nan_signs
-test.test_float.PackTests.test_pack
-test.test_float.PackTests.test_roundtrip
-test.test_float.PackTests.test_unpack
-test.test_float.ReprTestCase.test_repr
-test.test_float.ReprTestCase.test_short_repr
-test.test_float.RoundTestCase.test_None_ndigits
-test.test_float.RoundTestCase.test_format_specials
-test.test_float.RoundTestCase.test_inf_nan
-test.test_float.RoundTestCase.test_inf_nan_ndigits
-test.test_float.RoundTestCase.test_large_n
-test.test_float.RoundTestCase.test_matches_float_format
-test.test_float.RoundTestCase.test_overflow
-test.test_float.RoundTestCase.test_previous_round_bugs
-test.test_float.RoundTestCase.test_small_n
-test.test_float.UnknownFormatTestCase.test_double_specials_dont_unpack
-test.test_float.UnknownFormatTestCase.test_float_specials_dont_unpack
+test.test_float.FormatFunctionsTestCase.test_getformat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.FormatTestCase.test_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.FormatTestCase.test_format_testfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.FormatTestCase.test_issue35560 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.FormatTestCase.test_issue5864 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_error_message @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_float @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_float_ceil @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_float_containment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_float_floor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_float_memoryview @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_float_mod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_float_pow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_float_with_comma @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_floatasratio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_floatconversion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_is_integer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_keyword_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_noargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_non_numeric_input_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.GeneralFloatCases.test_underscores @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.HexFloatTestCase.test_ends @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.HexFloatTestCase.test_from_hex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.HexFloatTestCase.test_invalid_inputs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.HexFloatTestCase.test_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.HexFloatTestCase.test_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.HexFloatTestCase.test_whitespace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.IEEEFormatTestCase.test_double_specials_do_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.IEEEFormatTestCase.test_float_specials_do_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.IEEEFormatTestCase.test_serialized_float_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_float.InfNanTest.test_inf_as_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.InfNanTest.test_inf_from_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.InfNanTest.test_inf_signs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.InfNanTest.test_nan_as_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.InfNanTest.test_nan_from_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.InfNanTest.test_nan_signs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.PackTests.test_pack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_float.PackTests.test_roundtrip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_float.PackTests.test_unpack @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_float.ReprTestCase.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.ReprTestCase.test_short_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_None_ndigits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_format_specials @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_inf_nan @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_inf_nan_ndigits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_large_n @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_matches_float_format @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_previous_round_bugs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_float.RoundTestCase.test_small_n @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

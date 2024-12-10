@@ -1,30 +1,28 @@
-test.test_platform.PlatformTest.test__comparable_version
-test.test_platform.PlatformTest.test_architecture
-test.test_platform.PlatformTest.test_architecture_via_symlink
-test.test_platform.PlatformTest.test_freedesktop_os_release
-test.test_platform.PlatformTest.test_java_ver
-test.test_platform.PlatformTest.test_libc_ver
-test.test_platform.PlatformTest.test_mac_ver
-test.test_platform.PlatformTest.test_mac_ver_with_fork
-test.test_platform.PlatformTest.test_machine
-test.test_platform.PlatformTest.test_macos
-test.test_platform.PlatformTest.test_node
-test.test_platform.PlatformTest.test_parse_os_release
-test.test_platform.PlatformTest.test_platform
-test.test_platform.PlatformTest.test_processor
-test.test_platform.PlatformTest.test_release
-test.test_platform.PlatformTest.test_sys_version
-test.test_platform.PlatformTest.test_system
-test.test_platform.PlatformTest.test_system_alias
-test.test_platform.PlatformTest.test_uname
-test.test_platform.PlatformTest.test_uname_asdict
-test.test_platform.PlatformTest.test_uname_cast_to_tuple
-test.test_platform.PlatformTest.test_uname_copy
-test.test_platform.PlatformTest.test_uname_fields
-test.test_platform.PlatformTest.test_uname_pickle
-test.test_platform.PlatformTest.test_uname_processor
-test.test_platform.PlatformTest.test_uname_replace
-test.test_platform.PlatformTest.test_uname_slices
-test.test_platform.PlatformTest.test_uname_win32_ARCHITEW6432
-test.test_platform.PlatformTest.test_version
-test.test_platform.PlatformTest.test_win32_ver
+test.test_platform.PlatformTest.test_architecture @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_architecture_via_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_platform.PlatformTest.test_freedesktop_os_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_java_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_libc_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_mac_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_machine @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_macos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_node @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_parse_os_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_platform @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_processor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_sys_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_system @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_system_alias @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname_asdict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname_cast_to_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname_fields @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname_processor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_platform.PlatformTest.test_uname_replace @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname_slices @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_uname_win32_ARCHITEW6432 @ win32-AMD64
+test.test_platform.PlatformTest.test_version @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_platform.PlatformTest.test_win32_ver @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

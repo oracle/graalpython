@@ -1,84 +1,74 @@
-test.test_compile.TestExpressionStackSize.test_and
-test.test_compile.TestExpressionStackSize.test_and_or
-test.test_compile.TestExpressionStackSize.test_binop
-test.test_compile.TestExpressionStackSize.test_chained_comparison
-test.test_compile.TestExpressionStackSize.test_func_and
-test.test_compile.TestExpressionStackSize.test_if_else
-test.test_compile.TestExpressionStackSize.test_or
-test.test_compile.TestExpressionStackSize.test_stack_3050
-test.test_compile.TestExpressionStackSize.test_stack_3050_2
-test.test_compile.TestSourcePositions.test_column_offset_deduplication
-test.test_compile.TestSourcePositions.test_multiline_assert_rewritten_as_method_call
-test.test_compile.TestSourcePositions.test_simple_assignment
-test.test_compile.TestSourcePositions.test_weird_attribute_position_regressions
-test.test_compile.TestSpecifics.test_annotation_limit
-test.test_compile.TestSpecifics.test_apply_static_swaps
-test.test_compile.TestSpecifics.test_apply_static_swaps_2
-test.test_compile.TestSpecifics.test_apply_static_swaps_3
-test.test_compile.TestSpecifics.test_argument_handling
-test.test_compile.TestSpecifics.test_argument_order
-test.test_compile.TestSpecifics.test_bad_single_statement
-test.test_compile.TestSpecifics.test_big_dict_literal
-test.test_compile.TestSpecifics.test_compile_filename
-test.test_compile.TestSpecifics.test_compiler_recursion_limit
-test.test_compile.TestSpecifics.test_dead_blocks_do_not_generate_bytecode
-test.test_compile.TestSpecifics.test_dict_evaluation_order
-test.test_compile.TestSpecifics.test_duplicate_global_local
-test.test_compile.TestSpecifics.test_empty
-test.test_compile.TestSpecifics.test_encoding
-test.test_compile.TestSpecifics.test_exec_with_general_mapping_for_locals
-test.test_compile.TestSpecifics.test_extended_arg
-test.test_compile.TestSpecifics.test_float_literals
-test.test_compile.TestSpecifics.test_for_distinct_code_objects
-test.test_compile.TestSpecifics.test_import
-test.test_compile.TestSpecifics.test_indentation
-test.test_compile.TestSpecifics.test_lambda_doc
-test.test_compile.TestSpecifics.test_leading_newlines
-test.test_compile.TestSpecifics.test_line_number_genexp
-test.test_compile.TestSpecifics.test_literals_with_leading_zeroes
-test.test_compile.TestSpecifics.test_mangling
-test.test_compile.TestSpecifics.test_merge_code_attrs
-test.test_compile.TestSpecifics.test_merge_constants
-test.test_compile.TestSpecifics.test_no_ending_newline
-test.test_compile.TestSpecifics.test_none_assignment
-test.test_compile.TestSpecifics.test_none_keyword_arg
-test.test_compile.TestSpecifics.test_null_terminated
-test.test_compile.TestSpecifics.test_other_newlines
-test.test_compile.TestSpecifics.test_path_like_objects
-test.test_compile.TestSpecifics.test_peephole_opt_unreachable_code_array_access_in_bounds
-test.test_compile.TestSpecifics.test_redundant_jump_in_if_else_break
-test.test_compile.TestSpecifics.test_same_filename_used
-test.test_compile.TestSpecifics.test_sequence_unpacking_error
-test.test_compile.TestSpecifics.test_single_statement
-test.test_compile.TestSpecifics.test_stack_overflow
-test.test_compile.TestSpecifics.test_strip_unused_consts
-test.test_compile.TestSpecifics.test_subscripts
-test.test_compile.TestSpecifics.test_syntax_error
-test.test_compile.TestSpecifics.test_unary_minus
-test.test_compile.TestStackSizeStability.test_async_for
-test.test_compile.TestStackSizeStability.test_async_for_else
-test.test_compile.TestStackSizeStability.test_async_with
-test.test_compile.TestStackSizeStability.test_for
-test.test_compile.TestStackSizeStability.test_for_break_continue
-test.test_compile.TestStackSizeStability.test_for_break_continue_inside_async_with_block
-test.test_compile.TestStackSizeStability.test_for_break_continue_inside_except_block
-test.test_compile.TestStackSizeStability.test_for_break_continue_inside_finally_block
-test.test_compile.TestStackSizeStability.test_for_break_continue_inside_try_finally_block
-test.test_compile.TestStackSizeStability.test_for_break_continue_inside_with_block
-test.test_compile.TestStackSizeStability.test_for_else
-test.test_compile.TestStackSizeStability.test_if
-test.test_compile.TestStackSizeStability.test_if_else
-test.test_compile.TestStackSizeStability.test_return_inside_async_with_block
-test.test_compile.TestStackSizeStability.test_return_inside_except_block
-test.test_compile.TestStackSizeStability.test_return_inside_finally_block
-test.test_compile.TestStackSizeStability.test_return_inside_try_finally_block
-test.test_compile.TestStackSizeStability.test_return_inside_with_block
-test.test_compile.TestStackSizeStability.test_try_except_as
-test.test_compile.TestStackSizeStability.test_try_except_bare
-test.test_compile.TestStackSizeStability.test_try_except_qualified
-test.test_compile.TestStackSizeStability.test_try_except_star_as
-test.test_compile.TestStackSizeStability.test_try_except_star_finally
-test.test_compile.TestStackSizeStability.test_try_except_star_qualified
-test.test_compile.TestStackSizeStability.test_try_finally
-test.test_compile.TestStackSizeStability.test_while_else
-test.test_compile.TestStackSizeStability.test_with
+test.test_compile.TestExpressionStackSize.test_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestExpressionStackSize.test_and_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestExpressionStackSize.test_binop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestExpressionStackSize.test_chained_comparison @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestExpressionStackSize.test_func_and @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestExpressionStackSize.test_if_else @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestExpressionStackSize.test_or @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestExpressionStackSize.test_stack_3050 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestExpressionStackSize.test_stack_3050_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSourcePositions.test_multiline_assert_rewritten_as_method_call @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSourcePositions.test_simple_assignment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSourcePositions.test_weird_attribute_position_regressions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_annotation_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_apply_static_swaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_apply_static_swaps_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_apply_static_swaps_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_argument_handling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_argument_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_bad_single_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_big_dict_literal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_compile_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_dict_evaluation_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_duplicate_global_local @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_empty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_exec_with_general_mapping_for_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_extended_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_compile.TestSpecifics.test_float_literals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_for_distinct_code_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_indentation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_lambda_doc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_line_number_genexp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_literals_with_leading_zeroes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_mangling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_no_ending_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_none_assignment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_none_keyword_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_null_terminated @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_other_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_path_like_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_sequence_unpacking_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_single_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_stack_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_subscripts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_unary_minus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_async_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_async_for_else @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_async_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_break_continue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_break_continue_inside_async_with_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_break_continue_inside_except_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_break_continue_inside_finally_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_break_continue_inside_try_finally_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_break_continue_inside_with_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_for_else @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_if @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_if_else @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_return_inside_async_with_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_return_inside_except_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_return_inside_finally_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_return_inside_try_finally_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_return_inside_with_block @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_try_except_as @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_try_except_bare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_try_except_qualified @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_try_except_star_as @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_try_except_star_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_try_except_star_qualified @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_try_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_while_else @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -1,80 +1,62 @@
-test.test_exceptions.AttributeErrorTests.test_attribute_error_with_failing_dict
-test.test_exceptions.AttributeErrorTests.test_getattr_error_bad_suggestions_do_not_trigger_for_small_names
-test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_do_not_trigger_for_big_dicts
-test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_do_not_trigger_for_long_attributes
-test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_for_same_name
-test.test_exceptions.ExceptionTests.testAttributes
-test.test_exceptions.ExceptionTests.testChainingAttrs
-test.test_exceptions.ExceptionTests.testChainingDescriptors
-test.test_exceptions.ExceptionTests.testExceptionCleanupState
-test.test_exceptions.ExceptionTests.testInvalidAttrs
-test.test_exceptions.ExceptionTests.testInvalidTraceback
-test.test_exceptions.ExceptionTests.testKeywordArgs
-test.test_exceptions.ExceptionTests.testMemoryErrorBigSource
-test.test_exceptions.ExceptionTests.testNoneClearsTracebackAttr
-test.test_exceptions.ExceptionTests.testRaising
-test.test_exceptions.ExceptionTests.testSettingException
-test.test_exceptions.ExceptionTests.testSyntaxErrorMessage
-test.test_exceptions.ExceptionTests.testSyntaxErrorMissingParens
-test.test_exceptions.ExceptionTests.testWithTraceback
-test.test_exceptions.ExceptionTests.test_3114
-test.test_exceptions.ExceptionTests.test_MemoryError
-test.test_exceptions.ExceptionTests.test_WindowsError
-test.test_exceptions.ExceptionTests.test_assert_shadowing
-test.test_exceptions.ExceptionTests.test_badisinstance
-test.test_exceptions.ExceptionTests.test_context_of_exception_in_else_and_finally
-test.test_exceptions.ExceptionTests.test_context_of_exception_in_except_and_finally
-test.test_exceptions.ExceptionTests.test_context_of_exception_in_try_and_finally
-test.test_exceptions.ExceptionTests.test_errno_ENOTDIR
-test.test_exceptions.ExceptionTests.test_error_offset_continuation_characters
-test.test_exceptions.ExceptionTests.test_exception_cleanup_names
-test.test_exceptions.ExceptionTests.test_exception_cleanup_names2
-test.test_exceptions.ExceptionTests.test_exception_target_in_nested_scope
-test.test_exceptions.ExceptionTests.test_exception_with_doc
-test.test_exceptions.ExceptionTests.test_generator_close_cleanup_exc_state
-test.test_exceptions.ExceptionTests.test_generator_del_cleanup_exc_state
-test.test_exceptions.ExceptionTests.test_generator_doesnt_retain_old_exc
-test.test_exceptions.ExceptionTests.test_generator_doesnt_retain_old_exc2
-test.test_exceptions.ExceptionTests.test_generator_finalizing_and_exc_info
-test.test_exceptions.ExceptionTests.test_generator_leaking
-test.test_exceptions.ExceptionTests.test_generator_leaking2
-test.test_exceptions.ExceptionTests.test_generator_leaking3
-test.test_exceptions.ExceptionTests.test_generator_leaking4
-test.test_exceptions.ExceptionTests.test_generator_next_cleanup_exc_state
-test.test_exceptions.ExceptionTests.test_generator_send_cleanup_exc_state
-test.test_exceptions.ExceptionTests.test_generator_throw_cleanup_exc_state
-test.test_exceptions.ExceptionTests.test_memory_error_cleanup
-test.test_exceptions.ExceptionTests.test_memory_error_in_PyErr_PrintEx
-test.test_exceptions.ExceptionTests.test_memory_error_subclasses
-test.test_exceptions.ExceptionTests.test_no_hang_on_context_chain_cycle2
-test.test_exceptions.ExceptionTests.test_notes
-test.test_exceptions.ExceptionTests.test_raise_does_not_create_context_chain_cycle
-test.test_exceptions.ExceptionTests.test_raise_in_generator
-test.test_exceptions.ExceptionTests.test_recursion_error_cleanup
-test.test_exceptions.ExceptionTests.test_recursion_normalizing_exception
-test.test_exceptions.ExceptionTests.test_recursion_normalizing_infinite_exception
-test.test_exceptions.ExceptionTests.test_recursion_normalizing_with_no_memory
-test.test_exceptions.ExceptionTests.test_str
-test.test_exceptions.ExceptionTests.test_trashcan_recursion
-test.test_exceptions.ExceptionTests.test_unhandled
-test.test_exceptions.ExceptionTests.test_unicode_change_attributes
-test.test_exceptions.ExceptionTests.test_unicode_errors_no_object
-test.test_exceptions.ExceptionTests.test_unraisable
-test.test_exceptions.ExceptionTests.test_windows_message
-test.test_exceptions.ExceptionTests.test_yield_in_nested_try_excepts
-test.test_exceptions.ImportErrorTests.test_attributes
-test.test_exceptions.ImportErrorTests.test_copy_pickle
-test.test_exceptions.ImportErrorTests.test_non_str_argument
-test.test_exceptions.ImportErrorTests.test_reset_attributes
-test.test_exceptions.NameErrorTests.test_issue45826
-test.test_exceptions.NameErrorTests.test_issue45826_focused
-test.test_exceptions.NameErrorTests.test_name_error_bad_suggestions_do_not_trigger_for_small_names
-test.test_exceptions.NameErrorTests.test_name_error_suggestions_do_not_trigger_for_long_names
-test.test_exceptions.NameErrorTests.test_name_error_suggestions_do_not_trigger_for_too_many_locals
-test.test_exceptions.NameErrorTests.test_name_error_with_custom_exceptions
-test.test_exceptions.NameErrorTests.test_unbound_local_error_doesn_not_match
-test.test_exceptions.PEP626Tests.test_lineno_after_raise_in_with_exit
-test.test_exceptions.PEP626Tests.test_lineno_after_raise_simple
-test.test_exceptions.PEP626Tests.test_lineno_in_finally_normal
-test.test_exceptions.PEP626Tests.test_lineno_in_try
-test.test_exceptions.SyntaxErrorTests.test_attributes_old_constructor
+test.test_exceptions.AttributeErrorTests.test_attribute_error_with_failing_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.AttributeErrorTests.test_getattr_error_bad_suggestions_do_not_trigger_for_small_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_do_not_trigger_for_big_dicts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_do_not_trigger_for_long_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_for_same_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testAttributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testChainingAttrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testChainingDescriptors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# Disabled due to transient stack overflow that fails to get caught and crashes the VM
+!test.test_exceptions.ExceptionTests.testInfiniteRecursion @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_exceptions.ExceptionTests.testInvalidAttrs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testInvalidTraceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testKeywordArgs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testNoneClearsTracebackAttr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testRaising @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testSyntaxErrorMessage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testSyntaxErrorMissingParens @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.testWithTraceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_WindowsError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_assert_shadowing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# Disabled due to transient stack overflow that fails to get caught and crashes the VM
+!test.test_exceptions.ExceptionTests.test_badisinstance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_exceptions.ExceptionTests.test_context_of_exception_in_else_and_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_context_of_exception_in_except_and_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_context_of_exception_in_try_and_finally @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_errno_ENOTDIR @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_error_offset_continuation_characters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_exception_cleanup_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_exception_cleanup_names2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_exception_target_in_nested_scope @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_generator_doesnt_retain_old_exc @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_generator_doesnt_retain_old_exc2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_generator_finalizing_and_exc_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_generator_leaking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_generator_leaking2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_generator_leaking3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_generator_leaking4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_memory_error_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_notes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_raise_does_not_create_context_chain_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_raise_in_generator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_str @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_unhandled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_unicode_change_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_unicode_errors_no_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_yield_in_nested_try_excepts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ImportErrorTests.test_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ImportErrorTests.test_copy_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ImportErrorTests.test_non_str_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ImportErrorTests.test_reset_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.NameErrorTests.test_issue45826 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.NameErrorTests.test_issue45826_focused @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.NameErrorTests.test_name_error_bad_suggestions_do_not_trigger_for_small_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.NameErrorTests.test_name_error_suggestions_do_not_trigger_for_long_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.NameErrorTests.test_name_error_suggestions_do_not_trigger_for_too_many_locals @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.NameErrorTests.test_name_error_with_custom_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.NameErrorTests.test_unbound_local_error_doesn_not_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.PEP626Tests.test_lineno_after_raise_in_with_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.PEP626Tests.test_lineno_after_raise_simple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.PEP626Tests.test_lineno_in_finally_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.PEP626Tests.test_lineno_in_try @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.SyntaxErrorTests.test_attributes_old_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

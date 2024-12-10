@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -82,10 +82,10 @@ if(WIN32)
     target_compile_options(${TARGET_LZMA} PRIVATE /Z7 /O2)
     target_compile_options(${TARGET_LZMASUPPORT} PRIVATE /Z7 /O2 /W3 /WX)
 else()
-    target_compile_options(${TARGET_LZMA} PRIVATE -fPIC -DPIC -g -O2)
+    target_compile_options(${TARGET_LZMA} PRIVATE -fPIC -DPIC -O2)
     target_compile_definitions(${TARGET_LZMA} PRIVATE PIC)
 
-    target_compile_options(${TARGET_LZMASUPPORT} PRIVATE -g -O3 -Wall -Werror)
+    target_compile_options(${TARGET_LZMASUPPORT} PRIVATE -O3 -Wall -Werror)
 endif()
 
 # don't install into the system but into the MX project's output dir

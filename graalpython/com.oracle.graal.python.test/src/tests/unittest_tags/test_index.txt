@@ -1,55 +1,55 @@
-test.test_index.BaseTestCase.test_basic
-test.test_index.BaseTestCase.test_error
-test.test_index.BaseTestCase.test_index_returns_int_subclass
-test.test_index.BaseTestCase.test_int_subclass_with_index
-test.test_index.BaseTestCase.test_slice
-test.test_index.BaseTestCase.test_subclasses
-test.test_index.BaseTestCase.test_wrappers
-test.test_index.ByteArrayTestCase.test_error
-test.test_index.ByteArrayTestCase.test_index
-test.test_index.ByteArrayTestCase.test_repeat
-test.test_index.ByteArrayTestCase.test_slice
-test.test_index.ByteArrayTestCase.test_slice_bug7532
-test.test_index.ByteArrayTestCase.test_subclasses
-test.test_index.ByteArrayTestCase.test_wrappers
-test.test_index.BytesTestCase.test_error
-test.test_index.BytesTestCase.test_index
-test.test_index.BytesTestCase.test_repeat
-test.test_index.BytesTestCase.test_slice
-test.test_index.BytesTestCase.test_slice_bug7532
-test.test_index.BytesTestCase.test_subclasses
-test.test_index.BytesTestCase.test_wrappers
-test.test_index.ListTestCase.test_error
-test.test_index.ListTestCase.test_index
-test.test_index.ListTestCase.test_inplace_repeat
-test.test_index.ListTestCase.test_repeat
-test.test_index.ListTestCase.test_setdelitem
-test.test_index.ListTestCase.test_slice
-test.test_index.ListTestCase.test_slice_bug7532
-test.test_index.ListTestCase.test_subclasses
-test.test_index.ListTestCase.test_wrappers
-test.test_index.NewSeqTestCase.test_error
-test.test_index.NewSeqTestCase.test_index
-test.test_index.NewSeqTestCase.test_repeat
-test.test_index.NewSeqTestCase.test_slice
-test.test_index.NewSeqTestCase.test_slice_bug7532
-test.test_index.NewSeqTestCase.test_subclasses
-test.test_index.NewSeqTestCase.test_wrappers
-test.test_index.OverflowTestCase.test_getitem
-test.test_index.OverflowTestCase.test_large_longs
-test.test_index.OverflowTestCase.test_sequence_repeat
-test.test_index.RangeTestCase.test_range
-test.test_index.StringTestCase.test_error
-test.test_index.StringTestCase.test_index
-test.test_index.StringTestCase.test_repeat
-test.test_index.StringTestCase.test_slice
-test.test_index.StringTestCase.test_slice_bug7532
-test.test_index.StringTestCase.test_subclasses
-test.test_index.StringTestCase.test_wrappers
-test.test_index.TupleTestCase.test_error
-test.test_index.TupleTestCase.test_index
-test.test_index.TupleTestCase.test_repeat
-test.test_index.TupleTestCase.test_slice
-test.test_index.TupleTestCase.test_slice_bug7532
-test.test_index.TupleTestCase.test_subclasses
-test.test_index.TupleTestCase.test_wrappers
+test.test_index.BaseTestCase.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BaseTestCase.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BaseTestCase.test_index_returns_int_subclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BaseTestCase.test_int_subclass_with_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BaseTestCase.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BaseTestCase.test_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BaseTestCase.test_wrappers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ByteArrayTestCase.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ByteArrayTestCase.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ByteArrayTestCase.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ByteArrayTestCase.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ByteArrayTestCase.test_slice_bug7532 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ByteArrayTestCase.test_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ByteArrayTestCase.test_wrappers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BytesTestCase.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BytesTestCase.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BytesTestCase.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BytesTestCase.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BytesTestCase.test_slice_bug7532 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BytesTestCase.test_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.BytesTestCase.test_wrappers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_inplace_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_setdelitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_slice_bug7532 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.ListTestCase.test_wrappers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.NewSeqTestCase.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.NewSeqTestCase.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.NewSeqTestCase.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.NewSeqTestCase.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.NewSeqTestCase.test_slice_bug7532 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.NewSeqTestCase.test_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.NewSeqTestCase.test_wrappers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.OverflowTestCase.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.OverflowTestCase.test_large_longs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.OverflowTestCase.test_sequence_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.RangeTestCase.test_range @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.StringTestCase.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.StringTestCase.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.StringTestCase.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.StringTestCase.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.StringTestCase.test_slice_bug7532 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.StringTestCase.test_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.StringTestCase.test_wrappers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.TupleTestCase.test_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.TupleTestCase.test_index @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.TupleTestCase.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.TupleTestCase.test_slice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.TupleTestCase.test_slice_bug7532 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.TupleTestCase.test_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_index.TupleTestCase.test_wrappers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

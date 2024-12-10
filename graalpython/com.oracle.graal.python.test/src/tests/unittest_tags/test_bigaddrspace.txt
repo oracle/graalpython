@@ -1,7 +1,0 @@
-test.test_bigaddrspace.BytesTest.test_concat
-test.test_bigaddrspace.BytesTest.test_optimized_concat
-test.test_bigaddrspace.BytesTest.test_repeat
-test.test_bigaddrspace.StrTest.test_concat
-test.test_bigaddrspace.StrTest.test_optimized_concat
-test.test_bigaddrspace.StrTest.test_repeat
-test.test_bigaddrspace.TestMain.test_main

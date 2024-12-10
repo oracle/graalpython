@@ -1,77 +1,77 @@
-test.test_posixpath.PathLikeTests.test_path_abspath
-test.test_posixpath.PathLikeTests.test_path_basename
-test.test_posixpath.PathLikeTests.test_path_commonpath
-test.test_posixpath.PathLikeTests.test_path_dirname
-test.test_posixpath.PathLikeTests.test_path_expanduser
-test.test_posixpath.PathLikeTests.test_path_expandvars
-test.test_posixpath.PathLikeTests.test_path_isabs
-test.test_posixpath.PathLikeTests.test_path_islink
-test.test_posixpath.PathLikeTests.test_path_ismount
-test.test_posixpath.PathLikeTests.test_path_join
-test.test_posixpath.PathLikeTests.test_path_lexists
-test.test_posixpath.PathLikeTests.test_path_normcase
-test.test_posixpath.PathLikeTests.test_path_normpath
-test.test_posixpath.PathLikeTests.test_path_realpath
-test.test_posixpath.PathLikeTests.test_path_relpath
-test.test_posixpath.PathLikeTests.test_path_split
-test.test_posixpath.PathLikeTests.test_path_splitdrive
-test.test_posixpath.PathLikeTests.test_path_splitext
-test.test_posixpath.PosixCommonTest.test_abspath
-test.test_posixpath.PosixCommonTest.test_abspath_issue3426
-test.test_posixpath.PosixCommonTest.test_commonprefix
-test.test_posixpath.PosixCommonTest.test_exists
-test.test_posixpath.PosixCommonTest.test_exists_fd
-test.test_posixpath.PosixCommonTest.test_expandvars
-test.test_posixpath.PosixCommonTest.test_expandvars_nonascii
-test.test_posixpath.PosixCommonTest.test_filetime
-test.test_posixpath.PosixCommonTest.test_getsize
-test.test_posixpath.PosixCommonTest.test_import
-test.test_posixpath.PosixCommonTest.test_isdir
-test.test_posixpath.PosixCommonTest.test_isfile
-test.test_posixpath.PosixCommonTest.test_join_errors
-test.test_posixpath.PosixCommonTest.test_no_argument
-test.test_posixpath.PosixCommonTest.test_nonascii_abspath
-test.test_posixpath.PosixCommonTest.test_normcase
-test.test_posixpath.PosixCommonTest.test_normpath_issue106242
-test.test_posixpath.PosixCommonTest.test_normpath_issue5827
-test.test_posixpath.PosixCommonTest.test_realpath
-test.test_posixpath.PosixCommonTest.test_relpath_errors
-test.test_posixpath.PosixCommonTest.test_samefile
-test.test_posixpath.PosixCommonTest.test_samefile_on_link
-test.test_posixpath.PosixCommonTest.test_samefile_on_symlink
-test.test_posixpath.PosixCommonTest.test_sameopenfile
-test.test_posixpath.PosixCommonTest.test_samestat
-test.test_posixpath.PosixCommonTest.test_samestat_on_link
-test.test_posixpath.PosixCommonTest.test_samestat_on_symlink
-test.test_posixpath.PosixCommonTest.test_splitdrive
-test.test_posixpath.PosixPathTest.test_basename
-test.test_posixpath.PosixPathTest.test_commonpath
-test.test_posixpath.PosixPathTest.test_dirname
-test.test_posixpath.PosixPathTest.test_expanduser
-test.test_posixpath.PosixPathTest.test_expanduser_home_envvar
-test.test_posixpath.PosixPathTest.test_expanduser_pwd
-test.test_posixpath.PosixPathTest.test_isabs
-test.test_posixpath.PosixPathTest.test_islink
-test.test_posixpath.PosixPathTest.test_ismount
-test.test_posixpath.PosixPathTest.test_ismount_different_device
-test.test_posixpath.PosixPathTest.test_ismount_directory_not_readable
-test.test_posixpath.PosixPathTest.test_ismount_non_existent
-test.test_posixpath.PosixPathTest.test_ismount_symlinks
-test.test_posixpath.PosixPathTest.test_join
-test.test_posixpath.PosixPathTest.test_normpath
-test.test_posixpath.PosixPathTest.test_realpath_basic
-test.test_posixpath.PosixPathTest.test_realpath_curdir
-test.test_posixpath.PosixPathTest.test_realpath_deep_recursion
-test.test_posixpath.PosixPathTest.test_realpath_pardir
-test.test_posixpath.PosixPathTest.test_realpath_relative
-test.test_posixpath.PosixPathTest.test_realpath_repeated_indirect_symlinks
-test.test_posixpath.PosixPathTest.test_realpath_resolve_before_normalizing
-test.test_posixpath.PosixPathTest.test_realpath_resolve_first
-test.test_posixpath.PosixPathTest.test_realpath_resolve_parents
-test.test_posixpath.PosixPathTest.test_realpath_strict
-test.test_posixpath.PosixPathTest.test_realpath_symlink_loops
-test.test_posixpath.PosixPathTest.test_realpath_symlink_loops_strict
-test.test_posixpath.PosixPathTest.test_relpath
-test.test_posixpath.PosixPathTest.test_relpath_bytes
-test.test_posixpath.PosixPathTest.test_split
-test.test_posixpath.PosixPathTest.test_splitext
+test.test_posixpath.PathLikeTests.test_path_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_basename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_commonpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_dirname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_expanduser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_expandvars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_isabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_islink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_ismount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_lexists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_normcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_normpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_realpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_relpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PathLikeTests.test_path_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_abspath_issue3426 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_commonprefix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_exists_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_expandvars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_expandvars_nonascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_filetime @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_getsize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_isdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_isfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_join_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_no_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_nonascii_abspath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_normcase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_normpath_issue106242 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_normpath_issue5827 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_realpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_relpath_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_samefile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_samefile_on_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixCommonTest.test_samefile_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_sameopenfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_samestat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_samestat_on_link @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixCommonTest.test_samestat_on_symlink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixCommonTest.test_splitdrive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_basename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_commonpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_dirname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_expanduser @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_expanduser_home_envvar @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_expanduser_pwd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_isabs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_islink @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_ismount @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_ismount_different_device @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_ismount_directory_not_readable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_ismount_non_existent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_ismount_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_normpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_realpath_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_curdir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_deep_recursion @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_pardir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_relative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_repeated_indirect_symlinks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_resolve_before_normalizing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_resolve_first @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_resolve_parents @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_symlink_loops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_realpath_symlink_loops_strict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_posixpath.PosixPathTest.test_relpath @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_relpath_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_split @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_posixpath.PosixPathTest.test_splitext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

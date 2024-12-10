@@ -46,7 +46,7 @@ import unittest
 from tests.standalone import util
 
 
-class MavenPluginTest(util.PolyglotAppTestBase):
+class MavenPluginTest(util.BuildToolTestBase):
 
     def generate_app(self, tmpdir, target_dir, target_name, pom_template=None):
         cmd = util.GLOBAL_MVN_CMD + [
@@ -72,11 +72,11 @@ class MavenPluginTest(util.PolyglotAppTestBase):
         shutil.copy(os.path.join(mvnw_dir, "mvnw"), os.path.join(target_dir, "mvnw"))
         shutil.copy(os.path.join(mvnw_dir, "mvnw.cmd"), os.path.join(target_dir, "mvnw.cmd"))
         shutil.copytree(os.path.join(mvnw_dir, ".mvn"), os.path.join(target_dir, ".mvn"))
-        util.patch_properties_file(os.path.join(target_dir, ".mvn", "wrapper", "maven-wrapper.properties"), self.env.get("MAVEN_DISTRIBUTION_URL_OVERRIDE"))
+        util.override_maven_properties_file(target_dir)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with util.TemporaryTestDirectory() as tmpdir:
             target_name = "generated_app_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             self.generate_app(tmpdir, target_dir, target_name)
@@ -140,7 +140,7 @@ class MavenPluginTest(util.PolyglotAppTestBase):
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app_external_resources(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with util.TemporaryTestDirectory() as tmpdir:
             target_name = "generated_app_ext_resources_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             self.generate_app(tmpdir, target_dir, target_name)
@@ -193,7 +193,7 @@ class MavenPluginTest(util.PolyglotAppTestBase):
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_fail_without_graalpy_dep(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with util.TemporaryTestDirectory() as tmpdir:
             target_name = "fail_without_graalpy_dep_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "fail_without_graalpy_dep_pom.xml")
@@ -207,7 +207,7 @@ class MavenPluginTest(util.PolyglotAppTestBase):
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_gen_launcher_and_venv(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with util.TemporaryTestDirectory() as tmpdir:
             target_name = "gen_launcher_and_venv_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "prepare_venv_pom.xml")
@@ -247,7 +247,7 @@ class MavenPluginTest(util.PolyglotAppTestBase):
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_check_home(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with util.TemporaryTestDirectory() as tmpdir:
             target_name = "check_home_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "check_home_pom.xml")
@@ -340,7 +340,7 @@ class MavenPluginTest(util.PolyglotAppTestBase):
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_empty_packages(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with util.TemporaryTestDirectory() as tmpdir:
             target_name = "empty_packages_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "check_packages_pom.xml")

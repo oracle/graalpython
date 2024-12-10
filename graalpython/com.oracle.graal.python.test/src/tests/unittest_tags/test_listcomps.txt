@@ -1,2 +1,1 @@
-DocTestCase.test.test_listcomps.__test__.doctests
-test.test_listcomps.TestMain.test_main
+DocTestCase.test.test_listcomps.__test__.doctests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

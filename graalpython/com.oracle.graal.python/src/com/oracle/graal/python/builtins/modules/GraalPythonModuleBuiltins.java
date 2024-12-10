@@ -838,7 +838,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object toNative(PArray array) {
-            CApiContext.ensureCapiWasLoaded();
+            CApiContext.ensureCapiWasLoaded("internal API");
             NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(array.getSequenceStorage(), true);
             array.setSequenceStorage(newStorage);
             return array;
@@ -847,7 +847,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object toNative(PSequence sequence) {
-            CApiContext.ensureCapiWasLoaded();
+            CApiContext.ensureCapiWasLoaded("internal API");
             NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), sequence instanceof PBytesLike);
             sequence.setSequenceStorage(newStorage);
             return sequence;

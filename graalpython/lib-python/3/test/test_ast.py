@@ -316,7 +316,9 @@ class AST_Tests(unittest.TestCase):
         ref = weakref.ref(a.x)
         del a
         support.gc_collect()
-        self.assertIsNone(ref())
+        # GraalPy change
+        if sys.implementation.name != 'graalpy':
+            self.assertIsNone(ref())
 
     def test_snippets(self):
         for input, output, kind in ((exec_tests, exec_results, "exec"),

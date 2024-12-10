@@ -1,90 +1,90 @@
-test.test_wave.MiscTestCase.test__all__
-test.test_wave.WaveLowLevelTest.test_read_no_chunks
-test.test_wave.WaveLowLevelTest.test_read_no_data_chunk
-test.test_wave.WaveLowLevelTest.test_read_no_fmt_chunk
-test.test_wave.WaveLowLevelTest.test_read_no_fmt_no_data_chunk
-test.test_wave.WaveLowLevelTest.test_read_no_riff_chunk
-test.test_wave.WaveLowLevelTest.test_read_not_wave
-test.test_wave.WaveLowLevelTest.test_read_wrong_form
-test.test_wave.WaveLowLevelTest.test_read_wrong_number_of_channels
-test.test_wave.WaveLowLevelTest.test_read_wrong_sample_width
-test.test_wave.WavePCM16Test.test_close
-test.test_wave.WavePCM16Test.test_context_manager_with_filename
-test.test_wave.WavePCM16Test.test_context_manager_with_open_file
-test.test_wave.WavePCM16Test.test_copy
-test.test_wave.WavePCM16Test.test_incompleted_write
-test.test_wave.WavePCM16Test.test_multiple_writes
-test.test_wave.WavePCM16Test.test_overflowed_write
-test.test_wave.WavePCM16Test.test_read
-test.test_wave.WavePCM16Test.test_read_not_from_start
-test.test_wave.WavePCM16Test.test_read_params
-test.test_wave.WavePCM16Test.test_unseekable_incompleted_write
-test.test_wave.WavePCM16Test.test_unseekable_overflowed_write
-test.test_wave.WavePCM16Test.test_unseekable_read
-test.test_wave.WavePCM16Test.test_unseekable_write
-test.test_wave.WavePCM16Test.test_write
-test.test_wave.WavePCM16Test.test_write_array
-test.test_wave.WavePCM16Test.test_write_bytearray
-test.test_wave.WavePCM16Test.test_write_context_manager_calls_close
-test.test_wave.WavePCM16Test.test_write_memoryview
-test.test_wave.WavePCM16Test.test_write_params
-test.test_wave.WavePCM24Test.test_close
-test.test_wave.WavePCM24Test.test_context_manager_with_filename
-test.test_wave.WavePCM24Test.test_context_manager_with_open_file
-test.test_wave.WavePCM24Test.test_copy
-test.test_wave.WavePCM24Test.test_incompleted_write
-test.test_wave.WavePCM24Test.test_multiple_writes
-test.test_wave.WavePCM24Test.test_overflowed_write
-test.test_wave.WavePCM24Test.test_read
-test.test_wave.WavePCM24Test.test_read_not_from_start
-test.test_wave.WavePCM24Test.test_read_params
-test.test_wave.WavePCM24Test.test_unseekable_incompleted_write
-test.test_wave.WavePCM24Test.test_unseekable_overflowed_write
-test.test_wave.WavePCM24Test.test_unseekable_read
-test.test_wave.WavePCM24Test.test_unseekable_write
-test.test_wave.WavePCM24Test.test_write
-test.test_wave.WavePCM24Test.test_write_array
-test.test_wave.WavePCM24Test.test_write_bytearray
-test.test_wave.WavePCM24Test.test_write_context_manager_calls_close
-test.test_wave.WavePCM24Test.test_write_memoryview
-test.test_wave.WavePCM24Test.test_write_params
-test.test_wave.WavePCM32Test.test_close
-test.test_wave.WavePCM32Test.test_context_manager_with_filename
-test.test_wave.WavePCM32Test.test_context_manager_with_open_file
-test.test_wave.WavePCM32Test.test_copy
-test.test_wave.WavePCM32Test.test_incompleted_write
-test.test_wave.WavePCM32Test.test_multiple_writes
-test.test_wave.WavePCM32Test.test_overflowed_write
-test.test_wave.WavePCM32Test.test_read
-test.test_wave.WavePCM32Test.test_read_not_from_start
-test.test_wave.WavePCM32Test.test_read_params
-test.test_wave.WavePCM32Test.test_unseekable_incompleted_write
-test.test_wave.WavePCM32Test.test_unseekable_overflowed_write
-test.test_wave.WavePCM32Test.test_unseekable_read
-test.test_wave.WavePCM32Test.test_unseekable_write
-test.test_wave.WavePCM32Test.test_write
-test.test_wave.WavePCM32Test.test_write_array
-test.test_wave.WavePCM32Test.test_write_bytearray
-test.test_wave.WavePCM32Test.test_write_context_manager_calls_close
-test.test_wave.WavePCM32Test.test_write_memoryview
-test.test_wave.WavePCM32Test.test_write_params
-test.test_wave.WavePCM8Test.test_close
-test.test_wave.WavePCM8Test.test_context_manager_with_filename
-test.test_wave.WavePCM8Test.test_context_manager_with_open_file
-test.test_wave.WavePCM8Test.test_copy
-test.test_wave.WavePCM8Test.test_incompleted_write
-test.test_wave.WavePCM8Test.test_multiple_writes
-test.test_wave.WavePCM8Test.test_overflowed_write
-test.test_wave.WavePCM8Test.test_read
-test.test_wave.WavePCM8Test.test_read_not_from_start
-test.test_wave.WavePCM8Test.test_read_params
-test.test_wave.WavePCM8Test.test_unseekable_incompleted_write
-test.test_wave.WavePCM8Test.test_unseekable_overflowed_write
-test.test_wave.WavePCM8Test.test_unseekable_read
-test.test_wave.WavePCM8Test.test_unseekable_write
-test.test_wave.WavePCM8Test.test_write
-test.test_wave.WavePCM8Test.test_write_array
-test.test_wave.WavePCM8Test.test_write_bytearray
-test.test_wave.WavePCM8Test.test_write_context_manager_calls_close
-test.test_wave.WavePCM8Test.test_write_memoryview
-test.test_wave.WavePCM8Test.test_write_params
+test.test_wave.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_no_chunks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_no_data_chunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_no_fmt_chunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_no_fmt_no_data_chunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_no_riff_chunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_not_wave @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_wrong_form @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_wrong_number_of_channels @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WaveLowLevelTest.test_read_wrong_sample_width @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_context_manager_with_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_context_manager_with_open_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_incompleted_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_multiple_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_overflowed_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_read_not_from_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_read_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_unseekable_incompleted_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_unseekable_overflowed_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_unseekable_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_unseekable_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_write_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_write_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_write_context_manager_calls_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_write_memoryview @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM16Test.test_write_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_context_manager_with_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_context_manager_with_open_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_incompleted_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_multiple_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_overflowed_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_read_not_from_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_read_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_unseekable_incompleted_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_unseekable_overflowed_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_unseekable_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_unseekable_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_write_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_write_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_write_context_manager_calls_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_write_memoryview @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM24Test.test_write_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_context_manager_with_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_context_manager_with_open_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_incompleted_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_multiple_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_overflowed_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_read_not_from_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_read_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_unseekable_incompleted_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_unseekable_overflowed_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_unseekable_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_unseekable_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_write_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_write_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_write_context_manager_calls_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_write_memoryview @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM32Test.test_write_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_context_manager_with_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_context_manager_with_open_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_incompleted_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_multiple_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_overflowed_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_read_not_from_start @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_read_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_unseekable_incompleted_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_unseekable_overflowed_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_unseekable_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_unseekable_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_write_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_write_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_write_context_manager_calls_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_write_memoryview @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_wave.WavePCM8Test.test_write_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

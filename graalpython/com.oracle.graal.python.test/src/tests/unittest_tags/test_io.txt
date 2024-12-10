@@ -1,624 +1,523 @@
-test.test_io.APIMismatchTest.test_RawIOBase_io_in_pyio_match
-test.test_io.APIMismatchTest.test_RawIOBase_pyio_in_io_match
-test.test_io.CBufferedRWPairTest.test_close_and_closed
-test.test_io.CBufferedRWPairTest.test_constructor
-test.test_io.CBufferedRWPairTest.test_constructor_max_buffer_size_removal
-test.test_io.CBufferedRWPairTest.test_constructor_with_not_readable
-test.test_io.CBufferedRWPairTest.test_constructor_with_not_writeable
-test.test_io.CBufferedRWPairTest.test_detach
-test.test_io.CBufferedRWPairTest.test_isatty
-test.test_io.CBufferedRWPairTest.test_peek
-test.test_io.CBufferedRWPairTest.test_read
-test.test_io.CBufferedRWPairTest.test_read1
-test.test_io.CBufferedRWPairTest.test_readable
-test.test_io.CBufferedRWPairTest.test_reader_close_error_on_close
-test.test_io.CBufferedRWPairTest.test_reader_writer_close_error_on_close
-test.test_io.CBufferedRWPairTest.test_readinto
-test.test_io.CBufferedRWPairTest.test_readlines
-test.test_io.CBufferedRWPairTest.test_seekable
-test.test_io.CBufferedRWPairTest.test_uninitialized
-test.test_io.CBufferedRWPairTest.test_weakref_clearing
-test.test_io.CBufferedRWPairTest.test_write
-test.test_io.CBufferedRWPairTest.test_writeable
-test.test_io.CBufferedRWPairTest.test_writer_close_error_on_close
-test.test_io.CBufferedRandomTest.test_args_error
-test.test_io.CBufferedRandomTest.test_buffer_freeing
-test.test_io.CBufferedRandomTest.test_buffering
-test.test_io.CBufferedRandomTest.test_close_error_on_close
-test.test_io.CBufferedRandomTest.test_constructor
-test.test_io.CBufferedRandomTest.test_context_manager
-test.test_io.CBufferedRandomTest.test_destructor
-test.test_io.CBufferedRandomTest.test_detach
-test.test_io.CBufferedRandomTest.test_detach_flush
-test.test_io.CBufferedRandomTest.test_error_through_destructor
-test.test_io.CBufferedRandomTest.test_fileno
-test.test_io.CBufferedRandomTest.test_flush
-test.test_io.CBufferedRandomTest.test_flush_and_peek
-test.test_io.CBufferedRandomTest.test_flush_and_read
-test.test_io.CBufferedRandomTest.test_flush_and_readinto
-test.test_io.CBufferedRandomTest.test_flush_and_write
-test.test_io.CBufferedRandomTest.test_flush_error_on_close
-test.test_io.CBufferedRandomTest.test_garbage_collection
-test.test_io.CBufferedRandomTest.test_interleaved_read_write
-test.test_io.CBufferedRandomTest.test_interleaved_readline_write
-test.test_io.CBufferedRandomTest.test_invalid_args
-test.test_io.CBufferedRandomTest.test_max_buffer_size_removal
-test.test_io.CBufferedRandomTest.test_misbehaved_io
-test.test_io.CBufferedRandomTest.test_multi_close
-test.test_io.CBufferedRandomTest.test_no_extraneous_read
-test.test_io.CBufferedRandomTest.test_nonnormalized_close_error_on_close
-test.test_io.CBufferedRandomTest.test_override_destructor
-test.test_io.CBufferedRandomTest.test_read
-test.test_io.CBufferedRandomTest.test_read1
-test.test_io.CBufferedRandomTest.test_read1_arbitrary
-test.test_io.CBufferedRandomTest.test_read_all
-test.test_io.CBufferedRandomTest.test_read_and_write
-test.test_io.CBufferedRandomTest.test_read_non_blocking
-test.test_io.CBufferedRandomTest.test_read_on_closed
-test.test_io.CBufferedRandomTest.test_read_past_eof
-test.test_io.CBufferedRandomTest.test_readinto
-test.test_io.CBufferedRandomTest.test_readinto1
-test.test_io.CBufferedRandomTest.test_readinto1_array
-test.test_io.CBufferedRandomTest.test_readinto_array
-test.test_io.CBufferedRandomTest.test_readlines
-test.test_io.CBufferedRandomTest.test_readonly_attributes
-test.test_io.CBufferedRandomTest.test_recursive_repr
-test.test_io.CBufferedRandomTest.test_repr
-test.test_io.CBufferedRandomTest.test_seek_and_tell
-test.test_io.CBufferedRandomTest.test_sizeof
-test.test_io.CBufferedRandomTest.test_slow_close_from_thread
-test.test_io.CBufferedRandomTest.test_threads
-test.test_io.CBufferedRandomTest.test_truncate
-test.test_io.CBufferedRandomTest.test_truncate_after_read_or_write
-test.test_io.CBufferedRandomTest.test_truncate_after_write
-test.test_io.CBufferedRandomTest.test_uninitialized
-test.test_io.CBufferedRandomTest.test_write
-test.test_io.CBufferedRandomTest.test_write_after_readahead
-test.test_io.CBufferedRandomTest.test_write_and_rewind
-test.test_io.CBufferedRandomTest.test_write_error_on_close
-test.test_io.CBufferedRandomTest.test_write_non_blocking
-test.test_io.CBufferedRandomTest.test_write_overflow
-test.test_io.CBufferedRandomTest.test_write_rewind_write
-test.test_io.CBufferedRandomTest.test_writelines
-test.test_io.CBufferedRandomTest.test_writelines_error
-test.test_io.CBufferedRandomTest.test_writelines_userlist
-test.test_io.CBufferedRandomTest.test_writes
-test.test_io.CBufferedRandomTest.test_writes_and_flushes
-test.test_io.CBufferedRandomTest.test_writes_and_peek
-test.test_io.CBufferedRandomTest.test_writes_and_read1s
-test.test_io.CBufferedRandomTest.test_writes_and_readintos
-test.test_io.CBufferedRandomTest.test_writes_and_reads
-test.test_io.CBufferedRandomTest.test_writes_and_seeks
-test.test_io.CBufferedRandomTest.test_writes_and_truncates
-test.test_io.CBufferedReaderTest.test_args_error
-test.test_io.CBufferedReaderTest.test_bad_readinto_type
-test.test_io.CBufferedReaderTest.test_bad_readinto_value
-test.test_io.CBufferedReaderTest.test_buffer_freeing
-test.test_io.CBufferedReaderTest.test_buffering
-test.test_io.CBufferedReaderTest.test_close_error_on_close
-test.test_io.CBufferedReaderTest.test_constructor
-test.test_io.CBufferedReaderTest.test_context_manager
-test.test_io.CBufferedReaderTest.test_detach
-test.test_io.CBufferedReaderTest.test_error_through_destructor
-test.test_io.CBufferedReaderTest.test_fileno
-test.test_io.CBufferedReaderTest.test_flush_error_on_close
-test.test_io.CBufferedReaderTest.test_garbage_collection
-test.test_io.CBufferedReaderTest.test_initialization
-test.test_io.CBufferedReaderTest.test_invalid_args
-test.test_io.CBufferedReaderTest.test_misbehaved_io
-test.test_io.CBufferedReaderTest.test_misbehaved_io_read
-test.test_io.CBufferedReaderTest.test_multi_close
-test.test_io.CBufferedReaderTest.test_no_extraneous_read
-test.test_io.CBufferedReaderTest.test_nonnormalized_close_error_on_close
-test.test_io.CBufferedReaderTest.test_override_destructor
-test.test_io.CBufferedReaderTest.test_read
-test.test_io.CBufferedReaderTest.test_read1
-test.test_io.CBufferedReaderTest.test_read1_arbitrary
-test.test_io.CBufferedReaderTest.test_read_all
-test.test_io.CBufferedReaderTest.test_read_non_blocking
-test.test_io.CBufferedReaderTest.test_read_on_closed
-test.test_io.CBufferedReaderTest.test_read_past_eof
-test.test_io.CBufferedReaderTest.test_readinto
-test.test_io.CBufferedReaderTest.test_readinto1
-test.test_io.CBufferedReaderTest.test_readinto1_array
-test.test_io.CBufferedReaderTest.test_readinto_array
-test.test_io.CBufferedReaderTest.test_readlines
-test.test_io.CBufferedReaderTest.test_readonly_attributes
-test.test_io.CBufferedReaderTest.test_recursive_repr
-test.test_io.CBufferedReaderTest.test_repr
-test.test_io.CBufferedReaderTest.test_sizeof
-test.test_io.CBufferedReaderTest.test_threads
-test.test_io.CBufferedReaderTest.test_truncate_on_read_only
-test.test_io.CBufferedReaderTest.test_uninitialized
-test.test_io.CBufferedReaderTest.test_unseekable
-test.test_io.CBufferedWriterTest.test_args_error
-test.test_io.CBufferedWriterTest.test_buffer_freeing
-test.test_io.CBufferedWriterTest.test_close_error_on_close
-test.test_io.CBufferedWriterTest.test_constructor
-test.test_io.CBufferedWriterTest.test_context_manager
-test.test_io.CBufferedWriterTest.test_destructor
-test.test_io.CBufferedWriterTest.test_detach
-test.test_io.CBufferedWriterTest.test_detach_flush
-test.test_io.CBufferedWriterTest.test_error_through_destructor
-test.test_io.CBufferedWriterTest.test_fileno
-test.test_io.CBufferedWriterTest.test_flush
-test.test_io.CBufferedWriterTest.test_flush_error_on_close
-test.test_io.CBufferedWriterTest.test_garbage_collection
-test.test_io.CBufferedWriterTest.test_initialization
-test.test_io.CBufferedWriterTest.test_invalid_args
-test.test_io.CBufferedWriterTest.test_max_buffer_size_removal
-test.test_io.CBufferedWriterTest.test_misbehaved_io
-test.test_io.CBufferedWriterTest.test_multi_close
-test.test_io.CBufferedWriterTest.test_nonnormalized_close_error_on_close
-test.test_io.CBufferedWriterTest.test_override_destructor
-test.test_io.CBufferedWriterTest.test_readonly_attributes
-test.test_io.CBufferedWriterTest.test_recursive_repr
-test.test_io.CBufferedWriterTest.test_repr
-test.test_io.CBufferedWriterTest.test_sizeof
-test.test_io.CBufferedWriterTest.test_slow_close_from_thread
-test.test_io.CBufferedWriterTest.test_threads
-test.test_io.CBufferedWriterTest.test_truncate
-test.test_io.CBufferedWriterTest.test_truncate_after_write
-test.test_io.CBufferedWriterTest.test_uninitialized
-test.test_io.CBufferedWriterTest.test_unseekable
-test.test_io.CBufferedWriterTest.test_write
-test.test_io.CBufferedWriterTest.test_write_and_rewind
-test.test_io.CBufferedWriterTest.test_write_error_on_close
-test.test_io.CBufferedWriterTest.test_write_non_blocking
-test.test_io.CBufferedWriterTest.test_write_overflow
-test.test_io.CBufferedWriterTest.test_writelines
-test.test_io.CBufferedWriterTest.test_writelines_error
-test.test_io.CBufferedWriterTest.test_writelines_userlist
-test.test_io.CBufferedWriterTest.test_writes
-test.test_io.CBufferedWriterTest.test_writes_and_flushes
-test.test_io.CBufferedWriterTest.test_writes_and_seeks
-test.test_io.CBufferedWriterTest.test_writes_and_truncates
-test.test_io.CIOTest.test_BufferedIOBase_destructor
-test.test_io.CIOTest.test_BufferedIOBase_readinto
-test.test_io.CIOTest.test_IOBase_destructor
-test.test_io.CIOTest.test_IOBase_finalize
-test.test_io.CIOTest.test_RawIOBase_destructor
-test.test_io.CIOTest.test_RawIOBase_read
-test.test_io.CIOTest.test_RawIOBase_readall
-test.test_io.CIOTest.test_TextIOBase_destructor
-test.test_io.CIOTest.test_append_mode_tell
-test.test_io.CIOTest.test_array_writes
-test.test_io.CIOTest.test_bad_opener_negative_1
-test.test_io.CIOTest.test_bad_opener_other_negative
-test.test_io.CIOTest.test_buffered_file_io
-test.test_io.CIOTest.test_buffered_readinto_mixin
-test.test_io.CIOTest.test_close_assert
-test.test_io.CIOTest.test_close_flushes
-test.test_io.CIOTest.test_closefd
-test.test_io.CIOTest.test_closefd_attr
-test.test_io.CIOTest.test_destructor
-test.test_io.CIOTest.test_fileio_closefd
-test.test_io.CIOTest.test_flush_error_on_close
-test.test_io.CIOTest.test_fspath_support
-test.test_io.CIOTest.test_garbage_collection
-test.test_io.CIOTest.test_invalid_newline
-test.test_io.CIOTest.test_invalid_operations
-test.test_io.CIOTest.test_large_file_ops
-test.test_io.CIOTest.test_multi_close
-test.test_io.CIOTest.test_next_nonsizeable
-test.test_io.CIOTest.test_no_closefd_with_filename
-test.test_io.CIOTest.test_nonbuffered_textio
-test.test_io.CIOTest.test_open_handles_NUL_chars
-test.test_io.CIOTest.test_opener
-test.test_io.CIOTest.test_opener_invalid_fd
-test.test_io.CIOTest.test_optional_abilities
-test.test_io.CIOTest.test_raw_bytes_io
-test.test_io.CIOTest.test_raw_file_io
-test.test_io.CIOTest.test_read_closed
-test.test_io.CIOTest.test_readline
-test.test_io.CIOTest.test_readline_nonsizeable
-test.test_io.CIOTest.test_types_have_dict
-test.test_io.CIOTest.test_unbounded_file
-test.test_io.CIOTest.test_with_open
-test.test_io.CIncrementalNewlineDecoderTest.test_newline_bytes
-test.test_io.CIncrementalNewlineDecoderTest.test_newline_decoder
-test.test_io.CIncrementalNewlineDecoderTest.test_translate
-test.test_io.CIncrementalNewlineDecoderTest.test_uninitialized
-test.test_io.CMiscIOTest.test___all__
-test.test_io.CMiscIOTest.test_abc_inheritance
-test.test_io.CMiscIOTest.test_abc_inheritance_official
-test.test_io.CMiscIOTest.test_abcs
-test.test_io.CMiscIOTest.test_attributes
-test.test_io.CMiscIOTest.test_blockingioerror
-test.test_io.CMiscIOTest.test_check_encoding_errors
-test.test_io.CMiscIOTest.test_check_encoding_warning
-test.test_io.CMiscIOTest.test_create_fail
-test.test_io.CMiscIOTest.test_create_writes
-test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stderr_deadlock
-test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stdout_deadlock
-test.test_io.CMiscIOTest.test_io_after_close
-test.test_io.CMiscIOTest.test_nonblock_pipe_write_bigbuf
-test.test_io.CMiscIOTest.test_nonblock_pipe_write_smallbuf
-test.test_io.CMiscIOTest.test_open_allargs
-test.test_io.CMiscIOTest.test_open_pipe_with_append
-test.test_io.CMiscIOTest.test_openwrapper
-test.test_io.CMiscIOTest.test_pickling
-test.test_io.CMiscIOTest.test_readinto_buffer_overflow
-test.test_io.CMiscIOTest.test_warn_on_dealloc
-test.test_io.CMiscIOTest.test_warn_on_dealloc_fd
-test.test_io.CSignalsTest.test_interrupted_read_retry_buffered
-test.test_io.CSignalsTest.test_interrupted_read_retry_text
-test.test_io.CSignalsTest.test_interrupted_write_buffered
-test.test_io.CSignalsTest.test_interrupted_write_retry_buffered
-test.test_io.CSignalsTest.test_interrupted_write_retry_text
-test.test_io.CSignalsTest.test_interrupted_write_text
-test.test_io.CSignalsTest.test_interrupted_write_unbuffered
-test.test_io.CSignalsTest.test_reentrant_write_buffered
-test.test_io.CSignalsTest.test_reentrant_write_text
-test.test_io.CTextIOWrapperTest.test_append_bom
-test.test_io.CTextIOWrapperTest.test_basic_io
-test.test_io.CTextIOWrapperTest.test_bufio_write_through
-test.test_io.CTextIOWrapperTest.test_close_error_on_close
-test.test_io.CTextIOWrapperTest.test_constructor
-test.test_io.CTextIOWrapperTest.test_create_at_shutdown_with_encoding
-test.test_io.CTextIOWrapperTest.test_create_at_shutdown_without_encoding
-test.test_io.CTextIOWrapperTest.test_default_encoding
-test.test_io.CTextIOWrapperTest.test_del__CHUNK_SIZE_SystemError
-test.test_io.CTextIOWrapperTest.test_destructor
-test.test_io.CTextIOWrapperTest.test_detach
-test.test_io.CTextIOWrapperTest.test_device_encoding
-test.test_io.CTextIOWrapperTest.test_encoded_writes
-test.test_io.CTextIOWrapperTest.test_encoding
-test.test_io.CTextIOWrapperTest.test_encoding_errors_reading
-test.test_io.CTextIOWrapperTest.test_encoding_errors_writing
-test.test_io.CTextIOWrapperTest.test_error_through_destructor
-test.test_io.CTextIOWrapperTest.test_errors_property
-test.test_io.CTextIOWrapperTest.test_flush_error_on_close
-test.test_io.CTextIOWrapperTest.test_garbage_collection
-test.test_io.CTextIOWrapperTest.test_illegal_decoder
-test.test_io.CTextIOWrapperTest.test_illegal_encoder
-test.test_io.CTextIOWrapperTest.test_initialization
-test.test_io.CTextIOWrapperTest.test_internal_buffer_size
-test.test_io.CTextIOWrapperTest.test_issue1395_1
-test.test_io.CTextIOWrapperTest.test_issue1395_2
-test.test_io.CTextIOWrapperTest.test_issue1395_3
-test.test_io.CTextIOWrapperTest.test_issue1395_4
-test.test_io.CTextIOWrapperTest.test_issue1395_5
-test.test_io.CTextIOWrapperTest.test_issue2282
-test.test_io.CTextIOWrapperTest.test_issue22849
-test.test_io.CTextIOWrapperTest.test_issue25862
-test.test_io.CTextIOWrapperTest.test_line_buffering
-test.test_io.CTextIOWrapperTest.test_multi_close
-test.test_io.CTextIOWrapperTest.test_multibyte_seek_and_tell
-test.test_io.CTextIOWrapperTest.test_newlines
-test.test_io.CTextIOWrapperTest.test_newlines_input
-test.test_io.CTextIOWrapperTest.test_newlines_output
-test.test_io.CTextIOWrapperTest.test_non_text_encoding_codecs_are_rejected
-test.test_io.CTextIOWrapperTest.test_nonnormalized_close_error_on_close
-test.test_io.CTextIOWrapperTest.test_override_destructor
-test.test_io.CTextIOWrapperTest.test_rawio
-test.test_io.CTextIOWrapperTest.test_rawio_write_through
-test.test_io.CTextIOWrapperTest.test_read_by_chunk
-test.test_io.CTextIOWrapperTest.test_read_byteslike
-test.test_io.CTextIOWrapperTest.test_read_nonbytes
-test.test_io.CTextIOWrapperTest.test_read_one_by_one
-test.test_io.CTextIOWrapperTest.test_readlines
-test.test_io.CTextIOWrapperTest.test_readonly_attributes
-test.test_io.CTextIOWrapperTest.test_reconfigure_defaults
-test.test_io.CTextIOWrapperTest.test_reconfigure_encoding_read
-test.test_io.CTextIOWrapperTest.test_reconfigure_line_buffering
-test.test_io.CTextIOWrapperTest.test_reconfigure_newline
-test.test_io.CTextIOWrapperTest.test_reconfigure_write
-test.test_io.CTextIOWrapperTest.test_reconfigure_write_fromascii
-test.test_io.CTextIOWrapperTest.test_reconfigure_write_non_seekable
-test.test_io.CTextIOWrapperTest.test_reconfigure_write_through
-test.test_io.CTextIOWrapperTest.test_recursive_repr
-test.test_io.CTextIOWrapperTest.test_repr
-test.test_io.CTextIOWrapperTest.test_rwpair_cleared_before_textio
-test.test_io.CTextIOWrapperTest.test_seek_and_tell
-test.test_io.CTextIOWrapperTest.test_seek_append_bom
-test.test_io.CTextIOWrapperTest.test_seek_bom
-test.test_io.CTextIOWrapperTest.test_seek_with_encoder_state
-test.test_io.CTextIOWrapperTest.test_seeking
-test.test_io.CTextIOWrapperTest.test_seeking_too
-test.test_io.CTextIOWrapperTest.test_telling
-test.test_io.CTextIOWrapperTest.test_threads_write
-test.test_io.CTextIOWrapperTest.test_uninitialized
-test.test_io.CTextIOWrapperTest.test_unreadable
-test.test_io.CTextIOWrapperTest.test_unseekable
-test.test_io.CTextIOWrapperTest.test_writelines
-test.test_io.CTextIOWrapperTest.test_writelines_error
-test.test_io.CTextIOWrapperTest.test_writelines_userlist
-test.test_io.PyBufferedRWPairTest.test_close_and_closed
-test.test_io.PyBufferedRWPairTest.test_constructor
-test.test_io.PyBufferedRWPairTest.test_constructor_max_buffer_size_removal
-test.test_io.PyBufferedRWPairTest.test_constructor_with_not_readable
-test.test_io.PyBufferedRWPairTest.test_constructor_with_not_writeable
-test.test_io.PyBufferedRWPairTest.test_detach
-test.test_io.PyBufferedRWPairTest.test_isatty
-test.test_io.PyBufferedRWPairTest.test_peek
-test.test_io.PyBufferedRWPairTest.test_read
-test.test_io.PyBufferedRWPairTest.test_read1
-test.test_io.PyBufferedRWPairTest.test_readable
-test.test_io.PyBufferedRWPairTest.test_reader_close_error_on_close
-test.test_io.PyBufferedRWPairTest.test_reader_writer_close_error_on_close
-test.test_io.PyBufferedRWPairTest.test_readinto
-test.test_io.PyBufferedRWPairTest.test_readlines
-test.test_io.PyBufferedRWPairTest.test_seekable
-test.test_io.PyBufferedRWPairTest.test_uninitialized
-test.test_io.PyBufferedRWPairTest.test_weakref_clearing
-test.test_io.PyBufferedRWPairTest.test_write
-test.test_io.PyBufferedRWPairTest.test_writeable
-test.test_io.PyBufferedRWPairTest.test_writer_close_error_on_close
-test.test_io.PyBufferedRandomTest.test_buffering
-test.test_io.PyBufferedRandomTest.test_close_error_on_close
-test.test_io.PyBufferedRandomTest.test_constructor
-test.test_io.PyBufferedRandomTest.test_context_manager
-test.test_io.PyBufferedRandomTest.test_destructor
-test.test_io.PyBufferedRandomTest.test_detach
-test.test_io.PyBufferedRandomTest.test_detach_flush
-test.test_io.PyBufferedRandomTest.test_error_through_destructor
-test.test_io.PyBufferedRandomTest.test_fileno
-test.test_io.PyBufferedRandomTest.test_flush
-test.test_io.PyBufferedRandomTest.test_flush_and_peek
-test.test_io.PyBufferedRandomTest.test_flush_and_read
-test.test_io.PyBufferedRandomTest.test_flush_and_readinto
-test.test_io.PyBufferedRandomTest.test_flush_and_write
-test.test_io.PyBufferedRandomTest.test_flush_error_on_close
-test.test_io.PyBufferedRandomTest.test_interleaved_read_write
-test.test_io.PyBufferedRandomTest.test_interleaved_readline_write
-test.test_io.PyBufferedRandomTest.test_invalid_args
-test.test_io.PyBufferedRandomTest.test_max_buffer_size_removal
-test.test_io.PyBufferedRandomTest.test_misbehaved_io
-test.test_io.PyBufferedRandomTest.test_multi_close
-test.test_io.PyBufferedRandomTest.test_no_extraneous_read
-test.test_io.PyBufferedRandomTest.test_nonnormalized_close_error_on_close
-test.test_io.PyBufferedRandomTest.test_override_destructor
-test.test_io.PyBufferedRandomTest.test_read
-test.test_io.PyBufferedRandomTest.test_read1
-test.test_io.PyBufferedRandomTest.test_read1_arbitrary
-test.test_io.PyBufferedRandomTest.test_read_all
-test.test_io.PyBufferedRandomTest.test_read_and_write
-test.test_io.PyBufferedRandomTest.test_read_non_blocking
-test.test_io.PyBufferedRandomTest.test_read_on_closed
-test.test_io.PyBufferedRandomTest.test_read_past_eof
-test.test_io.PyBufferedRandomTest.test_readinto
-test.test_io.PyBufferedRandomTest.test_readinto1
-test.test_io.PyBufferedRandomTest.test_readinto1_array
-test.test_io.PyBufferedRandomTest.test_readinto_array
-test.test_io.PyBufferedRandomTest.test_readlines
-test.test_io.PyBufferedRandomTest.test_readonly_attributes
-test.test_io.PyBufferedRandomTest.test_recursive_repr
-test.test_io.PyBufferedRandomTest.test_repr
-test.test_io.PyBufferedRandomTest.test_seek_and_tell
-test.test_io.PyBufferedRandomTest.test_slow_close_from_thread
-test.test_io.PyBufferedRandomTest.test_threads
-test.test_io.PyBufferedRandomTest.test_truncate
-test.test_io.PyBufferedRandomTest.test_truncate_after_read_or_write
-test.test_io.PyBufferedRandomTest.test_truncate_after_write
-test.test_io.PyBufferedRandomTest.test_uninitialized
-test.test_io.PyBufferedRandomTest.test_write
-test.test_io.PyBufferedRandomTest.test_write_after_readahead
-test.test_io.PyBufferedRandomTest.test_write_and_rewind
-test.test_io.PyBufferedRandomTest.test_write_error_on_close
-test.test_io.PyBufferedRandomTest.test_write_non_blocking
-test.test_io.PyBufferedRandomTest.test_write_overflow
-test.test_io.PyBufferedRandomTest.test_write_rewind_write
-test.test_io.PyBufferedRandomTest.test_writelines
-test.test_io.PyBufferedRandomTest.test_writelines_error
-test.test_io.PyBufferedRandomTest.test_writelines_userlist
-test.test_io.PyBufferedRandomTest.test_writes
-test.test_io.PyBufferedRandomTest.test_writes_and_flushes
-test.test_io.PyBufferedRandomTest.test_writes_and_peek
-test.test_io.PyBufferedRandomTest.test_writes_and_read1s
-test.test_io.PyBufferedRandomTest.test_writes_and_readintos
-test.test_io.PyBufferedRandomTest.test_writes_and_reads
-test.test_io.PyBufferedRandomTest.test_writes_and_seeks
-test.test_io.PyBufferedRandomTest.test_writes_and_truncates
-test.test_io.PyBufferedReaderTest.test_buffering
-test.test_io.PyBufferedReaderTest.test_close_error_on_close
-test.test_io.PyBufferedReaderTest.test_constructor
-test.test_io.PyBufferedReaderTest.test_context_manager
-test.test_io.PyBufferedReaderTest.test_detach
-test.test_io.PyBufferedReaderTest.test_error_through_destructor
-test.test_io.PyBufferedReaderTest.test_fileno
-test.test_io.PyBufferedReaderTest.test_flush_error_on_close
-test.test_io.PyBufferedReaderTest.test_invalid_args
-test.test_io.PyBufferedReaderTest.test_misbehaved_io
-test.test_io.PyBufferedReaderTest.test_multi_close
-test.test_io.PyBufferedReaderTest.test_no_extraneous_read
-test.test_io.PyBufferedReaderTest.test_nonnormalized_close_error_on_close
-test.test_io.PyBufferedReaderTest.test_override_destructor
-test.test_io.PyBufferedReaderTest.test_read
-test.test_io.PyBufferedReaderTest.test_read1
-test.test_io.PyBufferedReaderTest.test_read1_arbitrary
-test.test_io.PyBufferedReaderTest.test_read_all
-test.test_io.PyBufferedReaderTest.test_read_non_blocking
-test.test_io.PyBufferedReaderTest.test_read_on_closed
-test.test_io.PyBufferedReaderTest.test_read_past_eof
-test.test_io.PyBufferedReaderTest.test_readinto
-test.test_io.PyBufferedReaderTest.test_readinto1
-test.test_io.PyBufferedReaderTest.test_readinto1_array
-test.test_io.PyBufferedReaderTest.test_readinto_array
-test.test_io.PyBufferedReaderTest.test_readlines
-test.test_io.PyBufferedReaderTest.test_readonly_attributes
-test.test_io.PyBufferedReaderTest.test_recursive_repr
-test.test_io.PyBufferedReaderTest.test_repr
-test.test_io.PyBufferedReaderTest.test_threads
-test.test_io.PyBufferedReaderTest.test_truncate_on_read_only
-test.test_io.PyBufferedReaderTest.test_uninitialized
-test.test_io.PyBufferedReaderTest.test_unseekable
-test.test_io.PyBufferedWriterTest.test_close_error_on_close
-test.test_io.PyBufferedWriterTest.test_constructor
-test.test_io.PyBufferedWriterTest.test_context_manager
-test.test_io.PyBufferedWriterTest.test_destructor
-test.test_io.PyBufferedWriterTest.test_detach
-test.test_io.PyBufferedWriterTest.test_detach_flush
-test.test_io.PyBufferedWriterTest.test_error_through_destructor
-test.test_io.PyBufferedWriterTest.test_fileno
-test.test_io.PyBufferedWriterTest.test_flush
-test.test_io.PyBufferedWriterTest.test_flush_error_on_close
-test.test_io.PyBufferedWriterTest.test_invalid_args
-test.test_io.PyBufferedWriterTest.test_max_buffer_size_removal
-test.test_io.PyBufferedWriterTest.test_misbehaved_io
-test.test_io.PyBufferedWriterTest.test_multi_close
-test.test_io.PyBufferedWriterTest.test_nonnormalized_close_error_on_close
-test.test_io.PyBufferedWriterTest.test_override_destructor
-test.test_io.PyBufferedWriterTest.test_readonly_attributes
-test.test_io.PyBufferedWriterTest.test_recursive_repr
-test.test_io.PyBufferedWriterTest.test_repr
-test.test_io.PyBufferedWriterTest.test_slow_close_from_thread
-test.test_io.PyBufferedWriterTest.test_threads
-test.test_io.PyBufferedWriterTest.test_truncate
-test.test_io.PyBufferedWriterTest.test_truncate_after_write
-test.test_io.PyBufferedWriterTest.test_uninitialized
-test.test_io.PyBufferedWriterTest.test_unseekable
-test.test_io.PyBufferedWriterTest.test_write
-test.test_io.PyBufferedWriterTest.test_write_and_rewind
-test.test_io.PyBufferedWriterTest.test_write_error_on_close
-test.test_io.PyBufferedWriterTest.test_write_non_blocking
-test.test_io.PyBufferedWriterTest.test_write_overflow
-test.test_io.PyBufferedWriterTest.test_writelines
-test.test_io.PyBufferedWriterTest.test_writelines_error
-test.test_io.PyBufferedWriterTest.test_writelines_userlist
-test.test_io.PyBufferedWriterTest.test_writes
-test.test_io.PyBufferedWriterTest.test_writes_and_flushes
-test.test_io.PyBufferedWriterTest.test_writes_and_seeks
-test.test_io.PyBufferedWriterTest.test_writes_and_truncates
-test.test_io.PyIOTest.test_BufferedIOBase_destructor
-test.test_io.PyIOTest.test_BufferedIOBase_readinto
-test.test_io.PyIOTest.test_IOBase_destructor
-test.test_io.PyIOTest.test_RawIOBase_destructor
-test.test_io.PyIOTest.test_RawIOBase_read
-test.test_io.PyIOTest.test_RawIOBase_readall
-test.test_io.PyIOTest.test_TextIOBase_destructor
-test.test_io.PyIOTest.test_append_mode_tell
-test.test_io.PyIOTest.test_array_writes
-test.test_io.PyIOTest.test_bad_opener_negative_1
-test.test_io.PyIOTest.test_bad_opener_other_negative
-test.test_io.PyIOTest.test_buffered_file_io
-test.test_io.PyIOTest.test_buffered_readinto_mixin
-test.test_io.PyIOTest.test_close_assert
-test.test_io.PyIOTest.test_close_flushes
-test.test_io.PyIOTest.test_closefd
-test.test_io.PyIOTest.test_closefd_attr
-test.test_io.PyIOTest.test_destructor
-test.test_io.PyIOTest.test_fileio_closefd
-test.test_io.PyIOTest.test_flush_error_on_close
-test.test_io.PyIOTest.test_fspath_support
-test.test_io.PyIOTest.test_garbage_collection
-test.test_io.PyIOTest.test_invalid_newline
-test.test_io.PyIOTest.test_invalid_operations
-test.test_io.PyIOTest.test_large_file_ops
-test.test_io.PyIOTest.test_multi_close
-test.test_io.PyIOTest.test_next_nonsizeable
-test.test_io.PyIOTest.test_no_closefd_with_filename
-test.test_io.PyIOTest.test_nonbuffered_textio
-test.test_io.PyIOTest.test_open_handles_NUL_chars
-test.test_io.PyIOTest.test_opener
-test.test_io.PyIOTest.test_opener_invalid_fd
-test.test_io.PyIOTest.test_optional_abilities
-test.test_io.PyIOTest.test_raw_bytes_io
-test.test_io.PyIOTest.test_raw_file_io
-test.test_io.PyIOTest.test_read_closed
-test.test_io.PyIOTest.test_readline
-test.test_io.PyIOTest.test_readline_nonsizeable
-test.test_io.PyIOTest.test_types_have_dict
-test.test_io.PyIOTest.test_unbounded_file
-test.test_io.PyIOTest.test_with_open
-test.test_io.PyIncrementalNewlineDecoderTest.test_newline_bytes
-test.test_io.PyIncrementalNewlineDecoderTest.test_newline_decoder
-test.test_io.PyIncrementalNewlineDecoderTest.test_translate
-test.test_io.PyMiscIOTest.test___all__
-test.test_io.PyMiscIOTest.test_abc_inheritance
-test.test_io.PyMiscIOTest.test_abc_inheritance_official
-test.test_io.PyMiscIOTest.test_abcs
-test.test_io.PyMiscIOTest.test_attributes
-test.test_io.PyMiscIOTest.test_blockingioerror
-test.test_io.PyMiscIOTest.test_check_encoding_errors
-test.test_io.PyMiscIOTest.test_check_encoding_warning
-test.test_io.PyMiscIOTest.test_create_fail
-test.test_io.PyMiscIOTest.test_create_writes
-test.test_io.PyMiscIOTest.test_io_after_close
-test.test_io.PyMiscIOTest.test_nonblock_pipe_write_bigbuf
-test.test_io.PyMiscIOTest.test_nonblock_pipe_write_smallbuf
-test.test_io.PyMiscIOTest.test_open_allargs
-test.test_io.PyMiscIOTest.test_open_pipe_with_append
-test.test_io.PyMiscIOTest.test_openwrapper
-test.test_io.PyMiscIOTest.test_pickling
-test.test_io.PyMiscIOTest.test_removed_u_mode
-test.test_io.PyMiscIOTest.test_warn_on_dealloc
-test.test_io.PyMiscIOTest.test_warn_on_dealloc_fd
-test.test_io.PySignalsTest.test_interrupted_read_retry_buffered
-test.test_io.PySignalsTest.test_interrupted_read_retry_text
-test.test_io.PySignalsTest.test_interrupted_write_buffered
-test.test_io.PySignalsTest.test_interrupted_write_retry_buffered
-test.test_io.PySignalsTest.test_interrupted_write_retry_text
-test.test_io.PySignalsTest.test_interrupted_write_text
-test.test_io.PySignalsTest.test_interrupted_write_unbuffered
-test.test_io.PyTextIOWrapperTest.test_append_bom
-test.test_io.PyTextIOWrapperTest.test_basic_io
-test.test_io.PyTextIOWrapperTest.test_bufio_write_through
-test.test_io.PyTextIOWrapperTest.test_close_error_on_close
-test.test_io.PyTextIOWrapperTest.test_constructor
-test.test_io.PyTextIOWrapperTest.test_create_at_shutdown_with_encoding
-test.test_io.PyTextIOWrapperTest.test_create_at_shutdown_without_encoding
-test.test_io.PyTextIOWrapperTest.test_default_encoding
-test.test_io.PyTextIOWrapperTest.test_destructor
-test.test_io.PyTextIOWrapperTest.test_detach
-test.test_io.PyTextIOWrapperTest.test_device_encoding
-test.test_io.PyTextIOWrapperTest.test_encoded_writes
-test.test_io.PyTextIOWrapperTest.test_encoding
-test.test_io.PyTextIOWrapperTest.test_encoding_errors_reading
-test.test_io.PyTextIOWrapperTest.test_encoding_errors_writing
-test.test_io.PyTextIOWrapperTest.test_error_through_destructor
-test.test_io.PyTextIOWrapperTest.test_errors_property
-test.test_io.PyTextIOWrapperTest.test_flush_error_on_close
-test.test_io.PyTextIOWrapperTest.test_illegal_decoder
-test.test_io.PyTextIOWrapperTest.test_illegal_encoder
-test.test_io.PyTextIOWrapperTest.test_issue1395_1
-test.test_io.PyTextIOWrapperTest.test_issue1395_2
-test.test_io.PyTextIOWrapperTest.test_issue1395_3
-test.test_io.PyTextIOWrapperTest.test_issue1395_4
-test.test_io.PyTextIOWrapperTest.test_issue1395_5
-test.test_io.PyTextIOWrapperTest.test_issue2282
-test.test_io.PyTextIOWrapperTest.test_issue22849
-test.test_io.PyTextIOWrapperTest.test_issue25862
-test.test_io.PyTextIOWrapperTest.test_line_buffering
-test.test_io.PyTextIOWrapperTest.test_multi_close
-test.test_io.PyTextIOWrapperTest.test_multibyte_seek_and_tell
-test.test_io.PyTextIOWrapperTest.test_newlines
-test.test_io.PyTextIOWrapperTest.test_newlines_input
-test.test_io.PyTextIOWrapperTest.test_newlines_output
-test.test_io.PyTextIOWrapperTest.test_non_text_encoding_codecs_are_rejected
-test.test_io.PyTextIOWrapperTest.test_nonnormalized_close_error_on_close
-test.test_io.PyTextIOWrapperTest.test_override_destructor
-test.test_io.PyTextIOWrapperTest.test_rawio
-test.test_io.PyTextIOWrapperTest.test_rawio_write_through
-test.test_io.PyTextIOWrapperTest.test_read_by_chunk
-test.test_io.PyTextIOWrapperTest.test_read_byteslike
-test.test_io.PyTextIOWrapperTest.test_read_nonbytes
-test.test_io.PyTextIOWrapperTest.test_read_one_by_one
-test.test_io.PyTextIOWrapperTest.test_readlines
-test.test_io.PyTextIOWrapperTest.test_readonly_attributes
-test.test_io.PyTextIOWrapperTest.test_reconfigure_defaults
-test.test_io.PyTextIOWrapperTest.test_reconfigure_encoding_read
-test.test_io.PyTextIOWrapperTest.test_reconfigure_errors
-test.test_io.PyTextIOWrapperTest.test_reconfigure_line_buffering
-test.test_io.PyTextIOWrapperTest.test_reconfigure_newline
-test.test_io.PyTextIOWrapperTest.test_reconfigure_write
-test.test_io.PyTextIOWrapperTest.test_reconfigure_write_fromascii
-test.test_io.PyTextIOWrapperTest.test_reconfigure_write_non_seekable
-test.test_io.PyTextIOWrapperTest.test_reconfigure_write_through
-test.test_io.PyTextIOWrapperTest.test_recursive_repr
-test.test_io.PyTextIOWrapperTest.test_repr
-test.test_io.PyTextIOWrapperTest.test_seek_and_tell
-test.test_io.PyTextIOWrapperTest.test_seek_append_bom
-test.test_io.PyTextIOWrapperTest.test_seek_bom
-test.test_io.PyTextIOWrapperTest.test_seek_with_encoder_state
-test.test_io.PyTextIOWrapperTest.test_seeking
-test.test_io.PyTextIOWrapperTest.test_seeking_too
-test.test_io.PyTextIOWrapperTest.test_telling
-test.test_io.PyTextIOWrapperTest.test_threads_write
-test.test_io.PyTextIOWrapperTest.test_uninitialized
-test.test_io.PyTextIOWrapperTest.test_unreadable
-test.test_io.PyTextIOWrapperTest.test_unseekable
-test.test_io.PyTextIOWrapperTest.test_writelines
-test.test_io.PyTextIOWrapperTest.test_writelines_error
-test.test_io.PyTextIOWrapperTest.test_writelines_userlist
-test.test_io.StatefulIncrementalDecoderTest.test_decoder
+test.test_io.CBufferedRWPairTest.test_close_and_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_constructor_max_buffer_size_removal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_constructor_with_not_readable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_constructor_with_not_writeable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_isatty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_readable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_reader_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_reader_writer_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_seekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_weakref_clearing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRWPairTest.test_writeable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_args_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_detach_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_flush_and_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_flush_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_flush_and_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_flush_and_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_interleaved_read_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_interleaved_readline_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_max_buffer_size_removal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_misbehaved_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_no_extraneous_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_read1_arbitrary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_read_and_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_read_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_read_on_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_read_past_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_readinto1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_readinto1_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_readinto_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_seek_and_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_slow_close_from_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_truncate_after_read_or_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_truncate_after_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_write_after_readahead @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_write_and_rewind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_write_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_write_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_write_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_write_rewind_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writelines_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writelines_userlist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writes_and_flushes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writes_and_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writes_and_read1s @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writes_and_readintos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writes_and_reads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writes_and_seeks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedRandomTest.test_writes_and_truncates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_args_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_bad_readinto_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_bad_readinto_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_initialization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_misbehaved_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_misbehaved_io_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_no_extraneous_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_read1_arbitrary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_read_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_read_on_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_read_past_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_readinto1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_readinto1_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_readinto_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_truncate_on_read_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedReaderTest.test_unseekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_args_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_detach_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_initialization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_max_buffer_size_removal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_misbehaved_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_slow_close_from_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_truncate_after_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_unseekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_write_and_rewind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_write_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_write_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_write_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_writelines_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_writelines_userlist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_writes_and_flushes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_writes_and_seeks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CBufferedWriterTest.test_writes_and_truncates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_BufferedIOBase_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_RawIOBase_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_RawIOBase_readall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_append_mode_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_array_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_bad_opener_negative_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_bad_opener_other_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_buffered_file_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_buffered_readinto_mixin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_close_assert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_close_flushes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_closefd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_closefd_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_fileio_closefd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_fspath_support @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_invalid_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_invalid_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_large_file_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_next_nonsizeable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_no_closefd_with_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_nonbuffered_textio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_open_handles_NUL_chars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_opener @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_opener_invalid_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_optional_abilities @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_raw_bytes_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_raw_file_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_read_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_readline_nonsizeable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_types_have_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIOTest.test_with_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIncrementalNewlineDecoderTest.test_newline_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIncrementalNewlineDecoderTest.test_newline_decoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CIncrementalNewlineDecoderTest.test_translate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test___all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_abc_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_abc_inheritance_official @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_abcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_check_encoding_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_create_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_create_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stderr_deadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stdout_deadlock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_io_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_nonblock_pipe_write_bigbuf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_nonblock_pipe_write_smallbuf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_open_allargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_open_pipe_with_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CMiscIOTest.test_readinto_buffer_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_basic_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_bufio_write_through @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_default_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_del__CHUNK_SIZE_SystemError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_encoding_errors_reading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_encoding_errors_writing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_error_through_destructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_errors_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_illegal_decoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_illegal_encoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_initialization @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_internal_buffer_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_issue1395_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_issue1395_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_issue1395_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_issue1395_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_issue1395_5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_issue2282 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_issue22849 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_issue25862 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_line_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_multibyte_seek_and_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_newlines_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_newlines_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_non_text_encoding_codecs_are_rejected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_rawio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_rawio_write_through @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_read_by_chunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_read_byteslike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_read_nonbytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_read_one_by_one @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_reconfigure_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_reconfigure_encoding_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_reconfigure_line_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_reconfigure_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_reconfigure_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_reconfigure_write_fromascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_reconfigure_write_non_seekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_reconfigure_write_through @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_seek_and_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_seeking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_seeking_too @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_telling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_threads_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_unreadable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_unseekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_writelines_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.CTextIOWrapperTest.test_writelines_userlist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_close_and_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_constructor_max_buffer_size_removal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_constructor_with_not_readable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_constructor_with_not_writeable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_isatty @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_readable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_reader_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_reader_writer_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_seekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_weakref_clearing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRWPairTest.test_writeable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_detach_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_flush_and_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_flush_and_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_flush_and_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_flush_and_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_interleaved_read_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_interleaved_readline_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_max_buffer_size_removal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_misbehaved_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_no_extraneous_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read1_arbitrary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read_and_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read_on_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read_past_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_readinto1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_readinto1_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_readinto_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_seek_and_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_slow_close_from_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_truncate_after_read_or_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_truncate_after_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_write_after_readahead @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_write_and_rewind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_write_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_write_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_write_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_write_rewind_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writelines_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writelines_userlist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writes_and_flushes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writes_and_peek @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writes_and_read1s @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writes_and_readintos @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writes_and_reads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writes_and_seeks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedRandomTest.test_writes_and_truncates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_misbehaved_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_no_extraneous_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_read1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_read1_arbitrary @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_read_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_read_on_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_read_past_eof @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_readinto1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_readinto1_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_readinto_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_truncate_on_read_only @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedReaderTest.test_unseekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_context_manager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_detach_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_flush @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_max_buffer_size_removal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_misbehaved_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_slow_close_from_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_truncate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_truncate_after_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_unseekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_write_and_rewind @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_write_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_write_non_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_write_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_writelines_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_writelines_userlist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_writes_and_flushes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_writes_and_seeks @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyBufferedWriterTest.test_writes_and_truncates @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_BufferedIOBase_readinto @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_RawIOBase_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_RawIOBase_readall @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_append_mode_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_array_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_bad_opener_negative_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_bad_opener_other_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_buffered_file_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_buffered_readinto_mixin @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_close_assert @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_close_flushes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_closefd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_closefd_attr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_fileio_closefd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_fspath_support @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_invalid_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_invalid_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_large_file_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_next_nonsizeable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_no_closefd_with_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_nonbuffered_textio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_open_handles_NUL_chars @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_opener @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_opener_invalid_fd @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_optional_abilities @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_raw_bytes_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_raw_file_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_read_closed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_readline_nonsizeable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_types_have_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIOTest.test_with_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIncrementalNewlineDecoderTest.test_newline_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIncrementalNewlineDecoderTest.test_newline_decoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyIncrementalNewlineDecoderTest.test_translate @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test___all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_abc_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_abc_inheritance_official @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_abcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_check_encoding_warning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_create_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_create_writes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_io_after_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_nonblock_pipe_write_bigbuf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_nonblock_pipe_write_smallbuf @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_open_allargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_open_pipe_with_append @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_pickling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyMiscIOTest.test_removed_u_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_basic_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_bufio_write_through @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_default_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_detach @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_encoding_errors_reading @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_encoding_errors_writing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_error_through_destructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_errors_property @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_flush_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_illegal_decoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_illegal_encoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue1395_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue1395_2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue1395_3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue1395_4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue1395_5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue2282 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue22849 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue25862 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_line_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_multi_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_multibyte_seek_and_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_newlines_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_newlines_output @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_non_text_encoding_codecs_are_rejected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_nonnormalized_close_error_on_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_rawio @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_rawio_write_through @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_read_by_chunk @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_read_byteslike @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_read_nonbytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_read_one_by_one @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_readonly_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_defaults @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_encoding_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_line_buffering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_write_fromascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_write_non_seekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_write_through @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_seek_and_tell @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_seeking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_seeking_too @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_telling @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_threads_write @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_uninitialized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_unreadable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_unseekable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_writelines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_writelines_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_writelines_userlist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_io.StatefulIncrementalDecoderTest.test_decoder @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

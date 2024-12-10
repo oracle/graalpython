@@ -1,18 +1,20 @@
-test.test_trace.TestCommandLine.test_failures
-test.test_trace.TestCommandLine.test_run_as_module
-test.test_trace.TestCommandLine.test_sys_argv_list
-test.test_trace.TestCoverage.test_coverage
-test.test_trace.TestCoverage.test_coverage_ignore
-test.test_trace.TestCoverage.test_coverageresults_update
-test.test_trace.TestCoverage.test_issue9936
-test.test_trace.TestCoverageCommandLineOutput.test_cover_files_written_no_highlight
-test.test_trace.TestCoverageCommandLineOutput.test_cover_files_written_with_highlight
-test.test_trace.TestFuncs.test_arg_errors
-test.test_trace.TestFuncs.test_loop_caller_importing
-test.test_trace.TestFuncs.test_simple_caller
-test.test_trace.TestFuncs.test_traced_decorated_function
-test.test_trace.TestLineCounts.test_linear_methods
-test.test_trace.TestLineCounts.test_traced_decorated_function
-test.test_trace.TestLineCounts.test_traced_func_importing
-test.test_trace.TestLineCounts.test_traced_func_linear
-test.test_trace.Test_Ignore.test_ignored
+test.test_trace.TestCommandLine.test_failures @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestCommandLine.test_run_as_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestCommandLine.test_sys_argv_list @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_trace.TestCoverage.test_coverage @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestCoverage.test_coverage_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestCoverage.test_coverageresults_update @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestCoverage.test_issue9936 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestCoverageCommandLineOutput.test_cover_files_written_no_highlight @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestCoverageCommandLineOutput.test_cover_files_written_with_highlight @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestFuncs.test_arg_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestFuncs.test_loop_caller_importing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestFuncs.test_simple_caller @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestFuncs.test_traced_decorated_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestLineCounts.test_linear_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestLineCounts.test_traced_decorated_function @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestLineCounts.test_traced_func_importing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_trace.TestLineCounts.test_traced_func_linear @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-59862 - passes only if one of the other tests invokes the traced function before
+!test.test_trace.TestRunExecCounts.test_exec_counts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_trace.Test_Ignore.test_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

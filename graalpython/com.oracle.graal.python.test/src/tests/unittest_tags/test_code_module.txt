@@ -1,9 +1,9 @@
-test.test_code_module.TestInteractiveConsole.test_banner
-test.test_code_module.TestInteractiveConsole.test_cause_tb
-test.test_code_module.TestInteractiveConsole.test_console_stderr
-test.test_code_module.TestInteractiveConsole.test_context_tb
-test.test_code_module.TestInteractiveConsole.test_exit_msg
-test.test_code_module.TestInteractiveConsole.test_ps1
-test.test_code_module.TestInteractiveConsole.test_ps2
-test.test_code_module.TestInteractiveConsole.test_syntax_error
-test.test_code_module.TestInteractiveConsole.test_sysexcepthook
+test.test_code_module.TestInteractiveConsole.test_banner @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_code_module.TestInteractiveConsole.test_cause_tb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_code_module.TestInteractiveConsole.test_console_stderr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_code_module.TestInteractiveConsole.test_context_tb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_code_module.TestInteractiveConsole.test_exit_msg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_code_module.TestInteractiveConsole.test_ps1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_code_module.TestInteractiveConsole.test_ps2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_code_module.TestInteractiveConsole.test_syntax_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_code_module.TestInteractiveConsole.test_sysexcepthook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -1,140 +1,107 @@
-test.test_memoryview.ArrayMemorySliceSliceTest.test_attributes_readonly
-test.test_memoryview.ArrayMemorySliceSliceTest.test_attributes_writable
-test.test_memoryview.ArrayMemorySliceSliceTest.test_compare
-test.test_memoryview.ArrayMemorySliceSliceTest.test_contextmanager
-test.test_memoryview.ArrayMemorySliceSliceTest.test_delitem
-test.test_memoryview.ArrayMemorySliceSliceTest.test_gc
-test.test_memoryview.ArrayMemorySliceSliceTest.test_getbuf_fail
-test.test_memoryview.ArrayMemorySliceSliceTest.test_getbuffer
-test.test_memoryview.ArrayMemorySliceSliceTest.test_getitem
-test.test_memoryview.ArrayMemorySliceSliceTest.test_hash
-test.test_memoryview.ArrayMemorySliceSliceTest.test_hash_writable
-test.test_memoryview.ArrayMemorySliceSliceTest.test_issue22668
-test.test_memoryview.ArrayMemorySliceSliceTest.test_iter
-test.test_memoryview.ArrayMemorySliceSliceTest.test_release
-test.test_memoryview.ArrayMemorySliceSliceTest.test_reversed
-test.test_memoryview.ArrayMemorySliceSliceTest.test_setitem_readonly
-test.test_memoryview.ArrayMemorySliceSliceTest.test_setitem_writable
-test.test_memoryview.ArrayMemorySliceSliceTest.test_tobytes
-test.test_memoryview.ArrayMemorySliceSliceTest.test_tolist
-test.test_memoryview.ArrayMemorySliceSliceTest.test_toreadonly
-test.test_memoryview.ArrayMemorySliceSliceTest.test_weakref
-test.test_memoryview.ArrayMemorySliceSliceTest.test_writable_readonly
-test.test_memoryview.ArrayMemorySliceTest.test_attributes_readonly
-test.test_memoryview.ArrayMemorySliceTest.test_attributes_writable
-test.test_memoryview.ArrayMemorySliceTest.test_compare
-test.test_memoryview.ArrayMemorySliceTest.test_contextmanager
-test.test_memoryview.ArrayMemorySliceTest.test_delitem
-test.test_memoryview.ArrayMemorySliceTest.test_gc
-test.test_memoryview.ArrayMemorySliceTest.test_getbuf_fail
-test.test_memoryview.ArrayMemorySliceTest.test_getbuffer
-test.test_memoryview.ArrayMemorySliceTest.test_getitem
-test.test_memoryview.ArrayMemorySliceTest.test_hash
-test.test_memoryview.ArrayMemorySliceTest.test_hash_writable
-test.test_memoryview.ArrayMemorySliceTest.test_issue22668
-test.test_memoryview.ArrayMemorySliceTest.test_iter
-test.test_memoryview.ArrayMemorySliceTest.test_refs
-test.test_memoryview.ArrayMemorySliceTest.test_release
-test.test_memoryview.ArrayMemorySliceTest.test_reversed
-test.test_memoryview.ArrayMemorySliceTest.test_setitem_readonly
-test.test_memoryview.ArrayMemorySliceTest.test_setitem_writable
-test.test_memoryview.ArrayMemorySliceTest.test_tobytes
-test.test_memoryview.ArrayMemorySliceTest.test_tolist
-test.test_memoryview.ArrayMemorySliceTest.test_toreadonly
-test.test_memoryview.ArrayMemorySliceTest.test_weakref
-test.test_memoryview.ArrayMemorySliceTest.test_writable_readonly
-test.test_memoryview.ArrayMemoryviewTest.test_array_assign
-test.test_memoryview.ArrayMemoryviewTest.test_attributes_readonly
-test.test_memoryview.ArrayMemoryviewTest.test_attributes_writable
-test.test_memoryview.ArrayMemoryviewTest.test_compare
-test.test_memoryview.ArrayMemoryviewTest.test_contextmanager
-test.test_memoryview.ArrayMemoryviewTest.test_delitem
-test.test_memoryview.ArrayMemoryviewTest.test_gc
-test.test_memoryview.ArrayMemoryviewTest.test_getbuf_fail
-test.test_memoryview.ArrayMemoryviewTest.test_getbuffer
-test.test_memoryview.ArrayMemoryviewTest.test_getitem
-test.test_memoryview.ArrayMemoryviewTest.test_hash
-test.test_memoryview.ArrayMemoryviewTest.test_hash_writable
-test.test_memoryview.ArrayMemoryviewTest.test_issue22668
-test.test_memoryview.ArrayMemoryviewTest.test_iter
-test.test_memoryview.ArrayMemoryviewTest.test_release
-test.test_memoryview.ArrayMemoryviewTest.test_reversed
-test.test_memoryview.ArrayMemoryviewTest.test_setitem_readonly
-test.test_memoryview.ArrayMemoryviewTest.test_setitem_writable
-test.test_memoryview.ArrayMemoryviewTest.test_tobytes
-test.test_memoryview.ArrayMemoryviewTest.test_tolist
-test.test_memoryview.ArrayMemoryviewTest.test_toreadonly
-test.test_memoryview.ArrayMemoryviewTest.test_weakref
-test.test_memoryview.ArrayMemoryviewTest.test_writable_readonly
-test.test_memoryview.BytesMemorySliceSliceTest.test_attributes_readonly
-test.test_memoryview.BytesMemorySliceSliceTest.test_attributes_writable
-test.test_memoryview.BytesMemorySliceSliceTest.test_compare
-test.test_memoryview.BytesMemorySliceSliceTest.test_contextmanager
-test.test_memoryview.BytesMemorySliceSliceTest.test_delitem
-test.test_memoryview.BytesMemorySliceSliceTest.test_gc
-test.test_memoryview.BytesMemorySliceSliceTest.test_getbuf_fail
-test.test_memoryview.BytesMemorySliceSliceTest.test_getbuffer
-test.test_memoryview.BytesMemorySliceSliceTest.test_getitem
-test.test_memoryview.BytesMemorySliceSliceTest.test_hash
-test.test_memoryview.BytesMemorySliceSliceTest.test_hash_writable
-test.test_memoryview.BytesMemorySliceSliceTest.test_issue22668
-test.test_memoryview.BytesMemorySliceSliceTest.test_iter
-test.test_memoryview.BytesMemorySliceSliceTest.test_release
-test.test_memoryview.BytesMemorySliceSliceTest.test_reversed
-test.test_memoryview.BytesMemorySliceSliceTest.test_setitem_readonly
-test.test_memoryview.BytesMemorySliceSliceTest.test_setitem_writable
-test.test_memoryview.BytesMemorySliceSliceTest.test_tobytes
-test.test_memoryview.BytesMemorySliceSliceTest.test_tolist
-test.test_memoryview.BytesMemorySliceSliceTest.test_toreadonly
-test.test_memoryview.BytesMemorySliceSliceTest.test_weakref
-test.test_memoryview.BytesMemorySliceSliceTest.test_writable_readonly
-test.test_memoryview.BytesMemorySliceTest.test_attributes_readonly
-test.test_memoryview.BytesMemorySliceTest.test_attributes_writable
-test.test_memoryview.BytesMemorySliceTest.test_compare
-test.test_memoryview.BytesMemorySliceTest.test_contextmanager
-test.test_memoryview.BytesMemorySliceTest.test_delitem
-test.test_memoryview.BytesMemorySliceTest.test_gc
-test.test_memoryview.BytesMemorySliceTest.test_getbuf_fail
-test.test_memoryview.BytesMemorySliceTest.test_getbuffer
-test.test_memoryview.BytesMemorySliceTest.test_getitem
-test.test_memoryview.BytesMemorySliceTest.test_hash
-test.test_memoryview.BytesMemorySliceTest.test_hash_writable
-test.test_memoryview.BytesMemorySliceTest.test_issue22668
-test.test_memoryview.BytesMemorySliceTest.test_iter
-test.test_memoryview.BytesMemorySliceTest.test_refs
-test.test_memoryview.BytesMemorySliceTest.test_release
-test.test_memoryview.BytesMemorySliceTest.test_reversed
-test.test_memoryview.BytesMemorySliceTest.test_setitem_readonly
-test.test_memoryview.BytesMemorySliceTest.test_setitem_writable
-test.test_memoryview.BytesMemorySliceTest.test_tobytes
-test.test_memoryview.BytesMemorySliceTest.test_tolist
-test.test_memoryview.BytesMemorySliceTest.test_toreadonly
-test.test_memoryview.BytesMemorySliceTest.test_weakref
-test.test_memoryview.BytesMemorySliceTest.test_writable_readonly
-test.test_memoryview.BytesMemoryviewTest.test_attributes_readonly
-test.test_memoryview.BytesMemoryviewTest.test_attributes_writable
-test.test_memoryview.BytesMemoryviewTest.test_compare
-test.test_memoryview.BytesMemoryviewTest.test_constructor
-test.test_memoryview.BytesMemoryviewTest.test_contextmanager
-test.test_memoryview.BytesMemoryviewTest.test_delitem
-test.test_memoryview.BytesMemoryviewTest.test_gc
-test.test_memoryview.BytesMemoryviewTest.test_getbuf_fail
-test.test_memoryview.BytesMemoryviewTest.test_getbuffer
-test.test_memoryview.BytesMemoryviewTest.test_getitem
-test.test_memoryview.BytesMemoryviewTest.test_hash
-test.test_memoryview.BytesMemoryviewTest.test_hash_writable
-test.test_memoryview.BytesMemoryviewTest.test_issue22668
-test.test_memoryview.BytesMemoryviewTest.test_iter
-test.test_memoryview.BytesMemoryviewTest.test_release
-test.test_memoryview.BytesMemoryviewTest.test_reversed
-test.test_memoryview.BytesMemoryviewTest.test_setitem_readonly
-test.test_memoryview.BytesMemoryviewTest.test_setitem_writable
-test.test_memoryview.BytesMemoryviewTest.test_tobytes
-test.test_memoryview.BytesMemoryviewTest.test_tolist
-test.test_memoryview.BytesMemoryviewTest.test_toreadonly
-test.test_memoryview.BytesMemoryviewTest.test_weakref
-test.test_memoryview.BytesMemoryviewTest.test_writable_readonly
-test.test_memoryview.OtherTest.test_copy
-test.test_memoryview.OtherTest.test_ctypes_cast
-test.test_memoryview.OtherTest.test_memoryview_hex
-test.test_memoryview.OtherTest.test_pickle
+test.test_memoryview.ArrayMemorySliceSliceTest.test_attributes_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_getbuf_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_hash_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_issue22668 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_setitem_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_tobytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceSliceTest.test_toreadonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_attributes_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_getbuf_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_hash_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_issue22668 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_setitem_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_tobytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemorySliceTest.test_toreadonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_array_assign @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_attributes_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_getbuf_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_hash_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_issue22668 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_setitem_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_tobytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.ArrayMemoryviewTest.test_toreadonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_attributes_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_attributes_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_getbuf_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_getbuffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_hash_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_issue22668 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_setitem_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_setitem_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_tobytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_tolist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_toreadonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceSliceTest.test_writable_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_attributes_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_attributes_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_getbuf_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_getbuffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_hash_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_issue22668 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_setitem_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_setitem_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_tobytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_tolist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_toreadonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemorySliceTest.test_writable_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_attributes_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_attributes_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_contextmanager @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_getbuf_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_getbuffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_getitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_hash_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_issue22668 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_release @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_setitem_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_setitem_writable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_tobytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_tolist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_toreadonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.BytesMemoryviewTest.test_writable_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.OtherTest.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.OtherTest.test_memoryview_hex @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_memoryview.OtherTest.test_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

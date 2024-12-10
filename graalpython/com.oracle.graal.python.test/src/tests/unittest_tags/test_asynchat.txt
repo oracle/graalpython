@@ -1,25 +1,25 @@
-test.test_asynchat.TestAsynchat.test_close_when_done
-test.test_asynchat.TestAsynchat.test_empty_line
-test.test_asynchat.TestAsynchat.test_line_terminator1
-test.test_asynchat.TestAsynchat.test_line_terminator2
-test.test_asynchat.TestAsynchat.test_line_terminator3
-test.test_asynchat.TestAsynchat.test_none_terminator
-test.test_asynchat.TestAsynchat.test_numeric_terminator1
-test.test_asynchat.TestAsynchat.test_numeric_terminator2
-test.test_asynchat.TestAsynchat.test_push
-test.test_asynchat.TestAsynchat.test_simple_producer
-test.test_asynchat.TestAsynchat.test_string_producer
-test.test_asynchat.TestAsynchatMocked.test_blockingioerror
-test.test_asynchat.TestAsynchat_WithPoll.test_close_when_done
-test.test_asynchat.TestAsynchat_WithPoll.test_empty_line
-test.test_asynchat.TestAsynchat_WithPoll.test_line_terminator1
-test.test_asynchat.TestAsynchat_WithPoll.test_line_terminator2
-test.test_asynchat.TestAsynchat_WithPoll.test_line_terminator3
-test.test_asynchat.TestAsynchat_WithPoll.test_none_terminator
-test.test_asynchat.TestAsynchat_WithPoll.test_numeric_terminator1
-test.test_asynchat.TestAsynchat_WithPoll.test_numeric_terminator2
-test.test_asynchat.TestAsynchat_WithPoll.test_push
-test.test_asynchat.TestAsynchat_WithPoll.test_simple_producer
-test.test_asynchat.TestAsynchat_WithPoll.test_string_producer
-test.test_asynchat.TestHelperFunctions.test_find_prefix_at_end
-test.test_asynchat.TestNotConnected.test_disallow_negative_terminator
+test.test_asynchat.TestAsynchat.test_close_when_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_empty_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_line_terminator1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_line_terminator2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_line_terminator3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_none_terminator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_numeric_terminator1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_numeric_terminator2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_push @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_simple_producer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat.test_string_producer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchatMocked.test_blockingioerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asynchat.TestAsynchat_WithPoll.test_close_when_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_empty_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_line_terminator1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_line_terminator2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_line_terminator3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_none_terminator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_numeric_terminator1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_numeric_terminator2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_push @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_simple_producer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestAsynchat_WithPoll.test_string_producer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asynchat.TestHelperFunctions.test_find_prefix_at_end @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_asynchat.TestNotConnected.test_disallow_negative_terminator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

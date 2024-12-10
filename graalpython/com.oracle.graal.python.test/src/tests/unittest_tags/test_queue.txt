@@ -1,54 +1,52 @@
-test.test_queue.CFailingQueueTest.test_failing_queue
-test.test_queue.CLifoQueueTest.test_basic
-test.test_queue.CLifoQueueTest.test_negative_timeout_raises_exception
-test.test_queue.CLifoQueueTest.test_nowait
-test.test_queue.CLifoQueueTest.test_queue_join
-test.test_queue.CLifoQueueTest.test_queue_task_done
-test.test_queue.CLifoQueueTest.test_shrinking_queue
-test.test_queue.CPriorityQueueTest.test_basic
-test.test_queue.CPriorityQueueTest.test_negative_timeout_raises_exception
-test.test_queue.CPriorityQueueTest.test_nowait
-test.test_queue.CPriorityQueueTest.test_queue_join
-test.test_queue.CPriorityQueueTest.test_queue_task_done
-test.test_queue.CPriorityQueueTest.test_shrinking_queue
-test.test_queue.CQueueTest.test_basic
-test.test_queue.CQueueTest.test_negative_timeout_raises_exception
-test.test_queue.CQueueTest.test_nowait
-test.test_queue.CQueueTest.test_queue_join
-test.test_queue.CQueueTest.test_queue_task_done
-test.test_queue.CQueueTest.test_shrinking_queue
-test.test_queue.CSimpleQueueTest.test_basic
-test.test_queue.CSimpleQueueTest.test_is_default
-test.test_queue.CSimpleQueueTest.test_many_threads
-test.test_queue.CSimpleQueueTest.test_many_threads_nonblock
-test.test_queue.CSimpleQueueTest.test_many_threads_timeout
-test.test_queue.CSimpleQueueTest.test_negative_timeout_raises_exception
-test.test_queue.CSimpleQueueTest.test_order
-test.test_queue.CSimpleQueueTest.test_reentrancy
-test.test_queue.CSimpleQueueTest.test_references
-test.test_queue.PyFailingQueueTest.test_failing_queue
-test.test_queue.PyLifoQueueTest.test_basic
-test.test_queue.PyLifoQueueTest.test_negative_timeout_raises_exception
-test.test_queue.PyLifoQueueTest.test_nowait
-test.test_queue.PyLifoQueueTest.test_queue_join
-test.test_queue.PyLifoQueueTest.test_queue_task_done
-test.test_queue.PyLifoQueueTest.test_shrinking_queue
-test.test_queue.PyPriorityQueueTest.test_basic
-test.test_queue.PyPriorityQueueTest.test_negative_timeout_raises_exception
-test.test_queue.PyPriorityQueueTest.test_nowait
-test.test_queue.PyPriorityQueueTest.test_queue_join
-test.test_queue.PyPriorityQueueTest.test_queue_task_done
-test.test_queue.PyPriorityQueueTest.test_shrinking_queue
-test.test_queue.PyQueueTest.test_basic
-test.test_queue.PyQueueTest.test_negative_timeout_raises_exception
-test.test_queue.PyQueueTest.test_nowait
-test.test_queue.PyQueueTest.test_queue_join
-test.test_queue.PyQueueTest.test_queue_task_done
-test.test_queue.PyQueueTest.test_shrinking_queue
-test.test_queue.PySimpleQueueTest.test_basic
-test.test_queue.PySimpleQueueTest.test_many_threads
-test.test_queue.PySimpleQueueTest.test_many_threads_nonblock
-test.test_queue.PySimpleQueueTest.test_many_threads_timeout
-test.test_queue.PySimpleQueueTest.test_negative_timeout_raises_exception
-test.test_queue.PySimpleQueueTest.test_order
-test.test_queue.PySimpleQueueTest.test_references
+test.test_queue.CFailingQueueTest.test_failing_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CLifoQueueTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CLifoQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CLifoQueueTest.test_nowait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CLifoQueueTest.test_queue_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CLifoQueueTest.test_queue_task_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CLifoQueueTest.test_shrinking_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CPriorityQueueTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CPriorityQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CPriorityQueueTest.test_nowait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CPriorityQueueTest.test_queue_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CPriorityQueueTest.test_queue_task_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CPriorityQueueTest.test_shrinking_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CQueueTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CQueueTest.test_nowait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CQueueTest.test_queue_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CQueueTest.test_queue_task_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CQueueTest.test_shrinking_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CSimpleQueueTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CSimpleQueueTest.test_is_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CSimpleQueueTest.test_many_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CSimpleQueueTest.test_many_threads_nonblock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CSimpleQueueTest.test_many_threads_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CSimpleQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CSimpleQueueTest.test_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.CSimpleQueueTest.test_reentrancy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyFailingQueueTest.test_failing_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyLifoQueueTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyLifoQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyLifoQueueTest.test_nowait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyLifoQueueTest.test_queue_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyLifoQueueTest.test_queue_task_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyLifoQueueTest.test_shrinking_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyPriorityQueueTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyPriorityQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyPriorityQueueTest.test_nowait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyPriorityQueueTest.test_queue_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyPriorityQueueTest.test_queue_task_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyPriorityQueueTest.test_shrinking_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyQueueTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyQueueTest.test_nowait @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyQueueTest.test_queue_join @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyQueueTest.test_queue_task_done @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PyQueueTest.test_shrinking_queue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PySimpleQueueTest.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PySimpleQueueTest.test_many_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PySimpleQueueTest.test_many_threads_nonblock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PySimpleQueueTest.test_many_threads_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PySimpleQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_queue.PySimpleQueueTest.test_order @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

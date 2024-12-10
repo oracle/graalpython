@@ -59,6 +59,7 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
@@ -395,9 +396,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * The core is intended to the immutable part of the interpreter, including most modules and most
- * types. The core is embedded, using inheritance, into {@link PythonContext} to avoid indirection
- * through an extra field in the context.
+ * The core is a historical artifact and PythonContext and Python3Core should be merged.
  */
 public abstract class Python3Core {
     private static final int REC_LIM = 1000;
@@ -488,6 +487,7 @@ public abstract class Python3Core {
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
                         new ForeignNumberBuiltins(),
+                        new ForeignBooleanBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),

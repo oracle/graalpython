@@ -83,7 +83,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_KEYITERA
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_REVERSE_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
@@ -135,6 +134,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -298,8 +298,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PickleBuffer("PickleBuffer", "_pickle"),
 
     // Foreign
-    ForeignObject(J_FOREIGN, Flags.PRIVATE_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
-    ForeignNumber("ForeignNumberType", Flags.PRIVATE_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
+    ForeignObject("ForeignObject", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
+    ForeignNumber("ForeignNumber", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
+    ForeignBoolean("ForeignBoolean", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignBooleanBuiltins.SLOTS),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
@@ -833,6 +834,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PBuiltinMethod.base = PBuiltinFunctionOrMethod;
 
         Boolean.base = PInt;
+
+        ForeignNumber.base = ForeignObject;
+        ForeignBoolean.base = ForeignNumber;
 
         PBaseExceptionGroup.base = PBaseException;
         SystemExit.base = PBaseException;

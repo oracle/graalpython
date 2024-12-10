@@ -1,50 +1,50 @@
-test.test_with.AssignmentTargetTestCase.testMultipleComplexTargets
-test.test_with.AssignmentTargetTestCase.testSingleComplexTarget
-test.test_with.AssignmentTargetTestCase.testWithExtendedTargets
-test.test_with.ExceptionalTestCase.testErrorsInBool
-test.test_with.ExceptionalTestCase.testExceptionNormalized
-test.test_with.ExceptionalTestCase.testMultipleResourcesInSingleStatement
-test.test_with.ExceptionalTestCase.testNestedExceptionAfterInnerStatement
-test.test_with.ExceptionalTestCase.testNestedExceptionBeforeInnerStatement
-test.test_with.ExceptionalTestCase.testNestedSingleStatements
-test.test_with.ExceptionalTestCase.testRaisedGeneratorExit1
-test.test_with.ExceptionalTestCase.testRaisedGeneratorExit2
-test.test_with.ExceptionalTestCase.testRaisedStopIteration1
-test.test_with.ExceptionalTestCase.testRaisedStopIteration2
-test.test_with.ExceptionalTestCase.testRaisedStopIteration3
-test.test_with.ExceptionalTestCase.testSingleResource
-test.test_with.ExitSwallowsExceptionTestCase.testExitFalseDoesntSwallowException
-test.test_with.ExitSwallowsExceptionTestCase.testExitTrueSwallowsException
-test.test_with.FailureTestCase.testAssignmentToNoneError
-test.test_with.FailureTestCase.testAssignmentToTupleContainingNoneError
-test.test_with.FailureTestCase.testAssignmentToTupleOnlyContainingNoneError
-test.test_with.FailureTestCase.testEnterAttributeError1
-test.test_with.FailureTestCase.testEnterAttributeError2
-test.test_with.FailureTestCase.testEnterThrows
-test.test_with.FailureTestCase.testExitAttributeError
-test.test_with.FailureTestCase.testExitThrows
-test.test_with.FailureTestCase.testNameError
-test.test_with.NestedNonexceptionalTestCase.testMultipleArgBound
-test.test_with.NestedNonexceptionalTestCase.testMultipleArgUnbound
-test.test_with.NestedNonexceptionalTestCase.testSingleArgBoundToMultipleElementTupleError
-test.test_with.NestedNonexceptionalTestCase.testSingleArgBoundToNonTuple
-test.test_with.NestedNonexceptionalTestCase.testSingleArgBoundToSingleElementParenthesizedList
-test.test_with.NestedNonexceptionalTestCase.testSingleArgInlineGeneratorSyntax
-test.test_with.NestedNonexceptionalTestCase.testSingleArgUnbound
-test.test_with.NestedWith.testEnterReturnsTuple
-test.test_with.NestedWith.testExceptionInEnter
-test.test_with.NestedWith.testExceptionInExit
-test.test_with.NestedWith.testExceptionInExprList
-test.test_with.NestedWith.testNoExceptions
-test.test_with.NonLocalFlowControlTestCase.testWithBreak
-test.test_with.NonLocalFlowControlTestCase.testWithContinue
-test.test_with.NonLocalFlowControlTestCase.testWithRaise
-test.test_with.NonLocalFlowControlTestCase.testWithReturn
-test.test_with.NonLocalFlowControlTestCase.testWithYield
-test.test_with.NonexceptionalTestCase.testBoundGenerator
-test.test_with.NonexceptionalTestCase.testInlineGeneratorBoundSyntax
-test.test_with.NonexceptionalTestCase.testInlineGeneratorBoundToDottedVariable
-test.test_with.NonexceptionalTestCase.testInlineGeneratorBoundToExistingVariable
-test.test_with.NonexceptionalTestCase.testInlineGeneratorSyntax
-test.test_with.NonexceptionalTestCase.testNestedSingleStatements
-test.test_with.NonexceptionalTestCase.testUnboundGenerator
+test.test_with.AssignmentTargetTestCase.testMultipleComplexTargets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.AssignmentTargetTestCase.testSingleComplexTarget @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.AssignmentTargetTestCase.testWithExtendedTargets @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testErrorsInBool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testExceptionNormalized @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testMultipleResourcesInSingleStatement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testNestedExceptionAfterInnerStatement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testNestedExceptionBeforeInnerStatement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testNestedSingleStatements @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testRaisedGeneratorExit1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testRaisedGeneratorExit2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testRaisedStopIteration1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testRaisedStopIteration2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testRaisedStopIteration3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExceptionalTestCase.testSingleResource @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExitSwallowsExceptionTestCase.testExitFalseDoesntSwallowException @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.ExitSwallowsExceptionTestCase.testExitTrueSwallowsException @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testAssignmentToNoneError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testAssignmentToTupleContainingNoneError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testAssignmentToTupleOnlyContainingNoneError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testEnterAttributeError1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testEnterAttributeError2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testEnterThrows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testExitAttributeError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testExitThrows @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.FailureTestCase.testNameError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedNonexceptionalTestCase.testMultipleArgBound @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedNonexceptionalTestCase.testMultipleArgUnbound @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedNonexceptionalTestCase.testSingleArgBoundToMultipleElementTupleError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedNonexceptionalTestCase.testSingleArgBoundToNonTuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedNonexceptionalTestCase.testSingleArgBoundToSingleElementParenthesizedList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedNonexceptionalTestCase.testSingleArgInlineGeneratorSyntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedNonexceptionalTestCase.testSingleArgUnbound @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedWith.testEnterReturnsTuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedWith.testExceptionInEnter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedWith.testExceptionInExit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedWith.testExceptionInExprList @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedWith.testNoExceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonLocalFlowControlTestCase.testWithBreak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonLocalFlowControlTestCase.testWithContinue @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonLocalFlowControlTestCase.testWithRaise @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonLocalFlowControlTestCase.testWithReturn @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonLocalFlowControlTestCase.testWithYield @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonexceptionalTestCase.testBoundGenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonexceptionalTestCase.testInlineGeneratorBoundSyntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonexceptionalTestCase.testInlineGeneratorBoundToDottedVariable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonexceptionalTestCase.testInlineGeneratorBoundToExistingVariable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonexceptionalTestCase.testInlineGeneratorSyntax @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonexceptionalTestCase.testNestedSingleStatements @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NonexceptionalTestCase.testUnboundGenerator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

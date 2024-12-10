@@ -1,3 +1,0 @@
-test.test_lltrace.TestLLTrace.test_lltrace
-test.test_lltrace.TestLLTrace.test_lltrace_different_module
-test.test_lltrace.TestLLTrace.test_lltrace_does_not_crash_on_subscript_operator

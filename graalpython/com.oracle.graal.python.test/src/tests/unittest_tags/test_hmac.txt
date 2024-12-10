@@ -1,28 +1,26 @@
-test.test_hmac.CompareDigestTestCase.test_hmac_compare_digest
-test.test_hmac.CompareDigestTestCase.test_openssl_compare_digest
-test.test_hmac.ConstructorTestCase.test_dot_new_with_str_key
-test.test_hmac.ConstructorTestCase.test_internal_types
-test.test_hmac.ConstructorTestCase.test_normal
-test.test_hmac.ConstructorTestCase.test_with_bytearray
-test.test_hmac.ConstructorTestCase.test_with_memoryview_msg
-test.test_hmac.ConstructorTestCase.test_with_sha256_module
-test.test_hmac.ConstructorTestCase.test_with_str_key
-test.test_hmac.ConstructorTestCase.test_withmodule
-test.test_hmac.ConstructorTestCase.test_withtext
-test.test_hmac.CopyTestCase.test_attributes
-test.test_hmac.CopyTestCase.test_attributes_old
-test.test_hmac.CopyTestCase.test_equality
-test.test_hmac.CopyTestCase.test_equality_new
-test.test_hmac.CopyTestCase.test_realcopy
-test.test_hmac.CopyTestCase.test_realcopy_hmac
-test.test_hmac.CopyTestCase.test_realcopy_old
-test.test_hmac.SanityTestCase.test_exercise_all_methods
-test.test_hmac.TestVectorsTestCase.test_legacy_block_size_warnings
-test.test_hmac.TestVectorsTestCase.test_md5_vectors
-test.test_hmac.TestVectorsTestCase.test_sha224_rfc4231
-test.test_hmac.TestVectorsTestCase.test_sha256_rfc4231
-test.test_hmac.TestVectorsTestCase.test_sha384_rfc4231
-test.test_hmac.TestVectorsTestCase.test_sha512_rfc4231
-test.test_hmac.TestVectorsTestCase.test_sha_vectors
-test.test_hmac.TestVectorsTestCase.test_with_digestmod_no_default
-test.test_hmac.TestVectorsTestCase.test_with_fallback
+test.test_hmac.CompareDigestTestCase.test_hmac_compare_digest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.CompareDigestTestCase.test_openssl_compare_digest @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_dot_new_with_str_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_internal_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_with_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_with_memoryview_msg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_with_sha256_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_with_str_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_withmodule @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_withtext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.CopyTestCase.test_attributes_old @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.CopyTestCase.test_equality @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.CopyTestCase.test_equality_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.CopyTestCase.test_realcopy_hmac @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.CopyTestCase.test_realcopy_old @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.SanityTestCase.test_exercise_all_methods @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_legacy_block_size_warnings @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_md5_vectors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_sha224_rfc4231 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_sha256_rfc4231 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_sha384_rfc4231 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_sha512_rfc4231 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_sha_vectors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_with_digestmod_no_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.TestVectorsTestCase.test_with_fallback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -1,103 +1,103 @@
-test.test_urllib.PathName2URLTests.test_converting_drive_letter
-test.test_urllib.PathName2URLTests.test_converting_when_no_drive_letter
-test.test_urllib.PathName2URLTests.test_long_drive_letter
-test.test_urllib.PathName2URLTests.test_roundtrip_pathname2url
-test.test_urllib.PathName2URLTests.test_simple_compare
-test.test_urllib.Pathname_Tests.test_basic
-test.test_urllib.Pathname_Tests.test_ntpath
-test.test_urllib.Pathname_Tests.test_prefixes
-test.test_urllib.Pathname_Tests.test_quoting
-test.test_urllib.ProxyTests.test_getproxies_environment_keep_no_proxies
-test.test_urllib.ProxyTests.test_proxy_bypass_environment_always_match
-test.test_urllib.ProxyTests.test_proxy_bypass_environment_host_match
-test.test_urllib.ProxyTests.test_proxy_bypass_environment_newline
-test.test_urllib.ProxyTests.test_proxy_cgi_ignore
-test.test_urllib.ProxyTests_withOrderedEnv.test_getproxies_environment_prefer_lowercase
-test.test_urllib.QuotingTests.test_default_quoting
-test.test_urllib.QuotingTests.test_default_safe
-test.test_urllib.QuotingTests.test_never_quote
-test.test_urllib.QuotingTests.test_quote_bytes
-test.test_urllib.QuotingTests.test_quote_plus_with_unicode
-test.test_urllib.QuotingTests.test_quote_with_unicode
-test.test_urllib.QuotingTests.test_quoting_plus
-test.test_urllib.QuotingTests.test_quoting_space
-test.test_urllib.QuotingTests.test_safe
-test.test_urllib.RequestTests.test_default_values
-test.test_urllib.RequestTests.test_with_method_arg
-test.test_urllib.URL2PathNameTests.test_converting_drive_letter
-test.test_urllib.URL2PathNameTests.test_converting_when_no_drive_letter
-test.test_urllib.URL2PathNameTests.test_non_ascii_drive_letter
-test.test_urllib.URL2PathNameTests.test_roundtrip_url2pathname
-test.test_urllib.URL2PathNameTests.test_simple_compare
-test.test_urllib.URLopener_Tests.test_local_file_open
-test.test_urllib.URLopener_Tests.test_quoted_open
-test.test_urllib.URLopener_Tests.test_urlopener_retrieve_file
-test.test_urllib.URLopener_Tests.test_urlopener_retrieve_remote
-test.test_urllib.UnquotingTests.test_unquote_to_bytes
-test.test_urllib.UnquotingTests.test_unquote_with_unicode
-test.test_urllib.UnquotingTests.test_unquoting
-test.test_urllib.UnquotingTests.test_unquoting_badpercent
-test.test_urllib.UnquotingTests.test_unquoting_mixed_case
-test.test_urllib.UnquotingTests.test_unquoting_parts
-test.test_urllib.UnquotingTests.test_unquoting_plus
-test.test_urllib.UnquotingTests.test_unquoting_with_bytes_input
-test.test_urllib.Utility_Tests.test_thishost
-test.test_urllib.urlencode_Tests.test_doseq
-test.test_urllib.urlencode_Tests.test_empty_sequence
-test.test_urllib.urlencode_Tests.test_nonstring_seq_values
-test.test_urllib.urlencode_Tests.test_nonstring_values
-test.test_urllib.urlencode_Tests.test_quoting
-test.test_urllib.urlencode_Tests.test_urlencode_bytes
-test.test_urllib.urlencode_Tests.test_urlencode_encoding
-test.test_urllib.urlencode_Tests.test_urlencode_encoding_doseq
-test.test_urllib.urlencode_Tests.test_urlencode_encoding_safe_parameter
-test.test_urllib.urlencode_Tests.test_using_mapping
-test.test_urllib.urlencode_Tests.test_using_sequence
-test.test_urllib.urlopen_DataTests.test_geturl
-test.test_urllib.urlopen_DataTests.test_info
-test.test_urllib.urlopen_DataTests.test_interface
-test.test_urllib.urlopen_DataTests.test_invalid_base64_data
-test.test_urllib.urlopen_DataTests.test_missing_comma
-test.test_urllib.urlopen_DataTests.test_read_image
-test.test_urllib.urlopen_DataTests.test_read_text
-test.test_urllib.urlopen_DataTests.test_read_text_base64
-test.test_urllib.urlopen_FileTests.test_close
-test.test_urllib.urlopen_FileTests.test_fileno
-test.test_urllib.urlopen_FileTests.test_getcode
-test.test_urllib.urlopen_FileTests.test_geturl
-test.test_urllib.urlopen_FileTests.test_headers
-test.test_urllib.urlopen_FileTests.test_info
-test.test_urllib.urlopen_FileTests.test_interface
-test.test_urllib.urlopen_FileTests.test_iter
-test.test_urllib.urlopen_FileTests.test_read
-test.test_urllib.urlopen_FileTests.test_readline
-test.test_urllib.urlopen_FileTests.test_readlines
-test.test_urllib.urlopen_FileTests.test_relativelocalfile
-test.test_urllib.urlopen_FileTests.test_status
-test.test_urllib.urlopen_FileTests.test_url
-test.test_urllib.urlopen_HttpTests.test_URLopener_deprecation
-test.test_urllib.urlopen_HttpTests.test_cafile_and_context
-test.test_urllib.urlopen_HttpTests.test_empty_socket
-test.test_urllib.urlopen_HttpTests.test_file_notexists
-test.test_urllib.urlopen_HttpTests.test_ftp_cache_pruning
-test.test_urllib.urlopen_HttpTests.test_invalid_redirect
-test.test_urllib.urlopen_HttpTests.test_missing_localfile
-test.test_urllib.urlopen_HttpTests.test_read_0_9
-test.test_urllib.urlopen_HttpTests.test_read_1_0
-test.test_urllib.urlopen_HttpTests.test_read_1_1
-test.test_urllib.urlopen_HttpTests.test_read_bogus
-test.test_urllib.urlopen_HttpTests.test_redirect_limit_independent
-test.test_urllib.urlopen_HttpTests.test_url_fragment
-test.test_urllib.urlopen_HttpTests.test_url_path_with_control_char_rejected
-test.test_urllib.urlopen_HttpTests.test_url_path_with_newline_header_injection_rejected
-test.test_urllib.urlopen_HttpTests.test_userpass_inurl
-test.test_urllib.urlopen_HttpTests.test_userpass_inurl_w_spaces
-test.test_urllib.urlopen_HttpTests.test_willclose
-test.test_urllib.urlretrieve_FileTests.test_basic
-test.test_urllib.urlretrieve_FileTests.test_copy
-test.test_urllib.urlretrieve_FileTests.test_reporthook
-test.test_urllib.urlretrieve_FileTests.test_reporthook_0_bytes
-test.test_urllib.urlretrieve_FileTests.test_reporthook_5_bytes
-test.test_urllib.urlretrieve_FileTests.test_reporthook_8193_bytes
-test.test_urllib.urlretrieve_HttpTests.test_short_content_raises_ContentTooShortError
-test.test_urllib.urlretrieve_HttpTests.test_short_content_raises_ContentTooShortError_without_reporthook
+test.test_urllib.PathName2URLTests.test_converting_drive_letter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.PathName2URLTests.test_converting_when_no_drive_letter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.PathName2URLTests.test_long_drive_letter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.PathName2URLTests.test_roundtrip_pathname2url @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.PathName2URLTests.test_simple_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.Pathname_Tests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.Pathname_Tests.test_ntpath @ win32-AMD64
+test.test_urllib.Pathname_Tests.test_prefixes @ win32-AMD64
+test.test_urllib.Pathname_Tests.test_quoting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.ProxyTests.test_getproxies_environment_keep_no_proxies @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.ProxyTests.test_proxy_bypass_environment_always_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.ProxyTests.test_proxy_bypass_environment_host_match @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.ProxyTests.test_proxy_bypass_environment_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.ProxyTests.test_proxy_cgi_ignore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.ProxyTests_withOrderedEnv.test_getproxies_environment_prefer_lowercase @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_default_quoting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_default_safe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_never_quote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_quote_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_quote_plus_with_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_quote_with_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_quoting_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_quoting_space @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.QuotingTests.test_safe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.RequestTests.test_default_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.RequestTests.test_with_method_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URL2PathNameTests.test_converting_drive_letter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URL2PathNameTests.test_converting_when_no_drive_letter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URL2PathNameTests.test_non_ascii_drive_letter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URL2PathNameTests.test_roundtrip_url2pathname @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URL2PathNameTests.test_simple_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URLopener_Tests.test_local_file_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URLopener_Tests.test_quoted_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URLopener_Tests.test_urlopener_retrieve_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.URLopener_Tests.test_urlopener_retrieve_remote @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.UnquotingTests.test_unquote_to_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.UnquotingTests.test_unquote_with_unicode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.UnquotingTests.test_unquoting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.UnquotingTests.test_unquoting_badpercent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.UnquotingTests.test_unquoting_mixed_case @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.UnquotingTests.test_unquoting_parts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.UnquotingTests.test_unquoting_plus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.UnquotingTests.test_unquoting_with_bytes_input @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.Utility_Tests.test_thishost @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_doseq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_empty_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_nonstring_seq_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_nonstring_values @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_quoting @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_urlencode_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_urlencode_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_urlencode_encoding_doseq @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_urlencode_encoding_safe_parameter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_using_mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlencode_Tests.test_using_sequence @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_DataTests.test_geturl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_DataTests.test_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_DataTests.test_interface @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_DataTests.test_invalid_base64_data @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_DataTests.test_missing_comma @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_DataTests.test_read_image @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_DataTests.test_read_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_DataTests.test_read_text_base64 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_close @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_fileno @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_getcode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_geturl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_headers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_info @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_interface @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_iter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_readline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_readlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_relativelocalfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_status @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_FileTests.test_url @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_URLopener_deprecation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_cafile_and_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_empty_socket @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_file_notexists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_ftp_cache_pruning @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_invalid_redirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_missing_localfile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_read_0_9 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_read_1_0 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_read_1_1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_read_bogus @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_redirect_limit_independent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_url_fragment @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_url_path_with_control_char_rejected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_url_path_with_newline_header_injection_rejected @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_userpass_inurl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_userpass_inurl_w_spaces @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlopen_HttpTests.test_willclose @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlretrieve_FileTests.test_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlretrieve_FileTests.test_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlretrieve_FileTests.test_reporthook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlretrieve_FileTests.test_reporthook_0_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlretrieve_FileTests.test_reporthook_5_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlretrieve_FileTests.test_reporthook_8193_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlretrieve_HttpTests.test_short_content_raises_ContentTooShortError @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_urllib.urlretrieve_HttpTests.test_short_content_raises_ContentTooShortError_without_reporthook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

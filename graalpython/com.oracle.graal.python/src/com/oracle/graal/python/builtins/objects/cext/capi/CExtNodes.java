@@ -860,7 +860,7 @@ public abstract class CExtNodes {
                 PythonContext pythonContext = PythonContext.get(inliningTarget);
                 if (!pythonContext.hasCApiContext()) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    CApiContext.ensureCapiWasLoaded();
+                    CApiContext.ensureCapiWasLoaded("call internal native GraalPy function");
                 }
                 // TODO review EnsureTruffleStringNode with GR-37896
                 Object callable = CApiContext.getNativeSymbol(inliningTarget, symbol);

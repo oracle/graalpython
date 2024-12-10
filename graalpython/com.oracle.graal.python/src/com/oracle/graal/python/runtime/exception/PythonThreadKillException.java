@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,27 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
+import com.oracle.truffle.api.TruffleSafepoint.Interruptible;
+import com.oracle.truffle.api.nodes.Node;
+
 /**
- * This exception kills a Python thread.<br/>
- * It does intentionally not extends from {@link PythonControlFlowException} because if this
- * exception is thrown, we <b>MUST NOT</b> run any finally blocks. This is because we did probably
- * fail to acquire the GIL during context shutdown and thus we do not own the GIL when this
- * exception is flying.
+ * This exception kills a Python thread.
+ * <p>
+ * All the polyglot threads started from Python using
+ * {@link com.oracle.truffle.api.TruffleLanguage.Env#newTruffleThreadBuilder(Runnable)} must poll
+ * Truffle Safepoint. When a thread should be killed, we submit a Thread Local Action that throws
+ * {@link PythonThreadKillException}. All such threads must be able to also handle this exception.
+ * Threads running Python code handle this exception and forward it to the top level Python entry
+ * point. Threads not running Python code should catch this exception and handle it accordingly.
+ * <p>
+ * Note that
+ * {@link com.oracle.truffle.api.TruffleSafepoint#setBlockedThreadInterruptible(Node, Interruptible, Object)}
+ * or similar APIs implicitly call Truffle Safepoint poll.
+ * <p>
+ * {@link PythonThreadKillException} does intentionally not extend from
+ * {@link PythonControlFlowException} because if this exception is thrown, we <b>MUST NOT</b> run
+ * any finally blocks. This is because we did probably fail to acquire the GIL during context
+ * shutdown, and thus we do not own the GIL when this exception is flying.
  */
 public final class PythonThreadKillException extends RuntimeException {
 
