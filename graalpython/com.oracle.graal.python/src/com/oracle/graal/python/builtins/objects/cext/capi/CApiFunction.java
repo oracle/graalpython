@@ -55,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_BUFFER_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_PY_UCS4;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
@@ -126,6 +127,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -170,6 +172,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_objvoid;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.func_voidvoidptr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.xid_newobjectfunc;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -1006,7 +1009,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyCrossInterpreterData_Lookup", ret = CROSSINTERPDATAFUNC, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyCrossInterpreterData_NewObject", ret = PyObject, args = {_PYCROSSINTERPRETERDATA_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyCrossInterpreterData_RegisterClass", ret = Int, args = {PyTypeObject, CROSSINTERPDATAFUNC}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyCrossInterpreterData_Release", ret = Void, args = {_PYCROSSINTERPRETERDATA_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDeadline_Get", ret = _PYTIME_T, args = {_PYTIME_T}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDeadline_Init", ret = _PYTIME_T, args = {_PYTIME_T}, call = NotImplemented)
     @CApiBuiltin(name = "_PyDebugAllocatorStats", ret = Void, args = {FILE_PTR, ConstCharPtrAsTruffleString, Int, SIZE_T}, call = NotImplemented)
@@ -1215,7 +1217,12 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyFunction_SetVectorcall", ret = Void, args = {PyFunctionObject, vectorcallfunc}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnstable_Code_GetExtra", ret = PrimitiveResult32, args = {PyObject, Py_ssize_t, VOID_PTR_LIST}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnstable_Code_SetExtra", ret = PrimitiveResult32, args = {PyObject, Py_ssize_t, Pointer}, call = NotImplemented)
-    @CApiBuiltin(name = "PyVectorcall_NARGS", ret = Py_ssize_t, args = {SIZE_T}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyCrossInterpreterData_Clear", ret = Void, args = {PyInterpreterState, _PYCROSSINTERPRETERDATA_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyCrossInterpreterData_Init", ret = Void, args = {_PYCROSSINTERPRETERDATA_PTR, PyInterpreterState, Pointer, PyObject, xid_newobjectfunc}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyCrossInterpreterData_InitWithSize", ret = PrimitiveResult32, args = {_PYCROSSINTERPRETERDATA_PTR, PyInterpreterState, CONST_SIZE_T, PyObject,
+                    xid_newobjectfunc}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyCrossInterpreterData_Release", ret = PrimitiveResult32, args = {_PYCROSSINTERPRETERDATA_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyCrossInterpreterData_UnregisterClass", ret = PrimitiveResult32, args = {PyTypeObjectTransfer}, call = NotImplemented)
 
     private static final class Dummy {
         // only here for the annotations

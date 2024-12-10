@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -33,6 +33,19 @@ Py_DEPRECATED(3.11) PyAPI_FUNC(int) PySys_HasWarnOptions(void);
 
 Py_DEPRECATED(3.11) PyAPI_FUNC(void) PySys_AddXOption(const wchar_t *);
 PyAPI_FUNC(PyObject *) PySys_GetXOptions(void);
+
+#if !defined(Py_LIMITED_API)
+typedef struct {
+    FILE* perf_map;
+    PyThread_type_lock map_lock;
+} PerfMapState;
+
+PyAPI_FUNC(int) PyUnstable_PerfMapState_Init(void);
+
+PyAPI_FUNC(int) PyUnstable_WritePerfMapEntry(const void *code_addr, unsigned int code_size, const char *entry_name);
+
+PyAPI_FUNC(void) PyUnstable_PerfMapState_Fini(void);
+#endif
 
 #ifndef Py_LIMITED_API
 #  define Py_CPYTHON_SYSMODULE_H

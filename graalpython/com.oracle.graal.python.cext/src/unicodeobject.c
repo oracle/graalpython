@@ -1249,7 +1249,6 @@ unicode_kind_name(PyObject *unicode)
             return "<legacy invalid kind>";
         }
     }
-    assert(PyUnicode_IS_READY(unicode));
     switch (PyUnicode_KIND(unicode)) {
     case PyUnicode_1BYTE_KIND:
         if (PyUnicode_IS_ASCII(unicode))
@@ -1878,39 +1877,7 @@ unicode_char(Py_UCS4 ch)
     assert(_PyUnicode_CheckConsistency(unicode, 1));
     return unicode;
 }
-#endif // GraalPy change
 
-PyObject *
-PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size)
-{
-    if (u == NULL) {
-        if (size > 0) {
-            if (PyErr_WarnEx(PyExc_DeprecationWarning,
-                    "PyUnicode_FromUnicode(NULL, size) is deprecated; "
-                    "use PyUnicode_New() instead", 1) < 0) {
-                return NULL;
-            }
-        }
-        // GraalPy change
-        return (PyObject*)PyUnicode_New(size, MAX_UNICODE);
-    }
-
-    if (size < 0) {
-        PyErr_BadInternalCall();
-        return NULL;
-    }
-
-    // GraalPy change
-    switch(Py_UNICODE_SIZE) {
-    case 2:
-        return GraalPyTruffleUnicode_FromUTF((void*) u, size * 2, 2);
-    case 4:
-        return GraalPyTruffleUnicode_FromUTF((void*) u, size * 4, 4);
-    }
-    return NULL;
-}
-
-#if 0 // GraalPy change
 PyObject *
 PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size)
 {
@@ -3716,58 +3683,16 @@ PyUnicode_AsUTF8(PyObject *unicode)
     return PyUnicode_AsUTF8AndSize(unicode, NULL);
 }
 
-Py_UNICODE *
-PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
-{
-    if (!PyUnicode_Check(unicode)) {
-        PyErr_BadArgument();
-        return NULL;
-    }
-    // GraalPy change: upcall for managed objects
-    if (points_to_py_handle_space(unicode)) {
-        return GraalPyTruffleUnicode_AsUnicodeAndSize(unicode, size);
-    }
-    Py_UNICODE *w = _PyUnicode_WSTR(unicode);
-    if (w == NULL) {
-        // GraalPy change: upcall
-        if (GraalPyTruffleUnicode_FillUnicode(unicode) == -1) {
-            return NULL;
-        }
-        w = _PyUnicode_WSTR(unicode);
-    }
-    if (size != NULL)
-        *size = PyUnicode_WSTR_LENGTH(unicode);
-    return w;
-}
-
-/* Deprecated APIs */
-
-_Py_COMP_DIAG_PUSH
-_Py_COMP_DIAG_IGNORE_DEPR_DECLS
-
-Py_UNICODE *
-PyUnicode_AsUnicode(PyObject *unicode)
-{
-    return PyUnicode_AsUnicodeAndSize(unicode, NULL);
-}
-
 #if 0 // GraalPy change
-const Py_UNICODE *
-_PyUnicode_AsUnicode(PyObject *unicode)
-{
-    Py_ssize_t size;
-    const Py_UNICODE *wstr;
+/*
+PyUnicode_GetSize() has been deprecated since Python 3.3
+because it returned length of Py_UNICODE.
 
-    wstr = PyUnicode_AsUnicodeAndSize(unicode, &size);
-    if (wstr && wcslen(wstr) != (size_t)size) {
-        PyErr_SetString(PyExc_ValueError, "embedded null character");
-        return NULL;
-    }
-    return wstr;
-}
-
-
-Py_ssize_t
+But this function is part of stable abi, because it don't
+include Py_UNICODE in signature and it was not excluded from
+stable abi in PEP 384.
+*/
+PyAPI_FUNC(Py_ssize_t)
 PyUnicode_GetSize(PyObject *unicode)
 {
     PyErr_SetString(PyExc_RuntimeError,
@@ -3775,8 +3700,6 @@ PyUnicode_GetSize(PyObject *unicode)
     return -1;
 }
 #endif // GraalPy change
-
-_Py_COMP_DIAG_POP
 
 Py_ssize_t
 PyUnicode_GetLength(PyObject *unicode)
@@ -14112,7 +14035,6 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
     _PyUnicode_DATA_ANY(self) = NULL;
 
     share_utf8 = 0;
-    share_wstr = 0;
     if (kind == PyUnicode_1BYTE_KIND) {
         char_size = 1;
         if (PyUnicode_MAX_CHAR_VALUE(unicode) < 128)
@@ -14120,14 +14042,10 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
     }
     else if (kind == PyUnicode_2BYTE_KIND) {
         char_size = 2;
-        if (sizeof(wchar_t) == 2)
-            share_wstr = 1;
     }
     else {
         assert(kind == PyUnicode_4BYTE_KIND);
         char_size = 4;
-        if (sizeof(wchar_t) == 4)
-            share_wstr = 1;
     }
 
     /* Ensure we won't overflow the length. */
@@ -14146,13 +14064,8 @@ unicode_subtype_new(PyTypeObject *type, PyObject *unicode)
         _PyUnicode_UTF8_LENGTH(self) = length;
         _PyUnicode_UTF8(self) = data;
     }
-    if (share_wstr) {
-        _PyUnicode_WSTR_LENGTH(self) = length;
-        _PyUnicode_WSTR(self) = (wchar_t *)data;
-    }
 
-    memcpy(data, PyUnicode_DATA(unicode),
-              kind * (length + 1));
+    memcpy(data, PyUnicode_DATA(unicode), kind * (length + 1));
     assert(_PyUnicode_CheckConsistency(self, 1));
 #ifdef Py_DEBUG
     _PyUnicode_HASH(self) = _PyUnicode_HASH(unicode);

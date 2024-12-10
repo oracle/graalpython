@@ -497,15 +497,13 @@ public abstract class CExtCommonNodes {
         static void setCurrentException(Frame frame, Node inliningTarget, PException e, LazyTraceback tb,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached GetClassNode getClassNode,
                         @Cached(inline = false) PythonToNativeNode pythonToNativeNode,
                         @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
             /*
              * Run the ToNative conversion early so that nothing interrups the code between setting
              * the managed and native states
              */
-            Object exceptionType = getClassNode.execute(inliningTarget, e.getUnreifiedException());
-            Object exceptionTypeNative = pythonToNativeNode.execute(exceptionType);
+            Object currentException = pythonToNativeNode.execute(e.getUnreifiedException());
             // TODO connect f_back
             getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
@@ -527,7 +525,7 @@ public abstract class CExtCommonNodes {
                  * Write a borrowed ref to the native mirror because we need to keep that in sync
                  * anyway.
                  */
-                writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, exceptionTypeNative);
+                writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
             }
         }
     }
@@ -1302,7 +1300,7 @@ public abstract class CExtCommonNodes {
             threadState.clearCurrentException();
             Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
             if (nativeThreadState != null) {
-                writePointerNode.write(nativeThreadState, CFields.PyThreadState__curexc_type, 0L);
+                writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
             }
         }
     }

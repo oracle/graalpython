@@ -334,12 +334,13 @@ public enum CFields {
     PyMemberDef__flags(Int),
     PyMemberDef__doc(ConstCharPtr),
 
-    PyThreadState__curexc_type(PyObject),
-    PyThreadState__curexc_value(PyObject),
-    PyThreadState__curexc_traceback(PyObject),
+    PyThreadState__current_exception(PyObject),
     PyThreadState__dict(PyObject),
     PyThreadState__small_ints(PyObjectPtr),
     PyThreadState__gc(Pointer),
+    PyThreadState__py_recursion_limit(Int),
+    PyThreadState__py_recursion_remaining(Int),
+    PyThreadState__c_recursion_remaining(Int),
 
     GCState__enabled(Int),
     GCState__debug(Int),

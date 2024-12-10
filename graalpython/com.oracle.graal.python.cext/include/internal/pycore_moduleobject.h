@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -34,6 +34,9 @@ static inline void* _PyModule_GetState(PyObject* mod) {
 static inline PyObject* _PyModule_GetDict(PyObject *mod) {
     return PyModule_GetDict(mod);
 }
+
+PyObject* _Py_module_getattro_impl(PyModuleObject *m, PyObject *name, int suppress);
+PyObject* _Py_module_getattro(PyModuleObject *m, PyObject *name);
 
 #ifdef __cplusplus
 }

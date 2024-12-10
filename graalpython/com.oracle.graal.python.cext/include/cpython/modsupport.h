@@ -65,6 +65,7 @@ typedef struct _PyArg_Parser {
     int max;            /* maximal number of positional arguments */
     PyObject *kwtuple;  /* tuple of keyword parameter names */
     struct _PyArg_Parser *next;
+    int initialized;
 } _PyArg_Parser;
 
 #ifdef PY_SSIZE_T_CLEAN

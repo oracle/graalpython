@@ -2412,6 +2412,7 @@ gcmodule_exec(PyObject *module)
 
 static PyModuleDef_Slot gcmodule_slots[] = {
     {Py_mod_exec, gcmodule_exec},
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
     {0, NULL}
 };
 
@@ -2715,7 +2716,6 @@ _PyObject_GC_New(PyTypeObject *tp)
 PyVarObject *
 _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
 {
-    size_t size;
     PyVarObject *op;
 
     if (nitems < 0) {
@@ -2723,7 +2723,7 @@ _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
         return NULL;
     }
     size_t presize = _PyType_PreHeaderSize(tp);
-    size = _PyObject_VAR_SIZE(tp, nitems);
+    size_t size = _PyObject_VAR_SIZE(tp, nitems);
     op = (PyVarObject *)gc_alloc(size, presize);
     if (op == NULL) {
         return NULL;
@@ -2756,14 +2756,16 @@ PyObject_GC_Del(void *op)
     size_t presize = _PyType_PreHeaderSize(Py_TYPE(op)); // GraalPy change
     PyGC_Head *g = AS_GC(op);
     if (_PyObject_GC_IS_TRACKED(op)) {
+        gc_list_remove(g);
 #ifdef Py_DEBUG
+        PyObject *exc = PyErr_GetRaisedException();
         if (PyErr_WarnExplicitFormat(PyExc_ResourceWarning, "gc", 0,
                                      "gc", NULL, "Object of type %s is not untracked before destruction",
         ((PyObject*)op)->ob_type->tp_name)) {
             PyErr_WriteUnraisable(NULL);
         }
+        PyErr_SetRaisedException(exc);
 #endif
-        gc_list_remove(g);
     }
     GCState *gcstate = get_gc_state();
     if (gcstate->generations[0].count > 0) {
@@ -2788,6 +2790,30 @@ PyObject_GC_IsFinalized(PyObject *obj)
          return 1;
     }
     return 0;
+}
+
+void
+PyUnstable_GC_VisitObjects(gcvisitobjects_t callback, void *arg)
+{
+    size_t i;
+    GCState *gcstate = get_gc_state();
+    int origenstate = gcstate->enabled;
+    gcstate->enabled = 0;
+    for (i = 0; i < NUM_GENERATIONS; i++) {
+        PyGC_Head *gc_list, *gc;
+        gc_list = GEN_HEAD(gcstate, i);
+        for (gc = GC_NEXT(gc_list); gc != gc_list; gc = GC_NEXT(gc)) {
+            PyObject *op = FROM_GC(gc);
+            Py_INCREF(op);
+            int res = callback(op, arg);
+            Py_DECREF(op);
+            if (!res) {
+                goto done;
+            }
+        }
+    }
+done:
+    gcstate->enabled = origenstate;
 }
 
 

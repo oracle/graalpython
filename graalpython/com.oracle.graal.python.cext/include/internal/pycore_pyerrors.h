@@ -26,8 +26,11 @@ static inline PyObject* _PyErr_Occurred(PyThreadState *tstate)
 {
     assert(tstate != NULL);
     // GraalPy change
-    assert(tstate->curexc_type == Graal_PyTruffleErr_Occurred(tstate));
-    return tstate->curexc_type;
+    assert(tstate->current_exception == Graal_PyTruffleErr_Occurred(tstate));
+    if (tstate->current_exception == NULL) {
+        return NULL;
+    }
+    return (PyObject *)Py_TYPE(tstate->current_exception);
 }
 
 static inline void _PyErr_ClearExcState(_PyErr_StackItem *exc_state)
@@ -44,9 +47,15 @@ PyAPI_FUNC(void) _PyErr_Fetch(
     PyObject **value,
     PyObject **traceback);
 
+extern PyObject *
+_PyErr_GetRaisedException(PyThreadState *tstate);
+
 PyAPI_FUNC(int) _PyErr_ExceptionMatches(
     PyThreadState *tstate,
     PyObject *exc);
+
+void
+_PyErr_SetRaisedException(PyThreadState *tstate, PyObject *exc);
 
 PyAPI_FUNC(void) _PyErr_Restore(
     PyThreadState *tstate,

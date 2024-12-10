@@ -87,7 +87,6 @@ get_small_int(sdigit ival)
     assert(IS_SMALL_INT(ival));
     // GraalPy change: use our array of pointers
     PyObject *v = _PyLong_SMALL_INT_PTRS[_PY_NSMALLNEGINTS + ival];
-    Py_INCREF(v);
     return v;
 }
 
@@ -1073,7 +1072,7 @@ _PyLong_UnsignedShort_Converter(PyObject *obj, void *ptr)
 {
     unsigned long uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1095,7 +1094,7 @@ _PyLong_UnsignedInt_Converter(PyObject *obj, void *ptr)
 {
     unsigned long uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1118,7 +1117,7 @@ _PyLong_UnsignedLong_Converter(PyObject *obj, void *ptr)
 {
     unsigned long uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1136,7 +1135,7 @@ _PyLong_UnsignedLongLong_Converter(PyObject *obj, void *ptr)
 {
     unsigned long long uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1153,7 +1152,7 @@ _PyLong_Size_t_Converter(PyObject *obj, void *ptr)
 {
     size_t uval;
 
-    if (PyLong_Check(obj) && _PyLong_Sign(obj) < 0) {
+    if (PyLong_Check(obj) && _PyLong_IsNegative((PyLongObject *)obj)) {
         PyErr_SetString(PyExc_ValueError, "value must be positive");
         return 0;
     }
@@ -1307,14 +1306,14 @@ inplace_divrem1(digit *pout, digit *pin, Py_ssize_t size, digit n)
 static PyLongObject *
 divrem1(PyLongObject *a, digit n, digit *prem)
 {
-    const Py_ssize_t size = Py_ABS(Py_SIZE(a));
+    const Py_ssize_t size = _PyLong_DigitCount(a);
     PyLongObject *z;
 
     assert(n > 0 && n <= PyLong_MASK);
     z = _PyLong_New(size);
     if (z == NULL)
         return NULL;
-    *prem = inplace_divrem1(z->ob_digit, a->ob_digit, size, n);
+    *prem = inplace_divrem1(z->long_value.ob_digit, a->long_value.ob_digit, size, n);
     return long_normalize(z);
 }
 
@@ -1972,6 +1971,369 @@ long_from_binary_base(const char *start, const char *end, Py_ssize_t digits, int
     *res = z;
     return 0;
 }
+
+static PyObject *long_neg(PyLongObject *v);
+
+#ifdef WITH_PYLONG_MODULE
+/* asymptotically faster str-to-long conversion for base 10, using _pylong.py */
+static int
+pylong_int_from_string(const char *start, const char *end, PyLongObject **res)
+{
+    PyObject *mod = PyImport_ImportModule("_pylong");
+    if (mod == NULL) {
+        goto error;
+    }
+    PyObject *s = PyUnicode_FromStringAndSize(start, end-start);
+    if (s == NULL) {
+        Py_DECREF(mod);
+        goto error;
+    }
+    PyObject *result = PyObject_CallMethod(mod, "int_from_string", "O", s);
+    Py_DECREF(s);
+    Py_DECREF(mod);
+    if (result == NULL) {
+        goto error;
+    }
+    if (!PyLong_Check(result)) {
+        Py_DECREF(result);
+        PyErr_SetString(PyExc_TypeError,
+                        "_pylong.int_from_string did not return an int");
+        goto error;
+    }
+    *res = (PyLongObject *)result;
+    return 0;
+error:
+    *res = NULL;
+    return 0;  // See the long_from_string_base() API comment.
+}
+#endif /* WITH_PYLONG_MODULE */
+
+/***
+long_from_non_binary_base: parameters and return values are the same as
+long_from_binary_base.
+
+Binary bases can be converted in time linear in the number of digits, because
+Python's representation base is binary.  Other bases (including decimal!) use
+the simple quadratic-time algorithm below, complicated by some speed tricks.
+
+First some math:  the largest integer that can be expressed in N base-B digits
+is B**N-1.  Consequently, if we have an N-digit input in base B, the worst-
+case number of Python digits needed to hold it is the smallest integer n s.t.
+
+    BASE**n-1 >= B**N-1  [or, adding 1 to both sides]
+    BASE**n >= B**N      [taking logs to base BASE]
+    n >= log(B**N)/log(BASE) = N * log(B)/log(BASE)
+
+The static array log_base_BASE[base] == log(base)/log(BASE) so we can compute
+this quickly.  A Python int with that much space is reserved near the start,
+and the result is computed into it.
+
+The input string is actually treated as being in base base**i (i.e., i digits
+are processed at a time), where two more static arrays hold:
+
+    convwidth_base[base] = the largest integer i such that base**i <= BASE
+    convmultmax_base[base] = base ** convwidth_base[base]
+
+The first of these is the largest i such that i consecutive input digits
+must fit in a single Python digit.  The second is effectively the input
+base we're really using.
+
+Viewing the input as a sequence <c0, c1, ..., c_n-1> of digits in base
+convmultmax_base[base], the result is "simply"
+
+   (((c0*B + c1)*B + c2)*B + c3)*B + ... ))) + c_n-1
+
+where B = convmultmax_base[base].
+
+Error analysis:  as above, the number of Python digits `n` needed is worst-
+case
+
+    n >= N * log(B)/log(BASE)
+
+where `N` is the number of input digits in base `B`.  This is computed via
+
+    size_z = (Py_ssize_t)((scan - str) * log_base_BASE[base]) + 1;
+
+below.  Two numeric concerns are how much space this can waste, and whether
+the computed result can be too small.  To be concrete, assume BASE = 2**15,
+which is the default (and it's unlikely anyone changes that).
+
+Waste isn't a problem:  provided the first input digit isn't 0, the difference
+between the worst-case input with N digits and the smallest input with N
+digits is about a factor of B, but B is small compared to BASE so at most
+one allocated Python digit can remain unused on that count.  If
+N*log(B)/log(BASE) is mathematically an exact integer, then truncating that
+and adding 1 returns a result 1 larger than necessary.  However, that can't
+happen:  whenever B is a power of 2, long_from_binary_base() is called
+instead, and it's impossible for B**i to be an integer power of 2**15 when
+B is not a power of 2 (i.e., it's impossible for N*log(B)/log(BASE) to be
+an exact integer when B is not a power of 2, since B**i has a prime factor
+other than 2 in that case, but (2**15)**j's only prime factor is 2).
+
+The computed result can be too small if the true value of N*log(B)/log(BASE)
+is a little bit larger than an exact integer, but due to roundoff errors (in
+computing log(B), log(BASE), their quotient, and/or multiplying that by N)
+yields a numeric result a little less than that integer.  Unfortunately, "how
+close can a transcendental function get to an integer over some range?"
+questions are generally theoretically intractable.  Computer analysis via
+continued fractions is practical:  expand log(B)/log(BASE) via continued
+fractions, giving a sequence i/j of "the best" rational approximations.  Then
+j*log(B)/log(BASE) is approximately equal to (the integer) i.  This shows that
+we can get very close to being in trouble, but very rarely.  For example,
+76573 is a denominator in one of the continued-fraction approximations to
+log(10)/log(2**15), and indeed:
+
+    >>> log(10)/log(2**15)*76573
+    16958.000000654003
+
+is very close to an integer.  If we were working with IEEE single-precision,
+rounding errors could kill us.  Finding worst cases in IEEE double-precision
+requires better-than-double-precision log() functions, and Tim didn't bother.
+Instead the code checks to see whether the allocated space is enough as each
+new Python digit is added, and copies the whole thing to a larger int if not.
+This should happen extremely rarely, and in fact I don't have a test case
+that triggers it(!).  Instead the code was tested by artificially allocating
+just 1 digit at the start, so that the copying code was exercised for every
+digit beyond the first.
+***/
+static int
+long_from_non_binary_base(const char *start, const char *end, Py_ssize_t digits, int base, PyLongObject **res)
+{
+    twodigits c;           /* current input character */
+    Py_ssize_t size_z;
+    int i;
+    int convwidth;
+    twodigits convmultmax, convmult;
+    digit *pz, *pzstop;
+    PyLongObject *z;
+    const char *p;
+
+    static double log_base_BASE[37] = {0.0e0,};
+    static int convwidth_base[37] = {0,};
+    static twodigits convmultmax_base[37] = {0,};
+
+    if (log_base_BASE[base] == 0.0) {
+        twodigits convmax = base;
+        int i = 1;
+
+        log_base_BASE[base] = (log((double)base) /
+                               log((double)PyLong_BASE));
+        for (;;) {
+            twodigits next = convmax * base;
+            if (next > PyLong_BASE) {
+                break;
+            }
+            convmax = next;
+            ++i;
+        }
+        convmultmax_base[base] = convmax;
+        assert(i > 0);
+        convwidth_base[base] = i;
+    }
+
+    /* Create an int object that can contain the largest possible
+     * integer with this base and length.  Note that there's no
+     * need to initialize z->long_value.ob_digit -- no slot is read up before
+     * being stored into.
+     */
+    double fsize_z = (double)digits * log_base_BASE[base] + 1.0;
+    if (fsize_z > (double)MAX_LONG_DIGITS) {
+        /* The same exception as in _PyLong_New(). */
+        PyErr_SetString(PyExc_OverflowError,
+                        "too many digits in integer");
+        *res = NULL;
+        return 0;
+    }
+    size_z = (Py_ssize_t)fsize_z;
+    /* Uncomment next line to test exceedingly rare copy code */
+    /* size_z = 1; */
+    assert(size_z > 0);
+    z = _PyLong_New(size_z);
+    if (z == NULL) {
+        *res = NULL;
+        return 0;
+    }
+    _PyLong_SetSignAndDigitCount(z, 0, 0);
+
+    /* `convwidth` consecutive input digits are treated as a single
+     * digit in base `convmultmax`.
+     */
+    convwidth = convwidth_base[base];
+    convmultmax = convmultmax_base[base];
+
+    /* Work ;-) */
+    p = start;
+    while (p < end) {
+        if (*p == '_') {
+            p++;
+            continue;
+        }
+        /* grab up to convwidth digits from the input string */
+        c = (digit)_PyLong_DigitValue[Py_CHARMASK(*p++)];
+        for (i = 1; i < convwidth && p != end; ++p) {
+            if (*p == '_') {
+                continue;
+            }
+            i++;
+            c = (twodigits)(c *  base +
+                            (int)_PyLong_DigitValue[Py_CHARMASK(*p)]);
+            assert(c < PyLong_BASE);
+        }
+
+        convmult = convmultmax;
+        /* Calculate the shift only if we couldn't get
+         * convwidth digits.
+         */
+        if (i != convwidth) {
+            convmult = base;
+            for ( ; i > 1; --i) {
+                convmult *= base;
+            }
+        }
+
+        /* Multiply z by convmult, and add c. */
+        pz = z->long_value.ob_digit;
+        pzstop = pz + _PyLong_DigitCount(z);
+        for (; pz < pzstop; ++pz) {
+            c += (twodigits)*pz * convmult;
+            *pz = (digit)(c & PyLong_MASK);
+            c >>= PyLong_SHIFT;
+        }
+        /* carry off the current end? */
+        if (c) {
+            assert(c < PyLong_BASE);
+            if (_PyLong_DigitCount(z) < size_z) {
+                *pz = (digit)c;
+                assert(!_PyLong_IsNegative(z));
+                _PyLong_SetSignAndDigitCount(z, 1, _PyLong_DigitCount(z) + 1);
+            }
+            else {
+                PyLongObject *tmp;
+                /* Extremely rare.  Get more space. */
+                assert(_PyLong_DigitCount(z) == size_z);
+                tmp = _PyLong_New(size_z + 1);
+                if (tmp == NULL) {
+                    Py_DECREF(z);
+                    *res = NULL;
+                    return 0;
+                }
+                memcpy(tmp->long_value.ob_digit,
+                       z->long_value.ob_digit,
+                       sizeof(digit) * size_z);
+                Py_SETREF(z, tmp);
+                z->long_value.ob_digit[size_z] = (digit)c;
+                ++size_z;
+            }
+        }
+    }
+    *res = z;
+    return 0;
+}
+
+/* *str points to the first digit in a string of base `base` digits. base is an
+ * integer from 2 to 36 inclusive. Here we don't need to worry about prefixes
+ * like 0x or leading +- signs. The string should be null terminated consisting
+ * of ASCII digits and separating underscores possibly with trailing whitespace
+ * but we have to validate all of those points here.
+ *
+ * If base is a power of 2 then the complexity is linear in the number of
+ * characters in the string. Otherwise a quadratic algorithm is used for
+ * non-binary bases.
+ *
+ * Return values:
+ *
+ *   - Returns -1 on syntax error (exception needs to be set, *res is untouched)
+ *   - Returns 0 and sets *res to NULL for MemoryError, OverflowError, or
+ *     _pylong.int_from_string() errors.
+ *   - Returns 0 and sets *res to an unsigned, unnormalized PyLong (success!).
+ *
+ * Afterwards *str is set to point to the first non-digit (which may be *str!).
+ */
+static int
+long_from_string_base(const char **str, int base, PyLongObject **res)
+{
+    const char *start, *end, *p;
+    char prev = 0;
+    Py_ssize_t digits = 0;
+    int is_binary_base = (base & (base - 1)) == 0;
+
+    /* Here we do four things:
+     *
+     * - Find the `end` of the string.
+     * - Validate the string.
+     * - Count the number of `digits` (rather than underscores)
+     * - Point *str to the end-of-string or first invalid character.
+     */
+    start = p = *str;
+    /* Leading underscore not allowed. */
+    if (*start == '_') {
+        return -1;
+    }
+    /* Verify all characters are digits and underscores. */
+    while (_PyLong_DigitValue[Py_CHARMASK(*p)] < base || *p == '_') {
+        if (*p == '_') {
+            /* Double underscore not allowed. */
+            if (prev == '_') {
+                *str = p - 1;
+                return -1;
+            }
+        } else {
+            ++digits;
+        }
+        prev = *p;
+        ++p;
+    }
+    /* Trailing underscore not allowed. */
+    if (prev == '_') {
+        *str = p - 1;
+        return -1;
+    }
+    *str = end = p;
+    /* Reject empty strings */
+    if (start == end) {
+        return -1;
+    }
+    /* Allow only trailing whitespace after `end` */
+    while (*p && Py_ISSPACE(*p)) {
+        p++;
+    }
+    *str = p;
+    if (*p != '\0') {
+        return -1;
+    }
+
+    /*
+     * Pass a validated string consisting of only valid digits and underscores
+     * to long_from_xxx_base.
+     */
+    if (is_binary_base) {
+        /* Use the linear algorithm for binary bases. */
+        return long_from_binary_base(start, end, digits, base, res);
+    }
+    else {
+        /* Limit the size to avoid excessive computation attacks exploiting the
+         * quadratic algorithm. */
+        if (digits > _PY_LONG_MAX_STR_DIGITS_THRESHOLD) {
+            PyInterpreterState *interp = _PyInterpreterState_GET();
+            int max_str_digits = interp->long_state.max_str_digits;
+            if ((max_str_digits > 0) && (digits > max_str_digits)) {
+                PyErr_Format(PyExc_ValueError, _MAX_STR_DIGITS_ERROR_FMT_TO_INT,
+                             max_str_digits, digits);
+                *res = NULL;
+                return 0;
+            }
+        }
+#if WITH_PYLONG_MODULE
+        if (digits > 6000 && base == 10) {
+            /* Switch to _pylong.int_from_string() */
+            return pylong_int_from_string(start, end, res);
+        }
+#endif
+        /* Use the quadratic algorithm for non binary bases. */
+        return long_from_non_binary_base(start, end, digits, base, res);
+    }
+}
+
 #endif // GraalPy change
 
 /* Parses an int from a bytestring. Leading and trailing whitespace will be

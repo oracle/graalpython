@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 #include "pycore_fileutils.h"     // _Py_error_handler
+#include "pycore_ucnhash.h"       // _PyUnicode_Name_CAPI
 
 void _PyUnicode_ExactDealloc(PyObject *op);
 Py_ssize_t _PyUnicode_InternedSize(void);
@@ -23,11 +24,24 @@ Py_ssize_t _PyUnicode_InternedSize_Immortal(void);
 
 extern void _PyUnicode_InitState(PyInterpreterState *);
 extern PyStatus _PyUnicode_InitGlobalObjects(PyInterpreterState *);
+extern PyStatus _PyUnicode_InitInternDict(PyInterpreterState *);
 extern PyStatus _PyUnicode_InitTypes(PyInterpreterState *);
 extern void _PyUnicode_Fini(PyInterpreterState *);
 extern void _PyUnicode_FiniTypes(PyInterpreterState *);
 
 extern PyTypeObject _PyUnicodeASCIIIter_Type;
+
+/* Interning */
+
+// All these are "ref-neutral", like the public PyUnicode_InternInPlace.
+
+// Explicit interning routines:
+PyAPI_FUNC(void) _PyUnicode_InternMortal(PyInterpreterState *interp, PyObject **);
+PyAPI_FUNC(void) _PyUnicode_InternImmortal(PyInterpreterState *interp, PyObject **);
+// Left here to help backporting:
+PyAPI_FUNC(void) _PyUnicode_InternInPlace(PyInterpreterState *interp, PyObject **p);
+// Only for statically allocated strings:
+extern void _PyUnicode_InternStatic(PyInterpreterState *interp, PyObject **);
 
 /* other API */
 
@@ -58,6 +72,8 @@ struct _Py_unicode_ids {
 
 struct _Py_unicode_state {
     struct _Py_unicode_fs_codec fs_codec;
+
+    _PyUnicode_Name_CAPI *ucnhash_capi;
 
     // Unicode identifiers (_Py_Identifier): see _PyUnicode_FromId()
     struct _Py_unicode_ids ids;

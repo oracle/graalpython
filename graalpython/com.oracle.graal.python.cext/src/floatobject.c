@@ -1963,12 +1963,6 @@ PyTypeObject PyFloat_Type = {
 void
 _PyFloat_InitState(PyInterpreterState *interp)
 {
-#if 0 // GraalPy change
-    if (!_Py_IsMainInterpreter(interp)) {
-        return;
-    }
-#endif // GraalPy change
-
     float_format_type detected_double_format, detected_float_format;
 
     /* We attempt to determine if this machine is using IEEE
@@ -2466,25 +2460,14 @@ PyFloat_Unpack2(const char *data, int le)
     f |= *p;
 
     if (e == 0x1f) {
-#if _PY_SHORT_FLOAT_REPR == 0
         if (f == 0) {
             /* Infinity */
             return sign ? -Py_HUGE_VAL : Py_HUGE_VAL;
         }
         else {
             /* NaN */
-            return sign ? -Py_NAN : Py_NAN;
+            return sign ? -fabs(Py_NAN) : fabs(Py_NAN);
         }
-#else  // _PY_SHORT_FLOAT_REPR == 1
-        if (f == 0) {
-            /* Infinity */
-            return _Py_dg_infinity(sign);
-        }
-        else {
-            /* NaN */
-            return _Py_dg_stdnan(sign);
-        }
-#endif  // _PY_SHORT_FLOAT_REPR == 1
     }
 
     x = (double)f / 1024.0;

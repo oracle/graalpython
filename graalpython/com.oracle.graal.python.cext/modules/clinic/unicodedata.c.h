@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -6,6 +6,12 @@
 /*[clinic input]
 preserve
 [clinic start generated code]*/
+
+#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+#  include "pycore_gc.h"            // PyGC_Head
+#  include "pycore_runtime.h"       // _Py_ID()
+#endif
+
 
 PyDoc_STRVAR(unicodedata_UCD_decimal__doc__,
 "decimal($self, chr, default=<unrepresentable>, /)\n"
@@ -564,4 +570,4 @@ unicodedata_UCD_lookup(PyObject *self, PyObject *arg)
 exit:
     return return_value;
 }
-/*[clinic end generated code: output=78d7a7ae57014502 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=aaf601d28b352353 input=a9049054013a1b77]*/

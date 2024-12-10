@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -84,16 +84,52 @@ typedef long stwodigits; /* signed variant of twodigits */
    aware that ints abuse  ob_size's sign bit.
 */
 
+typedef struct _PyLongValue {
+    uintptr_t lv_tag; /* Number of digits, sign and flags */
+    digit ob_digit[1];
+} _PyLongValue;
+
 struct _longobject {
-    PyObject_VAR_HEAD
-    digit dummy;
-    digit ob_digit[];
+    PyObject_HEAD
+    _PyLongValue long_value;
 };
 
 PyAPI_FUNC(PyLongObject *) _PyLong_New(Py_ssize_t);
 
 /* Return a copy of src. */
 PyAPI_FUNC(PyObject *) _PyLong_Copy(PyLongObject *src);
+
+PyAPI_FUNC(PyLongObject *)
+_PyLong_FromDigits(int negative, Py_ssize_t digit_count, digit *digits);
+
+
+/* Inline some internals for speed. These should be in pycore_long.h
+ * if user code didn't need them inlined. */
+
+#define _PyLong_SIGN_MASK 3
+#define _PyLong_NON_SIZE_BITS 3
+
+
+static inline int
+_PyLong_IsCompact(const PyLongObject* op) {
+    assert(PyType_HasFeature((op)->ob_base.ob_type, Py_TPFLAGS_LONG_SUBCLASS));
+    return op->long_value.lv_tag < (2 << _PyLong_NON_SIZE_BITS);
+}
+
+#define PyUnstable_Long_IsCompact _PyLong_IsCompact
+
+static inline Py_ssize_t
+_PyLong_CompactValue(const PyLongObject *op)
+{
+    Py_ssize_t sign;
+    assert(PyType_HasFeature((op)->ob_base.ob_type, Py_TPFLAGS_LONG_SUBCLASS));
+    assert(PyUnstable_Long_IsCompact(op));
+    sign = 1 - (op->long_value.lv_tag & _PyLong_SIGN_MASK);
+    return sign * (Py_ssize_t)op->long_value.ob_digit[0];
+}
+
+#define PyUnstable_Long_CompactValue _PyLong_CompactValue
+
 
 #ifdef __cplusplus
 }
