@@ -143,12 +143,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      */
     private Class<?> resourceLoadingClass;
 
-    private final FileSystem delegate;
-
     static final String PLATFORM_SEPARATOR = Paths.get("").getFileSystem().getSeparator();
     private static final char RESOURCE_SEPARATOR_CHAR = '/';
     private static final String RESOURCE_SEPARATOR = String.valueOf(RESOURCE_SEPARATOR_CHAR);
-    private Path cwd;
 
     private abstract class BaseEntry {
         final String platformPath;
@@ -290,12 +287,25 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             this.deleteTempDir = null;
         }
         this.allowHostIO = allowHostIO;
-        delegate = switch (allowHostIO) {
-            case NONE -> new DeniedIOFileSystem();
+    }
+
+    static FileSystem createDelegatingFileSystem(VirtualFileSystemImpl vfs) {
+        FileSystem d = switch (vfs.allowHostIO) {
+            case NONE -> FileSystem.newDenyIOFileSystem();
             case READ -> FileSystem.newReadOnlyFileSystem(FileSystem.newDefaultFileSystem());
             case READ_WRITE -> FileSystem.newDefaultFileSystem();
         };
-        cwd = allowHostIO == NONE ? mountPoint.resolve("src") : null;
+        FileSystem delegatingFS = FileSystem.newCompositeFileSystem(d, new Selector(vfs) {
+            @Override
+            public boolean test(Path path) {
+                Objects.requireNonNull(path);
+                return vfs.pathIsInVfs(toAbsoluteNormalizedPath(path));
+            }
+        });
+        if (vfs.allowHostIO == NONE) {
+            delegatingFS.setCurrentWorkingDirectory(vfs.mountPoint.resolve("src"));
+        }
+        return delegatingFS;
     }
 
     @Override
@@ -447,7 +457,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                 warn("VFS.getEntry: no entries after init");
             }
         }
-        Path path = toAbsolutePathInternal(inputPath);
+        Path path = toAbsoluteNormalizedPath(inputPath);
         return vfsEntries.get(toCaseComparable(path.toString()));
     }
 
@@ -455,8 +465,18 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      * Determines if the given path belongs to the VFS. The path should be already normalized
      */
     private boolean pathIsInVfs(Path path) {
-        assert path.toString().equals(path.normalize().toString());
+        assert isNormalized(path);
         return toCaseComparable(path.toString()).startsWith(mountPointLowerCase);
+    }
+
+    private static boolean isNormalized(Path path) {
+        for (Path name : path) {
+            String strName = name.toString();
+            if (".".equals(strName) || "..".equals(strName)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -627,63 +647,26 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(p);
         Objects.requireNonNull(modes);
 
-        Path path = toAbsolutePathInternal(p);
-        if (!pathIsInVfs(path)) {
-            try {
-                delegate.checkAccess(path, modes, linkOptions);
-                finest("VFS.checkAccess delegated '%s'", path);
-            } catch (Throwable t) {
-                finest(t, "VFS.checkAccess delegated '%s'", path);
-                throw t;
-            }
-        } else {
-            if (modes.contains(AccessMode.WRITE)) {
-                throw securityException("VFS.checkAccess", String.format("read-only filesystem, write access not supported '%s'", path));
-            }
-            if (getEntry(path) == null) {
-                String msg = String.format("no such file or directory: '%s'", path);
-                finer("VFS.checkAccess %s", msg);
-                throw new NoSuchFileException(msg);
-            }
-            finer("VFS.checkAccess %s OK", path);
+        Path path = toAbsoluteNormalizedPath(p);
+        if (modes.contains(AccessMode.WRITE)) {
+            throw securityException("VFS.checkAccess", String.format("read-only filesystem, write access not supported '%s'", path));
         }
+        if (getEntry(path) == null) {
+            String msg = String.format("no such file or directory: '%s'", path);
+            finer("VFS.checkAccess %s", msg);
+            throw new NoSuchFileException(msg);
+        }
+        finer("VFS.checkAccess %s OK", path);
     }
 
     @Override
     public void createDirectory(Path d, FileAttribute<?>... attrs) throws IOException {
-        Objects.requireNonNull(d);
-        Objects.requireNonNull(attrs);
-
-        Path dir = toAbsolutePathInternal(d);
-        if (!pathIsInVfs(dir)) {
-            try {
-                delegate.createDirectory(dir, attrs);
-                finest("VFS.createDirectory delegated '%s'", dir);
-            } catch (Throwable t) {
-                finest(t, "VFS.createDirectory delegated '%s'", dir);
-                throw t;
-            }
-        } else {
-            throw securityException("VFS.createDirectory", String.format("read-only filesystem, create directory not supported '%s'", dir));
-        }
+        throw securityException("VFS.createDirectory", String.format("read-only filesystem, create directory not supported '%s'", d));
     }
 
     @Override
     public void delete(Path p) throws IOException {
-        Objects.requireNonNull(p);
-
-        Path path = toAbsolutePathInternal(p);
-        if (!pathIsInVfs(path)) {
-            try {
-                delegate.delete(path);
-                finest("VFS.delete delegated '%s'", path);
-            } catch (Throwable t) {
-                finest(t, "VFS.delete delegated '%s'", path);
-                throw t;
-            }
-        } else {
-            throw securityException("VFS.delete", String.format("read-only filesystem, delete not supported: '%s'", path));
-        }
+        throw securityException("VFS.delete", String.format("read-only filesystem, delete not supported: '%s'", p));
     }
 
     @Override
@@ -692,18 +675,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         Objects.requireNonNull(options);
         Objects.requireNonNull(attrs);
 
-        Path path = toAbsolutePathInternal(p);
-        if (!pathIsInVfs(path)) {
-            try {
-                SeekableByteChannel ret = delegate.newByteChannel(path, options, attrs);
-                finest("VFS.newByteChannel delegated '%s'", path);
-                return ret;
-            } catch (Throwable t) {
-                finest(t, "VFS.newByteChannel delegated '%s'", path);
-                throw t;
-            }
-        }
-
+        Path path = toAbsoluteNormalizedPath(p);
         if (options.isEmpty() || (options.size() == 1 && options.contains(StandardOpenOption.READ))) {
             BaseEntry entry = getEntry(path);
             if (entry == null) {
@@ -786,17 +758,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path d, DirectoryStream.Filter<? super Path> filter) throws IOException {
         Objects.requireNonNull(d);
-        Path dir = toAbsolutePathInternal(d);
-        if (!pathIsInVfs(dir)) {
-            try {
-                DirectoryStream<Path> ret = delegate.newDirectoryStream(dir, filter);
-                finest("VFS.newDirectoryStream delegated '%s'", d);
-                return ret;
-            } catch (Throwable t) {
-                finest(t, "VFS.newDirectoryStream delegated '%s'", d);
-                throw t;
-            }
-        }
+        Path dir = toAbsoluteNormalizedPath(d);
         Objects.requireNonNull(filter);
         BaseEntry entry = getEntry(dir);
         if (entry instanceof FileEntry) {
@@ -830,83 +792,57 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
     }
 
-    private Path toAbsolutePathInternal(Path path) {
+    private static Path toAbsoluteNormalizedPath(Path path) {
+        // see doc of FileSystem.newCompositeFileSystem()
+        // - until CWD is not set, toAbsolutePath maybe be called
+        // - if an explicit CWD was set then toAbsolutePath is never called
         if (path.isAbsolute()) {
-            return path.normalize();
+            // it is guaranteed that once an incoming path from truffle is absolute
+            // then it is also already normalized
+            return path;
         }
-        if (cwd == null) {
-            return path.toAbsolutePath().normalize();
-        } else {
-            return cwd.resolve(path).normalize();
-        }
+        // guaranteed that relative paths are sent only if cwd was not set yet,
+        // and in such case it is safe to fallback on jdk cwd
+        return path.toAbsolutePath().normalize();
     }
 
     @Override
     public Path toAbsolutePath(Path path) {
+        // see doc of FileSystem.newCompositeFileSystem()
+        // - until CWD is not set, toAbsolutePath maybe be called
+        // - if an explicit CWD was set then toAbsolutePath is never called
         Objects.requireNonNull(path);
-        Path result = toAbsolutePathInternal(path);
-        if (!pathIsInVfs(result)) {
-            if (allowHostIO == NONE) {
-                throw securityException("VFS.toAbsolutePath", String.format("filesystem without host IO: '%s'path", path));
-            }
+        if (path.isAbsolute()) {
+            return path;
         } else {
-            if (shouldExtract(result)) {
-                Path p = getExtractedPath(result);
-                if (p != null) {
-                    result = p;
-                } else {
-                    finer("VFS.toAbsolutePath could not extract '%s'", path);
-                }
-            }
+            // guaranteed that relative paths are sent only if cwd was not set yet,
+            // and in such case it is safe to fallback on jdk cwd
+            return path.toAbsolutePath();
         }
-        finer("VFS.toAbsolutePath '%s' -> '%s'", path, result);
-        return result;
     }
 
     @Override
     public Path toRealPath(Path p, LinkOption... linkOptions) throws IOException {
         Objects.requireNonNull(p);
 
-        Path path = toAbsolutePathInternal(p);
-        boolean pathIsInVFS = pathIsInVfs(path);
-        if (!pathIsInVFS) {
-            try {
-                Path ret = delegate.toRealPath(path, linkOptions);
-                finest("VFS.toRealPath delegated '%s' -> '%s'", path, ret);
-                return ret;
-            } catch (Throwable t) {
-                finest(t, "VFS.toRealPath delegated '%s'", path);
-                throw t;
+        Path path = toAbsoluteNormalizedPath(p);
+        Path result = path;
+        if (shouldExtract(path)) {
+            result = getExtractedPath(path);
+            if (result == null) {
+                finer("VFS.toRealPath could not extract '%s'", path);
+                result = path;
             }
-        } else {
-            Path result = path;
-            if (shouldExtract(path)) {
-                result = getExtractedPath(path);
-                if (result == null) {
-                    finer("VFS.toRealPath could not extract '%s'", path);
-                    result = path;
-                }
-            }
-            finer("VFS.toRealPath '%s' -> '%s'", path, result);
-            return result;
         }
+        finer("VFS.toRealPath '%s' -> '%s'", path, result);
+        return result;
     }
 
     @Override
     public Map<String, Object> readAttributes(Path p, String attributes, LinkOption... options) throws IOException {
         Objects.requireNonNull(p);
 
-        Path path = toAbsolutePathInternal(p);
-        if (!pathIsInVfs(path)) {
-            try {
-                Map<String, Object> ret = delegate.readAttributes(path, attributes, options);
-                finest("VFS.readAttributes delegated '%s' -> '%s'", path, ret);
-                return ret;
-            } catch (Throwable t) {
-                finest(t, "VFS.readAttributes delegated '%s'", path);
-                throw t;
-            }
-        }
+        Path path = toAbsoluteNormalizedPath(p);
         BaseEntry entry = getEntry(path);
         if (entry == null) {
             String msg = String.format("no such file or directory: '%s'", path);
@@ -939,200 +875,66 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     @Override
     public void setCurrentWorkingDirectory(Path d) {
-        Objects.requireNonNull(d, "Current working directory must be non null.");
-        if (!d.isAbsolute()) {
-            throw new IllegalArgumentException("Current working directory must be absolute.");
-        }
-        // need resolve paths starting in VFS but pointing to real FS or vice versa
-        // /vfs_mount_point/../real/fs/path
-        // /real/fs/path/../../vfs_mount_point/...
-        Path dir = d.normalize();
-        if (pathIsInVfs(dir)) {
-            try {
-                BaseEntry entry = getEntry(dir);
-                if (entry != null && !(entry instanceof DirEntry)) {
-                    throw new IllegalArgumentException("Current working directory must be directory.");
-                }
-            } catch (IOException ioe) {
-                throw new RuntimeException(String.format("Error while reading vfs entry '%s'", dir), ioe);
-            }
-        } else {
-            if (delegate != null) {
-                try {
-                    delegate.setCurrentWorkingDirectory(dir);
-                    finest("VFS.setCurrentWorkingDirectory delegated '%s'", d);
-                } catch (Throwable t) {
-                    finest(t, "VFS.setCurrentWorkingDirectory delegated '%s'", d);
-                    throw t;
-                }
-            } else {
-                // allow so that we can resolve relative paths pointing from real FS to VFS
-                // {cwd}/real/fs/../ ... /../vfs_root
-            }
-        }
-        cwd = dir;
+        // CompositeFileSystem never dispatches to us
+        // see doc of FileSystem.newCompositeFileSystem()
+        throw new RuntimeException("should not reach here");
     }
 
     @Override
-    public void copy(Path s, Path t, CopyOption... options) throws IOException {
-        Objects.requireNonNull(s);
-        Objects.requireNonNull(t);
-
-        Path source = toAbsolutePathInternal(s);
-        Path target = toAbsolutePathInternal(t);
-        if (pathIsInVfs(target)) {
-            throw securityException("VFS.copy", String.format("read-only filesystem, can't copy '%s' to '%s'", source, target));
-        } else {
-            try {
-                if (pathIsInVfs(source)) {
-                    FileSystem.super.copy(source, target, options);
-                } else {
-                    delegate.copy(source, target, options);
-                }
-                finest("VFS.copy delegated '%s' '%s'", source, target);
-            } catch (Throwable thr) {
-                finest(thr, "VFS.copy delegated '%s' '%s'", source, target);
-                throw thr;
-            }
-        }
+    public void copy(Path s, Path t, CopyOption... options) {
+        // CompositeFileSystem never dispatches to us
+        // CompositeFileSystem.copy() -> FileSystem.copy() -> IOHelper.copy()
+        throw new RuntimeException("should not reach here");
     }
 
     @Override
-    public void move(Path s, Path t, CopyOption... options) throws IOException {
-        Objects.requireNonNull(s);
-        Objects.requireNonNull(t);
-        Path source = toAbsolutePathInternal(s);
-        Path target = toAbsolutePathInternal(t);
-        if (!pathIsInVfs(source) && !pathIsInVfs(target)) {
-            try {
-                delegate.move(source, target, options);
-            } catch (Throwable thr) {
-                finest(thr, "VFS.move delegated '%s' '%s'", source, target);
-                throw thr;
-            }
-        } else {
-            throw securityException("VFS.move", String.format("read-only filesystem, can't move '%s' to '%s'", source, target));
-        }
+    public void move(Path s, Path t, CopyOption... options) {
+        // CompositeFileSystem never dispatches to us
+        // CompositeFileSystem.move() -> FileSystem.move() -> IOHelper.move()
+        throw new RuntimeException("should not reach here");
     }
 
     @Override
     public Charset getEncoding(Path p) {
         Objects.requireNonNull(p);
-        Path path = toAbsolutePathInternal(p);
-        if (!pathIsInVfs(path)) {
-            try {
-                Charset ret = delegate.getEncoding(path);
-                finest("VFS.getEncoding delegated '%s'", path);
-                return ret;
-            } catch (Throwable t) {
-                finest(t, "VFS.getEncoding delegated '%s'", path);
-                throw t;
-            }
-        } else {
-            return null;
-        }
+        return null;
     }
 
     @Override
     public void createSymbolicLink(Path l, Path t, FileAttribute<?>... attrs) throws IOException {
         Objects.requireNonNull(l);
         Objects.requireNonNull(t);
-        Path link = toAbsolutePathInternal(l);
-        Path target = toAbsolutePathInternal(t);
-        if (!pathIsInVfs(link) && !pathIsInVfs(target)) {
-            try {
-                delegate.createSymbolicLink(link, target, attrs);
-                finest("VFS.createSymbolicLink delegated '%s' '%s'", link, target);
-            } catch (Throwable thr) {
-                finest(thr, "VFS.createSymbolicLink delegated '%s' '%s'", link, target);
-                throw thr;
-            }
-        } else {
-            throw securityException("VFS.createSymbolicLink", String.format("read-only filesystem, can't create symbolic link from '%s' to '%s'", link, target));
-        }
+        throw securityException("VFS.createSymbolicLink", String.format("read-only filesystem, can't create symbolic link from '%s' to '%s'", l, t));
     }
 
     @Override
     public void createLink(Path l, Path e) throws IOException {
         Objects.requireNonNull(l);
         Objects.requireNonNull(e);
-        Path link = toAbsolutePathInternal(l);
-        Path existing = toAbsolutePathInternal(e);
-        if (!pathIsInVfs(link) && !pathIsInVfs(existing)) {
-            try {
-                delegate.createLink(link, existing);
-                finest("VFS.createLink delegated '%s' '%s'", link, existing);
-            } catch (Throwable thr) {
-                finest(thr, "VFS.createLink delegated '%s' '%s'", link, existing);
-                throw thr;
-            }
-        } else {
-            throw securityException("VFS.createLink", String.format("read-only filesystem, can't create link '%s' to '%s'", link, existing));
-        }
+        throw securityException("VFS.createLink", String.format("read-only filesystem, can't create link '%s' to '%s'", l, e));
     }
 
     @Override
     public Path readSymbolicLink(Path l) throws IOException {
         Objects.requireNonNull(l);
-        Path link = toAbsolutePathInternal(l);
-        if (!pathIsInVfs(link)) {
-            try {
-                Path ret = delegate.readSymbolicLink(link);
-                finest("VFS.readSymbolicLink delegated '%s' '%s'", link, ret);
-                return ret;
-            } catch (Throwable t) {
-                finest(t, "VFS.readSymbolicLink delegated '%s'", link);
-                throw t;
-            }
-        } else {
-            throw securityException("VFS.readSymbolicLink", String.format("reading symbolic links in VirtualFileSystem not supported %s", link));
-        }
+        throw securityException("VFS.readSymbolicLink", String.format("reading symbolic links in VirtualFileSystem not supported %s", l));
     }
 
     @Override
     public void setAttribute(Path p, String attribute, Object value, LinkOption... options) throws IOException {
         Objects.requireNonNull(p);
-        Path path = toAbsolutePathInternal(p);
-        if (!pathIsInVfs(path)) {
-            try {
-                delegate.setAttribute(path, attribute, value, options);
-                finest("VFS.setAttribute delegated '%s' '%s'", path, attribute);
-            } catch (Throwable t) {
-                finest(t, "VFS.setAttribute delegated '%s' '%s'", path, attribute);
-                throw t;
-            }
-        } else {
-            throw securityException("VFS.setAttribute", String.format("read-only filesystem, can't set attribute '%s' for '%s", attribute, p));
-        }
+        throw securityException("VFS.setAttribute", String.format("read-only filesystem, can't set attribute '%s' for '%s", attribute, p));
     }
 
     @Override
     public String getMimeType(Path p) {
         Objects.requireNonNull(p);
-        Path path = toAbsolutePathInternal(p);
-        if (!pathIsInVfs(path)) {
-            try {
-                String ret = delegate.getMimeType(path);
-                finest("VFS.getMimeType delegated '%s' '%s", path, ret);
-                return ret;
-            } catch (Throwable t) {
-                finest(t, "VFS.getMimeType delegated '%s'", path);
-                throw t;
-            }
-        }
         return null;
     }
 
     @Override
     public Path getTempDirectory() {
-        try {
-            Path ret = delegate.getTempDirectory();
-            finest("VFS.getTempDirectory delegated '%s'", ret);
-            return ret;
-        } catch (Throwable t) {
-            finest(t, "VFS.getTempDirectory delegated");
-            throw t;
-        }
+        throw new RuntimeException("should not reach here");
     }
 
     private static void warn(String msgFormat, Object... args) {
@@ -1159,115 +961,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
     }
 
-    private static void finest(Throwable t, String msgFormat, Object... args) {
-        if (LOGGER.isLoggable(Level.FINEST)) {
-            LOGGER.log(Level.FINEST, String.format(msgFormat, args), t);
-        }
-    }
-
     private static SecurityException securityException(String from, String msg) {
         finer("%s %s", from, msg);
         throw new SecurityException(msg);
-    }
-
-    /**
-     * copy and paste from c.o.t.polyglot.FileSystems.DeniedIOFileSystem
-     */
-    private static class DeniedIOFileSystem implements FileSystem {
-
-        @Override
-        public Path parsePath(final URI uri) {
-            throw new RuntimeException("should not reach here");
-        }
-
-        @Override
-        public Path parsePath(final String path) {
-            throw new RuntimeException("should not reach here");
-        }
-
-        @Override
-        public void checkAccess(Path path, Set<? extends AccessMode> modes, LinkOption... linkOptions) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", path));
-        }
-
-        @Override
-        public void createDirectory(Path dir, FileAttribute<?>... attrs) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", dir));
-        }
-
-        @Override
-        public void delete(Path path) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", path));
-        }
-
-        @Override
-        public void copy(Path source, Path target, CopyOption... options) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s', '%s'", source, target));
-        }
-
-        @Override
-        public void move(Path source, Path target, CopyOption... options) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s', '%s'", source, target));
-        }
-
-        @Override
-        public SeekableByteChannel newByteChannel(Path inPath, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-            throw new SecurityException(String.format("Filesystem without host IO: '%s'", inPath));
-        }
-
-        @Override
-        public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", dir));
-        }
-
-        @Override
-        public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", path));
-        }
-
-        @Override
-        public void setAttribute(Path path, String attribute, Object value, LinkOption... options) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", path));
-        }
-
-        @Override
-        public Path toAbsolutePath(Path path) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", path));
-        }
-
-        @Override
-        public void setCurrentWorkingDirectory(Path currentWorkingDirectory) {
-        }
-
-        @Override
-        public Path toRealPath(Path path, LinkOption... linkOptions) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", path));
-        }
-
-        @Override
-        public Path getTempDirectory() {
-            throw new SecurityException(String.format("filesystem without host IO"));
-        }
-
-        @Override
-        public void createLink(Path link, Path existing) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", link));
-        }
-
-        @Override
-        public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s', '%s'", link, target));
-        }
-
-        @Override
-        public Path readSymbolicLink(Path link) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s'", link));
-        }
-
-        @Override
-        public boolean isSameFile(Path path1, Path path2, LinkOption... options) {
-            throw new SecurityException(String.format("filesystem without host IO: '%s', '%s'", path1, path2));
-        }
     }
 
 }
