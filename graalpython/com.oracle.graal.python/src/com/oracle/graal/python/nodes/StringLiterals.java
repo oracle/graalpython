@@ -159,4 +159,5 @@ public abstract class StringLiterals {
     public static final TruffleString T_KWARGS = tsLiteral("kwargs");
     public static final TruffleString T_VISIT = tsLiteral("visit");
     public static final TruffleString T_PREFIX = tsLiteral("prefix");
+    public static final TruffleString T_BASE_PREFIX = tsLiteral("base_prefix");
 }

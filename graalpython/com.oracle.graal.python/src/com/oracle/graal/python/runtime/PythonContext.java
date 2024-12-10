@@ -1881,12 +1881,13 @@ public final class PythonContext extends Python3Core {
                             "\n\tHome candidate: {7}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome, homeCandidate.toString()));
 
             langHome = toTruffleStringUncached(homeCandidate.toString());
+            TruffleString prefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
             if (sysPrefix.isEmpty()) {
-                sysPrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
+                sysPrefix = prefix;
             }
 
             if (basePrefix.isEmpty()) {
-                basePrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
+                basePrefix = prefix;
             }
 
             if (coreHome.isEmpty()) {

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_BASE_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -176,7 +177,10 @@ public final class NativeLibraryLocator {
         if (original.getAbsoluteFile().startsWith(context.getCoreHome().toJavaStringUncached())) {
             // must be relocated to venv
             Object sysPrefix = context.getSysModule().getAttribute(T_PREFIX);
-            if (sysPrefix instanceof TruffleString tsSysPrefix) {
+            Object sysBasePrefix = context.getSysModule().getAttribute(T_BASE_PREFIX);
+            if (sysPrefix.equals(sysBasePrefix)) {
+                throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_POINT_TO_A_VENV_FOR_CAPI_ISOLATION);
+            } else if (sysPrefix instanceof TruffleString tsSysPrefix) {
                 copy = env.getPublicTruffleFile(tsSysPrefix.toJavaStringUncached()).resolve(newName);
             } else {
                 throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION, sysPrefix);
