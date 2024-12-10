@@ -1085,7 +1085,26 @@ _PyObject_LookupAttr(PyObject *v, PyObject *name, PyObject **result)
         }
         return 0;
     }
-    if (tp->tp_getattro != NULL) {
+    if (tp->tp_getattro == (getattrofunc)_Py_type_getattro) {
+        int supress_missing_attribute_exception = 0;
+        *result = _Py_type_getattro_impl((PyTypeObject*)v, name, &supress_missing_attribute_exception);
+        if (supress_missing_attribute_exception) {
+            // return 0 without having to clear the exception
+            return 0;
+        }
+    }
+    else if (tp->tp_getattro == (getattrofunc)_Py_module_getattro) {
+        // optimization: suppress attribute error from module getattro method
+        *result = _Py_module_getattro_impl((PyModuleObject*)v, name, 1);
+        if (*result != NULL) {
+            return 1;
+        }
+        if (PyErr_Occurred()) {
+            return -1;
+        }
+        return 0;
+    }
+    else if (tp->tp_getattro != NULL) {
         *result = (*tp->tp_getattro)(v, name);
     }
     else if (tp->tp_getattr != NULL) {
@@ -1188,7 +1207,7 @@ PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value)
 }
 
 PyObject **
-_PyObject_DictPointer(PyObject *obj)
+_PyObject_ComputedDictPointer(PyObject *obj)
 {
     PyTypeObject *tp = Py_TYPE(obj);
     assert((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0);
@@ -1226,22 +1245,18 @@ PyObject **
 _PyObject_GetDictPtr(PyObject *obj)
 {
     if ((Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0) {
-        return _PyObject_DictPointer(obj);
+        return _PyObject_ComputedDictPointer(obj);
     }
-    PyObject **dict_ptr = _PyObject_ManagedDictPointer(obj);
-    PyDictValues **values_ptr = _PyObject_ValuesPointer(obj);
-    if (*values_ptr == NULL) {
-        return dict_ptr;
+    PyDictOrValues *dorv_ptr = _PyObject_DictOrValuesPointer(obj);
+    if (_PyDictOrValues_IsValues(*dorv_ptr)) {
+        PyObject *dict = _PyObject_MakeDictFromInstanceAttributes(obj, _PyDictOrValues_GetValues(*dorv_ptr));
+        if (dict == NULL) {
+            PyErr_Clear();
+            return NULL;
+        }
+        dorv_ptr->dict = dict;
     }
-    assert(*dict_ptr == NULL);
-    PyObject *dict = _PyObject_MakeDictFromInstanceAttributes(obj, *values_ptr);
-    if (dict == NULL) {
-        PyErr_Clear();
-        return NULL;
-    }
-    *values_ptr = NULL;
-    *dict_ptr = dict;
-    return dict_ptr;
+    return &dorv_ptr->dict;
 }
 
 PyObject *
@@ -1309,36 +1324,46 @@ _PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method)
             }
         }
     }
-    PyDictValues *values;
-    if ((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) &&
-        (values = *_PyObject_ValuesPointer(obj)))
-    {
-        assert(*_PyObject_DictPointer(obj) == NULL);
-        PyObject *attr = _PyObject_GetInstanceAttribute(obj, values, name);
-        if (attr != NULL) {
-            *method = attr;
-            Py_XDECREF(descr);
-            return 0;
+    PyObject *dict;
+    if ((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT)) {
+        PyDictOrValues* dorv_ptr = _PyObject_DictOrValuesPointer(obj);
+        if (_PyDictOrValues_IsValues(*dorv_ptr)) {
+            PyDictValues *values = _PyDictOrValues_GetValues(*dorv_ptr);
+            PyObject *attr = _PyObject_GetInstanceAttribute(obj, values, name);
+            if (attr != NULL) {
+                *method = attr;
+                Py_XDECREF(descr);
+                return 0;
+            }
+            dict = NULL;
+        }
+        else {
+            dict = dorv_ptr->dict;
         }
     }
     else {
-        PyObject **dictptr = _PyObject_DictPointer(obj);
-        PyObject *dict;
-        if (dictptr != NULL && (dict = *dictptr) != NULL) {
-            Py_INCREF(dict);
-            PyObject *attr = PyDict_GetItemWithError(dict, name);
-            if (attr != NULL) {
-                *method = Py_NewRef(attr);
-                Py_DECREF(dict);
-                Py_XDECREF(descr);
-                return 0;
-            }
+        PyObject **dictptr = _PyObject_ComputedDictPointer(obj);
+        if (dictptr != NULL) {
+            dict = *dictptr;
+        }
+        else {
+            dict = NULL;
+        }
+    }
+    if (dict != NULL) {
+        Py_INCREF(dict);
+        PyObject *attr = PyDict_GetItemWithError(dict, name);
+        if (attr != NULL) {
+            *method = Py_NewRef(attr);
             Py_DECREF(dict);
+            Py_XDECREF(descr);
+            return 0;
+        }
+        Py_DECREF(dict);
 
-            if (PyErr_Occurred()) {
-                Py_XDECREF(descr);
-                return 0;
-            }
+        if (PyErr_Occurred()) {
+            Py_XDECREF(descr);
+            return 0;
         }
     }
 
@@ -1601,7 +1626,7 @@ PyObject_GenericSetDict(PyObject *obj, PyObject *value, void *context)
     PyObject **dictptr = _PyObject_GetDictPtr(obj);
     if (dictptr == NULL) {
         if (_PyType_HasFeature(Py_TYPE(obj), Py_TPFLAGS_MANAGED_DICT) &&
-            *_PyObject_ValuesPointer(obj) != NULL)
+            _PyDictOrValues_IsValues(*_PyObject_DictOrValuesPointer(obj)))
         {
             /* Was unable to convert to dict */
             PyErr_NoMemory();
@@ -2563,14 +2588,9 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
         /* Display the traceback where the object has been allocated.
            Do it before dumping repr(obj), since repr() is more likely
            to crash than dumping the traceback. */
-        void *ptr;
         PyTypeObject *type = Py_TYPE(obj);
-        if (_PyType_IS_GC(type)) {
-            ptr = (void *)((char *)obj - sizeof(PyGC_Head));
-        }
-        else {
-            ptr = (void *)obj;
-        }
+        const size_t presize = _PyType_PreHeaderSize(type);
+        void *ptr = (void *)((char *)obj - presize);
         _PyMem_DumpTraceback(fileno(stderr), ptr);
 
         /* This might succeed or fail, but we're about to abort, so at least

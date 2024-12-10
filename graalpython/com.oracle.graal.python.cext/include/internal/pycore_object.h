@@ -14,16 +14,25 @@ extern "C" {
 #include "pycore_pystate.h"       // _PyInterpreterState_GET()
 #include "pycore_runtime.h"       // _PyRuntime
 
-#define _PyObject_IMMORTAL_INIT(type) \
-    { \
-        .ob_refcnt = 999999999, \
-        .ob_type = type, \
-    }
-#define _PyVarObject_IMMORTAL_INIT(type, size) \
-    { \
-        .ob_base = _PyObject_IMMORTAL_INIT(type), \
-        .ob_size = size, \
-    }
+/* We need to maintain an internal copy of Py{Var}Object_HEAD_INIT to avoid
+   designated initializer conflicts in C++20. If we use the deinition in
+   object.h, we will be mixing designated and non-designated initializers in
+   pycore objects which is forbiddent in C++20. However, if we then use
+   designated initializers in object.h then Extensions without designated break.
+   Furthermore, we can't use designated initializers in Extensions since these
+   are not supported pre-C++20. Thus, keeping an internal copy here is the most
+   backwards compatible solution */
+#define _PyObject_HEAD_INIT(type)         \
+    {                                     \
+        _PyObject_EXTRA_INIT              \
+        .ob_refcnt = _Py_IMMORTAL_REFCNT, \
+        .ob_type = (type)                 \
+    },
+#define _PyVarObject_HEAD_INIT(type, size)    \
+    {                                         \
+        .ob_base = _PyObject_HEAD_INIT(type)  \
+        .ob_size = size                       \
+    },
 
 PyAPI_FUNC(void) _Py_NO_RETURN _Py_FatalRefcountErrorFunc(
     const char *func,
@@ -92,6 +101,10 @@ static inline void _Py_ClearImmortal(PyObject *op)
 static inline void
 _Py_DECREF_SPECIALIZED(PyObject *op, const destructor destruct)
 {
+    if (_Py_IsImmortal(op)) {
+        return;
+    }
+    _Py_DECREF_STAT_INC();
 #ifdef Py_REF_DEBUG
     _Py_DEC_REFTOTAL(_PyInterpreterState_GET());
 #endif
@@ -109,6 +122,10 @@ _Py_DECREF_SPECIALIZED(PyObject *op, const destructor destruct)
 static inline void
 _Py_DECREF_NO_DEALLOC(PyObject *op)
 {
+    if (_Py_IsImmortal(op)) {
+        return;
+    }
+    _Py_DECREF_STAT_INC();
 #ifdef Py_REF_DEBUG
     _Py_DEC_REFTOTAL(_PyInterpreterState_GET());
 #endif
@@ -279,6 +296,13 @@ extern void _Py_PrintReferenceAddresses(PyInterpreterState *, FILE *);
 static inline PyObject **
 _PyObject_GET_WEAKREFS_LISTPTR(PyObject *op)
 {
+    if (PyType_Check(op) &&
+            ((PyTypeObject *)op)->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN) {
+        PyInterpreterState *interp = _PyInterpreterState_GET();
+        static_builtin_state *state = _PyStaticType_GetState(
+                                                interp, (PyTypeObject *)op);
+        return _PyStaticType_GET_WEAKREFS_LISTPTR(state);
+    }
     // Essentially _PyObject_GET_WEAKREFS_LISTPTR_FROM_OFFSET():
     Py_ssize_t offset = Py_TYPE(op)->tp_weaklistoffset;
     return (PyObject **)((char *)op + offset);
@@ -322,7 +346,7 @@ static inline size_t
 _PyType_PreHeaderSize(PyTypeObject *tp)
 {
     return _PyType_IS_GC(tp) * sizeof(PyGC_Head) +
-        _PyType_HasFeature(tp, Py_TPFLAGS_MANAGED_DICT) * 2 * sizeof(PyObject *);
+        _PyType_HasFeature(tp, Py_TPFLAGS_PREHEADER) * 2 * sizeof(PyObject *);
 }
 
 void _PyObject_GC_Link(PyObject *op);
@@ -332,10 +356,6 @@ extern int _Py_CheckSlotResult(
     PyObject *obj,
     const char *slot_name,
     int success);
-
-// PyType_Ready() must be called if _PyType_IsReady() is false.
-// See also the Py_TPFLAGS_READY flag.
-#define _PyType_IsReady(type) ((type)->tp_dict != NULL)
 
 // Test if a type supports weak references
 static inline int _PyType_SUPPORTS_WEAKREFS(PyTypeObject *type) {
@@ -350,30 +370,50 @@ extern int _PyObject_StoreInstanceAttribute(PyObject *obj, PyDictValues *values,
 PyObject * _PyObject_GetInstanceAttribute(PyObject *obj, PyDictValues *values,
                                         PyObject *name);
 
-static inline PyDictValues **_PyObject_ValuesPointer(PyObject *obj)
+typedef union {
+    PyObject *dict;
+    /* Use a char* to generate a warning if directly assigning a PyDictValues */
+    char *values;
+} PyDictOrValues;
+
+static inline PyDictOrValues *
+_PyObject_DictOrValuesPointer(PyObject *obj)
 {
     assert(Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
-    return ((PyDictValues **)obj)-4;
+    return ((PyDictOrValues *)obj)-3;
 }
 
-static inline PyObject **_PyObject_ManagedDictPointer(PyObject *obj)
+static inline int
+_PyDictOrValues_IsValues(PyDictOrValues dorv)
 {
-    assert(Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
-    return ((PyObject **)obj)-3;
+    return ((uintptr_t)dorv.values) & 1;
 }
 
-#define MANAGED_DICT_OFFSET (((int)sizeof(PyObject *))*-3)
+static inline PyDictValues *
+_PyDictOrValues_GetValues(PyDictOrValues dorv)
+{
+    assert(_PyDictOrValues_IsValues(dorv));
+    return (PyDictValues *)(dorv.values + 1);
+}
 
-extern PyObject ** _PyObject_DictPointer(PyObject *);
-extern int _PyObject_VisitInstanceAttributes(PyObject *self, visitproc visit, void *arg);
-extern void _PyObject_ClearInstanceAttributes(PyObject *self);
-extern void _PyObject_FreeInstanceAttributes(PyObject *self);
+static inline PyObject *
+_PyDictOrValues_GetDict(PyDictOrValues dorv)
+{
+    assert(!_PyDictOrValues_IsValues(dorv));
+    return dorv.dict;
+}
+
+static inline void
+_PyDictOrValues_SetValues(PyDictOrValues *ptr, PyDictValues *values)
+{
+    ptr->values = ((char *)values) - 1;
+}
+
+#define MANAGED_WEAKREF_OFFSET (((Py_ssize_t)sizeof(PyObject *))*-4)
+
+extern PyObject ** _PyObject_ComputedDictPointer(PyObject *);
+extern void _PyObject_FreeInstanceAttributes(PyObject *obj);
 extern int _PyObject_IsInstanceDictEmpty(PyObject *);
-extern PyObject* _PyType_GetSubclasses(PyTypeObject *);
-
-// Access macro to the members which are floating "behind" the object
-#define _PyHeapType_GET_MEMBERS(etype) \
-    ((PyMemberDef *)(((char *)etype) + Py_TYPE(etype)->tp_basicsize))
 
 PyAPI_FUNC(PyObject *) _PyObject_LookupSpecial(PyObject *, PyObject *);
 
