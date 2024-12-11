@@ -85,11 +85,38 @@ whose size is determined when the object is allocated.
 /* PyObject_HEAD defines the initial segment of every PyObject. */
 #define PyObject_HEAD                   PyObject Py_HIDE_IMPL_FIELD(ob_base);
 
-#define PyObject_HEAD_INIT(type)        \
-    { _PyObject_EXTRA_INIT              \
-    1, type },
+/*
+Immortalization:
 
+The following indicates the immortalization strategy depending on the amount
+of available bits in the reference count field. All strategies are backwards
+compatible but the specific reference count value or immortalization check
+might change depending on the specializations for the underlying system.
 
+Proper deallocation of immortal instances requires distinguishing between
+statically allocated immortal instances vs those promoted by the runtime to be
+immortal. The latter should be the only instances that require
+cleanup during runtime finalization.
+*/
+
+#if SIZEOF_VOID_P > 4
+/*
+In 64+ bit systems, an object will be marked as immortal by setting all of the
+lower 32 bits of the reference count field, which is equal to: 0xFFFFFFFF
+
+Using the lower 32 bits makes the value backwards compatible by allowing
+C-Extensions without the updated checks in Py_INCREF and Py_DECREF to safely
+increase and decrease the objects reference count. The object would lose its
+immortality, but the execution would still be correct.
+
+Reference count increases will use saturated arithmetic, taking advantage of
+having all the lower 32 bits set, which will avoid the reference count to go
+beyond the refcount limit. Immortality checks for reference count decreases will
+be done by checking the bit sign flag in the lower 32 bits.
+*/
+#define _Py_IMMORTAL_REFCNT UINT_MAX
+
+#else
 /*
 In 32 bit systems, an object will be marked as immortal by setting all of the
 lower 30 bits of the reference count field, which is equal to: 0x3FFFFFFF
@@ -103,6 +130,25 @@ Reference count increases and decreases will first go through an immortality
 check by comparing the reference count field to the immortality reference count.
 */
 #define _Py_IMMORTAL_REFCNT (UINT_MAX >> 2)
+#endif
+
+// Make all internal uses of PyObject_HEAD_INIT immortal while preserving the
+// C-API expectation that the refcnt will be set to 1.
+#ifdef Py_BUILD_CORE
+#define PyObject_HEAD_INIT(type)    \
+    {                               \
+        _PyObject_EXTRA_INIT        \
+        { _Py_IMMORTAL_REFCNT },    \
+        (type)                      \
+    },
+#else
+#define PyObject_HEAD_INIT(type) \
+    {                            \
+        _PyObject_EXTRA_INIT     \
+        { 1 },                   \
+        (type)                   \
+    },
+#endif /* Py_BUILD_CORE */
 
 #define PyVarObject_HEAD_INIT(type, size) \
     {                                     \
@@ -128,6 +174,31 @@ struct _object {
     _PyObject_HEAD_EXTRA
     Py_ssize_t Py_HIDE_IMPL_FIELD(ob_refcnt);
     PyTypeObject *Py_HIDE_IMPL_FIELD(ob_type);
+
+#if 0 // GraalPy change
+#if (defined(__GNUC__) || defined(__clang__)) \
+        && !(defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L)
+    // On C99 and older, anonymous union is a GCC and clang extension
+    __extension__
+#endif
+#ifdef _MSC_VER
+    // Ignore MSC warning C4201: "nonstandard extension used:
+    // nameless struct/union"
+    __pragma(warning(push))
+    __pragma(warning(disable: 4201))
+#endif
+    union {
+       Py_ssize_t ob_refcnt;
+#if SIZEOF_VOID_P > 4
+       PY_UINT32_T ob_refcnt_split[2];
+#endif
+    };
+#ifdef _MSC_VER
+    __pragma(warning(pop))
+#endif
+
+    PyTypeObject *ob_type;
+#endif // GraalPy change
 };
 
 /* Cast argument to PyObject* type. */
@@ -588,10 +659,25 @@ static inline Py_ALWAYS_INLINE void Py_INCREF(PyObject *op)
 #else
     // Non-limited C API and limited C API for Python 3.9 and older access
     // directly PyObject.ob_refcnt.
-#ifdef Py_REF_DEBUG
-    _Py_RefTotal++;
-#endif
+#if SIZEOF_VOID_P > 4
+    // Portable saturated add, branching on the carry flag and set low bits
+    PY_UINT32_T cur_refcnt = op->ob_refcnt_split[PY_BIG_ENDIAN];
+    PY_UINT32_T new_refcnt = cur_refcnt + 1;
+    if (new_refcnt == 0) {
+        return;
+    }
+    op->ob_refcnt_split[PY_BIG_ENDIAN] = new_refcnt;
+#else
+    // Explicitly check immortality against the immortal value
+    if (_Py_IsImmortal(op)) {
+        return;
+    }
     op->ob_refcnt++;
+#endif
+    _Py_INCREF_STAT_INC();
+#ifdef Py_REF_DEBUG
+    _Py_INCREF_IncRefTotal();
+#endif
 #endif
 }
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
@@ -612,6 +698,22 @@ static inline void Py_DECREF(PyObject *op) {
 }
 #define Py_DECREF(op) Py_DECREF(_PyObject_CAST(op))
 
+#elif defined(Py_REF_DEBUG)
+static inline void Py_DECREF(const char *filename, int lineno, PyObject *op)
+{
+    if (op->ob_refcnt <= 0) {
+        _Py_NegativeRefcount(filename, lineno, op);
+    }
+    if (_Py_IsImmortal(op)) {
+        return;
+    }
+    _Py_DECREF_STAT_INC();
+    _Py_DECREF_DecRefTotal();
+    if (--op->ob_refcnt == 0) {
+        _Py_Dealloc(op);
+    }
+}
+#define Py_DECREF(op) Py_DECREF(__FILE__, __LINE__, _PyObject_CAST(op))
 
 #else
 static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
@@ -621,6 +723,7 @@ static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
     if (_Py_IsImmortal(op)) {
         return;
     }
+    _Py_DECREF_STAT_INC();
     if (--op->ob_refcnt == 0) {
         _Py_Dealloc(op);
     }
@@ -679,15 +782,44 @@ static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
  * one of those can't cause problems -- but in part that relies on that
  * Python integers aren't currently weakly referencable.  Best practice is
  * to use Py_CLEAR() even if you can't think of a reason for why you need to.
+ *
+ * gh-98724: Use a temporary variable to only evaluate the macro argument once,
+ * to avoid the duplication of side effects if the argument has side effects.
+ *
+ * gh-99701: If the PyObject* type is used with casting arguments to PyObject*,
+ * the code can be miscompiled with strict aliasing because of type punning.
+ * With strict aliasing, a compiler considers that two pointers of different
+ * types cannot read or write the same memory which enables optimization
+ * opportunities.
+ *
+ * If available, use _Py_TYPEOF() to use the 'op' type for temporary variables,
+ * and so avoid type punning. Otherwise, use memcpy() which causes type erasure
+ * and so prevents the compiler to reuse an old cached 'op' value after
+ * Py_CLEAR().
  */
-#define Py_CLEAR(op)                            \
-    do {                                        \
-        PyObject *_py_tmp = _PyObject_CAST(op); \
-        if (_py_tmp != NULL) {                  \
-            (op) = NULL;                        \
-            Py_DECREF(_py_tmp);                 \
-        }                                       \
+#ifdef _Py_TYPEOF
+#define Py_CLEAR(op) \
+    do { \
+        _Py_TYPEOF(op)* _tmp_op_ptr = &(op); \
+        _Py_TYPEOF(op) _tmp_old_op = (*_tmp_op_ptr); \
+        if (_tmp_old_op != NULL) { \
+            *_tmp_op_ptr = _Py_NULL; \
+            Py_DECREF(_tmp_old_op); \
+        } \
     } while (0)
+#else
+#define Py_CLEAR(op) \
+    do { \
+        PyObject **_tmp_op_ptr = _Py_CAST(PyObject**, &(op)); \
+        PyObject *_tmp_old_op = (*_tmp_op_ptr); \
+        if (_tmp_old_op != NULL) { \
+            PyObject *_null_ptr = _Py_NULL; \
+            memcpy(_tmp_op_ptr, &_null_ptr, sizeof(PyObject*)); \
+            Py_DECREF(_tmp_old_op); \
+        } \
+    } while (0)
+#endif
+
 
 /* Function to use in case the object pointer can be NULL: */
 static inline void Py_XINCREF(PyObject *op)

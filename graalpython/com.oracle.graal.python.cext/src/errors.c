@@ -15,7 +15,7 @@
 #include "pycore_pyerrors.h"      // _PyErr_Format()
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 #if 0 // GraalPy change
-#include "pycore_structseq.h"     // _PyStructSequence_FiniType()
+#include "pycore_structseq.h"     // _PyStructSequence_FiniBuiltin()
 #include "pycore_sysmodule.h"     // _PySys_Audit()
 #include "pycore_traceback.h"     // _PyTraceBack_FromFrame()
 #endif // GraalPy change
@@ -163,37 +163,122 @@ _PyErr_GetTopmostException(PyThreadState *tstate)
 }
 #endif // GraalPy change
 
-static PyObject*
-_PyErr_CreateException(PyObject *exception_type, PyObject *value)
+static PyObject *
+get_normalization_failure_note(PyThreadState *tstate, PyObject *exception, PyObject *value)
 {
-    PyObject *exc;
-
-    if (value == NULL || value == Py_None) {
-        exc = _PyObject_CallNoArgs(exception_type);
+    PyObject *args = PyObject_Repr(value);
+    if (args == NULL) {
+        _PyErr_Clear(tstate);
+        args = PyUnicode_FromFormat("<unknown>");
     }
-    else if (PyTuple_Check(value)) {
-        exc = PyObject_Call(exception_type, value, NULL);
+    PyObject *note;
+    const char *tpname = ((PyTypeObject*)exception)->tp_name;
+    if (args == NULL) {
+        _PyErr_Clear(tstate);
+        note = PyUnicode_FromFormat("Normalization failed: type=%s", tpname);
     }
     else {
-        exc = PyObject_CallOneArg(exception_type, value);
+        note = PyUnicode_FromFormat("Normalization failed: type=%s args=%S",
+                                    tpname, args);
+        Py_DECREF(args);
     }
-
-    if (exc != NULL && !PyExceptionInstance_Check(exc)) {
-        PyErr_Format(PyExc_TypeError,
-                     "calling %R should have returned an instance of "
-                     "BaseException, not %s",
-                     exception_type, Py_TYPE(exc)->tp_name);
-        Py_CLEAR(exc);
-    }
-
-    return exc;
+    return note;
 }
 
 void
 _PyErr_SetObject(PyThreadState *tstate, PyObject *exception, PyObject *value)
 {
-    // GraalPy change: different implementation
+#if 0 // GraalPy change
+    PyObject *exc_value;
+    PyObject *tb = NULL;
+
+    if (exception != NULL &&
+        !PyExceptionClass_Check(exception)) {
+        _PyErr_Format(tstate, PyExc_SystemError,
+                      "_PyErr_SetObject: "
+                      "exception %R is not a BaseException subclass",
+                      exception);
+        return;
+    }
+    /* Normalize the exception */
+    int is_subclass = 0;
+    if (value != NULL && PyExceptionInstance_Check(value)) {
+        is_subclass = PyObject_IsSubclass((PyObject *)Py_TYPE(value), exception);
+        if (is_subclass < 0) {
+            return;
+        }
+    }
+    Py_XINCREF(value);
+    if (!is_subclass) {
+        /* We must normalize the value right now */
+
+        /* Issue #23571: functions must not be called with an
+            exception set */
+        _PyErr_Clear(tstate);
+
+        PyObject *fixed_value = _PyErr_CreateException(exception, value);
+        if (fixed_value == NULL) {
+            PyObject *exc = _PyErr_GetRaisedException(tstate);
+            assert(PyExceptionInstance_Check(exc));
+
+            PyObject *note = get_normalization_failure_note(tstate, exception, value);
+            Py_XDECREF(value);
+            if (note != NULL) {
+                /* ignore errors in _PyException_AddNote - they will be overwritten below */
+                _PyException_AddNote(exc, note);
+                Py_DECREF(note);
+            }
+            _PyErr_SetRaisedException(tstate, exc);
+            return;
+        }
+        Py_XSETREF(value, fixed_value);
+    }
+
+    exc_value = _PyErr_GetTopmostException(tstate)->exc_value;
+    if (exc_value != NULL && exc_value != Py_None) {
+        /* Implicit exception chaining */
+        Py_INCREF(exc_value);
+        /* Avoid creating new reference cycles through the
+           context chain, while taking care not to hang on
+           pre-existing ones.
+           This is O(chain length) but context chains are
+           usually very short. Sensitive readers may try
+           to inline the call to PyException_GetContext. */
+        if (exc_value != value) {
+            PyObject *o = exc_value, *context;
+            PyObject *slow_o = o;  /* Floyd's cycle detection algo */
+            int slow_update_toggle = 0;
+            while ((context = PyException_GetContext(o))) {
+                Py_DECREF(context);
+                if (context == value) {
+                    PyException_SetContext(o, NULL);
+                    break;
+                }
+                o = context;
+                if (o == slow_o) {
+                    /* pre-existing cycle - all exceptions on the
+                       path were visited and checked.  */
+                    break;
+                }
+                if (slow_update_toggle) {
+                    slow_o = PyException_GetContext(slow_o);
+                    Py_DECREF(slow_o);
+                }
+                slow_update_toggle = !slow_update_toggle;
+            }
+            PyException_SetContext(value, exc_value);
+        }
+        else {
+            Py_DECREF(exc_value);
+        }
+    }
+    assert(value != NULL);
+    if (PyExceptionInstance_Check(value))
+        tb = PyException_GetTraceback(value);
+    _PyErr_Restore(tstate, Py_NewRef(Py_TYPE(value)), value, tb);
+#else // GraalPy change: different implementation
 	Graal_PyTruffleErr_CreateAndSetException(exception, value);
+#endif // GraalPy change
 }
 
 void
@@ -1299,15 +1384,10 @@ static PyStructSequence_Desc UnraisableHookArgs_desc = {
 PyStatus
 _PyErr_InitTypes(PyInterpreterState *interp)
 {
-    if (!_Py_IsMainInterpreter(interp)) {
-        return _PyStatus_OK();
-    }
-
-    if (UnraisableHookArgsType.tp_name == NULL) {
-        if (PyStructSequence_InitType2(&UnraisableHookArgsType,
-                                       &UnraisableHookArgs_desc) < 0) {
-            return _PyStatus_ERR("failed to initialize UnraisableHookArgs type");
-        }
+    if (_PyStructSequence_InitBuiltin(interp, &UnraisableHookArgsType,
+                                      &UnraisableHookArgs_desc) < 0)
+    {
+        return _PyStatus_ERR("failed to initialize UnraisableHookArgs type");
     }
     return _PyStatus_OK();
 }
@@ -1316,11 +1396,7 @@ _PyErr_InitTypes(PyInterpreterState *interp)
 void
 _PyErr_FiniTypes(PyInterpreterState *interp)
 {
-    if (!_Py_IsMainInterpreter(interp)) {
-        return;
-    }
-
-    _PyStructSequence_FiniType(&UnraisableHookArgsType);
+    _PyStructSequence_FiniBuiltin(interp, &UnraisableHookArgsType);
 }
 
 
