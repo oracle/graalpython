@@ -175,6 +175,7 @@ import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -2480,9 +2481,26 @@ public final class PythonContext extends Python3Core {
      * @see GilNode
      */
     @TruffleBoundary
+    // intentional catch of IllegalMonitorStateException, see inline comments
+    @SuppressFBWarnings("IMSE_DONT_CATCH_IMSE")
     void releaseGil() {
-        assert globalInterpreterLock.getHoldCount() == 1 : dumpStackOnAssertionHelper("trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount());
-        globalInterpreterLock.unlock();
+        // We allow hold count == 0 when cancelling, because a thread may have given up the GIL,
+        // then a cancelling (subclass of ThreadDeath) exception is thrown inside the code running
+        // without GIL through thread local action and in such case, we do not try to reacquire the
+        // GIL and let the ThreadDeath bubble up the stack to the top level and along the way we
+        // may have some finally blocks that are trying to release the initially acquired GIL and
+        // reach this method
+        assert globalInterpreterLock.getHoldCount() == 1 || (env.getContext().isCancelling() && globalInterpreterLock.getHoldCount() == 0) : dumpStackOnAssertionHelper(
+                        "trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount());
+        try {
+            globalInterpreterLock.unlock();
+        } catch (IllegalMonitorStateException ex) {
+            // IllegalMonitorStateException is thrown if the lock is not owned by this thread, see
+            // the comment above why we allow it if the context is cancelling
+            if (!env.getContext().isCancelling()) {
+                throw ex;
+            }
+        }
     }
 
     /**

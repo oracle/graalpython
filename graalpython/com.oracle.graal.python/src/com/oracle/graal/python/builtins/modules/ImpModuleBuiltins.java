@@ -122,6 +122,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -216,7 +217,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         public Object run(@Cached GilNode gil) {
             gil.release(true);
             try {
-                getContext().getImportLock().lock();
+                TruffleSafepoint.setBlockedThreadInterruptible(this, ReentrantLock::lock, getContext().getImportLock());
             } finally {
                 gil.acquire();
             }

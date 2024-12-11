@@ -1280,7 +1280,7 @@ def graalpython_gate_runner(args, tasks):
             override_path = os.path.join(SUITE.get_mx_output_dir(), 'gradle-properties-override')
             original_props_file = "graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties"
             mx.copyfile(original_props_file, override_path)
-            mx_graalpython_gradleproject.patch_distributionUrl(override_path, original_props_file)
+            mx_graalpython_gradleproject.patch_distribution_url(override_path, original_props_file)
             env['GRADLE_PROPERTIES_OVERRIDE'] = override_path
 
             env["org.graalvm.maven.downloader.version"] = version
@@ -1315,7 +1315,7 @@ def graalpython_gate_runner(args, tasks):
             override_path = os.path.join(SUITE.get_mx_output_dir(), 'maven-properties-override')
             original_props_file = "graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties"
             mx.copyfile(original_props_file, override_path)
-            mx_graalpython_gradleproject.patch_distributionUrl(override_path, original_props_file, escape_colon=False)
+            mx_graalpython_gradleproject.patch_distribution_url(override_path, original_props_file, escape_colon=False)
             env['MAVEN_PROPERTIES_OVERRIDE'] = override_path
 
             env["org.graalvm.maven.downloader.version"] = version
