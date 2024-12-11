@@ -31,8 +31,8 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -94,7 +94,7 @@ abstract class FormatProcessor<T> {
     protected abstract boolean isMapping(Object obj);
 
     static Object lookupAttribute(Object owner, TruffleString name) {
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.executeUncached(owner), name);
+        return LookupSpecialMethodNode.Dynamic.executeUncached(GetClassNode.executeUncached(owner), name, owner);
     }
 
     static Object call(Object callable, Object... args) {

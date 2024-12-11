@@ -87,8 +87,8 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
 
         public abstract Object execute(Frame frame, Node inliningTarget, Object type, TruffleString name, Object receiver);
 
-        public static Object executeUncached(Frame frame, Object type, TruffleString name, Object receiver) {
-            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached().execute(frame, null, type, name, receiver);
+        public static Object executeUncached(Object type, TruffleString name, Object receiver) {
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached().execute(null, null, type, name, receiver);
         }
 
         @Specialization
