@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -131,19 +132,8 @@ public class MultiContextCExtTest {
 
     private static void deleteDirOnShutdown(Path tmpdir) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                Files.walk(tmpdir).forEach(t -> {
-                    try {
-                        Files.delete(t);
-                    } catch (IOException e) {
-                    }
-                });
-                Files.walk(tmpdir).forEach(t -> {
-                    try {
-                        Files.delete(t);
-                    } catch (IOException e) {
-                    }
-                });
+            try (var fs = Files.walk(tmpdir)) {
+                fs.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
             } catch (IOException e) {
             }
         }));
