@@ -39,7 +39,7 @@
  * SOFTWARE.
  */
 
-package org.graalvm.python.embedding.utils.test.integration;
+package org.graalvm.python.embedding.cext.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -127,7 +127,12 @@ public class MultiContextCExtTest {
         var tmpdir = Files.createTempDirectory("graalpytest");
         deleteDirOnShutdown(tmpdir);
         var venvdir = tmpdir.resolve("venv");
-        VFSUtils.createVenv(venvdir, Arrays.asList(packages), tmpdir.resolve("graalpy.exe"), () -> getClasspath(), "", log, log);
+        try {
+            VFSUtils.createVenv(venvdir, Arrays.asList(packages), tmpdir.resolve("graalpy.exe"), () -> getClasspath(), "", log, log);
+        } catch (RuntimeException e) {
+            System.err.println(getClasspath());
+            throw e;
+        }
         return venvdir;
     }
 

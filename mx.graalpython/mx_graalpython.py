@@ -405,6 +405,9 @@ def punittest(ars, report=False):
     configs += [
         TestConfig(vm_args + graalpy_tests + args, True),
         TestConfig(vm_args + graalpy_tests + args, False),
+        # MultiContext cext tests should run by themselves so they aren't influenced by others
+        TestConfig(vm_args + ['org.graalvm.python.embedding.cext.test'] + args + ["--use-graalvm"], True),
+        TestConfig(vm_args + ['org.graalvm.python.embedding.cext.test'] + args + ["--use-graalvm"], False),
         # TCK suite is not compatible with the PythonMxUnittestConfig,
         # so it must have its own run and the useResources config is ignored
         TestConfig(vm_args + ['com.oracle.truffle.tck.tests'] + args, False),
