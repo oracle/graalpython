@@ -50,6 +50,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
@@ -140,7 +141,17 @@ public class MultiContextCExtTest {
     }
 
     private static Set<String> getClasspath() {
-        return Set.copyOf(Arrays.stream((System.getProperty("jdk.module.path") + File.pathSeparator + System.getProperty("java.class.path")).split(File.pathSeparator)).toList());
+        var sb = new ArrayList<String>();
+        var modPath = System.getProperty("jdk.module.path");
+        if (modPath != null) {
+            sb.add(modPath);
+        }
+        var classPath = System.getProperty("java.class.path");
+        if (classPath != null) {
+            sb.add(classPath);
+        }
+        var cp = String.join(File.pathSeparator, sb);
+        return Set.copyOf(Arrays.stream(cp.split(File.pathSeparator)).toList());
     }
 
     @Test

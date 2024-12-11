@@ -1254,6 +1254,7 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON_RESOURCES",
+                "GRAALPYTHON-LAUNCHER", # See MultiContextCExtTest
                 "GRAALPYTHON_EMBEDDING",
                 "GRAALPYTHON_EMBEDDING_TOOLS",
                 "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
