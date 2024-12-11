@@ -75,13 +75,13 @@ final class PEFile extends SharedObject {
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
         var pb = newProcessBuilder(context);
+        var tempfileWithForwardSlashes = tempfile.toString().replace('\\', '/');
         pb.command(context.getOption(PythonOptions.Executable).toJavaStringUncached(),
-                        "-m", "machomachomangler.cmd.redll",
-                        tempfile.toString(), tempfile.toString(),
-                        oldName, newName);
+                        "-c", String.format("from delvewheel import _dll_utils; _dll_utils.replace_needed('%s', ['%s'], {'%s': '%s'}, strip=True, verbose=2, test=[])",
+                                        tempfileWithForwardSlashes, oldName, oldName, newName));
         var proc = pb.start();
         if (proc.waitFor() != 0) {
-            throw new IOException("Failed to run `machomachomangler` to copy required DLL. Make sure you have it installed in your venv.");
+            throw new IOException("Failed to run `delvewheel` 1.9.0 to copy required DLL. Make sure you have it installed in your venv.");
         }
     }
 

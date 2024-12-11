@@ -162,7 +162,7 @@ public class MultiContextCExtTest {
         String exe;
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
             pythonNative = "python-native.dll";
-            venv = createVenv(log, "machomachomangler");
+            venv = createVenv(log, "delvewheel==1.9.0");
             exe = venv.resolve("Scripts").resolve("python.exe").toString().replace('\\', '/');
         } else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
             pythonNative = "libpython-native.dylib";
