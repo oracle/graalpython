@@ -52,7 +52,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.nio.file.LinkOption;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -320,7 +319,7 @@ public abstract class CExtContext {
         InteropLibrary interopLib;
 
         if (cApiContext.useNativeBackend) {
-            TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
             getLogger().config(String.format("loading module %s (real path: %s) as native", spec.path, realPath));
             String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(context.getDlopenFlags()), realPath);
             if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
@@ -366,7 +365,7 @@ public abstract class CExtContext {
         Env env = context.getEnv();
         try {
             TruffleString extSuffix = context.getSoAbi();
-            TruffleFile realPath = context.getPublicTruffleFileRelaxed(path, extSuffix).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            TruffleFile realPath = context.getPublicTruffleFileRelaxed(path, extSuffix).getCanonicalFile();
             CallTarget callTarget = env.parseInternal(Source.newBuilder(J_LLVM_LANGUAGE, realPath).build());
             return callTarget.call();
         } catch (SecurityException e) {
