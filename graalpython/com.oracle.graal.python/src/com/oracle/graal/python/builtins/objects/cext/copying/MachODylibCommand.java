@@ -60,7 +60,7 @@ import java.nio.charset.Charset;
  *  uint32_t compatibility_version;
  * };
  * </pre>
-*/
+ */
 final class MachODylibCommand {
 
     static final int SIZE = 6 * Integer.BYTES;

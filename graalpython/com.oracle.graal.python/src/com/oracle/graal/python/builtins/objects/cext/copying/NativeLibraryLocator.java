@@ -68,7 +68,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 public final class NativeLibraryLocator {
     /**
-     * Bitset for which copied C extension to use when {@link PythonOptions#IsolateNativeModules} is enabled.
+     * Bitset for which copied C extension to use when {@link PythonOptions#IsolateNativeModules} is
+     * enabled.
      */
     private static AtomicLong CEXT_COPY_INDICES = new AtomicLong(-1);
 
@@ -92,8 +93,10 @@ public final class NativeLibraryLocator {
     /**
      * Create a locator for native extension libraries.
      *
-     * @param capiLibrary - the library file that implements the C API symbols for all extensions to bind to
-     * @param isolateNative - if {@code true}, look for or create relocated copies of native libraries to load, else just load the originals
+     * @param capiLibrary - the library file that implements the C API symbols for all extensions to
+     *            bind to
+     * @param isolateNative - if {@code true}, look for or create relocated copies of native
+     *            libraries to load, else just load the originals
      */
     public NativeLibraryLocator(PythonContext context, TruffleFile capiLibrary, boolean isolateNative) throws ApiInitException {
         this.capiOriginal = capiLibrary.getName();
@@ -111,8 +114,8 @@ public final class NativeLibraryLocator {
 
     /**
      * Determine path of actual shared object to load for the given capi slot. If the capi slot is
-     * {@code -1}, return the {@code original} argument's path. Otherwise, look for a relocated
-     * copy corresponding to the desired slot.
+     * {@code -1}, return the {@code original} argument's path. Otherwise, look for a relocated copy
+     * corresponding to the desired slot.
      *
      * @see PythonOptions#IsolateNativeModules
      */
@@ -212,7 +215,8 @@ public final class NativeLibraryLocator {
         }
     }
 
-    private static void walk(TruffleFile dir, String suffix, String capiOriginalName, PythonContext context, int capiSlot, BiFunction<TruffleFile, String, TruffleFile> f) throws IOException, InterruptedException {
+    private static void walk(TruffleFile dir, String suffix, String capiOriginalName, PythonContext context, int capiSlot, BiFunction<TruffleFile, String, TruffleFile> f)
+                    throws IOException, InterruptedException {
         try (var ds = dir.newDirectoryStream()) {
             for (var e : ds) {
                 if (e.isDirectory()) {

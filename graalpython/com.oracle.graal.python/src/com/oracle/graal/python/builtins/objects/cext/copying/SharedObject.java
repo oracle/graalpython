@@ -72,7 +72,7 @@ abstract class SharedObject {
 
     protected static final class LoggingOutputStream extends OutputStream {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger("NativeLibraryLocator");
-        private final StringBuffer sb = new StringBuffer();
+        private final StringBuilder sb = new StringBuilder();
 
         @Override
         public void write(int b) throws IOException {

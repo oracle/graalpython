@@ -53,7 +53,7 @@ import java.nio.ByteBuffer;
  *  ...
  * };
  * </pre>
-*/
+ */
 final class MachOLoadCommand {
     static final int LC_CODE_SIGNATURE = 0x0000001D;
 

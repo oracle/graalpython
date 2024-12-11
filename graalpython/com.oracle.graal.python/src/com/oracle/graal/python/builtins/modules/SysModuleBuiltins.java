@@ -129,7 +129,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_VALUE_UNKNOWN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;

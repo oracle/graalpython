@@ -47,11 +47,11 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -65,7 +65,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -864,7 +863,8 @@ public final class CApiContext extends CExtContext {
 
     /**
      * This represents whether the current process has already loaded an instance of the native CAPI
-     * extensions - this can only be loaded globally once per process or in isolation multiple times.
+     * extensions - this can only be loaded globally once per process or in isolation multiple
+     * times.
      */
     private static final AtomicInteger nativeCAPILoaded = new AtomicInteger();
     private static final byte NO_NATIVE_CONTEXT = 0;
@@ -1017,14 +1017,13 @@ public final class CApiContext extends CExtContext {
     }
 
     private static final Set<String> C_EXT_SUPPORTED_LIST = Set.of(
-                // Stdlib modules are considered supported
-                "_cpython_sre",
-                "_cpython_unicodedata",
-                "_sha3",
-                "_sqlite3",
-                "termios",
-                "pyexpat");
-
+                    // Stdlib modules are considered supported
+                    "_cpython_sre",
+                    "_cpython_unicodedata",
+                    "_sha3",
+                    "_sqlite3",
+                    "termios",
+                    "pyexpat");
 
     private static String dlopenFlagsToString(int flags) {
         String str = "RTLD_NOW";
@@ -1084,9 +1083,9 @@ public final class CApiContext extends CExtContext {
             if (context.getOption(PythonOptions.IsolateNativeModules)) {
                 if ((dlopenFlags & PosixConstants.RTLD_GLOBAL.value) != 0) {
                     getLogger(CApiContext.class).warning("The IsolateNativeModules option was specified, but the dlopen flags were set to include RTLD_GLOBAL " +
-                    "(likely via some call to sys.setdlopenflags). This will probably lead to broken isolation and possibly incorrect results and crashing. " +
-                    "You can patch sys.setdlopenflags to trace callers and/or prevent setting the RTLD_GLOBAL flags. " +
-                    "See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for more details.");
+                                    "(likely via some call to sys.setdlopenflags). This will probably lead to broken isolation and possibly incorrect results and crashing. " +
+                                    "You can patch sys.setdlopenflags to trace callers and/or prevent setting the RTLD_GLOBAL flags. " +
+                                    "See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for more details.");
                 }
                 dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
             }
@@ -1253,7 +1252,9 @@ public final class CApiContext extends CExtContext {
             }
         }
 
-        nativeLibraryLocator.close();
+        if (nativeLibraryLocator != null) {
+            nativeLibraryLocator.close();
+        }
     }
 
     @TruffleBoundary

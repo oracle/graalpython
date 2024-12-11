@@ -164,16 +164,9 @@ public class MultiContextCExtTest {
             exe = venv.resolve("bin").resolve("python").toString();
         }
 
-        var engine = Engine.newBuilder("python")
-            .logHandler(log)
-            .build();
-        var builder = Context.newBuilder()
-            .engine(engine)
-            .allowAllAccess(true)
-            .option("python.Sha3ModuleBackend", "native")
-            .option("python.ForceImportSite", "true")
-            .option("python.Executable", exe)
-            .option("log.python.level", "CONFIG");
+        var engine = Engine.newBuilder("python").logHandler(log).build();
+        var builder = Context.newBuilder().engine(engine).allowAllAccess(true).option("python.Sha3ModuleBackend", "native").option("python.ForceImportSite", "true").option("python.Executable",
+                        exe).option("log.python.level", "CONFIG");
         var c0 = builder.build();
         c0.initialize("python");
         c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venv.toString().replace('\\', '/')));
@@ -182,8 +175,7 @@ public class MultiContextCExtTest {
         assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".1")));
         assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
 
-        builder
-            .option("python.IsolateNativeModules", "true");
+        builder.option("python.IsolateNativeModules", "true");
         var c1 = builder.build();
         var c2 = builder.build();
         var c3 = builder.build();
