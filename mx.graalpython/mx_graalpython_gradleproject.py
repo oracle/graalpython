@@ -52,7 +52,7 @@ def gradle_wrapper_properties(project_root):
     return os.path.join(project_root, "gradle", "wrapper", "gradle-wrapper.properties")
 
 
-def patch_distributionUrl(properties_file, original_file=None, escape_colon=True):
+def patch_distribution_url(properties_file, original_file=None, escape_colon=True):
     def escape(s):
         return s.replace(':', '\\:') if escape_colon else s
 
@@ -301,8 +301,8 @@ class _GradleBuildTask(mx.ProjectBuildTask):
         """
         # Gradle wrapper
         shutil.copytree(os.path.join(self.subject.gradle_directory, "wrapper"), self.subject.get_output_root(), dirs_exist_ok=True)
-        patch_distributionUrl(gradle_wrapper_properties(self.subject.get_output_root()),
-                             original_file=gradle_wrapper_properties(os.path.join(self.subject.gradle_directory, "wrapper")))
+        patch_distribution_url(gradle_wrapper_properties(self.subject.get_output_root()),
+                               original_file=gradle_wrapper_properties(os.path.join(self.subject.gradle_directory, "wrapper")))
 
         # build.gradle
         deps_decls = []
