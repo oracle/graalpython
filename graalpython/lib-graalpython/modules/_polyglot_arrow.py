@@ -40,7 +40,6 @@
 import polyglot
 import java
 
-
 try:
     java.type("org.apache.arrow.vector.BaseFixedWidthVector")
 except KeyError:

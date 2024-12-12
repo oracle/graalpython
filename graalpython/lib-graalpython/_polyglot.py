@@ -143,6 +143,16 @@ polyglot.register_interop_behavior(time.struct_time,
                                    is_time_zone=lambda t: t.tm_zone is not None or t.tm_gmtoff is not None,
                                    as_time_zone=_struct_time_tz)
 
+# loading arrow structures on demand
+def __getattr__(name):
+    if name == "arrow":
+        from modules import _polyglot_arrow
+        setattr(polyglot, "arrow", _polyglot_arrow)
+        return _polyglot_arrow
+    raise AttributeError(f"module 'polyglot' has no attribute '{name}'")
+
+setattr(polyglot, "__getattr__", __getattr__)
+
 # example extending time.struct_time using the decorator wrapper
 #
 # @polyglot.interop_behavior(time.struct_time)

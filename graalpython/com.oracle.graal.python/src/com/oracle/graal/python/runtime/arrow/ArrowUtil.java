@@ -45,15 +45,9 @@ import com.oracle.truffle.api.source.Source;
 
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 
-public class AbstractArrowSupport {
+public class ArrowUtil {
 
-    protected final PythonContext ctx;
-
-    public AbstractArrowSupport(PythonContext ctx) {
-        this.ctx = ctx;
-    }
-
-    protected Object createNfiSignature(String methodSignature) {
+    public static Object createNfiSignature(String methodSignature, PythonContext ctx) {
         Source sigSource = Source.newBuilder(J_NFI_LANGUAGE, methodSignature, "python-nfi-signature").build();
         return ctx.getEnv().parseInternal(sigSource).call();
     }

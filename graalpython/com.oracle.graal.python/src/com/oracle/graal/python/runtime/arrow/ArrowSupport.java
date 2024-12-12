@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.arrow;
 import com.oracle.graal.python.nodes.arrow.capsule.ArrowArrayCapsuleDestructor;
 import com.oracle.graal.python.nodes.arrow.capsule.ArrowSchemaCapsuleDestructor;
 import com.oracle.graal.python.nodes.arrow.release_callback.ArrowSchemaReleaseCallback;
+import com.oracle.graal.python.nodes.arrow.vector.VectorArrowArrayReleaseCallback;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -50,9 +51,18 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
-public class ArrowSupport extends AbstractArrowSupport {
+import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+
+public class ArrowSupport {
+
+    protected final PythonContext ctx;
+
+    public ArrowSupport(PythonContext ctx) {
+        this.ctx = ctx;
+    }
 
     // ArrowArray destructor
     private Object arrowArrayDestructorNFIClosure;
@@ -65,10 +75,6 @@ public class ArrowSupport extends AbstractArrowSupport {
     // ArrowSchema release callback
     private Object arrowSchemaNFIClosure;
     @CompilationFinal private long arrowSchemaReleaseCallback;
-
-    public ArrowSupport(PythonContext ctx) {
-        super(ctx);
-    }
 
     public long getArrowSchemaDestructor() {
         if (arrowSchemaDestructorCallback == 0) {
@@ -97,7 +103,7 @@ public class ArrowSupport extends AbstractArrowSupport {
     @TruffleBoundary
     private void initArrowArrayDestructor() {
         CompilerAsserts.neverPartOfCompilation();
-        var signature = createNfiSignature("(POINTER):VOID");
+        var signature = ArrowUtil.createNfiSignature("(POINTER):VOID", ctx);
         var executable = new ArrowArrayCapsuleDestructor();
         this.arrowArrayDestructorNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
         this.arrowArrayDestructor = PythonUtils.coerceToLong(arrowArrayDestructorNFIClosure, InteropLibrary.getUncached());
@@ -106,7 +112,7 @@ public class ArrowSupport extends AbstractArrowSupport {
     @TruffleBoundary
     private void initArrowSchemaDestructor() {
         CompilerAsserts.neverPartOfCompilation();
-        var signature = createNfiSignature("(POINTER):VOID");
+        var signature = ArrowUtil.createNfiSignature("(POINTER):VOID", ctx);
         var executable = new ArrowSchemaCapsuleDestructor();
         this.arrowSchemaDestructorNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
         this.arrowSchemaDestructorCallback = PythonUtils.coerceToLong(arrowSchemaDestructorNFIClosure, InteropLibrary.getUncached());
@@ -115,7 +121,7 @@ public class ArrowSupport extends AbstractArrowSupport {
     @TruffleBoundary
     private void initArrowSchemaReleaseCallback() {
         CompilerAsserts.neverPartOfCompilation();
-        var signature = createNfiSignature("(UINT64):VOID");
+        var signature = ArrowUtil.createNfiSignature("(UINT64):VOID", ctx);
         var executable = new ArrowSchemaReleaseCallback();
         this.arrowSchemaNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
         this.arrowSchemaReleaseCallback = PythonUtils.coerceToLong(arrowSchemaNFIClosure, InteropLibrary.getUncached());

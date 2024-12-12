@@ -50,18 +50,19 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
-public class ArrowVectorSupport extends AbstractArrowSupport {
+public class ArrowVectorSupport {
 
     private final String FIXED_WIDTH_VECTOR_PATH = "org.apache.arrow.vector.BaseFixedWidthVector";
 
     public final boolean isJavaArrowImplOnClassPath;
     public final Class<?> baseFixedWidthVectorClass;
+    private final PythonContext ctx;
 
     private Object vectorArrowArrayNFIClosure;
     @CompilationFinal private long vectorArrowArrayReleaseCallback;
 
     public ArrowVectorSupport(PythonContext ctx) {
-        super(ctx);
+        this.ctx = ctx;
         Class<?> baseFixedWidthVectorClass;
         try {
             baseFixedWidthVectorClass = Class.forName(FIXED_WIDTH_VECTOR_PATH);
@@ -88,7 +89,7 @@ public class ArrowVectorSupport extends AbstractArrowSupport {
     @TruffleBoundary
     private void initVectorArrowArrayReleaseCallback() {
         CompilerAsserts.neverPartOfCompilation();
-        var signature = createNfiSignature("(UINT64):VOID");
+        var signature = ArrowUtil.createNfiSignature("(UINT64):VOID", ctx);
         var executable = new VectorArrowArrayReleaseCallback();
         this.vectorArrowArrayNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
         this.vectorArrowArrayReleaseCallback = PythonUtils.coerceToLong(vectorArrowArrayNFIClosure, InteropLibrary.getUncached());

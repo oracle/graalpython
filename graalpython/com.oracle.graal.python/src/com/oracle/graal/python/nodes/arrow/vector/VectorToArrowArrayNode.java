@@ -62,10 +62,9 @@ public abstract class VectorToArrowArrayNode extends PNodeWithContext {
 
     public abstract ArrowArray execute(Node inliningTarget, Object vector);
 
-    @Specialization(guards = "arrowVectorSupport.isFixedWidthVector(vector)")
+    @Specialization(guards = "ctx.arrowVectorSupport.isFixedWidthVector(vector)")
     static ArrowArray doIntVector(Node inliningTarget, Object vector,
                     @Bind("getContext(inliningTarget)") PythonContext ctx,
-                    @Bind("ctx.arrowVectorSupport") ArrowVectorSupport arrowVectorSupport,
                     @CachedLibrary(limit = "3") InteropLibrary interopLib) {
         var snapshot = new ArrowArray.Snapshot();
         var unsafe = ctx.getUnsafe();
