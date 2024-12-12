@@ -146,12 +146,13 @@ polyglot.register_interop_behavior(time.struct_time,
 # loading arrow structures on demand
 def __getattr__(name):
     if name == "arrow":
-        from modules import _polyglot_arrow
+        import _polyglot_arrow
         setattr(polyglot, "arrow", _polyglot_arrow)
         return _polyglot_arrow
     raise AttributeError(f"module 'polyglot' has no attribute '{name}'")
 
 setattr(polyglot, "__getattr__", __getattr__)
+setattr(polyglot, "__path__", ".")
 
 # example extending time.struct_time using the decorator wrapper
 #

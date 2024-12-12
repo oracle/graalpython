@@ -73,8 +73,7 @@ public abstract class VectorToArrowArrayNode extends PNodeWithContext {
             snapshot.null_count = (Integer) interopLib.invokeMember(vector, "getNullCount");
             snapshot.n_buffers = (Integer) interopLib.invokeMember(vector, "getExportedCDataBufferCount");
             if (snapshot.n_buffers != 2) {
-                // we expect only two buffers (validity and value buffer)
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere("We expect that Vector implementation to has just 2 buffers, those are validity buffer and value buffer. This should never happen unless arrow changes internally");
             }
             snapshot.buffers = unsafe.allocateMemory(2 * POINTER_SIZE);
             long validityPointer = (long) interopLib.invokeMember(vector, "getValidityBufferAddress");
@@ -85,7 +84,7 @@ public abstract class VectorToArrowArrayNode extends PNodeWithContext {
 
             return ArrowArray.allocateFromSnapshot(snapshot);
         } catch (Exception e) {
-            throw CompilerDirectives.shouldNotReachHere();
+            throw CompilerDirectives.shouldNotReachHere("Unable to convert vector to arrow array. Error: " + e.getMessage());
         }
     }
 
