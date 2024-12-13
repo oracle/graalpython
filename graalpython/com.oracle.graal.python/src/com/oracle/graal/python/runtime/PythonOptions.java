@@ -348,7 +348,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether C extension modules should be loaded as native code (as opposed to LLVM bitcode execution).") //
     public static final OptionKey<Boolean> NativeModules = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Whether the context should isolate its loading of C extension modules. " +
+    @Option(category = OptionCategory.USER, stability = OptionStability.EXPERIMENTAL, usageSyntax = "true|false",
+                    help = "Whether the context should isolate its loading of C extension modules. " +
                     "This allows more than one context to access C extensions. " +
                     "Note that all contexts in the operating system process must set this option to true to cooperatively allow this feature to work.") //
     public static final OptionKey<Boolean> IsolateNativeModules = new OptionKey<>(false);
