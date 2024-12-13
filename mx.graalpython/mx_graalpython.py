@@ -383,6 +383,7 @@ def punittest(ars, report=False):
     args = [] if ars is None else ars
     @dataclass
     class TestConfig:
+        identifier: str
         args: list
         useResources: bool
         reportConfig: bool = report
@@ -402,24 +403,24 @@ def punittest(ars, report=False):
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
     graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test', 'org.graalvm.python.embedding.utils.test']
+    has_compiler = bool(mx.suite('compiler', fatalIfMissing=False))
     configs += [
-        TestConfig(vm_args + graalpy_tests + args, True),
-        TestConfig(vm_args + graalpy_tests + args, False),
+        TestConfig("junit", vm_args + graalpy_tests + args, True),
+        TestConfig("junit", vm_args + graalpy_tests + args, False),
         # MultiContext cext tests should run by themselves so they aren't influenced by others
-        TestConfig(vm_args + ['org.graalvm.python.embedding.cext.test'] + args + ["--use-graalvm"], True),
-        TestConfig(vm_args + ['org.graalvm.python.embedding.cext.test'] + args + ["--use-graalvm"], False),
+        TestConfig("multi-cext", vm_args + ['org.graalvm.python.embedding.cext.test'] + args + (["--use-graalvm"] if has_compiler else []), True),
         # TCK suite is not compatible with the PythonMxUnittestConfig,
         # so it must have its own run and the useResources config is ignored
-        TestConfig(vm_args + ['com.oracle.truffle.tck.tests'] + args, False),
+        TestConfig("tck", vm_args + ['com.oracle.truffle.tck.tests'] + args, False),
     ]
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
-        configs.append(TestConfig(vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test', 'org.graalvm.python.embedding.utils.test'] + async_regex + args, True, False))
+        configs.append(TestConfig("async", vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test', 'org.graalvm.python.embedding.utils.test'] + async_regex + args, True, False))
 
     for c in configs:
         mx.log(f"Python JUnit tests configuration: {c}")
         PythonMxUnittestConfig.useResources = c.useResources
-        mx_unittest.unittest(c.args, test_report_tags=({"task": "punittest"} if c.reportConfig else None))
+        mx_unittest.unittest(c.args, test_report_tags=({"task": f"punittest-{c.identifier}-{'w' if c.useResources else 'wo'}-resources"} if c.reportConfig else None))
 
     if skip_leak_tests:
         return
