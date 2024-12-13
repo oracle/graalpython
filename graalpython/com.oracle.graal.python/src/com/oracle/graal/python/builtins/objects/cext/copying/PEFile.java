@@ -89,4 +89,9 @@ final class PEFile extends SharedObject {
     public byte[] write() throws IOException {
         return tempfile.readAllBytes();
     }
+
+    @Override
+    protected void fixup(TruffleFile copy) {
+        // TODO: Maybe this should be signed again?
+    }
 }

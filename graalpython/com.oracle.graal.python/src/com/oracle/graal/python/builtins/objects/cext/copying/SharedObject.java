@@ -70,8 +70,9 @@ abstract class SharedObject {
         }
     }
 
+    protected static final TruffleLogger LOGGER = PythonLanguage.getLogger("NativeLibraryLocator");
+
     protected static final class LoggingOutputStream extends OutputStream {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger("NativeLibraryLocator");
         private final StringBuilder sb = new StringBuilder();
 
         @Override
@@ -97,4 +98,6 @@ abstract class SharedObject {
         pb.redirectError(pb.createRedirectToStream(new LoggingOutputStream()));
         return pb;
     }
+
+    protected abstract void fixup(TruffleFile copy) throws IOException, InterruptedException;
 }

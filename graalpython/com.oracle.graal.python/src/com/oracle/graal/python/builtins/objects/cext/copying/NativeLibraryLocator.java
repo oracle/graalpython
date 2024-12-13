@@ -213,6 +213,7 @@ public final class NativeLibraryLocator {
         try (var os = copy.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
             os.write(o.write());
         }
+        o.fixup(copy);
     }
 
     private static void walk(TruffleFile dir, String suffix, String capiOriginalName, PythonContext context, int capiSlot, BiFunction<TruffleFile, String, TruffleFile> f)

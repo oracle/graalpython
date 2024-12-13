@@ -46,14 +46,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 
 final class MachOFile extends SharedObject {
+    private final PythonContext context;
     private final ByteBuffer buffer;
     private final MachOHeader mh;
     private final List<MachOLoadCommand> loadCommands;
     private int emptySpace;
 
     MachOFile(byte[] f, PythonContext context) throws IOException {
+        this.context = context;
         this.buffer = ByteBuffer.wrap(f);
         this.mh = MachOHeader.read(buffer);
         this.loadCommands = new ArrayList<>();
@@ -68,13 +72,55 @@ final class MachOFile extends SharedObject {
         this.emptySpace = zeroBytes;
     }
 
-    public void removeCodeSignature() {
+    private void removeCommand(MachOLoadCommand cmd) {
+        loadCommands.remove(cmd);
+        mh.nCmds -= 1;
+        mh.sizeOfCmds -= cmd.cmdSize;
+        emptySpace += cmd.cmdSize;
+    }
+
+    private void addCommand(MachODylibCommand cmd) throws IOException {
+        if (cmd.cmdSize > emptySpace) {
+            throw new IOException(String.format("Not enough empty space add new cmd with string %s.", cmd.getName()));
+        }
+        var newBuffer = ByteBuffer.allocate(cmd.cmdSize);
+        newBuffer.order(buffer.order());
+        cmd.put(newBuffer);
+        newBuffer.position(0);
+        loadCommands.add(MachOLoadCommand.get(newBuffer));
+        mh.nCmds += 1;
+        mh.sizeOfCmds += cmd.cmdSize;
+        emptySpace -= cmd.cmdSize;
+    }
+
+    private void removeCodeSignature() {
         for (int i = 0; i < loadCommands.size(); ++i) {
             var cmd = loadCommands.get(i);
             if (cmd.cmd == MachOLoadCommand.LC_CODE_SIGNATURE) {
-                loadCommands.remove(i);
-                emptySpace += cmd.cmdSize;
-                break;
+                removeCommand(cmd);
+                LOGGER.fine(() -> String.format("Removing code LC_CODE_SIGNATURE. New empty space is %d", emptySpace));
+            }
+        }
+    }
+
+    private void removeId() {
+        for (int i = 0; i < loadCommands.size(); ++i) {
+            var cmd = loadCommands.get(i);
+            if (cmd.cmd == MachODylibCommand.LC_ID_DYLIB) {
+                removeCommand(cmd);
+            }
+        }
+    }
+
+    private void removeLoad(String oldName) {
+        for (int i = 0; i < loadCommands.size(); ++i) {
+            var cmd = loadCommands.get(i);
+            if (cmd.cmd == MachODylibCommand.LC_LOAD_DYLIB) {
+                var loadCmd = MachODylibCommand.get(cmd.content);
+                if (loadCmd.getName().equals(oldName)) {
+                    removeCommand(cmd);
+                    LOGGER.fine(() -> String.format("Removing LC_LOAD_DYLIB %s. New empty space is %d.", oldName, emptySpace));
+                }
             }
         }
     }
@@ -82,79 +128,55 @@ final class MachOFile extends SharedObject {
     @Override
     public void setId(String newId) throws IOException {
         removeCodeSignature();
-        MachOLoadCommand oldIdCommand = null;
-        for (int i = 0; i < loadCommands.size(); ++i) {
-            var cmd = loadCommands.get(i);
-            if (cmd.cmd == MachODylibCommand.LC_ID_DYLIB) {
-                oldIdCommand = cmd;
-                break;
-            }
-        }
+        removeId();
 
-        MachODylibCommand newCmd;
-        if (oldIdCommand != null) {
-            newCmd = MachODylibCommand.get(oldIdCommand.content);
-        } else {
-            newCmd = new MachODylibCommand(MachODylibCommand.LC_ID_DYLIB, MachODylibCommand.SIZE, new byte[0], MachODylibCommand.SIZE, 0, 0, 0);
-        }
+        var newCmd = new MachODylibCommand(MachODylibCommand.LC_ID_DYLIB, MachODylibCommand.SIZE, new byte[0], MachODylibCommand.SIZE, 0, 0, 0);
         newCmd.setName(newId);
+        addCommand(newCmd);
 
-        if ((oldIdCommand != null && newCmd.cmdSize - oldIdCommand.cmdSize > emptySpace) || newCmd.cmdSize > emptySpace) {
-            throw new IOException("Not enough empty space to change ID");
-        }
-
-        loadCommands.remove(oldIdCommand);
-
-        var newBuffer = ByteBuffer.allocate(newCmd.cmdSize);
-        newBuffer.order(buffer.order());
-        newCmd.put(newBuffer);
-        loadCommands.add(MachOLoadCommand.get(newBuffer));
-
-        if (oldIdCommand != null) {
-            mh.sizeOfCmds -= oldIdCommand.cmdSize;
-            emptySpace += oldIdCommand.cmdSize;
-        }
-        emptySpace -= newCmd.cmdSize;
-        mh.sizeOfCmds += newCmd.cmdSize;
+        LOGGER.fine(() -> String.format("Added LC_ID_DYLIB %s. New empty space is %d.", newId, emptySpace));
     }
 
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws IOException {
         removeCodeSignature();
-
-        for (int i = 0; i < loadCommands.size(); ++i) {
-            var cmd = loadCommands.get(i);
-            if (cmd.cmd == MachODylibCommand.LC_LOAD_DYLIB) {
-                var loadCmd = MachODylibCommand.get(cmd.content);
-                if (loadCmd.getName().equals(oldName)) {
-                    loadCommands.remove(i);
-                    emptySpace += cmd.cmdSize;
-                    break;
-                }
-            }
-        }
+        removeLoad(oldName);
 
         var newCmd = new MachODylibCommand(MachODylibCommand.LC_LOAD_DYLIB, MachODylibCommand.SIZE, new byte[0], MachODylibCommand.SIZE, 0, 0, 0);
         newCmd.setName(newName);
+        addCommand(newCmd);
 
-        if (newCmd.cmdSize > emptySpace) {
-            throw new IOException("Not enough empty space to add dependency");
-        }
-
-        var newBuffer = ByteBuffer.allocate(newCmd.cmdSize);
-        newBuffer.order(buffer.order());
-        newCmd.put(newBuffer);
-        loadCommands.add(MachOLoadCommand.get(newBuffer));
-
-        mh.nCmds += 1;
-        mh.sizeOfCmds += newCmd.cmdSize;
-        emptySpace -= newCmd.cmdSize;
+        LOGGER.fine(() -> String.format("Added LC_LOAD_DYLIB %s. New empty space is %d.", newName, emptySpace));
     }
 
     @Override
     public byte[] write() {
         buffer.position(0);
         mh.put(buffer);
+        for (var cmd : loadCommands) {
+            cmd.put(buffer);
+        }
         return buffer.array();
+    }
+
+    private String getCodesign() {
+        Env env = context.getEnv();
+        var path = env.getEnvironment().getOrDefault("PATH", "").split(env.getPathSeparator());
+        var i = 0;
+        TruffleFile codesign;
+        do {
+            codesign = env.getPublicTruffleFile(path[i++]).resolve("codesign");
+        } while (!codesign.isExecutable() && i < path.length);
+        return codesign.toString();
+    }
+
+    @Override
+    protected void fixup(TruffleFile copy) throws IOException, InterruptedException {
+        var pb = newProcessBuilder(context);
+        pb.command(getCodesign(), "--force", "--sign", "-", copy.getAbsoluteFile().getPath());
+        var proc = pb.start();
+        if (proc.waitFor() != 0) {
+            throw new IOException("Failed to run `codesign` command. Make sure you have it on your PATH.");
+        }
     }
 }

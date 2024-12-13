@@ -114,7 +114,7 @@ final class MachODylibCommand {
         int nameLen = nameBytes.length;
         int paddedLen = (nameLen & ~(Long.BYTES - 1)) + Long.BYTES;
         byte[] paddedNameBytes = new byte[paddedLen];
-        System.arraycopy(nameBytes, 0, paddedNameBytes, 0, paddedLen);
+        System.arraycopy(nameBytes, 0, paddedNameBytes, 0, nameLen);
         this.paddedName = paddedNameBytes;
         this.cmdSize = MachODylibCommand.SIZE + paddedLen;
     }
