@@ -84,6 +84,7 @@ public abstract class VectorToArrowArrayNode extends PNodeWithContext {
 
             return ArrowArray.allocateFromSnapshot(snapshot);
         } catch (Exception e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw CompilerDirectives.shouldNotReachHere("Unable to convert vector to arrow array. Error: " + e.getMessage());
         }
     }
