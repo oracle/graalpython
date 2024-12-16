@@ -330,6 +330,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             Object key, val;
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                if (entry.getKey().startsWith("=")) {
+                    // Hidden variable, shouldn't be visible to python
+                    continue;
+                }
                 key = toTruffleStringUncached(entry.getKey());
             } else {
                 key = core.factory().createBytes(entry.getKey().getBytes());

@@ -937,7 +937,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_DecodeUTF7", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_DecodeUTF7Stateful", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString, PY_SSIZE_T_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_DecodeUnicodeEscape", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyUnicode_EncodeLocale", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_FSDecoder", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_Fill", ret = Py_ssize_t, args = {PyObject, Py_ssize_t, Py_ssize_t, PY_UCS4}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_GetDefaultEncoding", ret = ConstCharPtrAsTruffleString, args = {}, call = NotImplemented)
