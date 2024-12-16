@@ -1,4 +1,4 @@
-test.test_argparse.StdStreamTest.test_skip_invalid_stderr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_argparse.StdStreamTest.test_skip_invalid_stderr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_argparse.StdStreamTest.test_skip_invalid_stdout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_argparse.TestActionExtend.test_failures_many_groups_listargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_argparse.TestActionExtend.test_failures_many_groups_sysargs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
