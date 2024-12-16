@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.arrow.vector;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
-import com.oracle.graal.python.runtime.arrow.ArrowVectorSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -73,7 +72,8 @@ public abstract class VectorToArrowArrayNode extends PNodeWithContext {
             snapshot.null_count = (Integer) interopLib.invokeMember(vector, "getNullCount");
             snapshot.n_buffers = (Integer) interopLib.invokeMember(vector, "getExportedCDataBufferCount");
             if (snapshot.n_buffers != 2) {
-                throw CompilerDirectives.shouldNotReachHere("We expect that Vector implementation to has just 2 buffers, those are validity buffer and value buffer. This should never happen unless arrow changes internally");
+                throw CompilerDirectives.shouldNotReachHere(
+                                "We expect that Vector implementation to has just 2 buffers, those are validity buffer and value buffer. This should never happen unless arrow changes internally");
             }
             snapshot.buffers = unsafe.allocateMemory(2 * POINTER_SIZE);
             long validityPointer = (long) interopLib.invokeMember(vector, "getValidityBufferAddress");

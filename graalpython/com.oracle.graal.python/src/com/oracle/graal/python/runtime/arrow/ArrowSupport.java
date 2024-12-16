@@ -43,7 +43,6 @@ package com.oracle.graal.python.runtime.arrow;
 import com.oracle.graal.python.nodes.arrow.capsule.ArrowArrayCapsuleDestructor;
 import com.oracle.graal.python.nodes.arrow.capsule.ArrowSchemaCapsuleDestructor;
 import com.oracle.graal.python.nodes.arrow.release_callback.ArrowSchemaReleaseCallback;
-import com.oracle.graal.python.nodes.arrow.vector.VectorArrowArrayReleaseCallback;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -51,10 +50,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
-
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 
 public class ArrowSupport {
 
