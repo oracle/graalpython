@@ -83,6 +83,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.nodes.arrow.ArrowArray;
+import com.oracle.graal.python.nodes.arrow.ArrowSchema;
+import com.oracle.graal.python.nodes.arrow.capsule.CreateArrowPyCapsuleNode;
+import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowArrayNode;
+import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowSchemaNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1299,6 +1304,21 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             Object invokeMember(String member, Object[] arguments) throws UnsupportedMessageException {
                 throw UnsupportedMessageException.create();
             }
+        }
+    }
+
+    @Builtin(name = "export_arrow_vector", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ExportArrowVector extends PythonUnaryBuiltinNode {
+        @Specialization
+        static PTuple doExport(Object vector,
+                        @Bind("this") Node inliningTarget,
+                        @Cached VectorToArrowArrayNode exportArray,
+                        @Cached VectorToArrowSchemaNode exportSchema,
+                        @Cached CreateArrowPyCapsuleNode createArrowCapsuleNode) {
+            ArrowArray arrowArray = exportArray.execute(inliningTarget, vector);
+            ArrowSchema arrowSchema = exportSchema.execute(inliningTarget, vector);
+            return createArrowCapsuleNode.execute(inliningTarget, arrowArray, arrowSchema);
         }
     }
 }

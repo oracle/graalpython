@@ -1665,4 +1665,6 @@ public abstract class ErrorMessages {
     public static final TruffleString STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0 = tsLiteral("cannot iteratively unpack with a struct of length 0");
     public static final TruffleString STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES = tsLiteral("iterative unpacking requires a buffer of a multiple of %d bytes");
     public static final TruffleString CANNOT_CREATE_P_OBJECTS = tsLiteral("Cannot create %p objects");
+    public static final TruffleString ARROW_ARRAY_ALREADY_RELEASED = tsLiteral("Cannot release already released ArrowArray");
+    public static final TruffleString ARROW_SCHEMA_ALREADY_RELEASED = tsLiteral("Cannot release already released ArrowSchema");
 }

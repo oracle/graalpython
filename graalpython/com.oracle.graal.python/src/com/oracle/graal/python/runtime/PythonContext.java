@@ -100,6 +100,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.arrow.ArrowSupport;
+import com.oracle.graal.python.runtime.arrow.ArrowVectorSupport;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -220,6 +222,8 @@ public final class PythonContext extends Python3Core {
 
     public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
     public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
+    public final ArrowVectorSupport arrowVectorSupport = new ArrowVectorSupport(this);
+    public final ArrowSupport arrowSupport = new ArrowSupport(this);
     private volatile boolean finalizing;
 
     @TruffleBoundary
