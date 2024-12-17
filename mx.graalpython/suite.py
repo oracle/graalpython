@@ -1328,15 +1328,9 @@ suite = {
             "fileListEntry": "META-INF/resources/libgraalpy.files",
             "type": "dir",
             "description": "GraalVM Python lib-graalpython resources",
-            "buildDependencies": [
-                "graalpy_virtualenv",
-            ],
             "layout": {
                 "./META-INF/resources/libgraalpy/": [
                     "file:graalpython/lib-graalpython/*",
-                ],
-                "./META-INF/resources/libgraalpy/modules/graalpy_virtualenv": [
-                    "file:graalpy_virtualenv/graalpy_virtualenv",
                 ],
             },
             "maven": False,
