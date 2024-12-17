@@ -107,6 +107,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult32;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeAddressRange;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
@@ -799,6 +800,14 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyMapping_HasKey", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyMapping_HasKeyString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyMapping_SetItemString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadLastObjectFromFile", ret = PyObject, args = {FILE_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadLongFromFile", ret = PrimitiveResult64, args = {FILE_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadObjectFromFile", ret = PyObject, args = {FILE_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadObjectFromString", ret = PyObject, args = {ConstCharPtr, Py_ssize_t}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_ReadShortFromFile", ret = PrimitiveResult32, args = {FILE_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_WriteLongToFile", ret = Void, args = {PrimitiveResult64, FILE_PTR, PrimitiveResult32}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_WriteObjectToFile", ret = Void, args = {PyObject, FILE_PTR, PrimitiveResult32}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMarshal_WriteObjectToString", ret = PyObject, args = {PyObject, PrimitiveResult32}, call = NotImplemented)
     @CApiBuiltin(name = "PyMem_GetAllocator", ret = Void, args = {PYMEMALLOCATORDOMAIN, PYMEMALLOCATOREX_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyMem_SetAllocator", ret = Void, args = {PYMEMALLOCATORDOMAIN, PYMEMALLOCATOREX_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyMem_SetupDebugHooks", ret = Void, args = {}, call = NotImplemented)

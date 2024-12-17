@@ -63,6 +63,7 @@ source = """\
 #include <frameobject.h>
 #include <datetime.h>
 #include <structmember.h>
+#include <marshal.h>
 """
 
 include_path = sysconfig.get_config_var("INCLUDEPY")

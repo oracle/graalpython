@@ -451,11 +451,16 @@ license = 'BSD-3-Clause'
 
 [[pydantic.rules]]
 # Pin to match our pinned pydantic-core
-version = '== 2.4.2'
+version = '== 2.10.3'
 
 [[pydantic-core.rules]]
 version = '== 2.10.1'
 patch = 'pydantic-core-2.10.1.patch'
+license = 'MIT'
+
+[[pydantic-core.rules]]
+version = '== 2.27.1'
+patch = 'pydantic-core-2.27.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
