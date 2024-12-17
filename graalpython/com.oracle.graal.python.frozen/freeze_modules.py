@@ -119,7 +119,6 @@ def add_graalpython_core():
         "java",
         "pip_hook",
         "unicodedata",
-        "sulong_support",
     ]:
         modname = f"graalpy.{os.path.basename(name)}"
         modpath = os.path.join(lib_graalpython, f"{name}.py")

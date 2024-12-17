@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,10 +86,10 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         return convertStringToDouble(frame, inliningTarget, toJavaStringNode.execute(object), object, reprNode, raiseNode);
     }
 
-    @Specialization(limit = "3")
+    @Specialization
     static double doGeneric(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached(value = "createFor(this)") IndirectCallData indirectCallData,
-                    @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
+                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                     @Cached(inline = false) CastToJavaStringNode cast,
                     @Shared @Cached PyObjectReprAsTruffleStringNode reprNode,

@@ -175,36 +175,6 @@ class TestMisc(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PyTruffle_Intrinsic_Pmovmskb = CPyExtFunction(
-        lambda args: True,
-        lambda: (
-            (0xffffcafebabe, 0xefffdeadbeef),
-        ),
-        code="""
-#ifndef __aarch64__
-        #include <emmintrin.h>
-#endif
-        PyObject* PyTruffle_Intrinsic_Pmovmskb(PyObject* arg0, PyObject* arg1) {
-#ifdef __aarch64__
-            return Py_True;
-#else
-            int r;
-            int64_t a = (int64_t) PyLong_AsSsize_t(arg0);
-            int64_t b = (int64_t) PyLong_AsSsize_t(arg1);
-            __m128i zero = _mm_setzero_si128();
-            __m128i v = _mm_set_epi64(_m_from_int64(b), _m_from_int64(a));
-            v = _mm_cmpeq_epi8(v, zero);
-            r = _mm_movemask_epi8(v);
-            return (r == 0 || r == 49344) ? Py_True : Py_False;
-#endif
-        }
-        """,
-        resultspec="O",
-        argspec="OO",
-        arguments=["PyObject* arg0", "PyObject* arg1"],
-        cmpfunc=unhandled_error_compare
-    )
-
     ignored_test_PointerEquality_Primitive = CPyExtFunction(
         lambda args: True,
         lambda: (

@@ -238,7 +238,11 @@ static void initialize_builtin_types_and_structs() {
 
 int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
 	// TODO(fa) readonly flag
-    return PyBuffer_FillInfo(view, (PyObject*)self, GraalPyTruffle_GetMMapData(self), PyObject_Size((PyObject *)self), 0, flags);
+    char* data = GraalPyTruffle_GetMMapData(self);
+    if (!data) {
+        return -1;
+    }
+    return PyBuffer_FillInfo(view, (PyObject*)self, data, PyObject_Size((PyObject *)self), 0, flags);
 }
 
 PyAPI_FUNC(void) mmap_init_bufferprotocol(PyObject* mmap_type) {

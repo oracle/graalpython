@@ -85,12 +85,11 @@ and holding on to the last (if any) in a local variable.
 Some PyPI packages contain code that is not compatible with GraalPy.
 To overcome this limitation and support such packages, GraalPy contains
 patches for some popular packages. The patches are applied to packages
-installed via GraalPy specific utility `ginstall` and also to packages
 installed via `pip`. This is achieved by patching `pip` code.
 
 The patches are regular POSIX `patch` command compatible diffs located in
-`lib-graalpython/patches`. Check out the directory structure and metadate.toml
-files to get an idea of how rules are set for patches to be applied.
+`lib-graalpython/patches`. The directory has a `README.md` file describing
+how the patches are applied.
 
 ## The GIL
 

@@ -43,13 +43,13 @@ from pathlib import Path
 from subprocess import check_output as subprocess_check_output
 
 from virtualenv.create.creator import Creator
-from virtualenv.create.describe import PosixSupports
+from virtualenv.create.describe import PosixSupports, WindowsSupports
 from virtualenv.seed.embed.pip_invoke import PipInvoke
 from virtualenv.seed.wheels import get_wheel
 from virtualenv.seed.wheels.bundle import from_dir
 
 
-class GraalPyCreatorPosix(Creator, PosixSupports):
+class AbstractGraalPyCreator(Creator):
     """
     Describe and fake Creator service for GraalPy.
 
@@ -115,13 +115,21 @@ class GraalPyCreatorPosix(Creator, PosixSupports):
                            "or environment variable VIRTUALENV_CREATOR=venv")
 
 
+class GraalPyCreatorPosix(AbstractGraalPyCreator, PosixSupports):
+    pass
+
+
+class GraalPyCreatorWindows(AbstractGraalPyCreator, WindowsSupports):
+    pass
+
+
 @lru_cache()
 def get_ensurepip_path(exe):
     if exe.samefile(sys.executable):
         import ensurepip
         ensurepip_path = ensurepip.__path__[0]
     else:
-        cmd = [exe, "-u", "-c", 'import ensurepip; print(ensurepip.__path__[0])']
+        cmd = [str(exe), "-u", "-c", 'import ensurepip; print(ensurepip.__path__[0])']
         ensurepip_path = subprocess_check_output(cmd, universal_newlines=True).strip()
     return Path(ensurepip_path) / '_bundled'
 

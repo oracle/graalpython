@@ -394,6 +394,8 @@ def punittest(ars, report=False):
     if "--no-leak-tests" in args:
         skip_leak_tests = True
         args.remove("--no-leak-tests")
+    if is_collecting_coverage():
+        skip_leak_tests = True
 
     vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
 
@@ -482,7 +484,6 @@ class GraalPythonTags(object):
     unittest_standalone = 'python-unittest-standalone'
     unittest_gradle_plugin = 'python-unittest-gradle-plugin'
     unittest_maven_plugin = 'python-unittest-maven-plugin'
-    ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
@@ -492,7 +493,6 @@ class GraalPythonTags(object):
     svm = 'python-svm'
     native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
-    windows = 'python-windows-smoketests'
     language_checker = 'python-language-checker'
     exclusions_checker = 'python-class-exclusion-checker'
 
@@ -771,26 +771,37 @@ def make_coverage_launcher_if_needed(launcher):
         # patch our launchers created under jacoco to also run with jacoco.
         # do not use is_collecting_coverage() here, we only want to patch when
         # jacoco agent is requested.
+        quote = shlex.quote if sys.platform != 'win32' else lambda x: x
         def graalvm_vm_arg(java_arg):
             if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
                 with open(java_arg[1:], "r") as f:
                     java_arg = f.read()
             assert java_arg[0] == "-", java_arg
-            return shlex.quote(f'--vm.{java_arg[1:]}')
+            return quote(f'--vm.{java_arg[1:]}')
 
         agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments. We also disable compilation, it hardly helps for this use case
         original_launcher = os.path.abspath(os.path.realpath(launcher))
-        bash_launcher = f'{original_launcher}.sh'
-        with open(bash_launcher, "w") as f:
-            f.write("#!/bin/sh\n")
-            exe_arg = shlex.quote(f"--python.Executable={bash_launcher}")
-            f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
-        os.chmod(bash_launcher, 0o775)
-        mx.log(f"Replaced {launcher} with {bash_launcher} to collect coverage")
-        launcher = bash_launcher
+        if sys.platform != 'win32':
+            coverage_launcher = original_launcher + '.sh'
+            preamble = '#!/bin/sh'
+            pass_args = '"$@"'
+        else:
+            coverage_launcher = original_launcher.replace('.exe', '.cmd')
+            # Windows looks for libraries on PATH, we need to add the jvm bin dir there or it won't find the instrumentation dlls
+            jvm_bindir = os.path.join(os.path.dirname(os.path.dirname(original_launcher)), 'jvm', 'bin')
+            preamble = f'@echo off\nset PATH=%PATH%;{jvm_bindir}'
+            pass_args = '%*'
+        with open(coverage_launcher, "w") as f:
+            f.write(f'{preamble}\n')
+            exe_arg = quote(f"--python.Executable={coverage_launcher}")
+            f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} {pass_args}\n')
+        if sys.platform != 'win32':
+            os.chmod(coverage_launcher, 0o775)
+        mx.log(f"Replaced {launcher} with {coverage_launcher} to collect coverage")
+        launcher = coverage_launcher
     return launcher
 
 
@@ -919,6 +930,10 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if parallel is None:
         parallel = 4 if paths is None else 1
 
+    if sys.platform == 'win32':
+        # Windows machines don't seem to have much memory
+        parallel = min(parallel, 2)
+
     args = args or []
     args = [
         "--vm.ea",
@@ -958,8 +973,6 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
             args += ['--ignore', file]
 
     if is_collecting_coverage() and mx_gate.get_jacoco_agent_args():
-        with open(python_binary, "r") as f:
-            assert f.read(9) == "#!/bin/sh"
         if not use_pytest:
             # jacoco only dumps the data on exit, and when we run all our unittests
             # at once it generates so much data we run out of heap space
@@ -1088,7 +1101,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
-                         report=False, parallel=8, exclude=None, runner_args=()):
+                         report=False, parallel=8, exclude=None, paths=()):
     sub_env = dict(env or os.environ)
     sub_env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python', '3')
 
@@ -1096,8 +1109,8 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
-        runner_args=['--tagged', *runner_args],
-        paths=[os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))],
+        runner_args=['--tagged'],
+        paths=paths or [os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))],
         env=sub_env,
         cwd=cwd,
         nonZeroIsFatal=nonZeroIsFatal,
@@ -1134,7 +1147,7 @@ def graalpython_gate_runner(args, tasks):
     nonZeroIsFatal = not is_collecting_coverage()
 
     # JUnit tests
-    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit, GraalPythonTags.windows]) as task:
+    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
             if WIN32:
                 punittest(
@@ -1337,7 +1350,7 @@ def graalpython_gate_runner(args, tasks):
             run_tagged_unittests(graalpy_standalone_native(), nonZeroIsFatal=(not is_collecting_coverage()), report=report())
 
     # Unittests on SVM
-    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
+    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
             run_python_unittests(graalpy_standalone_native(), parallel=8, report=report())
 
@@ -2290,8 +2303,12 @@ def mx_post_parse_cmd_line(namespace):
 def python_coverage(args):
     "Generate coverage report for our unittests"
     parser = ArgumentParser(prog='mx python-coverage')
-    parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
-    parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
+    subparsers = parser.add_subparsers()
+    jacoco_parser = subparsers.add_parser('jacoco', help="Generate Jacoco (Java) coverage")
+    jacoco_parser.set_defaults(mode='jacoco')
+    jacoco_parser.add_argument('--tags', required=True, help="Tags for mx gate")
+    truffle_parser = subparsers.add_parser('truffle', help="Generate Truffle (Python) coverage")
+    truffle_parser.set_defaults(mode='truffle')
     args = parser.parse_args(args)
 
     # do not endlessly rebuild tests
@@ -2304,7 +2321,7 @@ def python_coverage(args):
     global _COLLECTING_COVERAGE
     _COLLECTING_COVERAGE = True
 
-    if args.jacoco:
+    if args.mode == 'jacoco':
         jacoco_args = [
             '--jacoco-omit-excluded',
             '--jacoco-generic-paths',
@@ -2312,25 +2329,12 @@ def python_coverage(args):
             '--jacocout', 'coverage',
             '--jacoco-format', 'lcov',
         ]
-        if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
-            jacoco_gates = (
-                GraalPythonTags.tagged,
-            )
-        else:
-            jacoco_gates = (
-                GraalPythonTags.junit,
-                GraalPythonTags.unittest,
-                GraalPythonTags.unittest_multi,
-                GraalPythonTags.unittest_jython,
-                GraalPythonTags.unittest_hpy,
-            )
-
         mx.run_mx([
             '--strict-compliance',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
-            '--tags', ",".join(jacoco_gates),
+            '--tags', args.tags,
         ] + jacoco_args, env=env)
         mx.run_mx([
             '--strict-compliance',
@@ -2342,20 +2346,18 @@ def python_coverage(args):
             '--generic-paths',
             '--exclude-src-gen',
         ], env=env)
-    if args.truffle:
+    if args.mode == 'truffle':
         executable = graalpy_standalone_jvm()
         file_filter = f"*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*,*lib/graalpy{graal_version_short()}*,*include/python{py_version_short()}*"
-        if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
-            variants = [
-                {"tagged": True},
-            ]
-        else:
-            variants = [
-                {"args": []},
-                # {"args": SANDBOXED_OPTIONS}, # Sulong is not reporting coverage with Truffle coverage very well, so we just disable it
-                {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
-                {"hpy": True},
-            ]
+        variants = [
+            {"args": []},
+            # Run only a few tagged tests that are relevant to the files in lib-graalpython
+            {"tagged": True, "paths": ["test_re.py", "test_unicodedata.py"]},
+            # Sulong is not reporting coverage with Truffle coverage very well, so we just disable it
+            # {"args": SANDBOXED_OPTIONS},
+            {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+            {"hpy": True},
+        ]
 
         common_coverage_args = [
             "--experimental-options",
@@ -2376,14 +2378,8 @@ def python_coverage(args):
                 f"--coverage.OutputFile={outfile}",
             ]
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
-            # deselect some tagged unittests that hang with coverage enabled
-            tagged_exclude = [
-                "test_multiprocessing_spawn",
-                "test_multiprocessing_main_handling",
-                "test_multiprocessing_graalpy",
-            ]
             if kwds.pop("tagged", False):
-                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=6, exclude=tagged_exclude, runner_args=['--continue-on-collection-errors'])
+                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
             elif kwds.pop("hpy", False):
                 run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
@@ -2460,22 +2456,8 @@ def python_coverage(args):
                     cmdargs += ["-a", f]
                 else:
                     mx.warn(f"Skipping {f}")
-
         # actually run the merge command
         mx.run(cmdargs)
-
-    # upload coverage data
-    out = mx.OutputCapture()
-    mx.run_mx(['sversions', '--print-repositories', '--json'], out=out)
-    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8') as f:
-        f.write(out.data)
-        f.flush()
-        print(f"Associated data", out.data, sep="\n")
-        if os.environ.get('CI'):
-            mx.run(['coverage-uploader.py', '--associated-repos', f.name])
-        else:
-            mx.run(['genhtml', '--output-directory', 'coverage-html', '--source-directory', os.path.abspath(os.path.join(SUITE.dir, '..')), '--quiet', 'coverage/lcov.info'])
-            print('Generated html report in ./coverage-html')
 
 
 class GraalpythonBuildTask(mx.ProjectBuildTask):

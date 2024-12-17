@@ -59,6 +59,7 @@ dependencies = [
 
 [project.entry-points."virtualenv.create"]
 graalpy-posix = "graalpy_virtualenv.graalpy:GraalPyCreatorPosix"
+graalpy-windows = "graalpy_virtualenv.graalpy:GraalPyCreatorWindows"
 
 [project.entry-points."virtualenv.seed"]
 graalpy = "graalpy_virtualenv:graalpy.GraalPySeeder"

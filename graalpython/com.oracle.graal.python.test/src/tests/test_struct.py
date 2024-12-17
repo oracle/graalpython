@@ -179,10 +179,12 @@ def test_pack_large_long():
         assert struct.unpack(fmt, b'\xff' * struct.calcsize(fmt)) == (-1,)
 
     for fmt in ('L', 'Q'):
-        assert struct.pack(fmt, 0) == b'\x00' * struct.calcsize(fmt)
-        assert struct.unpack(fmt, b'\x00' * struct.calcsize(fmt)) == (0,)
-        assert struct.pack(fmt, 18446744073709551615) == b'\xff\xff\xff\xff\xff\xff\xff\xff'
-        assert struct.unpack(fmt, b'\xff\xff\xff\xff\xff\xff\xff\xff') == (18446744073709551615,)
+        size = struct.calcsize(fmt)
+        assert struct.pack(fmt, 0) == b'\x00' * size
+        assert struct.unpack(fmt, b'\x00' * size) == (0,)
+        maxval = (1 << (size * 8)) - 1
+        assert struct.pack(fmt, maxval) == b'\xff' * size
+        assert struct.unpack(fmt, b'\xff' * size) == (maxval,)
 
 
 def test_pack_into():
