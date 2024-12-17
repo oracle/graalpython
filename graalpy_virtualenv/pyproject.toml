@@ -58,11 +58,11 @@ dependencies = [
 ]
 
 [project.entry-points."virtualenv.create"]
-graalpy-posix = "graalpy_virtualenv.graalpy:GraalPyCreatorPosix"
-graalpy-windows = "graalpy_virtualenv.graalpy:GraalPyCreatorWindows"
+graalpy-posix = "graalpy_virtualenv.graalpy:GraalPyPosix"
+graalpy-win = "graalpy_virtualenv.graalpy:GraalPyWindows"
 
 [project.entry-points."virtualenv.seed"]
-graalpy = "graalpy_virtualenv:graalpy.GraalPySeeder"
+graalpy = "graalpy_virtualenv.graalpy:GraalPySeeder"
 
 [project.urls]
 Homepage = "https://graalvm.org/python"
