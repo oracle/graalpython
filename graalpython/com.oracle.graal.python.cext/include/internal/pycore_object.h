@@ -404,26 +404,30 @@ typedef union {
 static inline PyDictOrValues *
 _PyObject_DictOrValuesPointer(PyObject *obj)
 {
-#if 0 // GraalPy change
     assert(Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
     return ((PyDictOrValues *)obj)-3;
-#else // GraalPy change: we don't have inlined managed dict values
-    assert(0);
-    return NULL;
-#endif // GraalPy change
 }
 
 static inline int
 _PyDictOrValues_IsValues(PyDictOrValues dorv)
 {
+#if 0 // GraalPy change
     return ((uintptr_t)dorv.values) & 1;
+#else // GraalPy change: we don't have inlined managed dict values
+    return 0;
+#endif // GraalPy change
 }
 
 static inline PyDictValues *
 _PyDictOrValues_GetValues(PyDictOrValues dorv)
 {
+#if 0 // GraalPy change
     assert(_PyDictOrValues_IsValues(dorv));
     return (PyDictValues *)(dorv.values + 1);
+#else // GraalPy change: we don't have inlined managed dict values
+    assert(0);
+    return NULL;
+#endif // GraalPy change
 }
 
 static inline PyObject *
