@@ -58,14 +58,14 @@ _Py_IDENTIFIER(n_unnamed_fields);
 #define VISIBLE_SIZE(op) Py_SIZE(op)
 #define VISIBLE_SIZE_TP(tp) \
     get_type_attr_as_size(tp, &PyId_n_sequence_fields)
+// GraalPy change: cannot use CPython's current _Py_ID mechanism
 #define REAL_SIZE_TP(tp) \
-<<<<<<< HEAD
     get_type_attr_as_size(tp, &PyId_n_fields)
-#define REAL_SIZE(op) REAL_SIZE_TP(Py_TYPE(op))
-=======
-    get_type_attr_as_size(tp, &_Py_ID(n_fields))
+#if 0 // GraalPy change: we do not store items within the struct
 #define REAL_SIZE(op) get_real_size((PyObject *)op)
->>>>>>> python-import
+#else // GraalPy change
+#define REAL_SIZE(op) REAL_SIZE_TP(Py_TYPE(op))
+#endif // GraalPy change
 
 #define UNNAMED_FIELDS_TP(tp) \
     get_type_attr_as_size(tp, &PyId_n_unnamed_fields)
@@ -515,14 +515,17 @@ initialize_static_fields(PyTypeObject *type, PyStructSequence_Desc *desc,
     // Account for hidden members in tp_basicsize because they are not
     // included in the variable size.
     Py_ssize_t n_hidden = n_members - desc->n_in_sequence;
+    n_hidden = 2; // GraalPy change: we store members and desc within tp_dict
     type->tp_basicsize = sizeof(PyStructSequence) + (n_hidden - 1) * sizeof(PyObject *);
     type->tp_itemsize = sizeof(PyObject *);
     type->tp_dealloc = (destructor)structseq_dealloc;
-    type->tp_repr = (reprfunc)structseq_repr;
+    // GraalPy change: set in a later upcall
+    type->tp_repr = NULL;
     type->tp_doc = desc->doc;
     type->tp_base = &PyTuple_Type;
-    type->tp_methods = structseq_methods;
-    type->tp_new = structseq_new;
+    // GraalPy change: set in a later upcall
+    type->tp_methods = NULL;
+    type->tp_new = NULL;
     type->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
     type->tp_traverse = (traverseproc) structseq_traverse;
     type->tp_members = tp_members;
@@ -537,13 +540,16 @@ initialize_static_type(PyTypeObject *type, PyStructSequence_Desc *desc,
     }
     Py_INCREF(type);
 
+#if 0 // GraalPy change: initialize dict in an upcall later
     if (initialize_structseq_dict(
             desc, _PyType_GetDict(type), n_members, n_unnamed_members) < 0) {
         Py_DECREF(type);
         return -1;
     }
+#endif // GraalPy change
 
-    return 0;
+    // GraalPy change: upcall to set the members and methods
+    return GraalPyTruffleStructSequence_InitType2(type, desc->fields, desc->n_in_sequence);
 }
 
 int
@@ -553,7 +559,11 @@ _PyStructSequence_InitBuiltinWithFlags(PyInterpreterState *interp,
                                        unsigned long tp_flags)
 {
     Py_ssize_t n_unnamed_members;
+#if 0 // GraalPy change
     Py_ssize_t n_members = count_members(desc, &n_unnamed_members);
+#else // GraalPy change
+    Py_ssize_t n_members = 0;
+#endif // GraalPy change
     PyMemberDef *members = NULL;
 
     if ((type->tp_flags & Py_TPFLAGS_READY) == 0) {
@@ -561,10 +571,12 @@ _PyStructSequence_InitBuiltinWithFlags(PyInterpreterState *interp,
         assert(type->tp_members == NULL);
         assert(type->tp_base == NULL);
 
+#if 0 // GraalPy change: initialize members in an upcall later
         members = initialize_members(desc, n_members, n_unnamed_members);
         if (members == NULL) {
             goto error;
         }
+#endif // GraalPy change
         initialize_static_fields(type, desc, members, n_members, tp_flags);
 
         _Py_SetImmortal(type);
@@ -580,6 +592,7 @@ _PyStructSequence_InitBuiltinWithFlags(PyInterpreterState *interp,
     }
 #endif
 
+#if 0 // GraalPy change
     if (_PyStaticType_InitBuiltin(interp, type) < 0) {
         PyErr_Format(PyExc_RuntimeError,
                      "Can't initialize builtin type %s",
@@ -592,6 +605,7 @@ _PyStructSequence_InitBuiltinWithFlags(PyInterpreterState *interp,
     {
         goto error;
     }
+#endif // GraalPy change
 
     return 0;
 
@@ -624,62 +638,24 @@ PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc)
     }
 #endif // GraalPy change
 
-<<<<<<< HEAD
-    type->tp_name = desc->name;
-    type->tp_basicsize = sizeof(PyStructSequence) - sizeof(PyObject *);
-    type->tp_itemsize = sizeof(PyObject *);
-    type->tp_dealloc = (destructor)structseq_dealloc;
-    // GraalPy change: set in a later upcall
-    type->tp_repr = NULL;
-    type->tp_doc = desc->doc;
-    type->tp_base = &PyTuple_Type;
-    // GraalPy change: set in a later upcall
-    type->tp_methods = NULL;
-    type->tp_new = NULL;
-    type->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | tp_flags;
-    type->tp_traverse = (traverseproc) structseq_traverse;
-
 #if 0 // GraalPy change: initialize members in an upcall later
-=======
->>>>>>> python-import
     n_members = count_members(desc, &n_unnamed_members);
     members = initialize_members(desc, n_members, n_unnamed_members);
     if (members == NULL) {
         return -1;
     }
-<<<<<<< HEAD
-    initialize_members(desc, members, n_members);
-    type->tp_members = members;
 #else // GraalPy change
-    type->tp_members = NULL;
+    n_members = 0;
+    members = NULL;
 #endif // GraalPy change
 
-    if (PyType_Ready(type) < 0) {
+    initialize_static_fields(type, desc, members, n_members, 0);
+    if (initialize_static_type(type, desc, n_members, n_unnamed_members) < 0) {
         // GraalPy change: not initialized
         // PyMem_Free(members);
         return -1;
     }
-    Py_INCREF(type);
-
-#if 0 // GraalPy change: initialize dict in an upcall later
-    if (initialize_structseq_dict(
-            desc, type->tp_dict, n_members, n_unnamed_members) < 0) {
-        PyMem_Free(members);
-        Py_DECREF(type);
-        return -1;
-    }
-#endif // GraalPy change
-
-    // GraalPy change: upcall to set the members and methods
-    return GraalPyTruffleStructSequence_InitType2(type, desc->fields, desc->n_in_sequence);
-=======
-    initialize_static_fields(type, desc, members, n_members, 0);
-    if (initialize_static_type(type, desc, n_members, n_unnamed_members) < 0) {
-        PyMem_Free(members);
-        return -1;
-    }
     return 0;
->>>>>>> python-import
 }
 
 void
@@ -689,14 +665,11 @@ PyStructSequence_InitType(PyTypeObject *type, PyStructSequence_Desc *desc)
 }
 
 
-<<<<<<< HEAD
 #if 0 // GraalPy change
-=======
 /* This is exposed in the internal API, not the public API.
    It is only called on builtin static types, which are all
    initialized via _PyStructSequence_InitBuiltinWithFlags(). */
 
->>>>>>> python-import
 void
 _PyStructSequence_FiniBuiltin(PyInterpreterState *interp, PyTypeObject *type)
 {
