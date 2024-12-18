@@ -172,10 +172,6 @@ check by comparing the reference count field to the immortality reference count.
  */
 struct _object {
     _PyObject_HEAD_EXTRA
-    Py_ssize_t Py_HIDE_IMPL_FIELD(ob_refcnt);
-    PyTypeObject *Py_HIDE_IMPL_FIELD(ob_type);
-
-#if 0 // GraalPy change
 #if (defined(__GNUC__) || defined(__clang__)) \
         && !(defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L)
     // On C99 and older, anonymous union is a GCC and clang extension
@@ -198,7 +194,6 @@ struct _object {
 #endif
 
     PyTypeObject *ob_type;
-#endif // GraalPy change
 };
 
 /* Cast argument to PyObject* type. */
