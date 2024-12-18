@@ -49,9 +49,9 @@ You can also manually trigger the detector with the Python `gc.collect()` call.
 
 ### Multi-Context and Native Libraries
 
-To support creating multiple GraalPy contexts that access native modules within the same JVM, we need to isolate them from each other.
+To support creating multiple GraalPy contexts that access native modules within the same JVM or Native Image, we need to isolate them from each other.
 The current strategy for this is to copy the libraries and modify them such that the dynamic library loader of the operating system will isolate them for us.
-To do this, all GraalPy contexts in the same JVM (not just those in the same engine!) must set the `python.IsolateNativeModules` option to `true`.
+To do this, all GraalPy contexts in the same process (not just those in the same engine!) must set the `python.IsolateNativeModules` option to `true`.
 
 On Linux, Python native extensions expect to lookup Python C API functions in the global namespace and specify no explicit dependency on any libpython.
 To isolate them, we copy them with a new name, change their `SONAME`, add a `DT_NEEDED` dependency on a copy of our libpython shared object, and finally load them with `RTLD_LOCAL`.
