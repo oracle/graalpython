@@ -17,7 +17,6 @@
 #include "structmember.h"         // PyMemberDef
 #endif // GraalPy change
 
-static Py_ssize_t max_module_number;
 
 #if 0 // GraalPy change
 static PyMemberDef module_members[] = {
@@ -53,10 +52,9 @@ PyModuleDef_Init(PyModuleDef* def)
 {
     assert(PyModuleDef_Type.tp_flags & Py_TPFLAGS_READY);
     if (def->m_base.m_index == 0) {
-        max_module_number++;
         Py_SET_REFCNT(def, 1);
         Py_SET_TYPE(def, &PyModuleDef_Type);
-        def->m_base.m_index = max_module_number;
+        def->m_base.m_index = _PyImport_GetNextModuleIndex();
     }
     return (PyObject*)def;
 }
