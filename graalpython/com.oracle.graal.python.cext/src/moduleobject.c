@@ -9,7 +9,6 @@
 #include "pycore_moduleobject.h"  // _PyModule_GetDef()
 #include "structmember.h"         // PyMemberDef
 
-static Py_ssize_t max_module_number;
 
 static PyMemberDef module_members[] = {
     {"__dict__", T_OBJECT, offsetof(PyModuleObject, md_dict), READONLY},
@@ -43,10 +42,9 @@ PyModuleDef_Init(PyModuleDef* def)
 {
     assert(PyModuleDef_Type.tp_flags & Py_TPFLAGS_READY);
     if (def->m_base.m_index == 0) {
-        max_module_number++;
         Py_SET_REFCNT(def, 1);
         Py_SET_TYPE(def, &PyModuleDef_Type);
-        def->m_base.m_index = max_module_number;
+        def->m_base.m_index = _PyImport_GetNextModuleIndex();
     }
     return (PyObject*)def;
 }
@@ -210,22 +208,7 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
             "module %s: PyModule_Create is incompatible with m_slots", name);
         return NULL;
     }
-    /* Make sure name is fully qualified.
-
-       This is a bit of a hack: when the shared library is loaded,
-       the module name is "package.module", but the module calls
-       PyModule_Create*() with just "module" for the name.  The shared
-       library loader squirrels away the true name of the module in
-       _Py_PackageContext, and PyModule_Create*() will substitute this
-       (if the name actually matches).
-    */
-    if (_Py_PackageContext != NULL) {
-        const char *p = strrchr(_Py_PackageContext, '.');
-        if (p != NULL && strcmp(module->m_name, p+1) == 0) {
-            name = _Py_PackageContext;
-            _Py_PackageContext = NULL;
-        }
-    }
+    name = _PyImport_ResolveNameWithPackageContext(name);
     if ((m = (PyModuleObject*)PyModule_New(name)) == NULL)
         return NULL;
 
@@ -1032,7 +1015,7 @@ PyTypeObject PyModule_Type = {
     0,                                          /* tp_hash */
     0,                                          /* tp_call */
     0,                                          /* tp_str */
-    (getattrofunc)module_getattro,              /* tp_getattro */
+    (getattrofunc)_Py_module_getattro,          /* tp_getattro */
     PyObject_GenericSetAttr,                    /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
