@@ -187,9 +187,9 @@ public class MultiContextCExtTest {
         c0.initialize("python");
         c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venv.toString().replace('\\', '/')));
 
-        assertTrue("created a copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".0")));
-        assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".1")));
-        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
+        assertTrue("created a copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup0")));
+        assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup1")));
+        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
 
         builder.option("python.IsolateNativeModules", "true");
         var c1 = builder.build();
@@ -208,20 +208,20 @@ public class MultiContextCExtTest {
         // First one works
         var r1 = c1.eval(code);
         assertEquals("tiny_sha3", r1.asString());
-        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
+        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
         // Second one works because of isolation
         var r2 = c2.eval(code);
         assertEquals("tiny_sha3", r2.asString());
         c2.eval("python", "import _sha3; _sha3.implementation = '12'");
         r2 = c2.eval(code);
-        assertEquals("12", r2.asString());
+        assertEquals(".dup2", r2.asString());
         // first context is unaffected
         r1 = c1.eval(code);
         assertEquals("tiny_sha3", r1.asString());
-        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
+        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
         // Third one works and triggers a dynamic relocation
         c3.eval(code);
-        assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".2")));
+        assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
         // Fourth one does not work because we changed the sys.prefix
         c4.eval("python", "import sys; sys.prefix = 12");
         try {
@@ -245,6 +245,7 @@ public class MultiContextCExtTest {
         } catch (PolyglotException e) {
             assertTrue("needs LLVM", e.getMessage().contains("LLVM"));
         }
+
     }
 
     private static boolean isVerbose() {

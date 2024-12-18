@@ -166,7 +166,7 @@ public final class NativeLibraryLocator {
     }
 
     private static String copyNameOf(String original, int capiSlot) {
-        return original + "." + Integer.toHexString(capiSlot);
+        return original + ".dup" + Integer.toHexString(capiSlot);
     }
 
     private static String resolve(PythonContext context, TruffleFile original, int capiSlot, String capiOrignalName) throws ApiInitException {
