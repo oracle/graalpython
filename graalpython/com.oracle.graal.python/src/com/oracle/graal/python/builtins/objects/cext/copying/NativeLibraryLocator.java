@@ -47,7 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.IOException;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -67,11 +67,14 @@ import com.oracle.truffle.api.strings.TruffleString;
  * guaranteed to work with the matching GraalPy version.
  */
 public final class NativeLibraryLocator {
+    private static final int MAX_CEXT_COPIES = 64;
+
     /**
      * Bitset for which copied C extension to use when {@link PythonOptions#IsolateNativeModules} is
      * enabled.
      */
-    private static AtomicLong CEXT_COPY_INDICES = new AtomicLong(-1);
+    private static final AtomicInteger CEXT_COPY_INDICES = new AtomicInteger(MAX_CEXT_COPIES);
+
 
     /**
      * The suffix to add to C extensions when loading. This allows us to support native module
@@ -101,9 +104,10 @@ public final class NativeLibraryLocator {
     public NativeLibraryLocator(PythonContext context, TruffleFile capiLibrary, boolean isolateNative) throws ApiInitException {
         this.capiOriginal = capiLibrary.getName();
         if (isolateNative) {
-            this.capiSlot = Long.numberOfTrailingZeros(Long.lowestOneBit(CEXT_COPY_INDICES.getAndUpdate((oldValue) -> oldValue ^ Long.lowestOneBit(oldValue))));
-            if (this.capiSlot == Long.SIZE) {
-                throw new ApiInitException(ErrorMessages.CAPI_ISOLATION_CAPPED_AT_D, Long.SIZE);
+            this.capiSlot = MAX_CEXT_COPIES - CEXT_COPY_INDICES.getAndDecrement();
+            if (this.capiSlot < 0) {
+                CEXT_COPY_INDICES.set(0);
+                throw new ApiInitException(ErrorMessages.CAPI_ISOLATION_CAPPED_AT_D, MAX_CEXT_COPIES);
             }
             this.capiCopy = resolve(context, capiLibrary, capiSlot, null);
         } else {
@@ -132,8 +136,6 @@ public final class NativeLibraryLocator {
     }
 
     public void close() {
-        // Return the C API slot for subsequent contexts to use.
-        CEXT_COPY_INDICES.updateAndGet((oldValue) -> oldValue | (1L << capiSlot));
     }
 
     /**
