@@ -45,7 +45,6 @@ _PyErr_SetRaisedException(PyThreadState *tstate, PyObject *exc)
     Py_XDECREF(old_exc);
 }
 
-#if 0 // GraalPy change
 static PyObject*
 _PyErr_CreateException(PyObject *exception_type, PyObject *value)
 {
@@ -71,7 +70,6 @@ _PyErr_CreateException(PyObject *exception_type, PyObject *value)
 
     return exc;
 }
-#endif // GraalPy change
 
 void
 _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,

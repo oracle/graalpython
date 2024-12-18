@@ -4277,6 +4277,7 @@ _PyType_FromMetaclass_impl(
         goto finally;
     }
 
+#if 0 // GraalPy change
     /* If this is an immutable type, check if all bases are also immutable,
      * and (for now) fire a deprecation warning if not.
      * (This isn't necessary for static types: those can't have heap bases,
@@ -4335,6 +4336,9 @@ _PyType_FromMetaclass_impl(
             goto finally;
         }
     }
+#else // GraalPy change
+        metaclass = &PyType_Type;
+#endif // GraalPy change
 
     /* Calculate best base, and check that all bases are type objects */
     PyTypeObject *base = best_base(bases);  // borrowed ref
@@ -4498,7 +4502,7 @@ _PyType_FromMetaclass_impl(
     if (type->tp_doc) {
         PyObject *__doc__ = PyUnicode_FromString(_PyType_DocWithoutSignature(type->tp_name, type->tp_doc));
         if (!__doc__)
-            goto fail;
+            goto finally;
         // GraalPy change: cannot use CPython's current _Py_ID mechanism
         r = _PyDict_SetItemId(dict, &PyId___doc__, __doc__);
         Py_DECREF(__doc__);
@@ -4508,12 +4512,16 @@ _PyType_FromMetaclass_impl(
     }
 
     if (weaklistoffset) {
-        if (PyDict_DelItem(dict, &_Py_ID(__weaklistoffset__)) < 0) {
+        // GraalPy change: cannot use CPython's current _Py_ID mechanism
+        type->tp_weaklistoffset = weaklistoffset;
+        if (PyDict_DelItemString(dict, "__weaklistoffset__") < 0) {
             goto finally;
         }
     }
     if (dictoffset) {
-        if (PyDict_DelItem(dict, &_Py_ID(__dictoffset__)) < 0) {
+        // GraalPy change: cannot use CPython's current _Py_ID mechanism
+        type->tp_dictoffset = dictoffset;
+        if (PyDict_DelItemString(dict, "__dictoffset__") < 0) {
             goto finally;
         }
     }
