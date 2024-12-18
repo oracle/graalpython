@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.copying;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
@@ -72,7 +71,7 @@ abstract class SharedObject implements AutoCloseable {
         }
     }
 
-    protected static final TruffleLogger LOGGER = PythonLanguage.getLogger("NativeLibraryLocator");
+    protected static final TruffleLogger LOGGER = NativeLibraryLocator.LOGGER;
 
     protected static final class LoggingOutputStream extends OutputStream {
         private final StringBuilder sb = new StringBuilder();
@@ -88,8 +87,8 @@ abstract class SharedObject implements AutoCloseable {
         }
 
         @Override
-        public void flush() throws IOException {
-            LOGGER.fine(() -> sb.toString());
+        public void flush() {
+            LOGGER.fine(sb::toString);
             sb.setLength(0);
         }
     }

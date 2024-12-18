@@ -42,12 +42,14 @@ package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BASE_PREFIX;
+import static com.oracle.graal.python.nodes.StringLiterals.J_MAX_CAPI_COPIES;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -58,6 +60,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 
 /**
  * Given a GraalPy virtual environment, this class helps prepare that environment so that multiple
@@ -67,7 +70,9 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
  * guaranteed to work with the matching GraalPy version.
  */
 public final class NativeLibraryLocator {
-    private static final int MAX_CEXT_COPIES = 64;
+    static final TruffleLogger LOGGER = PythonLanguage.getLogger("NativeLibraryLocator");
+
+    private static final int MAX_CEXT_COPIES = Integer.getInteger(J_MAX_CAPI_COPIES, 64);
 
     /**
      * Bitset for which copied C extension to use when {@link PythonOptions#IsolateNativeModules} is
@@ -144,6 +149,11 @@ public final class NativeLibraryLocator {
      * count}.
      */
     public static void replicate(TruffleFile venvDirectory, PythonContext context, int count) throws IOException, InterruptedException {
+        if (count > MAX_CEXT_COPIES) {
+            LOGGER.warning(() -> String.format("The current limit for concurrent Python contexts accessing the Python C API is %d, " +
+                                            "but we are preparing %d copies. The extra copies will only be used if a different value " +
+                                            "of the system property %s is set.", MAX_CEXT_COPIES, count, J_MAX_CAPI_COPIES));
+        }
         String suffix = context.getSoAbi().toJavaStringUncached();
         TruffleFile capiLibrary = context.getPublicTruffleFileRelaxed(context.getCAPIHome()).resolve(PythonContext.getSupportLibName("python-" + J_NATIVE));
         try {

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.StringLiterals.J_MAX_CAPI_COPIES;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonOS;
@@ -1672,7 +1673,7 @@ public abstract class ErrorMessages {
     public static final TruffleString SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION = tsLiteral("The sys.prefix must be a str, not '%p' when the `IsolateNativeModules' option is used, because it is the base path for searching the relocated C API. Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
     public static final TruffleString SYS_PREFIX_MUST_POINT_TO_A_VENV_FOR_CAPI_ISOLATION = tsLiteral("The sys.prefix must point to a venv, not be identical to sys.base_prefix when the `IsolateNativeModules' option is used, because it is the base path for searching and creating the relocated C API and extension modules. Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
     public static final TruffleString CAPI_ISOLATION_CAPPED_AT_D = tsLiteral(
-                    "There is no available slot for C API isolation. The current limit for concurrent Python contexts accessing the Python C API is %d.");
+                    "There is no available slot for C API isolation. The current limit for concurrent Python contexts accessing the Python C API is %d. This can be changed with the" + J_MAX_CAPI_COPIES + " System property.");
     public static final TruffleString SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION = tsLiteral(
                     "The sys.prefix must be a str, not '%p' when the `IsolateNativeModules' option is used, because it is the base path for searching the relocated C API. " +
                                     "Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
