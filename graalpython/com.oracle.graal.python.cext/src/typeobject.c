@@ -4103,6 +4103,7 @@ check_basicsize_includes_size_and_offsets(PyTypeObject* type)
                      type->tp_base->tp_name, type->tp_base->tp_basicsize);
         return 0;
     }
+#if 0 // GraalPy change: should be reverted once transitioned managed reports a valid weaklistoffset.
     if (type->tp_weaklistoffset + (Py_ssize_t)sizeof(PyObject*) > max) {
         PyErr_Format(PyExc_TypeError,
                      "weaklist offset %d is out of bounds for type '%s' (tp_basicsize = %d)",
@@ -4110,6 +4111,7 @@ check_basicsize_includes_size_and_offsets(PyTypeObject* type)
                      type->tp_name, type->tp_basicsize);
         return 0;
     }
+#endif // GraalPy change
     if (type->tp_dictoffset + (Py_ssize_t)sizeof(PyObject*) > max) {
         PyErr_Format(PyExc_TypeError,
                      "dict offset %d is out of bounds for type '%s' (tp_basicsize = %d)",
