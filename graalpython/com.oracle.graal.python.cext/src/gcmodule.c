@@ -520,6 +520,10 @@ visit_weak_reachable(PyObject *op, PyGC_Head *reachable)
         return 0;
     }
 
+    if (_Py_IsImmortal(op)) {
+        return 0;
+    }
+
     PyGC_Head *gc = AS_GC(op);
 
     /* 'visit_reachable' tests at this point for 'gc_is_collecting(gc)'.

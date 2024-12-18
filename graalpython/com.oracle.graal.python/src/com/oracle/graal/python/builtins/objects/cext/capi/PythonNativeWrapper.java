@@ -178,7 +178,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
          */
         public static final long MANAGED_REFCNT = 10;
 
-        public static final long IMMORTAL_REFCNT = Long.MAX_VALUE / 2;
+        public static final long IMMORTAL_REFCNT = 0xFFFFFFFFL; // from include/object.h
 
         protected PythonAbstractObjectNativeWrapper() {
         }

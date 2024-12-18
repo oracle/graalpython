@@ -46,7 +46,8 @@
 
 #define MANAGED_REFCNT 10
 #define HANDLE_BASE 0x8000000000000000ULL
-#define IMMORTAL_REFCNT (INT64_MAX >> 1)
+ // IMMORTAL_REFCNT value is aligned with include/object.h
+#define IMMORTAL_REFCNT 0xFFFFFFFFL
 
 #define points_to_py_handle_space(PTR) ((((uintptr_t) (PTR)) & HANDLE_BASE) != 0)
 #define stub_to_pointer(STUB_PTR) (((uintptr_t) (STUB_PTR)) | HANDLE_BASE)

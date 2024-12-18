@@ -1786,6 +1786,9 @@ public abstract class CApiTransitions {
         if (ignoreIfDead && refCount == 0) {
             return 0;
         }
+        if (refCount == IMMORTAL_REFCNT) {
+            return IMMORTAL_REFCNT;
+        }
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount + refCntDelta) > 0 : String.format("refcnt reached zero during managed adjustment for %016x (%d %016x + %d)\n", pointer, refCount, refCount, refCntDelta);
 
@@ -1799,6 +1802,9 @@ public abstract class CApiTransitions {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonContext.get(null).ownsGil();
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
+        if (refCount == IMMORTAL_REFCNT) {
+            return IMMORTAL_REFCNT;
+        }
         assert (refCount & 0xFFFFFFFF00000000L) == 0 : String.format("suspicious refcnt value during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
         assert (refCount - refCntDelta) >= 0 : String.format("refcnt below zero during managed adjustment for %016x (%d %016x - %d)\n", pointer, refCount, refCount, refCntDelta);
 

@@ -735,6 +735,10 @@ static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
 
 static inline Py_ALWAYS_INLINE void Py_INCREF(PyObject *op)
 {
+    // Explicitly check immortality against the immortal value
+    if (_Py_IsImmortal(op)) {
+        return;
+    }
     _Py_IncRef(op);
 }
 
@@ -742,6 +746,10 @@ static inline Py_ALWAYS_INLINE void Py_INCREF(PyObject *op)
 
 static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
 {
+    // Explicitly check immortality against the immortal value
+    if (_Py_IsImmortal(op)) {
+        return;
+    }
     _Py_DecRef(op);
 }
 #define Py_DECREF(op) Py_DECREF(_PyObject_CAST(op))
