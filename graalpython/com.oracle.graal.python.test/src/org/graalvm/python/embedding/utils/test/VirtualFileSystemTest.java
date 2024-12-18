@@ -55,12 +55,15 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.nio.file.NotLinkException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -85,6 +88,7 @@ import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ;
 import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ_WRITE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -175,8 +179,10 @@ public class VirtualFileSystemTest {
     private static void toRealPathVFS(FileSystem fs, String pathPrefix) throws IOException {
         assertEquals(Path.of(VFS_MOUNT_POINT, "dir1"), fs.toRealPath(Path.of(pathPrefix, "dir1")));
         assertEquals(Path.of(VFS_MOUNT_POINT, "SomeFile"), fs.toRealPath(Path.of(pathPrefix, "SomeFile")));
-        assertEquals(Path.of(VFS_MOUNT_POINT, "does-not-exist", "extractme"), fs.toRealPath(Path.of(pathPrefix, "does-not-exist", "extractme")));
+        assertEquals(Path.of(VFS_MOUNT_POINT, "does-not-exist"), fs.toRealPath(Path.of(pathPrefix, "does-not-exist")));
+        assertEquals(Path.of(VFS_MOUNT_POINT, "extractme"), fs.toRealPath(Path.of(pathPrefix, "extractme"), LinkOption.NOFOLLOW_LINKS));
         checkExtractedFile(fs.toRealPath(Path.of(pathPrefix, "extractme")), new String[]{"text1", "text2"});
+        checkException(NoSuchFileException.class, () -> fs.toRealPath(Path.of(pathPrefix, "does-not-exist", "extractme")));
     }
 
     @Test
@@ -383,10 +389,23 @@ public class VirtualFileSystemTest {
         fs.checkAccess(Path.of(pathPrefix, "dir1"), Set.of(AccessMode.READ));
         // check regular resource file
         fs.checkAccess(Path.of(pathPrefix, "SomeFile"), Set.of(AccessMode.READ));
+
         // check to be extracted file
+        fs.checkAccess(Path.of(pathPrefix, "extractme"), Set.of(AccessMode.READ), LinkOption.NOFOLLOW_LINKS);
+        checkException(SecurityException.class, () -> fs.checkAccess(Path.of(pathPrefix, "extractme"), Set.of(AccessMode.WRITE), LinkOption.NOFOLLOW_LINKS));
         fs.checkAccess(Path.of(pathPrefix, "extractme"), Set.of(AccessMode.READ));
+        // even though extracted -> FS is read-only and we are limiting the access to read-only also
+        // for extracted files
+        checkException(IOException.class, () -> fs.checkAccess(Path.of(pathPrefix, "extractme"), Set.of(AccessMode.WRITE)));
+
+        checkException(NoSuchFileException.class, () -> fs.checkAccess(Path.of(pathPrefix, "does-not-exits", "extractme"), Set.of(AccessMode.READ), LinkOption.NOFOLLOW_LINKS));
+        checkException(NoSuchFileException.class, () -> fs.checkAccess(Path.of(pathPrefix, "does-not-exits", "extractme"), Set.of(AccessMode.READ)));
 
         checkException(SecurityException.class, () -> fs.checkAccess(Path.of(pathPrefix, "SomeFile"), Set.of(AccessMode.WRITE)), "write access should not be possible with VFS");
+        checkException(SecurityException.class, () -> fs.checkAccess(Path.of(pathPrefix, "does-not-exist"), Set.of(AccessMode.WRITE)), "execute access should not be possible with VFS");
+        checkException(SecurityException.class, () -> fs.checkAccess(Path.of(pathPrefix, "SomeFile"), Set.of(AccessMode.EXECUTE)), "execute access should not be possible with VFS");
+        checkException(SecurityException.class, () -> fs.checkAccess(Path.of(pathPrefix, "does-not-exist"), Set.of(AccessMode.EXECUTE)), "execute access should not be possible with VFS");
+
         checkException(NoSuchFileException.class, () -> fs.checkAccess(Path.of(pathPrefix, "does-not-exits"), Set.of(AccessMode.READ)),
                         "should not be able to access a file which does not exist in VFS");
         checkException(NoSuchFileException.class, () -> fs.checkAccess(Path.of(pathPrefix, "does-not-exits", "extractme"), Set.of(AccessMode.READ)),
@@ -485,6 +504,11 @@ public class VirtualFileSystemTest {
 
             newByteChannelVFS(fs, VFS_MOUNT_POINT);
             withCWD(fs, VFS_ROOT_PATH, (fst) -> newByteChannelVFS(fst, ""));
+
+            checkException(NullPointerException.class, () -> fs.newByteChannel(Path.of(VFS_MOUNT_POINT, "does-not-exist"), null));
+            withCWD(fs, VFS_ROOT_PATH, (fst) -> checkException(NullPointerException.class, () -> fst.newByteChannel(Path.of("does-not-exist"), null)));
+            checkException(NullPointerException.class, () -> fs.newByteChannel(Path.of(VFS_MOUNT_POINT, "does-not-exist", "extractme"), null));
+            withCWD(fs, VFS_ROOT_PATH, (fst) -> checkException(NullPointerException.class, () -> fst.newByteChannel(Path.of("does-not-exist", "extractme"), null)));
         }
 
         // from real FS
@@ -502,25 +526,34 @@ public class VirtualFileSystemTest {
     }
 
     private static void newByteChannelVFS(FileSystem fs, String pathPrefix) throws IOException {
-        Path path = Path.of(pathPrefix, "file1");
-        for (StandardOpenOption o : StandardOpenOption.values()) {
+        Path file1 = Path.of(pathPrefix, "file1");
+        Path extractable = Path.of(pathPrefix, "extractme");
+        for (StandardOpenOption o : new StandardOpenOption[]{StandardOpenOption.WRITE, StandardOpenOption.READ}) {
             if (o == StandardOpenOption.READ) {
-                SeekableByteChannel bch = fs.newByteChannel(path, Set.of(o));
-                ByteBuffer buffer = ByteBuffer.allocate(1024);
-                bch.read(buffer);
-                String s = new String(buffer.array());
-                String[] ss = s.split(System.lineSeparator());
-                assertTrue(ss.length >= 2);
-                assertEquals("text1", ss[0]);
-                assertEquals("text2", ss[1]);
-
-                checkException(IOException.class, () -> bch.write(buffer), "should not be able to write to VFS");
-                checkException(IOException.class, () -> bch.truncate(0), "should not be able to write to VFS");
+                newByteChannelVFS(fs, file1, Set.of(o));
+                newByteChannelVFS(fs, file1, Set.of(o, LinkOption.NOFOLLOW_LINKS));
+                newByteChannelVFS(fs, extractable, Set.of(o));
+                checkException(IOException.class, () -> fs.newByteChannel(extractable, Set.of(o, LinkOption.NOFOLLOW_LINKS)));
             } else {
-                checkCanOnlyRead(fs, path, o);
+                checkCanOnlyRead(fs, file1, o);
+                checkCanOnlyRead(fs, extractable, o);
             }
         }
-        checkCanOnlyRead(fs, path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        checkCanOnlyRead(fs, file1, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        checkCanOnlyRead(fs, extractable, StandardOpenOption.READ, StandardOpenOption.WRITE);
+    }
+
+    private static void newByteChannelVFS(FileSystem fs, Path path, Set<OpenOption> options) throws IOException {
+        SeekableByteChannel bch = fs.newByteChannel(path, options);
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        bch.read(buffer);
+        String s = new String(buffer.array());
+        String[] ss = s.split(System.lineSeparator());
+        assertTrue(ss.length >= 2);
+        assertEquals("text1", ss[0]);
+        assertEquals("text2", ss[1]);
+        checkException(NonWritableChannelException.class, () -> bch.write(buffer), "should not be able to write to VFS");
+        checkException(NonWritableChannelException.class, () -> bch.truncate(0), "should not be able to write to VFS");
     }
 
     private static void newByteChannelRealFS(FileSystem fs, Path path, String expectedText) throws IOException {
@@ -621,6 +654,19 @@ public class VirtualFileSystemTest {
     private static void readAttributesVFS(FileSystem fs, String pathPrefix) throws IOException {
         Map<String, Object> attrs = fs.readAttributes(Path.of(pathPrefix, "dir1"), "creationTime");
         assertEquals(FileTime.fromMillis(0), attrs.get("creationTime"));
+
+        attrs = fs.readAttributes(Path.of(pathPrefix, "extractme"), "creationTime,isSymbolicLink,isRegularFile", LinkOption.NOFOLLOW_LINKS);
+        assertEquals(FileTime.fromMillis(0), attrs.get("creationTime"));
+        assertTrue((Boolean) attrs.get("isSymbolicLink"));
+        assertFalse((Boolean) attrs.get("isRegularFile")); //
+
+        attrs = fs.readAttributes(Path.of(pathPrefix, "extractme"), "creationTime,isSymbolicLink,isRegularFile");
+        assertNotEquals(FileTime.fromMillis(0), attrs.get("creationTime"));
+        assertFalse((Boolean) attrs.get("isSymbolicLink"));
+        assertTrue((Boolean) attrs.get("isRegularFile"));
+
+        checkException(NoSuchFileException.class, () -> fs.readAttributes(Path.of(pathPrefix, "does-not-exist", "extractme"), "creationTime", LinkOption.NOFOLLOW_LINKS));
+        checkException(NoSuchFileException.class, () -> fs.readAttributes(Path.of(pathPrefix, "does-not-exist", "extractme"), "creationTime"));
 
         checkException(NoSuchFileException.class, () -> fs.readAttributes(Path.of(pathPrefix, "does-not-exist"), "creationTime"), "");
         checkException(UnsupportedOperationException.class, () -> fs.readAttributes(Path.of(pathPrefix, "file1"), "unix:creationTime"), "");
@@ -876,7 +922,6 @@ public class VirtualFileSystemTest {
             checkException(IOException.class, () -> fs.createSymbolicLink(VFS_ROOT_PATH.resolve("link1"), realFSLinkTarget));
 
             checkException(SecurityException.class, () -> fs.createSymbolicLink(VFS_ROOT_PATH, VFS_ROOT_PATH.resolve("link")));
-            checkException(SecurityException.class, () -> fs.readSymbolicLink(VFS_ROOT_PATH.resolve("link1")));
         }
         checkException(SecurityException.class, () -> rHostIOVFS.createSymbolicLink(realFSDir.resolve("link2"), realFSLinkTarget));
         checkException(SecurityException.class, () -> noHostIOVFS.createSymbolicLink(realFSDir.resolve("link3"), realFSLinkTarget));
@@ -900,6 +945,20 @@ public class VirtualFileSystemTest {
             withCWD(fs, VFS_ROOT_PATH, (fst) -> assertEquals(target, fst.readSymbolicLink(Path.of("..", symlink.toString()))));
             withCWD(fs, dir, (fst) -> assertEquals(target, fst.readSymbolicLink(Path.of(dotdot(dir.getNameCount()), "..", VFS_MOUNT_POINT, "..", symlink.toString()))));
         }
+    }
+
+    @Test
+    public void readSymbolicLink() throws Exception {
+        for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS, noHostIOVFS}) {
+            readSymbolicLink(fs, VFS_MOUNT_POINT);
+            withCWD(fs, VFS_ROOT_PATH, (fst) -> readSymbolicLink(fst, ""));
+        }
+    }
+
+    private static void readSymbolicLink(FileSystem fs, String vfsPrefix) throws IOException {
+        checkException(NotLinkException.class, () -> fs.readSymbolicLink(Path.of(vfsPrefix, "file1")));
+        checkException(NoSuchFileException.class, () -> fs.readSymbolicLink(Path.of(vfsPrefix, "does-not-exist")));
+        checkExtractedFile(fs.readSymbolicLink(Path.of(vfsPrefix, "extractme")), new String[]{"text1", "text2"});
     }
 
     @Test

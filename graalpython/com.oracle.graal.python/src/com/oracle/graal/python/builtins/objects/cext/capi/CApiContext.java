@@ -53,7 +53,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
-import java.nio.file.LinkOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -819,7 +818,7 @@ public final class CApiContext extends CExtContext {
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             // e.g. "libpython-native.so"
             String libName = context.getLLVMSupportExt("python");
-            TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
             try {
                 SourceBuilder capiSrcBuilder;
                 final boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
