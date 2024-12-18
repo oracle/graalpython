@@ -46,6 +46,8 @@ _PyModule_IsExtension(PyObject *obj)
 }
 #endif // GraalPy change
 
+// GraalPy change
+static Py_ssize_t LAST_MODULE_INDEX;
 
 PyObject*
 PyModuleDef_Init(PyModuleDef* def)
@@ -54,7 +56,9 @@ PyModuleDef_Init(PyModuleDef* def)
     if (def->m_base.m_index == 0) {
         Py_SET_REFCNT(def, 1);
         Py_SET_TYPE(def, &PyModuleDef_Type);
-        def->m_base.m_index = _PyImport_GetNextModuleIndex();
+        // GraalPy change
+        // def->m_base.m_index = _PyImport_GetNextModuleIndex();
+        def->m_base.m_index = ++LAST_MODULE_INDEX;
     }
     return (PyObject*)def;
 }

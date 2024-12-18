@@ -219,6 +219,7 @@ PyImport_GetModuleDict(void)
     }
     return MODULES(interp);
 }
+#endif // GraalPy change
 
 // This is only kept around for extensions that use _Py_IDENTIFIER.
 PyObject *
@@ -230,7 +231,6 @@ _PyImport_GetModuleId(_Py_Identifier *nameid)
     }
     return PyImport_GetModule(name);
 }
-#endif // GraalPy change
 
 int
 _PyImport_SetModule(PyObject *name, PyObject *m)

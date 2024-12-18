@@ -1044,7 +1044,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyImport_FixupExtensionObject", ret = Int, args = {PyObject, PyObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_GetModuleAttr", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_GetModuleAttrString", ret = PyObject, args = {ConstCharPtr, ConstCharPtr}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyImport_GetModuleId", ret = PyObject, args = {_PY_IDENTIFIER_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyImport_GetModuleId", ret = PyObject, args = {_PY_IDENTIFIER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyImport_IsInitialized", ret = Int, args = {PyInterpreterState}, call = NotImplemented)
     @CApiBuiltin(name = "_PyImport_SetModuleString", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyInterpreterState_GetConfig", ret = CONST_PYCONFIG_PTR, args = {PyInterpreterState}, call = CImpl)
