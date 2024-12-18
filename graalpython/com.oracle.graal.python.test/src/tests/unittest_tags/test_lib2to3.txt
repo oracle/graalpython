@@ -463,7 +463,7 @@ lib2to3.tests.test_fixers.Test_zip.test_future_builtins @ darwin-arm64,darwin-x8
 lib2to3.tests.test_fixers.Test_zip.test_zip_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_fixers.Test_zip.test_zip_nochange @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_fixers.Test_zip.test_zip_trailers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-lib2to3.tests.test_main.TestMain.test_filename_changing_on_output_single_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+lib2to3.tests.test_main.TestMain.test_filename_changing_on_output_single_dir @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_main.TestMain.test_filename_changing_on_output_single_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_main.TestMain.test_filename_changing_on_output_two_files @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 lib2to3.tests.test_parser.TestAsyncAwait.test_async_for @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
