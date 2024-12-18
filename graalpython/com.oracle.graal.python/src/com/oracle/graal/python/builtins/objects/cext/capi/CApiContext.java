@@ -263,9 +263,9 @@ public final class CApiContext extends CExtContext {
         }
 
         /**
-         * Get the variable part of a module's export symbol name. Returns a bytes instance. For
-         * non-ASCII-named modules, the name is encoded as per PEP 489. The hook_prefix pointer is
-         * set to either ascii_only_prefix or nonascii_prefix, as appropriate.
+         * Get the variable part of a module's export symbol name. For non-ASCII-named modules, the
+         * name is encoded as per PEP 489. The hook_prefix pointer is set to either
+         * ascii_only_prefix or nonascii_prefix, as appropriate.
          */
         @TruffleBoundary
         TruffleString getEncodedName() {
@@ -1048,9 +1048,9 @@ public final class CApiContext extends CExtContext {
      * @param context The Python context object.
      * @param spec The name and path of the module (also containing the original module spec
      *            object).
-     * @param checkFunctionResultNode An adopted node instance. This is necessary because the result
-     *            check could raise an exception and only an adopted node will report useful source
-     *            locations.
+     * @param checkFunctionResultNode A node to check that the function result does not indicate
+     *            that an exception was raised on the native side. It should be an adopted  node,
+     *            because only an adopted node will report useful source locations.
      * @return A Python module.
      * @throws IOException If the specified file cannot be loaded.
      * @throws ApiInitException If the corresponding native context could not be initialized.

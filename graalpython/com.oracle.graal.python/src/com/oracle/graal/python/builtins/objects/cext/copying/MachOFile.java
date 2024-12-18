@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -150,13 +151,23 @@ final class MachOFile extends SharedObject {
     }
 
     @Override
-    public byte[] write() {
+    public void write(TruffleFile copy) throws IOException, InterruptedException {
         buffer.position(0);
         mh.put(buffer);
         for (var cmd : loadCommands) {
             cmd.put(buffer);
         }
-        return buffer.array();
+
+        try (var os = copy.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            os.write(buffer.array());
+        }
+
+        var pb = newProcessBuilder(context);
+        pb.command(getCodesign(), "--force", "--sign", "-", copy.getAbsoluteFile().getPath());
+        var proc = pb.start();
+        if (proc.waitFor() != 0) {
+            throw new IOException("Failed to run `codesign` command. Make sure you have it on your PATH.");
+        }
     }
 
     private String getCodesign() {
@@ -171,12 +182,7 @@ final class MachOFile extends SharedObject {
     }
 
     @Override
-    protected void fixup(TruffleFile copy) throws IOException, InterruptedException {
-        var pb = newProcessBuilder(context);
-        pb.command(getCodesign(), "--force", "--sign", "-", copy.getAbsoluteFile().getPath());
-        var proc = pb.start();
-        if (proc.waitFor() != 0) {
-            throw new IOException("Failed to run `codesign` command. Make sure you have it on your PATH.");
-        }
+    public void close() {
+        // Nothing to do
     }
 }

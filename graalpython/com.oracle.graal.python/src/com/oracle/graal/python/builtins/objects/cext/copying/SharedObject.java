@@ -49,12 +49,14 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
 
-abstract class SharedObject {
+abstract class SharedObject implements AutoCloseable {
     abstract void setId(String newId) throws IOException, InterruptedException;
 
     abstract void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException;
 
-    abstract byte[] write() throws IOException;
+    abstract void write(TruffleFile copy) throws IOException, InterruptedException;
+
+    abstract public void close() throws IOException, InterruptedException;
 
     static SharedObject open(TruffleFile file, PythonContext context) throws IOException {
         var f = file.readAllBytes();
@@ -98,6 +100,4 @@ abstract class SharedObject {
         pb.redirectError(pb.createRedirectToStream(new LoggingOutputStream()));
         return pb;
     }
-
-    protected abstract void fixup(TruffleFile copy) throws IOException, InterruptedException;
 }

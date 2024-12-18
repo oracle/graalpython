@@ -42,6 +42,7 @@
 package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import java.io.IOException;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 import com.oracle.graal.python.runtime.PythonContext;
@@ -68,13 +69,6 @@ final class ElfFile extends SharedObject {
     ElfFile(byte[] b, PythonContext context) throws IOException {
         this.context = context;
         this.tempfile = context.getEnv().createTempFile(null, null, ".so");
-        this.context.registerAtexitHook((ctx) -> {
-            try {
-                this.tempfile.delete();
-            } catch (IOException e) {
-                // ignore
-            }
-        });
         try (var os = this.tempfile.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
             os.write(b);
         }
@@ -106,12 +100,12 @@ final class ElfFile extends SharedObject {
     }
 
     @Override
-    public byte[] write() throws IOException {
-        return tempfile.readAllBytes();
+    public void write(TruffleFile copy) throws IOException {
+        tempfile.copy(copy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
     }
 
     @Override
-    protected void fixup(TruffleFile copy) {
-        // Nothing to do
+    public void close() throws IOException {
+        tempfile.delete();
     }
 }

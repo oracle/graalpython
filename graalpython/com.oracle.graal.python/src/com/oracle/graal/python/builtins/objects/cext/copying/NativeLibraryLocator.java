@@ -46,18 +46,18 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.IOException;
-import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Given a GraalPy virtual environment, this class helps prepare that environment so that multiple
@@ -157,9 +157,9 @@ public final class NativeLibraryLocator {
             }
         } catch (RuntimeException e) {
             var cause = e.getCause();
-            if (cause != null && cause instanceof IOException ioCause) {
+            if (cause instanceof IOException ioCause) {
                 throw ioCause;
-            } else if (cause != null && cause instanceof InterruptedException intCause) {
+            } else if (cause instanceof InterruptedException intCause) {
                 throw intCause;
             } else {
                 throw e;
@@ -185,10 +185,13 @@ public final class NativeLibraryLocator {
             Object sysBasePrefix = context.getSysModule().getAttribute(T_BASE_PREFIX);
             if (sysPrefix.equals(sysBasePrefix)) {
                 throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_POINT_TO_A_VENV_FOR_CAPI_ISOLATION);
-            } else if (sysPrefix instanceof TruffleString tsSysPrefix) {
-                copy = env.getPublicTruffleFile(tsSysPrefix.toJavaStringUncached()).resolve(newName);
             } else {
-                throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION, sysPrefix);
+                try {
+                    var tsSysPrefix = CastToTruffleStringNode.executeUncached(sysPrefix);
+                    copy = env.getPublicTruffleFile(tsSysPrefix.toJavaStringUncached()).resolve(newName);
+                } catch (CannotCastException e) {
+                    throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION, sysPrefix);
+                }
             }
         } else {
             copy = original.resolveSibling(newName);
@@ -204,18 +207,16 @@ public final class NativeLibraryLocator {
     }
 
     private static void replicate(TruffleFile original, TruffleFile copy, PythonContext context, int slot, String... dependenciesToUpdate) throws IOException, InterruptedException {
-        var o = SharedObject.open(original, context);
-        for (var depToUpdate : dependenciesToUpdate) {
-            if (depToUpdate != null) {
-                var newDepName = copyNameOf(depToUpdate, slot);
-                o.changeOrAddDependency(depToUpdate, newDepName);
+        try (var o = SharedObject.open(original, context)) {
+            for (var depToUpdate : dependenciesToUpdate) {
+                if (depToUpdate != null) {
+                    var newDepName = copyNameOf(depToUpdate, slot);
+                    o.changeOrAddDependency(depToUpdate, newDepName);
+                }
             }
+            o.setId(copy.getName());
+            o.write(copy);
         }
-        o.setId(copy.getName());
-        try (var os = copy.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-            os.write(o.write());
-        }
-        o.fixup(copy);
     }
 
     private static void walk(TruffleFile dir, String suffix, String capiOriginalName, PythonContext context, int capiSlot, BiFunction<TruffleFile, String, TruffleFile> f)
