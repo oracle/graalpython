@@ -151,7 +151,7 @@ final class MachOFile extends SharedObject {
         }
         assert buffer.position() == MachOHeader.SIZE64 + mh.sizeOfCmds;
         for (int i = 0; i < emptySpace; i++) {
-            buffer.put((byte)0);
+            buffer.put((byte) 0);
         }
 
         try (var os = copy.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {

@@ -407,12 +407,17 @@ def punittest(ars, report=False):
     configs += [
         TestConfig("junit", vm_args + graalpy_tests + args, True),
         TestConfig("junit", vm_args + graalpy_tests + args, False),
-        # MultiContext cext tests should run by themselves so they aren't influenced by others
-        TestConfig("multi-cext", vm_args + ['org.graalvm.python.embedding.cext.test'] + args + (["--use-graalvm"] if has_compiler else []), True),
         # TCK suite is not compatible with the PythonMxUnittestConfig,
         # so it must have its own run and the useResources config is ignored
         TestConfig("tck", vm_args + ['com.oracle.truffle.tck.tests'] + args, False),
     ]
+    if mx.is_linux():
+        # see GR-60656 and GR-60658 for what's missing in darwin and windows support
+        configs.append(
+            # MultiContext cext tests should run by themselves so they aren't influenced by others
+            TestConfig("multi-cext", vm_args + ['org.graalvm.python.embedding.cext.test'] + args + (["--use-graalvm"] if has_compiler else []), True),
+        )
+
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
         configs.append(TestConfig("async", vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test', 'org.graalvm.python.embedding.utils.test'] + async_regex + args, True, False))
