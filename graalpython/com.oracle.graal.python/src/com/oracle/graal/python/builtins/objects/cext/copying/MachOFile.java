@@ -87,21 +87,14 @@ final class MachOFile extends SharedObject {
         var newBuffer = ByteBuffer.allocate(cmd.cmdSize);
         newBuffer.order(buffer.order());
         cmd.put(newBuffer);
+        assert newBuffer.position() == cmd.cmdSize;
         newBuffer.position(0);
-        loadCommands.add(MachOLoadCommand.get(newBuffer));
+        var newCmd = MachOLoadCommand.get(newBuffer);
+        loadCommands.add(newCmd);
+        assert newCmd.cmdSize == cmd.cmdSize;
         mh.nCmds += 1;
         mh.sizeOfCmds += cmd.cmdSize;
         emptySpace -= cmd.cmdSize;
-    }
-
-    private void removeCodeSignature() {
-        for (int i = 0; i < loadCommands.size(); ++i) {
-            var cmd = loadCommands.get(i);
-            if (cmd.cmd == MachOLoadCommand.LC_CODE_SIGNATURE) {
-                removeCommand(cmd);
-                LOGGER.fine(() -> String.format("Removing code LC_CODE_SIGNATURE. New empty space is %d", emptySpace));
-            }
-        }
     }
 
     private void removeId() {
@@ -128,7 +121,6 @@ final class MachOFile extends SharedObject {
 
     @Override
     public void setId(String newId) throws IOException {
-        removeCodeSignature();
         removeId();
 
         var newCmd = new MachODylibCommand(MachODylibCommand.LC_ID_DYLIB, MachODylibCommand.SIZE, new byte[0], MachODylibCommand.SIZE, 0, 0, 0);
@@ -140,7 +132,6 @@ final class MachOFile extends SharedObject {
 
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws IOException {
-        removeCodeSignature();
         removeLoad(oldName);
 
         var newCmd = new MachODylibCommand(MachODylibCommand.LC_LOAD_DYLIB, MachODylibCommand.SIZE, new byte[0], MachODylibCommand.SIZE, 0, 0, 0);
@@ -154,8 +145,13 @@ final class MachOFile extends SharedObject {
     public void write(TruffleFile copy) throws IOException, InterruptedException {
         buffer.position(0);
         mh.put(buffer);
+        assert buffer.position() == MachOHeader.SIZE64;
         for (var cmd : loadCommands) {
             cmd.put(buffer);
+        }
+        assert buffer.position() == MachOHeader.SIZE64 + mh.sizeOfCmds;
+        for (int i = 0; i < emptySpace; i++) {
+            buffer.put((byte)0);
         }
 
         try (var os = copy.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {

@@ -78,6 +78,7 @@ final class MachOLoadCommand {
     }
 
     void put(ByteBuffer f) {
+        content.position(0);
         f.put(content);
     }
 }
