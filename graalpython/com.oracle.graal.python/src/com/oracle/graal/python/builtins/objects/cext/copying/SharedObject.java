@@ -55,7 +55,7 @@ abstract class SharedObject implements AutoCloseable {
 
     abstract void write(TruffleFile copy) throws IOException, InterruptedException;
 
-    abstract public void close() throws IOException, InterruptedException;
+    public abstract void close() throws IOException, InterruptedException;
 
     static SharedObject open(TruffleFile file, PythonContext context) throws IOException {
         var f = file.readAllBytes();

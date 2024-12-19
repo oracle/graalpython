@@ -80,7 +80,6 @@ public final class NativeLibraryLocator {
      */
     private static final AtomicInteger CEXT_COPY_INDICES = new AtomicInteger(MAX_CEXT_COPIES);
 
-
     /**
      * The suffix to add to C extensions when loading. This allows us to support native module
      * isolation with {@link PythonOptions#IsolateNativeModules}. If the value is {@code -1}, it
@@ -151,8 +150,8 @@ public final class NativeLibraryLocator {
     public static void replicate(TruffleFile venvDirectory, PythonContext context, int count) throws IOException, InterruptedException {
         if (count > MAX_CEXT_COPIES) {
             LOGGER.warning(() -> String.format("The current limit for concurrent Python contexts accessing the Python C API is %d, " +
-                                            "but we are preparing %d copies. The extra copies will only be used if a different value " +
-                                            "of the system property %s is set.", MAX_CEXT_COPIES, count, J_MAX_CAPI_COPIES));
+                            "but we are preparing %d copies. The extra copies will only be used if a different value " +
+                            "of the system property %s is set.", MAX_CEXT_COPIES, count, J_MAX_CAPI_COPIES));
         }
         String suffix = context.getSoAbi().toJavaStringUncached();
         TruffleFile capiLibrary = context.getPublicTruffleFileRelaxed(context.getCAPIHome()).resolve(PythonContext.getSupportLibName("python-" + J_NATIVE));

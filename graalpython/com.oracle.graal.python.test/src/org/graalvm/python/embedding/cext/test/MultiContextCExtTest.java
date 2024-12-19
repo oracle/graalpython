@@ -214,7 +214,7 @@ public class MultiContextCExtTest {
         assertEquals("tiny_sha3", r2.asString());
         c2.eval("python", "import _sha3; _sha3.implementation = '12'");
         r2 = c2.eval(code);
-        assertEquals(".dup2", r2.asString());
+        assertEquals("12", r2.asString());
         // first context is unaffected
         r1 = c1.eval(code);
         assertEquals("tiny_sha3", r1.asString());

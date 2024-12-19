@@ -1670,7 +1670,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ARROW_ARRAY_ALREADY_RELEASED = tsLiteral("Cannot release already released ArrowArray");
     public static final TruffleString ARROW_SCHEMA_ALREADY_RELEASED = tsLiteral("Cannot release already released ArrowSchema");
     public static final TruffleString CAPI_ISOLATION_CAPPED_AT_D = tsLiteral(
-                    "There is no available slot for C API isolation. The current limit for concurrent Python contexts accessing the Python C API is %d. This can be changed with the" + J_MAX_CAPI_COPIES + " System property.");
+                    "There is no available slot for C API isolation. The current limit for concurrent Python contexts accessing the Python C API is %d. This can be changed with the" +
+                                    J_MAX_CAPI_COPIES + " System property.");
     public static final TruffleString SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION = tsLiteral(
                     "The sys.prefix must be a str, not '%p' when the `IsolateNativeModules' option is used, because it is the base path for searching the relocated C API. " +
                                     "Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");

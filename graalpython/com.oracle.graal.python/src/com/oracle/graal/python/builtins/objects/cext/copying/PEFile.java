@@ -42,8 +42,6 @@
 package com.oracle.graal.python.builtins.objects.cext.copying;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.CopyOption;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
