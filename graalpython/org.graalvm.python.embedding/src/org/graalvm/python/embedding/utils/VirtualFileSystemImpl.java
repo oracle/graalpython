@@ -205,7 +205,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      */
     private final Path extractDir;
 
-    private boolean extractOnStartup = "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
+    private boolean extractOnStartup = "true".equals(System.getProperty("org.graalvm.python.vfs.extractOnStartup")) || "true".equals(System.getProperty("graalpy.vfs.extractOnStartup"));
 
     /**
      * A filter to determine if a path should be extracted (see {@link #shouldExtract(Path)}).
