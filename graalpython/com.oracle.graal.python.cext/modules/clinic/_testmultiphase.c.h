@@ -32,7 +32,7 @@ _testmultiphase_StateAccessType_get_defining_module_impl(StateAccessTypeObject *
 static PyObject *
 _testmultiphase_StateAccessType_get_defining_module(StateAccessTypeObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    if (nargs) {
+    if (nargs || (kwnames && PyTuple_GET_SIZE(kwnames))) {
         PyErr_SetString(PyExc_TypeError, "get_defining_module() takes no arguments");
         return NULL;
     }
@@ -55,7 +55,7 @@ _testmultiphase_StateAccessType_getmodulebydef_bad_def_impl(StateAccessTypeObjec
 static PyObject *
 _testmultiphase_StateAccessType_getmodulebydef_bad_def(StateAccessTypeObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    if (nargs) {
+    if (nargs || (kwnames && PyTuple_GET_SIZE(kwnames))) {
         PyErr_SetString(PyExc_TypeError, "getmodulebydef_bad_def() takes no arguments");
         return NULL;
     }
@@ -84,7 +84,23 @@ static PyObject *
 _testmultiphase_StateAccessType_increment_count_clinic(StateAccessTypeObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
+    #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+
+    #define NUM_KEYWORDS 2
+    static struct {
+        PyGC_Head _this_is_not_used;
+        PyObject_VAR_HEAD
+        PyObject *ob_item[NUM_KEYWORDS];
+    } _kwtuple = {
+        .ob_base = PyVarObject_HEAD_INIT(&PyTuple_Type, NUM_KEYWORDS)
+        .ob_item = { _Py_LATIN1_CHR('n'), &_Py_ID(twice), },
+    };
+    #undef NUM_KEYWORDS
+    #define KWTUPLE (&_kwtuple.ob_base.ob_base)
+
+    #else  // !Py_BUILD_CORE
     #  define KWTUPLE NULL
+    #endif  // !Py_BUILD_CORE
 
     static const char * const _keywords[] = {"n", "twice", NULL};
     static _PyArg_Parser _parser = {
@@ -145,7 +161,7 @@ _testmultiphase_StateAccessType_get_count_impl(StateAccessTypeObject *self,
 static PyObject *
 _testmultiphase_StateAccessType_get_count(StateAccessTypeObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    if (nargs) {
+    if (nargs || (kwnames && PyTuple_GET_SIZE(kwnames))) {
         PyErr_SetString(PyExc_TypeError, "get_count() takes no arguments");
         return NULL;
     }

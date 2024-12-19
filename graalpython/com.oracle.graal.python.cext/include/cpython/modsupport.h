@@ -112,5 +112,3 @@ PyAPI_FUNC(PyObject * const *) _PyArg_UnpackKeywordsWithVararg(
 
 PyAPI_FUNC(PyObject *) _PyModule_CreateInitialized(PyModuleDef*, int apiver);
 PyAPI_FUNC(int) _PyModule_Add(PyObject *, const char *, PyObject *);
-
-PyAPI_DATA(const char *) _Py_PackageContext;
