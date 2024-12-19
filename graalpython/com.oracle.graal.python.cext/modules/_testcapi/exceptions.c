@@ -60,6 +60,7 @@ _testcapi.exception_print
 To test the format of exceptions as printed out.
 [clinic start generated code]*/
 
+#if 0 // GraalPy change
 static PyObject *
 _testcapi_exception_print_impl(PyObject *module, PyObject *exc, int legacy)
 /*[clinic end generated code: output=3f04fe0c18412ae0 input=c76f42cb94136dbf]*/
@@ -77,6 +78,7 @@ _testcapi_exception_print_impl(PyObject *module, PyObject *exc, int legacy)
     }
     Py_RETURN_NONE;
 }
+#endif // GraalPy change
 
 /*[clinic input]
 _testcapi.make_exception_with_doc
@@ -355,6 +357,7 @@ _testcapi.unstable_exc_prep_reraise_star
 To test PyUnstable_Exc_PrepReraiseStar.
 [clinic start generated code]*/
 
+#if 0 // GraalPy change
 static PyObject *
 _testcapi_unstable_exc_prep_reraise_star_impl(PyObject *module,
                                               PyObject *orig, PyObject *excs)
@@ -362,6 +365,7 @@ _testcapi_unstable_exc_prep_reraise_star_impl(PyObject *module,
 {
     return PyUnstable_Exc_PrepReraiseStar(orig, excs);
 }
+#endif // GraalPy change
 
 
 /*
@@ -393,7 +397,7 @@ static PyMethodDef test_methods[] = {
     {"err_restore",             err_restore,                     METH_VARARGS},
     {"err_writeunraisable",     err_writeunraisable,             METH_VARARGS},
     _TESTCAPI_ERR_SET_RAISED_METHODDEF
-    _TESTCAPI_EXCEPTION_PRINT_METHODDEF
+    // _TESTCAPI_EXCEPTION_PRINT_METHODDEF
     _TESTCAPI_FATAL_ERROR_METHODDEF
     _TESTCAPI_MAKE_EXCEPTION_WITH_DOC_METHODDEF
     _TESTCAPI_EXC_SET_OBJECT_METHODDEF
@@ -406,7 +410,7 @@ static PyMethodDef test_methods[] = {
     _TESTCAPI_SET_EXCEPTION_METHODDEF
     _TESTCAPI_TRACEBACK_PRINT_METHODDEF
     _TESTCAPI_WRITE_UNRAISABLE_EXC_METHODDEF
-    _TESTCAPI_UNSTABLE_EXC_PREP_RERAISE_STAR_METHODDEF
+    // _TESTCAPI_UNSTABLE_EXC_PREP_RERAISE_STAR_METHODDEF
     {NULL},
 };
 

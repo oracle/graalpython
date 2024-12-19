@@ -22,6 +22,7 @@ PyDoc_STRVAR(_testcapi_exception_print__doc__,
 "\n"
 "To test the format of exceptions as printed out.");
 
+#if 0 // GraalPy change
 #define _TESTCAPI_EXCEPTION_PRINT_METHODDEF    \
     {"exception_print", _PyCFunction_CAST(_testcapi_exception_print), METH_FASTCALL, _testcapi_exception_print__doc__},
 
@@ -52,6 +53,7 @@ skip_optional:
 exit:
     return return_value;
 }
+#endif // GraalPy change
 
 PyDoc_STRVAR(_testcapi_make_exception_with_doc__doc__,
 "make_exception_with_doc($module, /, name, doc=<unrepresentable>,\n"
@@ -72,7 +74,8 @@ static PyObject *
 _testcapi_make_exception_with_doc(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
-    #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    #if 0 // GraalPy change
+    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 4
     static struct {
@@ -464,6 +467,7 @@ PyDoc_STRVAR(_testcapi_unstable_exc_prep_reraise_star__doc__,
 "\n"
 "To test PyUnstable_Exc_PrepReraiseStar.");
 
+#if 0 // GraalPy change
 #define _TESTCAPI_UNSTABLE_EXC_PREP_RERAISE_STAR_METHODDEF    \
     {"unstable_exc_prep_reraise_star", _PyCFunction_CAST(_testcapi_unstable_exc_prep_reraise_star), METH_FASTCALL, _testcapi_unstable_exc_prep_reraise_star__doc__},
 
@@ -488,4 +492,5 @@ _testcapi_unstable_exc_prep_reraise_star(PyObject *module, PyObject *const *args
 exit:
     return return_value;
 }
+#endif // GraalPy change
 /*[clinic end generated code: output=d574342d716e98b5 input=a9049054013a1b77]*/

@@ -1496,6 +1496,7 @@ run_in_subinterp(PyObject *self, PyObject *args)
 }
 
 /* To run some code in a sub-interpreter. */
+#if 0 // GraalPy change
 static PyObject *
 run_in_subinterp_with_config(PyObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -1592,6 +1593,7 @@ run_in_subinterp_with_config(PyObject *self, PyObject *args, PyObject *kwargs)
 
     return PyLong_FromLong(r);
 }
+#endif // GraalPy change
 
 static void
 _xid_capsule_destructor(PyObject *capsule)
@@ -2616,6 +2618,7 @@ type_assign_specific_version_unsafe(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+#if 0 // GraalPy change
 static PyObject *
 type_assign_version(PyObject *self, PyObject *type)
 {
@@ -2626,6 +2629,7 @@ type_assign_version(PyObject *self, PyObject *type)
     int res = PyUnstable_Type_AssignVersionTag((PyTypeObject *)type);
     return PyLong_FromLong(res);
 }
+#endif // GraalPy change
 
 
 static PyObject *
@@ -2816,6 +2820,7 @@ frame_new(PyObject *self, PyObject *args)
     return (PyObject *)PyFrame_New(tstate, (PyCodeObject *)code, globals, locals);
 }
 
+#if 0 // GraalPy change
 static PyObject *
 test_frame_getvar(PyObject *self, PyObject *args)
 {
@@ -2846,6 +2851,7 @@ test_frame_getvarstring(PyObject *self, PyObject *args)
 
     return PyFrame_GetVarString((PyFrameObject *)frame, name);
 }
+#endif // GraalPy change
 
 
 static PyObject *
@@ -2860,6 +2866,7 @@ eval_get_func_desc(PyObject *self, PyObject *func)
     return PyUnicode_FromString(PyEval_GetFuncDesc(func));
 }
 
+#if 0 // GraalPy change
 static PyObject *
 gen_get_code(PyObject *self, PyObject *gen)
 {
@@ -2869,6 +2876,7 @@ gen_get_code(PyObject *self, PyObject *gen)
     }
     return (PyObject *)PyGen_GetCode((PyGenObject *)gen);
 }
+#endif // GraalPy change
 
 static PyObject *
 eval_eval_code_ex(PyObject *mod, PyObject *pos_args)
@@ -3137,12 +3145,14 @@ settrace_to_error(PyObject *self, PyObject *list)
     Py_RETURN_NONE;
 }
 
+#if 0 // GraalPy change
 static PyObject *
 clear_managed_dict(PyObject *self, PyObject *obj)
 {
     _PyObject_ClearManagedDict(obj);
     Py_RETURN_NONE;
 }
+#endif // GraalPy change
 
 
 static PyObject *
@@ -3276,6 +3286,7 @@ callback(void *data)
     ((struct atexit_data *)data)->called += 1;
 }
 
+#if 0 // GraalPy change
 static PyObject *
 test_atexit(PyObject *self, PyObject *Py_UNUSED(args))
 {
@@ -3295,6 +3306,7 @@ test_atexit(PyObject *self, PyObject *Py_UNUSED(args))
     }
     Py_RETURN_NONE;
 }
+#endif // GraalPy change
 
 
 static PyObject *test_buildvalue_issue38913(PyObject *, PyObject *);
@@ -3353,9 +3365,11 @@ static PyMethodDef TestMethods[] = {
     {"crash_no_current_thread", crash_no_current_thread,         METH_NOARGS},
     {"test_current_tstate_matches", test_current_tstate_matches, METH_NOARGS},
     {"run_in_subinterp",        run_in_subinterp,                METH_VARARGS},
+#if 0 // GraalPy change
     {"run_in_subinterp_with_config",
      _PyCFunction_CAST(run_in_subinterp_with_config),
      METH_VARARGS | METH_KEYWORDS},
+#endif // GraalPy change
     {"get_crossinterp_data",    get_crossinterp_data,            METH_VARARGS},
     {"restore_crossinterp_data", restore_crossinterp_data,       METH_VARARGS},
     {"create_cfunction",        create_cfunction,                METH_NOARGS},
@@ -3379,15 +3393,17 @@ static PyMethodDef TestMethods[] = {
     {"getitem_with_error", getitem_with_error, METH_VARARGS},
     {"Py_CompileString",     pycompilestring, METH_O},
     {"dict_get_version", dict_get_version, METH_VARARGS},
-    /* we do not support 'raise_SIGINT_then_send_None' because of incomplete signal support */
-    /* {"raise_SIGINT_then_send_None", raise_SIGINT_then_send_None, METH_VARARGS}, */
+#if 0 // GraalPy change: we do not support 'raise_SIGINT_then_send_None' because of incomplete signal support
+    {"raise_SIGINT_then_send_None", raise_SIGINT_then_send_None, METH_VARARGS},
+#endif // GraalPy change
     {"stack_pointer", stack_pointer, METH_NOARGS},
 #ifdef W_STOPCODE
     {"W_STOPCODE", py_w_stopcode, METH_VARARGS},
 #endif
     {"test_pythread_tss_key_state", test_pythread_tss_key_state, METH_VARARGS},
-    /* we do not support HAMTs */
-    /* {"hamt", new_hamt, METH_NOARGS}, */
+#if 0 // GraalPy change: we do not support HAMTs
+    {"hamt", new_hamt, METH_NOARGS},
+#endif // GraalPy change
     {"bad_get", _PyCFunction_CAST(bad_get), METH_FASTCALL},
 #ifdef Py_REF_DEBUG
     {"negative_refcount", negative_refcount, METH_NOARGS},
@@ -3411,7 +3427,9 @@ static PyMethodDef TestMethods[] = {
     {"type_modified", type_modified, METH_O, PyDoc_STR("PyType_Modified")},
     {"type_assign_specific_version_unsafe", type_assign_specific_version_unsafe, METH_VARARGS,
      PyDoc_STR("forcefully assign type->tp_version_tag")},
+#if 0 // GraalPy change
     {"type_assign_version", type_assign_version, METH_O, PyDoc_STR("PyUnstable_Type_AssignVersionTag")},
+#endif // GraalPy change
     {"type_get_tp_bases", type_get_tp_bases, METH_O},
     {"type_get_tp_mro", type_get_tp_mro, METH_O},
     {"get_basic_static_type", get_basic_static_type, METH_VARARGS, NULL},
@@ -3422,17 +3440,23 @@ static PyMethodDef TestMethods[] = {
     {"frame_getbuiltins", frame_getbuiltins, METH_O, NULL},
     {"frame_getlasti", frame_getlasti, METH_O, NULL},
     {"frame_new", frame_new, METH_VARARGS, NULL},
+#if 0 // GraalPy change
     {"frame_getvar", test_frame_getvar, METH_VARARGS, NULL},
     {"frame_getvarstring", test_frame_getvarstring, METH_VARARGS, NULL},
+#endif // GraalPy change
     {"eval_get_func_name", eval_get_func_name, METH_O, NULL},
     {"eval_get_func_desc", eval_get_func_desc, METH_O, NULL},
+#if 0 // GraalPy change
     {"gen_get_code", gen_get_code, METH_O, NULL},
-    // {"get_feature_macros", get_feature_macros, METH_NOARGS, NULL},
+    {"get_feature_macros", get_feature_macros, METH_NOARGS, NULL},
+#endif // GraalPy change
     {"test_code_api", test_code_api, METH_NOARGS, NULL},
     {"settrace_to_error", settrace_to_error, METH_O, NULL},
     {"settrace_to_record", settrace_to_record, METH_O, NULL},
     {"test_macros", test_macros, METH_NOARGS, NULL},
+#if 0 // GraalPy change
     {"clear_managed_dict", clear_managed_dict, METH_O, NULL},
+#endif // GraalPy change
     {"function_get_code", function_get_code, METH_O, NULL},
     {"function_get_globals", function_get_globals, METH_O, NULL},
     {"function_get_module", function_get_module, METH_O, NULL},
@@ -3440,7 +3464,9 @@ static PyMethodDef TestMethods[] = {
     {"function_set_defaults", function_set_defaults, METH_VARARGS, NULL},
     {"function_get_kw_defaults", function_get_kw_defaults, METH_O, NULL},
     {"function_set_kw_defaults", function_set_kw_defaults, METH_VARARGS, NULL},
+#if 0 // GraalPy change
     {"test_atexit", test_atexit, METH_NOARGS},
+#endif // GraalPy change
     {NULL, NULL} /* sentinel */
 };
 
@@ -4041,12 +4067,14 @@ PyInit__testcapi(void)
         return NULL;
 
     /* Include tests from the _testcapi/ directory */
+#if 0 // GraalPy change
     if (_PyTestCapi_Init_Vectorcall(m) < 0) {
         return NULL;
     }
     if (_PyTestCapi_Init_Heaptype(m) < 0) {
         return NULL;
     }
+#endif // GraalPy change
     if (_PyTestCapi_Init_Abstract(m) < 0) {
         return NULL;
     }
@@ -4074,9 +4102,11 @@ PyInit__testcapi(void)
     if (_PyTestCapi_Init_Mem(m) < 0) {
         return NULL;
     }
+#if 0 // GraalPy change
     if (_PyTestCapi_Init_Watchers(m) < 0) {
         return NULL;
     }
+#endif // GraalPy change
     if (_PyTestCapi_Init_Long(m) < 0) {
         return NULL;
     }
@@ -4107,9 +4137,11 @@ PyInit__testcapi(void)
     if (_PyTestCapi_Init_Exceptions(m) < 0) {
         return NULL;
     }
+#if 0 // GraalPy change
     if (_PyTestCapi_Init_Code(m) < 0) {
         return NULL;
     }
+#endif // GraalPy change
     if (_PyTestCapi_Init_Buffer(m) < 0) {
         return NULL;
     }
@@ -4135,6 +4167,7 @@ PyInit__testcapi(void)
         return NULL;
     }
 
+#if 0 // GraalPy change
 #ifndef LIMITED_API_AVAILABLE
     PyModule_AddObjectRef(m, "LIMITED_API_AVAILABLE", Py_False);
 #else
@@ -4146,6 +4179,9 @@ PyInit__testcapi(void)
         return NULL;
     }
 #endif
+#else // GraalPy change
+    PyModule_AddObjectRef(m, "LIMITED_API_AVAILABLE", Py_False);
+#endif // GraalPy change
 
     PyState_AddModule(m, &_testcapimodule);
     return m;
