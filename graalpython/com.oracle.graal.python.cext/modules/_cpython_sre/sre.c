@@ -56,13 +56,6 @@ static const char copyright[] =
 
 #include <ctype.h>
 
-/* name of this module, minus the leading underscore */
-#if !defined(SRE_MODULE)
-#define SRE_MODULE "cpython_sre"
-#endif
-
-#define SRE_PY_MODULE "re"
-
 /* defining this one enables tracing */
 #undef VERBOSE
 
@@ -1204,10 +1197,14 @@ pattern_subx(_sremodulestate* module_state,
             match = pattern_new_match(module_state, self, &state, 1);
             if (!match)
                 goto error;
+#if 0 // GraalPy change
             if (filter_type == TEMPLATE) {
                 item = expand_template((TemplateObject *)filter,
                                        (MatchObject *)match);
             }
+#else // GraalPy change
+            if (0) {}
+#endif // GraalPy change
             else {
                 assert(filter_type == CALLABLE);
                 item = PyObject_CallOneArg(filter, match);
@@ -2210,6 +2207,34 @@ match_getslice(MatchObject* self, PyObject* index, PyObject* def)
     return match_getslice_by_index(self, i, def);
 }
 
+
+static PyObject*
+graalpy_call(const char* module, const char* function, PyObject* args)
+{
+    PyObject* name;
+    PyObject* mod;
+    PyObject* func;
+    PyObject* result;
+
+    if (!args)
+        return NULL;
+    name = PyUnicode_FromString(module);
+    if (!name)
+        return NULL;
+    mod = PyImport_Import(name);
+    Py_DECREF(name);
+    if (!mod)
+        return NULL;
+    func = PyObject_GetAttrString(mod, function);
+    Py_DECREF(mod);
+    if (!func)
+        return NULL;
+    result = PyObject_CallObject(func, args);
+    Py_DECREF(func);
+    Py_DECREF(args);
+    return result;
+}
+
 /*[clinic input]
 _sre.SRE_Match.expand
 
@@ -2222,6 +2247,7 @@ static PyObject *
 _sre_SRE_Match_expand_impl(MatchObject *self, PyObject *template)
 /*[clinic end generated code: output=931b58ccc323c3a1 input=4bfdb22c2f8b146a]*/
 {
+#if 0 // GraalPy change
     _sremodulestate *module_state = get_sre_module_state_by_class(Py_TYPE(self));
     PyObject *filter = compile_template(module_state, self->pattern, template);
     if (filter == NULL) {
@@ -2230,6 +2256,13 @@ _sre_SRE_Match_expand_impl(MatchObject *self, PyObject *template)
     PyObject *result = expand_template((TemplateObject *)filter, self);
     Py_DECREF(filter);
     return result;
+#else // GraalPy change
+    /* delegate to Python code */
+    return graalpy_call(
+        "re", "_expand",
+        PyTuple_Pack(3, self->pattern, self, template)
+        );
+#endif // GraalPy change
 }
 
 static PyObject*
@@ -2841,6 +2874,7 @@ template_dealloc(TemplateObject *self)
     Py_DECREF(tp);
 }
 
+#if 0 // GraalPy change
 static PyObject *
 expand_template(TemplateObject *self, MatchObject *match)
 {
@@ -2906,6 +2940,7 @@ cleanup:
     }
     return result;
 }
+#endif // GraalPy change
 
 
 static Py_hash_t
