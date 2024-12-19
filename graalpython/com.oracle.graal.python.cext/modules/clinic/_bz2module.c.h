@@ -149,7 +149,7 @@ _bz2_BZ2Decompressor_decompress(BZ2Decompressor *self, PyObject *const *args, Py
 {
     PyObject *return_value = NULL;
     #if 0 // GraalPy change
-    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    // #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 2
     static struct {

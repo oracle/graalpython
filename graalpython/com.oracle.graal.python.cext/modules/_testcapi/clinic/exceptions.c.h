@@ -75,7 +75,7 @@ _testcapi_make_exception_with_doc(PyObject *module, PyObject *const *args, Py_ss
 {
     PyObject *return_value = NULL;
     #if 0 // GraalPy change
-    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    // #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 4
     static struct {

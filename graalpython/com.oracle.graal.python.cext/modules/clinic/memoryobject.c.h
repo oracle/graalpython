@@ -27,7 +27,7 @@ memoryview(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
     PyObject *return_value = NULL;
     #if 0 // GraalPy change
-    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    // #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 1
     static struct {
@@ -85,7 +85,7 @@ memoryview__from_flags(PyTypeObject *type, PyObject *const *args, Py_ssize_t nar
 {
     PyObject *return_value = NULL;
     #if 0 // GraalPy change
-    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    // #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 2
     static struct {
@@ -165,7 +165,7 @@ memoryview_cast(PyMemoryViewObject *self, PyObject *const *args, Py_ssize_t narg
 {
     PyObject *return_value = NULL;
     #if 0 // GraalPy change
-    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    // #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 2
     static struct {
@@ -277,7 +277,7 @@ memoryview_tobytes(PyMemoryViewObject *self, PyObject *const *args, Py_ssize_t n
 {
     PyObject *return_value = NULL;
     #if 0 // GraalPy change
-    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    // #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 1
     static struct {
@@ -373,7 +373,7 @@ memoryview_hex(PyMemoryViewObject *self, PyObject *const *args, Py_ssize_t nargs
 {
     PyObject *return_value = NULL;
     #if 0 // GraalPy change
-    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    // #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 2
     static struct {

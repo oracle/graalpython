@@ -85,7 +85,7 @@ _testmultiphase_StateAccessType_increment_count_clinic(StateAccessTypeObject *se
 {
     PyObject *return_value = NULL;
     #if 0 // GraalPy change
-    //#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+    // #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
 
     #define NUM_KEYWORDS 2
     static struct {
