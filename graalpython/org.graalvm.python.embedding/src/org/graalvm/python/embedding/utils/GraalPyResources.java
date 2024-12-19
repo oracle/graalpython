@@ -263,8 +263,6 @@ public final class GraalPyResources {
                         // The sys.executable path, a virtual path that is used by the interpreter
                         // to discover packages
                         option("python.Executable", vfs.impl.vfsVenvPath() + (VirtualFileSystemImpl.isWindows() ? "\\Scripts\\python.exe" : "/bin/python")).
-                        // Set the python home to be read from the embedded resources
-                        option("python.PythonHome", vfs.impl.vfsHomePath()).
                         // Set python path to point to sources stored in
                         // src/main/resources/org.graalvm.python.vfs/src
                         option("python.PythonPath", vfs.impl.vfsSrcPath()).
@@ -321,7 +319,6 @@ public final class GraalPyResources {
             execPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("bin").resolve("python").toAbsolutePath().toString();
         }
 
-        String homePath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_HOME).toAbsolutePath().toString();
         String srcPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString();
         return createContextBuilder().
         // allow all IO access
@@ -329,8 +326,6 @@ public final class GraalPyResources {
                         // The sys.executable path, a virtual path that is used by the interpreter
                         // to discover packages
                         option("python.Executable", execPath).
-                        // Set the python home to be read from the embedded resources
-                        option("python.PythonHome", homePath).
                         // Set python path to point to sources stored in
                         // src/main/resources/org.graalvm.python.vfs/src
                         option("python.PythonPath", srcPath).

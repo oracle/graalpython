@@ -121,7 +121,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      */
     private static final String VFS_ROOT = "/org.graalvm.python.vfs";
 
-    static final String VFS_HOME = "home";
     static final String VFS_VENV = "venv";
     static final String VFS_SRC = "src";
 
@@ -132,7 +131,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      */
     private static final String FILES_LIST_PATH = VFS_ROOT + "/fileslist.txt";
     private static final String VENV_PREFIX = VFS_ROOT + "/" + VFS_VENV;
-    private static final String HOME_PREFIX = VFS_ROOT + "/" + VFS_HOME;
     private static final String PROJ_PREFIX = VFS_ROOT + "/proj";
     private static final String SRC_PREFIX = VFS_ROOT + "/" + VFS_SRC;
     private final VirtualFileSystem.HostIO allowHostIO;
@@ -327,10 +325,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
-    }
-
-    String vfsHomePath() {
-        return resourcePathToPlatformPath(HOME_PREFIX);
     }
 
     String vfsSrcPath() {
@@ -655,7 +649,6 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     @Override
     public Path parsePath(String path) {
         Objects.requireNonNull(path);
-
         // same as in c.o.t.polyglot.FileSystems.DeniedIOFileSystem
         Path p = Paths.get(path);
         finer("VFS.parsePath '%s' -> '%s'", path, p);

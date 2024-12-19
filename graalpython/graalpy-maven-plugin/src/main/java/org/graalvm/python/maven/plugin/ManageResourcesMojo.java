@@ -115,7 +115,13 @@ public class ManageResourcesMojo extends AbstractMojo {
             }
         }
 
-        manageHome();
+        if(pythonHome != null) {
+            getLog().warn("The GraalPy plugin <pythonHome> configuration setting was deprecated and has no effect anymore.\n" +
+                "For execution in jvm mode, the python language home is always available.\n" +
+                "When building a native executable using GraalVM, then the full python language home is by default embedded into the native executable.\n" +
+                "For more details, please refer to native image options IncludeLanguageResources and CopyLanguageResources documentation.");
+        }
+
         manageVenv();
         listGraalPyResources();
         manageNativeImageConfig();
@@ -142,49 +148,6 @@ public class ManageResourcesMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException("failed to create native image configuration files", e);
         }
-    }
-
-    private void manageHome() throws MojoExecutionException {
-        if (pythonHome == null) {
-            pythonHome = new PythonHome();
-            pythonHome.includes = Arrays.asList(".*");
-            pythonHome.excludes = Collections.emptyList();
-        } else {
-            if (pythonHome.includes != null) {
-                VFSUtils.trim(pythonHome.includes);
-            }
-            if (pythonHome.includes == null || pythonHome.includes.isEmpty()) {
-                pythonHome.includes = Arrays.asList(".*");
-            }
-            if (pythonHome.excludes == null) {
-                pythonHome.excludes = Collections.emptyList();
-            } else {
-                VFSUtils.trim(pythonHome.excludes);
-            }
-        }
-
-        Path homeDirectory;
-        if(pythonResourcesDirectory == null) {
-            homeDirectory = Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_HOME);
-        } else {
-            homeDirectory = Path.of(pythonResourcesDirectory, VFS_HOME);
-        }
-        List<String> includes = toSortedArrayList(pythonHome.includes);
-        List<String> excludes = toSortedArrayList(pythonHome.excludes);
-
-        try {
-            VFSUtils.createHome(homeDirectory, getGraalPyVersion(project), includes, excludes, () -> calculateLauncherClasspath(project), new MavenDelegateLog(getLog()), (s) -> getLog().info(s));
-        } catch(IOException e) {
-            throw new MojoExecutionException(String.format("failed to copy graalpy home %s", homeDirectory), e);
-        }
-    }
-
-    private ArrayList<String> toSortedArrayList(List<String> l) {
-        if(l != null) {
-            Collections.sort(l);
-            return new ArrayList<>(l);
-        }
-        return new ArrayList<>(0);
     }
 
     private void listGraalPyResources() throws MojoExecutionException {
@@ -219,15 +182,15 @@ public class ManageResourcesMojo extends AbstractMojo {
         }
     }
 
-    private void delete(Path homeDirectory) throws MojoExecutionException {
+    private void delete(Path dir) throws MojoExecutionException {
         try {
-            try (var s = Files.walk(homeDirectory)) {
+            try (var s = Files.walk(dir)) {
                 s.sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
             }
         } catch (IOException e) {
-            new MojoExecutionException(String.format("failed to delete %s", homeDirectory),  e);
+            new MojoExecutionException(String.format("failed to delete %s", dir),  e);
         }
     }
 

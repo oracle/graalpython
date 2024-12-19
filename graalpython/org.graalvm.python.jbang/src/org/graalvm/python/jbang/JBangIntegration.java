@@ -142,9 +142,8 @@ public class JBangIntegration {
         if (nativeImage) {
             // include python stdlib in image
             try {
-                VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, LOG);
                 VFSUtils.writeNativeImageConfig(temporaryJar.resolve("META-INF"), "org.graalvm.polyglot.jbang");
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }

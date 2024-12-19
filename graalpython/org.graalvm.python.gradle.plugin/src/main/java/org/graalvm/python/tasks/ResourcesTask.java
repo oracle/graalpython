@@ -88,12 +88,6 @@ public abstract class ResourcesTask extends DefaultTask {
     @Input
     public abstract ListProperty<String> getPackages();
 
-    @Input
-    public abstract ListProperty<String> getIncludes();
-
-    @Input
-    public abstract ListProperty<String> getExcludes();
-
     @Internal
     public abstract DirectoryProperty getLauncherDirectory();
 
@@ -111,22 +105,7 @@ public abstract class ResourcesTask extends DefaultTask {
     @TaskAction
     public void exec() throws IOException {
         Files.createDirectories(computeLauncherDirectory());
-        manageHome();
         manageVenv();
-    }
-
-    private void manageHome() {
-        Path homeDirectory = getHomeDirectory();
-
-        List<String> includes = new ArrayList<>(getIncludes().get());
-        List<String> excludes = new ArrayList<>(getExcludes().get());
-
-        try {
-            VFSUtils.createHome(homeDirectory, GraalPyGradlePlugin.determineGraalPyVersion(), includes, excludes, this::calculateLauncherClasspath, GradleLogger.of(getLogger()),
-                            (s) -> getLogger().lifecycle(s));
-        } catch (IOException e) {
-            throw new GradleException(String.format("failed to copy graalpy home %s", homeDirectory), e);
-        }
     }
 
     private void manageVenv() {

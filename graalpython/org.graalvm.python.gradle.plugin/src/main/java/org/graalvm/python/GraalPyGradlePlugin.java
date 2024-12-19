@@ -41,6 +41,7 @@
 package org.graalvm.python;
 
 import org.graalvm.python.dsl.GraalPyExtension;
+import org.graalvm.python.dsl.PythonHomeInfo;
 import org.graalvm.python.tasks.MetaInfTask;
 import org.graalvm.python.tasks.ResourcesTask;
 import org.graalvm.python.tasks.VFSFilesListTask;
@@ -51,9 +52,12 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.internal.provider.DefaultSetProperty;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
@@ -63,6 +67,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.BiFunction;
 
@@ -153,13 +158,13 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         return project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class, t -> {
             t.getLauncherClasspath().from(launcherClasspath);
             t.getLauncherDirectory().convention(project.getLayout().getBuildDirectory().dir("python-launcher"));
-            if (extension.getPythonHome().getIncludes().get().isEmpty()) {
-                t.getIncludes().set(List.of(".*"));
-            } else {
-                t.getIncludes().set(extension.getPythonHome().getIncludes());
-            }
 
-            t.getExcludes().set(extension.getPythonHome().getExcludes());
+            if(userPythonHome()) {
+                t.getLogger().warn("The GraalPy plugin pythonHome configuration setting was deprecated and has no effect anymore.\n" +
+                        "For execution in jvm mode, the python language home is always available.\n" +
+                        "When building a native executable using GraalVM, then the full python language home is by default embedded into the native executable.\n" +
+                        "For more details, please refer to native image options IncludeLanguageResources and CopyLanguageResources documentation.");
+            }
             t.getPackages().set(extension.getPackages());
 
             t.getOutput().convention(extension.getPythonResourcesDirectory().orElse(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY)));
@@ -167,6 +172,13 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
 
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
+    }
+
+    private boolean userPythonHome() {
+        return !(extension.getPythonHome().getIncludes().get().size() == 1 &&
+                extension.getPythonHome().getExcludes().get().size() == 1 &&
+                extension.getPythonHome().getIncludes().get().iterator().next().equals(EMPTY_LIST.get(0)) &&
+                extension.getPythonHome().getExcludes().get().iterator().next().equals(EMPTY_LIST.get(0)));
     }
 
     /**
@@ -181,13 +193,15 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         });
     }
 
+    private static final List<String> EMPTY_LIST = List.of("--empty--");
+
     /**
      * Creates the GraalPy extension on the project
      */
     private void createExtension() {
         this.extension = project.getExtensions().create("graalPy", GraalPyExtension.class);
-        extension.getPythonHome().getIncludes().convention(List.of(".*"));
-        extension.getPythonHome().getExcludes().convention(Collections.emptyList());
+        extension.getPythonHome().getIncludes().convention(EMPTY_LIST);
+        extension.getPythonHome().getExcludes().convention(EMPTY_LIST);
         extension.getPackages().convention(Collections.emptyList());
         extension.getCommunity().convention(false);
     }

@@ -545,7 +545,7 @@ public class VirtualFileSystemIntegrationTest {
             defaultMountPoint = vfs.getMountPoint();
         }
 
-        String getPathsSource = "import sys; [__graalpython__.get_python_home_paths(), sys.path, sys.executable]";
+        String getPathsSource = "import sys; [sys.path, sys.executable]";
         try (Context ctx = GraalPyResources.createContext()) {
             Value paths = ctx.eval("python", getPathsSource);
 
@@ -563,7 +563,7 @@ public class VirtualFileSystemIntegrationTest {
         assertEquals(VFS_MOUNT_POINT, vfs.getMountPoint());
         try (Context ctx = GraalPyResources.contextBuilder(vfs).build()) {
             Value paths = ctx.eval("python", getPathsSource);
-            checkPaths(paths.as(List.class), vfs.getMountPoint(), true);
+            checkPaths(paths.as(List.class), vfs.getMountPoint());
         }
         Path resourcesDir = Files.createTempDirectory("python-resources");
 
@@ -573,31 +573,12 @@ public class VirtualFileSystemIntegrationTest {
         }
     }
 
-    private static void checkPaths(List<Object> l, String pathPrefix) {
-        checkPaths(l, pathPrefix, false);
-    }
-
     @SuppressWarnings("unchecked")
-    private static void checkPaths(List<Object> l, String pathPrefix, boolean checkHome) {
-        // python.PythonHome
-        // TODO how to check python.PythonHome?
-        // /org.graalvm.python.vfs/home has to be in fileslist.txt
-        // - if it is in fileslist.txt, than it also has to contain the whole stdlib,
-        // or other tests will fail when trying to load python
-        // - the pythonHome value is implicitly covered in maven and gradle plugin tests
-        // if (checkHome) {
-        // assertTrue(((String) l.get(0)).contains(pathPrefix + File.separator + "home" +
-        // File.separator +
-        // "lib-graalpython"));
-        // assertTrue(((String) l.get(0)).contains(pathPrefix + File.separator + "home" +
-        // File.separator +
-        // "lib-python" + File.separator + "3"));
-        // }
-
+    private static void checkPaths(List<Object> l, String pathPrefix) {
         // option python.PythonPath
-        assertTrue(((List<Object>) l.get(1)).contains(pathPrefix + File.separator + "src"));
+        assertTrue(((List<Object>) l.get(0)).contains(pathPrefix + File.separator + "src"));
         // option python.Executable
-        assertEquals(l.get(2), pathPrefix + (IS_WINDOWS ? "\\venv\\Scripts\\python.exe" : "/venv/bin/python"));
+        assertEquals(l.get(1), pathPrefix + (IS_WINDOWS ? "\\venv\\Scripts\\python.exe" : "/venv/bin/python"));
     }
 
     private static Builder addTestOptions(Builder builder) {

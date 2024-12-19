@@ -43,16 +43,12 @@ package org.graalvm.python.embedding.tools.vfs;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -60,10 +56,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
 import org.graalvm.python.embedding.tools.exec.SubprocessLog;
@@ -102,7 +94,6 @@ public final class VFSUtils {
     public static void writeNativeImageConfig(Path metaInfRoot, String pluginId) throws IOException {
         Path p = metaInfRoot.resolve(Path.of("native-image", GRAALPY_GROUP_ID, pluginId));
         write(p.resolve("resource-config.json"), NATIVE_IMAGE_RESOURCES_CONFIG);
-        write(p.resolve("native-image.properties"), NATIVE_IMAGE_ARGS);
     }
 
     private static void write(Path config, String txt) throws IOException {
@@ -182,67 +173,6 @@ public final class VFSUtils {
         void info(String s);
     }
 
-    public static void createHome(Path homeDirectory, String graalPyVersion, List<String> includes, List<String> excludes, LauncherClassPath launcherClassPath, SubprocessLog subprocessLog, Log log)
-                    throws IOException {
-
-        trim(includes);
-        trim(excludes);
-
-        var tag = homeDirectory.resolve("tagfile");
-
-        if (Files.isReadable(tag)) {
-            List<String> lines = null;
-            try {
-                lines = Files.readAllLines(tag);
-            } catch (IOException e) {
-                throw new IOException(String.format("failed to read tag file %s", tag), e);
-            }
-            if (lines.isEmpty() || !graalPyVersion.equals(lines.get(0))) {
-                log.info(String.format("Stale GraalPy home, updating to %s", graalPyVersion));
-                delete(homeDirectory);
-            }
-            if (pythonHomeChanged(includes, excludes, lines)) {
-                log.info(String.format("Deleting GraalPy home due to changed includes or excludes"));
-                delete(homeDirectory);
-            }
-        }
-        try {
-            if (!Files.exists(homeDirectory)) {
-                log.info(String.format("Creating GraalPy %s home in %s", graalPyVersion, homeDirectory));
-                createParentDirectories(homeDirectory);
-                VFSUtils.copyGraalPyHome(launcherClassPath.get(), homeDirectory, includes, excludes, subprocessLog);
-            }
-            Files.write(tag, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            write(tag, includes, INCLUDE_PREFIX);
-            write(tag, excludes, EXCLUDE_PREFIX);
-        } catch (IOException | InterruptedException e) {
-
-            throw new IOException(String.format("failed to copy graalpy home %s", homeDirectory), e);
-        }
-    }
-
-    private static boolean pythonHomeChanged(List<String> includes, List<String> excludes, List<String> lines) {
-        Set<String> prevIncludes = new HashSet<>();
-        Set<String> prevExcludes = new HashSet<>();
-        for (int i = 1; i < lines.size(); i++) {
-            String l = lines.get(i);
-            if (l.startsWith(INCLUDE_PREFIX)) {
-                prevIncludes.add(l.substring(INCLUDE_PREFIX.length()));
-            } else if (l.startsWith(EXCLUDE_PREFIX)) {
-                prevExcludes.add(l.substring(EXCLUDE_PREFIX.length()));
-            }
-        }
-        boolean includeDidNotChange = prevIncludes.size() == includes.size() && prevIncludes.containsAll(includes);
-        boolean excludeDidNotChange = prevExcludes.size() == excludes.size() && prevExcludes.containsAll(excludes);
-        return !(includeDidNotChange && excludeDidNotChange);
-    }
-
-    private static void write(Path tag, List<String> list, String prefix) throws IOException {
-        if (list != null) {
-            Files.write(tag, list.stream().map(l -> prefix + l).collect(Collectors.toList()), StandardOpenOption.APPEND);
-        }
-    }
-
     public static void delete(Path dir) throws IOException {
         if (!Files.exists(dir)) {
             return;
@@ -253,154 +183,6 @@ public final class VFSUtils {
             }
         } catch (IOException e) {
             throw new IOException(String.format("failed to delete %s", dir), e);
-        }
-    }
-
-    public static void copyGraalPyHome(Set<String> classpath, Path home, Collection<String> pythonHomeIncludes, Collection<String> pythonHomeExcludes, SubprocessLog log)
-                    throws IOException, InterruptedException {
-        log.log(String.format("Copying std lib to '%s'\n", home));
-        // get stdlib and core home
-        String stdlibHome = null;
-        String coreHome = null;
-        String pathsOutputPrefix = "<=outputpaths=>";
-
-        CollectOutputLog outputLog = new CollectOutputLog();
-        GraalPyRunner.run(classpath, outputLog, new String[]{"-c", "print('" + pathsOutputPrefix + "', __graalpython__.get_python_home_paths(), sep='')"});
-        for (String l : outputLog.output) {
-            if (l.startsWith(pathsOutputPrefix)) {
-                String[] s = l.substring(pathsOutputPrefix.length()).split(File.pathSeparator);
-                stdlibHome = s[0];
-                coreHome = s[1];
-            }
-        }
-        assert stdlibHome != null;
-        assert coreHome != null;
-
-        // copy core home
-        Path target = home.resolve("lib-graalpython");
-        if (!Files.exists(target)) {
-            Files.createDirectories(target);
-        }
-        Path source = Paths.get(coreHome);
-        Predicate<Path> filter = (f) -> {
-            if (Files.isDirectory(f)) {
-                if (f.getFileName().toString().equals("__pycache__") || f.getFileName().toString().equals("standalone")) {
-                    return true;
-                }
-            } else {
-                if (f.getFileName().endsWith(".py") || f.getFileName().endsWith(".txt") ||
-                                f.getFileName().endsWith(".c") || f.getFileName().endsWith(".md") ||
-                                f.getFileName().endsWith(".patch") || f.getFileName().endsWith(".toml") ||
-                                f.getFileName().endsWith("PKG-INFO")) {
-                    return true;
-                }
-                if (!isIncluded(f.toAbsolutePath().toString(), pythonHomeIncludes)) {
-                    return true;
-                }
-            }
-            return isExcluded(f.toAbsolutePath().toString(), pythonHomeExcludes);
-        };
-        copyFolder(source, source, target, filter);
-
-        // copy stdlib home
-        target = home.resolve("lib-python").resolve("3");
-        if (!Files.exists(target)) {
-            Files.createDirectories(target);
-        }
-        source = Paths.get(stdlibHome);
-        filter = (f) -> {
-            if (Files.isDirectory(f)) {
-                if (f.getFileName().toString().equals("idlelib") || f.getFileName().toString().equals("ensurepip") ||
-                                f.getFileName().toString().equals("tkinter") || f.getFileName().toString().equals("turtledemo") ||
-                                f.getFileName().toString().equals("__pycache__")) {
-                    return true;
-                }
-            } else {
-                // libpythonvm.* in same folder as stdlib is a windows issue only
-                if (f.getFileName().toString().equals("libpythonvm.dll")) {
-                    return true;
-                }
-                if (!isIncluded(f.toAbsolutePath().toString(), pythonHomeIncludes)) {
-                    return true;
-                }
-            }
-            return isExcluded(f.toAbsolutePath().toString(), pythonHomeExcludes);
-        };
-        copyFolder(source, source, target, filter);
-    }
-
-    private static boolean isIncluded(String filePath, Collection<String> includes) {
-        if (includes == null || includes.isEmpty()) {
-            return true;
-        }
-        return pathMatches(filePath, includes);
-    }
-
-    private static boolean isExcluded(String filePath, Collection<String> excludes) {
-        if (excludes == null || excludes.isEmpty()) {
-            return false;
-        }
-        return pathMatches(filePath, excludes);
-    }
-
-    private static boolean pathMatches(String filePath, Collection<String> includes) {
-        String path = filePath;
-        if (File.separator.equals("\\")) {
-            path = path.replaceAll("\\\\", "/");
-        }
-        for (String i : includes) {
-            Pattern pattern = Pattern.compile(i);
-            Matcher matcher = pattern.matcher(path);
-            if (matcher.matches()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static void copyFolder(Path sourceRoot, Path file, Path targetRoot, Predicate<Path> filter) throws IOException {
-        Files.walkFileTree(file, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException {
-                if (filter.test(f)) {
-                    return FileVisitResult.CONTINUE;
-                }
-                if (Files.isDirectory(f)) {
-                    copyFolder(sourceRoot, f, targetRoot, filter);
-                } else {
-                    Path relFile = sourceRoot.relativize(f);
-                    Path targetPath = targetRoot.resolve(relFile.toString());
-                    Path parent = targetPath.getParent();
-                    if (parent == null) {
-                        return FileVisitResult.CONTINUE;
-                    }
-                    if (!Files.exists(parent)) {
-                        Files.createDirectories(parent);
-                    }
-                    if (Files.exists(targetPath)) {
-                        Files.delete(targetPath);
-                    }
-                    Files.copy(f, targetPath);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
-
-    private static class CollectOutputLog implements SubprocessLog {
-
-        private final List<String> output = new ArrayList<>();
-
-        public void subProcessOut(CharSequence var1) {
-            output.add(var1.toString());
-        }
-
-        public void subProcessErr(CharSequence var1) {
-            System.err.println(var1);
-        }
-
-        public void log(CharSequence var1) {
-
         }
     }
 

@@ -51,18 +51,6 @@
               <packages>
                 <package>termcolor==2.2</package>
               </packages>
-              <pythonHome>
-                <includes>
-                  <!-- java-like regular expression what file paths should be included;
-                       if empty than default is all -->
-                  <include>.*</include>
-                </includes>                
-                <excludes>
-                <!-- java-like regular expression what file paths should be excluded;
-                     default is none -->
-                  <!-- <exclude></exclude> -->
-                </excludes>
-              </pythonHome>
             </configuration>
             <goals>
               <goal>process-graalpy-resources</goal>
