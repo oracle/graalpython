@@ -63,7 +63,6 @@ import org.graalvm.python.embedding.tools.exec.SubprocessLog;
 public final class VFSUtils {
 
     public static final String VFS_ROOT = "org.graalvm.python.vfs";
-    public static final String VFS_HOME = "home";
     public static final String VFS_VENV = "venv";
     public static final String VFS_FILESLIST = "fileslist.txt";
 
@@ -78,12 +77,6 @@ public final class VFSUtils {
                       }
                     }
                     """.replace("$vfs", VFS_ROOT);
-
-    private static final String NATIVE_IMAGE_ARGS = "Args = -H:-CopyLanguageResources";
-
-    private static final String INCLUDE_PREFIX = "include:";
-
-    private static final String EXCLUDE_PREFIX = "exclude:";
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
 

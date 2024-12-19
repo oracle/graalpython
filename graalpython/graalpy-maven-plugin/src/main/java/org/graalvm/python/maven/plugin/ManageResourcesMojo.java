@@ -63,7 +63,6 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.LAUNCHER_NAME;
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 

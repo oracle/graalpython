@@ -69,7 +69,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.LAUNCHER_NAME;
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 
@@ -129,10 +128,6 @@ public abstract class ResourcesTask extends DefaultTask {
     @NotNull
     private Path computeLauncherDirectory() {
         return getLauncherDirectory().get().getAsFile().toPath();
-    }
-
-    private Path getHomeDirectory() {
-        return getResourceDirectory(VFS_HOME);
     }
 
     private Path getVenvDirectory() {
