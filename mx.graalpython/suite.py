@@ -469,6 +469,7 @@ suite = {
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT",
                 "NETBEANS-LIB-PROFILER",
+                "GRAALPYTHON_EMBEDDING_TOOLS",
             ],
             "requires": [
                 "java.management",
@@ -498,7 +499,6 @@ suite = {
             "sourceDirs": ["src"],
             "dependencies": [
                 "GRAALPYTHON_EMBEDDING",
-                "GRAALPYTHON_EMBEDDING_TOOLS",
                 "mx:JUNIT",
                 "sdk:GRAAL_SDK",
             ],
@@ -1236,6 +1236,7 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_EMBEDDING_TOOLS", # See MultiContextCExtTest
                 "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
                 "truffle:TRUFFLE_TCK",
                 "GRAALPYTHON_INTEGRATION_UNIT_TESTS",
@@ -1254,9 +1255,7 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON_RESOURCES",
-                "GRAALPYTHON-LAUNCHER", # See MultiContextCExtTest
                 "GRAALPYTHON_EMBEDDING",
-                "GRAALPYTHON_EMBEDDING_TOOLS",
                 "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
                 "sdk:GRAAL_SDK",
             ],

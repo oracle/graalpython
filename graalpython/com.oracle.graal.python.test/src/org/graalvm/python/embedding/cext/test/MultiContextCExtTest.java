@@ -183,69 +183,76 @@ public class MultiContextCExtTest {
         var engine = Engine.newBuilder("python").logHandler(log).build();
         var builder = Context.newBuilder().engine(engine).allowAllAccess(true).option("python.Sha3ModuleBackend", "native").option("python.ForceImportSite", "true").option("python.Executable",
                         exe).option("log.python.level", "CONFIG");
-        var c0 = builder.build();
-        c0.initialize("python");
-        c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venv.toString().replace('\\', '/')));
-
-        assertTrue("created a copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup0")));
-        assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup1")));
-        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
-
-        builder.option("python.IsolateNativeModules", "true");
-        var c1 = builder.build();
-        var c2 = builder.build();
-        var c3 = builder.build();
-        var c4 = builder.build();
-        builder.option("python.Executable", "");
-        var c5 = builder.build();
-        c0.initialize("python");
-        c1.initialize("python");
-        c2.initialize("python");
-        c3.initialize("python");
-        c4.initialize("python");
-        c5.initialize("python");
-        var code = Source.create("python", "import _sha3; _sha3.implementation");
-        // First one works
-        var r1 = c1.eval(code);
-        assertEquals("tiny_sha3", r1.asString());
-        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
-        // Second one works because of isolation
-        var r2 = c2.eval(code);
-        assertEquals("tiny_sha3", r2.asString());
-        c2.eval("python", "import _sha3; _sha3.implementation = '12'");
-        r2 = c2.eval(code);
-        assertEquals("12", r2.asString());
-        // first context is unaffected
-        r1 = c1.eval(code);
-        assertEquals("tiny_sha3", r1.asString());
-        assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
-        // Third one works and triggers a dynamic relocation
-        c3.eval(code);
-        assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
-        // Fourth one does not work because we changed the sys.prefix
-        c4.eval("python", "import sys; sys.prefix = 12");
+        var contexts = new ArrayList<Context>();
         try {
-            c4.eval(code);
-            fail("should not reach here");
-        } catch (PolyglotException e) {
-            assertTrue("We rely on sys.prefix", e.getMessage().contains("sys.prefix must be a str"));
-        }
-        // Fifth one does not work because we don't have the venv configured
-        try {
-            c5.eval(code);
-            fail("should not reach here");
-        } catch (PolyglotException e) {
-            assertTrue("We need a venv", e.getMessage().contains("sys.prefix must point to a venv"));
-        }
-        // Using a context without isolation in the same process needs to use LLVM
-        assertFalse("have not had a context use LLVM, yet", log.truffleLog.toString().contains("as bitcode"));
-        try {
-            c0.eval(code);
-            fail("should not reach here");
-        } catch (PolyglotException e) {
-            assertTrue("needs LLVM", e.getMessage().contains("LLVM"));
-        }
+            Context c0, c1, c2, c3, c4, c5;
+            contexts.add(c0 = builder.build());
+            c0.initialize("python");
+            c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venv.toString().replace('\\', '/')));
 
+            assertTrue("created a copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup0")));
+            assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup1")));
+            assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
+
+            builder.option("python.IsolateNativeModules", "true");
+            contexts.add(c1 = builder.build());
+            contexts.add(c2 = builder.build());
+            contexts.add(c3 = builder.build());
+            contexts.add(c4 = builder.build());
+            builder.option("python.Executable", "");
+            contexts.add(c5 = builder.build());
+            c0.initialize("python");
+            c1.initialize("python");
+            c2.initialize("python");
+            c3.initialize("python");
+            c4.initialize("python");
+            c5.initialize("python");
+            var code = Source.create("python", "import _sha3; _sha3.implementation");
+            // First one works
+            var r1 = c1.eval(code);
+            assertEquals("tiny_sha3", r1.asString());
+            assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
+            // Second one works because of isolation
+            var r2 = c2.eval(code);
+            assertEquals("tiny_sha3", r2.asString());
+            c2.eval("python", "import _sha3; _sha3.implementation = '12'");
+            r2 = c2.eval(code);
+            assertEquals("12", r2.asString());
+            // first context is unaffected
+            r1 = c1.eval(code);
+            assertEquals("tiny_sha3", r1.asString());
+            assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
+            // Third one works and triggers a dynamic relocation
+            c3.eval(code);
+            assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
+            // Fourth one does not work because we changed the sys.prefix
+            c4.eval("python", "import sys; sys.prefix = 12");
+            try {
+                c4.eval(code);
+                fail("should not reach here");
+            } catch (PolyglotException e) {
+                assertTrue("We rely on sys.prefix", e.getMessage().contains("sys.prefix must be a str"));
+            }
+            // Fifth one does not work because we don't have the venv configured
+            try {
+                c5.eval(code);
+                fail("should not reach here");
+            } catch (PolyglotException e) {
+                assertTrue("We need a venv", e.getMessage().contains("sys.prefix must point to a venv"));
+            }
+            // Using a context without isolation in the same process needs to use LLVM
+            assertFalse("have not had a context use LLVM, yet", log.truffleLog.toString().contains("as bitcode"));
+            try {
+                c0.eval(code);
+                fail("should not reach here");
+            } catch (PolyglotException e) {
+                assertTrue("needs LLVM", e.getMessage().contains("LLVM"));
+            }
+        } finally {
+            for (var c : contexts) {
+                c.close(true);
+            }
+        }
     }
 
     private static boolean isVerbose() {

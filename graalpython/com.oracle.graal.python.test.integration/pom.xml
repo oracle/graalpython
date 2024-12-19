@@ -174,19 +174,8 @@ Additionally, one can change the polyglot artifacts version with
             <type>pom</type>
         </dependency>
         <dependency>
-            <!-- See MultiContextCExtTest -->
-            <groupId>org.graalvm.python</groupId>
-            <artifactId>python-launcher</artifactId>
-            <version>${com.oracle.graal.python.test.polyglot.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.graalvm.python</groupId>
             <artifactId>python-embedding</artifactId>
-            <version>${com.oracle.graal.python.test.polyglot.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.python</groupId>
-            <artifactId>python-embedding-tools</artifactId>
             <version>${com.oracle.graal.python.test.polyglot.version}</version>
         </dependency>
         <dependency>
