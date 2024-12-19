@@ -113,7 +113,7 @@ DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     # "html5lib",
     "json_dumps",
     "json_loads",
-    "logging",
+    # "logging",
     # "mako",
     "meteor_contest",
     "nbody",
