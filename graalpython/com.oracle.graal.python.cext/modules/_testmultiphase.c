@@ -682,6 +682,27 @@ PyInit__testmultiphase_export_unreported_exception(void)
 }
 
 static PyObject*
+createfunc_noop(PyObject *spec, PyModuleDef *def)
+{
+    return PyModule_New("spam");
+}
+
+static PyModuleDef_Slot slots_multiple_create_slots[] = {
+    {Py_mod_create, createfunc_noop},
+    {Py_mod_create, createfunc_noop},
+    {0, NULL},
+};
+
+static PyModuleDef def_multiple_create_slots = TEST_MODULE_DEF(
+    "_testmultiphase_multiple_create_slots", slots_multiple_create_slots, NULL);
+
+PyMODINIT_FUNC
+PyInit__testmultiphase_multiple_create_slots(void)
+{
+    return PyModuleDef_Init(&def_multiple_create_slots);
+}
+
+static PyObject*
 createfunc_null(PyObject *spec, PyModuleDef *def)
 {
     return NULL;
@@ -892,13 +913,57 @@ PyInit__test_module_state_shared(void)
 }
 
 
-/*** Helper for imp test ***/
+/* multiple interpreters support */
 
-static PyModuleDef imp_dummy_def = TEST_MODULE_DEF("imp_dummy", main_slots, testexport_methods);
+static PyModuleDef_Slot slots_multiple_multiple_interpreters_slots[] = {
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {0, NULL},
+};
+
+static PyModuleDef def_multiple_multiple_interpreters_slots = TEST_MODULE_DEF(
+    "_testmultiphase_multiple_multiple_interpreters_slots",
+    slots_multiple_multiple_interpreters_slots,
+    NULL);
 
 PyMODINIT_FUNC
-PyInit_imp_dummy(void)
+PyInit__testmultiphase_multiple_multiple_interpreters_slots(void)
 {
-    return PyModuleDef_Init(&imp_dummy_def);
+    return PyModuleDef_Init(&def_multiple_multiple_interpreters_slots);
 }
 
+static PyModuleDef_Slot non_isolated_slots[] = {
+    {Py_mod_exec, execfunc},
+    {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED},
+    {0, NULL},
+};
+
+static PyModuleDef non_isolated_def = TEST_MODULE_DEF("_test_non_isolated",
+                                                      non_isolated_slots,
+                                                      testexport_methods);
+
+PyMODINIT_FUNC
+PyInit__test_non_isolated(void)
+{
+    return PyModuleDef_Init(&non_isolated_def);
+}
+
+
+static PyModuleDef_Slot shared_gil_only_slots[] = {
+    {Py_mod_exec, execfunc},
+    /* Note that Py_MOD_MULTIPLE_INTERPRETERS_SUPPORTED is the default.
+       We put it here explicitly to draw attention to the contrast
+       with Py_MOD_PER_INTERPRETER_GIL_SUPPORTED. */
+    {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_SUPPORTED},
+    {0, NULL},
+};
+
+static PyModuleDef shared_gil_only_def = TEST_MODULE_DEF("_test_shared_gil_only",
+                                                         shared_gil_only_slots,
+                                                         testexport_methods);
+
+PyMODINIT_FUNC
+PyInit__test_shared_gil_only(void)
+{
+    return PyModuleDef_Init(&shared_gil_only_def);
+}
