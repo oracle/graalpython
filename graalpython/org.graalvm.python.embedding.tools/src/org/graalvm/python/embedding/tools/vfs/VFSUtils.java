@@ -284,7 +284,7 @@ public final class VFSUtils {
             if (!IS_WINDOWS) {
                 var script = String.format("""
                                 #!/usr/bin/env bash
-                                %s -classpath %s %s --python.Executable="$0" "$@"
+                                %s --enable-native-access=ALL-UNNAMED -classpath %s %s --python.Executable="$0" "$@"
                                 """,
                                 java,
                                 String.join(File.pathSeparator, classpath),
@@ -306,7 +306,7 @@ public final class VFSUtils {
                                 tl = os.path.join(r'%s')
                                 os.makedirs(Path(tl).parent.absolute(), exist_ok=True)
                                 shutil.copy(vl, tl)
-                                cmd = r'%s -classpath "%s" %s'
+                                cmd = r'%s --enable-native-access=ALL-UNNAMED -classpath "%s" %s --jvm --enable-native-access=ALL-UNNAMED'
                                 pyvenvcfg = os.path.join(os.path.dirname(tl), "pyvenv.cfg")
                                 with open(pyvenvcfg, 'w', encoding='utf-8') as f:
                                     f.write('venvlauncher_command = ')
