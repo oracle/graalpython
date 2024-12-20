@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,11 +38,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.util;
+package com.oracle.graal.python.builtins.objects.cext.copying;
 
-import com.oracle.graal.python.runtime.PythonContext;
+import java.nio.ByteBuffer;
 
-@FunctionalInterface
-public interface ShutdownHook {
-    void call(PythonContext context);
+/**
+ * A load command, without much interpretation. Stores the entire command as a byte array, and the
+ * cmd id and size as fields.
+ *
+ * <pre>
+ * struct load_command {
+ *  uint32_t cmd;
+ *  uint32_t cmdsize;
+ *  ...
+ * };
+ * </pre>
+ */
+final class MachOLoadCommand {
+    static final int LC_CODE_SIGNATURE = 0x0000001D;
+
+    final int cmd;
+    final int cmdSize;
+    final ByteBuffer content;
+
+    MachOLoadCommand(int cmd, int cmdSize, ByteBuffer content) {
+        this.cmd = cmd;
+        this.cmdSize = cmdSize;
+        this.content = content;
+    }
+
+    static MachOLoadCommand get(ByteBuffer buffer) {
+        int pos = buffer.position();
+        int cmd = buffer.getInt();
+        int cmdSize = buffer.getInt();
+        var content = buffer.slice(pos, cmdSize);
+        content.order(buffer.order());
+        buffer.position(pos + cmdSize);
+        return new MachOLoadCommand(cmd, cmdSize, content);
+    }
+
+    void put(ByteBuffer f) {
+        content.position(0);
+        f.put(content);
+    }
 }

@@ -280,6 +280,13 @@ PyObject* _Py_EllipsisObjectReference;
 PyObject* _Py_NoneStructReference;
 PyObject* _Py_NotImplementedStructReference;
 
+/*
+ * This holds the thread-local reference to the PythonThreadState on the
+ * managed side. If additional contexts used the C API with the same Python
+ * library, we have to either update when switching contexts, or before each
+ * downcall, or just leave this NULL at all times and incur an upcall in the
+ * getter.
+ */
 THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
 static void initialize_globals() {
@@ -916,7 +923,34 @@ void initialize_hashes();
 // defined in 'floatobject.c'
 void _PyFloat_InitState(PyInterpreterState* state);
 
+/*
+ * This is used to allow Truffle to enter/leave the context on native threads
+ * that were not created by NFI/Truffle/Java and thus not previously attached
+ * to the context. See e.g. PyGILState_Ensure. This is used by some C
+ * extensions to allow calling Python APIs from natively created threads. This
+ * poses a problem if multiple contexts use the same library, since we cannot
+ * know which context should be entered. CPython has the same problem (see
+ * https://docs.python.org/3/c-api/init.html#bugs-and-caveats), in particular
+ * the following quote:
+ *
+ *   Furthermore, extensions (such as ctypes) using these APIs to allow calling
+ *   of Python code from non-Python created threads will probably be broken
+ *   when using sub-interpreters.
+ *
+ * If we try to use the same libpython for multiple contexts, we can only
+ * behave in a similar (likely broken) way as CPython: natively created threads
+ * that use the PyGIL_* APIs to allow calling into Python will attach to the
+ * first interpreter that initialized the C API (and thus set the
+ * TRUFFLE_CONTEXT pointer) only.
+ */
 Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
+
+/*
+ * This is only set during VM shutdown, so on the native side can only be used
+ * to guard things that do not work during VM shutdown, not to guard things
+ * that do not work during context shutdown! (This means that it would be safe
+ * to share this global across multiple contexts.)
+ */
 Py_LOCAL_SYMBOL int32_t graalpy_finalizing;
 
 PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc) {
@@ -928,6 +962,30 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
 
     _PyGC_InitState(gc);
 
+    /*
+     * Initializing all these global fields with pointers to different contexts
+     * could be ok even if all contexts share this library and its globals.
+     * Each native stub is allocated using the AllocateNode and filled by each
+     * context. The long value of the stub pointer is then given an index via
+     * nativeStubLookupReserve, and the index is stored both in the stub for
+     * fast access from native as well as in the PythonObjectReference which
+     * wraps the stub on the managed side. The table is per context. Given that
+     * C API initialisation is deterministic and we initialise only with
+     * quasi-immortal objects, those indices are never repurposed for other
+     * objects. So, while later contexts override the pointers for those global
+     * objects with pointers to their own stubs, the index stored in those
+     * stubs are the same across all contexts, and thus mapping to
+     * context-specific objects works as intended. It'd a bit dodgy that the
+     * ob_refcnt fields of those objects would show whacky behaviour. Maybe we
+     * could just assert that everything stored during initialisation of the
+     * GraalPy C API has IMMORTAL_REFCNT and that all stub indices actually
+     * match. The only real problem would be if the last context exists and
+     * actually frees the stub memory. We would have to VM-globally delay
+     * freeing the "latest" stubs, but that's no big deal, we would simply keep
+     * a reference to the "latest" handle stub table globally. When it changes
+     * and the associated context already exited, we can free it now, when
+     * context exits and its table is the "latest", we delay freeing it.
+     */
     initialize_builtins(builtin_closures);
     PyTruffle_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyTruffle_Native_Options();

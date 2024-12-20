@@ -78,11 +78,10 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -321,10 +320,10 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             if (existingModule != null) {
                 return existingModule;
             }
-            return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode());
+            return CApiContext.loadCExtModule(this, context, spec, getCheckResultNode());
         }
 
-        private PythonModule findExtension(PythonContext context, ModuleSpec spec) {
+        private static PythonModule findExtension(PythonContext context, ModuleSpec spec) {
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext == null) {
                 return null;

@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -1178,6 +1179,23 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object currentRSS() {
             return getContext().getCApiContext().getCurrentRSS();
+        }
+    }
+
+    @Builtin(name = "replicate_extensions_in_venv", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ReplicateExtNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object replicate(TruffleString venvPath, int count,
+                        @Bind("$node") Node node,
+                        @Bind PythonContext context) {
+            try {
+                NativeLibraryLocator.replicate(context.getEnv().getPublicTruffleFile(venvPath.toJavaStringUncached()), context, count);
+            } catch (IOException | InterruptedException e) {
+                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.ValueError, e);
+            }
+            return PNone.NONE;
         }
     }
 

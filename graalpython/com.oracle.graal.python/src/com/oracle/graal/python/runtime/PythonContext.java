@@ -213,6 +213,7 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 import sun.misc.Unsafe;
 
+@Bind.DefaultExpression("get($node)")
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
     public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
@@ -1880,12 +1881,13 @@ public final class PythonContext extends Python3Core {
                             "\n\tHome candidate: {7}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome, homeCandidate.toString()));
 
             langHome = toTruffleStringUncached(homeCandidate.toString());
+            TruffleString prefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
             if (sysPrefix.isEmpty()) {
-                sysPrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
+                sysPrefix = prefix;
             }
 
             if (basePrefix.isEmpty()) {
-                basePrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
+                basePrefix = prefix;
             }
 
             if (coreHome.isEmpty()) {
