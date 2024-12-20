@@ -53,13 +53,10 @@ The factory methods in [GraalPyResources](https://github.com/oracle/graalpython/
 - `${root}/venv`: used for the Python virtual environment holding installed third-party Python packages. 
 The Context will be configured as if it is executed from this virtual environment. Notably packages installed in this
 virtual environment will be automatically available for importing.
-- `${root}/home`: used for the Python standard library (equivalent to `PYTHONHOME` environment variable).
 
-The Maven or Gradle plugin will fully manage the contents of the `venv` and `home` subdirectories.
-Any manual changes in these directories will be overridden by the plugin during the build.
+The Maven or Gradle plugin will fully manage the contents of the `venv` subdirectory.
+Any manual change will be overridden by the plugin during the build.
 - `${root}/venv`: the plugin creates a virtual environment and installs required packages according to the plugin configuration in _pom.xml_ or _build.gradle_.
-- `${root}/home`: the plugin copies the required (also configurable) parts of the Python standard library into this directory.
-By default, the full standard library is used.
 
 The _src_ subdirectory is left to be manually populated by the user with custom Python scripts or modules.
 
@@ -85,24 +82,6 @@ The **packages** element declares a list of third-party Python packages to be do
           <package>termcolor==2.2</package>
           ...
       </packages>
-      ...
-  </configuration>
-  ```
-- The **pythonHome** subsection declares what parts of the standard library should be deployed.
-
-  Each `include` and `exclude` element is interpreted as a Java-like regular expression specifying which file paths should be included or excluded.
-  ```xml
-  <configuration>
-      <pythonHome>
-          <includes>
-              <include>.*</include>
-              ...
-          </includes>
-          <excludes>
-              <exclude></exclude>
-              ...
-          </excludes>
-      </pythonHome>
       ...
   </configuration>
   ```
@@ -137,17 +116,6 @@ The plugin can be configured in the `graalPy` block:
   ```
   graalPy {
     packages = ["termcolor==2.2"]
-    ...
-  }
-  ```
-- The **pythonHome** subsection declares what parts of the standard library should be deployed.
-  Each element in the `includes` and `excludes` list is interpreted as a Java-like regular expression specifying which file paths should be included or excluded.
-  ```
-  graalPy {
-    pythonHome {
-      includes = [".*"]
-      excludes = []
-    }
     ...
   }
   ```
