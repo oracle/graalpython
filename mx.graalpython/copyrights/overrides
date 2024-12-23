@@ -296,7 +296,6 @@ graalpython/com.oracle.graal.python.cext/modules/_testcapi/numbers.c,python.copy
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/parts.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/pyos.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/pytime.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_testcapi/README.txt,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/run.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/set.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/structmember.c,python.copyright
