@@ -478,7 +478,13 @@ patch = 'pygame-2.patch'
 license = 'LGPL-2.0-or-later'
 
 [[pymongo.rules]]
+version = "< 4.8.0"
 patch = 'pymongo.patch'
+license = 'Apache-2.0'
+
+[[pymongo.rules]]
+version = ">= 4.8.0"
+patch = 'pymongo-4.8.0.patch'
 license = 'Apache-2.0'
 
 [[pyOpenSSL.rules]]
