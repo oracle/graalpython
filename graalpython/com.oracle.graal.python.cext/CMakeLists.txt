@@ -208,7 +208,25 @@ set(SQLITE3_SRC
 )
 native_module("_sqlite3" TRUE "${SQLITE3_SRC}")
 target_include_directories("_sqlite3" PUBLIC "${SRC_DIR}/modules/_sqlite/sqlite")
-native_module("_sha3" TRUE "${SRC_DIR}/modules/_sha3/sha3module.c")
+
+set(LIBHACL_HEADERS
+    # "${SRC_DIR}/modules/_hacl/include/krml/FStar_UInt128_Verified.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/FStar_UInt_8_16_32_64.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/fstar_uint128_struct_endianness.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/internal/target.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/lowstar_endianness.h"
+    # "${SRC_DIR}/modules/_hacl/include/krml/types.h"
+    # "${SRC_DIR}/modules/_hacl/Hacl_Streaming_Types.h"
+    # "${SRC_DIR}/modules/_hacl/python_hacl_namespaces.h"
+    "${SRC_DIR}/modules/_hacl/include"
+    "${SRC_DIR}/modules/_hacl"
+)
+set(SHA3_SRC
+    "${SRC_DIR}/modules/sha3module.c"
+    "${SRC_DIR}/modules/_hacl/Hacl_Hash_SHA3.c"
+)
+native_module("_sha3" TRUE "${SHA3_SRC}")
+target_include_directories("_sha3" PUBLIC "${LIBHACL_HEADERS}")
 
 set(TESTCAPI_SRC
     "${SRC_DIR}/modules/_testcapi/abstract.c"

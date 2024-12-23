@@ -3309,6 +3309,7 @@ _PyImport_FiniExternal(PyInterpreterState *interp)
         PyErr_WriteUnraisable(NULL);
     }
 }
+#endif // GraalPy change
 
 
 /******************/
@@ -3346,6 +3347,7 @@ _PyImport_GetModuleAttrString(const char *modname, const char *attrname)
 }
 
 
+#if 0 // GraalPy change
 /**************/
 /* the module */
 /**************/

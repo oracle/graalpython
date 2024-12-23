@@ -458,6 +458,7 @@ connection_finalize(PyObject *self)
     pysqlite_Connection *con = (pysqlite_Connection *)self;
     PyObject *exc = PyErr_GetRaisedException();
 
+#if 0 // GraalPy change
     /* If close is implicitly called as a result of interpreter
      * tear-down, we must not call back into Python. */
     PyInterpreterState *interp = PyInterpreterState_Get();
@@ -465,6 +466,9 @@ connection_finalize(PyObject *self)
     if (teardown && con->db) {
         remove_callbacks(con->db);
     }
+#else // GraalPy change
+    int teardown = 0;
+#endif // GraalPy change
 
     /* Clean up if user has not called .close() explicitly. */
     if (connection_close(con) < 0) {
@@ -482,9 +486,11 @@ connection_finalize(PyObject *self)
 static void
 connection_dealloc(PyObject *self)
 {
+#if 0 // GraalPy change
     if (PyObject_CallFinalizerFromDealloc(self) < 0) {
         return;
     }
+#endif // GraalPy change
     PyTypeObject *tp = Py_TYPE(self);
     PyObject_GC_UnTrack(self);
     tp->tp_clear(self);

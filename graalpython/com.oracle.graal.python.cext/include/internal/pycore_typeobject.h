@@ -104,6 +104,7 @@ _PyStaticType_GET_WEAKREFS_LISTPTR(static_builtin_state *state)
 static inline void *
 _PyType_GetModuleState(PyTypeObject *type)
 {
+#if 0 // GraalPy change: we don't support ht_module 
     assert(PyType_Check(type));
     assert(type->tp_flags & Py_TPFLAGS_HEAPTYPE);
     PyHeapTypeObject *et = (PyHeapTypeObject *)type;
@@ -111,6 +112,9 @@ _PyType_GetModuleState(PyTypeObject *type)
     PyModuleObject *mod = (PyModuleObject *)(et->ht_module);
     assert(mod != NULL);
     return mod->md_state;
+#else // GraalPy change
+    return PyType_GetModuleState(type);
+#endif // GraalPy change
 }
 
 
