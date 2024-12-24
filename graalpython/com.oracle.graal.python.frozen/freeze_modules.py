@@ -24,6 +24,9 @@ FROZEN_MODULES_DIR: str
 OS_PATH = 'ntpath' if os.name == 'nt' else 'posixpath'
 
 # These are modules that get frozen.
+# If you're debugging new bytecode instructions,
+# you can delete all sections except 'import system'.
+# This also speeds up building somewhat.
 TESTS_SECTION = 'Test module'
 FROZEN = [
     # See parse_frozen_spec() for the format.
@@ -37,6 +40,7 @@ FROZEN = [
         # on a builtin zip file instead of a filesystem.
         'zipimport',
         ]),
+    # (You can delete entries from here down to the end of the list.)
     ('stdlib - startup, without site (python -S)', [
         'abc',
         'codecs',
@@ -90,6 +94,7 @@ FROZEN = [
         '<__phello__.**.*>',
         f'frozen_only : __hello_only__ = {FROZEN_ONLY}',
         ]),
+    # (End of stuff you could delete.)
 ]
 BOOTSTRAP = {
     'importlib._bootstrap',
