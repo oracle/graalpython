@@ -8,7 +8,6 @@ import hashlib
 import os
 import ntpath
 import posixpath
-import sys
 import argparse
 from update_file import updating_file_with_tmpfile
 
@@ -33,6 +32,9 @@ PCBUILD_PYTHONCORE = os.path.join(ROOT_DIR, 'PCbuild', 'pythoncore.vcxproj')
 OS_PATH = 'ntpath' if os.name == 'nt' else 'posixpath'
 
 # These are modules that get frozen.
+# If you're debugging new bytecode instructions,
+# you can delete all sections except 'import system'.
+# This also speeds up building somewhat.
 TESTS_SECTION = 'Test module'
 FROZEN = [
     # See parse_frozen_spec() for the format.
@@ -46,6 +48,7 @@ FROZEN = [
         # on a builtin zip file instead of a filesystem.
         'zipimport',
         ]),
+    # (You can delete entries from here down to the end of the list.)
     ('stdlib - startup, without site (python -S)', [
         'abc',
         'codecs',
@@ -81,6 +84,7 @@ FROZEN = [
         '<__phello__.**.*>',
         f'frozen_only : __hello_only__ = {FROZEN_ONLY}',
         ]),
+    # (End of stuff you could delete.)
 ]
 BOOTSTRAP = {
     'importlib._bootstrap',
@@ -463,6 +467,17 @@ def replace_block(lines, start_marker, end_marker, replacements, file):
     return lines[:start_pos + 1] + replacements + lines[end_pos:]
 
 
+class UniqueList(list):
+    def __init__(self):
+        self._seen = set()
+
+    def append(self, item):
+        if item in self._seen:
+            return
+        super().append(item)
+        self._seen.add(item)
+
+
 def regen_frozen(modules, frozen_modules: bool):
     headerlines = []
     parentdir = os.path.dirname(FROZEN_FILE)
@@ -473,7 +488,7 @@ def regen_frozen(modules, frozen_modules: bool):
             header = relpath_for_posix_display(src.frozenfile, parentdir)
             headerlines.append(f'#include "{header}"')
 
-    externlines = []
+    externlines = UniqueList()
     bootstraplines = []
     stdliblines = []
     testlines = []
@@ -521,7 +536,7 @@ def regen_frozen(modules, frozen_modules: bool):
 
     for lines in (bootstraplines, stdliblines, testlines):
         # TODO: Is this necessary any more?
-        if not lines[0]:
+        if lines and not lines[0]:
             del lines[0]
         for i, line in enumerate(lines):
             if line:
@@ -582,7 +597,7 @@ def regen_makefile(modules):
     frozenfiles = []
     rules = ['']
     deepfreezerules = ["$(DEEPFREEZE_C): $(DEEPFREEZE_DEPS)",
-                       "\t$(PYTHON_FOR_FREEZE) $(srcdir)/Tools/scripts/deepfreeze.py \\"]
+                       "\t$(PYTHON_FOR_FREEZE) $(srcdir)/Tools/build/deepfreeze.py \\"]
     for src in _iter_sources(modules):
         frozen_header = relpath_for_posix_display(src.frozenfile, ROOT_DIR)
         frozenfiles.append(f'\t\t{frozen_header} \\')
@@ -647,7 +662,7 @@ def regen_pcbuild(modules):
     projlines = []
     filterlines = []
     corelines = []
-    deepfreezerules = ['\t<Exec Command=\'$(PythonForBuild) "$(PySourcePath)Tools\\scripts\\deepfreeze.py" ^']
+    deepfreezerules = ['\t<Exec Command=\'$(PythonForBuild) "$(PySourcePath)Tools\\build\\deepfreeze.py" ^']
     for src in _iter_sources(modules):
         pyfile = relpath_for_windows_display(src.pyfile, ROOT_DIR)
         header = relpath_for_windows_display(src.frozenfile, ROOT_DIR)
