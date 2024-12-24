@@ -120,7 +120,13 @@ class MimeTypes:
         but non-standard types.
         """
         url = os.fspath(url)
-        scheme, url = urllib.parse._splittype(url)
+        p = urllib.parse.urlparse(url)
+        if p.scheme and len(p.scheme) > 1:
+            scheme = p.scheme
+            url = p.path
+        else:
+            scheme = None
+            url = os.path.splitdrive(url)[1]
         if scheme == 'data':
             # syntax of data URLs:
             # dataurl   := "data:" [ mediatype ] [ ";base64" ] "," data
@@ -217,10 +223,7 @@ class MimeTypes:
         list of standard types, else to the list of non-standard
         types.
         """
-        while 1:
-            line = fp.readline()
-            if not line:
-                break
+        while line := fp.readline():
             words = line.split()
             for i in range(len(words)):
                 if words[i][0] == '#':
@@ -427,8 +430,8 @@ def _default_mime_types():
     # Make sure the entry with the preferred file extension for a particular mime type
     # appears before any others of the same mimetype.
     types_map = _types_map_default = {
-        '.js'     : 'application/javascript',
-        '.mjs'    : 'application/javascript',
+        '.js'     : 'text/javascript',
+        '.mjs'    : 'text/javascript',
         '.json'   : 'application/json',
         '.webmanifest': 'application/manifest+json',
         '.doc'    : 'application/msword',
@@ -548,6 +551,8 @@ def _default_mime_types():
         '.csv'    : 'text/csv',
         '.html'   : 'text/html',
         '.htm'    : 'text/html',
+        '.md'     : 'text/markdown',
+        '.markdown': 'text/markdown',
         '.n3'     : 'text/n3',
         '.txt'    : 'text/plain',
         '.bat'    : 'text/plain',

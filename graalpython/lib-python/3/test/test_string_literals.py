@@ -109,11 +109,11 @@ class TestLiterals(unittest.TestCase):
         for b in range(1, 128):
             if b in b"""\n\r"'01234567NU\\abfnrtuvx""":
                 continue
-            with self.assertWarns(DeprecationWarning):
+            with self.assertWarns(SyntaxWarning):
                 self.assertEqual(eval(r"'\%c'" % b), '\\' + chr(b))
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', category=DeprecationWarning)
+            warnings.simplefilter('always', category=SyntaxWarning)
             eval("'''\n\\z'''")
         self.assertEqual(len(w), 1)
         self.assertEqual(str(w[0].message), r"invalid escape sequence '\z'")
@@ -121,7 +121,7 @@ class TestLiterals(unittest.TestCase):
         # self.assertEqual(w[0].lineno, 1)
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('error', category=DeprecationWarning)
+            warnings.simplefilter('error', category=SyntaxWarning)
             with self.assertRaises(SyntaxError) as cm:
                 eval("'''\n\\z'''")
             exc = cm.exception
@@ -131,27 +131,27 @@ class TestLiterals(unittest.TestCase):
         self.assertEqual(exc.lineno, 1)
         self.assertEqual(exc.offset, 1)
 
-        # Check that the warning is raised ony once if there are syntax errors
+        # Check that the warning is raised only once if there are syntax errors
 
         # GraalPy change: we gather warnings and report them later only if the code successfully parsed.
         # It would be very difficult to emit warnings from failed parses
         # with warnings.catch_warnings(record=True) as w:
-        #     warnings.simplefilter('always', category=DeprecationWarning)
+        #     warnings.simplefilter('always', category=SyntaxWarning)
         #     with self.assertRaises(SyntaxError) as cm:
         #         eval("'\\e' $")
         #     exc = cm.exception
         # self.assertEqual(len(w), 1)
-        # self.assertEqual(w[0].category, DeprecationWarning)
+        # self.assertEqual(w[0].category, SyntaxWarning)
         # self.assertRegex(str(w[0].message), 'invalid escape sequence')
         # self.assertEqual(w[0].filename, '<string>')
 
     def test_eval_str_invalid_octal_escape(self):
         for i in range(0o400, 0o1000):
-            with self.assertWarns(DeprecationWarning):
+            with self.assertWarns(SyntaxWarning):
                 self.assertEqual(eval(r"'\%o'" % i), chr(i))
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', category=DeprecationWarning)
+            warnings.simplefilter('always', category=SyntaxWarning)
             eval("'''\n\\407'''")
         self.assertEqual(len(w), 1)
         self.assertEqual(str(w[0].message),
@@ -160,7 +160,7 @@ class TestLiterals(unittest.TestCase):
         self.assertEqual(w[0].lineno, 1)
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('error', category=DeprecationWarning)
+            warnings.simplefilter('error', category=SyntaxWarning)
             with self.assertRaises(SyntaxError) as cm:
                 eval("'''\n\\407'''")
             exc = cm.exception
@@ -200,11 +200,11 @@ class TestLiterals(unittest.TestCase):
         for b in range(1, 128):
             if b in b"""\n\r"'01234567\\abfnrtvx""":
                 continue
-            with self.assertWarns(DeprecationWarning):
+            with self.assertWarns(SyntaxWarning):
                 self.assertEqual(eval(r"b'\%c'" % b), b'\\' + bytes([b]))
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', category=DeprecationWarning)
+            warnings.simplefilter('always', category=SyntaxWarning)
             eval("b'''\n\\z'''")
         self.assertEqual(len(w), 1)
         self.assertEqual(str(w[0].message), r"invalid escape sequence '\z'")
@@ -212,7 +212,7 @@ class TestLiterals(unittest.TestCase):
         self.assertEqual(w[0].lineno, 1)
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('error', category=DeprecationWarning)
+            warnings.simplefilter('error', category=SyntaxWarning)
             with self.assertRaises(SyntaxError) as cm:
                 eval("b'''\n\\z'''")
             exc = cm.exception
@@ -223,11 +223,11 @@ class TestLiterals(unittest.TestCase):
 
     def test_eval_bytes_invalid_octal_escape(self):
         for i in range(0o400, 0o1000):
-            with self.assertWarns(DeprecationWarning):
+            with self.assertWarns(SyntaxWarning):
                 self.assertEqual(eval(r"b'\%o'" % i), bytes([i & 0o377]))
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', category=DeprecationWarning)
+            warnings.simplefilter('always', category=SyntaxWarning)
             eval("b'''\n\\407'''")
         self.assertEqual(len(w), 1)
         self.assertEqual(str(w[0].message),
@@ -236,7 +236,7 @@ class TestLiterals(unittest.TestCase):
         self.assertEqual(w[0].lineno, 1)
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('error', category=DeprecationWarning)
+            warnings.simplefilter('error', category=SyntaxWarning)
             with self.assertRaises(SyntaxError) as cm:
                 eval("b'''\n\\407'''")
             exc = cm.exception

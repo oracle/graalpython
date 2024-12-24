@@ -84,14 +84,14 @@ class LocaltimeTests(unittest.TestCase):
     def test_localtime_daylight_true_dst_false(self):
         test.support.patch(self, time, 'daylight', True)
         t0 = datetime.datetime(2012, 3, 12, 1, 1)
-        t1 = utils.localtime(t0, isdst=-1)
+        t1 = utils.localtime(t0)
         t2 = utils.localtime(t1)
         self.assertEqual(t1, t2)
 
     def test_localtime_daylight_false_dst_false(self):
         test.support.patch(self, time, 'daylight', False)
         t0 = datetime.datetime(2012, 3, 12, 1, 1)
-        t1 = utils.localtime(t0, isdst=-1)
+        t1 = utils.localtime(t0)
         t2 = utils.localtime(t1)
         self.assertEqual(t1, t2)
 
@@ -99,7 +99,7 @@ class LocaltimeTests(unittest.TestCase):
     def test_localtime_daylight_true_dst_true(self):
         test.support.patch(self, time, 'daylight', True)
         t0 = datetime.datetime(2012, 3, 12, 1, 1)
-        t1 = utils.localtime(t0, isdst=1)
+        t1 = utils.localtime(t0)
         t2 = utils.localtime(t1)
         self.assertEqual(t1, t2)
 
@@ -107,7 +107,7 @@ class LocaltimeTests(unittest.TestCase):
     def test_localtime_daylight_false_dst_true(self):
         test.support.patch(self, time, 'daylight', False)
         t0 = datetime.datetime(2012, 3, 12, 1, 1)
-        t1 = utils.localtime(t0, isdst=1)
+        t1 = utils.localtime(t0)
         t2 = utils.localtime(t1)
         self.assertEqual(t1, t2)
 
@@ -143,16 +143,21 @@ class LocaltimeTests(unittest.TestCase):
         t2 = utils.localtime(t0.replace(tzinfo=None))
         self.assertEqual(t1, t2)
 
-    @unittest.skipUnless("Europe/Kyiv" in zoneinfo.available_timezones(),
-                         "Can't find a Kyiv timezone database")
     @test.support.run_with_tz('Europe/Kyiv')
     def test_variable_tzname(self):
         t0 = datetime.datetime(1984, 1, 1, tzinfo=datetime.timezone.utc)
         t1 = utils.localtime(t0)
+        if t1.tzname() in ('Europe', 'UTC'):
+            self.skipTest("Can't find a Kyiv timezone database")
         self.assertEqual(t1.tzname(), 'MSK')
         t0 = datetime.datetime(1994, 1, 1, tzinfo=datetime.timezone.utc)
         t1 = utils.localtime(t0)
         self.assertEqual(t1.tzname(), 'EET')
+
+    def test_isdst_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            t0 = datetime.datetime(1990, 1, 1)
+            t1 = utils.localtime(t0, isdst=True)
 
 # Issue #24836: The timezone files are out of date (pre 2011k)
 # on Mac OS X Snow Leopard.

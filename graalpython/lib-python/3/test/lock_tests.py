@@ -2,7 +2,6 @@
 Various tests for synchronization primitives.
 """
 
-import os
 import gc
 import sys
 import time
@@ -1014,6 +1013,10 @@ class BarrierTests(BaseTestCase):
             self.barrier.wait()
         self.assertEqual(self.barrier.n_waiting, 0)
         self.assertFalse(self.barrier.broken)
+
+    def test_constructor(self):
+        self.assertRaises(ValueError, self.barriertype, parties=0)
+        self.assertRaises(ValueError, self.barriertype, parties=-1)
 
     def test_barrier(self, passes=1):
         """

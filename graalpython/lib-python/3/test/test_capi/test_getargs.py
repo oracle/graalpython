@@ -2,10 +2,11 @@ import unittest
 import math
 import string
 import sys
-import warnings
 from test import support
 from test.support import import_helper
+from test.support import script_helper
 from test.support import warnings_helper
+from test.support.testcase import FloatsAreIdenticalMixin
 # Skip this test if the _testcapi module isn't available.
 _testcapi = import_helper.import_module('_testcapi')
 from _testcapi import getargs_keywords, getargs_keyword_only
@@ -436,11 +437,7 @@ class LongLong_TestCase(unittest.TestCase):
         self.assertEqual(VERY_LARGE & ULLONG_MAX, getargs_K(VERY_LARGE))
 
 
-class Float_TestCase(unittest.TestCase):
-    def assertEqualWithSign(self, actual, expected):
-        self.assertEqual(actual, expected)
-        self.assertEqual(math.copysign(1, actual), math.copysign(1, expected))
-
+class Float_TestCase(unittest.TestCase, FloatsAreIdenticalMixin):
     def test_f(self):
         from _testcapi import getargs_f
         self.assertEqual(getargs_f(4.25), 4.25)
@@ -462,10 +459,10 @@ class Float_TestCase(unittest.TestCase):
             self.assertEqual(getargs_f(DBL_MAX), INF)
             self.assertEqual(getargs_f(-DBL_MAX), -INF)
         if FLT_MIN > DBL_MIN:
-            self.assertEqualWithSign(getargs_f(DBL_MIN), 0.0)
-            self.assertEqualWithSign(getargs_f(-DBL_MIN), -0.0)
-        self.assertEqualWithSign(getargs_f(0.0), 0.0)
-        self.assertEqualWithSign(getargs_f(-0.0), -0.0)
+            self.assertFloatsAreIdentical(getargs_f(DBL_MIN), 0.0)
+            self.assertFloatsAreIdentical(getargs_f(-DBL_MIN), -0.0)
+        self.assertFloatsAreIdentical(getargs_f(0.0), 0.0)
+        self.assertFloatsAreIdentical(getargs_f(-0.0), -0.0)
         r = getargs_f(NAN)
         self.assertNotEqual(r, r)
 
@@ -494,8 +491,8 @@ class Float_TestCase(unittest.TestCase):
             self.assertEqual(getargs_d(x), x)
         self.assertRaises(OverflowError, getargs_d, 1<<DBL_MAX_EXP)
         self.assertRaises(OverflowError, getargs_d, -1<<DBL_MAX_EXP)
-        self.assertEqualWithSign(getargs_d(0.0), 0.0)
-        self.assertEqualWithSign(getargs_d(-0.0), -0.0)
+        self.assertFloatsAreIdentical(getargs_d(0.0), 0.0)
+        self.assertFloatsAreIdentical(getargs_d(-0.0), -0.0)
         r = getargs_d(NAN)
         self.assertNotEqual(r, r)
 
@@ -519,10 +516,10 @@ class Float_TestCase(unittest.TestCase):
             self.assertEqual(getargs_D(c), c)
             c = complex(1.0, x)
             self.assertEqual(getargs_D(c), c)
-        self.assertEqualWithSign(getargs_D(complex(0.0, 1.0)).real, 0.0)
-        self.assertEqualWithSign(getargs_D(complex(-0.0, 1.0)).real, -0.0)
-        self.assertEqualWithSign(getargs_D(complex(1.0, 0.0)).imag, 0.0)
-        self.assertEqualWithSign(getargs_D(complex(1.0, -0.0)).imag, -0.0)
+        self.assertFloatsAreIdentical(getargs_D(complex(0.0, 1.0)).real, 0.0)
+        self.assertFloatsAreIdentical(getargs_D(complex(-0.0, 1.0)).real, -0.0)
+        self.assertFloatsAreIdentical(getargs_D(complex(1.0, 0.0)).imag, 0.0)
+        self.assertFloatsAreIdentical(getargs_D(complex(1.0, -0.0)).imag, -0.0)
 
 
 class Paradox:
@@ -1268,6 +1265,27 @@ class ParseTupleAndKeywords_Test(unittest.TestCase):
         self.assertRaises(ValueError, _testcapi.parse_tuple_and_keywords,
                           (), {}, '', [42])
 
+    def test_basic(self):
+        parse = _testcapi.parse_tuple_and_keywords
+
+        self.assertEqual(parse((), {'a': 1}, 'O', ['a']), (1,))
+        self.assertEqual(parse((), {}, '|O', ['a']), (NULL,))
+        self.assertEqual(parse((1, 2), {}, 'OO', ['a', 'b']), (1, 2))
+        self.assertEqual(parse((1,), {'b': 2}, 'OO', ['a', 'b']), (1, 2))
+        self.assertEqual(parse((), {'a': 1, 'b': 2}, 'OO', ['a', 'b']), (1, 2))
+        self.assertEqual(parse((), {'b': 2}, '|OO', ['a', 'b']), (NULL, 2))
+
+        with self.assertRaisesRegex(TypeError,
+                "function missing required argument 'a'"):
+            parse((), {}, 'O', ['a'])
+        with self.assertRaisesRegex(TypeError,
+                "'b' is an invalid keyword argument"):
+            parse((), {'b': 1}, '|O', ['a'])
+        with self.assertRaisesRegex(TypeError,
+                fr"argument for function given by name \('a'\) "
+                fr"and position \(1\)"):
+            parse((1,), {'a': 2}, 'O|O', ['a', 'b'])
+
     def test_bad_use(self):
         # Test handling invalid format and keywords in
         # PyArg_ParseTupleAndKeywords()
@@ -1295,20 +1313,23 @@ class ParseTupleAndKeywords_Test(unittest.TestCase):
     def test_positional_only(self):
         parse = _testcapi.parse_tuple_and_keywords
 
-        parse((1, 2, 3), {}, 'OOO', ['', '', 'a'])
-        parse((1, 2), {'a': 3}, 'OOO', ['', '', 'a'])
+        self.assertEqual(parse((1, 2, 3), {}, 'OOO', ['', '', 'a']), (1, 2, 3))
+        self.assertEqual(parse((1, 2), {'a': 3}, 'OOO', ['', '', 'a']), (1, 2, 3))
         with self.assertRaisesRegex(TypeError,
                r'function takes at least 2 positional arguments \(1 given\)'):
             parse((1,), {'a': 3}, 'OOO', ['', '', 'a'])
-        parse((1,), {}, 'O|OO', ['', '', 'a'])
+        self.assertEqual(parse((1,), {}, 'O|OO', ['', '', 'a']),
+                         (1, NULL, NULL))
         with self.assertRaisesRegex(TypeError,
                r'function takes at least 1 positional argument \(0 given\)'):
             parse((), {}, 'O|OO', ['', '', 'a'])
-        parse((1, 2), {'a': 3}, 'OO$O', ['', '', 'a'])
+        self.assertEqual(parse((1, 2), {'a': 3}, 'OO$O', ['', '', 'a']),
+                         (1, 2, 3))
         with self.assertRaisesRegex(TypeError,
                r'function takes exactly 2 positional arguments \(1 given\)'):
             parse((1,), {'a': 3}, 'OO$O', ['', '', 'a'])
-        parse((1,), {}, 'O|O$O', ['', '', 'a'])
+        self.assertEqual(parse((1,), {}, 'O|O$O', ['', '', 'a']),
+                         (1, NULL, NULL))
         with self.assertRaisesRegex(TypeError,
                r'function takes at least 1 positional argument \(0 given\)'):
             parse((), {}, 'O|O$O', ['', '', 'a'])
@@ -1317,11 +1338,18 @@ class ParseTupleAndKeywords_Test(unittest.TestCase):
         with self.assertRaisesRegex(SystemError, 'Empty keyword'):
             parse((1,), {}, 'O|OO', ['', 'a', ''])
 
+
+class Test_testcapi(unittest.TestCase):
+    locals().update((name, getattr(_testcapi, name))
+                    for name in dir(_testcapi)
+                    if name.startswith('test_') and name.endswith('_code'))
+
     def test_nested_tuple(self):
         parse = _testcapi.parse_tuple_and_keywords
 
-        parse(((1, 2, 3),), {}, '(OOO)', ['a'])
-        parse((1, (2, 3), 4), {}, 'O(OO)O', ['a', 'b', 'c'])
+        self.assertEqual(parse(((1, 2, 3),), {}, '(OOO)', ['a']), (1, 2, 3))
+        self.assertEqual(parse((1, (2, 3), 4), {}, 'O(OO)O', ['a', 'b', 'c']),
+                         (1, 2, 3, 4))
         parse(((1, 2, 3),), {}, '(iii)', ['a'])
 
         with self.assertRaisesRegex(TypeError,
