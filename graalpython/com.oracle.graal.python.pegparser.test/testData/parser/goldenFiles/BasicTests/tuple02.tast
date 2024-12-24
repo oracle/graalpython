@@ -15,4 +15,4 @@ Module[1:0-1:27]
                         Values:
                             LONG[1:12-1:13] Value: 1
                             LONG[1:14-1:15] Value: 2
-            RAW[1:20-1:26] Value: "ahoj"
+            CODEPOINTS[1:20-1:26] Value: "ahoj"

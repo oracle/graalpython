@@ -7,11 +7,11 @@ Output:
 Module[1:0-1:31]
     Dict[1:0-1:31]
         Values:
-            Key: RAW[1:1-1:4] Value: "a"
-            Val: RAW[1:5-1:8] Value: "b"
-            Key: RAW[1:9-1:12] Value: "c"
+            Key: CODEPOINTS[1:1-1:4] Value: "a"
+            Val: CODEPOINTS[1:5-1:8] Value: "b"
+            Key: CODEPOINTS[1:9-1:12] Value: "c"
             Val: LONG[1:13-1:15] Value: 14
-            Key: RAW[1:16-1:19] Value: "d"
+            Key: CODEPOINTS[1:16-1:19] Value: "d"
             Val: LONG[1:20-1:24] Value: 1234
-            Key: RAW[1:25-1:28] Value: "g"
+            Key: CODEPOINTS[1:25-1:28] Value: "g"
             Val: Name[1:29-1:30] Value: "h"

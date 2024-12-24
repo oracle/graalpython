@@ -109,8 +109,8 @@ public final class ByteArrayBuilder {
                 if (newSize < sizeTimes2) {
                     newSize = sizeTimes2;
                 }
+                data = arrayCopyOf(data, newSize);
             }
-            data = arrayCopyOf(data, newSize);
         } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new OutOfMemoryError();

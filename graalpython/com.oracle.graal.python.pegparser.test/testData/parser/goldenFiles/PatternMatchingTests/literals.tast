@@ -20,7 +20,7 @@ Module[1:0-9:12]
             MatchCaseTy[2:4-3:12]
                 Pattern: 
                     MatchValue[2:9-2:14]
-                        Value: RAW[2:9-2:14] Value: "abc"
+                        Value: CODEPOINTS[2:9-2:14] Value: "abc"
                 Body:
                     Pass[3:8-3:12]
             MatchCaseTy[4:4-5:12]

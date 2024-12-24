@@ -39,4 +39,4 @@ Module[1:0-6:17]
             Call[6:4-6:17]
                 Target: Name[6:4-6:9] Value: "print"
                 Args:
-                    RAW[6:10-6:16] Value: "test"
+                    CODEPOINTS[6:10-6:16] Value: "test"

@@ -32,7 +32,7 @@ Module[2:0-11:7]
             Call[6:8-6:35]
                 Target: Name[6:8-6:13] Value: "print"
                 Args:
-                    RAW[6:14-6:31] Value: "Inner, local x:"
+                    CODEPOINTS[6:14-6:31] Value: "Inner, local x:"
                     Name[6:33-6:34] Value: "x"
             ---- End of inner function ----
         Call[8:4-8:11]
@@ -40,7 +40,7 @@ Module[2:0-11:7]
         Call[9:4-9:31]
             Target: Name[9:4-9:9] Value: "print"
             Args:
-                RAW[9:10-9:27] Value: "Outer, local x:"
+                CODEPOINTS[9:10-9:27] Value: "Outer, local x:"
                 Name[9:29-9:30] Value: "x"
         ---- End of outer function ----
     Call[11:0-11:7]

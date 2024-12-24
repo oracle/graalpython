@@ -91,6 +91,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class Obj2SstBase {
@@ -269,11 +270,11 @@ abstract class Obj2SstBase {
             PComplex c = (PComplex) obj;
             return ConstantValue.ofComplex(c.getReal(), c.getImag());
         }
-        if (obj instanceof TruffleString) {
-            return ConstantValue.ofRaw(obj);
+        if (obj instanceof TruffleString ts) {
+            return ConstantValue.ofCodePoints(PythonUtils.truffleStringToCodePoints(ts));
         }
-        if (obj instanceof PString && PyUnicodeCheckExactNode.executeUncached(obj)) {
-            return ConstantValue.ofRaw(((PString) obj).getValueUncached());
+        if (obj instanceof PString ps && PyUnicodeCheckExactNode.executeUncached(obj)) {
+            return ConstantValue.ofCodePoints(PythonUtils.truffleStringToCodePoints(ps.getValueUncached()));
         }
         if (obj instanceof PBytes && PyBytesCheckExactNode.executeUncached(obj)) {
             Object buf = PythonBufferAcquireLibrary.getUncached().acquireReadonly(obj);

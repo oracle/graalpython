@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,8 @@
 package com.oracle.graal.python.pegparser.sst;
 
 import java.math.BigInteger;
+
+import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 
 /**
  * This is the representation of the {@code constant} type used in asdl. In CPython, this is
@@ -105,9 +107,9 @@ public final class ConstantValue {
         return (Long) value;
     }
 
-    public <T> T getRaw(Class<T> type) {
-        assert kind == Kind.RAW && type.isInstance(value);
-        return type.cast(value);
+    public CodePoints getCodePoints() {
+        assert kind == Kind.CODEPOINTS;
+        return (CodePoints) value;
     }
 
     public ConstantValue[] getTupleElements() {
@@ -197,9 +199,8 @@ public final class ConstantValue {
         return new ConstantValue(v, Kind.LONG);
     }
 
-    public static ConstantValue ofRaw(Object o) {
-        assert Kind.RAW.checkValueType(o);
-        return new ConstantValue(o, Kind.RAW);
+    public static ConstantValue ofCodePoints(CodePoints cp) {
+        return new ConstantValue(cp, Kind.CODEPOINTS);
     }
 
     public static ConstantValue ofTuple(ConstantValue[] values) {
@@ -253,11 +254,10 @@ public final class ConstantValue {
                 return value instanceof BigInteger;
             }
         },
-        RAW() {
+        CODEPOINTS() {
             @Override
             boolean checkValueType(Object value) {
-                // this check covers both j.l.String and TruffleString
-                return value != null && value.getClass().getName().endsWith("String");
+                return value instanceof CodePoints;
             }
         },
         BYTES() {

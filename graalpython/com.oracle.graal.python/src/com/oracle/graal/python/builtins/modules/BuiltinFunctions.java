@@ -33,7 +33,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.PNone.NONE;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
-import static com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback.raiseSyntaxError;
+import static com.oracle.graal.python.compiler.ParserCallbacksImpl.raiseSyntaxError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ALL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ANY;
@@ -161,7 +161,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.compiler.Compiler;
-import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
+import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
@@ -238,10 +238,10 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.AbstractParser;
-import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -285,6 +285,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
@@ -1089,7 +1090,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 PCode code = factory.createCode(fr.getTarget());
                 flags |= code.getFlags() & PyCF_MASK;
             }
-            return compile(expression, filename, mode, flags, dontInherit, optimize, featureVersion, factory);
+            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+            Node encapsulatingNode = encapsulating.set(this);
+            try {
+                return compile(expression, filename, mode, flags, dontInherit, optimize, featureVersion, factory);
+            } finally {
+                encapsulating.set(encapsulatingNode);
+            }
         }
 
         @TruffleBoundary
@@ -1115,7 +1122,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if ((flags & PyCF_ONLY_AST) != 0) {
                 Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
-                RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
+                ParserCallbacksImpl parserCb = new ParserCallbacksImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
 
                 EnumSet<AbstractParser.Flags> compilerFlags = EnumSet.noneOf(AbstractParser.Flags.class);
                 if ((flags & PyCF_TYPE_COMMENTS) != 0) {
@@ -1127,9 +1134,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if (featureVersion < 7) {
                     compilerFlags.add(AbstractParser.Flags.ASYNC_HACKS);
                 }
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, compilerFlags, featureVersion);
+                Parser parser = Compiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
-                errorCb.triggerDeprecationWarnings();
+                parserCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
             }
             CallTarget ct;
@@ -1197,16 +1204,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 flags |= code.getFlags() & PyCF_MASK;
             }
 
-            if (AstModuleBuiltins.isAst(getContext(), wSource)) {
-                ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserInputType(mode, flags));
-                Source source = PythonUtils.createFakeSource(filename);
-                RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null, flags);
-                return wrapRootCallTarget(rootCallTarget, factory);
+            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
+            Node encapsulatingNode = encapsulating.set(this);
+            try {
+                if (AstModuleBuiltins.isAst(getContext(), wSource)) {
+                    ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserInputType(mode, flags));
+                    Source source = PythonUtils.createFakeSource(filename);
+                    RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null, flags);
+                    return wrapRootCallTarget(rootCallTarget, factory);
+                }
+                TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode, factory,
+                                raiseNode, indirectCallData);
+                checkSource(source);
+                return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion, factory);
+            } finally {
+                encapsulating.set(encapsulatingNode);
             }
-            TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode, factory,
-                            raiseNode, indirectCallData);
-            checkSource(source);
-            return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion, factory);
         }
 
         private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget, PythonObjectFactory factory) {
@@ -1306,7 +1319,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Source source = PythonLanguage.newSource(context, T_SPACE, filename, mayBeFromFile, null);
             SourceRange sourceRange = new SourceRange(1, 0, 1, 0);
             TruffleString message = toTruffleStringUncached(String.format(format, args));
-            throw raiseSyntaxError(ErrorCallback.ErrorType.Syntax, sourceRange, message, source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));
+            throw raiseSyntaxError(ParserCallbacks.ErrorType.Syntax, sourceRange, message, source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));
         }
 
         public static CompileNode create(boolean mapFilenameToUri) {

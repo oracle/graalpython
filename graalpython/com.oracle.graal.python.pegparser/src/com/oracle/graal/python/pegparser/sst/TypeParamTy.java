@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,36 +38,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.pegparser;
 
-/**
- * Used by the parser to construct run-time representation of string literals. In the graalpython
- * interpreter, strings are represented by {@code TruffleString}. This interface allows the use of
- * the parser (e.g. in tools such as an IDE) without the dependency on Truffle - see
- * {@code DefaultStringFactoryImpl} in tests as an example that uses {@link String} for the
- * representation of python string literals. Note thought that this is not entirely correct since
- * {@link String} is not capable of distinguishing a SMP codepoint from a pair of corresponding
- * surrogates, which in Python are different: {@code '\U00010400' != '\uD801\uDC00'}.
- *
- * @param <T> the type used to represent string literals
- */
-public interface PythonStringFactory<T> {
+// Checkstyle: stop
+// JaCoCo Exclude
+//@formatter:off
+// Generated from Python.asdl by main_asdl_gen.py
+package com.oracle.graal.python.pegparser.sst;
 
-    PythonStringBuilder<T> createBuilder(int initialCodePointLength);
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
-    T emptyString();
+public abstract class TypeParamTy extends SSTNode {
 
-    T fromJavaString(String s);
+    TypeParamTy(SourceRange sourceRange) {
+        super(sourceRange);
+    }
 
-    interface PythonStringBuilder<T> {
-        PythonStringBuilder<T> appendString(String s);
+    public static final class TypeVar extends TypeParamTy {
+        public final String name;
+        public final ExprTy bound;   // nullable
 
-        PythonStringBuilder<T> appendPythonString(T s);
+        public TypeVar(String name, ExprTy bound, SourceRange sourceRange) {
+            super(sourceRange);
+            assert name != null;
+            this.name = name;
+            this.bound = bound;
+        }
 
-        PythonStringBuilder<T> appendCodePoint(int codePoint);
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
 
-        boolean isEmpty();
+    public static final class ParamSpec extends TypeParamTy {
+        public final String name;
 
-        T build();
+        public ParamSpec(String name, SourceRange sourceRange) {
+            super(sourceRange);
+            assert name != null;
+            this.name = name;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class TypeVarTuple extends TypeParamTy {
+        public final String name;
+
+        public TypeVarTuple(String name, SourceRange sourceRange) {
+            super(sourceRange);
+            assert name != null;
+            this.name = name;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 }

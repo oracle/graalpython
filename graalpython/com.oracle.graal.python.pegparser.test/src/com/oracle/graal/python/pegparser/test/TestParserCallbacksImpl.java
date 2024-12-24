@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,24 +43,15 @@ package com.oracle.graal.python.pegparser.test;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
-public class TestErrorCallbackImpl implements ErrorCallback {
+public class TestParserCallbacksImpl implements ParserCallbacks {
 
-    private final List<Error> errors = new ArrayList<>(1);
     private final List<Error> warnings = new ArrayList<>(0);
-
-    public List<Error> getErrors() {
-        return errors;
-    }
 
     public List<Error> getWarnings() {
         return warnings;
-    }
-
-    public boolean hasErrors() {
-        return !errors.isEmpty();
     }
 
     public boolean hasWarnings() {
@@ -68,8 +59,12 @@ public class TestErrorCallbackImpl implements ErrorCallback {
     }
 
     @Override
-    public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-        errors.add(new Error(errorType, sourceRange, message));
+    public void safePointPoll() {
+    }
+
+    @Override
+    public RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message) {
+        throw new ParserErrorWrapperException(new Error(errorType, sourceRange, message));
     }
 
     @Override
@@ -78,8 +73,22 @@ public class TestErrorCallbackImpl implements ErrorCallback {
     }
 
     @Override
-    public void reportIncompleteSource(int line) {
+    public RuntimeException reportIncompleteSource(int line) {
         throw new IncompleteSourceException(line);
+    }
+
+    @SuppressWarnings("serial")
+    public static final class ParserErrorWrapperException extends RuntimeException {
+        private final Error error;
+
+        ParserErrorWrapperException(Error error) {
+            super(error.toString());
+            this.error = error;
+        }
+
+        Error getError() {
+            return error;
+        }
     }
 
     public static final class IncompleteSourceException extends RuntimeException {
@@ -93,27 +102,11 @@ public class TestErrorCallbackImpl implements ErrorCallback {
         }
     }
 
-    public static class Error {
-        private final ErrorType type;
-        private SourceRange sourceRange;
-        private final String message;
-
-        public Error(ErrorType type, SourceRange sourceRange, String message) {
-            this.type = type;
-            this.sourceRange = sourceRange;
-            this.message = message;
-        }
-
-        public ErrorType getType() {
-            return type;
-        }
-
-        public SourceRange getSourceRange() {
-            return sourceRange;
-        }
-
-        public String getMessage() {
-            return message;
+    public record Error(ErrorType type, SourceRange sourceRange, String message) {
+        @Override
+        public String toString() {
+            return String.format("%s[%d:%d-%d:%d]:%s", type.name(), sourceRange.startLine, sourceRange.startColumn, sourceRange.endLine, sourceRange.endColumn, message);
         }
     }
+
 }

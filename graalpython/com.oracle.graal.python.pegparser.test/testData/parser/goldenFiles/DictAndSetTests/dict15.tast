@@ -8,6 +8,6 @@ Module[1:0-1:14]
     Dict[1:0-1:14]
         Values:
             Key: LONG[1:1-1:2] Value: 1
-            Val: RAW[1:3-1:6] Value: "b"
-            Key: RAW[1:7-1:10] Value: "c"
+            Val: CODEPOINTS[1:3-1:6] Value: "b"
+            Key: CODEPOINTS[1:7-1:10] Value: "c"
             Val: LONG[1:11-1:13] Value: 14

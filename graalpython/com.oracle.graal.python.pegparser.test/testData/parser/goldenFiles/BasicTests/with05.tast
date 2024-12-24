@@ -18,7 +18,7 @@ Module[1:0-3:8]
                         Call[2:7-2:16]
                             Target: Name[2:7-2:11] Value: "open"
                             Args:
-                                RAW[2:12-2:15] Value: "x"
+                                CODEPOINTS[2:12-2:15] Value: "x"
             Body:
                 Pass[3:4-3:8]
         ---- End of fn function ----

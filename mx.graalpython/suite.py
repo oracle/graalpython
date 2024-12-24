@@ -273,6 +273,7 @@ suite = {
             "buildDependencies": [
                 "com.oracle.graal.python.pegparser.generator",
             ],
+            "checkstyle": "com.oracle.graal.python",
         },
 
         "com.oracle.graal.python.pegparser.test": {

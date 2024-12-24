@@ -1997,10 +1997,8 @@ if 1:
         testfiles = random.sample(testfiles, 10)
 
         for testfile in testfiles:
-            # XXX Truffle change: print files if picking them randomly
-            # if support.verbose >= 2:
-            #     print('tokenize', testfile)
-            print('\tchecking', testfile)
+            if support.verbose >= 2:
+                print('tokenize', testfile)
             with open(testfile, 'rb') as f:
                 with self.subTest(file=testfile):
                     self.check_roundtrip(f)

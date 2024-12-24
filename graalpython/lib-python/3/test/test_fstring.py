@@ -940,10 +940,9 @@ x = (
         )
 
         # Different error message is raised for other whitespace characters.
-        # GraalPython patch: removed the check for error text: "invalid character in identifier"
         self.assertAllRaise(
             SyntaxError,
-            "",
+            r"invalid non-printable character U\+00A0",
             [
                 "f'''{\xa0}'''",
                 "\xa0",
@@ -1691,12 +1690,10 @@ x = (
         self.assertEqual(f"{0!=1}", "True")
         self.assertEqual(f"{0<=1}", "True")
         self.assertEqual(f"{0>=1}", "False")
-        # GraalPython patch: this requires walrus operator support (2 following asserts commented out)
-        # self.assertEqual(f'{(x:="5")}', "5")
-        # self.assertEqual(x, "5")
-        # GraalPython patch: this requires walrus operator support (2 following asserts commented out)
-        # self.assertEqual(f"{(x:=5)}", "5")
-        # self.assertEqual(x, 5)
+        self.assertEqual(f'{(x:="5")}', "5")
+        self.assertEqual(x, "5")
+        self.assertEqual(f"{(x:=5)}", "5")
+        self.assertEqual(x, 5)
         self.assertEqual(f'{"="}', "=")
 
         x = 20
@@ -1769,19 +1766,14 @@ x = (
         # self.assertEqual(f'X{x =       }Y', 'Xx\t=\t'+repr(x)+'Y')
 
     def test_walrus(self):
-        # GraalPython note: when enabling this test, which depends on the walrus operator support,
-        # we may uncomment some other assertions that use walrus. Moreover, the first assert in this
-        # test is duplicated in GraalPython's test_formatting.py, that duplication can be removed too.
         x = 20
         # This isn't an assignment expression, it's 'x', with a format
         # spec of '=10'.
         self.assertEqual(f"{x:=10}", "        20")
 
         # This is an assignment expression, which requires parens.
-        # GraalPython patch: commented out to allow GraalPython to successfully parse this file
-        # self.assertEqual(f"{(x:=10)}", "10")
-        # it can not be 10 until will not support walrus operator
-        # self.assertEqual(x, 10)
+        self.assertEqual(f"{(x:=10)}", "10")
+        self.assertEqual(x, 10)
 
     def test_invalid_syntax_error_message(self):
         with self.assertRaisesRegex(

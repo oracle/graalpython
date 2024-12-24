@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,59 +38,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.pegparser.test;
+package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.PythonStringFactory;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
-public class DefaultStringFactoryImpl implements PythonStringFactory<String> {
-    @Override
-    public PythonStringBuilder<String> createBuilder(int initialCodePointLength) {
-        return new StringBuilderWrapper(initialCodePointLength);
+public interface ParserCallbacks {
+    enum ErrorType {
+        Generic,
+        Indentation,
+        Tab,
+        Encoding,
+        Value,
+        Syntax,
+        System
     }
 
-    @Override
-    public String emptyString() {
-        return "";
+    enum WarningType {
+        Deprecation,
+        Syntax
     }
 
-    @Override
-    public String fromJavaString(String s) {
-        return s;
+    void safePointPoll();
+
+    RuntimeException reportIncompleteSource(int line);
+
+    RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message);
+
+    void onWarning(WarningType warningType, SourceRange sourceRange, String message);
+
+    default RuntimeException onError(ErrorType errorType, SourceRange sourceRange, String message, Object... arguments) {
+        throw onError(errorType, sourceRange, String.format(message, arguments));
     }
 
-    private static class StringBuilderWrapper implements PythonStringBuilder<String> {
-        private final StringBuilder sb;
-
-        StringBuilderWrapper(int initialCapacity) {
-            this.sb = new StringBuilder(initialCapacity);
-        }
-
-        @Override
-        public PythonStringBuilder<String> appendString(String s) {
-            sb.append(s);
-            return this;
-        }
-
-        @Override
-        public PythonStringBuilder<String> appendPythonString(String s) {
-            sb.append(s);
-            return null;
-        }
-
-        @Override
-        public PythonStringBuilder<String> appendCodePoint(int codePoint) {
-            sb.appendCodePoint(codePoint);
-            return null;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return sb.length() == 0;
-        }
-
-        @Override
-        public String build() {
-            return sb.toString();
-        }
+    default void onWarning(WarningType warningType, SourceRange sourceRange, String message, Object... arguments) {
+        onWarning(warningType, sourceRange, String.format(message, arguments));
     }
 }
