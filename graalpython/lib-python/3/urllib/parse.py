@@ -33,8 +33,8 @@ It serves as a useful guide when making changes.
 
 from collections import namedtuple
 import functools
+import math
 import re
-import sys
 import types
 import warnings
 import ipaddress
@@ -59,7 +59,7 @@ uses_netloc = ['', 'ftp', 'http', 'gopher', 'nntp', 'telnet',
                'imap', 'wais', 'file', 'mms', 'https', 'shttp',
                'snews', 'prospero', 'rtsp', 'rtsps', 'rtspu', 'rsync',
                'svn', 'svn+ssh', 'sftp', 'nfs', 'git', 'git+ssh',
-               'ws', 'wss']
+               'ws', 'wss', 'itms-services']
 
 uses_params = ['', 'ftp', 'hdl', 'prospero', 'http', 'imap',
                'https', 'shttp', 'rtsp', 'rtsps', 'rtspu', 'sip',
@@ -525,9 +525,13 @@ def urlunsplit(components):
     empty query; the RFC states that these are equivalent)."""
     scheme, netloc, url, query, fragment, _coerce_result = (
                                           _coerce_args(*components))
-    if netloc or (scheme and scheme in uses_netloc and url[:2] != '//'):
+    if netloc:
         if url and url[:1] != '/': url = '/' + url
-        url = '//' + (netloc or '') + url
+        url = '//' + netloc + url
+    elif url[:2] == '//':
+        url = '//' + url
+    elif scheme and scheme in uses_netloc and (not url or url[:1] == '/'):
+        url = '//' + url
     if scheme:
         url = scheme + ':' + url
     if query:
@@ -626,6 +630,9 @@ _hextobyte = None
 
 def unquote_to_bytes(string):
     """unquote_to_bytes('abc%20def') -> b'abc def'."""
+    return bytes(_unquote_impl(string))
+
+def _unquote_impl(string: bytes | bytearray | str) -> bytes | bytearray:
     # Note: strings are encoded as UTF-8. This is only an issue if it contains
     # unescaped non-ASCII characters, which URIs should not.
     if not string:
@@ -637,8 +644,8 @@ def unquote_to_bytes(string):
     bits = string.split(b'%')
     if len(bits) == 1:
         return string
-    res = [bits[0]]
-    append = res.append
+    res = bytearray(bits[0])
+    append = res.extend
     # Delay the initialization of the table to not waste memory
     # if the function is never called
     global _hextobyte
@@ -652,9 +659,19 @@ def unquote_to_bytes(string):
         except KeyError:
             append(b'%')
             append(item)
-    return b''.join(res)
+    return res
 
 _asciire = re.compile('([\x00-\x7f]+)')
+
+def _generate_unquoted_parts(string, encoding, errors):
+    previous_match_end = 0
+    for ascii_match in _asciire.finditer(string):
+        start, end = ascii_match.span()
+        yield string[previous_match_end:start]  # Non-ASCII
+        # The ascii_match[1] group == string[start:end].
+        yield _unquote_impl(ascii_match[1]).decode(encoding, errors)
+        previous_match_end = end
+    yield string[previous_match_end:]  # Non-ASCII tail
 
 def unquote(string, encoding='utf-8', errors='replace'):
     """Replace %xx escapes by their single-character equivalent. The optional
@@ -667,21 +684,16 @@ def unquote(string, encoding='utf-8', errors='replace'):
     unquote('abc%20def') -> 'abc def'.
     """
     if isinstance(string, bytes):
-        return unquote_to_bytes(string).decode(encoding, errors)
+        return _unquote_impl(string).decode(encoding, errors)
     if '%' not in string:
+        # Is it a string-like object?
         string.split
         return string
     if encoding is None:
         encoding = 'utf-8'
     if errors is None:
         errors = 'replace'
-    bits = _asciire.split(string)
-    res = [bits[0]]
-    append = res.append
-    for i in range(1, len(bits), 2):
-        append(unquote_to_bytes(bits[i]).decode(encoding, errors))
-        append(bits[i + 1])
-    return ''.join(res)
+    return ''.join(_generate_unquoted_parts(string, encoding, errors))
 
 
 def parse_qs(qs, keep_blank_values=False, strict_parsing=False,
@@ -755,42 +767,48 @@ def parse_qsl(qs, keep_blank_values=False, strict_parsing=False,
 
         Returns a list, as G-d intended.
     """
-    qs, _coerce_result = _coerce_args(qs)
-    separator, _ = _coerce_args(separator)
 
-    if not separator or (not isinstance(separator, (str, bytes))):
+    if not separator or not isinstance(separator, (str, bytes)):
         raise ValueError("Separator must be of type string or bytes.")
+    if isinstance(qs, str):
+        if not isinstance(separator, str):
+            separator = str(separator, 'ascii')
+        eq = '='
+        def _unquote(s):
+            return unquote_plus(s, encoding=encoding, errors=errors)
+    else:
+        if not qs:
+            return []
+        # Use memoryview() to reject integers and iterables,
+        # acceptable by the bytes constructor.
+        qs = bytes(memoryview(qs))
+        if isinstance(separator, str):
+            separator = bytes(separator, 'ascii')
+        eq = b'='
+        def _unquote(s):
+            return unquote_to_bytes(s.replace(b'+', b' '))
+
+    if not qs:
+        return []
 
     # If max_num_fields is defined then check that the number of fields
     # is less than max_num_fields. This prevents a memory exhaustion DOS
     # attack via post bodies with many fields.
     if max_num_fields is not None:
-        num_fields = 1 + qs.count(separator) if qs else 0
+        num_fields = 1 + qs.count(separator)
         if max_num_fields < num_fields:
             raise ValueError('Max number of fields exceeded')
 
     r = []
-    query_args = qs.split(separator) if qs else []
-    for name_value in query_args:
-        if not name_value and not strict_parsing:
-            continue
-        nv = name_value.split('=', 1)
-        if len(nv) != 2:
-            if strict_parsing:
+    for name_value in qs.split(separator):
+        if name_value or strict_parsing:
+            name, has_eq, value = name_value.partition(eq)
+            if not has_eq and strict_parsing:
                 raise ValueError("bad query field: %r" % (name_value,))
-            # Handle case of a control-name with no equal sign
-            if keep_blank_values:
-                nv.append('')
-            else:
-                continue
-        if len(nv[1]) or keep_blank_values:
-            name = nv[0].replace('+', ' ')
-            name = unquote(name, encoding=encoding, errors=errors)
-            name = _coerce_result(name)
-            value = nv[1].replace('+', ' ')
-            value = unquote(value, encoding=encoding, errors=errors)
-            value = _coerce_result(value)
-            r.append((name, value))
+            if value or keep_blank_values:
+                name = _unquote(name)
+                value = _unquote(value)
+                r.append((name, value))
     return r
 
 def unquote_plus(string, encoding='utf-8', errors='replace'):
@@ -932,7 +950,14 @@ def quote_from_bytes(bs, safe='/'):
     if not bs.rstrip(_ALWAYS_SAFE_BYTES + safe):
         return bs.decode()
     quoter = _byte_quoter_factory(safe)
-    return ''.join([quoter(char) for char in bs])
+    if (bs_len := len(bs)) < 200_000:
+        return ''.join(map(quoter, bs))
+    else:
+        # This saves memory - https://github.com/python/cpython/issues/95865
+        chunk_size = math.isqrt(bs_len)
+        chunks = [''.join(map(quoter, bs[i:i+chunk_size]))
+                  for i in range(0, bs_len, chunk_size)]
+        return ''.join(chunks)
 
 def urlencode(query, doseq=False, safe='', encoding=None, errors=None,
               quote_via=quote_plus):

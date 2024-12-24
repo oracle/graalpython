@@ -8,7 +8,7 @@ import sys
 import unittest
 import weakref
 from test import support
-from test.support import import_helper
+from test.support import import_helper, C_RECURSION_LIMIT
 
 
 class DictTest(unittest.TestCase):
@@ -596,7 +596,7 @@ class DictTest(unittest.TestCase):
 
     def test_repr_deep(self):
         d = {}
-        for i in range(sys.getrecursionlimit() + 100):
+        for i in range(C_RECURSION_LIMIT + 1):
             d = {1: d}
         self.assertRaises(RecursionError, repr, d)
 
@@ -1094,6 +1094,21 @@ class DictTest(unittest.TestCase):
         d.update(o.__dict__)
         self.assertEqual(list(d), ["c", "b", "a"])
 
+    @support.cpython_only
+    def test_splittable_to_generic_combinedtable(self):
+        """split table must be correctly resized and converted to generic combined table"""
+        class C:
+            pass
+
+        a = C()
+        a.x = 1
+        d = a.__dict__
+        before_resize = sys.getsizeof(d)
+        d[2] = 2 # split table is resized to a generic combined table
+
+        self.assertGreater(sys.getsizeof(d), before_resize)
+        self.assertEqual(list(d), ['x', 2])
+
     def test_iterator_pickling(self):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             data = {1:"a", 2:"b", 3:"c"}
@@ -1460,6 +1475,24 @@ class DictTest(unittest.TestCase):
         it = reversed({None: []}.items())
         gc.collect()
         self.assertTrue(gc.is_tracked(next(it)))
+
+    def test_store_evilattr(self):
+        class EvilAttr:
+            def __init__(self, d):
+                self.d = d
+
+            def __del__(self):
+                if 'attr' in self.d:
+                    del self.d['attr']
+                gc.collect()
+
+        class Obj:
+            pass
+
+        obj = Obj()
+        obj.__dict__ = {}
+        for _ in range(10):
+            obj.attr = EvilAttr(obj.__dict__)
 
     def test_str_nonstr(self):
         # cpython uses a different lookup function if the dict only contains

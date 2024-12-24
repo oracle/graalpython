@@ -227,7 +227,8 @@ class PyCompileCLITestCase(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.mkdtemp()
         self.source_path = os.path.join(self.directory, '_test.py')
-        self.cache_path = importlib.util.cache_from_source(self.source_path)
+        self.cache_path = importlib.util.cache_from_source(self.source_path,
+                                optimization='' if __debug__ else 1)
         with open(self.source_path, 'w') as file:
             file.write('x = 123\n')
 
@@ -239,16 +240,18 @@ class PyCompileCLITestCase(unittest.TestCase):
         # assert_python_* helpers don't return proc object. We'll just use
         # subprocess.run() instead of spawn_python() and its friends to test
         # stdin support of the CLI.
+        opts = '-m' if __debug__ else '-Om'
         if args and args[0] == '-' and 'input' in kwargs:
-            return subprocess.run([sys.executable, '-m', 'py_compile', '-'],
+            return subprocess.run([sys.executable, opts, 'py_compile', '-'],
                                   input=kwargs['input'].encode(),
                                   capture_output=True)
-        return script_helper.assert_python_ok('-m', 'py_compile', *args, **kwargs)
+        return script_helper.assert_python_ok(opts, 'py_compile', *args, **kwargs)
 
     def pycompilecmd_failure(self, *args):
         return script_helper.assert_python_failure('-m', 'py_compile', *args)
 
     def test_stdin(self):
+        self.assertFalse(os.path.exists(self.cache_path))
         result = self.pycompilecmd('-', input=self.source_path)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout, b'')

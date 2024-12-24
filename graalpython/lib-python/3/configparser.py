@@ -149,14 +149,14 @@ import re
 import sys
 import warnings
 
-__all__ = ["NoSectionError", "DuplicateOptionError", "DuplicateSectionError",
+__all__ = ("NoSectionError", "DuplicateOptionError", "DuplicateSectionError",
            "NoOptionError", "InterpolationError", "InterpolationDepthError",
            "InterpolationMissingOptionError", "InterpolationSyntaxError",
            "ParsingError", "MissingSectionHeaderError",
-           "ConfigParser", "SafeConfigParser", "RawConfigParser",
+           "ConfigParser", "RawConfigParser",
            "Interpolation", "BasicInterpolation",  "ExtendedInterpolation",
            "LegacyInterpolation", "SectionProxy", "ConverterMapping",
-           "DEFAULTSECT", "MAX_INTERPOLATION_DEPTH"]
+           "DEFAULTSECT", "MAX_INTERPOLATION_DEPTH")
 
 _default_dict = dict
 DEFAULTSECT = "DEFAULT"
@@ -298,40 +298,11 @@ class InterpolationDepthError(InterpolationError):
 class ParsingError(Error):
     """Raised when a configuration file does not follow legal syntax."""
 
-    def __init__(self, source=None, filename=None):
-        # Exactly one of `source'/`filename' arguments has to be given.
-        # `filename' kept for compatibility.
-        if filename and source:
-            raise ValueError("Cannot specify both `filename' and `source'. "
-                             "Use `source'.")
-        elif not filename and not source:
-            raise ValueError("Required argument `source' not given.")
-        elif filename:
-            source = filename
-        Error.__init__(self, 'Source contains parsing errors: %r' % source)
+    def __init__(self, source):
+        super().__init__(f'Source contains parsing errors: {source!r}')
         self.source = source
         self.errors = []
         self.args = (source, )
-
-    @property
-    def filename(self):
-        """Deprecated, use `source'."""
-        warnings.warn(
-            "The 'filename' attribute will be removed in Python 3.12. "
-            "Use 'source' instead.",
-            DeprecationWarning, stacklevel=2
-        )
-        return self.source
-
-    @filename.setter
-    def filename(self, value):
-        """Deprecated, user `source'."""
-        warnings.warn(
-            "The 'filename' attribute will be removed in Python 3.12. "
-            "Use 'source' instead.",
-            DeprecationWarning, stacklevel=2
-        )
-        self.source = value
 
     def append(self, lineno, line):
         self.errors.append((lineno, line))
@@ -769,15 +740,6 @@ class RawConfigParser(MutableMapping):
                 elements_added.add((section, key))
                 self.set(section, key, value)
 
-    def readfp(self, fp, filename=None):
-        """Deprecated, use read_file instead."""
-        warnings.warn(
-            "This method will be removed in Python 3.12. "
-            "Use 'parser.read_file()' instead.",
-            DeprecationWarning, stacklevel=2
-        )
-        self.read_file(fp, source=filename)
-
     def get(self, section, option, *, raw=False, vars=None, fallback=_UNSET):
         """Get an option value for a given section.
 
@@ -1033,100 +995,102 @@ class RawConfigParser(MutableMapping):
         lineno = 0
         indent_level = 0
         e = None                              # None, or an exception
-        for lineno, line in enumerate(fp, start=1):
-            comment_start = sys.maxsize
-            # strip inline comments
-            inline_prefixes = {p: -1 for p in self._inline_comment_prefixes}
-            while comment_start == sys.maxsize and inline_prefixes:
-                next_prefixes = {}
-                for prefix, index in inline_prefixes.items():
-                    index = line.find(prefix, index+1)
-                    if index == -1:
-                        continue
-                    next_prefixes[prefix] = index
-                    if index == 0 or (index > 0 and line[index-1].isspace()):
-                        comment_start = min(comment_start, index)
-                inline_prefixes = next_prefixes
-            # strip full line comments
-            for prefix in self._comment_prefixes:
-                if line.strip().startswith(prefix):
-                    comment_start = 0
-                    break
-            if comment_start == sys.maxsize:
-                comment_start = None
-            value = line[:comment_start].strip()
-            if not value:
-                if self._empty_lines_in_values:
-                    # add empty line to the value, but only if there was no
-                    # comment on the line
-                    if (comment_start is None and
-                        cursect is not None and
-                        optname and
-                        cursect[optname] is not None):
-                        cursect[optname].append('') # newlines added at join
-                else:
-                    # empty line marks end of value
-                    indent_level = sys.maxsize
-                continue
-            # continuation line?
-            first_nonspace = self.NONSPACECRE.search(line)
-            cur_indent_level = first_nonspace.start() if first_nonspace else 0
-            if (cursect is not None and optname and
-                cur_indent_level > indent_level):
-                cursect[optname].append(value)
-            # a section header or option header?
-            else:
-                indent_level = cur_indent_level
-                # is it a section header?
-                mo = self.SECTCRE.match(value)
-                if mo:
-                    sectname = mo.group('header')
-                    if sectname in self._sections:
-                        if self._strict and sectname in elements_added:
-                            raise DuplicateSectionError(sectname, fpname,
-                                                        lineno)
-                        cursect = self._sections[sectname]
-                        elements_added.add(sectname)
-                    elif sectname == self.default_section:
-                        cursect = self._defaults
+        try:
+            for lineno, line in enumerate(fp, start=1):
+                comment_start = sys.maxsize
+                # strip inline comments
+                inline_prefixes = {p: -1 for p in self._inline_comment_prefixes}
+                while comment_start == sys.maxsize and inline_prefixes:
+                    next_prefixes = {}
+                    for prefix, index in inline_prefixes.items():
+                        index = line.find(prefix, index+1)
+                        if index == -1:
+                            continue
+                        next_prefixes[prefix] = index
+                        if index == 0 or (index > 0 and line[index-1].isspace()):
+                            comment_start = min(comment_start, index)
+                    inline_prefixes = next_prefixes
+                # strip full line comments
+                for prefix in self._comment_prefixes:
+                    if line.strip().startswith(prefix):
+                        comment_start = 0
+                        break
+                if comment_start == sys.maxsize:
+                    comment_start = None
+                value = line[:comment_start].strip()
+                if not value:
+                    if self._empty_lines_in_values:
+                        # add empty line to the value, but only if there was no
+                        # comment on the line
+                        if (comment_start is None and
+                            cursect is not None and
+                            optname and
+                            cursect[optname] is not None):
+                            cursect[optname].append('') # newlines added at join
                     else:
-                        cursect = self._dict()
-                        self._sections[sectname] = cursect
-                        self._proxies[sectname] = SectionProxy(self, sectname)
-                        elements_added.add(sectname)
-                    # So sections can't start with a continuation line
-                    optname = None
-                # no section header in the file?
-                elif cursect is None:
-                    raise MissingSectionHeaderError(fpname, lineno, line)
-                # an option line?
+                        # empty line marks end of value
+                        indent_level = sys.maxsize
+                    continue
+                # continuation line?
+                first_nonspace = self.NONSPACECRE.search(line)
+                cur_indent_level = first_nonspace.start() if first_nonspace else 0
+                if (cursect is not None and optname and
+                    cur_indent_level > indent_level):
+                    cursect[optname].append(value)
+                # a section header or option header?
                 else:
-                    mo = self._optcre.match(value)
+                    indent_level = cur_indent_level
+                    # is it a section header?
+                    mo = self.SECTCRE.match(value)
                     if mo:
-                        optname, vi, optval = mo.group('option', 'vi', 'value')
-                        if not optname:
-                            e = self._handle_error(e, fpname, lineno, line)
-                        optname = self.optionxform(optname.rstrip())
-                        if (self._strict and
-                            (sectname, optname) in elements_added):
-                            raise DuplicateOptionError(sectname, optname,
-                                                       fpname, lineno)
-                        elements_added.add((sectname, optname))
-                        # This check is fine because the OPTCRE cannot
-                        # match if it would set optval to None
-                        if optval is not None:
-                            optval = optval.strip()
-                            cursect[optname] = [optval]
+                        sectname = mo.group('header')
+                        if sectname in self._sections:
+                            if self._strict and sectname in elements_added:
+                                raise DuplicateSectionError(sectname, fpname,
+                                                            lineno)
+                            cursect = self._sections[sectname]
+                            elements_added.add(sectname)
+                        elif sectname == self.default_section:
+                            cursect = self._defaults
                         else:
-                            # valueless option handling
-                            cursect[optname] = None
+                            cursect = self._dict()
+                            self._sections[sectname] = cursect
+                            self._proxies[sectname] = SectionProxy(self, sectname)
+                            elements_added.add(sectname)
+                        # So sections can't start with a continuation line
+                        optname = None
+                    # no section header in the file?
+                    elif cursect is None:
+                        raise MissingSectionHeaderError(fpname, lineno, line)
+                    # an option line?
                     else:
-                        # a non-fatal parsing error occurred. set up the
-                        # exception but keep going. the exception will be
-                        # raised at the end of the file and will contain a
-                        # list of all bogus lines
-                        e = self._handle_error(e, fpname, lineno, line)
-        self._join_multiline_values()
+                        mo = self._optcre.match(value)
+                        if mo:
+                            optname, vi, optval = mo.group('option', 'vi', 'value')
+                            if not optname:
+                                e = self._handle_error(e, fpname, lineno, line)
+                            optname = self.optionxform(optname.rstrip())
+                            if (self._strict and
+                                (sectname, optname) in elements_added):
+                                raise DuplicateOptionError(sectname, optname,
+                                                           fpname, lineno)
+                            elements_added.add((sectname, optname))
+                            # This check is fine because the OPTCRE cannot
+                            # match if it would set optval to None
+                            if optval is not None:
+                                optval = optval.strip()
+                                cursect[optname] = [optval]
+                            else:
+                                # valueless option handling
+                                cursect[optname] = None
+                        else:
+                            # a non-fatal parsing error occurred. set up the
+                            # exception but keep going. the exception will be
+                            # raised at the end of the file and will contain a
+                            # list of all bogus lines
+                            e = self._handle_error(e, fpname, lineno, line)
+        finally:
+            self._join_multiline_values()
         # if any parsing errors occurred, raise an exception
         if e:
             raise e
@@ -1238,19 +1202,6 @@ class ConfigParser(RawConfigParser):
             self.read_dict({self.default_section: defaults})
         finally:
             self._interpolation = hold_interpolation
-
-
-class SafeConfigParser(ConfigParser):
-    """ConfigParser alias for backwards compatibility purposes."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        warnings.warn(
-            "The SafeConfigParser class has been renamed to ConfigParser "
-            "in Python 3.2. This alias will be removed in Python 3.12."
-            " Use ConfigParser directly instead.",
-            DeprecationWarning, stacklevel=2
-        )
 
 
 class SectionProxy(MutableMapping):

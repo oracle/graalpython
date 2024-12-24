@@ -1,6 +1,6 @@
 # gh-91321: Build a basic C++ test extension to check that the Python C API is
 # compatible with C++ and does not emit C++ compiler warnings.
-import os.path
+import os
 import shlex
 import sys
 import sysconfig
@@ -9,7 +9,7 @@ from test import support
 from setuptools import setup, Extension
 
 
-SOURCE = os.path.join(os.path.dirname(__file__), 'extension.cpp')
+SOURCE = 'extension.cpp'
 if not support.MS_WINDOWS:
     # C++ compiler flags for GCC and clang
     CPPFLAGS = [
@@ -25,14 +25,8 @@ else:
 
 def main():
     cppflags = list(CPPFLAGS)
-    if '-std=c++03' in sys.argv:
-        sys.argv.remove('-std=c++03')
-        std = 'c++03'
-        name = '_testcpp03ext'
-    else:
-        # Python currently targets C++11
-        std = 'c++11'
-        name = '_testcpp11ext'
+    std = os.environ["CPYTHON_TEST_CPP_STD"]
+    name = os.environ["CPYTHON_TEST_EXT_NAME"]
 
     cppflags = [*CPPFLAGS, f'-std={std}']
 
