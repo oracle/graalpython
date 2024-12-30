@@ -186,7 +186,7 @@ public final class VFSUtils {
         void info(String s);
     }
 
-    public static void delete(Path dir) throws IOException {
+    private static void delete(Path dir) throws IOException {
         if (!Files.exists(dir)) {
             return;
         }
