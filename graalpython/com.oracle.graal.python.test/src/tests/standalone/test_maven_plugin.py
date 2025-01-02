@@ -74,6 +74,10 @@ class MavenPluginTest(util.BuildToolTestBase):
         shutil.copytree(os.path.join(mvnw_dir, ".mvn"), os.path.join(target_dir, ".mvn"))
         util.override_maven_properties_file(target_dir)
 
+        meta_inf_native_image_dir = os.path.join(target_dir, "src", "main", "resources", "META-INF", "native-image")
+        os.makedirs(meta_inf_native_image_dir, exist_ok=True)
+        shutil.copy(os.path.join(os.path.dirname(__file__), "native-image.properties"), os.path.join(meta_inf_native_image_dir, "native-image.properties"))
+
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app(self):
         with util.TemporaryTestDirectory() as tmpdir:
