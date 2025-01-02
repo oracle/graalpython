@@ -38,6 +38,7 @@
 # SOFTWARE.
 import threading
 import unittest
+import sys
 
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
@@ -81,6 +82,7 @@ class TestPyThread(CPyExtTestCase):
     )
 
 
+@unittest.skipIf(sys.platform == 'win32', "Needs pthread")
 class TestNativeThread(unittest.TestCase):
     def test_register_new_thread(self):
         TestThread = CPyExtType(

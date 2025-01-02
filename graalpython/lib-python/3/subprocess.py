@@ -72,9 +72,8 @@ try:
 except ModuleNotFoundError:
     _mswindows = False
 else:
-    # Truffle change
-    # _mswindows = True
-    _mswindows = False
+    # GraalPy change: under emulated posix, use the posix APIs even under windows
+    _mswindows = not (sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java')
 
 # wasm32-emscripten and wasm32-wasi do not support processes
 _can_fork_exec = sys.platform not in {"emscripten", "wasi"}
@@ -850,12 +849,14 @@ class Popen:
             if pass_fds and not close_fds:
                 warnings.warn("pass_fds overriding close_fds.", RuntimeWarning)
                 close_fds = True
-            if startupinfo is not None:
-                raise ValueError("startupinfo is only supported on Windows "
-                                 "platforms")
-            if creationflags != 0:
-                raise ValueError("creationflags is only supported on Windows "
-                                 "platforms")
+            # GraalPy change: allow and ignore windows-specific flags on windows on posix backend
+            if sys.platform != 'win32':
+                if startupinfo is not None:
+                    raise ValueError("startupinfo is only supported on Windows "
+                                     "platforms")
+                if creationflags != 0:
+                    raise ValueError("creationflags is only supported on Windows "
+                                     "platforms")
 
         self.args = args
         self.stdin = None

@@ -70,6 +70,9 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -83,6 +86,19 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         static Object doGeneric(Object pointer, Object namePtr, Object destructor,
                         @Bind("this") Node inliningTarget,
+                        @Cached PyCapsuleNewNode pyCapsuleNewNode) {
+            return pyCapsuleNewNode.execute(inliningTarget, pointer, namePtr, destructor);
+        }
+    }
+
+    @GenerateCached(false)
+    @GenerateInline
+    public abstract static class PyCapsuleNewNode extends Node {
+
+        public abstract PyCapsule execute(Node inliningTarget, Object pointer, Object name, Object destructor);
+
+        @Specialization
+        static PyCapsule doGeneric(Node inliningTarget, Object pointer, Object namePtr, Object destructor,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -121,8 +137,22 @@ public final class PythonCextCapsuleBuiltins {
     @CApiBuiltin(ret = Pointer, args = {PyObject, ConstCharPtr}, call = Direct)
     abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object doCapsule(PyCapsule o, Object name,
+        static Object doCapsule(Object o, Object name,
                         @Bind("this") Node inliningTarget,
+                        @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode) {
+            return pyCapsuleGetPointerNode.execute(inliningTarget, o, name);
+        }
+    }
+
+    @GenerateCached(false)
+    @GenerateInline
+    @GenerateUncached
+    public abstract static class PyCapsuleGetPointerNode extends Node {
+
+        public abstract Object execute(Node inliningTarget, Object capsule, Object name);
+
+        @Specialization
+        static Object doCapsule(Node inliningTarget, PyCapsule o, Object name,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (o.getPointer() == null) {
@@ -135,9 +165,9 @@ public final class PythonCextCapsuleBuiltins {
         }
 
         @Fallback
-        static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
+        static Object doError(Node inliningTarget, @SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
 

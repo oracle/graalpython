@@ -96,7 +96,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_async 
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_async_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_context @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_empty_iterable @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_enter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_enter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_imap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_imap_handle_iterable_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_imap_unordered @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

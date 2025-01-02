@@ -107,6 +107,7 @@ BOOTSTRAP = {
 def add_graalpython_core():
     lib_graalpython = os.path.join(os.path.dirname(__file__), "..", "lib-graalpython")
     l = []
+    l.append("polyglot.arrow : polyglot.arrow = " + os.path.join(lib_graalpython, "modules/_polyglot_arrow.py"))
     for name in [
         "modules/_sysconfigdata",
     ]:
@@ -123,7 +124,6 @@ def add_graalpython_core():
         "java",
         "pip_hook",
         "unicodedata",
-        "sulong_support",
     ]:
         modname = f"graalpy.{os.path.basename(name)}"
         modpath = os.path.join(lib_graalpython, f"{name}.py")

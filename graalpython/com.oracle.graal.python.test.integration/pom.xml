@@ -64,7 +64,7 @@ Additionally, one can change the polyglot artifacts version with
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <com.oracle.graal.python.test.polyglot.version>24.2.0</com.oracle.graal.python.test.polyglot.version>
+        <com.oracle.graal.python.test.polyglot.version>25.0.0</com.oracle.graal.python.test.polyglot.version>
     </properties>
 
     <build>
@@ -177,7 +177,7 @@ Additionally, one can change the polyglot artifacts version with
             <groupId>org.graalvm.python</groupId>
             <artifactId>python-embedding</artifactId>
             <version>${com.oracle.graal.python.test.polyglot.version}</version>
-          </dependency>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

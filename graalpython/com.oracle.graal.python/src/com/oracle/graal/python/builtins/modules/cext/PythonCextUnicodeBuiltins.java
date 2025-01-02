@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.ChrNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -951,6 +952,18 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached PythonObjectFactory factory) {
             byte[] array = encode.execute(StandardCharsets.UTF_8, castStr.execute(inliningTarget, s), T_REPLACE);
             return factory.createBytes(array);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    abstract static class PyUnicode_EncodeLocale extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object encode(Object s, Object errors,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached CodecsTruffleModuleBuiltins.GetEncodingNode getEncodingNode,
+                        @Cached CodecsModuleBuiltins.EncodeNode encodeNode) {
+            return encodeNode.execute(null, cast.execute(inliningTarget, s), getEncodingNode.execute(null), errors);
         }
     }
 

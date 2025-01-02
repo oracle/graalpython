@@ -114,7 +114,7 @@ type_defs = {
 # Column #1 - fallback specifier:
 #   empty - mandatory constant
 #   `*` - optional constant
-#   `0` - if not defined, it will default to 0
+#   `0`...`9` - if not defined, it will default to the number given (0 to 9)
 #   `u` - if not defined, it will use the constant prefixed with an underscore
 # Column #2 - type specifier:
 #   `i` - int
@@ -197,17 +197,17 @@ u x S_IFCHR
 0 x S_IFIFO
 
 [mmapFlags]
-0 x MAP_SHARED
-0 x MAP_PRIVATE
-0 x MAP_ANONYMOUS
+1 x MAP_SHARED
+2 x MAP_PRIVATE
+4 x MAP_ANONYMOUS
 * x MAP_DENYWRITE
 * x MAP_EXECUTABLE
 
 [mmapProtection]
 0 x PROT_NONE
-0 x PROT_READ
-0 x PROT_WRITE
-0 x PROT_EXEC
+1 x PROT_READ
+2 x PROT_WRITE
+4 x PROT_EXEC
 
 [flockOperation]
 0 x LOCK_SH
@@ -524,7 +524,7 @@ c_executable_file = 'gen_native_cfg'
 
 
 def parse_defs():
-    regex = re.compile(r'\[(\w+)\]|(\*|u|0?)\s*(\w+)\s+(\w+)')
+    regex = re.compile(r'\[(\w+)\]|(\*|u|\d?)\s*(\w+)\s+(\w+)')
     current_group = []
     groups = {}
     constants = []
@@ -614,8 +614,8 @@ def generate_platform():
                     f.write('#else\n')
                     if c.optional == "u":
                         f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.format});\\n", _{c.name});\n')
-                    elif c.optional == "0":
-                        f.write(f'    printf("        constants.put(\\"{c.name}\\", 0);\\n");\n')
+                    elif ord("0") <= ord(c.optional) <= ord("9"):
+                        f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.optional});\\n");\n')
                     else:
                         raise ValueError(f"Unsupported fallback specifier for {c.name}: {c.optional}")
                 f.write(f'#endif\n')
@@ -624,7 +624,7 @@ def generate_platform():
 
     flags = '-D_GNU_SOURCE' if platform == 'Linux' else ''
     flags += '' if platform == 'Win32' else ' -Wall -Werror -Wno-format '
-    cc = os.environ.get('CC', 'cc')
+    cc = os.environ.get('CC', 'cl' if platform == 'Win32' else 'cc')
     subprocess.run(f'{cc} {flags} -o {c_executable_file} {c_source_file}', shell=True, check=True)
 
     output = subprocess.run(f'./{c_executable_file}', shell=False, check=True, stdout=subprocess.PIPE, universal_newlines=True).stdout[:-1]
@@ -678,7 +678,7 @@ def generate_posix_constants(constants, groups):
     defs = []
 
     def add_constant(opt, typ, name):
-        prefix = 'Optional' if opt else 'Mandatory'
+        prefix = 'Optional' if opt == "*" else 'Mandatory'
         decls.append(f'    public static final {prefix}{typ}Constant {name};\n')
         defs.append(f'        {name} = reg.create{prefix}{typ}("{name}");\n')
 

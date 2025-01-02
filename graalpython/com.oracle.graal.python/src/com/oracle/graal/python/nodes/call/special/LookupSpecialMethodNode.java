@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,8 +87,8 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
 
         public abstract Object execute(Frame frame, Node inliningTarget, Object type, TruffleString name, Object receiver);
 
-        public static Object executeUncached(Frame frame, Object type, TruffleString name, Object receiver) {
-            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached().execute(frame, null, type, name, receiver);
+        public static Object executeUncached(Object type, TruffleString name, Object receiver) {
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached().execute(null, null, type, name, receiver);
         }
 
         @Specialization

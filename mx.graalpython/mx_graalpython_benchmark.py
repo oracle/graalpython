@@ -397,7 +397,7 @@ class GraalPythonVmBase(GuestVm):
         if isinstance(self._extra_vm_args, list):
             vm_args += self._extra_vm_args
         vm_args += [
-            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
+            "-Dorg.graalvm.language.python.home=%s" % mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output(),
             self.launcher_class(),
         ]
         for a in args[:]:
@@ -998,7 +998,7 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
             dists.append('SULONG_NATIVE')
 
         vmArgs += [
-            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
+            "-Dorg.graalvm.language.python.home=%s" % mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output(),
         ]
         vmArgs += mx.get_runtime_jvm_args(dists + ['com.oracle.graal.python.benchmarks'], jdk=mx.get_jdk())
         jmh_entry = ["com.oracle.graal.python.benchmarks.parser.ParserBenchRunner"]

@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "24.2.0",
+    "version": "25.0.0",
     "graalpython:pythonVersion": "3.11.7",
     "release": False,
     "groupId": "org.graalvm.python",
@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "2e0e746002f7378a7588428ab9fdd6d3b9426cc9",
+                "version": "0c2731c6e441a7617013a4cfd4fcce4209e3890b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "2e0e746002f7378a7588428ab9fdd6d3b9426cc9",
+                "version": "0c2731c6e441a7617013a4cfd4fcce4209e3890b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "2e0e746002f7378a7588428ab9fdd6d3b9426cc9",
+                "version": "0c2731c6e441a7617013a4cfd4fcce4209e3890b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "2e0e746002f7378a7588428ab9fdd6d3b9426cc9",
+                "version": "0c2731c6e441a7617013a4cfd4fcce4209e3890b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -470,6 +470,7 @@ suite = {
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT",
                 "NETBEANS-LIB-PROFILER",
+                "GRAALPYTHON_EMBEDDING_TOOLS",
             ],
             "requires": [
                 "java.management",
@@ -564,6 +565,7 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "17+",
             "workingSets": "Truffle,Python",
+            "jacoco": "exclude",
         },
 
         "python-venvlauncher": {
@@ -1235,6 +1237,7 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_EMBEDDING_TOOLS", # See MultiContextCExtTest
                 "sulong:SULONG_NATIVE", # See MultiContextTest#testSharingWithStruct
                 "truffle:TRUFFLE_TCK",
                 "GRAALPYTHON_INTEGRATION_UNIT_TESTS",
@@ -1328,15 +1331,9 @@ suite = {
             "fileListEntry": "META-INF/resources/libgraalpy.files",
             "type": "dir",
             "description": "GraalVM Python lib-graalpython resources",
-            "buildDependencies": [
-                "graalpy_virtualenv",
-            ],
             "layout": {
                 "./META-INF/resources/libgraalpy/": [
                     "file:graalpython/lib-graalpython/*",
-                ],
-                "./META-INF/resources/libgraalpy/modules/graalpy_virtualenv": [
-                    "file:graalpy_virtualenv/graalpy_virtualenv",
                 ],
             },
             "maven": False,

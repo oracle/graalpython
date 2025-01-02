@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -122,10 +121,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @NeverDefault
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, SpecialMethodSlot rslot, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
         return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, null, alwaysCheckReverse, ignoreDescriptorException);
-    }
-
-    protected static Object getMethod(Object receiver, TruffleString methodName) {
-        return LookupSpecialMethodNode.Dynamic.executeUncached(null, GetClassNode.executeUncached(receiver), methodName, receiver);
     }
 
     @ImportStatic(PGuards.class)

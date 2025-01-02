@@ -303,7 +303,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___MRO__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    abstract static class MroAttrNode extends PythonBuiltinNode {
+    abstract static class MroAttrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doit(Object klass,
                         @Bind("this") Node inliningTarget,

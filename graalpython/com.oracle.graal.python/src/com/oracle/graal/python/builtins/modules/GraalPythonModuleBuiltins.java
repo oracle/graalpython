@@ -83,6 +83,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.nodes.arrow.ArrowArray;
+import com.oracle.graal.python.nodes.arrow.ArrowSchema;
+import com.oracle.graal.python.nodes.arrow.capsule.CreateArrowPyCapsuleNode;
+import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowArrayNode;
+import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowSchemaNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -104,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -1176,6 +1182,23 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "replicate_extensions_in_venv", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ReplicateExtNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object replicate(TruffleString venvPath, int count,
+                        @Bind("$node") Node node,
+                        @Bind PythonContext context) {
+            try {
+                NativeLibraryLocator.replicate(context.getEnv().getPublicTruffleFile(venvPath.toJavaStringUncached()), context, count);
+            } catch (IOException | InterruptedException e) {
+                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.ValueError, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "foreign_number_list", maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ForeignNumberListNode extends PythonBuiltinNode {
@@ -1299,6 +1322,21 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             Object invokeMember(String member, Object[] arguments) throws UnsupportedMessageException {
                 throw UnsupportedMessageException.create();
             }
+        }
+    }
+
+    @Builtin(name = "export_arrow_vector", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ExportArrowVector extends PythonUnaryBuiltinNode {
+        @Specialization
+        static PTuple doExport(Object vector,
+                        @Bind("this") Node inliningTarget,
+                        @Cached VectorToArrowArrayNode exportArray,
+                        @Cached VectorToArrowSchemaNode exportSchema,
+                        @Cached CreateArrowPyCapsuleNode createArrowCapsuleNode) {
+            ArrowArray arrowArray = exportArray.execute(inliningTarget, vector);
+            ArrowSchema arrowSchema = exportSchema.execute(inliningTarget, vector);
+            return createArrowCapsuleNode.execute(inliningTarget, arrowArray, arrowSchema);
         }
     }
 }

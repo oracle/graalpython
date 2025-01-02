@@ -2845,7 +2845,7 @@ Py_ssize_t PyTruffle_REFCNT(PyObject *obj) {
 }
 
 // alias, currently used in PyO3
-Py_ssize_t _Py_REFCNT(PyObject *obj) {
+PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(PyObject *obj) {
     return PyTruffle_REFCNT(obj);
 }
 
@@ -2888,7 +2888,7 @@ PyTypeObject* PyTruffle_TYPE(PyObject *a) {
 }
 
 // alias, currently used in PyO3
-PyTypeObject* _Py_TYPE(PyObject *obj) {
+PyAPI_FUNC(PyTypeObject*) _Py_TYPE(PyObject *obj) {
     return PyTruffle_TYPE(obj);
 }
 
@@ -2924,7 +2924,7 @@ Py_ssize_t PyTruffle_SIZE(PyObject *ob) {
 }
 
 // alias, currently used in PyO3
-Py_ssize_t _Py_SIZE(PyObject *obj) {
+PyAPI_FUNC(Py_ssize_t) _Py_SIZE(PyObject *obj) {
     return PyTruffle_SIZE(obj);
 }
 
