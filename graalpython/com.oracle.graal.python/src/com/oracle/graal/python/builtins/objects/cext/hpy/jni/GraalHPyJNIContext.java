@@ -57,7 +57,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.nio.file.LinkOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -461,7 +460,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         PythonContext context = PythonContext.get(null);
         TruffleFile libPath = context.getPublicTruffleFileRelaxed(context.getJNIHome()).resolve(PythonContext.J_PYTHON_JNI_LIBRARY_NAME).getAbsoluteFile();
         try {
-            return libPath.getCanonicalFile(LinkOption.NOFOLLOW_LINKS).toString();
+            return libPath.getCanonicalFile().toString();
         } catch (IOException e) {
             LOGGER.severe(String.format("Cannot determine canonical path for %s: %s", libPath, e));
             throw new IllegalStateException(e);

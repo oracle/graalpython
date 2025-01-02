@@ -259,7 +259,7 @@ public final class GraalPyResources {
     public static Context.Builder contextBuilder(VirtualFileSystem vfs) {
         return createContextBuilder().
         // allow access to the virtual and the host filesystem, as well as sockets
-                        allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).fileSystem(vfs.impl).build()).
+                        allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).fileSystem(vfs.delegatingFileSystem).build()).
                         // The sys.executable path, a virtual path that is used by the interpreter
                         // to discover packages
                         option("python.Executable", vfs.impl.vfsVenvPath() + (VirtualFileSystemImpl.isWindows() ? "\\Scripts\\python.exe" : "/bin/python")).

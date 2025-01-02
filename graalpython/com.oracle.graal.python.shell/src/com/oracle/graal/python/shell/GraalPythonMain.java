@@ -177,6 +177,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         boolean posixBackendSpecified = false;
         boolean sha3BackendSpecified = false;
         boolean installSignalHandlersSpecified = false;
+        boolean isolateNativeModulesSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
             String arg = argumentIterator.next();
             origArgs.add(arg);
@@ -275,6 +276,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                             }
                             if (matchesPythonOption(arg, "InstallSignalHandlers")) {
                                 installSignalHandlersSpecified = true;
+                            }
+                            if (matchesPythonOption(arg, "IsolateNativeModules")) {
+                                isolateNativeModulesSpecified = true;
                             }
                             // possibly a polyglot argument
                             unrecognized.add(arg);
@@ -431,6 +435,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
         if (!installSignalHandlersSpecified) {
             polyglotOptions.put("python.InstallSignalHandlers", "true");
+        }
+        if (!isolateNativeModulesSpecified) {
+            polyglotOptions.put("python.IsolateNativeModules", "false");
         }
         // Never emit warnings that mess up the output
         unrecognized.add("--engine.WarnInterpreterOnly=false");
@@ -762,7 +769,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         if (!noSite) {
             contextBuilder.option("python.ForceImportSite", "true");
         }
-        contextBuilder.option("python.SetupLLVMLibraryPaths", "true");
         contextBuilder.option("python.IgnoreEnvironmentFlag", Boolean.toString(ignoreEnv));
         contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
 

@@ -100,6 +100,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.arrow.ArrowSupport;
+import com.oracle.graal.python.runtime.arrow.ArrowVectorSupport;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -107,7 +109,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -175,6 +176,7 @@ import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -211,6 +213,7 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 import sun.misc.Unsafe;
 
+@Bind.DefaultExpression("get($node)")
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
     public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
@@ -219,6 +222,8 @@ public final class PythonContext extends Python3Core {
 
     public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
     public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
+    public final ArrowVectorSupport arrowVectorSupport = new ArrowVectorSupport(this);
+    public final ArrowSupport arrowSupport = new ArrowSupport(this);
     private volatile boolean finalizing;
 
     @TruffleBoundary
@@ -1601,9 +1606,6 @@ public final class PythonContext extends Python3Core {
                 // When InputFilePath is set, this is handled by __graalpython__.run_path
                 addSysPath0();
             }
-            if (getOption(PythonOptions.SetupLLVMLibraryPaths)) {
-                ImpModuleBuiltins.importFrozenModuleObject(this, toTruffleStringUncached("graalpy.sulong_support"), false);
-            }
         } catch (PException e) {
             flushStdFiles();
             throw e;
@@ -1879,12 +1881,13 @@ public final class PythonContext extends Python3Core {
                             "\n\tHome candidate: {7}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome, homeCandidate.toString()));
 
             langHome = toTruffleStringUncached(homeCandidate.toString());
+            TruffleString prefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
             if (sysPrefix.isEmpty()) {
-                sysPrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
+                sysPrefix = prefix;
             }
 
             if (basePrefix.isEmpty()) {
-                basePrefix = toTruffleStringUncached(homeCandidate.getAbsoluteFile().getPath());
+                basePrefix = prefix;
             }
 
             if (coreHome.isEmpty()) {
@@ -2480,9 +2483,26 @@ public final class PythonContext extends Python3Core {
      * @see GilNode
      */
     @TruffleBoundary
+    // intentional catch of IllegalMonitorStateException, see inline comments
+    @SuppressFBWarnings("IMSE_DONT_CATCH_IMSE")
     void releaseGil() {
-        assert globalInterpreterLock.getHoldCount() == 1 : dumpStackOnAssertionHelper("trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount());
-        globalInterpreterLock.unlock();
+        // We allow hold count == 0 when cancelling, because a thread may have given up the GIL,
+        // then a cancelling (subclass of ThreadDeath) exception is thrown inside the code running
+        // without GIL through thread local action and in such case, we do not try to reacquire the
+        // GIL and let the ThreadDeath bubble up the stack to the top level and along the way we
+        // may have some finally blocks that are trying to release the initially acquired GIL and
+        // reach this method
+        assert globalInterpreterLock.getHoldCount() == 1 || (env.getContext().isCancelling() && globalInterpreterLock.getHoldCount() == 0) : dumpStackOnAssertionHelper(
+                        "trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount());
+        try {
+            globalInterpreterLock.unlock();
+        } catch (IllegalMonitorStateException ex) {
+            // IllegalMonitorStateException is thrown if the lock is not owned by this thread, see
+            // the comment above why we allow it if the context is cancelling
+            if (!env.getContext().isCancelling()) {
+                throw ex;
+            }
+        }
     }
 
     /**
