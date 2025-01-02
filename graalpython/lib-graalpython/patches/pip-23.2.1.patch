@@ -125,16 +125,38 @@ index a8cd133..20dd1e6 100644
      def pyc_source_file_paths() -> Generator[str, None, None]:
          # We de-duplicate installation paths, since there can be overlap (e.g.
          # file in .data maps to same location as file in wheel root).
+diff --git a/pip/_internal/resolution/resolvelib/candidates.py b/pip/_internal/resolution/resolvelib/candidates.py
+index de04e1d..d5bd355 100644
+--- a/pip/_internal/resolution/resolvelib/candidates.py
++++ b/pip/_internal/resolution/resolvelib/candidates.py
+@@ -20,6 +20,7 @@ from pip._internal.req.constructors import (
+ from pip._internal.req.req_install import InstallRequirement
+ from pip._internal.utils.direct_url_helpers import direct_url_from_link
+ from pip._internal.utils.misc import normalize_version_info
++from pip._internal.utils import graalpy
+ 
+ from .base import Candidate, CandidateVersion, Requirement, format_name
+ 
+@@ -242,6 +243,8 @@ class _InstallRequirementBackedCandidate(Candidate):
+         for r in requires:
+             yield self._factory.make_requirement_from_spec(str(r), self._ireq)
+         yield self._factory.make_requires_python_requirement(self.dist.requires_python)
++        if self.name == 'virtualenv' and not graalpy.DISABLE_PATCHING:
++            yield self._factory.make_requirement_from_spec('graalpy-virtualenv', self._ireq)
+ 
+     def get_install_requirement(self) -> Optional[InstallRequirement]:
+         return self._ireq
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..5b35102
+index 0000000..53dbe96
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,330 @@
+@@ -0,0 +1,334 @@
 +import abc
 +import logging
 +import os
 +import re
++import sys
 +import tempfile
 +import zipfile
 +from contextlib import contextmanager
@@ -144,7 +166,7 @@ index 0000000..5b35102
 +
 +from pip._internal.models.candidate import InstallationCandidate
 +from pip._internal.models.link import Link
-+from pip._internal.utils.urls import url_to_path
++from pip._internal.utils.urls import url_to_path, path_to_url
 +from pip._vendor import tomli, requests
 +from pip._vendor.packaging.specifiers import SpecifierSet
 +from pip._vendor.packaging.utils import canonicalize_name
@@ -440,6 +462,9 @@ index 0000000..5b35102
 +        # We need to force the filename to match the usual convention, otherwise we won't find a patch
 +        link = AddedSourceLink(url, f'{name}-{version}.{suffix}')
 +        candidates.append(InstallationCandidate(name=name, version=version, link=link))
++    if name == 'graalpy-virtualenv':
++        link = Link(path_to_url(os.path.join(sys.base_prefix, 'graalpy_virtualenv')))
++        candidates.append(InstallationCandidate(name=name, version='0.0.1', link=link))
 +    return candidates
 +
 +

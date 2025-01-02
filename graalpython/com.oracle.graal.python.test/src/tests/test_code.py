@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import os
 
 
 def a_function():
@@ -75,11 +76,11 @@ def test_name():
 
 
 def test_filename():
-    assert a_function.__code__.co_filename.rpartition("/")[2] == "test_code.py"
+    assert a_function.__code__.co_filename.rpartition(os.sep)[2] == "test_code.py"
 
 
 def test_firstlineno():
-    assert a_function.__code__.co_firstlineno == 41
+    assert a_function.__code__.co_firstlineno == 42
 
 
 def test_code_attributes():
@@ -94,7 +95,7 @@ def test_code_attributes():
     assert set(code.co_varnames) == {'arg_l', 'kwarg_case', 'kwarg_other', 'loc_1', 'loc_3', 'inner_func'}
     assert code.co_filename.endswith("test_code.py")
     assert code.co_name == "my_func"
-    assert code.co_firstlineno == 51
+    assert code.co_firstlineno == 52
     assert set(code.co_freevars) == {'values'}
     assert set(code.co_cellvars) == {'kwarg_other', 'loc_2'}
 

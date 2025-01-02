@@ -319,7 +319,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         // fill the environ dictionary with the current environment
         // TODO we should probably use PosixSupportLibrary to get environ
-        Map<String, String> getenv = System.getenv();
+        Map<String, String> getenv = core.getContext().getEnv().getEnvironment();
         PDict environ = core.factory().createDict();
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
@@ -330,6 +330,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             Object key, val;
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                if (entry.getKey().startsWith("=")) {
+                    // Hidden variable, shouldn't be visible to python
+                    continue;
+                }
                 key = toTruffleStringUncached(entry.getKey());
             } else {
                 key = core.factory().createBytes(entry.getKey().getBytes());

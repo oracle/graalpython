@@ -37,32 +37,39 @@ index 625e474..e3ad221 100644
  dbg_macro = "warn"
 diff --git a/build_backend.py b/build_backend.py
 new file mode 100644
-index 0000000..4576d33
+index 0000000..471610f
 --- /dev/null
 +++ b/build_backend.py
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,30 @@
 +import maturin
 +import os
 +import shutil
 +import subprocess
++import tarfile
++
++from pathlib import Path
++from urllib.request import urlopen
 +
 +build_sdist = maturin.build_sdist
 +
++
++def get_crate_and_patch(namespace, name, version, patched_crates):
++    with (
++        urlopen(f'https://github.com/{namespace}/{name}/archive/refs/tags/v{version}.tar.gz') as f,
++        tarfile.open(fileobj=f, mode='r:gz') as tar,
++    ):
++        tar.extractall(patched_crates, filter='data')
++    crate = patched_crates / f'{name}-{version}'
++    crate = crate.rename(patched_crates / name)
++    subprocess.check_call(['patch', '-p1', '-d', str(crate), '-i', str((Path('patches') / f'{name}.patch').absolute())])
++
++
 +def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
-+    shutil.rmtree('patched_crates', ignore_errors=True)
-+    os.makedirs('patched_crates')
-+    subprocess.check_call([
-+        'git', 'clone', 'https://github.com/PyO3/pyo3.git',
-+        'patched_crates/pyo3',
-+        '--branch', 'v0.22.5',
-+    ])
-+    subprocess.check_call(['patch', '-p1', '-d', 'patched_crates/pyo3', '-i', '../../patches/pyo3.patch'])
-+    subprocess.check_call([
-+        'git', 'clone', 'https://github.com/pydantic/jiter.git',
-+        'patched_crates/jiter',
-+        '--branch', 'v0.7.0',
-+    ])
-+    subprocess.check_call(['patch', '-p1', '-d', 'patched_crates/jiter', '-i', '../../patches/jiter.patch'])
++    patched_crates = Path('patched_crates')
++    shutil.rmtree(patched_crates, ignore_errors=True)
++    patched_crates.mkdir()
++    get_crate_and_patch('PyO3', 'pyo3', '0.22.5', patched_crates)
++    get_crate_and_patch('pydantic', 'jiter', '0.7.0', patched_crates)
 +    return maturin.build_wheel(wheel_directory, config_settings, metadata_directory)
 diff --git a/patches/jiter.patch b/patches/jiter.patch
 new file mode 100644

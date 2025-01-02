@@ -6,9 +6,6 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -20,19 +17,19 @@ import java.math.MathContext;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyNumberCheckNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -94,7 +91,7 @@ abstract class FormatProcessor<T> {
     protected abstract boolean isMapping(Object obj);
 
     static Object lookupAttribute(Object owner, TruffleString name) {
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.executeUncached(owner), name);
+        return LookupSpecialMethodNode.Dynamic.executeUncached(GetClassNode.executeUncached(owner), name, owner);
     }
 
     static Object call(Object callable, Object... args) {
@@ -190,20 +187,18 @@ abstract class FormatProcessor<T> {
         } else if (arg instanceof Boolean) {
             // Fast path for simple booleans
             return (Boolean) arg ? 1 : 0;
-        } else if (arg instanceof PythonAbstractObject) {
-            // Try again with arg.__int__() or __index__() depending on the spec type
+        } else if (PyNumberCheckNode.executeUncached(arg)) {
             try {
-                TruffleString magicName = useIndexMagicMethod(specType) ? T___INDEX__ : T___INT__;
-                Object attribute = lookupAttribute(arg, magicName);
-                if (!(attribute instanceof PNone)) {
-                    return call(attribute, arg);
+                if (useIndexMagicMethod(specType)) {
+                    return PyNumberIndexNode.executeUncached(arg);
+                } else {
+                    return CallNode.executeUncached(PythonBuiltinClassType.PInt, arg);
                 }
             } catch (PException e) {
-                e.expectUncached(AttributeError);
-                // No __int__/__index__ defined (at Python level)
+                e.expectUncached(TypeError);
             }
         }
-        return arg;
+        return null;
     }
 
     protected double asFloat(Object arg) {

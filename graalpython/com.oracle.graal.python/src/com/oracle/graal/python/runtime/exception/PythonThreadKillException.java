@@ -67,11 +67,6 @@ public final class PythonThreadKillException extends RuntimeException {
     private static final long serialVersionUID = 5323687983726237118L;
     public static final PythonThreadKillException INSTANCE = new PythonThreadKillException();
 
-    /**
-     * Creates an exception thrown to model control flow.
-     *
-     * @since 0.8 or earlier
-     */
     public PythonThreadKillException() {
         /*
          * We use the super constructor that initializes the cause to null. Without that, the cause
@@ -84,8 +79,6 @@ public final class PythonThreadKillException extends RuntimeException {
 
     /**
      * For performance reasons, this exception does not record any stack trace information.
-     *
-     * @since 0.8 or earlier
      */
     @SuppressWarnings("sync-override")
     @Override

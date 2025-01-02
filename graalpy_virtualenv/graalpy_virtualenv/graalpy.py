@@ -42,77 +42,100 @@ from functools import lru_cache
 from pathlib import Path
 from subprocess import check_output as subprocess_check_output
 
-from virtualenv.create.creator import Creator
-from virtualenv.create.describe import PosixSupports
 from virtualenv.seed.embed.pip_invoke import PipInvoke
 from virtualenv.seed.wheels import get_wheel
 from virtualenv.seed.wheels.bundle import from_dir
 
+try:
+    from virtualenv.create.via_global_ref.builtin.graalpy import GraalPyPosix, GraalPyWindows
+except ImportError:
+    from abc import ABC
+    from pathlib import Path
 
-class GraalPyCreatorPosix(Creator, PosixSupports):
-    """
-    Describe and fake Creator service for GraalPy.
+    from virtualenv.create.describe import PosixSupports, WindowsSupports
+    from virtualenv.create.via_global_ref.builtin.ref import PathRefToDest, RefMust, RefWhen
+    from virtualenv.create.via_global_ref.builtin.via_global_self_do import ViaGlobalRefVirtualenvBuiltin
 
-    For the time being, we expect users to just use the builtin 'venv' creator
-    with GraalPy, but the virtualenv package cannot just support GraalPy as a
-    generic "venv capable python", because it needs a Describe service for the
-    Seeder and Activator services.
+    class GraalPy(ViaGlobalRefVirtualenvBuiltin, ABC):
+        @classmethod
+        def can_describe(cls, interpreter):
+            return interpreter.implementation == "GraalVM" and super().can_describe(interpreter)
 
-    Note: that even if we provided GraalPy specific Creator service, the builtin
-    'venv' Creator takes precedence as the default. Therefore, the users would
-    have to enable the GraalPy Creator via explicit option `--creator graalpy`.
+        @classmethod
+        def exe_stem(cls):
+            return "graalpy"
 
-    Note: GraalPy cannot just simply pretend that it is CPython, because then the
-    virtualenv Creator would not set up the toolchain executables in the new virtual
-    environment.
-    """
+        @classmethod
+        def exe_names(cls, interpreter):
+            return {
+                cls.exe_stem(),
+                "python",
+                f"python{interpreter.version_info.major}",
+                f"python{interpreter.version_info.major}.{interpreter.version_info.minor}",
+            }
 
-    def __init__(self, options, interpreter):
-        super().__init__(options, interpreter)
-        self.options = options
+        @classmethod
+        def _executables(cls, interpreter):
+            host = Path(interpreter.system_executable)
+            targets = sorted(f"{name}{cls.suffix}" for name in cls.exe_names(interpreter))
+            yield host, targets, RefMust.NA, RefWhen.ANY
 
-    @classmethod
-    def can_create(cls, interpreter):
-        # We are fake creator, we actually do not want to be used as Creator
-        return None
+        @classmethod
+        def sources(cls, interpreter):
+            yield from super().sources(interpreter)
+            python_dir = Path(interpreter.system_executable).resolve().parent
+            if python_dir.name in {"bin", "Scripts"}:
+                python_dir = python_dir.parent
 
-    @classmethod
-    def can_describe(cls, interpreter):
-        if not (interpreter.implementation == "GraalVM" and super().can_describe(interpreter)):
-            return False
+            native_lib = cls._native_lib(python_dir / "lib", interpreter.platform)
+            if native_lib.exists():
+                yield PathRefToDest(native_lib, dest=lambda self, s: self.bin_dir.parent / "lib" / s.name)
 
-        # We monkey patch SeederSelector to use our ensurepip, but only if we know that there
-        # is a chance that we are creating virtualenv for GraalPy, so that we do not mess up
-        # with virtualenv if not necessary. This relies on the fact that virtualenv calls this
-        # because it calls SeederSelector._get_default, but even if we monkey patched SeederSelector
-        # eagerly, that code would still be executed only when virtualenv loads our plugin, which
-        # happens to be very close to the point when it calls can_describe
-        try:
-            from virtualenv.run import SeederSelector
-            _get_default_orig = SeederSelector._get_default
+            for jvm_dir_name in ("jvm", "jvmlibs", "modules"):
+                jvm_dir = python_dir / jvm_dir_name
+                if jvm_dir.exists():
+                    yield PathRefToDest(jvm_dir, dest=lambda self, s: self.bin_dir.parent / s.name)
 
-            def _seeder_selector_get_default_override(self):
-                if self.interpreter.implementation == "GraalVM":
-                    return "graalpy"
-                else:
-                    return _get_default_orig()
+        @classmethod
+        def _shared_libs(cls, python_dir):
+            raise NotImplementedError
 
-            SeederSelector._get_default = _seeder_selector_get_default_override
-        except ImportError:
-            pass
-        except AttributeError:
-            pass
-        return True
 
-    @classmethod
-    def exe_stem(cls):
-        return "graalpy"
+    class GraalPyPosix(GraalPy, PosixSupports):
+        @classmethod
+        def _native_lib(cls, lib_dir, platform):
+            if platform == "darwin":
+                return lib_dir / "libpythonvm.dylib"
+            return lib_dir / "libpythonvm.so"
 
-    def create(self):
-        raise RuntimeError("Please use the 'venv' creator with GraalPy. "
-                           "It should be the default and can be explicitly requested "
-                           "with command line option `--creator venv`, "
-                           "or environment variable VIRTUALENV_CREATOR=venv")
+
+    class GraalPyWindows(GraalPy, WindowsSupports):
+        @classmethod
+        def _native_lib(cls, lib_dir, _platform):
+            return lib_dir / "pythonvm.dll"
+
+        def set_pyenv_cfg(self):
+            # GraalPy needs an additional entry in pyvenv.cfg on Windows
+            super().set_pyenv_cfg()
+            self.pyenv_cfg["venvlauncher_command"] = self.interpreter.system_executable
+
+
+
+# We monkey patch SeederSelector to use our seeder by default when creating
+# a GraalPy virtualenv.
+try:
+    from virtualenv.run import SeederSelector
+    _get_default_orig = SeederSelector._get_default
+
+    def _seeder_selector_get_default_override(self):
+        if self.interpreter.implementation == "GraalVM":
+            return "graalpy"
+        else:
+            return _get_default_orig()
+
+    SeederSelector._get_default = _seeder_selector_get_default_override
+except Exception:
+    pass
 
 
 @lru_cache()
@@ -121,7 +144,7 @@ def get_ensurepip_path(exe):
         import ensurepip
         ensurepip_path = ensurepip.__path__[0]
     else:
-        cmd = [exe, "-u", "-c", 'import ensurepip; print(ensurepip.__path__[0])']
+        cmd = [str(exe), "-u", "-c", 'import ensurepip; print(ensurepip.__path__[0])']
         ensurepip_path = subprocess_check_output(cmd, universal_newlines=True).strip()
     return Path(ensurepip_path) / '_bundled'
 
