@@ -357,6 +357,14 @@ PyMapping_Length;Py_ssize_t;PyObject*
 PyMapping_SetItemString;int;PyObject*|const char*|PyObject*
 PyMapping_Size;Py_ssize_t;PyObject*
 PyMapping_Values;PyObject*;PyObject*
+PyMarshal_ReadLastObjectFromFile;PyObject*;FILE*
+PyMarshal_ReadLongFromFile;long;FILE*
+PyMarshal_ReadObjectFromFile;PyObject*;FILE*
+PyMarshal_ReadObjectFromString;PyObject*;const char*|Py_ssize_t
+PyMarshal_ReadShortFromFile;int;FILE*
+PyMarshal_WriteLongToFile;void;long|FILE*|int
+PyMarshal_WriteObjectToFile;void;PyObject*|FILE*|int
+PyMarshal_WriteObjectToString;PyObject*;PyObject*|int
 PyMem_Calloc;void*;size_t|size_t
 PyMem_Free;void;void*
 PyMem_GetAllocator;void;PyMemAllocatorDomain|PyMemAllocatorEx*

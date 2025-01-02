@@ -434,7 +434,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = context.getLanguage();
         int traceUpcallsInterval = language.getEngineOption(PythonOptions.HPyTraceUpcalls);
-        Boolean useNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
+        Boolean shouldUseNativeFastPaths = language.getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
         HPyBackendMode backendMode = language.getEngineOption(PythonOptions.HPyBackend);
 
         nextHandle = GraalHPyBoxing.SINGLETON_HANDLE_MAX + 1;
@@ -449,7 +449,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         LOGGER.config("Using HPy backend:" + backendMode.name());
         if (backendMode == HPyBackendMode.JNI) {
             if (!PythonImageBuildOptions.WITHOUT_JNI) {
-                this.useNativeFastPaths = useNativeFastPaths;
+                this.useNativeFastPaths = shouldUseNativeFastPaths;
                 backend = new GraalHPyJNIContext(this, traceUpcallsInterval > 0);
             } else {
                 throw new ApiInitException(ErrorMessages.HPY_CANNOT_USE_JNI_BACKEND);

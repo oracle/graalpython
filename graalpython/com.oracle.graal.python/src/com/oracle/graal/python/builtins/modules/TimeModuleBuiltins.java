@@ -511,7 +511,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 ModuleState moduleState = self.getModuleState(ModuleState.class);
                 moduleState.timeSlept = nanoTime() - t + moduleState.timeSlept;
             }
-            PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
         }
 
@@ -581,8 +580,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     try {
                         Thread.sleep(millis, nanos);
                     } catch (InterruptedException ignored) {
+                        // Truffle would otherwise execute the action again after interrupt
                         Thread.currentThread().interrupt();
-                        return;
                     }
                 }, secs);
                 secs = deadline - timeSeconds();

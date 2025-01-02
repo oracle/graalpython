@@ -61,8 +61,8 @@ class BasicZipImportTests(ZipImportBaseTestCase, unittest.TestCase):
         self.assertTrue(type(self.z._files) is dict)
         self.assertTrue(self.z._files["MyTestModule.py"] is not None)
         self.assertTrue(self.z._files["empty.txt"] is not None)
-        self.assertTrue(self.z._files["packageA/moduleC.py"] is not None)
-        self.assertTrue(self.z._files["cesta/moduleA.py"] is not None)
+        self.assertTrue(self.z._files[os.path.join("packageA", "moduleC.py")] is not None)
+        self.assertTrue(self.z._files[os.path.join("cesta", "moduleA.py")] is not None)
 
     def test_create_zipimport_from_string(self):
         zipimport._zip_directory_cache.clear()
@@ -72,48 +72,48 @@ class BasicZipImportTests(ZipImportBaseTestCase, unittest.TestCase):
     def test_zipimporter_find_module(self):
         self.assertTrue(self.z is self.z.find_module("MyTestModule"))
         self.assertTrue(self.z is self.z.find_module("packageA"))
-        self.assertTrue(self.z is self.z.find_module("packageA/moduleC"))
+        self.assertTrue(self.z is self.z.find_module(os.path.join("packageA", "moduleC")))
         self.assertTrue(None is self.z.find_module("packageA.moduleC"))
-        self.assertTrue(self.z is self.z.find_module("cesta/moduleA"))
+        self.assertTrue(self.z is self.z.find_module(os.path.join("cesta", "moduleA")))
 
     def test_zipimporter_get_code(self):
         self.assertTrue(self.z.get_code("MyTestModule").co_filename.endswith("MyTestModule.py"))
-        self.assertTrue(self.z.get_code("packageA").co_filename.endswith("packageA/__init__.py"))
-        self.assertTrue(self.z.get_code("packageA/moduleC").co_filename.endswith("packageA/moduleC.py"))
-        self.assertTrue(self.z.get_code("cesta/moduleA").co_filename.endswith("cesta/moduleA.py"))
+        self.assertTrue(self.z.get_code("packageA").co_filename.endswith(os.path.join("packageA", "__init__.py")))
+        self.assertTrue(self.z.get_code(os.path.join("packageA", "moduleC")).co_filename.endswith(os.path.join("packageA", "moduleC.py")))
+        self.assertTrue(self.z.get_code(os.path.join("cesta", "moduleA")).co_filename.endswith(os.path.join("cesta", "moduleA.py")))
         self.assertRaises(ZipImportError, self.z.get_code, "wrongname")
         self.assertRaises(ZipImportError, self.z.get_code, "")
 
     def test_zipimporter_get_data(self):
         self.assertTrue(type(self.z.get_data("MyTestModule.py")) is bytes)
-        self.assertTrue(type(self.z.get_data("packageA/moduleC.py")) is bytes)
-        self.assertTrue(type(self.z.get_data("cesta/moduleA.py")) is bytes)
+        self.assertTrue(type(self.z.get_data(os.path.join("packageA", "moduleC.py"))) is bytes)
+        self.assertTrue(type(self.z.get_data(os.path.join("cesta", "moduleA.py"))) is bytes)
         self.assertRaises(OSError, self.z.get_data, "")
         self.assertRaises(OSError, self.z.get_data, "MyTestModule")
         self.assertRaises(OSError, self.z.get_data, "packageA")
-        self.assertTrue(type(self.z.get_data(ZIP_ABS_PATH + "/MyTestModule.py")) is bytes)
-        self.assertTrue(type(self.z.get_data(ZIP_ABS_PATH + "/packageA/moduleC.py")) is bytes)
-        self.assertTrue(type(self.z.get_data(ZIP_ABS_PATH + "/cesta/moduleA.py")) is bytes)
-        self.assertTrue(type(self.z.get_data(ZIP_ABS_PATH + "/read.me")) is bytes)
+        self.assertTrue(type(self.z.get_data(os.path.join(ZIP_ABS_PATH, "MyTestModule.py"))) is bytes)
+        self.assertTrue(type(self.z.get_data(os.path.join(ZIP_ABS_PATH, "packageA", "moduleC.py"))) is bytes)
+        self.assertTrue(type(self.z.get_data(os.path.join(ZIP_ABS_PATH, "cesta", "moduleA.py"))) is bytes)
+        self.assertTrue(type(self.z.get_data(os.path.join(ZIP_ABS_PATH, "read.me"))) is bytes)
         self.assertTrue(type(self.z.get_data("empty.txt")) is bytes)
-        self.assertRaises(OSError, self.z.get_data, "/empty.txt")
+        self.assertRaises(OSError, self.z.get_data, os.sep + "empty.txt")
 
     def test_zipimporter_get_filename(self):
-        self.assertEqual(self.z.get_filename("packageA"), ZIP_ABS_PATH + "/packageA/__init__.py")
-        self.assertEqual(self.z.get_filename("MyTestModule"), ZIP_ABS_PATH + "/MyTestModule.py")
+        self.assertEqual(self.z.get_filename("packageA"), os.path.join(ZIP_ABS_PATH, "packageA", "__init__.py"))
+        self.assertEqual(self.z.get_filename("MyTestModule"), os.path.join(ZIP_ABS_PATH, "MyTestModule.py"))
         self.assertRaises(ZipImportError, self.z.get_filename, "empty.txt")
         self.assertRaises(ZipImportError, self.z.get_filename, "empty")
 
     def test_zipimporter_get_source(self):
         self.assertTrue(type(self.z.get_source("MyTestModule")) is str)
         self.assertTrue(type(self.z.get_source("packageA")) is str)
-        self.assertTrue(type(self.z.get_source("packageA/moduleC")) is str)
+        self.assertTrue(type(self.z.get_source(os.path.join("packageA", "moduleC"))) is str)
         self.assertRaises(ZipImportError, self.z.get_source, "packageA.moduleC")
 
     def test_zipimporter_is_package(self):
         self.assertTrue(self.z.is_package("packageA"))
         self.assertFalse(self.z.is_package("MyTestModule"))
-        self.assertFalse(self.z.is_package("packageA/moduleC"))
+        self.assertFalse(self.z.is_package(os.path.join("packageA", "moduleC")))
         self.assertRaises(ZipImportError, self.z.is_package, "empty")
         self.assertRaises(ZipImportError, self.z.is_package, "cesta")
         self.assertRaises(ZipImportError, self.z.is_package, "packageA.moduleC")
@@ -121,8 +121,8 @@ class BasicZipImportTests(ZipImportBaseTestCase, unittest.TestCase):
     def test_zipimporter_load_module(self):
         self.assertTrue(self.z.load_module("MyTestModule").__loader__ is self.z)
         self.assertTrue(self.z.load_module("packageA").__loader__ is self.z)
-        self.assertTrue(self.z.load_module("packageA/moduleC").__loader__ is self.z)
-        self.assertTrue(self.z.load_module("cesta/moduleA").__loader__ is self.z)
+        self.assertTrue(self.z.load_module(os.path.join("packageA", "moduleC")).__loader__ is self.z)
+        self.assertTrue(self.z.load_module(os.path.join("cesta", "moduleA")).__loader__ is self.z)
         self.assertRaises(ZipImportError, self.z.load_module, "packageA.moduleC")
 
 class ZipImportWithPrefixTests(ZipImportBaseTestCase, unittest.TestCase):
@@ -130,25 +130,25 @@ class ZipImportWithPrefixTests(ZipImportBaseTestCase, unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         ZipImportBaseTestCase.setUpClass()
-        cls.z = zipimport.zipimporter(ZIP_PATH + "/cesta")
+        cls.z = zipimport.zipimporter(os.path.join(ZIP_PATH, "cesta"))
 
     @classmethod
     def tearDownClass(cls):
         zipimport._zip_directory_cache.clear()
 
     def test_zipimporter_with_prefix_attribute(self):
-        self.assertTrue(self.z.prefix == "cesta/")
+        self.assertTrue(self.z.prefix == "cesta" + os.sep)
         self.assertTrue(self.z.archive == ZIP_ABS_PATH)
         self.assertTrue(type(self.z._files) is dict)
         self.assertTrue(self.z._files["MyTestModule.py"] is not None)
         self.assertTrue(self.z._files["empty.txt"] is not None)
-        self.assertTrue(self.z._files["packageA/moduleC.py"] is not None)
-        self.assertTrue(self.z._files["cesta/moduleA.py"] is not None)
+        self.assertTrue(self.z._files[os.path.join("packageA", "moduleC.py")] is not None)
+        self.assertTrue(self.z._files[os.path.join("cesta", "moduleA.py")] is not None)
 
     def test_zipimporter_with_prefix_find_module(self):
         self.assertTrue(None is self.z.find_module("MyTestModule"))
         self.assertTrue(None is self.z.find_module("packageA"))
-        self.assertTrue(None is self.z.find_module("packageA/moduleC"))
+        self.assertTrue(None is self.z.find_module(os.path.join("packageA", "moduleC")))
         self.assertTrue(None is self.z.find_module("packageA.moduleC"))
         self.assertTrue(self.z is self.z.find_module("moduleA"))
 
@@ -161,9 +161,9 @@ class ImportTests(ZipImportBaseTestCase, unittest.TestCase):
 
     def test_module_import(self):
         m = importlib.import_module("MyTestModule")
-        self.assertTrue (m.get_file() == ZIP_ABS_PATH + "/MyTestModule.py")
+        self.assertTrue (m.get_file() == os.path.join(ZIP_ABS_PATH, "MyTestModule.py"))
         p = importlib.import_module("packageA.moduleC")
-        self.assertTrue (p.get_file() == ZIP_ABS_PATH + "/packageA/moduleC.py")
+        self.assertTrue (p.get_file() == os.path.join(ZIP_ABS_PATH, "packageA", "moduleC.py"))
 
 class BasicEggImportTests(ZipImportBaseTestCase, unittest.TestCase):
 

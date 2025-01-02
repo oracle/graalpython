@@ -216,6 +216,7 @@ public final class FrozenModules {
         private static final PythonFrozenModule __PHELLO___HAM_EGGS = new PythonFrozenModule("__PHELLO___HAM_EGGS", "__phello__.ham.eggs", false);
         private static final PythonFrozenModule __PHELLO___SPAM = new PythonFrozenModule("__PHELLO___SPAM", "__phello__.spam", false);
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", null, false);
+        private static final PythonFrozenModule POLYGLOT_ARROW = new PythonFrozenModule("POLYGLOT_ARROW", null, false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", null, false);
         private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", null, false);
         private static final PythonFrozenModule GRAALPY__POLYGLOT = new PythonFrozenModule("GRAALPY__POLYGLOT", null, false);
@@ -226,7 +227,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", null, false);
         private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", null, false);
         private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", null, false);
-        private static final PythonFrozenModule GRAALPY_SULONG_SUPPORT = new PythonFrozenModule("GRAALPY_SULONG_SUPPORT", null, false);
     }
 
     public static final PythonFrozenModule lookup(String name) {
@@ -591,6 +591,8 @@ public final class FrozenModules {
                 return Map.__PHELLO___SPAM;
             case "__hello_only__":
                 return Map.FROZEN_ONLY;
+            case "polyglot.arrow":
+                return Map.POLYGLOT_ARROW;
             case "_sysconfigdata":
                 return Map._SYSCONFIGDATA;
             case "graalpy.__graalpython__":
@@ -611,8 +613,6 @@ public final class FrozenModules {
                 return Map.GRAALPY_PIP_HOOK;
             case "graalpy.unicodedata":
                 return Map.GRAALPY_UNICODEDATA;
-            case "graalpy.sulong_support":
-                return Map.GRAALPY_SULONG_SUPPORT;
             default:
                 return null;
         }
