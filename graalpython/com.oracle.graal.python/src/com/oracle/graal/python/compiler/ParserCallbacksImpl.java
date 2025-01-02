@@ -104,10 +104,7 @@ public class ParserCallbacksImpl implements ParserCallbacks {
     @Override
     public void safePointPoll() {
         Node node = EncapsulatingNodeReference.getCurrent().get();
-        // TODO remove the condition once GR-59720 is done
-        if (node != null) {
-            TruffleSafepoint.poll(node);
-        }
+        TruffleSafepoint.poll(node);
     }
 
     @Override
