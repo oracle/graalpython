@@ -29,6 +29,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -153,7 +154,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             long freedMemory = javaCollect(inliningTarget, gil);
             PythonContext pythonContext = PythonContext.get(inliningTarget);
             // call native 'gc_collect' if C API context is already available
-            if (PythonContext.get(inliningTarget).getCApiContext() != null && pythonContext.getOption(PythonOptions.PythonGC)) {
+            if (PythonContext.get(inliningTarget).getCApiContext() != null && PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC)) {
                 Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
                 PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                 Object result = invokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, SYMBOL.getTsName(), executable, level);

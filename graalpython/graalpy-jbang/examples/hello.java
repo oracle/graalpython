@@ -40,7 +40,7 @@
  */
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 17+
-//DEPS org.graalvm.python:jbang:${env.GRAALPY_VERSION:24.2.0}
+//DEPS org.graalvm.python:jbang:${env.GRAALPY_VERSION:25.0.0}
 // specify python packages and their versions as if used with pip
 //PIP termcolor==2.2
 

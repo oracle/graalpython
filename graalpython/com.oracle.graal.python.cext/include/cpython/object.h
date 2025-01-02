@@ -42,8 +42,8 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
 typedef struct _Py_Identifier {
     const char* string;
     /* XXX Truffle change: CPython migrated away from keeping the pointer directly
-     * in the struct to support subinterpreters. We don't have subinterpreters, so
-     * we keep the object pointer for now */
+     * in the struct to support subinterpreters. We do subinterpreters differently,
+     * so we keep the object pointer for now */
     PyObject *object;
 } _Py_Identifier;
 

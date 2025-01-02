@@ -149,7 +149,7 @@ class TestId:
                     test_id = f'<{action}>'
                 else:
                     test_id = f'{class_name}.<{action}>'
-        elif type(test).id is not unittest.TestCase.id:
+        elif type(test).id is not unittest.TestCase.id and type(test) is not unittest.FunctionTestCase:
             # Qualify doctests so that we know what they are
             test_id = f'{type(test).__qualname__}.{test_id}'
         return cls(test_file, test_id)
@@ -727,6 +727,8 @@ class SubprocessWorker:
             port = server.getsockname()[1]
             assert port
 
+            retries = 3
+
             while self.remaining_test_ids and not self.stop_event.is_set():
                 last_remaining_count = len(self.remaining_test_ids)
                 with open(tmp_dir / 'out', 'w+') as self.out_file:
@@ -744,8 +746,17 @@ class SubprocessWorker:
                         cmd.append('--failfast')
                     self.process = subprocess.Popen(cmd, stdout=self.out_file, stderr=self.out_file)
 
-                    server.settimeout(600.0)
-                    with server.accept()[0] as sock:
+                    server.settimeout(180.0)
+                    try:
+                        sock = server.accept()[0]
+                    except TimeoutError:
+                        interrupt_process(self.process)
+                        retries -= 1
+                        if retries:
+                            continue
+                        sys.exit("Worker failed to connect to runner multiple times")
+
+                    with sock:
                         conn = Connection(sock)
 
                         conn.send([TestSpecifier(t.test_file, t.test_name) for t in self.remaining_test_ids])

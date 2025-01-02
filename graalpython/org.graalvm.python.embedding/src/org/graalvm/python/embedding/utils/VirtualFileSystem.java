@@ -40,6 +40,8 @@
  */
 package org.graalvm.python.embedding.utils;
 
+import org.graalvm.polyglot.io.FileSystem;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Predicate;
@@ -47,6 +49,7 @@ import java.util.function.Predicate;
 public final class VirtualFileSystem implements AutoCloseable {
 
     final VirtualFileSystemImpl impl;
+    final FileSystem delegatingFileSystem;
 
     public static enum HostIO {
         NONE,
@@ -178,6 +181,7 @@ public final class VirtualFileSystem implements AutoCloseable {
                     boolean caseInsensitive) {
 
         this.impl = new VirtualFileSystemImpl(extractFilter, mountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
+        this.delegatingFileSystem = VirtualFileSystemImpl.createDelegatingFileSystem(impl);
     }
 
     public static Builder newBuilder() {

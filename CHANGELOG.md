@@ -16,7 +16,11 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Rewrite wheelbuilder to be easier to use and contribute to. This version is now the same we run internally to build publishable wheels for some platforms we support, so the community can build the same wheels on their own hardware easily if desired.
 * `pip` is now able to fetch newer versions of GraalPy patches for third-party packages from `graalpython` GitHub repository, allowing us to add new patches to released versions.
   * The patch repository can be overridden using `PIP_GRAALPY_PATCHES_URL` environment variable, which can point to a local path or a URL. It can be disabled by setting it to an empty string.
+* Added `GRAALPY_VERSION` and `GRAALPY_VERSION_NUM` C macros.
+* Remove `ginstall` module. It hasn't been necessary for several releases. Please, use `pip install`.
+* Remove experimental `SetupLLVMLibraryPaths` option. It was used to pre-set library path for LLVM toolchain's libc++. The path can still be set manually.
 * Added `GRAALPY_VERSION` and `GRAALPY_VERSION_NUM` C macros
+* Added experimental `python.IsolateNativeModules` option to allow loading native extensions multiple times in different contexts. See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Native-Extensions.md) for more information.
 
 ## Version 24.1.0
 * GraalPy is now considered stable for pure Python workloads. While many workloads involving native extension modules work, we continue to consider them experimental. You can use the command-line option `--python.WarnExperimentalFeatures` to enable warnings for such modules at runtime. In Java embeddings the warnings are enabled by default and you can suppress them by setting the context option 'python.WarnExperimentalFeatures' to 'false'.

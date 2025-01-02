@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -52,7 +52,7 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_native:
         curdir = os.path.abspath(os.path.dirname(__file__))
         src = dedent(f"""\
             import ssl, sys, os
-            sys.path.append('{curdir}')
+            sys.path.append(r'{curdir}')
             from test_ssl import data_file, check_handshake
             server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             server_context.load_cert_chain(data_file('signed_cert.pem'))

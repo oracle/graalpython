@@ -53,6 +53,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -2028,7 +2029,7 @@ public abstract class CApiTransitions {
                 assert ref.pointer == wrapper.getNativePointer();
                 if (setStrong && !ref.isStrongReference()) {
                     ref.setStrongReference(wrapper);
-                    if (ref.gc && PythonContext.get(inliningTarget).getOption(PythonOptions.PythonGC)) {
+                    if (ref.gc && PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC)) {
                         // gc = AS_GC(op)
                         long gc = wrapper.getNativePointer() - CStructs.PyGC_Head.size();
                         gcTrackNode.execute(inliningTarget, gc);

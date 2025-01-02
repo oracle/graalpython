@@ -82,8 +82,8 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 rlist, _, _ = select.select([pty_parent], [], [], 60)
                 assert pty_parent in rlist, f"Timed out waiting for REPL output. Output: {whole_out}{out}"
                 out += os.read(pty_parent, 1024).decode('utf-8')
-                out = out.replace('\r\n', '\n')
                 out = re.sub(r'\x1b\[(?:\?2004[hl]|\d+[A-G])', '', out)
+                out = out.replace('\r\n', '\n')
                 if out == '>>> ' or out.endswith(('\n>>> ', '\n... ')):
                     prompt = out[:3]
                     actual = out[:-5]

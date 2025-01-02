@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -85,6 +85,10 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 @GenerateInline
 public abstract class PyNumberIndexNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Node inliningTarget, Object object);
+
+    public static Object executeUncached(Object object) {
+        return PyNumberIndexNodeGen.getUncached().execute(null, null, object);
+    }
 
     @Specialization
     static int doInt(int object) {
