@@ -386,7 +386,7 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
     def test_gradle_check_home_warning(self):
         self.check_gradle_check_home_warning(community=True)
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    @unittest.skipUnless(util.is_gradle_plugin_long_running_test_enabled, "ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_gradle_check_home(self):
         self.check_gradle_check_home(community=True)
 
@@ -514,7 +514,7 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
     def test_gradle_check_home_warning(self):
         self.check_gradle_check_home_warning(community=True)
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    @unittest.skipUnless(util.is_gradle_plugin_long_running_test_enabled, "ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_gradle_check_home(self):
         self.check_gradle_check_home(community=True)
 

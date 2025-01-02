@@ -261,7 +261,7 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("the python language home is always available", out, contains=True)
 
-    @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
+    @unittest.skipUnless(util.is_maven_plugin_long_running_test_enabled, "ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_check_home(self):
         with TemporaryTestDirectory() as tmpdir:
             target_name = "check_home_test"
