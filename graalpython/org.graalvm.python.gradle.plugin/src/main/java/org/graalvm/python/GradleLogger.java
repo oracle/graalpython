@@ -40,10 +40,10 @@
  */
 package org.graalvm.python;
 
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.gradle.api.logging.Logger;
 
-public class GradleLogger implements SubprocessLog {
+public class GradleLogger implements BuildToolLog {
     private Logger logger;
 
     private GradleLogger(Logger logger) {
@@ -61,12 +61,12 @@ public class GradleLogger implements SubprocessLog {
     }
 
     @Override
-    public void log(CharSequence txt) {
+    public void info(String txt) {
         logger.lifecycle(txt.toString());
     }
 
     @Override
-    public void log(CharSequence txt, Throwable t) {
+    public void warning(String txt, Throwable t) {
         logger.lifecycle(txt.toString(), t);
     }
 

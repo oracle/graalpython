@@ -132,7 +132,7 @@ public abstract class ResourcesTask extends DefaultTask {
         List<String> packages = getPackages().getOrElse(null);
         try {
             VFSUtils.createVenv(getVenvDirectory(), new ArrayList<String>(packages), getLauncherPath(), this::calculateLauncherClasspath, getPolyglotVersion().get(),
-                            GradleLogger.of(getLogger()), (s) -> getLogger().lifecycle(s));
+                            GradleLogger.of(getLogger()));
         } catch (IOException e) {
             throw new GradleException(String.format("failed to create venv %s", getVenvDirectory()), e);
         }

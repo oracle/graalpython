@@ -58,9 +58,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
+import org.graalvm.python.embedding.tools.exec.BuildToolLog.CollectOutputLog;
 import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
-import org.graalvm.python.embedding.tools.exec.SubprocessLog.CollectOutputLog;
 
 public final class VFSUtils {
 
@@ -182,10 +182,6 @@ public final class VFSUtils {
         Set<String> get() throws IOException;
     }
 
-    public interface Log {
-        void info(String s);
-    }
-
     private static void delete(Path dir) throws IOException {
         if (!Files.exists(dir)) {
             return;
@@ -199,12 +195,12 @@ public final class VFSUtils {
         }
     }
 
-    public static void createVenv(Path venvDirectory, List<String> packages, Path launcher, LauncherClassPath launcherClassPath, String graalPyVersion, SubprocessLog subprocessLog, Log log)
+    public static void createVenv(Path venvDirectory, List<String> packages, Path launcher, LauncherClassPath launcherClassPath, String graalPyVersion, BuildToolLog log)
                     throws IOException {
         Path launcherPath = launcher;
         String externalLauncher = System.getProperty("graalpy.vfs.venvLauncher");
         if (externalLauncher == null || externalLauncher.trim().isEmpty()) {
-            generateLaunchers(launcherPath, launcherClassPath, subprocessLog, log);
+            generateLaunchers(launcherPath, launcherClassPath, log);
         } else {
             launcherPath = Path.of(externalLauncher);
         }
@@ -239,15 +235,15 @@ public final class VFSUtils {
 
         if (!Files.exists(venvDirectory)) {
             log.info(String.format("Creating GraalPy %s venv", graalPyVersion));
-            runLauncher(launcherPath.toString(), subprocessLog, "-m", "venv", venvDirectory.toString(), "--without-pip");
-            runVenvBin(venvDirectory, "graalpy", subprocessLog, "-I", "-m", "ensurepip");
+            runLauncher(launcherPath.toString(), log, "-m", "venv", venvDirectory.toString(), "--without-pip");
+            runVenvBin(venvDirectory, "graalpy", log, "-I", "-m", "ensurepip");
         }
 
         Iterable<String> frozenPkgs = null;
         if (packages != null) {
             boolean needsUpdate = false;
-            needsUpdate |= deleteUnwantedPackages(venvDirectory, packages, installedPackages, subprocessLog);
-            needsUpdate |= installWantedPackages(venvDirectory, packages, installedPackages, subprocessLog);
+            needsUpdate |= deleteUnwantedPackages(venvDirectory, packages, installedPackages, log);
+            needsUpdate |= installWantedPackages(venvDirectory, packages, installedPackages, log);
             if (needsUpdate) {
                 var freezeLog = new CollectOutputLog();
                 runPip(venvDirectory, "freeze", freezeLog, "--local");
@@ -269,7 +265,7 @@ public final class VFSUtils {
         }
     }
 
-    private static void checkLauncher(Path venvDirectory, Path launcherPath, Log log) throws IOException {
+    private static void checkLauncher(Path venvDirectory, Path launcherPath, BuildToolLog log) throws IOException {
         if (!Files.exists(launcherPath)) {
             throw new IOException(String.format("Launcher file does not exist '%s'", launcherPath));
         }
@@ -301,7 +297,7 @@ public final class VFSUtils {
         }
     }
 
-    private static void generateLaunchers(Path laucherPath, LauncherClassPath launcherClassPath, SubprocessLog subprocessLog, Log log) throws IOException {
+    private static void generateLaunchers(Path laucherPath, LauncherClassPath launcherClassPath, BuildToolLog log) throws IOException {
         if (!Files.exists(laucherPath)) {
             log.info("Generating GraalPy launchers");
             createParentDirectories(laucherPath);
@@ -356,7 +352,7 @@ public final class VFSUtils {
                 }
 
                 try {
-                    GraalPyRunner.run(classpath, subprocessLog, tmp.getAbsolutePath());
+                    GraalPyRunner.run(classpath, log, tmp.getAbsolutePath());
                 } catch (InterruptedException e) {
                     throw new IOException(String.format("failed to run Graalpy launcher"), e);
                 }
@@ -364,28 +360,29 @@ public final class VFSUtils {
         }
     }
 
-    private static boolean installWantedPackages(Path venvDirectory, List<String> packages, List<String> installedPackages, SubprocessLog subprocessLog) throws IOException {
+    private static boolean installWantedPackages(Path venvDirectory, List<String> packages, List<String> installedPackages, BuildToolLog log) throws IOException {
         Set<String> pkgsToInstall = new HashSet<>(packages);
         pkgsToInstall.removeAll(installedPackages);
         if (pkgsToInstall.isEmpty()) {
             return false;
         }
-        runPip(venvDirectory, "install", subprocessLog, pkgsToInstall.toArray(new String[pkgsToInstall.size()]));
+        runPip(venvDirectory, "install", log, pkgsToInstall.toArray(new String[pkgsToInstall.size()]));
         return true;
     }
 
-    private static boolean deleteUnwantedPackages(Path venvDirectory, List<String> packages, List<String> installedPackages, SubprocessLog subprocessLog) throws IOException {
+    private static boolean deleteUnwantedPackages(Path venvDirectory, List<String> packages, List<String> installedPackages, BuildToolLog log) throws IOException {
         List<String> args = new ArrayList<>(installedPackages);
         args.removeAll(packages);
         if (args.isEmpty()) {
             return false;
         }
         args.add(0, "-y");
-        runPip(venvDirectory, "uninstall", subprocessLog, args.toArray(new String[args.size()]));
+
+        runPip(venvDirectory, "uninstall", log, args.toArray(new String[args.size()]));
         return true;
     }
 
-    private static void runLauncher(String launcherPath, SubprocessLog log, String... args) throws IOException {
+    private static void runLauncher(String launcherPath, BuildToolLog log, String... args) throws IOException {
         try {
             GraalPyRunner.runLauncher(launcherPath, log, args);
         } catch (IOException | InterruptedException e) {
@@ -393,7 +390,7 @@ public final class VFSUtils {
         }
     }
 
-    private static void runPip(Path venvDirectory, String command, SubprocessLog log, String... args) throws IOException {
+    private static void runPip(Path venvDirectory, String command, BuildToolLog log, String... args) throws IOException {
         try {
             GraalPyRunner.runPip(venvDirectory, command, log, args);
         } catch (IOException | InterruptedException e) {
@@ -401,7 +398,7 @@ public final class VFSUtils {
         }
     }
 
-    private static void runVenvBin(Path venvDirectory, String bin, SubprocessLog log, String... args) throws IOException {
+    private static void runVenvBin(Path venvDirectory, String bin, BuildToolLog log, String... args) throws IOException {
         try {
             GraalPyRunner.runVenvBin(venvDirectory, bin, log, args);
         } catch (IOException | InterruptedException e) {

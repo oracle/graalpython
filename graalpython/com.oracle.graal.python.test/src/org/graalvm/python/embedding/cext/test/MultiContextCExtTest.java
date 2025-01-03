@@ -61,13 +61,12 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
-import org.graalvm.python.embedding.tools.vfs.VFSUtils.Log;
 import org.junit.Test;
 
 public class MultiContextCExtTest {
-    static final class TestLog extends Handler implements SubprocessLog, Log {
+    static final class TestLog extends Handler implements BuildToolLog {
         final StringBuilder logCharSequence = new StringBuilder();
         final StringBuilder logThrowable = new StringBuilder();
         final StringBuilder stderr = new StringBuilder();
@@ -81,13 +80,8 @@ public class MultiContextCExtTest {
             }
         }
 
-        public void log(CharSequence txt) {
-            println("[log]", txt);
-            logCharSequence.append(txt);
-        }
-
-        public void log(CharSequence txt, Throwable t) {
-            println("[log]", txt);
+        public void warning(CharSequence txt, Throwable t) {
+            println("[warning]", txt);
             println("[throwable]", t.getMessage());
             logThrowable.append(txt).append(t.getMessage());
         }
@@ -128,7 +122,7 @@ public class MultiContextCExtTest {
         deleteDirOnShutdown(tmpdir);
         var venvdir = tmpdir.resolve("venv");
         try {
-            VFSUtils.createVenv(venvdir, Arrays.asList(packages), tmpdir.resolve("graalpy.exe"), () -> getClasspath(), "", log, log);
+            VFSUtils.createVenv(venvdir, Arrays.asList(packages), tmpdir.resolve("graalpy.exe"), () -> getClasspath(), "", log);
         } catch (RuntimeException e) {
             System.err.println(getClasspath());
             throw e;

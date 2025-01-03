@@ -41,20 +41,20 @@
 package org.graalvm.python.maven.plugin;
 
 import org.apache.maven.plugin.logging.Log;
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 
-final class MavenDelegateLog implements SubprocessLog {
+final class MavenDelegateLog implements BuildToolLog {
     private final Log delegate;
 
     MavenDelegateLog(Log delegate) {
         this.delegate = delegate;
     }
 
-    public void log(CharSequence var1) {
+    public void info(String var1) {
         delegate.info(var1);
     }
 
-    public void log(CharSequence var1, Throwable t) {
-        delegate.error(var1, t);
+    public void warning(String var1, Throwable t) {
+        delegate.warn(var1, t);
     }
 }

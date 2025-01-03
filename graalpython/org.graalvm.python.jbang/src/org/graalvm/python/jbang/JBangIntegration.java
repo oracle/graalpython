@@ -41,7 +41,7 @@
 
 package org.graalvm.python.jbang;
 
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 import java.io.File;
@@ -75,8 +75,9 @@ public class JBangIntegration {
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
     private static final String LAUNCHER = IS_WINDOWS ? "graalpy.exe" : "graalpy.sh";
 
-    private static final SubprocessLog LOG = new SubprocessLog() {
+    private static final BuildToolLog BUILD_TOOL_LOG = new BuildToolLog() {
     };
+
     private static final String JBANG_COORDINATES = "org.graalvm.python:jbang:jar";
 
     /**
@@ -170,7 +171,7 @@ public class JBangIntegration {
             // perhaps already checked by jbang
             throw new IllegalStateException("could not resolve parent for venv path: " + venv);
         }
-        VFSUtils.createVenv(venv, pkgs, getLauncherPath(venvParent.toString()), () -> calculateClasspath(dependencies), graalPyVersion, LOG, (txt) -> LOG.log(txt));
+        VFSUtils.createVenv(venv, pkgs, getLauncherPath(venvParent.toString()), () -> calculateClasspath(dependencies), graalPyVersion, BUILD_TOOL_LOG);
 
         if (dropPip) {
             try {
@@ -234,6 +235,6 @@ public class JBangIntegration {
     }
 
     private static void log(String txt) {
-        LOG.log("[graalpy jbang integration] " + txt);
+        BUILD_TOOL_LOG.info("[graalpy jbang integration] " + txt);
     }
 }

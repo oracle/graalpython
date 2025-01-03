@@ -60,11 +60,11 @@ public class GraalPyRunner {
     private static final String BIN_DIR = IS_WINDOWS ? "Scripts" : "bin";
     private static final String EXE_SUFFIX = IS_WINDOWS ? ".exe" : "";
 
-    public static void run(Set<String> classpath, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void run(Set<String> classpath, BuildToolLog log, String... args) throws IOException, InterruptedException {
         run(String.join(File.pathSeparator, classpath), log, args);
     }
 
-    public static void run(String classpath, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void run(String classpath, BuildToolLog log, String... args) throws IOException, InterruptedException {
         String workdir = System.getProperty("exec.workingdir");
         Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
         List<String> cmd = new ArrayList<>();
@@ -77,20 +77,20 @@ public class GraalPyRunner {
         if (workdir != null) {
             pb.directory(new File(workdir));
         }
-        log.log(String.format("Running GraalPy: %s", String.join(" ", cmd)));
+        log.info(String.format("Running GraalPy: %s", String.join(" ", cmd)));
         runProcess(pb, log);
     }
 
-    public static void runLauncher(String launcherPath, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void runLauncher(String launcherPath, BuildToolLog log, String... args) throws IOException, InterruptedException {
         var cmd = new ArrayList<String>();
         cmd.add(launcherPath);
         cmd.addAll(List.of(args));
-        log.log(String.format("Running: %s", String.join(" ", cmd)));
+        log.info(String.format("Running: %s", String.join(" ", cmd)));
         var pb = new ProcessBuilder(cmd);
         runProcess(pb, log);
     }
 
-    public static void runPip(Path venvDirectory, String command, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void runPip(Path venvDirectory, String command, BuildToolLog log, String... args) throws IOException, InterruptedException {
         var newArgs = new ArrayList<String>();
         newArgs.add("-m");
         newArgs.add("pip");
@@ -101,15 +101,15 @@ public class GraalPyRunner {
         runVenvBin(venvDirectory, "graalpy", log, newArgs);
     }
 
-    public static void runVenvBin(Path venvDirectory, String command, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void runVenvBin(Path venvDirectory, String command, BuildToolLog log, String... args) throws IOException, InterruptedException {
         runVenvBin(venvDirectory, command, log, List.of(args));
     }
 
-    private static void runVenvBin(Path venvDirectory, String command, SubprocessLog log, List<String> args) throws IOException, InterruptedException {
+    private static void runVenvBin(Path venvDirectory, String command, BuildToolLog log, List<String> args) throws IOException, InterruptedException {
         var cmd = new ArrayList<String>();
         cmd.add(venvDirectory.resolve(BIN_DIR).resolve(command + EXE_SUFFIX).toString());
         cmd.addAll(args);
-        log.log(String.join(" ", cmd));
+        log.info(String.join(" ", cmd));
         var pb = new ProcessBuilder(cmd);
         runProcess(pb, log);
     }
@@ -139,7 +139,7 @@ public class GraalPyRunner {
         return proxyAddress.startsWith(protocol) ? proxyAddress : protocol + "://" + proxyAddress;
     }
 
-    private static void runProcess(ProcessBuilder pb, SubprocessLog log) throws IOException, InterruptedException {
+    private static void runProcess(ProcessBuilder pb, BuildToolLog log) throws IOException, InterruptedException {
         pb.redirectError();
         pb.redirectOutput();
         Process process = pb.start();
@@ -152,7 +152,7 @@ public class GraalPyRunner {
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.log("exception while reading subprocess out", e);
+                log.warning("exception while reading subprocess out", e);
             }
         });
         outputReader.start();
@@ -167,7 +167,7 @@ public class GraalPyRunner {
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.log("exception while reading subprocess err", e);
+                log.warning("exception while reading subprocess err", e);
             }
         });
         errorReader.start();

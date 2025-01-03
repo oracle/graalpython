@@ -230,7 +230,7 @@ public class ManageResourcesMojo extends AbstractMojo {
                 return;
             }
 
-            VFSUtils.createVenv(venvDirectory, new ArrayList<String>(packages), getLauncherPath(), () -> calculateLauncherClasspath(project), getGraalPyVersion(project), new MavenDelegateLog(getLog()), (s) -> getLog().info(s));
+            VFSUtils.createVenv(venvDirectory, new ArrayList<String>(packages), getLauncherPath(), () -> calculateLauncherClasspath(project), getGraalPyVersion(project), new MavenDelegateLog(getLog()));
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }
