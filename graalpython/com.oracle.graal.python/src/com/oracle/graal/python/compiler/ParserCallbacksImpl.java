@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -104,10 +104,7 @@ public class ParserCallbacksImpl implements ParserCallbacks {
     @Override
     public void safePointPoll() {
         Node node = EncapsulatingNodeReference.getCurrent().get();
-        // TODO remove the condition once GR-59720 is done
-        if (node != null) {
-            TruffleSafepoint.poll(node);
-        }
+        TruffleSafepoint.poll(node);
     }
 
     @Override

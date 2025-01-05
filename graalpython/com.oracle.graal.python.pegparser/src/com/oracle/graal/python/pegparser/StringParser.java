@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,9 +95,8 @@ final class StringParser {
             assert codePoints[s + len] == quote && codePoints[s + len + 1] == quote : "invalid ending triple quote";
         }
         // Avoid invoking escape decoding routines if possible.
-        rawmode = rawmode || indexOf(codePoints, s, s + len, '\\') == -1;
         if (bytesmode) {
-            if (rawmode) {
+            if (rawmode || indexOf(codePoints, s, s + len, '\\') == -1) {
                 byte[] result = new byte[len];
                 // Disallow non-ASCII characters.
                 for (int i = 0; i < len; ++i) {
@@ -239,15 +238,12 @@ final class StringParser {
     }
 
     private static CodePoints decodeUnicodeWithEscapes(AbstractParser parser, CodePoints cp, Token token) {
-        if (!cp.contains('\\')) {
-            return cp;
-        }
         int[] codePoints = cp.getBuffer();
         int start = cp.getOffset();
         int end = start + cp.getLength();
         int backslashIndex = indexOf(codePoints, start, end, '\\');
         if (backslashIndex < 0) {
-            return CodePoints.fromBuffer(codePoints, start, end - start);
+            return cp;
         }
         CodePoints.Builder sb = new Builder(end - start);
         boolean emittedDeprecationWarning = false;

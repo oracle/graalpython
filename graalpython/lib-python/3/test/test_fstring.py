@@ -14,7 +14,6 @@ import re
 import types
 import decimal
 import unittest
-from test.support import impl_detail # GraalPy Change
 import warnings
 from test import support
 from test.support.os_helper import temp_cwd

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NONBYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NON_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.nio.ByteBuffer;
@@ -57,7 +59,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TokenizeModuleBuiltinsClinicProviders.TokenizerIterNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesWithoutFrameNode;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -145,7 +148,19 @@ public final class TokenizeModuleBuiltins extends PythonBuiltins {
                     throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, RETURNED_NONBYTES, "readline()", o);
                 }
 
-                byte[] bytes = ToBytesWithoutFrameNode.executeUncached(o);
+                Object buffer;
+                try {
+                    buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(o);
+                } catch (PException e) {
+                    throw PRaiseNode.raiseUncached(null, TypeError, EXPECTED_BYTESLIKE_GOT_P, o);
+                }
+                PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
+                byte[] bytes;
+                try {
+                    bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                } finally {
+                    bufferLib.release(buffer);
+                }
                 String line = charset.decode(ByteBuffer.wrap(bytes)).toString();
                 return getCodePoints(TruffleString.fromJavaStringUncached(line, TS_ENCODING));
             };

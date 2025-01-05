@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -597,7 +597,7 @@ public abstract class AbstractParser {
         if (cp.getLength() == 2 && cp.get(0) == cp.get(1) && (cp.get(0) == '{' || cp.get(0) == '}')) {
             str = cp.withLength(1);
         } else {
-            str = StringParser.decodeString(this, isRaw || !cp.contains('\\'), cp, token);
+            str = StringParser.decodeString(this, isRaw, cp, token);
         }
         return factory.createConstant(ConstantValue.ofCodePoints(str), constant.getSourceRange());
     }
