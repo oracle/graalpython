@@ -76,8 +76,8 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DelimiterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static TruffleString doIt(CSVDialect self) {
-            return self.delimiter;
+        static Object doIt(CSVDialect self) {
+            return self.delimiterCodePoint == NOT_SET_CODEPOINT ? PNone.NONE : self.delimiter;
         }
     }
 

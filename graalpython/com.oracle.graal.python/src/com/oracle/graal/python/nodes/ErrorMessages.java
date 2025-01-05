@@ -1319,12 +1319,13 @@ public abstract class ErrorMessages {
     public static final TruffleString LINETERMINATOR_MUST_BE_SET = tsLiteral("lineterminator must be set");
     public static final TruffleString BAD_QUOTING_VALUE = tsLiteral("bad \"quoting\" value");
     public static final TruffleString S_EXPECTED_AFTER_S = tsLiteral("'%s' expected after '%s'");
-    public static final TruffleString NEWLINE_IN_UNQOUTED_FIELD = tsLiteral("new-line character seen in unquoted field - do you need to open the file in universal-newline mode?");
+    public static final TruffleString NEWLINE_IN_UNQOUTED_FIELD = tsLiteral("new-line character seen in unquoted field - do you need to open the file with newline=''?");
     public static final TruffleString LARGER_THAN_FIELD_SIZE_LIMIT = tsLiteral("field larger than field limit (%d)");
     public static final TruffleString UNEXPECTED_END_OF_DATA = tsLiteral("unexpected end of data");
     public static final TruffleString WRONG_ITERATOR_RETURN_TYPE = tsLiteral("iterator should return strings, not %.200s (the file should be opened in text mode)");
     public static final TruffleString EXPECTED_ITERABLE_NOT_S = tsLiteral("iterable expected, not %.200s");
     public static final TruffleString EMPTY_FIELD_RECORD_MUST_BE_QUOTED = tsLiteral("single empty field record must be quoted");
+    public static final TruffleString DELIMITER_IS_A_SPACE_AND_SKIPINITIALSPACE_IS_TRUE = tsLiteral("empty field must be quoted if delimiter is a space and skipinitialspace is true");
     public static final TruffleString ESCAPE_WITHOUT_ESCAPECHAR = tsLiteral("need to escape, but no escapechar set");
     public static final TruffleString S_MUST_HAVE_WRITE_METHOD = tsLiteral("%s must have \"write\" method");
 
