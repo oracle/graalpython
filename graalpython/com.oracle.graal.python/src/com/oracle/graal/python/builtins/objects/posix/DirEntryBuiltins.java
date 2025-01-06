@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,7 +81,6 @@ import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -315,7 +314,6 @@ public final class DirEntryBuiltins extends PythonBuiltins {
 
         private final long expectedMode;
         private final int expectedDirEntryType;
-        private StatHelperNode statHelperNode;
 
         protected TestModeNode(long expectedMode, int expectedDirEntryType) {
             this.expectedMode = expectedMode;
@@ -327,8 +325,9 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         @Specialization(guards = "followSymlinks")
         boolean testModeUsingStat(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached StatHelperNode statHelperNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode) {
-            PTuple statResult = getStatHelperNode().execute(frame, self, followSymlinks, true);
+            PTuple statResult = statHelperNode.execute(frame, self, followSymlinks, true);
             if (statResult == null) {
                 // file not found
                 return false;
@@ -341,21 +340,14 @@ public final class DirEntryBuiltins extends PythonBuiltins {
         @Specialization(guards = "!followSymlinks")
         boolean useTypeIfKnown(VirtualFrame frame, PDirEntry self, @SuppressWarnings("unused") boolean followSymlinks,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached StatHelperNode statHelperNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
             int entryType = posixLib.dirEntryGetType(PosixSupport.get(this), self.dirEntryData);
             if (entryType != DT_UNKNOWN.value) {
                 return entryType == expectedDirEntryType;
             }
-            return testModeUsingStat(frame, self, false, inliningTarget, getItemScalarNode);
-        }
-
-        private StatHelperNode getStatHelperNode() {
-            if (statHelperNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                statHelperNode = insert(DirEntryBuiltinsFactory.StatHelperNodeGen.create());
-            }
-            return statHelperNode;
+            return testModeUsingStat(frame, self, false, inliningTarget, statHelperNode, getItemScalarNode);
         }
 
         @NeverDefault
