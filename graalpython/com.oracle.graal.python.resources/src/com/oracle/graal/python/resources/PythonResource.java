@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,17 @@
  */
 package com.oracle.graal.python.resources;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.InternalResource;
@@ -100,20 +106,106 @@ public final class PythonResource implements InternalResource {
     public void unpackFiles(Env env, Path targetDirectory) throws IOException {
         OS os = env.getOS();
         Path osArch = Path.of(os.toString()).resolve(env.getCPUArchitecture().toString());
+        ResourcesFilter filter = new ResourcesFilter();
         if (os.equals(OS.WINDOWS)) {
-            env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("Lib"), BASE_PATH.resolve(LIBPYTHON));
-            env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib-graalpython"), BASE_PATH.resolve(LIBGRAALPY));
-            env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("Include"), BASE_PATH.resolve(INCLUDE));
+            env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("Lib"), BASE_PATH.resolve(LIBPYTHON), filter);
+            env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib-graalpython"), BASE_PATH.resolve(LIBGRAALPY), filter);
+            env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("Include"), BASE_PATH.resolve(INCLUDE), filter);
         } else {
             String pythonMajMin = "python" + PYTHON_MAJOR + "." + PYTHON_MINOR;
-            env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("lib").resolve(pythonMajMin), BASE_PATH.resolve(LIBPYTHON));
-            env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib").resolve("graalpy" + GRAALVM_MAJOR + "." + GRAALVM_MINOR), BASE_PATH.resolve(LIBGRAALPY));
-            env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("include").resolve(pythonMajMin), BASE_PATH.resolve(INCLUDE));
+            env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("lib").resolve(pythonMajMin), BASE_PATH.resolve(LIBPYTHON), filter);
+            env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib").resolve("graalpy" + GRAALVM_MAJOR + "." + GRAALVM_MINOR), BASE_PATH.resolve(LIBGRAALPY),
+                            filter);
+            env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("include").resolve(pythonMajMin), BASE_PATH.resolve(INCLUDE), filter);
         }
         // ni files are in the same place on all platforms
-        env.unpackResourceFiles(BASE_PATH.resolve(NI_FILES), targetDirectory, BASE_PATH);
+        env.unpackResourceFiles(BASE_PATH.resolve(NI_FILES), targetDirectory, BASE_PATH, filter);
         // native files already have the correct structure
-        env.unpackResourceFiles(BASE_PATH.resolve(osArch).resolve(NATIVE_FILES), targetDirectory, BASE_PATH.resolve(osArch));
+        env.unpackResourceFiles(BASE_PATH.resolve(osArch).resolve(NATIVE_FILES), targetDirectory, BASE_PATH.resolve(osArch), filter);
+
+        if (filter.log) {
+            System.out.println("unpacked python resources:");
+            System.out.println("include pattern: '" + filter.include + "'");
+            System.out.println("exclude pattern: '" + filter.exclude + "'");
+            listFiles("included files:", filter.included);
+            listFiles("excluded files:", filter.excluded);
+        }
+    }
+
+    private static void listFiles(String header, List<String> l) {
+        if (!l.isEmpty()) {
+            Collections.sort(l);
+            System.out.println(header);
+            for (String s : l) {
+                System.out.println("\t" + s);
+            }
+        }
+    }
+
+    private static class ResourcesFilter implements Predicate<Path> {
+
+        private final boolean log;
+        private final Pattern includePattern;
+        private final Pattern excludePattern;
+        private final String exclude;
+        private final String include;
+        private final List<String> excluded;
+        private final List<String> included;
+        private static final String INCLUDE_PROP = "org.graalvm.python.resources.include";
+        private static final String EXCLUDE_PROP = "org.graalvm.python.resources.exclude";
+
+        private static final String LOG_PROP = "org.graalvm.python.resources.exclude";
+
+        private ResourcesFilter() {
+            include = getProperty(INCLUDE_PROP);
+            exclude = getProperty(EXCLUDE_PROP);
+            log = Boolean.parseBoolean(getProperty(LOG_PROP));
+            includePattern = include != null ? compile(include, INCLUDE_PROP) : null;
+            excludePattern = exclude != null ? compile(exclude, EXCLUDE_PROP) : null;
+            included = log ? new ArrayList<>() : null;
+            excluded = log ? new ArrayList<>() : null;
+        }
+
+        private static Pattern compile(String re, String property) {
+            try {
+                return Pattern.compile(re);
+            } catch (PatternSyntaxException pse) {
+                throw new IllegalArgumentException("could not compile regex pattern '" + re + "' provided by system property '" + property + "'", pse);
+            }
+        }
+
+        @Override
+        public boolean test(Path path) {
+            String absolutePath = path.toAbsolutePath().toString();
+            if (File.separator.equals("\\")) {
+                absolutePath = absolutePath.replaceAll("\\\\", "/");
+            }
+            if ((includePattern != null && !includePattern.matcher(absolutePath).matches()) ||
+                            (excludePattern != null && excludePattern.matcher(absolutePath).matches())) {
+                if (log) {
+                    excluded.add(absolutePath);
+                }
+                return false;
+            } else {
+                if (log) {
+                    included.add(absolutePath);
+                }
+                return true;
+            }
+        }
+
+        private static String getProperty(String prop) {
+            String s = System.getProperty(prop);
+            if (s != null) {
+                if (s.isEmpty()) {
+                    s = null;
+                } else if (s.startsWith("\"") && s.endsWith("\"")) {
+                    // native-gradle-plugin sends system properties wrapped in "
+                    s = s.substring(1, s.length() - 1);
+                }
+            }
+            return s;
+        }
     }
 
     @Override

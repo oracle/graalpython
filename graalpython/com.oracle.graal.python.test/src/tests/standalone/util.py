@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -55,8 +55,9 @@ GRADLE_VERSION = "8.9"
 VFS_PREFIX = "org.graalvm.python.vfs"
 
 is_maven_plugin_test_enabled = 'ENABLE_MAVEN_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_UNITTESTS'] == "true"
+is_maven_plugin_long_running_test_enabled = 'ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS'] == "true"
 is_gradle_plugin_test_enabled = 'ENABLE_GRADLE_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_PLUGIN_UNITTESTS'] == "true"
-
+is_gradle_plugin_long_running_test_enabled = 'ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS' in os.environ and os.environ['ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS'] == "true"
 
 class TemporaryTestDirectory():
     def __init__(self):
@@ -113,7 +114,8 @@ class StdOutLogger(LoggerBase):
 class BuildToolTestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not is_maven_plugin_test_enabled and not is_gradle_plugin_test_enabled:
+        if (not is_maven_plugin_test_enabled and not is_gradle_plugin_test_enabled
+            and not is_maven_plugin_long_running_test_enabled and not is_gradle_plugin_long_running_test_enabled):
             return
 
         cls.env = os.environ.copy()

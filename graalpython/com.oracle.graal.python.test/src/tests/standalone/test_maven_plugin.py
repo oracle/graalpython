@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,11 @@
 import os
 import shutil
 import sys
-import tempfile
+import textwrap
 import unittest
 
 from tests.standalone import util
-
+from tests.standalone.util import TemporaryTestDirectory, Logger
 
 class MavenPluginTest(util.BuildToolTestBase):
 
@@ -74,6 +74,10 @@ class MavenPluginTest(util.BuildToolTestBase):
         shutil.copytree(os.path.join(mvnw_dir, ".mvn"), os.path.join(target_dir, ".mvn"))
         util.override_maven_properties_file(target_dir)
 
+        meta_inf_native_image_dir = os.path.join(target_dir, "src", "main", "resources", "META-INF", "native-image")
+        os.makedirs(meta_inf_native_image_dir, exist_ok=True)
+        shutil.copy(os.path.join(os.path.dirname(__file__), "native-image.properties"), os.path.join(meta_inf_native_image_dir, "native-image.properties"))
+
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app(self):
         with util.TemporaryTestDirectory() as tmpdir:
@@ -93,9 +97,6 @@ class MavenPluginTest(util.BuildToolTestBase):
             with open(fl_path) as f:
                 lines = f.readlines()
             assert "/" + util.VFS_PREFIX + "/\n" in lines, "unexpected output from " + str(cmd)
-            assert "/" + util.VFS_PREFIX + "/home/\n" in lines, "unexpected output from " + str(cmd)
-            assert "/" + util.VFS_PREFIX + "/home/lib-graalpython/\n" in lines, "unexpected output from " + str(cmd)
-            assert "/" + util.VFS_PREFIX + "/home/lib-python/\n" in lines, "unexpected output from " + str(cmd)
 
             # execute and check native image
             cmd = [os.path.join(target_dir, "target", target_name)]
@@ -240,103 +241,88 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput("Uninstalling ujson", out)
             util.check_ouput("termcolor", out, False)
 
-    def check_tagfile(self, target_dir, expected):
-        with open(os.path.join(target_dir, "target", "classes", util.VFS_PREFIX, "home", "tagfile")) as f:
-            lines = f.readlines()
-        assert lines == expected, "expected tagfile " + str(expected) + ", but got " + str(lines)
-
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
-    def test_check_home(self):
+    def test_check_home_warning(self):
         with util.TemporaryTestDirectory() as tmpdir:
-            target_name = "check_home_test"
+            target_name = "check_home_warning_test"
             target_dir = os.path.join(str(tmpdir), target_name)
             pom_template = os.path.join(os.path.dirname(__file__), "check_home_pom.xml")
             self.generate_app(tmpdir, target_dir, target_name, pom_template)
 
             mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
 
-            # 1. process-resources with no pythonHome config
+            # 1. process-resources with no pythonHome config - no warning printed
             process_resources_cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Copying std lib to ", out)
+            util.check_ouput("the python language home is always available", out, contains=False)
 
-            home_dir = os.path.join(target_dir, "target", "classes", util.VFS_PREFIX, "home")
-            assert os.path.exists(home_dir)
-            assert os.path.exists(os.path.join(home_dir, "lib-graalpython"))
-            assert os.path.isdir(os.path.join(home_dir, "lib-graalpython"))
-            assert os.path.exists(os.path.join(home_dir, "lib-python"))
-            assert os.path.isdir(os.path.join(home_dir, "lib-python"))
-            assert os.path.exists(os.path.join(home_dir, "tagfile"))
-            assert os.path.isfile(os.path.join(home_dir, "tagfile"))
-            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
-
-            # 2. process-resources with empty pythonHome includes and excludes
+            # 2. process-resources with pythonHome - warning printed
             shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
             util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", "<pythonHome></pythonHome></configuration>")
             out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Copying std lib to ", out, False)
-            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
+            util.check_ouput("the python language home is always available", out, contains=True)
 
-            shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
-            util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
-            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", "<pythonHome><includes></includes><excludes></excludes></pythonHome></configuration>")
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+    @unittest.skipUnless(util.is_maven_plugin_long_running_test_enabled, "ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
+    def test_check_home(self):
+        with TemporaryTestDirectory() as tmpdir:
+            target_name = "check_home_test"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            self.generate_app(tmpdir, target_dir, target_name)
+
+            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
+
+            # 1. native image with include all
+            log = Logger()
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "<fallback>false</fallback>",
+                                 textwrap.dedent("""<systemProperties>
+                                    <org.graalvm.python.resources.include>.*</org.graalvm.python.resources.include>                                
+                                    <org.graalvm.python.resources.log>true</org.graalvm.python.resources.log>
+                                 </systemProperties>
+                                 <fallback>false</fallback>"""))
+
+            cmd = mvnw_cmd + ["package", "-Pnative"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Copying std lib to ", out, False)
-            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
 
-            shutil.copyfile(pom_template, os.path.join(target_dir, "pom.xml"))
-            util.patch_pom_repositories(os.path.join(target_dir, "pom.xml"))
-            home_tag = """
-                        <pythonHome>
-                            <includes>
-                                <include></include>
-                                <include> </include>
-                            </includes>
-                            <excludes>
-                                <exclude></exclude>
-                                <exclude> </exclude>
-                            </excludes>
-                        </pythonHome>
-                    """
-            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", home_tag + "</configuration>")
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            cmd = [os.path.join(target_dir, "target", target_name)]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
+            util.check_ouput("hello java", out, logger=log)
+
+            # 2. native image with bogus include -> nothing included, graalpy won't even start
+            log = Logger()
+            bogus_include = "<org.graalvm.python.resources.include>bogus-include</org.graalvm.python.resources.include>"
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"),
+                                 "<org.graalvm.python.resources.include>.*</org.graalvm.python.resources.include>",
+                                 bogus_include)
+
+            cmd = mvnw_cmd + ["package", "-Pnative"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Copying std lib to ", out, False)
-            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*\n'])
 
-            # 3. process-resources with pythonHome includes and excludes
-            home_tag = """
-                <pythonHome>
-                    <includes>
-                        <include>.*__init__\.py</include>
-                    </includes>
-                    <excludes>
-                        <exclude>.*html/__init__\.py</exclude>
-                    </excludes>
-                </pythonHome>
-            """
-            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</configuration>", home_tag + "</configuration>")
-            out, return_code = util.run_cmd(process_resources_cmd, self.env, cwd=target_dir)
+            cmd = [os.path.join(target_dir, "target", target_name)]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
+            util.check_ouput("could not determine Graal.Python's core path", out, logger=log)
+
+            # 3. native image with excluded email package -> graalpy starts but no module named 'email'
+            log = Logger()
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), bogus_include,
+                textwrap.dedent(f"""<org.graalvm.python.resources.include>.*</org.graalvm.python.resources.include>
+                                    <org.graalvm.python.resources.exclude>.*/email/.*</org.graalvm.python.resources.exclude>
+                                    <org.graalvm.python.resources.log>true</org.graalvm.python.resources.log>"""))
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+                "import hello",
+                "import email; import hello")
+
+            cmd = mvnw_cmd + ["package", "-Pnative"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Deleting GraalPy home due to changed includes or excludes", out)
-            util.check_ouput("Copying std lib to ", out)
-            self.check_tagfile(target_dir, [f'{self.graalvmVersion}\n', 'include:.*__init__\\.py\n', 'exclude:.*html/__init__\\.py\n'])
 
-            # 4. check fileslist.txt
-            fl_path = os.path.join(target_dir, "target", "classes", util.VFS_PREFIX, "fileslist.txt")
-            with open(fl_path) as f:
-                for line in f:
-                    line = f.readline()
-                    # string \n
-                    line = line[:len(line)-1]
-                    if not line.startswith("/" + util.VFS_PREFIX + "/home/") or line.endswith("/"):
-                        continue
-                    assert line.endswith("/__init__.py")
-                    assert not line.endswith("html/__init__.py")
+            cmd = [os.path.join(target_dir, "target", target_name)]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
+            util.check_ouput("No module named 'email'", out, logger=log)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_empty_packages(self):

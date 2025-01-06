@@ -61,7 +61,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 
@@ -123,16 +122,13 @@ public class JBangIntegration {
 
         Path vfs = null;
         Path venv;
-        Path home;
         if (resourcesDirectory == null) {
             vfs = temporaryJar.resolve(VFS_ROOT);
             Files.createDirectories(vfs);
             venv = vfs.resolve(VFS_VENV);
-            home = vfs.resolve(VFS_HOME);
         } else {
             log("python resources directory: " + resourcesDirectory);
             venv = resourcesDirectory.resolve(VFS_VENV);
-            home = resourcesDirectory.resolve(VFS_HOME);
         }
 
         if (resourcesDirectory != null || !pkgs.isEmpty()) {
@@ -142,9 +138,8 @@ public class JBangIntegration {
         if (nativeImage) {
             // include python stdlib in image
             try {
-                VFSUtils.copyGraalPyHome(calculateClasspath(dependencies), home, null, null, LOG);
                 VFSUtils.writeNativeImageConfig(temporaryJar.resolve("META-INF"), "org.graalvm.polyglot.jbang");
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
