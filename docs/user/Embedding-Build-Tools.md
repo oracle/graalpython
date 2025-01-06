@@ -11,7 +11,6 @@ The GraalPy **Maven** and **Gradle** plugins provide functionality to manage Pyt
 required for embedding Python code in Java-based applications:
 - *Python application files* provided by the user, for example, Python sources which are part of the project.
 - *Third-party Python packages* installed by the plugin during the build according to the plugin configuration.
-- *The Python standard library*, which is necessary to make Native Image generated executables self-contained.
 
 Apart from physically managing and deploying those files, it is also necessary to make them available in Python at runtime by configuring the **GraalPy Context** in your Java code accordingly. 
 The [GraalPyResources](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/utils/GraalPyResources.java) API provides factory methods to create a Context preconfigured for accessing Python, embedding relevant resources with a **Virtual Filesystem** or from a dedicated **external directory**.
