@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.InternalResource;
@@ -146,19 +147,31 @@ public final class PythonResource implements InternalResource {
         private final boolean log;
         private final Pattern includePattern;
         private final Pattern excludePattern;
-        private final List<String> excluded;
         private final String exclude;
         private final String include;
-        private final ArrayList<String> included;
+        private final List<String> excluded;
+        private final List<String> included;
+        private static final String INCLUDE_PROP = "org.graalvm.python.resources.include";
+        private static final String EXCLUDE_PROP = "org.graalvm.python.resources.exclude";
+
+        private static final String LOG_PROP = "org.graalvm.python.resources.exclude";
 
         private ResourcesFilter() {
-            include = getProperty("org.graalvm.python.resources.include");
-            exclude = getProperty("org.graalvm.python.resources.exclude");
-            log = Boolean.parseBoolean(getProperty("org.graalvm.python.resources.log"));
-            includePattern = include != null ? Pattern.compile(include) : null;
-            excludePattern = exclude != null ? Pattern.compile(exclude) : null;
+            include = getProperty(INCLUDE_PROP);
+            exclude = getProperty(EXCLUDE_PROP);
+            log = Boolean.parseBoolean(getProperty(LOG_PROP));
+            includePattern = include != null ? compile(include, INCLUDE_PROP) : null;
+            excludePattern = exclude != null ? compile(exclude, EXCLUDE_PROP) : null;
             included = log ? new ArrayList<>() : null;
             excluded = log ? new ArrayList<>() : null;
+        }
+
+        private static Pattern compile(String re, String property) {
+            try {
+                return Pattern.compile(re);
+            } catch (PatternSyntaxException pse) {
+                throw new IllegalArgumentException("could not compile regex pattern '" + re + "' provided by system property '" + property + "'", pse);
+            }
         }
 
         @Override
