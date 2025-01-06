@@ -46,19 +46,50 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 
+/**
+ * The GraalPy Virtual Filesystem accesses embedded resource files as standard Java resources and
+ * makes them available to Python code running in GraalPy.
+ *
+ * @see GraalPyResources for more information on Python resources in GraalPy embedding and how to
+ *      use the {@link VirtualFileSystem} together with a GraalPy context.
+ *
+ * @since 24.2.0
+ */
 public final class VirtualFileSystem implements AutoCloseable {
 
     final VirtualFileSystemImpl impl;
     final FileSystem delegatingFileSystem;
 
+    /**
+     * Determines if and how much host IO is allowed outside the {@link VirtualFileSystem}.
+     *
+     * @since 24.2.0
+     */
     public static enum HostIO {
+        /**
+         * No host IO allowed.
+         *
+         * @since 24.2.0
+         */
         NONE,
+        /**
+         * Only read access allowed.
+         *
+         * @since 24.2.0
+         */
         READ,
+        /**
+         * Read and write access is allowed.
+         *
+         * @since 24.2.0
+         */
         READ_WRITE,
     }
 
     /**
      * Builder class to create {@link VirtualFileSystem} instances.
+     *
+     * @since 24.2.0
      */
     public static final class Builder {
         private static final Predicate<Path> DEFAULT_EXTRACT_FILTER = (p) -> {
@@ -81,6 +112,8 @@ public final class VirtualFileSystem implements AutoCloseable {
         /**
          * Sets the file system to be case-insensitive. Defaults to true on Windows and false
          * elsewhere.
+         *
+         * @since 24.2.0
          */
         public Builder caseInsensitive(boolean value) {
             caseInsensitive = value;
@@ -88,7 +121,9 @@ public final class VirtualFileSystem implements AutoCloseable {
         }
 
         /**
-         * Determines if and how much host IO is allowed outside of the virtual filesystem.
+         * Determines if and how much host IO is allowed outside the {@link VirtualFileSystem}.
+         *
+         * @since 24.2.0
          */
         public Builder allowHostIO(HostIO b) {
             allowHostIO = b;
@@ -102,10 +137,14 @@ public final class VirtualFileSystem implements AutoCloseable {
          * "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path with platform-specific
          * separators without any trailing separator. If that file or directory actually exists, it
          * will not be accessible.
+         *
+         * @throws IllegalArgumentException if the provided mount point isn't absolute or ends with
+         *             a trailing separator
+         * @since 24.2.0
          */
-        public Builder windowsMountPoint(String s) {
+        public Builder windowsMountPoint(String windowsMountPoint) {
             if (VirtualFileSystemImpl.isWindows()) {
-                mountPoint = getMountPointAsPath(s);
+                this.mountPoint = getMountPointAsPath(windowsMountPoint);
             }
             return this;
         }
@@ -117,10 +156,14 @@ public final class VirtualFileSystem implements AutoCloseable {
          * "/graalpy_vfs/xyz/abc". This needs to be an absolute path with platform-specific
          * separators without any trailing separator. If that file or directory actually exists, it
          * will not be accessible.
+         *
+         * @throws IllegalArgumentException if the provided mount point isn't absolute or ends with
+         *             a trailing separator
+         * @since 24.2.0
          */
-        public Builder unixMountPoint(String s) {
+        public Builder unixMountPoint(String unixMountPoint) {
             if (!VirtualFileSystemImpl.isWindows()) {
-                mountPoint = getMountPointAsPath(s);
+                this.mountPoint = getMountPointAsPath(unixMountPoint);
             }
             return this;
         }
@@ -131,6 +174,8 @@ public final class VirtualFileSystem implements AutoCloseable {
          * <code>resourceLoadingClass</code> to determine where to locate resources in cases when
          * for example <code>VirtualFileSystem</code> is on module path and the jar containing the
          * resources is on class path.
+         *
+         * @since 24.2.0
          */
         public Builder resourceLoadingClass(Class<?> c) {
             resourceLoadingClass = c;
@@ -148,6 +193,7 @@ public final class VirtualFileSystem implements AutoCloseable {
          *
          * @param filter the extraction filter, where the provided path is an absolute path from the
          *            VirtualFileSystem.
+         * @since 24.2.0
          */
         public Builder extractFilter(Predicate<Path> filter) {
             if (filter == null) {
@@ -158,6 +204,12 @@ public final class VirtualFileSystem implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Build a new {@link VirtualFileSystem} instance from the configuration provided in the
+         * builder.
+         *
+         * @since 24.2.0
+         */
         public VirtualFileSystem build() {
             if (mountPoint == null) {
                 mountPoint = VirtualFileSystemImpl.isWindows() ? Path.of(DEFAULT_WINDOWS_MOUNT_POINT) : Path.of(DEFAULT_UNIX_MOUNT_POINT);
@@ -184,19 +236,31 @@ public final class VirtualFileSystem implements AutoCloseable {
         this.delegatingFileSystem = VirtualFileSystemImpl.createDelegatingFileSystem(impl);
     }
 
+    /**
+     * Creates a builder for constructing a {@link VirtualFileSystem} with a custom configuration.
+     *
+     * @since 24.2.0
+     */
     public static Builder newBuilder() {
         return new Builder();
     }
 
+    /**
+     * Creates a {@link VirtualFileSystem}.
+     *
+     * @since 24.2.0
+     */
     public static VirtualFileSystem create() {
         return newBuilder().build();
     }
 
     /**
-     * The mount point for the virtual filesystem.
+     * Returns the mount point for this {@link VirtualFileSystem}.
      *
      * @see VirtualFileSystem.Builder#windowsMountPoint(String)
      * @see VirtualFileSystem.Builder#unixMountPoint(String)
+     *
+     * @since 24.2.0
      */
     public String getMountPoint() {
         return this.impl.mountPoint.toString();

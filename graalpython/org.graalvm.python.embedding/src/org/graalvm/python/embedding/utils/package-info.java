@@ -40,11 +40,13 @@
  */
 
 /**
- * Utilities for GraalPy embedding scenarios.
- *
- * @see org.graalvm.python.embedding.utils.GraalPyResources for an overview on how to create and
- *      configure a GraalPy context to get access to Python related resources in GraalPy embedding
- *      scenarios.
+ * Utilities for resources management in GraalPy embedding scenarios.
+ * <p>
+ * For an overview on how to create and configure a GraalPy context to get access to Python related
+ * resources in GraalPy embedding scenarios see
+ * {@link org.graalvm.python.embedding.utils.GraalPyResources}.
+ * </p>
+ * 
  *
  * @since 24.2.0
  */
