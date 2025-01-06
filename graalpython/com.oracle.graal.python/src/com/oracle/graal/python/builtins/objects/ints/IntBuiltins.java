@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,10 @@
 package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
@@ -57,34 +55,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RLSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RRSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BIG;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
@@ -184,23 +166,21 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class IntBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = IntBuiltinsSlotsGen.SLOTS;
 
+    private static void raiseDivisionByZero(Node inliningTarget, boolean cond, InlinedBranchProfile divisionByZeroProfile, PRaiseNode.Lazy raiseNode) {
+        if (cond) {
+            raiseDivisionByZero(inliningTarget, divisionByZeroProfile, raiseNode.get(inliningTarget));
+        }
+    }
+
+    @InliningCutoff
+    private static void raiseDivisionByZero(Node inliningTarget, InlinedBranchProfile divisionByZeroProfile, PRaiseNode raiseNode) {
+        divisionByZeroProfile.enter(inliningTarget);
+        throw raiseNode.raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
+    }
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IntBuiltinsFactory.getFactories();
-    }
-
-    private abstract static class IntBinaryBuiltinNode extends PythonBinaryBuiltinNode {
-        protected static void raiseDivisionByZero(Node inliningTarget, boolean cond, InlinedBranchProfile divisionByZeroProfile, PRaiseNode.Lazy raiseNode) {
-            if (cond) {
-                raiseDivByZero(inliningTarget, divisionByZeroProfile, raiseNode.get(inliningTarget));
-            }
-        }
-
-        @InliningCutoff
-        private static void raiseDivByZero(Node inliningTarget, InlinedBranchProfile divisionByZeroProfile, PRaiseNode raiseNode) {
-            divisionByZeroProfile.enter(inliningTarget);
-            throw raiseNode.raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
-        }
     }
 
     @Builtin(name = J___ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
@@ -470,11 +450,10 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_subtract, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class SubNode extends PythonBinaryBuiltinNode {
+    public abstract static class SubNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
         @Specialization(rewriteOn = ArithmeticException.class)
@@ -555,11 +534,10 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = J___TRUEDIV__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_true_divide, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class TrueDivNode extends PythonBinaryBuiltinNode {
+    public abstract static class TrueDivNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
         @Specialization
@@ -667,11 +645,10 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RFLOORDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = J___FLOORDIV__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_floor_divide, isComplex = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class FloorDivNode extends IntBinaryBuiltinNode {
+    public abstract static class FloorDivNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
         @Specialization
@@ -832,7 +809,7 @@ public final class IntBuiltins extends PythonBuiltins {
     @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class DivModNode extends IntBinaryBuiltinNode {
+    abstract static class DivModNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PTuple doLL(int left, int right,
                         @Bind("this") Node inliningTarget,
@@ -872,11 +849,10 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___RMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Slot(value = SlotKind.nb_remainder, isComplex = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class ModNode extends IntBinaryBuiltinNode {
+    public abstract static class ModNode extends BinaryOpBuiltinNode {
         public abstract int executeInt(int left, int right) throws UnexpectedResultException;
 
         public abstract Object execute(int left, int right);
@@ -1629,11 +1605,10 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___LSHIFT__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___RLSHIFT__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Slot(value = SlotKind.nb_lshift, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class LShiftNode extends PythonBinaryBuiltinNode {
+    public abstract static class LShiftNode extends BinaryOpBuiltinNode {
         public abstract int executeInt(int left, int right) throws UnexpectedResultException;
 
         public abstract Object execute(int left, int right);
@@ -1864,11 +1839,10 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RSHIFT__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___RRSHIFT__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Slot(value = SlotKind.nb_rshift, isComplex = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class RShiftNode extends PythonBinaryBuiltinNode {
+    public abstract static class RShiftNode extends BinaryOpBuiltinNode {
         public abstract int executeInt(int left, int right) throws UnexpectedResultException;
 
         public abstract Object execute(int left, int right);
@@ -1990,7 +1964,8 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class BinaryBitwiseNode extends PythonBinaryBuiltinNode {
+    @GenerateCached(false)
+    abstract static class BinaryBitwiseNode extends BinaryOpBuiltinNode {
 
         @SuppressWarnings("unused")
         protected int op(int left, int right) {
@@ -2089,8 +2064,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_and, isComplex = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class AndNode extends BinaryBitwiseNode {
@@ -2117,8 +2091,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_or, isComplex = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class OrNode extends BinaryBitwiseNode {
@@ -2145,8 +2118,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_xor, isComplex = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class XorNode extends BinaryBitwiseNode {

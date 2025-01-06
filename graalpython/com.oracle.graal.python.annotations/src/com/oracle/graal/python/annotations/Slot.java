@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,7 +97,28 @@ public @interface Slot {
         nb_bool("__bool__"),
         /** foo + bar */
         nb_add("__add__, __radd__"),
+        /** foo - bar */
+        nb_subtract("__sub__, __rsub__"),
+        /** foo * bar */
         nb_multiply("__mul__, __rmul__"),
+        /** foo % bar */
+        nb_remainder("__mod__, __rmod__"),
+        /** foo << bar */
+        nb_lshift("__lshift__, __rlshift__"),
+        /** foo >> bar */
+        nb_rshift("__rshift__, __rrshift__"),
+        /** foo & bar */
+        nb_and("__and__, __rand__"),
+        /** foo ^ bar */
+        nb_xor("__xor__, __rxor__"),
+        /** foo | bar */
+        nb_or("__or__, __ror__"),
+        /** foo // bar */
+        nb_floor_divide("__floordiv__, __rfloordiv__"),
+        /** foo / bar */
+        nb_true_divide("__truediv__, __rtruediv__"),
+        /** foo @ bar */
+        nb_matrix_multiply("__matmul__, __rmatmul__"),
         /** sequence length/size */
         sq_length("__len__"),
         /** sequence item: read element at index */

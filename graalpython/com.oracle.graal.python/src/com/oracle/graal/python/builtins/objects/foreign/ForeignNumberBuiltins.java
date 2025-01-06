@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,12 +28,10 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -41,32 +39,16 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RLSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RRSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
@@ -89,7 +71,16 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
+import com.oracle.graal.python.lib.PyNumberAndNode;
+import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberOrNode;
+import com.oracle.graal.python.lib.PyNumberRemainderNode;
+import com.oracle.graal.python.lib.PyNumberRshiftNode;
+import com.oracle.graal.python.lib.PyNumberSubtractNode;
+import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -446,8 +437,20 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberAddNode addNode) {
-            return binarySlotNode.execute(frame, inliningTarget, left, right, addNode);
+                        @Cached(inline = false) PyNumberAddNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_subtract, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class SubNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberSubtractNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
 
@@ -458,8 +461,104 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached ForeignBinarySlotNode binarySlotNode,
-                        @Cached(inline = false) PyNumberMultiplyNode mulNode) {
-            return binarySlotNode.execute(frame, inliningTarget, left, right, mulNode);
+                        @Cached(inline = false) PyNumberMultiplyNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_remainder, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class ModNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberRemainderNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_lshift, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class LShiftNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberLshiftNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_rshift, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class RShiftNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberRshiftNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_and, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class AndNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberAndNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_xor, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class XorNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberXorNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_or, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class OrNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberOrNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_floor_divide, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class FloorDivNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberFloorDivideNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
+    @Slot(value = SlotKind.nb_true_divide, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class TrueDivNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberTrueDivideNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
         }
     }
 
@@ -479,54 +578,6 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class SubNode extends ForeignBinaryNode {
-        SubNode() {
-            super(BinaryArithmetic.Sub.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RSubNode extends ForeignBinaryNode {
-        RSubNode() {
-            super(BinaryArithmetic.Sub.create(), true);
-        }
-    }
-
-    @Builtin(name = J___TRUEDIV__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class TrueDivNode extends ForeignBinaryNode {
-        TrueDivNode() {
-            super(BinaryArithmetic.TrueDiv.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RTRUEDIV__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RTrueDivNode extends ForeignBinaryNode {
-        RTrueDivNode() {
-            super(BinaryArithmetic.TrueDiv.create(), true);
-        }
-    }
-
-    @Builtin(name = J___FLOORDIV__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class FloorDivNode extends ForeignBinaryNode {
-        FloorDivNode() {
-            super(BinaryArithmetic.FloorDiv.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RFLOORDIV__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RFloorDivNode extends ForeignBinaryNode {
-        RFloorDivNode() {
-            super(BinaryArithmetic.FloorDiv.create(), true);
-        }
-    }
-
     @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DivModNode extends ForeignBinaryNode {
@@ -540,102 +591,6 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     abstract static class RDivModNode extends ForeignBinaryNode {
         RDivModNode() {
             super(BinaryArithmetic.DivMod.create(), true);
-        }
-    }
-
-    @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class ModNode extends ForeignBinaryNode {
-        ModNode() {
-            super(BinaryArithmetic.Mod.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RMOD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RModNode extends ForeignBinaryNode {
-        RModNode() {
-            super(BinaryArithmetic.Mod.create(), true);
-        }
-    }
-
-    @Builtin(name = J___LSHIFT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LShiftNode extends ForeignBinaryNode {
-        LShiftNode() {
-            super(BinaryArithmetic.LShift.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RLSHIFT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RLShiftNode extends ForeignBinaryNode {
-        RLShiftNode() {
-            super(BinaryArithmetic.LShift.create(), true);
-        }
-    }
-
-    @Builtin(name = J___RSHIFT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RShiftNode extends ForeignBinaryNode {
-        RShiftNode() {
-            super(BinaryArithmetic.RShift.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RRSHIFT__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RRShiftNode extends ForeignBinaryNode {
-        RRShiftNode() {
-            super(BinaryArithmetic.RShift.create(), true);
-        }
-    }
-
-    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class AndNode extends ForeignBinaryNode {
-        AndNode() {
-            super(BinaryArithmetic.And.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RAndNode extends ForeignBinaryNode {
-        RAndNode() {
-            super(BinaryArithmetic.And.create(), true);
-        }
-    }
-
-    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class OrNode extends ForeignBinaryNode {
-        OrNode() {
-            super(BinaryArithmetic.Or.create(), false);
-        }
-    }
-
-    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class ROrNode extends ForeignBinaryNode {
-        ROrNode() {
-            super(BinaryArithmetic.Or.create(), true);
-        }
-    }
-
-    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class XorNode extends ForeignBinaryNode {
-        XorNode() {
-            super(BinaryArithmetic.Xor.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RXorNode extends ForeignBinaryNode {
-        RXorNode() {
-            super(BinaryArithmetic.Xor.create(), true);
         }
     }
 

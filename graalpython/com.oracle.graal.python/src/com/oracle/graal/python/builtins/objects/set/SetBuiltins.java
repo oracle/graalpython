@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,22 +26,18 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -65,6 +61,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -103,6 +101,8 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
 public final class SetBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = SetBuiltinsSlotsGen.SLOTS;
 
     @Override
     public void initialize(Python3Core core) {
@@ -184,11 +184,10 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_or, isComplex = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
-    public abstract static class OrNode extends PythonBinaryBuiltinNode {
+    public abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization(guards = "canDoSetBinOp(other)")
         static Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Bind("this") Node inliningTarget,
@@ -401,11 +400,10 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_and, isComplex = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
-    public abstract static class AndNode extends PythonBinaryBuiltinNode {
+    public abstract static class AndNode extends BinaryOpBuiltinNode {
 
         @Specialization(guards = "canDoSetBinOp(right)")
         static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
@@ -522,11 +520,10 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_xor, isComplex = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
-    public abstract static class XorNode extends PythonBinaryBuiltinNode {
+    public abstract static class XorNode extends BinaryOpBuiltinNode {
 
         @Specialization(guards = "canDoSetBinOp(other)")
         static Object doSet(VirtualFrame frame, PSet self, Object other,
