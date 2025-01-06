@@ -162,8 +162,8 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
             if(userPythonHome()) {
                 t.getLogger().warn("The GraalPy plugin pythonHome configuration setting was deprecated and has no effect anymore.\n" +
                         "For execution in jvm mode, the python language home is always available.\n" +
-                        "When building a native executable using GraalVM, then the full python language home is by default embedded into the native executable.\n" +
-                        "For more details, please refer to native image options IncludeLanguageResources and CopyLanguageResources documentation.");
+                        "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
+                        "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources documentation.");
             }
             t.getPackages().set(extension.getPackages());
 
