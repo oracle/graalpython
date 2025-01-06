@@ -20,6 +20,11 @@ patch = 'blosc2.patch'
 license = 'Apache-2.0'
 
 [[catboost.rules]]
+version = '== 1.2.3'
+patch = 'catboost-1.2.3.patch'
+license = 'Apache-2.0'
+
+[[catboost.rules]]
 version = '== 1.2.2'
 patch = 'catboost-1.2.2.patch'
 license = 'Apache-2.0'
