@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
+import com.oracle.graal.python.builtins.objects.itertools.PBatched;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
@@ -1111,6 +1112,52 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             PPairwise self = factory.createPairwise(cls);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             return self;
+        }
+    }
+
+    @Builtin(name = "batched", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "n"}, constructsClass = PythonBuiltinClassType.PBatched, doc = "batched(iterable, n)\n" + //
+                    "--\n" + //
+                    "\n" + //
+                    "Batch data into tuples of length n. The last batch may be shorter than n.\n" + //
+                    "\n" + //
+                    "Loops over the input iterable and accumulates data into tuples\n" + //
+                    "up to size n.  The input is consumed lazily, just enough to\n" + //
+                    "fill a batch.  The result is yielded as soon as a batch is full\n" + //
+                    "or when the input iterable is exhausted.\n" + //
+                    "\n" + //
+                    "    >>> for batch in batched('ABCDEFG', 3):\n" + //
+                    "    ...     print(batch)\n" + //
+                    "    ...\n" + //
+                    "    ('A', 'B', 'C')\n" + //
+                    "    ('D', 'E', 'F')\n" + //
+                    "    ('G',)")
+    @ArgumentClinic(name = "n", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class BatchedNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ItertoolsModuleBuiltinsClinicProviders.BatchedNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PBatched batched(VirtualFrame frame, Object cls, Object iterable, int n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (n < 1) {
+                /*
+                 * We could define the n==0 case to return an empty iterator but that is at odds
+                 * with the idea that batching should never throw-away input data.
+                 */
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.N_MUST_BE_AT_LEAST_ONE);
+            }
+            Object it = getIter.execute(frame, inliningTarget, iterable);
+            /* create batchedobject structure */
+            PBatched bo = factory.createBatched(cls);
+            bo.setBatchSize(n);
+            bo.setIter(it);
+            return bo;
         }
     }
 

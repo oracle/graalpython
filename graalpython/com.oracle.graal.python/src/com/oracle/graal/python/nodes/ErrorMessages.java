@@ -441,6 +441,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_VALUE_NAN = tsLiteral("Invalid value NaN (not a number)");
     public static final TruffleString IS_NOT_SUBTYPE_OF = tsLiteral("%s.__new__(%N): %N is not a subtype of %s");
     public static final TruffleString IS_NOT_TYPE_OBJ = tsLiteral("%s is not a type object (%p)");
+    public static final TruffleString N_MUST_BE_AT_LEAST_ONE = tsLiteral("n must be at least one");
     public static final TruffleString ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE = tsLiteral("isinstance() arg 2 must be a type or tuple of types (was: %s)");
     public static final TruffleString ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = tsLiteral("issubclass() arg 2 must be a class or tuple of classes");
     public static final TruffleString ITER_V_MUST_BE_CALLABLE = tsLiteral("iter(v, w): v must be callable");

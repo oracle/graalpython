@@ -146,6 +146,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
+import com.oracle.graal.python.builtins.objects.itertools.PBatched;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
@@ -1433,6 +1434,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PZipLongest createZipLongest(Object cls) {
         return trace(new PZipLongest(cls, getShape(cls)));
+    }
+
+    public final PBatched createBatched(Object cls) {
+        return trace(new PBatched(cls, getShape(cls)));
     }
 
     public final PTextIO createTextIO(Object clazz) {
