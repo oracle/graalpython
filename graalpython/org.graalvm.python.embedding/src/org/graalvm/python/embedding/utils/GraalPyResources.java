@@ -101,9 +101,6 @@ import java.nio.file.Paths;
  * <p>
  * <b>GraalPy context</b> instances created by factory methods in this class are preconfigured with
  * some particular resource paths:
- * <li><code>${resources_root_directory}/home</code> - is reserved for the GraalPy Standard Library.
- * GraalPy context will be configured to use this standard library as if set in PYTHONHOME
- * environment variable.</li>
  * <li><code>${resources_root_directory}/venv</code> - is reserved for a python virtual environment
  * holding third-party packages. The context will be configured as if it were executed from this
  * virtual environment. Notably packages installed in this virtual environment will be automatically
@@ -160,8 +157,6 @@ public final class GraalPyResources {
      * <p>
      * Following resource paths are preconfigured:
      * <ul>
-     * <li><code>/org.graalvm.python.vfs/home</code> - is set as the GraalPy Standard Library
-     * location</li>
      * <li><code>/org.graalvm.python.vfs/venv</code> - is set as the python virtual environment
      * location</li>
      * <li><code>/org.graalvm.python.vfs/src</code> - is set as the python sources location</li>
@@ -179,8 +174,6 @@ public final class GraalPyResources {
      * <p>
      * Following resource paths are preconfigured:
      * <ul>
-     * <li><code>/org.graalvm.python.vfs/home</code> - is set as the GraalPy Standard Library
-     * location</li>
      * <li><code>/org.graalvm.python.vfs/venv</code> - is set as the python virtual environment
      * location</li>
      * <li><code>/org.graalvm.python.vfs/src</code> - is set as the python sources location</li>
@@ -216,8 +209,6 @@ public final class GraalPyResources {
      * <p>
      * Following resource paths are preconfigured:
      * <ul>
-     * <li><code>/org.graalvm.python.vfs/home</code> - is set as the GraalPy Standard Library
-     * location</li>
      * <li><code>/org.graalvm.python.vfs/venv</code> - is set as the python virtual environment
      * location</li>
      * <li><code>/org.graalvm.python.vfs/src</code> - is set as the python sources location</li>
@@ -276,8 +267,6 @@ public final class GraalPyResources {
      * <p>
      * Following resource paths are preconfigured:
      * <ul>
-     * <li><code>${resourcesDirectory}/home</code> - is set as the GraalPy Standard Library
-     * location</li>
      * <li><code>${resourcesDirectory}/venv</code> - is set as the python virtual environment
      * location</li>
      * <li><code>${resourcesDirectory}/src</code> - is set as the python sources location</li>
@@ -399,7 +388,6 @@ public final class GraalPyResources {
      * The structure of the created resource directory will stay the same like the embedded Python
      * resources structure:
      * <ul>
-     * <li><code>${resourcesDirectory}/home</code> - the GraalPy Standard Library location</li>
      * <li><code>${resourcesDirectory}/venv</code> - the python virtual environment location</li>
      * <li><code>${resourcesDirectory}/src</code> - the python sources location</li>
      * </ul>
