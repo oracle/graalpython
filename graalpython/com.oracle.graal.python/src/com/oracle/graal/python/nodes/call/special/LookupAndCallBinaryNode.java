@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -114,11 +114,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     @NeverDefault
-    public static LookupAndCallBinaryNode createBinaryOp(SpecialMethodSlot slot, SpecialMethodSlot rslot, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallNbNumbersBinaryNodeFactory.BinaryOpNodeGen.create(slot, rslot, handlerFactory);
-    }
-
-    @NeverDefault
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, SpecialMethodSlot rslot, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
         return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, null, alwaysCheckReverse, ignoreDescriptorException);
     }
@@ -198,8 +193,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     public abstract TruffleString getName();
-
-    public abstract TruffleString getRname();
 
     protected final CallBinaryMethodNode ensureDispatch() {
         // this also serves as a branch profile

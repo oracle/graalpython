@@ -800,7 +800,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SpecialMethodSlot[] repr = new SpecialMethodSlot[]{SpecialMethodSlot.Repr};
         SpecialMethodSlot[] reprAndNew = new SpecialMethodSlot[]{SpecialMethodSlot.Repr, SpecialMethodSlot.New};
 
-        Boolean.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.And};
         PythonModule.redefinedSlots = Super.redefinedSlots = repr;
         SyntaxError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
         UnicodeEncodeError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
