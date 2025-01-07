@@ -82,8 +82,19 @@ public abstract class PyNumberFloorDivideNode extends BinaryOpNode {
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
      * in IntBuiltins, FloatBuiltins, ...
      */
-    @Specialization(rewriteOn = ArithmeticException.class)
-    static int doII(int left, int right) {
+    @Specialization(rewriteOn = OverflowException.class)
+    static int doII(int left, int right) throws OverflowException {
+        if (right == 0 || (left == Integer.MIN_VALUE && right == -1)) {
+            throw OverflowException.INSTANCE;
+        }
+        return Math.floorDiv(left, right);
+    }
+
+    @Specialization(rewriteOn = OverflowException.class)
+    static long doLL(long left, long right) throws OverflowException {
+        if (right == 0 || (left == Long.MIN_VALUE && right == -1)) {
+            throw OverflowException.INSTANCE;
+        }
         return Math.floorDiv(left, right);
     }
 

@@ -157,6 +157,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
@@ -651,75 +652,72 @@ public final class IntBuiltins extends PythonBuiltins {
     public abstract static class FloorDivNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
+        private static final long INT_OVERFLOW_VALUE = (long) Integer.MAX_VALUE + 1;
+        private static final BigInteger LONG_OVERFLOW_VALUE = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
+
         @Specialization
-        static int doII(int left, int right,
+        static Object doII(int left, int right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached BranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
-            return Math.floorDiv(left, right);
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static long doLL(long left, long right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
-            if (left == Long.MIN_VALUE && right == -1) {
-                throw OverflowException.INSTANCE;
+            if (left == Integer.MIN_VALUE && right == -1) {
+                overflowValueProfile.enter();
+                return INT_OVERFLOW_VALUE;
             }
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
             return Math.floorDiv(left, right);
         }
 
-        @Specialization(replaces = "doLL")
-        static PInt doLLOverflow(long left, long right,
+        @Specialization
+        static Object doLL(long left, long right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached BranchProfile overflowValueProfile,
                         @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return doPiPi(factory.createInt(left), factory.createInt(right), inliningTarget, divisionByZeroProfile, factory, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            if (left == Long.MIN_VALUE && right == -1) {
+                overflowValueProfile.enter();
+                return factory.createInt(LONG_OVERFLOW_VALUE);
+            }
+            return Math.floorDiv(left, right);
         }
 
-        @Specialization(rewriteOn = OverflowException.class)
-        static int doIPi(int left, PInt right,
+        @Specialization
+        static Object doIPi(int left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
-            return Math.floorDiv(left, right.intValueExact());
-        }
-
-        @Specialization(replaces = "doIPi")
-        static int doIPiOvf(int left, PInt right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached BranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             try {
-                return Math.floorDiv(left, right.intValueExact());
+                int rightValue = right.intValueExact();
+                raiseDivisionByZero(inliningTarget, rightValue == 0, divisionByZeroProfile, raiseNode);
+                if (left == Integer.MIN_VALUE && rightValue == -1) {
+                    overflowValueProfile.enter();
+                    return INT_OVERFLOW_VALUE;
+                }
+                return Math.floorDiv(left, rightValue);
             } catch (OverflowException e) {
                 return left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
-        @Specialization(rewriteOn = OverflowException.class)
-        static long doLPi(long left, PInt right,
+        @Specialization
+        static Object doLPi(long left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
-            return Math.floorDiv(left, right.longValueExact());
-        }
-
-        @Specialization(replaces = "doLPi")
-        static long doLPiOvf(long left, PInt right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
+                        @Shared @Cached BranchProfile overflowValueProfile,
+                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
             try {
-                return Math.floorDiv(left, right.longValueExact());
+                long rightValue = right.longValueExact();
+                raiseDivisionByZero(inliningTarget, rightValue == 0, divisionByZeroProfile, raiseNode);
+                if (left == Long.MIN_VALUE && rightValue == -1) {
+                    overflowValueProfile.enter();
+                    return factory.createInt(LONG_OVERFLOW_VALUE);
+                }
+                return Math.floorDiv(left, rightValue);
             } catch (OverflowException e) {
                 return left < 0 == right.isNegative() ? 0 : -1;
             }
