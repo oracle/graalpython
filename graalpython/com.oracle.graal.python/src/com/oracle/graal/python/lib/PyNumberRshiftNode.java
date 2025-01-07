@@ -40,16 +40,22 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_PRINT;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -108,7 +114,17 @@ public abstract class PyNumberRshiftNode extends BinaryOpNode {
 
     @InliningCutoff
     private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Lazy raiseNode) {
+        if (v instanceof PBuiltinMethod) {
+            handlePossiblePrint(inliningTarget, v, w);
+        }
         return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, ">>", v, w);
+    }
+
+    @TruffleBoundary
+    private static void handlePossiblePrint(Node inliningTarget, Object v, Object w) {
+        if (v instanceof PBuiltinMethod method && method.getBuiltinFunction().getName().equalsUncached(T_PRINT, TS_ENCODING)) {
+            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT, ">>", v, w);
+        }
     }
 
     @NeverDefault
