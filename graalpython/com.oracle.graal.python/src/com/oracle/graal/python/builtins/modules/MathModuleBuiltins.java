@@ -50,11 +50,18 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyBoolCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyFloatCheckExactNode;
+import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
+import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -72,6 +79,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -1189,13 +1197,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "nextafter", minNumOfPositionalArgs = 2, parameterNames = {"start", "direction"})
+    @Builtin(name = "nextafter", minNumOfPositionalArgs = 3, parameterNames = {"start", "direction", "step"})
     @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.Double)
     @ArgumentClinic(name = "direction", conversion = ArgumentClinic.ClinicConversion.Double)
+    @ArgumentClinic(name = "step", defaultValue = "PNone.NONE", useDefaultForNone = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
-    public abstract static class NextAfterNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class NextAfterNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1203,8 +1212,87 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static double nextAfter(double start, double direction) {
+        static double fastpath(double start, double direction, PNone steps) {
             return Math.nextAfter(start, direction);
+        }
+
+        @Specialization(guards = "!isNone(stepsArg)")
+        double nextAfter(VirtualFrame frame, double x, double y, Object stepsArg,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberIndexNode pyNumberIndexNode,
+                        @Cached PyLongAsLongAndOverflowNode asLongAndOverflowNode,
+                        @Cached PRaiseNode raiseNode) {
+            Object steps = pyNumberIndexNode.execute(frame, inliningTarget, stepsArg);
+
+            // Conveniently, uint64_t and double have the same number of bits
+            // on all the platforms we care about.
+            // So if an overflow occurs, we can just use UINT64_MAX.
+            long usteps;
+            try {
+                usteps = asLongAndOverflowNode.execute(frame, inliningTarget, steps);
+            } catch (OverflowException e) {
+                // This branch includes the case where an error occurred, since
+                // (unsigned long long)(-1) = ULLONG_MAX >= UINT64_MAX. Note that
+                // usteps can be strictly larger than UINT64_MAX on a machine
+                // where unsigned long long has width > 64 bits.
+                usteps = Long.MAX_VALUE;
+            }
+            if (usteps < 0) {
+                throw raiseNode.raise(TypeError, ErrorMessages.STEPS_MUST_BE_A_NON_NEGATIVE_INTEGER);
+            }
+
+            if (usteps == 0) {
+                return x;
+            }
+            if (Double.isNaN(x)) {
+                return x;
+            }
+            if (Double.isNaN(y)) {
+                return y;
+            }
+
+            long uxi = Double.doubleToRawLongBits(x);
+            long uyi = Double.doubleToRawLongBits(y);
+            if (uxi == uyi) {
+                return x;
+            }
+
+            long sign_bit = 1L << 63;
+
+            long ax = uxi & ~sign_bit;
+            long ay = uyi & ~sign_bit;
+
+            // opposite signs
+            if (((uxi ^ uyi) & sign_bit) != 0) {
+                // NOTE: ax + ay can never overflow, because their most significant bit
+                // ain't set.
+                if (ax + ay <= usteps) {
+                    return y;
+                    // This comparison has to use <, because <= would get +0.0 vs -0.0
+                    // wrong.
+                } else if (ax < usteps) {
+                    long result = (uyi & sign_bit) | (usteps - ax);
+                    return Double.longBitsToDouble(result);
+                } else {
+                    uxi -= usteps;
+                    return Double.longBitsToDouble(uxi);
+                }
+                // same sign
+            } else if (ax > ay) {
+                if (ax - ay >= usteps) {
+                    uxi -= usteps;
+                    return Double.longBitsToDouble(uxi);
+                } else {
+                    return Double.longBitsToDouble(uyi);
+                }
+            } else {
+                if (ay - ax >= usteps) {
+                    uxi += usteps;
+                    return Double.longBitsToDouble(uxi);
+                } else {
+                    return Double.longBitsToDouble(uyi);
+                }
+            }
         }
     }
 
@@ -1850,6 +1938,217 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return MathModuleBuiltinsClinicProviders.FabsNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "sumprod", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"p", "q"}, doc = "sumprod($module, p, q, /)\n" + //
+                    "--\n" + //
+                    "\n" + //
+                    "Return the sum of products of values from two iterables p and q.\n" + //
+                    "\n" + //
+                    "Roughly equivalent to:\n" + //
+                    "\n" + //
+                    "    sum(itertools.starmap(operator.mul, zip(p, q, strict=True)))\n" + //
+                    "\n" + //
+                    "For float and mixed int/float inputs, the intermediate products\n" + //
+                    "and sums are computed with extended precision.")
+    @GenerateNodeFactory
+    public abstract static class SumprodNode extends PythonBinaryBuiltinNode {
+
+        static boolean int_path(VirtualFrame frame, Node inliningTarget, Object p_i, Object q_i, long[] int_total,
+                        PyLongCheckExactNode pyLongCheckExactNode,
+                        PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode) {
+            if (pyLongCheckExactNode.execute(inliningTarget, p_i) & pyLongCheckExactNode.execute(inliningTarget, q_i)) {
+                try {
+                    long int_p = pyLongAsLongAndOverflowNode.execute(frame, inliningTarget, p_i);
+                    long int_q = pyLongAsLongAndOverflowNode.execute(frame, inliningTarget, q_i);
+                    long int_prod = Math.multiplyExact(int_p, int_q);
+                    int_total[0] = Math.addExact(int_total[0], int_prod);
+                } catch (OverflowException | ArithmeticException e) {
+                    return false; // goto finalize_int_path
+                }
+                return true; // continue
+            }
+            return false; // goto finalize_int_path
+        }
+
+        static boolean flt_path(VirtualFrame frame, Node inliningTarget, Object p_i, Object q_i, TripleLength[] flt_total,
+                        IsBuiltinObjectProfile errorProfile,
+                        PyFloatCheckExactNode pyFloatCheckExactNode,
+                        PyLongCheckExactNode pyLongCheckExactNode,
+                        PyBoolCheckNode pyBoolCheckNode,
+                        PyLongAsDoubleNode pyLongAsDoubleNode,
+                        PyFloatAsDoubleNode pyFloatAsDoubleNode) {
+            double flt_p, flt_q;
+            boolean p_type_float = pyFloatCheckExactNode.execute(inliningTarget, p_i);
+            boolean q_type_float = pyFloatCheckExactNode.execute(inliningTarget, q_i);
+            if (p_type_float && q_type_float) {
+                flt_p = pyFloatAsDoubleNode.execute(frame, inliningTarget, p_i);
+                flt_q = pyFloatAsDoubleNode.execute(frame, inliningTarget, q_i);
+            } else if (p_type_float && (pyLongCheckExactNode.execute(inliningTarget, q_i) || pyBoolCheckNode.execute(inliningTarget, q_i))) {
+                /*
+                 * We care about float/int pairs and int/float pairs because they arise naturally in
+                 * several use cases such as price times quantity, measurements with integer
+                 * weights, or data selected by a vector of bools.
+                 */
+                flt_p = pyFloatAsDoubleNode.execute(frame, inliningTarget, p_i);
+                try {
+                    flt_q = pyLongAsDoubleNode.execute(inliningTarget, q_i);
+                } catch (PException e) {
+                    e.expectOverflowError(inliningTarget, errorProfile);
+                    return false; // goto finalize_flt_path
+                }
+            } else if (q_type_float && (pyLongCheckExactNode.execute(inliningTarget, p_i) || pyBoolCheckNode.execute(inliningTarget, p_i))) {
+                flt_q = pyFloatAsDoubleNode.execute(frame, inliningTarget, q_i);
+                try {
+                    flt_p = pyLongAsDoubleNode.execute(inliningTarget, p_i);
+                } catch (PException e) {
+                    e.expectOverflowError(inliningTarget, errorProfile);
+                    return false; // goto finalize_flt_path
+                }
+            } else {
+                return false; // goto finalize_flt_path
+            }
+            TripleLength new_flt_total = tl_fma(flt_p, flt_q, flt_total[0]);
+            if (Double.isFinite(new_flt_total.hi)) {
+                flt_total[0] = new_flt_total;
+                return true; // continue
+            }
+            return false; // goto finalize_flt_path
+        }
+
+        @Specialization
+        static Object sumprod(VirtualFrame frame, Object p, Object q,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetIter pyObjectGetIter,
+                        @Cached GetNextNode getNextNode,
+                        @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode,
+                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PyFloatCheckExactNode pyFloatCheckExactNode,
+                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Cached PyBoolCheckNode pyBoolCheckNode,
+                        @Cached PyLongAsDoubleNode pyLongAsDoubleNode,
+                        @Cached PyFloatAsDoubleNode pyFloatAsDoubleNode,
+                        @Cached PyNumberAddNode pyNumberAddNode,
+                        @Cached PyNumberMultiplyNode pyNumberMultiplyNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            boolean p_stopped = false, q_stopped = false;
+            boolean int_path_enabled = true, int_total_in_use = false;
+            boolean flt_path_enabled = true, flt_total_in_use = false;
+            long[] int_total = new long[]{0};
+            TripleLength[] flt_total = new TripleLength[]{TL_ZERO};
+
+            Object p_it = pyObjectGetIter.execute(frame, inliningTarget, p);
+            Object q_it = pyObjectGetIter.execute(frame, inliningTarget, q);
+            Object total = 0L;
+            while (true) {
+                Object p_i = null, q_i = null;
+                try {
+                    p_i = getNextNode.execute(frame, p_it);
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, errorProfile);
+                    p_stopped = true;
+                }
+
+                try {
+                    q_i = getNextNode.execute(frame, q_it);
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, errorProfile);
+                    q_stopped = true;
+                }
+
+                if (p_stopped != q_stopped) {
+                    raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INPUTS_ARE_NOT_THE_SAME_LENGTH);
+                }
+                boolean finished = p_stopped && q_stopped;
+
+                if (int_path_enabled) {
+                    if (!finished && int_path(frame, inliningTarget, p_i, q_i, int_total,
+                                    pyLongCheckExactNode, pyLongAsLongAndOverflowNode)) {
+                        int_total_in_use = true;
+                        continue;
+                    }
+                    // We're finished, overflowed, or have a non-int
+                    int_path_enabled = false;
+                    if (int_total_in_use) {
+                        total = pyNumberAddNode.execute(frame, inliningTarget, total, int_total[0]);
+                        int_total[0] = 0;   // An ounce of prevention, ...
+                        int_total_in_use = false;
+                    }
+                }
+
+                if (flt_path_enabled) {
+
+                    if (!finished && flt_path(frame, inliningTarget, p_i, q_i, flt_total,
+                                    errorProfile, pyFloatCheckExactNode, pyLongCheckExactNode, pyBoolCheckNode, pyLongAsDoubleNode, pyFloatAsDoubleNode)) {
+                        flt_total_in_use = true;
+                        continue;
+                    }
+                    // We're finished, overflowed, have a non-float, or got a non-finite value
+                    flt_path_enabled = false;
+                    if (flt_total_in_use) {
+                        total = pyNumberAddNode.execute(frame, inliningTarget, total, tl_to_d(flt_total[0]));
+                        flt_total[0] = TL_ZERO;
+                        flt_total_in_use = false;
+                    }
+                }
+
+                assert (!int_total_in_use);
+                assert (!flt_total_in_use);
+
+                if (finished) {
+                    break; // goto normal_exit
+                }
+                total = pyNumberAddNode.execute(frame, inliningTarget, total, pyNumberMultiplyNode.execute(frame, inliningTarget, p_i, q_i));
+            }
+
+            // normal_exit
+            return total;
+        }
+
+        /*
+         * Double and triple length extended precision algorithms from:
+         * 
+         * Accurate Sum and Dot Product by Takeshi Ogita, Siegfried M. Rump, and Shin’Ichi Oishi
+         * https://doi.org/10.1137/030601818 https://www.tuhh.de/ti3/paper/rump/OgRuOi05.pdf
+         * 
+         */
+
+        record DoubleLength(double hi, double lo) {
+        }
+
+        static DoubleLength dl_sum(double a, double b) {
+            /* Algorithm 3.1 Error-free transformation of the sum */
+            double x = a + b;
+            double z = x - a;
+            double y = (a - (x - z)) + (b - z);
+            return new DoubleLength(x, y);
+        }
+
+        static DoubleLength dl_mul(double x, double y) {
+            /* Algorithm 3.5. Error-free transformation of a product */
+            double z = x * y;
+            double zz = Math.fma(x, y, -z);
+            return new DoubleLength(z, zz);
+        }
+
+        record TripleLength(double hi, double lo, double tiny) {
+        }
+
+        static final TripleLength TL_ZERO = new TripleLength(0.0, 0.0, 0.0);
+
+        static TripleLength tl_fma(double x, double y, TripleLength total) {
+            /* Algorithm 5.10 with SumKVert for K=3 */
+            DoubleLength pr = dl_mul(x, y);
+            DoubleLength sm = dl_sum(total.hi, pr.hi);
+            DoubleLength r1 = dl_sum(total.lo, pr.lo);
+            DoubleLength r2 = dl_sum(r1.hi, sm.lo);
+            return new TripleLength(sm.hi, r2.hi, total.tiny + r1.lo + r2.lo);
+        }
+
+        static double tl_to_d(TripleLength total) {
+            DoubleLength last = dl_sum(total.lo, total.hi);
+            return total.tiny + last.lo + last.hi;
         }
     }
 

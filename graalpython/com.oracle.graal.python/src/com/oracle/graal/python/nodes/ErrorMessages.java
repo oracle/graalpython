@@ -475,6 +475,7 @@ public abstract class ErrorMessages {
     public static final TruffleString MATCH_MAPPING_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYS_AS_PATTERNS = tsLiteral("MatchMapping doesn't have the same number of keys as patterns");
     public static final TruffleString MATCH_OR_REQUIRES_AT_LEAST_2_PATTERNS = tsLiteral("MatchOr requires at least 2 patterns");
     public static final TruffleString MATCH_SINGLETON_CAN_ONLY_CONTAIN_TRUE_FALSE_AND_NONE = tsLiteral("MatchSingleton can only contain True, False and None");
+    public static final TruffleString INPUTS_ARE_NOT_THE_SAME_LENGTH = tsLiteral("Inputs are not the same length");
     public static final TruffleString MATH_DOMAIN_ERROR = tsLiteral("math domain error");
     public static final TruffleString MATH_RANGE_ERROR = tsLiteral("math range error");
     public static final TruffleString MAX_MARSHAL_STACK_DEPTH = tsLiteral("Maximum marshal stack depth");
@@ -720,6 +721,7 @@ public abstract class ErrorMessages {
     public static final TruffleString TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes exactly %d arguments (%d given)");
     public static final TruffleString S_TAKES_NO_KEYWORD_ARGS = tsLiteral("%s takes no keyword arguments");
     public static final TruffleString P_TAKES_NO_KEYWORD_ARGS = tsLiteral("%p takes no keyword arguments");
+    public static final TruffleString STEPS_MUST_BE_A_NON_NEGATIVE_INTEGER = tsLiteral("steps must be a non-negative integer");
     public static final TruffleString THROW_THIRD_ARG_MUST_BE_TRACEBACK = tsLiteral("throw() third argument must be a traceback object");
     public static final TruffleString TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = tsLiteral("_tee_dataobject should not have more than %s links");
     public static final TruffleString TDATAOBJECT_SHOULDNT_HAVE_NEXT = tsLiteral("_tee_dataobject shouldn't have a next if not full");
