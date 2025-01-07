@@ -160,8 +160,6 @@ import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.set.BaseSetBuiltins;
-import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins;
-import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
@@ -242,7 +240,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PMap("map", J_BUILTINS),
     PFloat("float", J_BUILTINS, FLOAT_M_FLAGS, FloatBuiltins.SLOTS),
     PFrame("frame", Flags.PRIVATE_DERIVED_WODICT),
-    PFrozenSet("frozenset", J_BUILTINS, FROZENSET_M_FLAGS, TpSlots.merge(BaseSetBuiltins.SLOTS, FrozenSetBuiltins.SLOTS)),
+    PFrozenSet("frozenset", J_BUILTINS, FROZENSET_M_FLAGS, BaseSetBuiltins.SLOTS),
     PFunction("function", Flags.PRIVATE_DERIVED_WDICT, FunctionBuiltins.SLOTS),
     PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT, GENERATOR_M_FLAGS),
     PCoroutine("coroutine", Flags.PRIVATE_DERIVED_WODICT, COROUTINE_M_FLAGS),
@@ -266,7 +264,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PReferenceType("ReferenceType", "_weakref"),
     PSentinelIterator("callable_iterator", Flags.PRIVATE_DERIVED_WODICT),
     PReverseIterator("reversed", J_BUILTINS),
-    PSet("set", J_BUILTINS, SET_M_FLAGS, TpSlots.merge(BaseSetBuiltins.SLOTS, SetBuiltins.SLOTS)),
+    PSet("set", J_BUILTINS, SET_M_FLAGS, BaseSetBuiltins.SLOTS),
     PSlice("slice", J_BUILTINS),
     PString("str", J_BUILTINS, STRING_M_FLAGS, StringBuiltins.SLOTS),
     PTraceback("traceback"),

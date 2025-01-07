@@ -36,8 +36,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
-import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -53,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDiff;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIntersect;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStoragePop;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
@@ -61,8 +60,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -95,14 +92,13 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * binary operations are implemented in {@link BaseSetBuiltins}
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
 public final class SetBuiltins extends PythonBuiltins {
-
-    public static final TpSlots SLOTS = SetBuiltinsSlotsGen.SLOTS;
 
     @Override
     public void initialize(Python3Core core) {
@@ -184,42 +180,14 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.nb_or, isComplex = true)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    public abstract static class OrNode extends BinaryOpBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(other)")
-        static Object doSet(VirtualFrame frame, PSet self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getHashingStorage,
-                        @Cached HashingStorageCopy copyStorage,
-                        @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Cached PythonObjectFactory factory) {
-            // Note: we cannot reuse 'otherStorage' because we need to add from other -> self, in
-            // order to execute __eq__ of keys in 'self' and not other
-            HashingStorage otherStorage = getHashingStorage.execute(frame, inliningTarget, other);
-            HashingStorage resultStorage = copyStorage.execute(inliningTarget, self.getDictStorage());
-            PSet result = factory.createSet(resultStorage);
-            addAllToOther.execute(frame, inliningTarget, otherStorage, result);
-            return result;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doOr(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
     @Builtin(name = J___IOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IOrNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(other)")
-        Object doSet(VirtualFrame frame, PSet self, Object other,
+        @Specialization
+        Object doSet(VirtualFrame frame, PSet self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Cached HashingStorageAddAllToOther addAllToOther) {
-            addAllToOther.execute(frame, inliningTarget, getSetStorageNode.execute(frame, inliningTarget, other), self);
+            addAllToOther.execute(frame, inliningTarget, other.getDictStorage(), self);
             return self;
         }
 
@@ -400,40 +368,25 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.nb_and, isComplex = true)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    public abstract static class AndNode extends BinaryOpBuiltinNode {
-
-        @Specialization(guards = "canDoSetBinOp(right)")
-        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
-                        @Cached HashingStorageIntersect intersectNode,
-                        @Cached PythonObjectFactory factory) {
-            HashingStorage storage = intersectNode.execute(frame, inliningTarget, getSetStorageNode.execute(frame, inliningTarget, right), left.getDictStorage());
-            return factory.createSet(storage);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doAnd(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
     @Builtin(name = J___IAND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IAndNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canDoSetBinOp(right)")
-        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
+        @Specialization
+        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
+                        @Cached HashingStorageLen lenNode,
+                        @Cached InlinedConditionProfile swapProfile,
                         @Cached HashingStorageIntersect intersectNode) {
-            // We cannot reuse the left storage without breaking the CPython "contract" of how many
-            // times we can call __eq__ on which key
-            HashingStorage storage = intersectNode.execute(frame, inliningTarget, getSetStorageNode.execute(frame, inliningTarget, right), left.getDictStorage());
+            HashingStorage storage1 = left.getDictStorage();
+            HashingStorage storage2 = right.getDictStorage();
+            // Try to minimize the number of __eq__ calls
+            if (swapProfile.profile(inliningTarget, lenNode.execute(inliningTarget, storage2) > lenNode.execute(inliningTarget, storage1))) {
+                HashingStorage tmp = storage1;
+                storage1 = storage2;
+                storage2 = tmp;
+            }
+            HashingStorage storage = intersectNode.execute(frame, inliningTarget, storage2, storage1);
             left.setDictStorage(storage);
             return left;
         }
@@ -520,38 +473,15 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.nb_xor, isComplex = true)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    public abstract static class XorNode extends BinaryOpBuiltinNode {
-
-        @Specialization(guards = "canDoSetBinOp(other)")
-        static Object doSet(VirtualFrame frame, PSet self, Object other,
-                        @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
-                        @Cached HashingStorageXor xorNode,
-                        @Cached PythonObjectFactory factory) {
-            // TODO: calls __eq__ wrong number of times compared to CPython (GR-42240)
-            return factory.createSet(xorNode.execute(frame, inliningTarget, self.getDictStorage(), getSetStorageNode.execute(frame, inliningTarget, other)));
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doOr(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
     @Builtin(name = J___IXOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IXorNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canDoSetBinOp(other)")
-        static Object doSet(VirtualFrame frame, PSet self, Object other,
+        @Specialization
+        static Object doSet(VirtualFrame frame, PSet self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Cached HashingStorageXor xorNode) {
-            self.setDictStorage(xorNode.execute(frame, inliningTarget, self.getDictStorage(), getSetStorageNode.execute(frame, inliningTarget, other)));
+            self.setDictStorage(xorNode.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()));
             return self;
         }
 
@@ -632,12 +562,11 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = J___ISUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ISubNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(right)")
-        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
+        @Specialization
+        static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right,
                         @Bind("this") Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Cached HashingStorageDiff diffNode) {
-            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), getSetStorageNode.execute(frame, inliningTarget, right));
+            HashingStorage storage = diffNode.execute(frame, inliningTarget, left.getDictStorage(), right.getDictStorage());
             left.setDictStorage(storage);
             return left;
         }

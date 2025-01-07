@@ -29,8 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 
 import java.util.List;
 
-import com.oracle.graal.python.annotations.Slot;
-import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -49,37 +47,28 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * binary operations are implemented in {@link BaseSetBuiltins}
  */
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFrozenSet})
 public final class FrozenSetBuiltins extends PythonBuiltins {
-
-    public static final TpSlots SLOTS = FrozenSetBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -100,33 +89,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             } else {
                 return factory.get(inliningTarget).createFrozenSet(arg.getDictStorage());
             }
-        }
-    }
-
-    @Slot(value = SlotKind.nb_and, isComplex = true)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    abstract static class AndNode extends BinaryOpBuiltinNode {
-
-        @Specialization(guards = "canDoSetBinOp(right)")
-        static PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile rightIsSetProfile,
-                        @Cached GetSetStorageNode getSetStorageNode,
-                        @Cached HashingStorageIntersect intersectNode,
-                        @Cached PythonObjectFactory factory) {
-            HashingStorage storage = intersectNode.execute(frame, inliningTarget, left.getDictStorage(), getSetStorageNode.execute(frame, inliningTarget, right));
-            if (rightIsSetProfile.profile(inliningTarget, right instanceof PBaseSet)) {
-                return factory.createFrozenSet(storage);
-            } else {
-                return factory.createSet(storage);
-            }
-        }
-
-        @Fallback
-        static Object doAnd(Object self, Object other,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "&", self, other);
         }
     }
 
@@ -181,62 +143,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @Shared @Cached PythonObjectFactory factory) {
             HashingStorage result = intersectNode.execute(frame, inliningTarget, self.getDictStorage(), getSetStorageNode.execute(frame, inliningTarget, other));
             return factory.createFrozenSet(result);
-        }
-    }
-
-    @Slot(value = SlotKind.nb_or, isComplex = true)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    abstract static class OrNode extends BinaryOpBuiltinNode {
-
-        @Specialization(guards = "canDoSetBinOp(right)")
-        static PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile rightIsSetProfile,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
-                        @Cached HashingStorageCopy copyNode,
-                        @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Cached PythonObjectFactory factory) {
-            HashingStorage storage = left.getDictStorage().union(inliningTarget, getSetStorageNode.execute(frame, inliningTarget, right), copyNode, addAllToOther);
-            if (rightIsSetProfile.profile(inliningTarget, right instanceof PBaseSet)) {
-                return factory.createFrozenSet(storage);
-            } else {
-                return factory.createSet(storage);
-            }
-        }
-
-        @Fallback
-        static Object doOr(Object self, Object other,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "|", self, other);
-        }
-    }
-
-    @Slot(value = SlotKind.nb_xor, isComplex = true)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    abstract static class XorNode extends BinaryOpBuiltinNode {
-
-        @Specialization(guards = "canDoSetBinOp(right)")
-        static PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile rightIsSetProfile,
-                        @Cached GetSetStorageNode getSetStorageNode,
-                        @Cached HashingStorageXor xorNode,
-                        @Cached PythonObjectFactory factory) {
-            HashingStorage rightStorage = getSetStorageNode.execute(frame, inliningTarget, right);
-            HashingStorage storage = xorNode.execute(frame, inliningTarget, left.getDictStorage(), rightStorage);
-            if (rightIsSetProfile.profile(inliningTarget, right instanceof PBaseSet)) {
-                return factory.createFrozenSet(storage);
-            } else {
-                return factory.createSet(storage);
-            }
-        }
-
-        @Fallback
-        static Object doOr(Object self, Object other,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "^", self, other);
         }
     }
 
