@@ -348,6 +348,10 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
             return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_TRUE_DIVIDE);
         }
 
+        public static BinaryOpSlotFuncWrapper createDivMod(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_DIVMOD);
+        }
+
         public static BinaryOpSlotFuncWrapper createMatrixMultiply(TpSlotManaged delegate) {
             return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_MATRIX_MULTIPLY);
         }

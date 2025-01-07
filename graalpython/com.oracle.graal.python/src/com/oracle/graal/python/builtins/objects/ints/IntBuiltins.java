@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
@@ -60,7 +59,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
@@ -100,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
@@ -803,47 +800,21 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Slot(value = SlotKind.nb_divmod, isComplex = true)
     @GenerateNodeFactory
-    abstract static class DivModNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static PTuple doLL(int left, int right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
-            return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
-        }
+    abstract static class DivModNode extends BinaryOpBuiltinNode {
 
         @Specialization
-        static PTuple doLL(long left, long right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
-            return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
-        }
-
-        @Specialization(guards = {"accepts(left)", "accepts(right)"})
-        static PTuple doGenericInt(VirtualFrame frame, Object left, Object right,
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached FloorDivNode floorDivNode,
                         @Cached ModNode modNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[]{floorDivNode.execute(frame, left, right), modNode.execute(frame, left, right)});
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static PNotImplemented doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        protected static boolean accepts(Object obj) {
-            return obj instanceof Integer || obj instanceof Long || obj instanceof PInt;
+                        @Cached PythonObjectFactory factory) {
+            Object div = floorDivNode.execute(frame, left, right);
+            if (div == PNotImplemented.NOT_IMPLEMENTED) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            Object mod = modNode.execute(frame, left, right);
+            return factory.createTuple(new Object[]{div, mod});
         }
     }
 

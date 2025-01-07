@@ -46,14 +46,13 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
+import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
 import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
@@ -69,18 +68,13 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -99,7 +93,7 @@ public enum BinaryArithmetic {
     Xor(PyNumberXorNode::create),
     MatMul(PyNumberMatrixMultiplyNode::create),
     Pow(BinaryArithmeticFactory.PowNodeGen::create),
-    DivMod(BinaryArithmeticFactory.DivModNodeGen::create);
+    DivMod(PyNumberDivmodNode::create);
 
     interface CreateBinaryOp {
         BinaryOpNode create();
@@ -183,25 +177,6 @@ public enum BinaryArithmetic {
             return LookupAndCallBinaryNode.createReversible(slot, slot.getReverse(), handler);
         }
 
-        @NeverDefault
-        public static LookupAndCallBinaryNode createBinaryOp(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
-            return LookupAndCallBinaryNode.createBinaryOp(slot, slot.getReverse(), handler);
-        }
-    }
-
-    public abstract static class BinaryArithmeticRaiseNode extends BinaryArithmeticNode {
-
-        protected static void raiseIntDivisionByZero(boolean cond, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
-            if (cond) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
-            }
-        }
-
-        protected static void raiseDivisionByZero(boolean cond, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
-            if (cond) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
-            }
-        }
     }
 
     public abstract static class PowNode extends BinaryArithmeticNode {
@@ -212,63 +187,6 @@ public enum BinaryArithmetic {
         public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         // TODO: ternary_op is not implemented (GR-<2????>)
                         @Cached("createCallNode(Pow, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
-            return callNode.executeObject(frame, left, right);
-        }
-    }
-
-    public abstract static class DivModNode extends BinaryArithmeticRaiseNode {
-
-        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("divmod");
-
-        @Specialization
-        public static PTuple doLL(int left, int right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
-            return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
-        }
-
-        @Specialization
-        public static PTuple doLL(long left, long right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseIntDivisionByZero(right == 0, inliningTarget, raiseNode);
-            return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
-        }
-
-        @Specialization
-        public static PTuple doDL(double left, long right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(right == 0, inliningTarget, raiseNode);
-            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
-        }
-
-        @Specialization
-        public static PTuple doDD(double left, double right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
-            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
-        }
-
-        @Specialization
-        public static PTuple doLD(long left, double right,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            raiseDivisionByZero(right == 0.0, inliningTarget, raiseNode);
-            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.mod(left, right)});
-        }
-
-        @Specialization
-        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        // TODO: replace with 'createBinaryOp' once (GR-<1????>) is fixed
-                        @Cached("createCallNode(DivMod, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }

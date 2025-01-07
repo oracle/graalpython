@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FLOAT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
@@ -47,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
@@ -474,8 +472,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_divmod, isComplex = true)
     @GenerateNodeFactory
     abstract static class DivModNode extends AbstractNumericBinaryBuiltin {
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();

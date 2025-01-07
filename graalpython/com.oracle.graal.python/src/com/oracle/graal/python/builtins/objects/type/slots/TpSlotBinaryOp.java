@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
@@ -50,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RLSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMATMUL__;
@@ -135,6 +137,7 @@ public class TpSlotBinaryOp {
         NB_OR(T___OR__, T___ROR__),
         NB_FLOOR_DIVIDE(T___FLOORDIV__, T___RFLOORDIV__),
         NB_TRUE_DIVIDE(T___TRUEDIV__, T___RTRUEDIV__),
+        NB_DIVMOD(T___DIVMOD__, T___RDIVMOD__),
         NB_MATRIX_MULTIPLY(T___MATMUL__, T___RMATMUL__);
 
         private static final BinaryOpSlot[] VALUES = values();
@@ -160,6 +163,7 @@ public class TpSlotBinaryOp {
                 case NB_OR -> slots.nb_or();
                 case NB_FLOOR_DIVIDE -> slots.nb_floor_divide();
                 case NB_TRUE_DIVIDE -> slots.nb_true_divide();
+                case NB_DIVMOD -> slots.nb_divmod();
                 case NB_MATRIX_MULTIPLY -> slots.nb_matrix_multiply();
             };
         }

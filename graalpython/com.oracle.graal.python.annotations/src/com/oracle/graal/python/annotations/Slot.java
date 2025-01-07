@@ -103,6 +103,8 @@ public @interface Slot {
         nb_multiply("__mul__, __rmul__"),
         /** foo % bar */
         nb_remainder("__mod__, __rmod__"),
+        /** divmod(foo, bar) */
+        nb_divmod("__divmod__, __rdivmod__"),
         /** foo << bar */
         nb_lshift("__lshift__, __rlshift__"),
         /** foo >> bar */

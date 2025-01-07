@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
@@ -58,6 +59,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RLSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMATMUL__;
@@ -230,6 +232,7 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot nb_or, //
                 TpSlot nb_floor_divide, //
                 TpSlot nb_true_divide, //
+                TpSlot nb_divmod, //
                 TpSlot nb_matrix_multiply, //
                 TpSlot sq_length, //
                 TpSlot sq_item, //
@@ -423,6 +426,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PyNumberMethods__nb_true_divide,
                         PExternalFunctionWrapper.BINARYFUNC,
                         BinaryOpSlotFuncWrapper::createTrueDivide),
+        NB_DIVMOD(
+                        TpSlots::nb_divmod,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_divmod,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createDivMod),
         NB_MATRIX_MULTIPLY(
                         TpSlots::nb_matrix_multiply,
                         TpSlotBinaryOpPython.class,
@@ -739,6 +750,9 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_TRUE_DIVIDE,
                         TpSlotDef.withoutHPy(T___TRUEDIV__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RTRUEDIV__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_DIVMOD,
+                        TpSlotDef.withoutHPy(T___DIVMOD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RDIVMOD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_MATRIX_MULTIPLY,
                         TpSlotDef.withoutHPy(T___MATMUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RMATMUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
@@ -1341,6 +1355,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.NB_OR), //
                             get(TpSlotMeta.NB_FLOOR_DIVIDE), //
                             get(TpSlotMeta.NB_TRUE_DIVIDE), //
+                            get(TpSlotMeta.NB_DIVMOD), //
                             get(TpSlotMeta.NB_MATRIX_MULTIPLY), //
                             get(TpSlotMeta.SQ_LENGTH), //
                             get(TpSlotMeta.SQ_ITEM), //

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -142,7 +142,6 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -169,6 +168,7 @@ import com.oracle.graal.python.lib.PyEvalGetLocals;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -792,43 +792,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // divmod(a, b)
     @Builtin(name = J_DIVMOD, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class DivModNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "b != 0")
-        static PTuple doLong(long a, long b,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
-        }
-
-        @Specialization(replaces = "doLong")
-        static PTuple doLongZero(long a, long b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            if (b == 0) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.INTEGER_DIVISION_BY_ZERO);
-            }
-            return factory.createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
-        }
-
-        @Specialization
-        static PTuple doDouble(double a, double b,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            if (b == 0) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
-            }
-            double q = Math.floor(a / b);
-            return factory.createTuple(new Object[]{q, FloatBuiltins.ModNode.mod(a, b)});
-        }
 
         @Specialization
         static Object doObject(VirtualFrame frame, Object a, Object b,
-                        @Cached("DivMod.create()") BinaryOpNode callDivmod) {
-            return callDivmod.executeObject(frame, a, b);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberDivmodNode divmodNode) {
+            return divmodNode.execute(frame, inliningTarget, a, b);
         }
     }
 

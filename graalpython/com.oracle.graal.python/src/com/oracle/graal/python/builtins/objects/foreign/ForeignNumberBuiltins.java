@@ -29,7 +29,6 @@ package com.oracle.graal.python.builtins.objects.foreign;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
@@ -43,7 +42,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
@@ -72,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttr
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
+import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
 import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
@@ -562,6 +561,18 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.nb_divmod, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class DivModNode extends BinaryOpBuiltinNode {
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ForeignBinarySlotNode binarySlotNode,
+                        @Cached(inline = false) PyNumberDivmodNode opNode) {
+            return binarySlotNode.execute(frame, inliningTarget, left, right, opNode);
+        }
+    }
+
     @Builtin(name = J___POW__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PowNode extends ForeignBinaryNode {
@@ -575,22 +586,6 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     abstract static class RPowNode extends ForeignBinaryNode {
         RPowNode() {
             super(BinaryArithmetic.Pow.create(), true);
-        }
-    }
-
-    @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class DivModNode extends ForeignBinaryNode {
-        DivModNode() {
-            super(BinaryArithmetic.DivMod.create(), false);
-        }
-    }
-
-    @Builtin(name = J___RDIVMOD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RDivModNode extends ForeignBinaryNode {
-        RDivModNode() {
-            super(BinaryArithmetic.DivMod.create(), true);
         }
     }
 
