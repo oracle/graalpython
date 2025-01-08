@@ -40,11 +40,11 @@
  */
 package org.graalvm.python.embedding;
 
-import org.graalvm.polyglot.io.FileSystem;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Predicate;
+
+import org.graalvm.polyglot.io.FileSystem;
 
 /**
  * The GraalPy Virtual Filesystem accesses embedded resource files as standard Java resources and
@@ -105,8 +105,45 @@ public final class VirtualFileSystem implements AutoCloseable {
         private boolean caseInsensitive = VirtualFileSystemImpl.isWindows();
 
         private Class<?> resourceLoadingClass;
+        private String resourceDirectory;
 
         private Builder() {
+        }
+
+        /**
+         * Sets the root directory of the virtual filesystem within Java resources. The default
+         * value is {@code "org.graalvm.python.vfs"}. This Java resources directory will be
+         * accessible as {@link #unixMountPoint(String)} or {@link #windowsMountPoint(String)} from
+         * Python code. The recommended convention is to use
+         * {@code GRAALPY-VFS/{groupId}/{artifactId}}.
+         * <p/>
+         * User scripts, data files, and other resources that should be accessible in Python should
+         * be put into this resource directory, e.g.,
+         * {@code src/main/resources/org.graalvm.python.vfs} for the default value of this option
+         * and assuming the usual layout of a Maven or Gradle project.
+         * <p/>
+         * When Maven and Gradle GraalPy plugin is used to build the virtual environment, it should
+         * be configured to generate the virtual environment into the same directory using the
+         * {@code <resourceDirectory>} tag in Maven or the {@code resourceDirectory} field in
+         * Gradle.
+         * <p/>
+         * Note regarding Java module system: resources in named modules are subject to the
+         * encapsulation rules. This is also the case of the default virtual filesystem location.
+         * When a resources directory is not a valid Java package name, such as the recommended
+         * "GRAALPY-VFS", the resources are not subject to the encapsulation rules and do not
+         * require additional module system configuration.
+         * <p/>
+         * The value must be relative resources path, i.e., not starting with `/`, and must use '/'
+         * as path separator regardless of the host OS.
+         *
+         * @since 24.2.0
+         */
+        public Builder resourceDirectory(String directory) {
+            if (directory.startsWith("/")) {
+                throw new IllegalArgumentException("Use relative resources path, i.e., not starting with '/'.");
+            }
+            this.resourceDirectory = directory;
+            return this;
         }
 
         /**
@@ -214,7 +251,7 @@ public final class VirtualFileSystem implements AutoCloseable {
             if (mountPoint == null) {
                 mountPoint = VirtualFileSystemImpl.isWindows() ? Path.of(DEFAULT_WINDOWS_MOUNT_POINT) : Path.of(DEFAULT_UNIX_MOUNT_POINT);
             }
-            return new VirtualFileSystem(extractFilter, mountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
+            return new VirtualFileSystem(extractFilter, mountPoint, allowHostIO, resourceLoadingClass, resourceDirectory, caseInsensitive);
         }
     }
 
@@ -230,9 +267,10 @@ public final class VirtualFileSystem implements AutoCloseable {
                     Path mountPoint,
                     HostIO allowHostIO,
                     Class<?> resourceLoadingClass,
+                    String resourceDirectory,
                     boolean caseInsensitive) {
 
-        this.impl = new VirtualFileSystemImpl(extractFilter, mountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
+        this.impl = new VirtualFileSystemImpl(extractFilter, mountPoint, resourceDirectory, allowHostIO, resourceLoadingClass, caseInsensitive);
         this.delegatingFileSystem = VirtualFileSystemImpl.createDelegatingFileSystem(impl);
     }
 

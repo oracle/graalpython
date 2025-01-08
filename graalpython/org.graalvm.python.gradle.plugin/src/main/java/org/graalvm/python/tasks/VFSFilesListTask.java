@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,8 +45,11 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleScriptException;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -76,19 +79,27 @@ public abstract class VFSFilesListTask extends DefaultTask {
     @OutputDirectory
     public abstract DirectoryProperty getVfsFilesListOutputDir();
 
+    /**
+     * The directory where the VFS should be generated within Java resources.
+     */
+    @Input
+    @Optional
+    public abstract Property<String> getResourceDirectory();
+
     @TaskAction
     public void exec() throws IOException {
-        Path outputDir = getVfsFilesListOutputDir().get().getAsFile().toPath().resolve(VFS_ROOT);
+        String vfsRoot = getResourceDirectory().getOrElse(VFS_ROOT);
+        Path outputDir = getVfsFilesListOutputDir().get().getAsFile().toPath().resolve(vfsRoot);
         Files.createDirectories(outputDir);
         // Sort lines for reproducibility
         var sorted = new TreeSet<String>();
         getVfsDirectories().getElements().get().forEach(location -> {
             var vfsParentDir = location.getAsFile().toPath();
             if (Files.isDirectory(vfsParentDir)) {
-                var vfsDir = vfsParentDir.resolve(VFS_PREFIX);
+                var vfsDir = vfsParentDir.resolve(vfsRoot);
                 if (Files.isDirectory(vfsDir)) {
                     try {
-                        VFSUtils.generateVFSFilesList(vfsDir, sorted, duplicate -> {
+                        VFSUtils.generateVFSFilesList(vfsParentDir, vfsDir, sorted, duplicate -> {
                             this.getLogger().warn("Found duplicate file '{}' in multiple resource directories.", duplicate);
                         });
                     } catch (IOException e) {

@@ -761,6 +761,11 @@ def deploy_local_maven_repo():
     return path, version, env
 
 
+def deploy_local_maven_repo_wrapper(*args):
+    p, _, _ = deploy_local_maven_repo()
+    print(f"local Maven repo path: {p}")
+
+
 def python_jvm(_=None):
     """Returns the path to GraalPy from 'jvm' standalone dev build. Also builds the standalone."""
     launcher = graalpy_standalone('jvm', dev=True)
@@ -3024,4 +3029,5 @@ mx.update_commands(SUITE, {
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
     'tox-example': [tox_example, ''],
     'graalpy-jmh': [graalpy_jmh, ''],
+    'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, ''],
 })

@@ -51,6 +51,7 @@ import java.nio.file.Path;
  * Siple copy of GraalPyResourcesTests to test also the deprecated
  * org.graalvm.python.embedding.utils pkg
  */
+@SuppressWarnings("deprecation")
 public class GraalPyResourcesUtilsTests {
 
     @Test

@@ -40,7 +40,8 @@
  */
 package org.graalvm.python.embedding;
 
-import org.graalvm.polyglot.io.FileSystem;
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
+import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.NONE;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -50,7 +51,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.invoke.VarHandle;
 import java.net.URI;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
@@ -75,6 +78,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -82,6 +86,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.logging.ConsoleHandler;
@@ -89,9 +94,10 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import java.util.stream.Collectors;
 
-import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
-import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.NONE;
+import org.graalvm.polyglot.io.FileSystem;
+import org.graalvm.python.embedding.VirtualFileSystem.HostIO;
 
 final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
@@ -116,29 +122,41 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         LOGGER.addHandler(consoleHandler);
     }
 
-    /*
-     * Root of the virtual filesystem in the resources.
-     */
-    private static final String VFS_ROOT = "/org.graalvm.python.vfs";
+    private static String resourcePath(String... components) {
+        return String.join("/", components);
+    }
+
+    private static String absoluteResourcePath(String... components) {
+        return "/" + String.join("/", components);
+    }
+
+    private static final String MULTI_VSF_CHECKS_AS_WARNING_PROP = "org.graalvm.python.vfs.multiple_vfs_checks_as_warning";
+    public static final String MULTI_VFS_ALLOW_PROP = "org.graalvm.python.vfs.allow_multiple";
+    public static final String MULTI_VFS_SINGLE_ROOT_URL_PROP = "org.graalvm.python.vfs.root_url";
+
+    private static final String DEFAULT_VFS_ROOT = "org.graalvm.python.vfs";
 
     static final String VFS_VENV = "venv";
     static final String VFS_SRC = "src";
 
+    private static final String FILES_LIST = "fileslist.txt";
+    public static final String CONTENTS_FILE = resourcePath(VFS_VENV, "contents");
+    private static final String INSTALLED_FILE = resourcePath(VFS_VENV, "installed.txt");
+
+    private static final String PROJ_DIR = "proj";
+
     /*
-     * Index of all files and directories available in the resources at runtime. - paths are
-     * absolute - directory paths end with a '/' - uses '/' separator regardless of platform. Used
-     * to determine directory entries, if an entry is a file or a directory, etc.
+     * Root of the virtual filesystem in the resources. Relative resource path, i.e., not starting
+     * with '/'.
      */
-    private static final String FILES_LIST_PATH = VFS_ROOT + "/fileslist.txt";
-    private static final String VENV_PREFIX = VFS_ROOT + "/" + VFS_VENV;
-    private static final String PROJ_PREFIX = VFS_ROOT + "/proj";
-    private static final String SRC_PREFIX = VFS_ROOT + "/" + VFS_SRC;
+    private final String vfsRoot;
+
     private final VirtualFileSystem.HostIO allowHostIO;
 
     /*
      * Maps platform-specific paths to entries.
      */
-    private Map<String, BaseEntry> vfsEntries;
+    private final Map<String, BaseEntry> vfsEntries = new HashMap<>();
 
     /**
      * Class used to read resources with getResource(name). By default VirtualFileSystem.class.
@@ -174,7 +192,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
         private byte[] getData() throws IOException {
             if (data == null) {
-                data = readResource(getResourcePath());
+                byte[] loaded = readResource(getResourcePath());
+                VarHandle.storeStoreFence();
+                data = loaded;
             }
             return data;
         }
@@ -250,6 +270,17 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     private final DeleteTempDir deleteTempDir;
 
+    // Following 2 options are intentionally not a static final to avoid constant folding them
+    // during image build time
+
+    private final boolean allowMultipleLocations = Boolean.getBoolean(MULTI_VFS_ALLOW_PROP);
+
+    /**
+     * If there are multiple VFS instances in Java resources, but user wants to restrict to only one
+     * of them. Unsupported and experimental option.
+     */
+    private final String vfsRootURL = System.getProperty(MULTI_VFS_SINGLE_ROOT_URL_PROP);
+
     /**
      * If an extract filter is given, the virtual file system will lazily extract files and
      * directories matching the filter to a temporary directory. This happens if the
@@ -258,9 +289,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
      */
     VirtualFileSystemImpl(Predicate<Path> extractFilter,
                     Path mountPoint,
-                    VirtualFileSystem.HostIO allowHostIO,
+                    String resourceDirectory,
+                    HostIO allowHostIO,
                     Class<?> resourceLoadingClass,
                     boolean caseInsensitive) {
+        this.vfsRoot = resourceDirectory == null ? DEFAULT_VFS_ROOT : resourceDirectory;
         if (resourceLoadingClass != null) {
             this.resourceLoadingClass = resourceLoadingClass;
         } else {
@@ -289,6 +322,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
             this.deleteTempDir = null;
         }
         this.allowHostIO = allowHostIO;
+        initEntries();
     }
 
     /**
@@ -328,26 +362,30 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
     }
 
     String vfsSrcPath() {
-        return resourcePathToPlatformPath(SRC_PREFIX);
+        return resourcePathToPlatformPath(absoluteResourcePath(vfsRoot, VFS_SRC));
     }
 
     String vfsVenvPath() {
-        return resourcePathToPlatformPath(VENV_PREFIX);
+        return resourcePathToPlatformPath(absoluteResourcePath(vfsRoot, VFS_VENV));
     }
 
     /**
-     * Converts the given path starting with the internal resource root to the path as seen by
-     * Python IO. For example if no other mount point was set then the path
+     * Converts the given path starting with the absolute internal resource root to the path as seen
+     * by Python IO. For example if no other mount point was set then the path
      * "/org.graalvm.python.vfs/src/hello.py" will be converted to the default mount point
      * "/graalpy_vfs/src/hello.py" .
      */
     private String resourcePathToPlatformPath(String resourcePath) {
-        if (!(resourcePath.length() > VFS_ROOT.length() && resourcePath.startsWith(VFS_ROOT))) {
-            String msg = "Resource path is expected to start with '" + VFS_ROOT + "' but was '" + resourcePath + "'.\n" +
-                            "Please also ensure that your virtual file system resources root directory is '" + VFS_ROOT + "'";
+        if (!resourcePath.startsWith("/")) {
+            throw new IllegalArgumentException("Relative resource path");
+        }
+        String relative = resourcePath.substring(1);
+        if (!(relative.length() > vfsRoot.length() && relative.startsWith(vfsRoot))) {
+            String msg = "Resource path is expected to start with '/" + vfsRoot + "' but was '" + resourcePath + "'.\n" +
+                            "Please also ensure that your virtual file system resources root directory is '" + vfsRoot + "'";
             throw new IllegalArgumentException(msg);
         }
-        var path = resourcePath.substring(VFS_ROOT.length() + 1);
+        var path = resourcePath.substring(vfsRoot.length() + 2);
         if (!PLATFORM_SEPARATOR.equals(RESOURCE_SEPARATOR)) {
             path = path.replace(RESOURCE_SEPARATOR, PLATFORM_SEPARATOR);
         }
@@ -358,6 +396,9 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         return absolute;
     }
 
+    /**
+     * Returns absolute resource path.
+     */
     private String platformPathToResourcePath(String inputPath) {
         String mountPointString = mountPoint.toString();
         String path = inputPath;
@@ -371,7 +412,7 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         if (path.endsWith(RESOURCE_SEPARATOR)) {
             path = path.substring(0, path.length() - RESOURCE_SEPARATOR.length());
         }
-        path = VFS_ROOT + path;
+        path = '/' + vfsRoot + path;
         return path;
     }
 
@@ -381,66 +422,257 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
     private boolean projWarning = false;
 
-    private void initEntries() throws IOException {
-        vfsEntries = new HashMap<>();
-        try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(FILES_LIST_PATH)) {
-            if (stream == null) {
-                warn("VFS.initEntries: could not read resource %s", FILES_LIST_PATH);
-                return;
+    private String multipleLocationsErrorMessage(String fmt, Object... args) {
+        String suffix = "";
+        if (!allowMultipleLocations) {
+            suffix = " This is an internal error. Please report it on https://github.com/oracle/graalpython.";
+        }
+        return String.format(fmt + suffix, args);
+    }
+
+    private IllegalStateException fileDirDuplicateMismatchError(String key) {
+        throw new IllegalStateException(multipleLocationsErrorMessage("Entry %s is a file in one virtual filesystem location, but a directory in another.", key));
+    }
+
+    private void initEntries() {
+        String filelistPath = resourcePath(vfsRoot, FILES_LIST);
+        String absFilelistPath = absoluteResourcePath(vfsRoot, FILES_LIST);
+        String srcPath = absoluteResourcePath(vfsRoot, VFS_SRC);
+        String venvPath = absoluteResourcePath(vfsRoot, VFS_VENV);
+        List<URL> filelistUrls = getFilelistURLs(filelistPath);
+        for (URL url : filelistUrls) {
+            try (InputStream stream = url.openStream()) {
+                if (stream == null) {
+                    warn("VFS.initEntries: could not read resource %s", filelistPath);
+                    return;
+                }
+                BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+                String line;
+                finest("VFS entries:");
+                while ((line = br.readLine()) != null) {
+                    if (line.isBlank()) {
+                        // allow empty lines, some tools insert empty lines when concatenating files
+                        continue;
+                    }
+
+                    String projPath = absoluteResourcePath(vfsRoot, PROJ_DIR);
+                    if (!projWarning && line.startsWith(projPath)) {
+                        projWarning = true;
+                        LOGGER.warning("");
+                        LOGGER.warning(String.format("%s source root was deprecated, use %s instead.", projPath, srcPath));
+                        LOGGER.warning("");
+                    }
+
+                    String platformPath = resourcePathToPlatformPath(line);
+                    int i = mountPoint.toString().length();
+                    DirEntry parent = null;
+                    do {
+                        String dir = platformPath.substring(0, i);
+                        String dirKey = toCaseComparable(dir);
+                        BaseEntry genericEntry = vfsEntries.get(dirKey);
+                        DirEntry dirEntry;
+                        if (genericEntry instanceof DirEntry de) {
+                            dirEntry = de;
+                        } else if (genericEntry == null) {
+                            dirEntry = new DirEntry(dir);
+                            vfsEntries.put(dirKey, dirEntry);
+                            finest("  %s", dirEntry.getResourcePath());
+                            if (parent != null) {
+                                parent.entries.add(dirEntry);
+                            }
+                        } else {
+                            throw fileDirDuplicateMismatchError(dirKey);
+                        }
+                        parent = dirEntry;
+                        i++;
+                    } while ((i = platformPath.indexOf(PLATFORM_SEPARATOR, i)) != -1);
+
+                    assert parent != null;
+                    if (!platformPath.endsWith(PLATFORM_SEPARATOR)) {
+                        FileEntry fileEntry = new FileEntry(platformPath);
+                        BaseEntry previous = vfsEntries.put(toCaseComparable(platformPath), fileEntry);
+                        if (previous != null) {
+                            if (previous instanceof DirEntry) {
+                                throw fileDirDuplicateMismatchError(platformPath);
+                            }
+                            if (filelistUrls.size() > 1 && !line.startsWith(venvPath) && !line.equals(absFilelistPath)) {
+                                reportFailedMultiVFSCheck(multipleLocationsErrorMessage("There are duplicate entries originating from different virtual " +
+                                                "filesystem instances. The duplicate entries path: %s.", line));
+                            }
+                            fine(multipleLocationsErrorMessage("Duplicate entries virtual filesystem entries: " + line));
+                        }
+                        finest("  %s", fileEntry.getResourcePath());
+                        parent.entries.add(fileEntry);
+                        if (extractOnStartup) {
+                            Path p = Paths.get(fileEntry.getPlatformPath());
+                            if (shouldExtract(p)) {
+                                getExtractedPath(p);
+                            }
+                        }
+                    }
+                }
+            } catch (IOException ex) {
+                throw new IllegalStateException(String.format("IO error during VirtualFileSystem initialization from location '%s'.", url), ex);
             }
-            BufferedReader br = new BufferedReader(new InputStreamReader(stream));
-            String line;
-            finest("VFS entries:");
-            while ((line = br.readLine()) != null) {
+        }
+        if (vfsEntries.isEmpty()) {
+            warn("VFS.getEntry: no entries after init");
+        }
+        if (filelistUrls.size() > 1) {
+            validateMultipleVFSLocations(filelistUrls);
+        }
+    }
 
-                if (!projWarning && line.startsWith(PROJ_PREFIX)) {
-                    projWarning = true;
-                    LOGGER.warning("");
-                    LOGGER.warning(String.format("%s source root was deprecated, use %s instead.", PROJ_PREFIX, SRC_PREFIX));
-                    LOGGER.warning("");
+    private List<URL> getFilelistURLs(String filelistPath) {
+        List<URL> filelistUrls;
+        try {
+            filelistUrls = Collections.list(this.resourceLoadingClass.getClassLoader().getResources(filelistPath));
+        } catch (IOException e) {
+            throw new IllegalStateException("IO error during reading the VirtualFileSystem metadata", e);
+        }
+        if (filelistUrls.isEmpty()) {
+            throw new IllegalStateException(String.format("Could not find VirtualFileSystem metadata in Java resources. " +
+                            "Resource not found: %s.", filelistPath));
+        } else if (filelistUrls.size() > 1 || vfsRootURL != null) {
+            String locations = filelistUrls.stream().map(URL::toString).collect(Collectors.joining("\n"));
+            if (vfsRootURL != null) {
+                Optional<URL> filelist = filelistUrls.stream().filter(x -> x.toString().startsWith(vfsRootURL)).findFirst();
+                if (filelist.isPresent()) {
+                    LOGGER.fine(String.format("Found multiple virtual filesystem instances. Using '%s' as requested by System property '%s'.",
+                                    vfsRootURL, MULTI_VFS_SINGLE_ROOT_URL_PROP));
+                    return List.of(filelist.get());
+                } else {
+                    throw new IllegalStateException(String.format(
+                                    "Could not find virtual filesystem with root '%s' as requested by System property '%s'. " +
+                                                    "Found the following virtual filesystem locations:\n" +
+                                                    "%s",
+                                    vfsRootURL, MULTI_VFS_SINGLE_ROOT_URL_PROP, locations));
                 }
+            } else {
+                String message = String.format(
+                                "Found multiple embedded virtual filesystem instances in the following locations:\n" +
+                                                "%s",
+                                locations);
+                if (!allowMultipleLocations) {
+                    throw new IllegalStateException(String.format("%s\n\n" +
+                                    "It is recommended to use virtual filesystem isolation. See the documentation of " +
+                                    "VirtualFilesystem$Builder#resourceDirectory(resourcePath) to learn about " +
+                                    "isolating multiple virtual filesystems in one application.\n\n" +
+                                    "Use experimental and unstable system property -D%s=URL to select only one virtual filesystem." +
+                                    "The URL must point to the root of the desired virtual filesystem instance.\n\n" +
+                                    "Use experimental and unstable system property -D%s=true to merge the filesystems into one. " +
+                                    "In case of duplicate entries in multiple filesystems, one is chosen at random.",
+                                    message, MULTI_VFS_SINGLE_ROOT_URL_PROP, MULTI_VFS_ALLOW_PROP));
+                } else {
+                    LOGGER.fine(message + "\n\nThe virtual filesystems will be merged. ");
+                }
+            }
+        }
+        return filelistUrls;
+    }
 
-                String platformPath = resourcePathToPlatformPath(line);
-                int i = mountPoint.toString().length();
-                DirEntry parent = null;
-                do {
-                    String dir = platformPath.substring(0, i);
-                    String dirKey = toCaseComparable(dir);
-                    DirEntry dirEntry = (DirEntry) vfsEntries.get(dirKey);
-                    if (dirEntry == null) {
-                        dirEntry = new DirEntry(dir);
-                        vfsEntries.put(dirKey, dirEntry);
-                        finest("  %s", dirEntry.getResourcePath());
-                        if (parent != null) {
-                            parent.entries.add(dirEntry);
-                        }
+    private static void reportFailedMultiVFSCheck(String message) {
+        if (Boolean.getBoolean(MULTI_VSF_CHECKS_AS_WARNING_PROP)) {
+            warn(message);
+        } else {
+            throw new IllegalStateException(message + String.format(" This error can be turned into a warning with -D%s=true", MULTI_VSF_CHECKS_AS_WARNING_PROP));
+        }
+    }
+
+    private void validateMultipleVFSLocations(List<URL> filelistUrls) {
+        // Check compatibility of installed packages. Use venv/installed.txt, which should be added
+        // by the Maven/Gradle plugin and should contain "pip freeze" of the venv
+        ArrayList<URL> installedUrls;
+        try {
+            installedUrls = Collections.list(this.resourceLoadingClass.getClassLoader().getResources(resourcePath(vfsRoot, INSTALLED_FILE)));
+        } catch (IOException e) {
+            warn("Cannot check compatibility of the merged virtual environments. Cannot read list of packages installed in the virtual environments. IOException: " + e.getMessage());
+            return;
+        }
+        if (installedUrls.size() != filelistUrls.size()) {
+            warn("Could not read the list of installed packages for all virtual environments. Lists found:\n%s",
+                            installedUrls.stream().map(URL::toString).collect(Collectors.joining("\n")));
+        }
+        HashMap<String, String> pkgToVersion = new HashMap<>();
+        for (URL installedUrl : installedUrls) {
+            try (InputStream stream = installedUrl.openStream()) {
+                if (stream == null) {
+                    throw new IOException("openStream() returned null");
+                }
+                String[] packages = new String(stream.readAllBytes()).split("(\\n|\\r\\n)");
+                for (String pkgAndVer : packages) {
+                    if (pkgAndVer.isBlank() || pkgAndVer.trim().startsWith("#")) {
+                        continue;
                     }
-                    parent = dirEntry;
-                    i++;
-                } while ((i = platformPath.indexOf(PLATFORM_SEPARATOR, i)) != -1);
-
-                assert parent != null;
-                if (!platformPath.endsWith(PLATFORM_SEPARATOR)) {
-                    FileEntry fileEntry = new FileEntry(platformPath);
-                    vfsEntries.put(toCaseComparable(platformPath), fileEntry);
-                    finest("  %s", fileEntry.getResourcePath());
-                    parent.entries.add(fileEntry);
-                    if (extractOnStartup) {
-                        Path p = Paths.get(fileEntry.getPlatformPath());
-                        if (shouldExtract(p)) {
-                            getExtractedPath(p);
-                        }
+                    String[] parts = pkgAndVer.split("==");
+                    if (parts.length != 2) {
+                        warn("Cannot parse package specification '%s' in %s. Ignoring it.", pkgAndVer, installedUrl);
+                        continue;
+                    }
+                    String pkg = parts[0];
+                    String version = parts[1];
+                    String originalVer = pkgToVersion.put(pkg, version);
+                    if (originalVer != null && !originalVer.equals(version)) {
+                        reportFailedMultiVFSCheck(String.format("Package '%s' is installed in different versions ('%s' and '%s') in different virtual environments. " +
+                                        "This may result in disrupted functionality of the package or packages depending on it.",
+                                        parts[0], originalVer, version));
                     }
                 }
+            } catch (IOException e) {
+                warn("Cannot read list of installed packages in '%s'. Error: %s", installedUrl, e.getMessage());
+            }
+        }
+
+        // Check compatibility of GraalPy versions that were used to create the VFSs
+        ArrayList<URL> contentsUrls;
+        try {
+            contentsUrls = Collections.list(this.resourceLoadingClass.getClassLoader().getResources(resourcePath(vfsRoot, CONTENTS_FILE)));
+        } catch (IOException e) {
+            warn("Cannot check compatibility of the merged virtual environments. Cannot read GraalPy version of the virtual environments. IOException: " + e.getMessage());
+            return;
+        }
+        if (contentsUrls.size() != filelistUrls.size()) {
+            warn("Could not read the GraalPy version for all virtual environments. Version files found:\n%s",
+                            contentsUrls.stream().map(URL::toString).collect(Collectors.joining("\n")));
+        }
+        String graalPyVersion = null;
+        URL graalPyVersionUrl = null;
+        for (URL installedUrl : installedUrls) {
+            try (InputStream stream = installedUrl.openStream()) {
+                if (stream == null) {
+                    throw new IOException("openStream() returned null");
+                }
+                var reader = new BufferedReader(new InputStreamReader(stream));
+                String ver = reader.readLine();
+                if (ver == null) {
+                    continue;
+                }
+                ver = ver.trim();
+                if (graalPyVersion == null) {
+                    graalPyVersion = ver;
+                    graalPyVersionUrl = installedUrl;
+                } else if (!graalPyVersion.equals(ver)) {
+                    reportFailedMultiVFSCheck("Following virtual environments appear to have been created by different GraalPy versions:\n" +
+                                    graalPyVersionUrl + '\n' + installedUrl);
+                    break;
+                }
+            } catch (IOException e) {
+                warn("Cannot read GraalPy version from '%s'. Error: %s", installedUrl, e.getMessage());
             }
         }
     }
 
     byte[] readResource(String path) throws IOException {
-        try (InputStream stream = this.resourceLoadingClass.getResourceAsStream(path)) {
+        List<URL> urls = Collections.list(this.resourceLoadingClass.getClassLoader().getResources(path.substring(1)));
+        if (vfsRootURL != null) {
+            urls = getURLInRoot(urls);
+        }
+        if (urls.isEmpty()) {
+            throw new IllegalStateException("VFS.initEntries: could not find resource: " + path);
+        }
+        try (InputStream stream = urls.get(0).openStream()) {
             if (stream == null) {
-                warn("VFS.initEntries: could not read resource %s", path);
-                return null;
+                throw new IllegalStateException("VFS.initEntries: could not read resource: " + path);
             }
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             int n;
@@ -454,13 +686,11 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
     }
 
-    private BaseEntry getEntry(Path inputPath) throws IOException {
-        if (vfsEntries == null) {
-            initEntries();
-            if (vfsEntries == null || vfsEntries.isEmpty()) {
-                warn("VFS.getEntry: no entries after init");
-            }
-        }
+    private List<URL> getURLInRoot(List<URL> urls) {
+        return urls.stream().filter(x -> x.toString().startsWith(vfsRootURL)).findFirst().map(List::of).orElseGet(List::of);
+    }
+
+    private BaseEntry getEntry(Path inputPath) {
         Path path = toAbsoluteNormalizedPath(inputPath);
         return vfsEntries.get(toCaseComparable(path.toString()));
     }
@@ -589,23 +819,19 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
         }
     }
 
-    void extractResources(Path resourcesDirectory) throws IOException {
-        fine("VFS.extractResources '%s'", resourcesDirectory);
-        InputStream stream = this.resourceLoadingClass.getResourceAsStream(FILES_LIST_PATH);
-        if (stream == null) {
-            warn("VFS.initEntries: could not read resource %s", FILES_LIST_PATH);
-            return;
-        }
-        BufferedReader br = new BufferedReader(new InputStreamReader(stream));
-        String resourcePath;
-        while ((resourcePath = br.readLine()) != null) {
-            Path destFile = resourcesDirectory.resolve(Path.of(resourcePath.substring(VFS_ROOT.length() + 1)));
-            if (destFile == null) {
+    void extractResources(Path externalResourceDirectory) throws IOException {
+        fine("VFS.extractResources '%s'", externalResourceDirectory);
+        for (BaseEntry entry : vfsEntries.values()) {
+            String resourcePath = entry.getResourcePath();
+            assert resourcePath.length() >= vfsRoot.length() + 1;
+            if (resourcePath.length() == vfsRoot.length() + 1) {
                 continue;
             }
-            if (resourcePath.endsWith(RESOURCE_SEPARATOR)) {
+            Path destFile = externalResourceDirectory.resolve(Path.of(resourcePath.substring(vfsRoot.length() + 2)));
+            if (entry instanceof DirEntry) {
                 Files.createDirectories(destFile);
             } else {
+                assert entry instanceof FileEntry;
                 Path parent = destFile.getParent();
                 if (parent != null) {
                     Files.createDirectories(parent);
@@ -849,12 +1075,12 @@ final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
                 public Iterator<Path> iterator() {
                     finest("VFS.newDirectoryStream %s entries:", dir);
                     return dirEntry.entries.stream().filter(e -> {
-                        boolean accept = false;
+                        boolean accept;
                         try {
                             accept = filter.accept(Path.of(e.platformPath));
                             finest("VFS.newDirectoryStream entry %s accept: %s", e.platformPath, accept);
                         } catch (IOException ex) {
-                            ex.printStackTrace();
+                            LOGGER.log(Level.WARNING, ex, () -> String.format("Error when iterating entries of '%s'", dir));
                             return false;
                         }
                         return accept;

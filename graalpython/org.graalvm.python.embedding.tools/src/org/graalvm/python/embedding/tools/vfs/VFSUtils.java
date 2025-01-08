@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package org.graalvm.python.embedding.tools.vfs;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -59,6 +60,7 @@ import java.util.function.Consumer;
 
 import org.graalvm.python.embedding.tools.exec.GraalPyRunner;
 import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.exec.SubprocessLog.CollectOutputLog;
 
 public final class VFSUtils {
 
@@ -76,7 +78,7 @@ public final class VFSUtils {
                         ]
                       }
                     }
-                    """.replace("$vfs", VFS_ROOT);
+                    """;
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
 
@@ -85,8 +87,12 @@ public final class VFSUtils {
     private static final String GRAALPY_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain";
 
     public static void writeNativeImageConfig(Path metaInfRoot, String pluginId) throws IOException {
+        writeNativeImageConfig(metaInfRoot, pluginId, VFS_ROOT);
+    }
+
+    public static void writeNativeImageConfig(Path metaInfRoot, String pluginId, String vfsRoot) throws IOException {
         Path p = metaInfRoot.resolve(Path.of("native-image", GRAALPY_GROUP_ID, pluginId));
-        write(p.resolve("resource-config.json"), NATIVE_IMAGE_RESOURCES_CONFIG);
+        write(p.resolve("resource-config.json"), NATIVE_IMAGE_RESOURCES_CONFIG.replace("$vfs", vfsRoot));
     }
 
     private static void write(Path config, String txt) throws IOException {
@@ -105,11 +111,15 @@ public final class VFSUtils {
         }
     }
 
-    public static void generateVFSFilesList(Path vfs) throws IOException {
+    public static void generateVFSFilesList(Path resourcesRoot, Path vfs) throws IOException {
         TreeSet<String> entriesSorted = new TreeSet<>();
-        generateVFSFilesList(vfs, entriesSorted, null);
+        generateVFSFilesList(resourcesRoot, vfs, entriesSorted, null);
         Path filesList = vfs.resolve(VFS_FILESLIST);
         Files.write(filesList, entriesSorted);
+    }
+
+    public static void generateVFSFilesList(Path vfs) throws IOException {
+        generateVFSFilesList(null, vfs);
     }
 
     // Note: forward slash is not valid file/dir name character on Windows,
@@ -124,12 +134,22 @@ public final class VFSUtils {
      * Adds the VFS filelist entries to given set. Caller may provide a non-empty set.
      */
     public static void generateVFSFilesList(Path vfs, Set<String> ret, Consumer<String> duplicateHandler) throws IOException {
+        generateVFSFilesList(null, vfs, ret, duplicateHandler);
+    }
+
+    public static void generateVFSFilesList(Path resourcesRoot, Path vfs, Set<String> ret, Consumer<String> duplicateHandler) throws IOException {
         if (!Files.isDirectory(vfs)) {
             throw new IOException(String.format("'%s' has to exist and be a directory.\n", vfs));
         }
         String rootPath = makeDirPath(vfs.toAbsolutePath());
-        int rootEndIdx = rootPath.lastIndexOf(File.separator, rootPath.lastIndexOf(File.separator) - 1);
-        ret.add(normalizeResourcePath(rootPath.substring(rootEndIdx)));
+        int rootEndIdx;
+        if (resourcesRoot == null) {
+            // we assume the resources root is the parent
+            rootEndIdx = rootPath.lastIndexOf(File.separator, rootPath.lastIndexOf(File.separator) - 1);
+        } else {
+            String resRootPath = makeDirPath(resourcesRoot);
+            rootEndIdx = resRootPath.length() - 1;
+        }
         try (var s = Files.walk(vfs)) {
             s.forEach(p -> {
                 String entry = null;
@@ -223,14 +243,27 @@ public final class VFSUtils {
             runVenvBin(venvDirectory, "graalpy", subprocessLog, "-I", "-m", "ensurepip");
         }
 
+        Iterable<String> frozenPkgs = null;
         if (packages != null) {
-            deleteUnwantedPackages(venvDirectory, packages, installedPackages, subprocessLog);
-            installWantedPackages(venvDirectory, packages, installedPackages, subprocessLog);
+            boolean needsUpdate = false;
+            needsUpdate |= deleteUnwantedPackages(venvDirectory, packages, installedPackages, subprocessLog);
+            needsUpdate |= installWantedPackages(venvDirectory, packages, installedPackages, subprocessLog);
+            if (needsUpdate) {
+                var freezeLog = new CollectOutputLog();
+                runPip(venvDirectory, "freeze", freezeLog, "--local");
+                frozenPkgs = freezeLog.getOutput();
+            }
         }
 
         try {
             Files.write(tag, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             Files.write(tag, packages, StandardOpenOption.APPEND);
+            if (frozenPkgs != null) {
+                String toWrite = "# Generated by GraalPy Maven or Gradle plugin using pip freeze\n" +
+                                "# This file is used by GraalPy VirtualFileSystem\n" +
+                                String.join("\n", frozenPkgs);
+                Files.write(venvDirectory.resolve("installed.txt"), toWrite.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            }
         } catch (IOException e) {
             throw new IOException(String.format("failed to write tag file %s", tag), e);
         }
@@ -331,23 +364,25 @@ public final class VFSUtils {
         }
     }
 
-    private static void installWantedPackages(Path venvDirectory, List<String> packages, List<String> installedPackages, SubprocessLog subprocessLog) throws IOException {
+    private static boolean installWantedPackages(Path venvDirectory, List<String> packages, List<String> installedPackages, SubprocessLog subprocessLog) throws IOException {
         Set<String> pkgsToInstall = new HashSet<>(packages);
         pkgsToInstall.removeAll(installedPackages);
         if (pkgsToInstall.isEmpty()) {
-            return;
+            return false;
         }
         runPip(venvDirectory, "install", subprocessLog, pkgsToInstall.toArray(new String[pkgsToInstall.size()]));
+        return true;
     }
 
-    private static void deleteUnwantedPackages(Path venvDirectory, List<String> packages, List<String> installedPackages, SubprocessLog subprocessLog) throws IOException {
+    private static boolean deleteUnwantedPackages(Path venvDirectory, List<String> packages, List<String> installedPackages, SubprocessLog subprocessLog) throws IOException {
         List<String> args = new ArrayList<>(installedPackages);
         args.removeAll(packages);
         if (args.isEmpty()) {
-            return;
+            return false;
         }
         args.add(0, "-y");
         runPip(venvDirectory, "uninstall", subprocessLog, args.toArray(new String[args.size()]));
+        return true;
     }
 
     private static void runLauncher(String launcherPath, SubprocessLog log, String... args) throws IOException {
