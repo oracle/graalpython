@@ -255,11 +255,22 @@ def sha_final(sha_info):
         dig.extend([ ((i>>56) & 0xff), ((i>>48) & 0xff), ((i>>40) & 0xff), ((i>>32) & 0xff), ((i>>24) & 0xff), ((i>>16) & 0xff), ((i>>8) & 0xff), (i & 0xff) ])
     return bytes(dig)
 
-class sha512(object):
+class Immutable(type):
+    def __init__(cls, name, bases, dct):
+        type.__setattr__(cls,"attr",set(dct.keys()))
+        type.__init__(cls, name, bases, dct)
+
+    def __setattr__(cls, name, value):
+        # Mock Py_TPFLAGS_IMMUTABLETYPE
+        qualname = '.'.join([cls.__module__, cls.__name__])
+        raise TypeError(f"cannot set '{name}' attribute of immutable type '{qualname}'")
+
+
+class sha512(object, metaclass=Immutable):
     digest_size = digestsize = SHA_DIGESTSIZE
     block_size = SHA_BLOCKSIZE
 
-    def __init__(self, s=None, *, usedforsecurity=True):
+    def __init__(self, s=None, usedforsecurity=True):
         self.name = 'sha512'
         self._sha = sha_init()
         if s:
@@ -282,7 +293,7 @@ class sha512(object):
 class sha384(sha512):
     digest_size = digestsize = 48
 
-    def __init__(self, s=None, *, usedforsecurity=True):
+    def __init__(self, s=None, usedforsecurity=True):
         self.name = 'sha384'
         self._sha = sha384_init()
         if s:

@@ -141,7 +141,7 @@ class md5:
     digest_size = digestsize = 16
     block_size = 64
 
-    def __init__(self, arg=None, *, usedforsecurity=True):
+    def __init__(self, arg=None, usedforsecurity=True):
         "Initialisation."
         
         # Initial message length in bits(!).
