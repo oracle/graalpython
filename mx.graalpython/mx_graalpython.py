@@ -2047,6 +2047,8 @@ def python_style_checks(args):
         mx.command_function("eclipseformat")(["--primary"])
     if "--no-spotbugs" not in args:
         mx.command_function("spotbugs")([])
+    if "--no-sigcheck" not in args:
+        mx.command_function("sigtest")([])
 
 
 def python_checkcopyrights(args):
