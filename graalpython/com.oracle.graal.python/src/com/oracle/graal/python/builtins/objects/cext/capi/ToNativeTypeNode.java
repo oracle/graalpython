@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -157,9 +157,7 @@ public abstract class ToNativeTypeNode {
         writeGroupSlots(CFields.PyTypeObject__tp_as_number, slots, writePointerNode, mem, nullValue);
 
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_absolute, getSlot(obj, SlotMethodDef.NB_ABSOLUTE));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_divmod, getSlot(obj, SlotMethodDef.NB_DIVMOD));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_float, getSlot(obj, SlotMethodDef.NB_FLOAT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_floor_divide, getSlot(obj, SlotMethodDef.NB_FLOOR_DIVIDE));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_index, getSlot(obj, SlotMethodDef.NB_INDEX));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_add, getSlot(obj, SlotMethodDef.NB_INPLACE_ADD));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_and, getSlot(obj, SlotMethodDef.NB_INPLACE_AND));
@@ -176,18 +174,10 @@ public abstract class ToNativeTypeNode {
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_xor, getSlot(obj, SlotMethodDef.NB_INPLACE_XOR));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_int, getSlot(obj, SlotMethodDef.NB_INT));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_invert, getSlot(obj, SlotMethodDef.NB_INVERT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_lshift, getSlot(obj, SlotMethodDef.NB_LSHIFT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_matrix_multiply, nullValue);
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_negative, getSlot(obj, SlotMethodDef.NB_NEGATIVE));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_or, getSlot(obj, SlotMethodDef.NB_OR));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_positive, getSlot(obj, SlotMethodDef.NB_POSITIVE));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_power, getSlot(obj, SlotMethodDef.NB_POWER));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_remainder, getSlot(obj, SlotMethodDef.NB_REMAINDER));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_reserved, nullValue);
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_rshift, getSlot(obj, SlotMethodDef.NB_RSHIFT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_subtract, getSlot(obj, SlotMethodDef.NB_SUBTRACT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_true_divide, getSlot(obj, SlotMethodDef.NB_TRUE_DIVIDE));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_xor, getSlot(obj, SlotMethodDef.NB_XOR));
         return mem;
     }
 

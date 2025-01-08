@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,11 +52,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
@@ -69,6 +67,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -81,7 +81,9 @@ import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict.ODictNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -128,6 +130,9 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.POrderedDict)
 public class OrderedDictBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = OrderedDictBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return OrderedDictBuiltinsFactory.getFactories();
@@ -240,10 +245,9 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Slot(value = SlotKind.nb_or, isComplex = true)
     @GenerateNodeFactory
-    abstract static class OrNode extends PythonBinaryBuiltinNode {
+    abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization
         static Object or(VirtualFrame frame, POrderedDict left, PDict right,
                         @Bind("this") Node inliningTarget,

@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,7 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import operator
 import sys
+
 from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises, compile_module_from_file
 
 SlotsGetter = CPyExtType("SlotsGetter",
@@ -627,3 +629,281 @@ def test_PyType_Modified_doesnt_change_slots():
     assert tester[1] == 'mp_subscript'
     assert tester.call_PySequence_GetItem(1) == 'sq_item'
 
+
+def test_nb_slot_calls():
+    slots = [
+        ('proxy_nb_binary_slot', 'nb_add'),
+        ('proxy_nb_binary_slot', 'nb_subtract'),
+        ('proxy_nb_binary_slot', 'nb_multiply'),
+        ('proxy_nb_binary_slot', 'nb_remainder'),
+        ('proxy_nb_binary_slot', 'nb_divmod'),
+        ('proxy_nb_ternary_slot', 'nb_power'),
+        ('proxy_nb_unary_slot', 'nb_negative'),
+        ('proxy_nb_unary_slot', 'nb_positive'),
+        ('proxy_nb_unary_slot', 'nb_absolute'),
+        ('proxy_nb_inquiry_slot', 'nb_bool'),
+        ('proxy_nb_unary_slot', 'nb_invert'),
+        ('proxy_nb_binary_slot', 'nb_lshift'),
+        ('proxy_nb_binary_slot', 'nb_rshift'),
+        ('proxy_nb_binary_slot', 'nb_and'),
+        ('proxy_nb_binary_slot', 'nb_xor'),
+        ('proxy_nb_binary_slot', 'nb_or'),
+        ('proxy_nb_unary_slot', 'nb_int'),
+        ('proxy_nb_unary_slot', 'nb_float'),
+        ('proxy_nb_binary_slot', 'nb_inplace_add'),
+        ('proxy_nb_binary_slot', 'nb_inplace_subtract'),
+        ('proxy_nb_binary_slot', 'nb_inplace_multiply'),
+        ('proxy_nb_binary_slot', 'nb_inplace_remainder'),
+        ('proxy_nb_ternary_slot', 'nb_inplace_power'),
+        ('proxy_nb_binary_slot', 'nb_inplace_lshift'),
+        ('proxy_nb_binary_slot', 'nb_inplace_rshift'),
+        ('proxy_nb_binary_slot', 'nb_inplace_and'),
+        ('proxy_nb_binary_slot', 'nb_inplace_xor'),
+        ('proxy_nb_binary_slot', 'nb_inplace_or'),
+        ('proxy_nb_binary_slot', 'nb_floor_divide'),
+        ('proxy_nb_binary_slot', 'nb_true_divide'),
+        ('proxy_nb_binary_slot', 'nb_inplace_floor_divide'),
+        ('proxy_nb_binary_slot', 'nb_inplace_true_divide'),
+        ('proxy_nb_unary_slot', 'nb_index'),
+        ('proxy_nb_binary_slot', 'nb_matrix_multiply'),
+        ('proxy_nb_binary_slot', 'nb_inplace_matrix_multiply'),
+    ]
+    NativeSlotProxy = CPyExtType(
+        name='NativeSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                PyObject* delegate;
+                if (!PyArg_UnpackTuple(args, "NativeSlotProxy", 0, 1, &delegate))
+                    return NULL;
+                NativeSlotProxyObject* obj = (NativeSlotProxyObject*)type->tp_alloc(type, 0);
+                if (!obj)
+                    return NULL;
+                obj->delegate = Py_NewRef(delegate);  // leaked
+                return (PyObject*)obj;
+            }
+            static PyTypeObject NativeSlotProxyType;
+            static void unpack(PyObject** obj) {
+                if (Py_TYPE(*obj) == &NativeSlotProxyType) {
+                    *obj = ((NativeSlotProxyObject*)*obj)->delegate;
+                }
+            }
+            #define proxy_nb_unary_slot(slot) \
+                static PyObject* proxy_##slot(PyObject *a) { \
+                    unpack(&a); \
+                    return Py_TYPE(a)->tp_as_number->slot(a); \
+                }
+            #define proxy_nb_inquiry_slot(slot) \
+                static int proxy_##slot(PyObject *a) { \
+                    unpack(&a); \
+                    return Py_TYPE(a)->tp_as_number->slot(a); \
+                }
+            #define proxy_nb_binary_slot(slot) \
+                static PyObject* proxy_##slot(PyObject *a, PyObject *b) { \
+                    if (Py_TYPE(a) == &NativeSlotProxyType) { \
+                        unpack(&a); \
+                        return Py_TYPE(a)->tp_as_number->slot(a, b); \
+                    } else { \
+                        unpack(&b); \
+                        return Py_TYPE(b)->tp_as_number->slot(a, b); \
+                    } \
+                }
+            #define proxy_nb_ternary_slot(slot) \
+                static PyObject* proxy_##slot(PyObject *a, PyObject *b, PyObject* c) { \
+                    if (Py_TYPE(a) == &NativeSlotProxyType) { \
+                        unpack(&a); \
+                        return Py_TYPE(a)->tp_as_number->slot(a, b, c); \
+                    } else if (Py_TYPE(b) == &NativeSlotProxyType) { \
+                        unpack(&b); \
+                        return Py_TYPE(b)->tp_as_number->slot(a, b, c); \
+                    } else { \
+                        unpack(&c); \
+                        return Py_TYPE(c)->tp_as_number->slot(a, b, c); \
+                    } \
+                }
+        ''' + '\n'.join(f'{macro}({slot})' for macro, slot in slots),
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(NativeSlotProxyObject, delegate), 0, NULL}',
+        **{slot: f'proxy_{slot}' for _, slot in slots},
+    )
+
+    def _unary_op(op):
+        def fn(a):
+            return op(a.delegate)
+
+        return fn
+
+    def _binary_op(op):
+        def fn(a, b):
+            return op(a.delegate, b)
+
+        return fn
+
+    def _binary_op_r(op):
+        def fn(a, b):
+            return op(b, a.delegate)
+
+        return fn
+
+    def _binary_op_inplace(op):
+        def fn(a, b):
+            a.delegate = op(a.delegate, b)
+            return a
+
+        return fn
+
+    class PureSlotProxy:
+        def __init__(self, delegate):
+            self.delegate = delegate
+
+        __add__ = _binary_op(operator.add)
+        __radd__ = _binary_op_r(operator.add)
+        __iadd__ = _binary_op_inplace(operator.add)
+        __sub__ = _binary_op(operator.sub)
+        __rsub__ = _binary_op_r(operator.sub)
+        __isub__ = _binary_op_inplace(operator.sub)
+        __mul__ = _binary_op(operator.mul)
+        __rmul__ = _binary_op_r(operator.mul)
+        __imul__ = _binary_op_inplace(operator.mul)
+        __mod__ = _binary_op(operator.mod)
+        __rmod__ = _binary_op_r(operator.mod)
+        __imod__ = _binary_op_inplace(operator.mod)
+        __floordiv__ = _binary_op(operator.floordiv)
+        __rfloordiv__ = _binary_op_r(operator.floordiv)
+        __ifloordiv__ = _binary_op_inplace(operator.floordiv)
+        __truediv__ = _binary_op(operator.truediv)
+        __rtruediv__ = _binary_op_r(operator.truediv)
+        __itruediv__ = _binary_op_inplace(operator.truediv)
+        __divmod__ = _binary_op(divmod)
+        __rdivmod__ = _binary_op_r(divmod)
+
+        def __pow__(self, power, modulo=None):
+            return pow(self.delegate, power, modulo)
+
+        def __rpow__(self, other):
+            return other ** self.delegate
+
+        def __ipow__(self, other):
+            self.delegate = self.delegate ** other
+            return self
+
+        __pos__ = _unary_op(operator.pos)
+        __neg__ = _unary_op(operator.neg)
+        __abs__ = _unary_op(abs)
+        __bool__ = _unary_op(bool)
+        __invert__ = _unary_op(operator.invert)
+        __index__ = _unary_op(operator.index)
+        __int__ = _unary_op(int)
+        __float__ = _unary_op(float)
+        __lshift__ = _binary_op(operator.lshift)
+        __rlshift__ = _binary_op_r(operator.lshift)
+        __ilshift__ = _binary_op_inplace(operator.lshift)
+        __rshift__ = _binary_op(operator.rshift)
+        __rrshift__ = _binary_op_r(operator.rshift)
+        __irshift__ = _binary_op_inplace(operator.rshift)
+        __and__ = _binary_op(operator.and_)
+        __rand__ = _binary_op_r(operator.and_)
+        __iand__ = _binary_op_inplace(operator.and_)
+        __or__ = _binary_op(operator.or_)
+        __ror__ = _binary_op_r(operator.or_)
+        __ior__ = _binary_op_inplace(operator.or_)
+        __xor__ = _binary_op(operator.xor)
+        __rxor__ = _binary_op_r(operator.xor)
+        __ixor__ = _binary_op_inplace(operator.xor)
+        __matmul__ = _binary_op(operator.matmul)
+        __rmatmul__ = _binary_op_r(operator.matmul)
+        __imatmul__ = _binary_op_inplace(operator.matmul)
+
+    class ObjWithMatmul:
+        def __matmul__(self, other):
+            return "@"
+
+        def __rmatmul__(self, other):
+            return "@"
+
+    for obj in [NativeSlotProxy(3), NativeSlotProxy(PureSlotProxy(3))]:
+        assert obj + 2 == 5
+        assert 2 + obj == 5
+        assert obj - 2 == 1
+        assert 2 - obj == -1
+        assert obj * 2 == 6
+        assert 2 * obj == 6
+        assert obj % 2 == 1
+        assert 2 % obj == 2
+        assert divmod(obj, 2) == (1, 1)
+        assert divmod(2, obj) == (0, 2)
+        # TODO fix on graalpy
+        # assert obj ** 2 == 9
+        # assert 2 ** obj == 8
+        # assert pow(obj, 2, 2) == 1
+        # if isinstance(obj.delegate, int):  # pow doesn't call __rpow__
+        #     assert pow(2, obj, 2) == 0
+        #     assert pow(2, 2, obj) == 1
+        assert -obj == -3
+        assert +obj == 3
+        assert abs(obj) == 3
+        assert bool(obj)
+        assert ~obj == -4
+        assert obj << 2 == 12
+        assert 2 << obj == 16
+        assert obj >> 2 == 0
+        assert 2 >> obj == 0
+        assert obj & 2 == 2
+        assert 2 & obj == 2
+        assert obj | 2 == 3
+        assert 2 | obj == 3
+        assert obj ^ 2 == 1
+        assert 2 ^ obj == 1
+        assert int(obj) == 3
+        assert float(obj) == 3.0
+        assert operator.index(obj) == 3
+        assert obj // 2 == 1
+        assert 2 // obj == 0
+        assert obj / 2 == 1.5
+        assert 2 / obj == 2 / 3
+
+    obj = NativeSlotProxy(ObjWithMatmul())
+    assert obj @ 1 == '@'
+    assert 1 @ obj == '@'
+
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj += 2
+    assert obj.delegate == 5
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj -= 2
+    assert obj.delegate == 1
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj *= 2
+    assert obj.delegate == 6
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj %= 2
+    assert obj.delegate == 1
+    # TODO fix on graalpy
+    # obj = NativeSlotProxy(PureSlotProxy(3))
+    # obj **= 2
+    # assert obj.delegate == 9
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj <<= 2
+    assert obj.delegate == 12
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj >>= 2
+    assert obj.delegate == 0
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj &= 2
+    assert obj.delegate == 2
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj |= 2
+    assert obj.delegate == 3
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj ^= 2
+    assert obj.delegate == 1
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj //= 2
+    assert obj.delegate == 1
+    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj /= 2
+    assert obj.delegate == 1.5
+    # TODO fix on graalpy
+    # obj = NativeSlotProxy(PureSlotProxy(ObjWithMatmul()))
+    # obj @= 1
+    # assert obj.delegate == '@'

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -61,10 +61,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSHOOK__;
@@ -132,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
@@ -1488,10 +1487,9 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Slot(value = SlotKind.nb_or, isComplex = true)
     @GenerateNodeFactory
-    abstract static class OrNode extends PythonBinaryBuiltinNode {
+    abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization
         Object union(Object self, Object other,
                         @Cached GenericTypeNodes.UnionTypeOrNode orNode) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,23 +44,12 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_ASS_SUBSCRIPT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_AND;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_DIVMOD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOAT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOOR_DIVIDE;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INDEX;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_LSHIFT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_MATRIX_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_OR;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_POWER;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_REMAINDER;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_RSHIFT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_SUBTRACT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_TRUE_DIVIDE;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_XOR;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ASS_ITEM;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
@@ -69,7 +58,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AEXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
@@ -77,12 +65,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
@@ -96,39 +82,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RLSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMATMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RRSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RTRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUBCLASSCHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -243,32 +210,8 @@ public enum SpecialMethodSlot {
     Gt(T___GT__),
     Ge(T___GE__),
 
-    And(T___AND__, NB_AND),
-    RAnd(T___RAND__, NB_AND),
-    Or(T___OR__, NB_OR),
-    ROr(T___ROR__, NB_OR),
-    Xor(T___XOR__, NB_XOR),
-    RXor(T___RXOR__, NB_XOR),
-    // Don't add SQ_CONCAT, CPython doesn't add a wrapper for it
-    Sub(T___SUB__, NB_SUBTRACT),
-    RSub(T___RSUB__, NB_SUBTRACT),
-    // Don't add SQ_REPEAT, CPython doesn't add a wrapper for it
-    MatMul(T___MATMUL__, NB_MATRIX_MULTIPLY),
-    RMatMul(T___RMATMUL__, NB_MATRIX_MULTIPLY),
-    Mod(T___MOD__, NB_REMAINDER),
-    RMod(T___RMOD__, NB_REMAINDER),
-    DivMod(T___DIVMOD__, NB_DIVMOD),
-    RDivMod(T___RDIVMOD__, NB_DIVMOD),
     Pow(T___POW__, NB_POWER),
     RPow(T___RPOW__, NB_POWER),
-    TrueDiv(T___TRUEDIV__, NB_TRUE_DIVIDE),
-    RTrueDiv(T___RTRUEDIV__, NB_TRUE_DIVIDE),
-    FloorDiv(T___FLOORDIV__, NB_FLOOR_DIVIDE),
-    RFloorDiv(T___RFLOORDIV__, NB_FLOOR_DIVIDE),
-    LShift(T___LSHIFT__, NB_LSHIFT),
-    RLShift(T___RLSHIFT__, NB_LSHIFT),
-    RShift(T___RSHIFT__, NB_RSHIFT),
-    RRShift(T___RRSHIFT__, NB_RSHIFT),
     Round(T___ROUND__),
 
     IAdd(T___IADD__, NB_INPLACE_ADD),
@@ -323,18 +266,7 @@ public enum SpecialMethodSlot {
     }
 
     static {
-        And.reverse = RAnd;
-        Or.reverse = ROr;
-        Sub.reverse = RSub;
-        DivMod.reverse = RDivMod;
-        TrueDiv.reverse = RTrueDiv;
-        FloorDiv.reverse = RFloorDiv;
-        LShift.reverse = RLShift;
-        RShift.reverse = RRShift;
-        Xor.reverse = RXor;
-        MatMul.reverse = RMatMul;
         Pow.reverse = RPow;
-        Mod.reverse = RMod;
         assert checkFind();
         assert checkReverseSlots();
     }
@@ -855,9 +787,6 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___DICT__, TS_ENCODING)) {
                     return Dict;
                 }
-                if (eqNode.execute(name, T___DIVMOD__, TS_ENCODING)) {
-                    return DivMod;
-                }
                 break;
             case 'i' * 26 + 't':    // it
                 if (eqNode.execute(name, T___ITER__, TS_ENCODING)) {
@@ -892,9 +821,6 @@ public enum SpecialMethodSlot {
             case 's' * 26 + 'u':    // su
                 if (eqNode.execute(name, T___SUBCLASSCHECK__, TS_ENCODING)) {
                     return Subclasscheck;
-                }
-                if (eqNode.execute(name, T___SUB__, TS_ENCODING)) {
-                    return Sub;
                 }
                 break;
             case 'c' * 26 + 'a':    // ca
@@ -933,9 +859,6 @@ public enum SpecialMethodSlot {
             case 'f' * 26 + 'l':    // fl
                 if (eqNode.execute(name, T___FLOAT__, TS_ENCODING)) {
                     return Float;
-                }
-                if (eqNode.execute(name, T___FLOORDIV__, TS_ENCODING)) {
-                    return FloorDiv;
                 }
                 break;
             case 's' * 26 + 't':    // st
@@ -977,70 +900,13 @@ public enum SpecialMethodSlot {
                 }
                 break;
             case 'a' * 26 + 'n':    // an
-                if (eqNode.execute(name, T___AND__, TS_ENCODING)) {
-                    return And;
-                }
                 if (eqNode.execute(name, T___ANEXT__, TS_ENCODING)) {
                     return ANext;
                 }
                 break;
-            case 'r' * 26 + 'a':    // ra
-                if (eqNode.execute(name, T___RAND__, TS_ENCODING)) {
-                    return RAnd;
-                }
-                break;
-            case 'o' * 26 + 'r':    // or
-                if (eqNode.execute(name, T___OR__, TS_ENCODING)) {
-                    return Or;
-                }
-                break;
             case 'r' * 26 + 'o':    // ro
-                if (eqNode.execute(name, T___ROR__, TS_ENCODING)) {
-                    return ROr;
-                }
                 if (eqNode.execute(name, T___ROUND__, TS_ENCODING)) {
                     return Round;
-                }
-                break;
-            case 'x' * 26 + 'o':    // xo
-                if (eqNode.execute(name, T___XOR__, TS_ENCODING)) {
-                    return Xor;
-                }
-                break;
-            case 'r' * 26 + 'x':    // rx
-                if (eqNode.execute(name, T___RXOR__, TS_ENCODING)) {
-                    return RXor;
-                }
-                break;
-            case 'r' * 26 + 's':    // rs
-                if (eqNode.execute(name, T___RSUB__, TS_ENCODING)) {
-                    return RSub;
-                }
-                if (eqNode.execute(name, T___RSHIFT__, TS_ENCODING)) {
-                    return RShift;
-                }
-                break;
-            case 'r' * 26 + 'm':    // rm
-                if (eqNode.execute(name, T___RMATMUL__, TS_ENCODING)) {
-                    return RMatMul;
-                }
-                if (eqNode.execute(name, T___RMOD__, TS_ENCODING)) {
-                    return RMod;
-                }
-                break;
-            case 'm' * 26 + 'a':    // ma
-                if (eqNode.execute(name, T___MATMUL__, TS_ENCODING)) {
-                    return MatMul;
-                }
-                break;
-            case 'm' * 26 + 'o':    // mo
-                if (eqNode.execute(name, T___MOD__, TS_ENCODING)) {
-                    return Mod;
-                }
-                break;
-            case 'r' * 26 + 'd':    // rd
-                if (eqNode.execute(name, T___RDIVMOD__, TS_ENCODING)) {
-                    return RDivMod;
                 }
                 break;
             case 'p' * 26 + 'o':    // po
@@ -1051,36 +917,6 @@ public enum SpecialMethodSlot {
             case 'r' * 26 + 'p':    // rp
                 if (eqNode.execute(name, T___RPOW__, TS_ENCODING)) {
                     return RPow;
-                }
-                break;
-            case 't' * 26 + 'r':    // tr
-                if (eqNode.execute(name, T___TRUEDIV__, TS_ENCODING)) {
-                    return TrueDiv;
-                }
-                break;
-            case 'r' * 26 + 't':    // rt
-                if (eqNode.execute(name, T___RTRUEDIV__, TS_ENCODING)) {
-                    return RTrueDiv;
-                }
-                break;
-            case 'r' * 26 + 'f':    // rf
-                if (eqNode.execute(name, T___RFLOORDIV__, TS_ENCODING)) {
-                    return RFloorDiv;
-                }
-                break;
-            case 'l' * 26 + 's':    // ls
-                if (eqNode.execute(name, T___LSHIFT__, TS_ENCODING)) {
-                    return LShift;
-                }
-                break;
-            case 'r' * 26 + 'l':    // rl
-                if (eqNode.execute(name, T___RLSHIFT__, TS_ENCODING)) {
-                    return RLShift;
-                }
-                break;
-            case 'r' * 26 + 'r':    // rr
-                if (eqNode.execute(name, T___RRSHIFT__, TS_ENCODING)) {
-                    return RRShift;
                 }
                 break;
             case 'i' * 26 + 'a':    // ia

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -308,8 +308,52 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
             return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_ADD);
         }
 
+        public static BinaryOpSlotFuncWrapper createSubtract(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_SUBTRACT);
+        }
+
         public static BinaryOpSlotFuncWrapper createMultiply(TpSlotManaged delegate) {
             return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_MULTIPLY);
+        }
+
+        public static BinaryOpSlotFuncWrapper createRemainder(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_REMAINDER);
+        }
+
+        public static BinaryOpSlotFuncWrapper createLShift(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_LSHIFT);
+        }
+
+        public static BinaryOpSlotFuncWrapper createRShift(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_RSHIFT);
+        }
+
+        public static BinaryOpSlotFuncWrapper createAnd(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_AND);
+        }
+
+        public static BinaryOpSlotFuncWrapper createXor(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_XOR);
+        }
+
+        public static BinaryOpSlotFuncWrapper createOr(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_OR);
+        }
+
+        public static BinaryOpSlotFuncWrapper createFloorDivide(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_FLOOR_DIVIDE);
+        }
+
+        public static BinaryOpSlotFuncWrapper createTrueDivide(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_TRUE_DIVIDE);
+        }
+
+        public static BinaryOpSlotFuncWrapper createDivMod(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_DIVMOD);
+        }
+
+        public static BinaryOpSlotFuncWrapper createMatrixMultiply(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_MATRIX_MULTIPLY);
         }
 
         @ExportMessage
