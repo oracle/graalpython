@@ -58,7 +58,9 @@ public class SlotsMapping {
             case sq_concat -> "TpSlotBinaryFunc.TpSlotSqConcat";
             case sq_length, mp_length -> "TpSlotLen.TpSlotLenBuiltin" + getSuffix(s.isComplex());
             case sq_item, sq_repeat -> "TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin";
+            case sq_ass_item -> "TpSlotSqAssItem.TpSlotSqAssItemBuiltin";
             case mp_subscript -> "TpSlotBinaryFunc.TpSlotMpSubscript";
+            case mp_ass_subscript -> "TpSlotMpAssSubscript.TpSlotMpAssSubscriptBuiltin";
             case tp_getattro -> "TpSlotGetAttr.TpSlotGetAttrBuiltin";
             case tp_descr_get -> "TpSlotDescrGet.TpSlotDescrGetBuiltin" + getSuffix(s.isComplex());
             case tp_descr_set -> "TpSlotDescrSet.TpSlotDescrSetBuiltin";
@@ -76,8 +78,10 @@ public class SlotsMapping {
             case sq_concat -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode";
             case sq_length, mp_length -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode";
             case sq_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode";
+            case sq_ass_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode";
             case sq_repeat -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode";
             case mp_subscript -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode";
+            case mp_ass_subscript -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode";
             case tp_getattro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode";
             case tp_descr_set -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.DescrSetBuiltinNode";
             case tp_setattro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode";
@@ -89,31 +93,21 @@ public class SlotsMapping {
             case nb_bool -> "boolean executeUncached(Object self)";
             case tp_descr_get -> "Object executeUncached(Object self, Object obj, Object type)";
             case sq_length, mp_length -> "int executeUncached(Object self)";
-            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript, sq_concat, sq_repeat,
-                            nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift,
-                            nb_and, nb_xor, nb_or, nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
-                throw new AssertionError("Should not reach here: should be always complex");
+            default -> throw new AssertionError("Should not reach here: should be always complex");
         };
     }
 
     static boolean supportsComplex(SlotKind s) {
         return switch (s) {
             case nb_bool -> false;
-            case sq_length, mp_length, tp_getattro, tp_descr_get, tp_descr_set,
-                            tp_setattro, sq_item, mp_subscript, sq_concat, sq_repeat,
-                            nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift,
-                            nb_and, nb_xor, nb_or, nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
-                true;
+            default -> true;
         };
     }
 
     static boolean supportsSimple(SlotKind s) {
         return switch (s) {
             case nb_bool, sq_length, mp_length, tp_descr_get -> true;
-            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript, sq_concat, sq_repeat,
-                            nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift,
-                            nb_and, nb_xor, nb_or, nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
-                false;
+            default -> false;
         };
     }
 
@@ -122,10 +116,7 @@ public class SlotsMapping {
             case nb_bool -> "executeBool(null, self)";
             case sq_length, mp_length -> "executeInt(null, self)";
             case tp_descr_get -> "execute(null, self, obj, type)";
-            case tp_getattro, tp_descr_set, tp_setattro, sq_item, mp_subscript, sq_concat, sq_repeat,
-                            nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift,
-                            nb_and, nb_xor, nb_or, nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
-                throw new AssertionError("Should not reach here: should be always complex");
+            default -> throw new AssertionError("Should not reach here: should be always complex");
         };
     }
 

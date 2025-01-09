@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -41,7 +41,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_ARRAY;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -53,7 +52,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
@@ -91,8 +89,10 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -115,7 +115,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -630,54 +629,114 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.sq_ass_item, isComplex = true)
     @GenerateNodeFactory
-    abstract static class SetItemNode extends PythonTernaryBuiltinNode {
+    abstract static class SetItemNode extends SqAssItemBuiltinNode {
 
-        @Specialization(guards = "!isPSlice(idx)")
-        static Object setitem(VirtualFrame frame, PArray self, Object idx, Object value,
+        @Specialization(guards = "!isNoValue(value)")
+        static void setitem(VirtualFrame frame, PArray self, int idx, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
+                        @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
+                        @Cached ArrayNodes.PutValueNode putValueNode) {
+            int index = normalizeIndexNode.execute(idx, self.getLength());
+            putValueNode.execute(frame, inliningTarget, self, index, value);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        static void delitem(PArray self, int idx, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
+                        @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
+            int index = normalizeIndexNode.execute(idx, self.getLength());
+            deleteSliceNode.execute(inliningTarget, self, index, 1);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class SetSubscriptNode extends MpAssSubscriptBuiltinNode {
+
+        @Specialization(guards = {"!isPSlice(idx)", "!isNoValue(value)"})
+        static void setitem(VirtualFrame frame, PArray self, Object idx, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyNumberIndexNode indexNode,
+                        @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
             putValueNode.execute(frame, inliningTarget, self, index, value);
-            return PNone.NONE;
         }
 
-        @Specialization(guards = "self.getFormat() == other.getFormat()")
-        static Object setitem(VirtualFrame frame, PArray self, PSlice slice, PArray other,
+        @Specialization(guards = {"!isPSlice(idx)", "isNoValue(value)"})
+        static void delitem(VirtualFrame frame, PArray self, Object idx, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached PyNumberIndexNode indexNode,
+                        @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
+                        @Shared @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
+            deleteSliceNode.execute(inliningTarget, self, index, 1);
+        }
+
+        @Specialization
+        static void setitem(PArray self, PSlice slice, Object other,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached InlinedConditionProfile sameArrayProfile,
-                        @Cached InlinedConditionProfile simpleStepProfile,
-                        @Cached InlinedConditionProfile complexDeleteProfile,
-                        @Cached InlinedConditionProfile differentLengthProfile,
+                        @Cached InlinedBranchProfile hasOtherProfile,
+                        @Cached InlinedBranchProfile isDelItemProfile,
+                        @Cached InlinedBranchProfile otherTypeErrorProfile,
+                        @Cached InlinedBranchProfile sameArrayProfile,
+                        @Cached InlinedBranchProfile simpleStepProfile,
+                        @Cached InlinedBranchProfile complexDeleteProfile,
+                        @Cached InlinedBranchProfile differentLengthProfile,
+                        @Cached InlinedBranchProfile copyProfile,
+                        @Cached InlinedBranchProfile wrongLengthProfile,
                         @Cached InlinedConditionProfile growProfile,
-                        @Cached InlinedConditionProfile stepAssignProfile,
+                        @Cached InlinedBranchProfile stepAssignProfile,
                         @Cached InlinedByteValueProfile itemShiftProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
-                        @Cached DeleteArraySliceNode deleteSliceNode,
+                        @Shared @Cached DeleteArraySliceNode deleteSliceNode,
                         @Cached ArrayNodes.ShiftNode shiftNode,
-                        @Cached DelItemNode delItemNode,
+                        @Cached ArrayNodes.SetLengthNode setLengthNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.getLength(), sliceUnpack.execute(inliningTarget, slice));
+            int length = self.getLength();
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, length, sliceUnpack.execute(inliningTarget, slice));
             int start = sliceInfo.start;
             int stop = sliceInfo.stop;
             int step = sliceInfo.step;
             int sliceLength = sliceInfo.sliceLength;
             int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
             int itemsize = self.getItemSize();
-            Object sourceBuffer = other.getBuffer();
-            int needed = other.getLength();
-            if (sameArrayProfile.profile(inliningTarget, sourceBuffer == self.getBuffer())) {
-                byte[] tmp = new byte[needed * itemsize];
-                bufferLib.readIntoByteArray(other.getBuffer(), 0, tmp, 0, tmp.length);
-                sourceBuffer = new ByteSequenceStorage(tmp);
+            int needed;
+            Object sourceBuffer;
+            if (other instanceof PArray otherArray) {
+                hasOtherProfile.enter(inliningTarget);
+                if (self.getFormat() != otherArray.getFormat()) {
+                    throw raiseNode.get(inliningTarget).raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                }
+                sourceBuffer = otherArray.getBuffer();
+                needed = otherArray.getLength();
+                if (sourceBuffer == self.getBuffer()) {
+                    sameArrayProfile.enter(inliningTarget);
+                    byte[] tmp = new byte[needed * itemsize];
+                    bufferLib.readIntoByteArray(sourceBuffer, 0, tmp, 0, tmp.length);
+                    sourceBuffer = new ByteSequenceStorage(tmp);
+                }
+            } else if (other == PNone.NO_VALUE) {
+                isDelItemProfile.enter(inliningTarget);
+                sourceBuffer = null;
+                needed = 0;
+            } else {
+                otherTypeErrorProfile.enter(inliningTarget);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_ARRAY, other);
             }
-            if (simpleStepProfile.profile(inliningTarget, step == 1)) {
-                if (differentLengthProfile.profile(inliningTarget, sliceLength != needed)) {
+            if (step == 1) {
+                simpleStepProfile.enter(inliningTarget);
+                if (sliceLength != needed) {
+                    differentLengthProfile.enter(inliningTarget);
                     self.checkCanResize(inliningTarget, raiseNode);
                     if (growProfile.profile(inliningTarget, sliceLength < needed)) {
                         if (stop < start) {
@@ -688,74 +747,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         deleteSliceNode.execute(inliningTarget, self, start, sliceLength - needed);
                     }
                 }
-                bufferLib.readIntoBuffer(sourceBuffer, 0, self.getBuffer(), start << itemShift, needed << itemShift, bufferLib);
-            } else if (complexDeleteProfile.profile(inliningTarget, needed == 0)) {
-                delItemNode.executeSlice(frame, self, slice);
-            } else if (stepAssignProfile.profile(inliningTarget, needed == sliceLength)) {
-                for (int cur = start, i = 0; i < sliceLength; cur += step, i++) {
-                    bufferLib.readIntoBuffer(sourceBuffer, i << itemShift, self.getBuffer(), cur << itemShift, itemsize, bufferLib);
+                if (needed > 0) {
+                    copyProfile.enter(inliningTarget);
+                    bufferLib.readIntoBuffer(sourceBuffer, 0, self.getBuffer(), start << itemShift, needed << itemShift, bufferLib);
                 }
-            } else {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
-            }
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "self.getFormat() != other.getFormat()")
-        @SuppressWarnings("unused")
-        static Object setitemWrongFormat(PArray self, PSlice slice, PArray other,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
-        }
-
-        @Specialization(guards = "!isArray(other)")
-        @SuppressWarnings("unused")
-        static Object setitemWrongType(PArray self, PSlice slice, Object other,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_ASSIGN_ARRAY, other);
-        }
-    }
-
-    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        public abstract Object executeSlice(VirtualFrame frame, PArray self, PSlice slice);
-
-        @Specialization(guards = "!isPSlice(idx)")
-        static Object delitem(VirtualFrame frame, PArray self, Object idx,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
-                        @Exclusive @Cached DeleteArraySliceNode deleteSliceNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            self.checkCanResize(inliningTarget, raiseNode);
-            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
-            deleteSliceNode.execute(inliningTarget, self, index, 1);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        static Object delitem(PArray self, PSlice slice,
-                        @Bind("this") Node inliningTarget,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached DeleteArraySliceNode deleteSliceNode,
-                        @Cached InlinedByteValueProfile itemShiftProfile,
-                        @Cached ArrayNodes.SetLengthNode setLengthNode,
-                        @Cached InlinedConditionProfile simpleStepProfile,
-                        @Cached SliceNodes.SliceUnpack sliceUnpack,
-                        @Cached SliceNodes.AdjustIndices adjustIndices,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            self.checkCanResize(inliningTarget, raiseNode);
-            int length = self.getLength();
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, length, sliceUnpack.execute(inliningTarget, slice));
-            int start = sliceInfo.start;
-            int step = sliceInfo.step;
-            int sliceLength = sliceInfo.sliceLength;
-            int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
-            if (sliceLength > 0) {
-                if (simpleStepProfile.profile(inliningTarget, step == 1)) {
-                    deleteSliceNode.execute(inliningTarget, self, start, sliceLength);
-                } else {
+            } else if (needed == 0) {
+                complexDeleteProfile.enter(inliningTarget);
+                if (sliceLength > 0) {
                     if (step < 0) {
                         start += 1 + step * (sliceLength - 1) - 1;
                         step = -step;
@@ -767,8 +765,15 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     bufferLib.readIntoBuffer(self.getBuffer(), (cur + 1) << itemShift, self.getBuffer(), (cur - offset) << itemShift, (length - cur - 1) << itemShift, bufferLib);
                     setLengthNode.execute(inliningTarget, self, length - sliceLength);
                 }
+            } else if (needed == sliceLength) {
+                stepAssignProfile.enter(inliningTarget);
+                for (int cur = start, i = 0; i < sliceLength; cur += step, i++) {
+                    bufferLib.readIntoBuffer(sourceBuffer, i << itemShift, self.getBuffer(), cur << itemShift, itemsize, bufferLib);
+                }
+            } else {
+                wrongLengthProfile.enter(inliningTarget);
+                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ATTEMPT_ASSIGN_ARRAY_OF_SIZE, needed, sliceLength);
             }
-            return PNone.NONE;
         }
     }
 

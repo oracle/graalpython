@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
@@ -72,6 +73,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
@@ -104,8 +106,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSe
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargprocWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
@@ -137,9 +141,13 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotG
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotInquiryBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.TpSlotLenBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.TpSlotMpAssSubscriptBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.TpSlotMpAssSubscriptPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlotSqAssItemBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlotSqAssItemPython;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -236,10 +244,12 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot nb_matrix_multiply, //
                 TpSlot sq_length, //
                 TpSlot sq_item, //
+                TpSlot sq_ass_item, //
                 TpSlot sq_concat, //
                 TpSlot sq_repeat, //
                 TpSlot mp_length, //
                 TpSlot mp_subscript, //
+                TpSlot mp_ass_subscript, //
                 TpSlot combined_sq_mp_length, //
                 TpSlot combined_mp_sq_length, //
                 TpSlot tp_descr_get, //
@@ -466,6 +476,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PySequenceMethods__sq_item,
                         PExternalFunctionWrapper.GETITEM,
                         SsizeargfuncSlotWrapper::new),
+        SQ_ASS_ITEM(
+                        TpSlots::sq_ass_item,
+                        TpSlotSqAssItemPython.class,
+                        TpSlotSqAssItemBuiltin.class,
+                        TpSlotGroup.AS_SEQUENCE,
+                        CFields.PySequenceMethods__sq_ass_item,
+                        PExternalFunctionWrapper.SETITEM,
+                        SsizeobjargprocWrapper::new),
         SQ_REPEAT(
                         TpSlots::sq_repeat,
                         TpSlotPythonSingle.class,
@@ -490,6 +508,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PyMappingMethods__mp_subscript,
                         PExternalFunctionWrapper.BINARYFUNC,
                         BinarySlotFuncWrapper::new),
+        MP_ASS_SUBSCRIPT(
+                        TpSlots::mp_ass_subscript,
+                        TpSlotMpAssSubscriptPython.class,
+                        TpSlotMpAssSubscriptBuiltin.class,
+                        TpSlotGroup.AS_MAPPING,
+                        CFields.PyMappingMethods__mp_ass_subscript,
+                        PExternalFunctionWrapper.OBJOBJARGPROC,
+                        ObjobjargWrapper::new),
         TP_DESCR_GET(
                         TpSlots::tp_descr_get,
                         TpSlotPythonSingle.class,
@@ -759,6 +785,9 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
         addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
         addSlotDef(s, TpSlotMeta.MP_SUBSCRIPT, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.MP_ASS_SUBSCRIPT,
+                        TpSlotDef.withoutHPy(T___SETITEM__, TpSlotMpAssSubscriptPython::create, PExternalFunctionWrapper.OBJOBJARGPROC),
+                        TpSlotDef.withoutHPy(T___DELITEM__, TpSlotMpAssSubscriptPython::create, PExternalFunctionWrapper.MP_DELITEM));
         addSlotDef(s, TpSlotMeta.SQ_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
         // sq_concat does not have a slotdef for __radd__ unlike sq_repeat. This have consequences
         // w.r.t. inheritance from native classes, where sq_repeat is not overridden by __mul__.
@@ -769,6 +798,9 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC),
                         TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC));
         addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.GETITEM, HPySlotWrapper.SQ_ITEM));
+        addSlotDef(s, TpSlotMeta.SQ_ASS_ITEM,
+                        TpSlotDef.withoutHPy(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SETITEM),
+                        TpSlotDef.withoutHPy(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.DELITEM));
 
         SLOTDEFS = s;
         SPECIAL2SLOT = new HashMap<>(SLOTDEFS.size() * 2);
@@ -1359,10 +1391,12 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.NB_MATRIX_MULTIPLY), //
                             get(TpSlotMeta.SQ_LENGTH), //
                             get(TpSlotMeta.SQ_ITEM), //
+                            get(TpSlotMeta.SQ_ASS_ITEM), //
                             get(TpSlotMeta.SQ_CONCAT), //
                             get(TpSlotMeta.SQ_REPEAT), //
                             get(TpSlotMeta.MP_LENGTH), //
                             get(TpSlotMeta.MP_SUBSCRIPT), //
+                            get(TpSlotMeta.MP_ASS_SUBSCRIPT), //
                             sq_mp_length, //
                             mp_sq_length, //
                             get(TpSlotMeta.TP_DESCR_GET), //

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -690,7 +690,6 @@ public abstract class ErrorMessages {
     public static final TruffleString STATE_IS_NOT_A_DICT = tsLiteral("state is not a dictionary");
     public static final TruffleString STATE_VECTOR_INVALID = tsLiteral("state vector invalid.");
     public static final TruffleString STATE_VECTOR_MUST_BE_A_TUPLE = tsLiteral("state vector must be a tuple");
-    public static final TruffleString STEP_1_NOT_SUPPORTED = tsLiteral("step != 1 not supported");
     public static final TruffleString STEP_FOR_ISLICE_MUST_BE = tsLiteral("Step for islice() must be a positive integer or None.");
     public static final TruffleString STRING_ARG_WO_ENCODING = tsLiteral("string argument without an encoding");
     public static final TruffleString STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII = tsLiteral("string argument should contain only ASCII characters");
@@ -1045,6 +1044,14 @@ public abstract class ErrorMessages {
     public static final TruffleString TOO_MANY_REMAINING_BYTES_TO_BE_STORED = tsLiteral("There are too many remaining bytes to be stored in a bytes object.");
     public static final TruffleString MMAP_CANNOT_MODIFY_READONLY_MEMORY = tsLiteral("mmap can't modify a readonly memory map.");
     public static final TruffleString DATA_OUT_OF_RANGE = tsLiteral("data out of range");
+    public static final TruffleString MMAP_CLOSED_OR_INVALID = tsLiteral("mmap closed or invalid");
+    public static final TruffleString MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION = tsLiteral("mmap object doesn't support item deletion");
+    public static final TruffleString MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION = tsLiteral("mmap object doesn't support slice deletion");
+    public static final TruffleString MMAP_ASSIGNMENT_MUST_BE_LENGTH_1_BYTES = tsLiteral("mmap assignment must be length-1 bytes()");
+    public static final TruffleString MMAP_INDICES_MUST_BE_INTEGER = tsLiteral("mmap indices must be integer");
+    public static final TruffleString MMAP_ITEM_VALUE_MUST_BE_AN_INT = tsLiteral("mmap item value must be an int");
+    public static final TruffleString MMAP_ITEM_VALUE_MUST_BE_IN_RANGE = tsLiteral("mmap item value must be in range(0, 256)");
+    public static final TruffleString MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE = tsLiteral("mmap slice assignment is wrong size");
 
     // zlib errors
     public static final TruffleString WHILE_FLUSHING = tsLiteral("while flushing");

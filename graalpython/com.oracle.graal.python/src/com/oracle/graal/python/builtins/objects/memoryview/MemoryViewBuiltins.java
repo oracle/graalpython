@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,13 +44,11 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.systemHashCodeAsHexString;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -85,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -95,7 +94,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -221,11 +219,11 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
-        static Object setitem(VirtualFrame frame, PMemoryView self, Object index, Object object,
+    abstract static class SetItemNode extends MpAssSubscriptBuiltinNode {
+        @Specialization(guards = {"!isNoValue(object)", "!isPSlice(index)", "!isEllipsis(index)"})
+        static void setitem(VirtualFrame frame, PMemoryView self, Object index, Object object,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached MemoryViewNodes.PointerLookupNode pointerLookupNode,
                         @Shared @Cached MemoryViewNodes.WriteItemAtNode writeItemAtNode,
@@ -235,12 +233,10 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
             MemoryViewNodes.MemoryPointer ptr = pointerLookupNode.execute(frame, self, index);
             writeItemAtNode.execute(frame, self, ptr.ptr, ptr.offset, object);
-
-            return PNone.NONE;
         }
 
-        @Specialization
-        static Object setitem(VirtualFrame frame, PMemoryView self, PSlice slice, Object object,
+        @Specialization(guards = "!isNoValue(object)")
+        static void setitem(VirtualFrame frame, PMemoryView self, PSlice slice, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetItemNode getItemNode,
                         @Cached PyMemoryViewFromObject createMemoryView,
@@ -269,7 +265,6 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         MemoryViewNodes.MemoryPointer destPtr = pointerLookupNode.execute(frame, destView, i);
                         writeBytesAtNode.execute(inliningTarget, srcBytes, i * itemsize, itemsize, self, destPtr.ptr, destPtr.offset);
                     }
-                    return PNone.NONE;
                 } finally {
                     releaseNode.execute(frame, destView);
                 }
@@ -278,8 +273,8 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        static Object setitem(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis, Object object,
+        @Specialization(guards = "!isNoValue(object)")
+        static void setitem(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile zeroDimProfile,
                         @Shared @Cached MemoryViewNodes.WriteItemAtNode writeItemAtNode,
@@ -289,10 +284,15 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
             if (zeroDimProfile.profile(inliningTarget, self.getDimensions() == 0)) {
                 writeItemAtNode.execute(frame, self, self.getBufferPointer(), 0, object);
-                return PNone.NONE;
+            } else {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
+        }
 
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+        @Specialization(guards = "isNoValue(value)")
+        static void error(@SuppressWarnings("unused") PMemoryView self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_DELETE_MEMORY);
         }
 
         private static void checkReadonly(Node inliningTarget, PMemoryView self, PRaiseNode.Lazy raiseNode) {
@@ -413,16 +413,6 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
             }
             return callCapiFunction;
-        }
-    }
-
-    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object error(@SuppressWarnings("unused") PMemoryView self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_DELETE_MEMORY);
         }
     }
 

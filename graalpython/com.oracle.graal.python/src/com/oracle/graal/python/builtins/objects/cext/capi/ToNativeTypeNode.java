@@ -140,13 +140,12 @@ public abstract class ToNativeTypeNode {
         }
     }
 
-    private static Object allocatePyMappingMethods(PythonManagedClass obj, TpSlots slots, Object nullValue) {
+    private static Object allocatePyMappingMethods(TpSlots slots, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyMappingMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
 
         writeGroupSlots(CFields.PyTypeObject__tp_as_mapping, slots, writePointerNode, mem, nullValue);
 
-        writePointerNode.write(mem, CFields.PyMappingMethods__mp_ass_subscript, getSlot(obj, SlotMethodDef.MP_ASS_SUBSCRIPT));
         return mem;
     }
 
@@ -187,10 +186,7 @@ public abstract class ToNativeTypeNode {
 
         writeGroupSlots(CFields.PyTypeObject__tp_as_sequence, slots, writePointerNode, mem, nullValue);
 
-        // TODO: Heap types defining __add__/__mul__ have sq_concat/sq_repeat == NULL in CPython, so
-        // this may have unintended effects
         writePointerNode.write(mem, CFields.PySequenceMethods__was_sq_slice, nullValue);
-        writePointerNode.write(mem, CFields.PySequenceMethods__sq_ass_item, getSlot(obj, SlotMethodDef.SQ_ASS_ITEM));
         writePointerNode.write(mem, CFields.PySequenceMethods__was_sq_ass_slice, nullValue);
         // TODO populate sq_contains
         writePointerNode.write(mem, CFields.PySequenceMethods__sq_contains, nullValue);
@@ -280,7 +276,7 @@ public abstract class ToNativeTypeNode {
         Object asAsync = hasAsyncMethods(clazz) ? allocatePyAsyncMethods(clazz, nullValue) : nullValue;
         Object asNumber = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, slots, nullValue);
         Object asSequence = (slots.has_as_sequence() || hasSequenceMethods(clazz)) ? allocatePySequenceMethods(clazz, slots, nullValue) : nullValue;
-        Object asMapping = (slots.has_as_mapping() || hasMappingMethods(clazz)) ? allocatePyMappingMethods(clazz, slots, nullValue) : nullValue;
+        Object asMapping = slots.has_as_mapping() ? allocatePyMappingMethods(slots, nullValue) : nullValue;
         Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, HiddenAttr.AS_BUFFER);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, HiddenAttr.DEALLOC));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INDEX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -81,7 +80,9 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceUnpack;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -93,7 +94,6 @@ import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -156,16 +156,16 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.sq_ass_item, isComplex = true)
     @GenerateNodeFactory
-    abstract static class PyCArraySetItemNode extends PythonTernaryBuiltinNode {
+    abstract static class PyCArraySetItemNode extends TpSlotSqAssItem.SqAssItemBuiltinNode {
 
-        @Specialization(guards = "!isPNone(value)")
-        static Object Array_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
+        @Specialization(guards = "!isNoValue(value)")
+        static void Array_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Shared @Cached PyCDataSetNode pyCDataSetNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode,
+                        @Cached PyCDataSetNode pyCDataSetNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(inliningTarget, self);
             assert stgdict != null : "Cannot be NULL for array object instances";
             if (index < 0 || index >= stgdict.length) {
@@ -176,66 +176,64 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
             int offset = index * size;
 
             pyCDataSetNode.execute(frame, self, stgdict.proto, stgdict.setfunc, value, index, size, self.b_ptr.withOffset(offset));
-            return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!isPNone(value)", "!isPSlice(item)"})
-        static Object Array_ass_subscript(VirtualFrame frame, CDataObject self, Object item, Object value,
+        @Specialization(guards = "isNoValue(value)")
+        static void error(CDataObject self, int index, PNone value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class PyCArraySetSubscriptNode extends MpAssSubscriptBuiltinNode {
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPSlice(indexObj)"})
+        static void Array_ass_subscript(VirtualFrame frame, CDataObject self, Object indexObj, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSint,
-                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Shared @Cached PyCDataSetNode pyCDataSetNode,
+                        @Shared @Cached PyCArraySetItemNode setItemNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            if (indexCheckNode.execute(inliningTarget, item)) {
-                int i = asSint.executeExact(frame, inliningTarget, item, IndexError);
-                if (i < 0) {
-                    i += self.b_length;
+            if (indexCheckNode.execute(inliningTarget, indexObj)) {
+                int index = asSint.executeExact(frame, inliningTarget, indexObj, IndexError);
+                if (index < 0) {
+                    index += self.b_length;
                 }
-                Array_ass_item(frame, self, i, value, inliningTarget,
-                                pyObjectStgDictNode,
-                                pyCDataSetNode,
-                                raiseNode);
+                setItemNode.executeIntKey(frame, self, index, value);
             } else {
                 throw raiseNode.get(inliningTarget).raise(TypeError, INDICES_MUST_BE_INTEGER);
             }
-            return PNone.NONE;
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isPNone(value)")
-        static Object Array_ass_subscript(VirtualFrame frame, CDataObject self, PSlice slice, Object value,
+        @Specialization(guards = "!isNoValue(value)")
+        static void Array_ass_subscript(VirtualFrame frame, CDataObject self, PSlice slice, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode pySequenceLength,
                         @Cached PyObjectGetItem pySequenceGetItem,
                         @Cached SliceUnpack sliceUnpack,
                         @Cached AdjustIndices adjustIndices,
-                        @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Shared @Cached PyCDataSetNode pyCDataSetNode,
+                        @Shared @Cached PyCArraySetItemNode setItemNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.b_length, sliceUnpack.execute(inliningTarget, slice));
-            int start = sliceInfo.start, stop = sliceInfo.stop, step = sliceInfo.step;
+            int start = sliceInfo.start, step = sliceInfo.step;
             int slicelen = sliceInfo.sliceLength;
-            // if ((step < 0 && start < stop) || (step > 0 && start > stop))
-            // stop = start;
 
             int otherlen = pySequenceLength.execute(frame, inliningTarget, value);
             if (otherlen != slicelen) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, CAN_ONLY_ASSIGN_SEQUENCE_OF_SAME_SIZE);
             }
             for (int cur = start, i = 0; i < otherlen; cur += step, i++) {
-                Array_ass_item(frame, self, cur, pySequenceGetItem.execute(frame, inliningTarget, value, i), inliningTarget,
-                                pyObjectStgDictNode,
-                                pyCDataSetNode,
-                                raiseNode);
+                Object item = pySequenceGetItem.execute(frame, inliningTarget, value, i);
+                setItemNode.executeIntKey(frame, self, cur, item);
             }
-            return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        static Object error(CDataObject self, Object item, PNone value,
+        @Specialization(guards = "isNoValue(value)")
+        static void error(CDataObject self, Object index, PNone value,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION);
         }

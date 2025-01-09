@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -85,6 +85,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -171,7 +172,7 @@ public class TpSlotSizeArgFun {
             if (size < 0) {
                 if (fixNegativeIndex == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    fixNegativeIndex = insert(FixNegativeIndexNodeGen.create());
+                    fixNegativeIndex = insert(FixNegativeIndex.create());
                 }
                 size = fixNegativeIndex.execute(frame, size, index);
             }
@@ -223,6 +224,11 @@ public class TpSlotSizeArgFun {
                 return indexAsSize + len;
             }
             return indexAsSize;
+        }
+
+        @NeverDefault
+        public static FixNegativeIndex create() {
+            return FixNegativeIndexNodeGen.create();
         }
     }
 
