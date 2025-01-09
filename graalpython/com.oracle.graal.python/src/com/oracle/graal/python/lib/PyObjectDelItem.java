@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,16 +43,20 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode.IndexForSqSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -69,7 +73,7 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateCached
 @GenerateInline(inlineByDefault = true)
-@ImportStatic(SpecialMethodSlot.class)
+@ImportStatic(PGuards.class)
 public abstract class PyObjectDelItem extends Node {
     public final void executeCached(Frame frame, Object container, Object index) {
         execute(frame, this, container, index);
@@ -77,31 +81,54 @@ public abstract class PyObjectDelItem extends Node {
 
     public abstract void execute(Frame frame, Node inliningTarget, Object container, Object index);
 
-    @Specialization
-    static void doWithFrame(VirtualFrame frame, Node inliningTarget, Object primary, Object index,
-                    @Shared("getclass") @Cached GetClassNode getClassNode,
-                    @Cached("create(DelItem)") LookupSpecialMethodSlotNode lookupDelitem,
-                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raise,
-                    @Shared("callNode") @Cached(inline = false) CallBinaryMethodNode callDelitem) {
-        Object delitem = lookupDelitem.execute(frame, getClassNode.execute(inliningTarget, primary), primary);
-        if (delitem == PNone.NO_VALUE) {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
-        }
-        callDelitem.executeObject(frame, delitem, primary, index);
+    @Specialization(guards = "isBuiltinList(object)")
+    static void doList(VirtualFrame frame, PList object, Object key,
+                    @Cached(inline = false) ListBuiltins.SetSubscriptNode setItemNode) {
+        setItemNode.executeVoid(frame, object, key, PNone.NO_VALUE);
     }
 
-    @Specialization(replaces = "doWithFrame")
     @InliningCutoff
-    static void doGeneric(Node inliningTarget, Object primary, Object index,
-                    @Shared("getclass") @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "DelItem", inline = false) LookupCallableSlotInMRONode lookupDelitem,
-                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raise,
-                    @Shared("callNode") @Cached(inline = false) CallBinaryMethodNode callDelitem) {
-        Object setitem = lookupDelitem.execute(getClassNode.execute(inliningTarget, primary));
-        if (setitem == PNone.NO_VALUE) {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
+    @Specialization(replaces = "doList")
+    static void doGeneric(VirtualFrame frame, Node inliningTarget, Object object, Object key,
+                    @Cached GetObjectSlotsNode getSlotsNode,
+                    @Cached PyObjectDelItemGeneric genericNode) {
+        TpSlots slots = getSlotsNode.execute(inliningTarget, object);
+        genericNode.execute(frame, inliningTarget, object, slots, key);
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class PyObjectDelItemGeneric extends Node {
+        public abstract void execute(Frame frame, Node inliningTarget, Object object, TpSlots objectKlassSlots, Object key);
+
+        @Specialization(guards = "slots.mp_ass_subscript() != null")
+        static void doMapping(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, Object key,
+                        @Cached CallSlotMpAssSubscriptNode callNode) {
+            callNode.execute(frame, inliningTarget, slots.mp_ass_subscript(), object, key, PNone.NO_VALUE);
         }
-        callDelitem.executeObject(null, setitem, primary, index);
+
+        @Specialization(guards = {"slots.mp_ass_subscript() == null", "slots.sq_ass_item() != null", "key >= 0"})
+        static void doSequenceFastPath(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, int key,
+                        @Exclusive @Cached CallSlotSqAssItemNode callSqItem) {
+            callSqItem.execute(frame, inliningTarget, slots.sq_ass_item(), object, key, PNone.NO_VALUE);
+        }
+
+        @Specialization(guards = {"slots.mp_ass_subscript() == null", "slots.sq_ass_item() != null"}, replaces = "doSequenceFastPath")
+        @InliningCutoff
+        static void doSequence(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, Object key,
+                        @Cached IndexForSqSlot indexForSqSlot,
+                        @Exclusive @Cached CallSlotSqAssItemNode callSqItem) {
+            int index = indexForSqSlot.execute(frame, inliningTarget, object, slots, key);
+            callSqItem.execute(frame, inliningTarget, slots.sq_ass_item(), object, index, PNone.NO_VALUE);
+        }
+
+        @Fallback
+        @InliningCutoff
+        static void error(Object object, @SuppressWarnings("unused") TpSlots slots, @SuppressWarnings("unused") Object key,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_DELETION, object);
+        }
     }
 
     @NeverDefault

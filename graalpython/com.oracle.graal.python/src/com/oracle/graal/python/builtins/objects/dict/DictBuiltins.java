@@ -78,13 +78,12 @@ import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -94,7 +93,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -559,7 +557,6 @@ public final class DictBuiltins extends PythonBuiltins {
 
     // fromkeys()
     @Builtin(name = "fromkeys", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "iterable", "value"}, isClassmethod = true)
-    @ImportStatic(SpecialMethodSlot.class)
     @GenerateNodeFactory
     public abstract static class FromKeysNode extends PythonTernaryBuiltinNode {
 
@@ -578,30 +575,22 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callCtor,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetItem,
-                        @Cached CallTernaryMethodNode callSetItem,
+                        @Cached PyObjectSetItem setItem,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             Object dict = callCtor.execute(frame, cls);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             Object it = getIter.execute(frame, inliningTarget, iterable);
-            Object setitemMethod = lookupSetItem.execute(frame, getClassNode.execute(inliningTarget, dict), dict);
-            if (setitemMethod != PNone.NO_VALUE) {
-                while (true) {
-                    try {
-                        Object key = nextNode.execute(frame, it);
-                        callSetItem.execute(frame, setitemMethod, dict, key, val);
-                    } catch (PException e) {
-                        e.expectStopIteration(inliningTarget, errorProfile);
-                        break;
-                    }
+            while (true) {
+                try {
+                    Object key = nextNode.execute(frame, it);
+                    setItem.execute(frame, inliningTarget, dict, key, val);
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, errorProfile);
+                    break;
                 }
-                return dict;
-            } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, iterable);
             }
+            return dict;
         }
 
         protected static boolean isBuiltinDict(Node inliningTarget, Object cls, IsSameTypeNode isSameTypeNode) {

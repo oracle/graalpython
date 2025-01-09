@@ -214,7 +214,7 @@ public final class PythonCextListBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ListBuiltins.SetSubscriptNode setItemNode,
                         @Cached PySliceNew sliceNode) {
-            setItemNode.execute(null, list, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE), s);
+            setItemNode.executeVoid(null, list, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE), s);
             return 0;
         }
 

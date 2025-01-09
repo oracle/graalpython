@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -55,6 +57,9 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -80,26 +85,14 @@ public abstract class PySequenceGetItemNode extends Node {
     }
 
     @Specialization
-    static Object doGeneric(Frame frame, Object object, int indexIn,
+    static Object doGeneric(VirtualFrame frame, Object object, int index,
                     @Bind("this") Node inliningTarget,
                     @Cached GetObjectSlotsNode getSlotsNode,
-                    @Cached InlinedConditionProfile negativeIndexProfile,
-                    @Cached CallSlotLenNode callLenSlot,
+                    @Cached IndexForSqSlotInt indexForSqSlot,
                     @Cached CallSlotSizeArgFun callSqItem,
                     @Cached PRaiseNode.Lazy raiseNode) {
         TpSlots slots = getSlotsNode.execute(inliningTarget, object);
-        return getItem((VirtualFrame) frame, inliningTarget, object, slots, indexIn, negativeIndexProfile, callLenSlot, callSqItem, raiseNode);
-    }
-
-    public static Object getItem(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, int indexIn,
-                    InlinedConditionProfile negativeIndexProfile, CallSlotLenNode callLenSlot, CallSlotSizeArgFun callSqItem, PRaiseNode.Lazy raiseNode) {
-        int index = indexIn;
-        if (negativeIndexProfile.profile(inliningTarget, index < 0)) {
-            if (slots.sq_length() != null) {
-                int len = callLenSlot.execute(frame, inliningTarget, slots.sq_length(), object);
-                index += len;
-            }
-        }
+        index = indexForSqSlot.execute(frame, inliningTarget, object, slots, index);
         if (slots.sq_item() != null) {
             return callSqItem.execute(frame, inliningTarget, slots.sq_item(), object, index);
         } else {
@@ -114,5 +107,58 @@ public abstract class PySequenceGetItemNode extends Node {
             message = ErrorMessages.IS_NOT_A_SEQUENCE;
         }
         throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, message, object);
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class IndexForSqSlotInt extends Node {
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, int index);
+
+        @Specialization(guards = "index >= 0")
+        static int doInt(@SuppressWarnings("unused") Object object, @SuppressWarnings("unused") TpSlots slots, int index) {
+            return index;
+        }
+
+        @Fallback
+        @InliningCutoff
+        static int doNegativeInt(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, int index,
+                        @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Cached CallSlotLenNode callLenSlot) {
+            if (negativeIndexProfile.profile(inliningTarget, index < 0)) {
+                if (slots.sq_length() != null) {
+                    int len = callLenSlot.execute(frame, inliningTarget, slots.sq_length(), object);
+                    index += len;
+                }
+            }
+            return index;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class IndexForSqSlot extends Node {
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, Object index);
+
+        @Specialization
+        static int doInt(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, int index,
+                        @Exclusive @Cached IndexForSqSlotInt indexForSqSlotInt) {
+            return indexForSqSlotInt.execute(frame, inliningTarget, object, slots, index);
+        }
+
+        @Specialization(replaces = "doInt")
+        @InliningCutoff
+        static int doGeneric(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, Object indexObj,
+                        @Cached PyIndexCheckNode checkNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Exclusive @Cached IndexForSqSlotInt indexForSqSlotInt,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (!checkNode.execute(inliningTarget, indexObj)) {
+                raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SEQUENCE_INDEX_MUST_BE_INT_NOT_P, indexObj);
+            }
+            int index = asSizeNode.executeExact(frame, inliningTarget, indexObj, PythonBuiltinClassType.IndexError);
+            return indexForSqSlotInt.execute(frame, inliningTarget, object, slots, index);
+        }
     }
 }

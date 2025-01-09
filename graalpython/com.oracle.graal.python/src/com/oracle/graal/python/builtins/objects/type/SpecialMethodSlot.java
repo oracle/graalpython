@@ -43,14 +43,12 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITER;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MP_ASS_SUBSCRIPT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOAT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INDEX;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_POWER;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_ASS_ITEM;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
@@ -64,7 +62,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
@@ -92,7 +89,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUBCLASSCHECK__;
@@ -184,9 +180,6 @@ public enum SpecialMethodSlot {
     InstanceCheck(T___INSTANCECHECK__),
     Subclasscheck(T___SUBCLASSCHECK__),
     Call(T___CALL__, NO_BUILTIN_DESCRIPTORS),
-
-    SetItem(T___SETITEM__, SQ_ASS_ITEM | MP_ASS_SUBSCRIPT),
-    DelItem(T___DELITEM__, SQ_ASS_ITEM | MP_ASS_SUBSCRIPT),
 
     Exit(T___EXIT__),
     Enter(T___ENTER__),
@@ -771,16 +764,10 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___SET_NAME__, TS_ENCODING)) {
                     return SetName;
                 }
-                if (eqNode.execute(name, T___SETITEM__, TS_ENCODING)) {
-                    return SetItem;
-                }
                 break;
             case 'd' * 26 + 'e':    // de
                 if (eqNode.execute(name, T___DELATTR__, TS_ENCODING)) {
                     return DelAttr;
-                }
-                if (eqNode.execute(name, T___DELITEM__, TS_ENCODING)) {
-                    return DelItem;
                 }
                 break;
             case 'd' * 26 + 'i':    // di
