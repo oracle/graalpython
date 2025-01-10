@@ -44,9 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAs
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_anext;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_await;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_absolute;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_float;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_floor_divide;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_index;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_add;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_and;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_floor_divide;
@@ -59,7 +57,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNu
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_subtract;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_true_divide;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_xor;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_int;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_invert;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_negative;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_positive;
@@ -78,7 +75,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
@@ -87,9 +83,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ILSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
@@ -111,7 +105,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.Hashfun
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TernaryFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncLegacyWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
 import com.oracle.graal.python.util.Function;
@@ -122,22 +116,20 @@ public enum SlotMethodDef {
     TP_CALL(PyTypeObject__tp_call, T___CALL__, TernaryFunctionWrapper::new),
     TP_HASH(PyTypeObject__tp_hash, T___HASH__, HashfuncWrapper::new),
     TP_INIT(PyTypeObject__tp_init, T___INIT__, InitWrapper::new),
-    TP_ITER(PyTypeObject__tp_iter, T___ITER__, UnaryFuncWrapper::new),
-    TP_ITERNEXT(PyTypeObject__tp_iternext, T___NEXT__, UnaryFuncWrapper::new),
-    TP_REPR(PyTypeObject__tp_repr, T___REPR__, UnaryFuncWrapper::new),
+    TP_ITER(PyTypeObject__tp_iter, T___ITER__, PyProcsWrapper.UnaryFuncLegacyWrapper::new),
+    TP_ITERNEXT(PyTypeObject__tp_iternext, T___NEXT__, UnaryFuncLegacyWrapper::new),
+    TP_REPR(PyTypeObject__tp_repr, T___REPR__, PyProcsWrapper.UnaryFuncLegacyWrapper::new),
     TP_RICHCOMPARE(PyTypeObject__tp_richcompare, T___TRUFFLE_RICHCOMPARE__, RichcmpFunctionWrapper::new),
-    TP_STR(PyTypeObject__tp_str, T___STR__, UnaryFuncWrapper::new),
+    TP_STR(PyTypeObject__tp_str, T___STR__, UnaryFuncLegacyWrapper::new),
 
-    AM_AWAIT(PyAsyncMethods__am_await, T___AWAIT__, UnaryFuncWrapper::new, MethodsFlags.AM_AWAIT),
-    AM_AITER(PyAsyncMethods__am_aiter, T___AITER__, UnaryFuncWrapper::new, MethodsFlags.AM_AITER),
-    AM_ANEXT(PyAsyncMethods__am_anext, T___ANEXT__, UnaryFuncWrapper::new, MethodsFlags.AM_ANEXT),
+    AM_AWAIT(PyAsyncMethods__am_await, T___AWAIT__, UnaryFuncLegacyWrapper::new, MethodsFlags.AM_AWAIT),
+    AM_AITER(PyAsyncMethods__am_aiter, T___AITER__, UnaryFuncLegacyWrapper::new, MethodsFlags.AM_AITER),
+    AM_ANEXT(PyAsyncMethods__am_anext, T___ANEXT__, PyProcsWrapper.UnaryFuncLegacyWrapper::new, MethodsFlags.AM_ANEXT),
     // (mq) AM_SEND is an internal function and mostly called from within AWAIT, AITER, ANEXT.
     /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, TernaryFunctionWrapper::new, MethodsFlags.AM_SEND), */
 
-    NB_ABSOLUTE(PyNumberMethods__nb_absolute, T___ABS__, UnaryFuncWrapper::new, MethodsFlags.NB_ABSOLUTE),
-    NB_FLOAT(PyNumberMethods__nb_float, T___FLOAT__, UnaryFuncWrapper::new, MethodsFlags.NB_FLOAT),
+    NB_ABSOLUTE(PyNumberMethods__nb_absolute, T___ABS__, UnaryFuncLegacyWrapper::new, MethodsFlags.NB_ABSOLUTE),
     NB_FLOOR_DIVIDE(PyNumberMethods__nb_floor_divide, T___FLOORDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_FLOOR_DIVIDE),
-    NB_INDEX(PyNumberMethods__nb_index, T___INDEX__, UnaryFuncWrapper::new, MethodsFlags.NB_INDEX),
     NB_INPLACE_ADD(PyNumberMethods__nb_inplace_add, T___IADD__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_ADD),
     NB_INPLACE_AND(PyNumberMethods__nb_inplace_and, T___IAND__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_AND),
     NB_INPLACE_FLOOR_DIVIDE(PyNumberMethods__nb_inplace_floor_divide, T___IFLOORDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_FLOOR_DIVIDE),
@@ -150,10 +142,9 @@ public enum SlotMethodDef {
     NB_INPLACE_SUBTRACT(PyNumberMethods__nb_inplace_subtract, T___ISUB__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_SUBTRACT),
     NB_INPLACE_TRUE_DIVIDE(PyNumberMethods__nb_inplace_true_divide, T___ITRUEDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_TRUE_DIVIDE),
     NB_INPLACE_XOR(PyNumberMethods__nb_inplace_xor, T___IXOR__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_XOR),
-    NB_INT(PyNumberMethods__nb_int, T___INT__, UnaryFuncWrapper::new, MethodsFlags.NB_INT),
-    NB_INVERT(PyNumberMethods__nb_invert, T___INVERT__, UnaryFuncWrapper::new, MethodsFlags.NB_INVERT),
-    NB_NEGATIVE(PyNumberMethods__nb_negative, T___NEG__, UnaryFuncWrapper::new, MethodsFlags.NB_NEGATIVE),
-    NB_POSITIVE(PyNumberMethods__nb_positive, T___POS__, UnaryFuncWrapper::new, MethodsFlags.NB_POSITIVE),
+    NB_INVERT(PyNumberMethods__nb_invert, T___INVERT__, UnaryFuncLegacyWrapper::new, MethodsFlags.NB_INVERT),
+    NB_NEGATIVE(PyNumberMethods__nb_negative, T___NEG__, UnaryFuncLegacyWrapper::new, MethodsFlags.NB_NEGATIVE),
+    NB_POSITIVE(PyNumberMethods__nb_positive, T___POS__, UnaryFuncLegacyWrapper::new, MethodsFlags.NB_POSITIVE),
     NB_POWER(PyNumberMethods__nb_power, T___POW__, TernaryFunctionWrapper::new, MethodsFlags.NB_POWER);
 
     public final TruffleString methodName;
@@ -188,8 +179,6 @@ public enum SlotMethodDef {
         initGroup(
                         PyTypeObject__tp_as_number,
                         NB_ABSOLUTE,
-                        NB_FLOAT,
-                        NB_INDEX,
                         NB_INPLACE_ADD,
                         NB_INPLACE_AND,
                         NB_INPLACE_FLOOR_DIVIDE,
@@ -202,7 +191,6 @@ public enum SlotMethodDef {
                         NB_INPLACE_SUBTRACT,
                         NB_INPLACE_TRUE_DIVIDE,
                         NB_INPLACE_XOR,
-                        NB_INT,
                         NB_INVERT,
                         NB_NEGATIVE,
                         NB_POSITIVE,

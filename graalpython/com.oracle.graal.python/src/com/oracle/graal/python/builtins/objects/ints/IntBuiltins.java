@@ -43,15 +43,12 @@ package com.oracle.graal.python.builtins.objects.ints;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
@@ -102,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyLongCopy;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -3170,56 +3168,17 @@ public final class IntBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = J___INT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_int, isComplex = true)
+    @Slot(value = SlotKind.nb_index, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IntNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static int doB(boolean self) {
-            return self ? 1 : 0;
+        static Object doCopy(Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyLongCopy copy) {
+            return copy.execute(inliningTarget, self);
         }
-
-        @Specialization
-        static int doI(int self) {
-            return self;
-        }
-
-        @Specialization
-        static long doL(long self) {
-            return self;
-        }
-
-        @Specialization(guards = "isBuiltinPInt(self)")
-        static PInt doPInt(PInt self) {
-            return self;
-        }
-
-        @Specialization(guards = "!isBuiltinPInt(self)", rewriteOn = OverflowException.class)
-        static int doPIntOverridenNarrowInt(PInt self) throws OverflowException {
-            return self.intValueExact();
-        }
-
-        @Specialization(guards = "!isBuiltinPInt(self)", replaces = "doPIntOverridenNarrowInt", rewriteOn = OverflowException.class)
-        static long doPIntOverridenNarrowLong(PInt self) throws OverflowException {
-            return self.longValueExact();
-        }
-
-        @Specialization(guards = "!isBuiltinPInt(self)", replaces = "doPIntOverridenNarrowLong")
-        static PInt doPIntOverriden(PInt self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createInt(self.getValue());
-        }
-
-        @Specialization
-        static PythonNativeVoidPtr doL(PythonNativeVoidPtr self) {
-            return self;
-        }
-    }
-
-    @Builtin(name = J___INDEX__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class IndexNode extends IntNode {
     }
 
     @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
@@ -3244,7 +3203,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___FLOAT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_float, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FloatNode extends PythonUnaryBuiltinNode {

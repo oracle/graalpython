@@ -30,12 +30,9 @@ import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTru
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
@@ -413,7 +410,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___INT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_int, isComplex = true)
     @GenerateNodeFactory
     abstract static class IntNode extends ForeignUnaryNode {
         IntNode() {
@@ -421,7 +418,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___FLOAT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_float, isComplex = true)
     @GenerateNodeFactory
     abstract static class FloatNode extends ForeignUnaryNode {
         FloatNode() {
@@ -657,7 +654,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___INDEX__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_index, isComplex = true)
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
