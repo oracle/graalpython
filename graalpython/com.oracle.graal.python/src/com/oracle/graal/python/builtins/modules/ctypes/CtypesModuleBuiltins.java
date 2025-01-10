@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ArgError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtr;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointerType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_GetContainer;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
@@ -1401,7 +1402,22 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                     case FFI_TYPE_FLOAT -> Pointer.create(rtype, rtype.size, ilib.asFloat(result), 0);
                     case FFI_TYPE_DOUBLE -> Pointer.create(rtype, rtype.size, ilib.asDouble(result), 0);
                     case FFI_TYPE_VOID -> Pointer.NULL;
-                    case FFI_TYPE_POINTER, FFI_TYPE_STRUCT -> {
+                    case FFI_TYPE_STRUCT -> {
+                        // TODO: NFI support for structs
+                        // In case of struct, depending on the ABI the value returned from the
+                        // function may be actual struct memory (<16B and some other constraints on
+                        // SystemV AMD64 ABI, returned in two registers) or a pointer to caller
+                        // allocated buffer prepared for struct contents (larger structs), in which
+                        // case, however, the caller must allocate and pass the buffer as (hidden)
+                        // argument. We cannot get away with just using NFI pointer type as return
+                        // value for large structs, because NFI still needs to allocate and pass the
+                        // buffer for the result to the callee.
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.RETURNING_STRUCT_BY_VALUE_NOT_SUPPORTED);
+                    }
+                    case FFI_TYPE_POINTER -> {
+                        // NOTE: we are returning pointer to the result buffer and the result buffer
+                        // data itself is a pointer
                         Pointer pointer;
                         if (ilib.isNull(result)) {
                             pointer = Pointer.NULL;
