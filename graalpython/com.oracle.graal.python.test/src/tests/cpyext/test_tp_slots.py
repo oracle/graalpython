@@ -41,6 +41,13 @@ import sys
 
 from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises, compile_module_from_file
 
+
+def get_delegate(o):
+    if hasattr(o, 'delegate'):
+        return get_delegate(o.delegate)
+    return o
+
+
 SlotsGetter = CPyExtType("SlotsGetter",
                          """
                          static PyObject* get_tp_attr(PyObject* unused, PyObject* object) {
@@ -650,80 +657,100 @@ def test_nb_slot_calls():
         ('proxy_nb_binary_slot', 'nb_or'),
         ('proxy_nb_unary_slot', 'nb_int'),
         ('proxy_nb_unary_slot', 'nb_float'),
-        ('proxy_nb_binary_slot', 'nb_inplace_add'),
-        ('proxy_nb_binary_slot', 'nb_inplace_subtract'),
-        ('proxy_nb_binary_slot', 'nb_inplace_multiply'),
-        ('proxy_nb_binary_slot', 'nb_inplace_remainder'),
-        ('proxy_nb_ternary_slot', 'nb_inplace_power'),
-        ('proxy_nb_binary_slot', 'nb_inplace_lshift'),
-        ('proxy_nb_binary_slot', 'nb_inplace_rshift'),
-        ('proxy_nb_binary_slot', 'nb_inplace_and'),
-        ('proxy_nb_binary_slot', 'nb_inplace_xor'),
-        ('proxy_nb_binary_slot', 'nb_inplace_or'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_add'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_subtract'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_multiply'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_remainder'),
+        ('proxy_nb_ternary_inplace_slot', 'nb_inplace_power'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_lshift'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_rshift'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_and'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_xor'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_or'),
         ('proxy_nb_binary_slot', 'nb_floor_divide'),
         ('proxy_nb_binary_slot', 'nb_true_divide'),
-        ('proxy_nb_binary_slot', 'nb_inplace_floor_divide'),
-        ('proxy_nb_binary_slot', 'nb_inplace_true_divide'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_floor_divide'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_true_divide'),
         ('proxy_nb_unary_slot', 'nb_index'),
         ('proxy_nb_binary_slot', 'nb_matrix_multiply'),
-        ('proxy_nb_binary_slot', 'nb_inplace_matrix_multiply'),
+        ('proxy_nb_binary_inplace_slot', 'nb_inplace_matrix_multiply'),
     ]
-    NativeSlotProxy = CPyExtType(
-        name='NativeSlotProxy',
+    NativeNbSlotProxy = CPyExtType(
+        name='NativeNbSlotProxy',
         cmembers='PyObject* delegate;',
         code=r'''
+            typedef NativeNbSlotProxyObject ProxyObject;
+            static PyObject* get_delegate(PyObject* self) {
+                return ((ProxyObject*)self)->delegate;
+            }
+            static void set_delegate(PyObject* self, PyObject* delegate) {
+                Py_XSETREF(((ProxyObject*)self)->delegate, delegate);
+            }
             static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
                 PyObject* delegate;
-                if (!PyArg_UnpackTuple(args, "NativeSlotProxy", 0, 1, &delegate))
+                if (!PyArg_UnpackTuple(args, "NativeNbSlotProxy", 0, 1, &delegate))
                     return NULL;
-                NativeSlotProxyObject* obj = (NativeSlotProxyObject*)type->tp_alloc(type, 0);
+                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
                 if (!obj)
                     return NULL;
                 obj->delegate = Py_NewRef(delegate);  // leaked
                 return (PyObject*)obj;
             }
-            static PyTypeObject NativeSlotProxyType;
-            static void unpack(PyObject** obj) {
-                if (Py_TYPE(*obj) == &NativeSlotProxyType) {
-                    *obj = ((NativeSlotProxyObject*)*obj)->delegate;
-                }
-            }
+            static PyTypeObject NativeNbSlotProxyType;
             #define proxy_nb_unary_slot(slot) \
                 static PyObject* proxy_##slot(PyObject *a) { \
-                    unpack(&a); \
-                    return Py_TYPE(a)->tp_as_number->slot(a); \
+                    PyObject* delegate = get_delegate(a); \
+                    return Py_TYPE(delegate)->tp_as_number->slot(delegate); \
                 }
             #define proxy_nb_inquiry_slot(slot) \
                 static int proxy_##slot(PyObject *a) { \
-                    unpack(&a); \
-                    return Py_TYPE(a)->tp_as_number->slot(a); \
+                    PyObject* delegate = get_delegate(a); \
+                    return Py_TYPE(delegate)->tp_as_number->slot(delegate); \
                 }
             #define proxy_nb_binary_slot(slot) \
                 static PyObject* proxy_##slot(PyObject *a, PyObject *b) { \
-                    if (Py_TYPE(a) == &NativeSlotProxyType) { \
-                        unpack(&a); \
-                        return Py_TYPE(a)->tp_as_number->slot(a, b); \
+                    if (Py_TYPE(a) == &NativeNbSlotProxyType) { \
+                        PyObject* delegate = get_delegate(a); \
+                        return Py_TYPE(delegate)->tp_as_number->slot(delegate, b); \
                     } else { \
-                        unpack(&b); \
-                        return Py_TYPE(b)->tp_as_number->slot(a, b); \
+                        PyObject* delegate = get_delegate(b); \
+                        return Py_TYPE(delegate)->tp_as_number->slot(a, delegate); \
                     } \
+                }
+            #define proxy_nb_binary_inplace_slot(slot) \
+                static PyObject* proxy_##slot(PyObject *self, PyObject *other) { \
+                    PyObject* delegate = get_delegate(self); \
+                    PyObject* result = Py_TYPE(delegate)->tp_as_number->slot(delegate, other); \
+                    if (!result) \
+                        return NULL; \
+                    set_delegate(self, result); \
+                    return Py_NewRef(self); \
                 }
             #define proxy_nb_ternary_slot(slot) \
                 static PyObject* proxy_##slot(PyObject *a, PyObject *b, PyObject* c) { \
-                    if (Py_TYPE(a) == &NativeSlotProxyType) { \
-                        unpack(&a); \
-                        return Py_TYPE(a)->tp_as_number->slot(a, b, c); \
-                    } else if (Py_TYPE(b) == &NativeSlotProxyType) { \
-                        unpack(&b); \
-                        return Py_TYPE(b)->tp_as_number->slot(a, b, c); \
+                    if (Py_TYPE(a) == &NativeNbSlotProxyType) { \
+                        PyObject* delegate = get_delegate(a); \
+                        return Py_TYPE(delegate)->tp_as_number->slot(delegate, b, c); \
+                    } else if (Py_TYPE(b) == &NativeNbSlotProxyType) { \
+                        PyObject* delegate = get_delegate(b); \
+                        return Py_TYPE(delegate)->tp_as_number->slot(a, delegate, c); \
                     } else { \
-                        unpack(&c); \
-                        return Py_TYPE(c)->tp_as_number->slot(a, b, c); \
+                        PyObject* delegate = get_delegate(c); \
+                        return Py_TYPE(delegate)->tp_as_number->slot(a, b, delegate); \
                     } \
+                }
+            #define proxy_nb_ternary_inplace_slot(slot) \
+                static PyObject* proxy_##slot(PyObject *self, PyObject *b, PyObject* c) { \
+                    PyObject* delegate = get_delegate(self); \
+                    PyObject* result = Py_TYPE(delegate)->tp_as_number->slot(delegate, b, c); \
+                    if (!result) \
+                        return NULL; \
+                    set_delegate(self, result); \
+                    return Py_NewRef(self); \
                 }
         ''' + '\n'.join(f'{macro}({slot})' for macro, slot in slots),
         tp_new='proxy_tp_new',
-        tp_members='{"delegate", T_OBJECT, offsetof(NativeSlotProxyObject, delegate), 0, NULL}',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
         **{slot: f'proxy_{slot}' for _, slot in slots},
     )
 
@@ -821,7 +848,7 @@ def test_nb_slot_calls():
         def __rmatmul__(self, other):
             return "@"
 
-    for obj in [NativeSlotProxy(3), NativeSlotProxy(PureSlotProxy(3))]:
+    for obj in [NativeNbSlotProxy(3), NativeNbSlotProxy(PureSlotProxy(3))]:
         assert obj + 2 == 5
         assert 2 + obj == 5
         assert obj - 2 == 1
@@ -862,48 +889,271 @@ def test_nb_slot_calls():
         assert obj / 2 == 1.5
         assert 2 / obj == 2 / 3
 
-    obj = NativeSlotProxy(ObjWithMatmul())
+    obj = NativeNbSlotProxy(ObjWithMatmul())
     assert obj @ 1 == '@'
     assert 1 @ obj == '@'
 
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj += 2
-    assert obj.delegate == 5
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 5
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj -= 2
-    assert obj.delegate == 1
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 1
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj *= 2
-    assert obj.delegate == 6
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 6
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj %= 2
-    assert obj.delegate == 1
+    assert obj.delegate.delegate == 1
     # TODO fix on graalpy
-    # obj = NativeSlotProxy(PureSlotProxy(3))
+    # obj = NativeNbSlotProxy(PureSlotProxy(3))
     # obj **= 2
-    # assert obj.delegate == 9
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    # assert obj.delegate.delegate == 9
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj <<= 2
-    assert obj.delegate == 12
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 12
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj >>= 2
-    assert obj.delegate == 0
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 0
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj &= 2
-    assert obj.delegate == 2
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 2
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj |= 2
-    assert obj.delegate == 3
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 3
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj ^= 2
-    assert obj.delegate == 1
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 1
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj //= 2
-    assert obj.delegate == 1
-    obj = NativeSlotProxy(PureSlotProxy(3))
+    assert obj.delegate.delegate == 1
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj /= 2
-    assert obj.delegate == 1.5
+    assert obj.delegate.delegate == 1.5
     # TODO fix on graalpy
-    # obj = NativeSlotProxy(PureSlotProxy(ObjWithMatmul()))
+    # obj = NativeNbSlotProxy(PureSlotProxy(ObjWithMatmul()))
     # obj @= 1
-    # assert obj.delegate == '@'
+    # assert obj.delegate.delegate == '@'
+
+
+def test_sq_slot_calls():
+    NativeSqSlotProxy = CPyExtType(
+        name='NativeSqSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef NativeSqSlotProxyObject ProxyObject;
+            static PyObject* get_delegate(PyObject* self) {
+                return ((ProxyObject*)self)->delegate;
+            }
+            static void set_delegate(PyObject* self, PyObject* delegate) {
+                Py_XSETREF(((ProxyObject*)self)->delegate, delegate);
+            }
+            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                PyObject* delegate;
+                if (!PyArg_UnpackTuple(args, "NativeSqSlotProxy", 0, 1, &delegate))
+                    return NULL;
+                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
+                if (!obj)
+                    return NULL;
+                obj->delegate = Py_NewRef(delegate);  // leaked
+                return (PyObject*)obj;
+            }
+            static Py_ssize_t proxy_sq_length(PyObject* self) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_sequence->sq_length(delegate);
+            }
+            static PyObject* proxy_sq_item(PyObject* self, Py_ssize_t item) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_sequence->sq_item(delegate, item);
+            }
+            static int proxy_sq_ass_item(PyObject* self, Py_ssize_t item, PyObject* value) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_sequence->sq_ass_item(delegate, item, value);
+            }
+            static int proxy_sq_contains(PyObject* self, PyObject* item) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_sequence->sq_contains(delegate, item);
+            }
+            static PyObject* proxy_sq_concat(PyObject* self, PyObject* item) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_sequence->sq_concat(delegate, item);
+            }
+            static PyObject* proxy_sq_inplace_concat(PyObject* self, PyObject* item) {
+                PyObject* delegate = get_delegate(self);
+                PyObject* result = Py_TYPE(delegate)->tp_as_sequence->sq_inplace_concat(delegate, item);
+                if (!result)
+                    return NULL;
+                set_delegate(self, result);
+                return Py_NewRef(self);
+            }
+            static PyObject* proxy_sq_repeat(PyObject* self, Py_ssize_t times) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_sequence->sq_repeat(delegate, times);
+            }
+            static PyObject* proxy_sq_inplace_repeat(PyObject* self, Py_ssize_t times) {
+                PyObject* delegate = get_delegate(self);
+                PyObject* result = Py_TYPE(delegate)->tp_as_sequence->sq_inplace_repeat(delegate, times);
+                if (!result)
+                    return NULL;
+                set_delegate(self, result);
+                return Py_NewRef(self);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
+        sq_length='proxy_sq_length',
+        sq_item='proxy_sq_item',
+        sq_ass_item='proxy_sq_ass_item',
+        sq_contains='proxy_sq_contains',
+        sq_concat='proxy_sq_concat',
+        sq_inplace_concat='proxy_sq_inplace_concat',
+        sq_repeat='proxy_sq_repeat',
+        sq_inplace_repeat='proxy_sq_inplace_repeat',
+    )
+
+    class PureSlotProxy:
+        def __init__(self, delegate):
+            self.delegate = delegate
+
+        def __len__(self):
+            return len(self.delegate)
+
+        def __getitem__(self, item):
+            return self.delegate[item]
+
+        def __setitem__(self, key, value):
+            self.delegate[key] = value
+
+        def __delitem__(self, key):
+            del self.delegate[key]
+
+        def __contains__(self, item):
+            return item in self.delegate
+
+    for obj in [NativeSqSlotProxy([1]), NativeSqSlotProxy(PureSlotProxy([1]))]:
+        assert len(obj) == 1
+        assert bool(obj)
+        # TODO fix on graalpy
+        # assert 1 in obj
+        # assert 2 not in obj
+
+        assert obj[0] == 1
+        assert_raises(IndexError, operator.getitem, obj, 1)
+        assert_raises(IndexError, operator.getitem, obj, 1 << 65)
+        assert_raises(TypeError, operator.getitem, obj, "a")
+
+        assert_raises(IndexError, operator.setitem, obj, 1, 3)
+        assert_raises(IndexError, operator.setitem, obj, 1 << 65, 3)
+        assert_raises(TypeError, operator.setitem, obj, "a", 3)
+        assert_raises(TypeError, operator.setitem, obj, slice(0), 3)
+        assert get_delegate(obj) == [1]
+        obj[0] = 2
+        assert get_delegate(obj) == [2]
+
+        assert_raises(IndexError, operator.delitem, obj, 1)
+        assert_raises(IndexError, operator.delitem, obj, 1 << 65)
+        assert_raises(TypeError, operator.delitem, obj, "a")
+        assert_raises(TypeError, operator.delitem, obj, slice(0))
+        assert get_delegate(obj) == [2]
+        del obj[0]
+        assert get_delegate(obj) == []
+        assert not bool(obj)
+
+    obj = NativeSqSlotProxy([1])
+    assert obj + [2] == [1, 2]
+    # TODO fix on graalpy
+    # obj += [2]
+    # assert obj.delegate == [1, 2]
+    obj = NativeSqSlotProxy([1])
+    assert obj * 2 == [1, 1]
+    # TODO fix on graalpy
+    # obj *= 2
+    # assert obj.delegate == [1, 1]
+    obj = NativeSqSlotProxy([1])
+    assert_raises(TypeError, operator.mul, obj, "a")
+    assert_raises(OverflowError, operator.mul, obj, 1 << 65)
+    # TODO fix on graalpy
+    # try:
+    #     obj *= "a"
+    # except TypeError:
+    #     pass
+    # else:
+    #     assert False
+    # try:
+    #     obj *= 1 << 65
+    # except OverflowError:
+    #     pass
+    # else:
+    #     assert False
+    assert get_delegate(obj) == [1]
+
+
+def test_mp_slot_calls():
+    NativeMpSlotProxy = CPyExtType(
+        name='NativeMpSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef NativeMpSlotProxyObject ProxyObject;
+            static PyObject* get_delegate(PyObject* self) {
+                return ((ProxyObject*)self)->delegate;
+            }
+            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                PyObject* delegate;
+                if (!PyArg_UnpackTuple(args, "NativeMpSlotProxy", 0, 1, &delegate))
+                    return NULL;
+                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
+                if (!obj)
+                    return NULL;
+                obj->delegate = Py_NewRef(delegate);  // leaked
+                return (PyObject*)obj;
+            }
+            static Py_ssize_t proxy_mp_length(PyObject* self) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_mapping->mp_length(delegate);
+            }
+            static PyObject* proxy_mp_subscript(PyObject* self, PyObject* item) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_mapping->mp_subscript(delegate, item);
+            }
+            static int proxy_mp_ass_subscript(PyObject* self, PyObject* item, PyObject* value) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_as_mapping->mp_ass_subscript(delegate, item, value);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
+        mp_length='proxy_mp_length',
+        mp_subscript='proxy_mp_subscript',
+        mp_ass_subscript='proxy_mp_ass_subscript',
+    )
+
+    class PureSlotProxy:
+        def __init__(self, delegate):
+            self.delegate = delegate
+
+        def __len__(self):
+            return len(self.delegate)
+
+        def __getitem__(self, item):
+            return self.delegate[item]
+
+        def __setitem__(self, key, value):
+            self.delegate[key] = value
+
+        def __delitem__(self, key):
+            del self.delegate[key]
+
+    for obj in [NativeMpSlotProxy({'a': 1}), NativeMpSlotProxy(PureSlotProxy({'a': 1}))]:
+        assert len(obj) == 1
+        assert bool(obj)
+
+        assert obj['a'] == 1
+        assert_raises(KeyError, operator.getitem, obj, 'b')
+        obj['b'] = 2
+        assert get_delegate(obj) == {'a': 1, 'b': 2}
+
+        assert_raises(KeyError, operator.delitem, obj, 'c')
+        del obj['b']
+        assert get_delegate(obj) == {'a': 1}
+        del obj['a']
+        assert not bool(obj)
