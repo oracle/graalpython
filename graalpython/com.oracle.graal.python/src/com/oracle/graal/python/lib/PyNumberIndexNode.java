@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,32 +46,26 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 /**
  * Equivalent of CPython's {@code PyNumber_Index}. Converts objects to Python integral types (can be
@@ -79,7 +73,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
  * {@link PythonAbstractNativeObject}) using their {@code __index__} method. Raises
  * {@code TypeError} if they don't have any.
  */
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
 @GenerateCached(false)
 @GenerateInline
@@ -100,80 +93,56 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         return object;
     }
 
-    @Specialization
+    @Specialization(guards = "isBuiltinPInt(object)")
     static PInt doPInt(PInt object) {
         return object;
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    static int doCallIndexInt(VirtualFrame frame, Node inliningTarget, Object object,
-                    @Exclusive @Cached GetClassNode getClassNode,
-                    @Shared("lookupIndex") @Cached(parameters = "Index", inline = false) LookupSpecialMethodSlotNode lookupIndex,
-                    @Shared("callIndex") @Cached(inline = false) CallUnaryMethodNode callIndex,
-                    @Shared("isSubtype") @Cached(inline = false) IsSubtypeNode isSubtype,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
-        Object type = getClassNode.execute(inliningTarget, object);
-        if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
-            throw new UnexpectedResultException(object);
-        }
-        Object indexDescr = lookupIndex.execute(frame, type, object);
-        if (indexDescr == PNone.NO_VALUE) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
-        }
-        try {
-            return PGuards.expectInteger(callIndex.executeObject(frame, indexDescr, object));
-        } catch (UnexpectedResultException e) {
-            // Implicit CompilerDirectives.transferToInterpreterAndInvalidate()
-            Object result = checkResult(frame, object, e.getResult(), null, GetClassNode.getUncached(),
-                            IsSubtypeNode.getUncached(), PyLongCheckExactNode.getUncached(), PRaiseNode.Lazy.getUncached(),
-                            WarningsModuleBuiltins.WarnNode.getUncached(), PythonObjectFactory.getUncached());
-            throw new UnexpectedResultException(result);
-        }
-    }
-
-    @Specialization(replaces = "doCallIndexInt")
+    @Fallback
     static Object doCallIndex(VirtualFrame frame, Node inliningTarget, Object object,
-                    @Exclusive @Cached GetClassNode getClassNode,
-                    @Shared("lookupIndex") @Cached(parameters = "Index", inline = false) LookupSpecialMethodSlotNode lookupIndex,
-                    @Shared("callIndex") @Cached(inline = false) CallUnaryMethodNode callIndex,
-                    @Shared("isSubtype") @Cached(inline = false) IsSubtypeNode isSubtype,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                    @Exclusive @Cached GetClassNode resultClassNode,
-                    @Exclusive @Cached(inline = false) IsSubtypeNode resultSubtype,
-                    @Cached PyLongCheckExactNode isInt,
-                    @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
-                    @Cached(inline = false) PythonObjectFactory factory) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached TpSlots.GetCachedTpSlotsNode getSlots,
+                    @Cached CallSlotUnaryNode callIndex,
+                    @Cached(inline = false) IsSubtypeNode isSubtype,
+                    @Cached PRaiseNode.Lazy raiseNode,
+                    @Cached PyLongCheckExactNode checkNode,
+                    @Cached CheckIndexResultNotInt checkResult,
+                    @Cached PyLongCopy copy) {
         Object type = getClassNode.execute(inliningTarget, object);
         if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
-            return object;
+            return copy.execute(inliningTarget, object);
         }
-        Object indexDescr = lookupIndex.execute(frame, type, object);
-        if (indexDescr == PNone.NO_VALUE) {
+        TpSlots slots = getSlots.execute(inliningTarget, type);
+        if (slots.nb_index() == null) {
             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
         }
-        Object result = callIndex.executeObject(frame, indexDescr, object);
-        return checkResult(frame, object, result, inliningTarget, resultClassNode, resultSubtype, isInt, raiseNode, warnNode, factory);
-    }
-
-    private static Object checkResult(VirtualFrame frame, Object originalObject, Object result, Node inliningTarget, GetClassNode getClassNode, IsSubtypeNode isSubtype,
-                    PyLongCheckExactNode isInt, PRaiseNode.Lazy raiseNode,
-                    WarningsModuleBuiltins.WarnNode warnNode, PythonObjectFactory factory) {
-        if (isInt.execute(inliningTarget, result)) {
+        Object result = callIndex.execute(frame, inliningTarget, slots.nb_index(), object);
+        if (checkNode.execute(inliningTarget, result)) {
             return result;
         }
-        if (!isSubtype.execute(getClassNode.execute(inliningTarget, result), PythonBuiltinClassType.PInt)) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
-        }
-        warnNode.warnFormat(frame, null, DeprecationWarning, 1,
-                        ErrorMessages.WARN_P_RETURNED_NON_P, originalObject, T___INDEX__, "int", result, "int");
-        if (result instanceof PInt) {
-            return factory.createInt(((PInt) result).getValue());
-        } else if (result instanceof Boolean) {
-            return (boolean) result ? 1 : 0;
-        } else if (result instanceof PythonAbstractNativeObject) {
-            throw CompilerDirectives.shouldNotReachHere("Cannot convert native result from __index__");
-        } else {
-            throw CompilerDirectives.shouldNotReachHere("Unexpected type returned from __index__");
+        return checkResult.execute(frame, object, result);
+    }
+
+    @GenerateInline(false) // Slow path
+    @GenerateUncached
+    abstract static class CheckIndexResultNotInt extends Node {
+        abstract Object execute(VirtualFrame frame, Object original, Object result);
+
+        @Specialization
+        @InliningCutoff
+        static Object doGeneric(VirtualFrame frame, Object original, Object result,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtype,
+                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached PyLongCopy copy) {
+            if (!isSubtype.execute(getClassNode.execute(inliningTarget, result), PythonBuiltinClassType.PInt)) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+            }
+            warnNode.warnFormat(frame, null, DeprecationWarning, 1,
+                            ErrorMessages.WARN_P_RETURNED_NON_P, original, T___INDEX__, "int", result, "int");
+            return copy.execute(inliningTarget, result);
         }
     }
 }

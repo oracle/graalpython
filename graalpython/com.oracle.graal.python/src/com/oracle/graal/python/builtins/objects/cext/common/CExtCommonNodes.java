@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,19 +82,17 @@ import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNod
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -655,7 +653,7 @@ public abstract class CExtCommonNodes {
      * If {@code exact} is {@code false}, then casting can be lossy without raising an error.
      */
     @GenerateUncached
-    @ImportStatic({PGuards.class, SpecialMethodSlot.class})
+    @ImportStatic(PGuards.class)
     @GenerateInline(false) // footprint reduction 32 -> 15, triggers GR-44020
     public abstract static class AsNativePrimitiveNode extends Node {
 
@@ -854,21 +852,9 @@ public abstract class CExtCommonNodes {
                                         "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
         static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
-                        @Cached CallUnaryMethodNode call,
+                        @Cached PyNumberIndexNode indexNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-
-            Object type = getClassNode.execute(inliningTarget, obj);
-            Object indexDescr = lookupIndex.execute(null, type, obj);
-
-            Object result;
-            if (indexDescr != PNone.NO_VALUE) {
-                result = call.executeObject(null, indexDescr, obj);
-            } else {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
-            }
-
+            Object result = indexNode.execute(null, inliningTarget, obj);
             /*
              * The easiest would be to recursively use this node and ensure that this generic case
              * isn't taken but we cannot guarantee that because the uncached version will always try
