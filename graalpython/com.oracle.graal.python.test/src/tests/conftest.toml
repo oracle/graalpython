@@ -21,7 +21,6 @@ partial_splits_individual_tests = true
 # on Windows, yet, add their files here.
 exclude_on = ['win32']
 selector = [
-    "test_mmap.py", # all tests fail with PermissionError, so does the mmap test in test_memoryview and cpyext/test_abstract
     "test_multiprocessing_graalpy.py", # import _winapi
     "test_patched_pip.py",
     "test_pathlib.py",
@@ -29,10 +28,8 @@ selector = [
     "test_pyio.py", # pyio imports msvcrt
     "test_signal.py",
     "test_structseq.py", # import posix
-    "cpyext/test_abstract.py", # mmap PermissionError
     "cpyext/test_member.py", # Too many assumptions about long size
     "cpyext/test_memoryview.py", # Failure in test_memoryview_read_0dim
-    "cpyext/test_mmap.py",
     "cpyext/test_shutdown.py", # Uses gcc-specific attribute
     "cpyext/test_wiki.py", # Assumptions about long size
 ]
