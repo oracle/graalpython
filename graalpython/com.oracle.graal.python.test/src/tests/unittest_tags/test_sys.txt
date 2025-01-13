@@ -1,9 +1,9 @@
 test.test_sys.ActiveExceptionTests.test_exc_info_no_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.ActiveExceptionTests.test_exc_info_with_exception_instance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.ActiveExceptionTests.test_exc_info_with_exception_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_sys.ActiveExceptionTests.test_sys_exception_no_exception @ linux-x86_64
-test.test_sys.ActiveExceptionTests.test_sys_exception_with_exception_instance @ linux-x86_64
-test.test_sys.ActiveExceptionTests.test_sys_exception_with_exception_type @ linux-x86_64
+test.test_sys.ActiveExceptionTests.test_sys_exception_no_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_sys.ActiveExceptionTests.test_sys_exception_with_exception_instance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_sys.ActiveExceptionTests.test_sys_exception_with_exception_type @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.DisplayHookTest.test_custom_displayhook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.DisplayHookTest.test_lost_displayhook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.DisplayHookTest.test_original_displayhook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

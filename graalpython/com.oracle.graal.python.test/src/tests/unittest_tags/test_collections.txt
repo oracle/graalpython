@@ -22,6 +22,7 @@ test.test_collections.TestChainMap.test_missing @ darwin-arm64,darwin-x86_64,lin
 test.test_collections.TestChainMap.test_new_child @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestChainMap.test_order_preservation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestChainMap.test_ordering @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_collections.TestChainMap.test_union_operators @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestCollectionABCs.test_ByteString @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestCollectionABCs.test_Mapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_collections.TestCollectionABCs.test_MutableMapping @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
