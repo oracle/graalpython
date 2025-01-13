@@ -60,7 +60,6 @@ import java.nio.file.Paths;
  * <ul>
  * <li>Python application files</li>
  * <li>Third-party Python packages</li>
- * <li>The Python standard library</li>
  * </ul>
  *
  * <p>
@@ -101,8 +100,6 @@ import java.nio.file.Paths;
  * Python packages. The Context will be configured as if it is executed from this virtual
  * environment. Notably packages installed in this virtual environment will be automatically
  * available for importing.</li>
- * <li>${resources_root}/home: used for the Python standard library (equivalent to PYTHONHOME
- * environment variable).</li>
  * </ul>
  * where ${resources_root} is either the resource root <code>/org.graalvm.python.vfs</code> or an
  * external directory.
@@ -139,9 +136,6 @@ import java.nio.file.Paths;
  * <p>
  * <b>GraalPy context</b> instances created by factory methods in this class are preconfigured with
  * some particular resource paths:
- * <li><code>${resources_root}/home</code> - is reserved for the GraalPy Standard Library. GraalPy
- * context will be configured to use this standard library as if set in PYTHONHOME environment
- * variable.</li>
  * <li><code>${resources_root}/venv</code> - is reserved for a python virtual environment holding
  * third-party packages. The context will be configured as if it were executed from this virtual
  * environment. Notably packages installed in this virtual environment will be automatically
