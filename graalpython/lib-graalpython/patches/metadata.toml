@@ -20,6 +20,11 @@ patch = 'blosc2.patch'
 license = 'Apache-2.0'
 
 [[catboost.rules]]
+version = '== 1.2.3'
+patch = 'catboost-1.2.3.patch'
+license = 'Apache-2.0'
+
+[[catboost.rules]]
 version = '== 1.2.2'
 patch = 'catboost-1.2.2.patch'
 license = 'Apache-2.0'
@@ -34,7 +39,7 @@ patch = 'cffi-1.15.1.patch'
 license = 'MIT'
 
 [[cffi.rules]]
-version = '== 1.16.0'
+version = '>= 1.16.0'
 patch = 'cffi-1.16.0.patch'
 license = 'MIT'
 
@@ -144,19 +149,15 @@ version = '== 1.60.0'
 patch = 'grpcio-1.60.0.patch'
 license = 'Apache-2.0'
 
+[[grpcio.rules]]
+# Force re-cythonize + other fixes
+version = '== 1.66.1'
+patch = 'grpcio-1.66.1.patch'
+license = 'Apache-2.0'
+
 [[h2o.rules]]
 patch = 'h2o.patch'
 license = 'Apache-2.0'
-
-[[h5py.rules]]
-version = '== 2.10.0'
-patch = 'h5py-2.10.0.patch'
-license = 'BSD-3-Clause'
-
-[[h5py.rules]]
-version = '== 3.10.0'
-patch = 'h5py-3.10.0.patch'
-license = 'BSD-3-Clause'
 
 [[hmmlearn.rules]]
 # Need to specify pybind11 build dependency, otherwise setuptools will install it unpatched
@@ -190,7 +191,7 @@ patch = 'jiter.patch'
 license = 'MIT'
 
 [[joblib.rules]]
-version = '==1.4.0'
+version = '==1.4.*'
 patch = 'joblib-1.4.0.patch'
 license = 'BSD-3-Clause'
 
@@ -242,23 +243,6 @@ patch = "MarkupSafe.patch"
 license = "BSD-3-Clause"
 install-priority = 0  # Don't make pip install prefer this version
 dist-type = "sdist"
-
-[[matplotlib.rules]]
-version = '== 3.5.3'
-patch = 'matplotlib-3.5.3.patch'
-license = 'PSF-2.0'
-
-[[matplotlib.rules]]
-version = '== 3.6.3'
-patch = 'matplotlib-3.6.3.patch'
-license = 'PSF-2.0'
-
-[[matplotlib.rules]]
-# pin 3.7.0
-install-priority = 10
-version = '== 3.7.0'
-patch = 'matplotlib-3.7.0.patch'
-license = 'PSF-2.0'
 
 [[meson-python.rules]]
 # Upstreamed
@@ -580,6 +564,12 @@ install-priority = 0
 version = '== 0.3.3'
 patch = 'safetensors-0.3.3.patch'
 license = 'Apache-2.0'
+
+[[scikit-learn.rules]]
+version = '== 1.5.2'
+patch = 'scikit-learn-1.5.2.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
 
 [[scikit-learn.rules]]
 version = '== 1.2.2'
