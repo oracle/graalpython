@@ -376,7 +376,7 @@ def _dev_pythonhome():
 
 def punittest(ars, report=False):
     """
-    Runs GraalPython junit tests, TCK, and memory leak tests, which can be skipped using --no-leak-tests.
+    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
     Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
     with language home on filesystem and with language home served from the Truffle resources.
     """
@@ -407,9 +407,6 @@ def punittest(ars, report=False):
     configs += [
         TestConfig("junit", vm_args + graalpy_tests + args, True),
         TestConfig("junit", vm_args + graalpy_tests + args, False),
-        # TCK suite is not compatible with the PythonMxUnittestConfig,
-        # so it must have its own run and the useResources config is ignored
-        TestConfig("tck", vm_args + ['com.oracle.truffle.tck.tests'] + args, False),
     ]
     if mx.is_linux():
         # see GR-60656 and GR-60658 for what's missing in darwin and windows support
@@ -1207,7 +1204,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'((com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util)))'
+                        r'((graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util)))'
                     ],
                     report=True
                 )
@@ -1221,6 +1218,12 @@ def graalpython_gate_runner(args, tasks):
                     punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advanced.ExclusionsTest'])
                 finally:
                     jdk.java_args_pfx = prev
+            if report():
+                with tempfile.NamedTemporaryFile(delete=True, suffix='.json.gz') as tmpfile:
+                    mx.command_function('tck')([f'--json-results={tmpfile.name}'])
+                    mx_gate.make_test_report(tmpfile.name, GraalPythonTags.junit + "-TCK")
+            else:
+                mx.command_function('tck')()
 
     # JUnit tests with Maven
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
