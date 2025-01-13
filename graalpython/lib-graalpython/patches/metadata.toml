@@ -566,6 +566,12 @@ patch = 'safetensors-0.3.3.patch'
 license = 'Apache-2.0'
 
 [[scikit-learn.rules]]
+version = '== 1.5.2'
+patch = 'scikit-learn-1.5.2.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[scikit-learn.rules]]
 version = '== 1.2.2'
 patch = 'scikit-learn-1.2.2.patch'
 license = 'BSD-3-Clause'

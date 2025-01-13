@@ -1,0 +1,31 @@
+diff --git a/sklearn/_build_utils/__init__.py b/sklearn/_build_utils/__init__.py
+index ceb7244..0a0acc2 100644
+--- a/sklearn/_build_utils/__init__.py
++++ b/sklearn/_build_utils/__init__.py
+@@ -59,10 +59,10 @@ def cythonize_extensions(extension):
+     sklearn._OPENMP_SUPPORTED = check_openmp_support()
+ 
+     n_jobs = 1
+-    with contextlib.suppress(ImportError):
+-        import joblib
++    # with contextlib.suppress(ImportError):
++    #     import joblib
+ 
+-        n_jobs = joblib.cpu_count()
++    #     n_jobs = joblib.cpu_count()
+ 
+     # Additional checks for Cython
+     cython_enable_debug_directives = (
+diff --git a/sklearn/datasets/_svmlight_format_fast.pyx b/sklearn/datasets/_svmlight_format_fast.pyx
+index 103d43b..e2cc6da 100644
+--- a/sklearn/datasets/_svmlight_format_fast.pyx
++++ b/sklearn/datasets/_svmlight_format_fast.pyx
+@@ -80,7 +80,7 @@ def _load_svmlight_file(f, dtype, bint multilabel, bint zero_based,
+         if n_features and features[0].startswith(qid_prefix):
+             _, value = features[0].split(COLON, 1)
+             if query_id:
+-                query.resize(len(query) + 1)
++                query.resize(len(query) + 1, refcheck=False)
+                 query[len(query) - 1] = np.int64(value)
+             features.pop(0)
+             n_features -= 1
