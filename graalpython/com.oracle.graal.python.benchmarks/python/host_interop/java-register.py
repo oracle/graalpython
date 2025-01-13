@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@
 
 import polyglot
 import sys
-from java.util import List, LinkedList
+from java.util import List, ArrayList
 
 @polyglot.interop_type(List)
 class JList:
@@ -65,7 +65,7 @@ class JList:
 # igv: function_root_create_list_at
 def create_list(num: int, l: JList):
     for i in range(num):
-        l.append(LinkedList())
+        l.append(ArrayList())
         for j in range(i):
             l[i].append(j)
 
@@ -74,7 +74,7 @@ def create_list(num: int, l: JList):
         assert li.length() * (li.length() - 1) / 2 == li.get_value()
 
 def measure(num):
-    j_list = LinkedList()
+    j_list = ArrayList()
     create_list(num, j_list)
 
 def __benchmark__(num=2_000):
