@@ -559,7 +559,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SqItemNode extends SqItemBuiltinNode {
         @Specialization
-        static Object doIt(VirtualFrame frame, PArray self, int index,
+        static Object doIt(PArray self, int index,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode.Lazy raiseNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
@@ -634,22 +634,21 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class SetItemNode extends SqAssItemBuiltinNode {
 
         @Specialization(guards = "!isNoValue(value)")
-        static void setitem(VirtualFrame frame, PArray self, int idx, Object value,
+        static void setitem(VirtualFrame frame, PArray self, int index, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
-                        @Cached ArrayNodes.PutValueNode putValueNode) {
-            int index = normalizeIndexNode.execute(idx, self.getLength());
+                        @Cached ArrayNodes.PutValueNode putValueNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            checkBounds(inliningTarget, raiseNode, ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS, index, self.getLength());
             putValueNode.execute(frame, inliningTarget, self, index, value);
         }
 
         @Specialization(guards = "isNoValue(value)")
-        static void delitem(PArray self, int idx, @SuppressWarnings("unused") Object value,
+        static void delitem(PArray self, int index, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
                         @Cached DeleteArraySliceNode deleteSliceNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            checkBounds(inliningTarget, raiseNode, ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS, index, self.getLength());
             self.checkCanResize(inliningTarget, raiseNode);
-            int index = normalizeIndexNode.execute(idx, self.getLength());
             deleteSliceNode.execute(inliningTarget, self, index, 1);
         }
     }
