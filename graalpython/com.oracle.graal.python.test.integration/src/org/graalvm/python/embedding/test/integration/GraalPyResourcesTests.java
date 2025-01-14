@@ -38,11 +38,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.utils.test.integration;
+package org.graalvm.python.embedding.test.integration;
 
 import org.graalvm.polyglot.Engine;
-import org.graalvm.python.embedding.utils.GraalPyResources;
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
+import org.graalvm.python.embedding.GraalPyResources;
+import org.graalvm.python.embedding.VirtualFileSystem;
 import org.junit.Test;
 
 import java.nio.file.Path;

@@ -46,7 +46,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Context.Builder;
-import org.graalvm.python.embedding.utils.GraalPyResources;
+import org.graalvm.python.embedding.GraalPyResources;
 
 /**
  * A simple launcher for Python. The launcher sets the filesystem up to read the Python core,

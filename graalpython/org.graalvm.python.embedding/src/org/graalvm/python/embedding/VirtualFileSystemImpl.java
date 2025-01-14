@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.utils;
+package org.graalvm.python.embedding;
 
 import org.graalvm.polyglot.io.FileSystem;
 
@@ -91,7 +91,7 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
-import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.NONE;
+import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.NONE;
 
 final class VirtualFileSystemImpl implements FileSystem, AutoCloseable {
 
