@@ -447,8 +447,8 @@ public final class GraalPyResources {
      *
      * <pre>
      * Path resourcesDir = Path.of(System.getProperty("user.home"), ".cache", "my.java.python.app.resources");
-     * FileSystem fs = GraalPyResources.createVirtualFileSystem();
-     * GraalPyResources.extractVirtualFileSystemResources(fs, resourcesDir);
+     * VirtualFileSystem vfs = VirtualFileSystem.newBuilder().build();
+     * GraalPyResources.extractVirtualFileSystemResources(vfs, resourcesDir);
      * try (Context context = GraalPyResources.contextBuilder(resourcesDir).build()) {
      *     context.eval("python", "print('hello world')");
      * }
