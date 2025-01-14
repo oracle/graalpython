@@ -305,13 +305,12 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictKeys;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
+import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -336,7 +335,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -2600,15 +2598,8 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached CanBeDoubleNode canBeDoubleNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "Int") LookupCallableSlotInMRONode lookup) {
-            if (indexCheckNode.execute(inliningTarget, object) || canBeDoubleNode.execute(inliningTarget, object)) {
-                return 1;
-            }
-            Object receiverType = getClassNode.execute(inliningTarget, object);
-            return PInt.intValue(lookup.execute(receiverType) != PNone.NO_VALUE);
+                        @Cached PyNumberCheckNode checkNode) {
+            return PInt.intValue(checkNode.execute(inliningTarget, object));
         }
     }
 

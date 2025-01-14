@@ -795,9 +795,6 @@ public enum SpecialMethodSlot {
                 if (eqNode.execute(name, T___INSTANCECHECK__, TS_ENCODING)) {
                     return InstanceCheck;
                 }
-                if (eqNode.execute(name, T___INT__, TS_ENCODING)) {
-                    return Int;
-                }
                 break;
             case 's' * 26 + 'u':    // su
                 if (eqNode.execute(name, T___SUBCLASSCHECK__, TS_ENCODING)) {
