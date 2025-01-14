@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -126,7 +127,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
     @InliningCutoff
     static Object doOther(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
-                    @Cached TpSlots.GetCachedTpSlotsNode getSlots,
+                    @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callInt,
                     @Cached PyLongCheckExactNode longCheckExactNode,
                     @Cached PyNumberIndexNode indexNode,

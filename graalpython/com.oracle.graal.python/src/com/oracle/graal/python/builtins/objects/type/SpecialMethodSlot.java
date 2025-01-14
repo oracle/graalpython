@@ -43,10 +43,8 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITER;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOAT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_POWER;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
@@ -64,7 +62,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
@@ -73,7 +70,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
@@ -185,8 +181,6 @@ public enum SpecialMethodSlot {
     LengthHint(T___LENGTH_HINT__),
     Contains(T___CONTAINS__, SQ_CONTAINS),
     Hash(T___HASH__),
-    Float(T___FLOAT__, NB_FLOAT),
-    Int(T___INT__, NB_INT),
     Str(T___STR__),
     Repr(T___REPR__),
     // Note: __format__ does not seem to be actual slot in CPython, but it is looked up frequently
@@ -832,11 +826,6 @@ public enum SpecialMethodSlot {
             case 'h' * 26 + 'a':    // ha
                 if (eqNode.execute(name, T___HASH__, TS_ENCODING)) {
                     return Hash;
-                }
-                break;
-            case 'f' * 26 + 'l':    // fl
-                if (eqNode.execute(name, T___FLOAT__, TS_ENCODING)) {
-                    return Float;
                 }
                 break;
             case 's' * 26 + 't':    // st
