@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AITE
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEXT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_FLOAT;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INDEX;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INT;
@@ -72,7 +71,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
@@ -187,7 +185,6 @@ public enum SpecialMethodSlot {
     LengthHint(T___LENGTH_HINT__),
     Contains(T___CONTAINS__, SQ_CONTAINS),
     Hash(T___HASH__),
-    Index(T___INDEX__, NB_INDEX),
     Float(T___FLOAT__, NB_FLOAT),
     Int(T___INT__, NB_INT),
     Str(T___STR__),
@@ -797,9 +794,6 @@ public enum SpecialMethodSlot {
                 }
                 if (eqNode.execute(name, T___INSTANCECHECK__, TS_ENCODING)) {
                     return InstanceCheck;
-                }
-                if (eqNode.execute(name, T___INDEX__, TS_ENCODING)) {
-                    return Index;
                 }
                 if (eqNode.execute(name, T___INT__, TS_ENCODING)) {
                     return Int;
