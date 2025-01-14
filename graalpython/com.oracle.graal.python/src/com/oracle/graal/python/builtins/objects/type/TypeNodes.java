@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -174,7 +174,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptab
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
-import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1944,7 +1943,7 @@ public abstract class TypeNodes {
                         @Cached HashingStorageIteratorNext itNext,
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorValue itValue,
-                        @Cached PyDictDelItem delItemNamespace,
+                        @Cached HashingStorageDelItem delItemNamespace,
                         @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
@@ -1979,7 +1978,7 @@ public abstract class TypeNodes {
                 }
 
                 // delete __qualname__ from namespace
-                delItemNamespace.execute(inliningTarget, namespace, T___QUALNAME__);
+                delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___QUALNAME__, namespace);
 
                 // initialize '__doc__' attribute
                 if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
@@ -1994,7 +1993,7 @@ public abstract class TypeNodes {
                     } else {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
-                    delItemNamespace.execute(inliningTarget, namespace, SpecialAttributeNames.T___CLASSCELL__);
+                    delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__, namespace);
                 }
 
                 SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode.execute(inliningTarget, newType), language);

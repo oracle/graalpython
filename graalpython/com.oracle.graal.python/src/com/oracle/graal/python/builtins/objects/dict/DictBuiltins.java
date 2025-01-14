@@ -31,13 +31,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -75,17 +73,17 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -95,7 +93,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -353,32 +350,26 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        static Object run(VirtualFrame frame, Object self, Object key, Object value,
+    abstract static class SetItemNode extends MpAssSubscriptBuiltinNode {
+        @Specialization(guards = "!isNoValue(value)")
+        static void run(VirtualFrame frame, Object self, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             setItemNode.execute(frame, inliningTarget, self, key, value);
-            return PNone.NONE;
         }
-    }
 
-    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static Object run(VirtualFrame frame, Object self, Object key,
+        @Specialization(guards = "isNoValue(value)")
+        static void run(VirtualFrame frame, Object self, Object key, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageDelItem delItem,
                         @Cached PRaiseNode.Lazy raiseNode) {
             var storage = getStorageNode.execute(inliningTarget, self);
-            if (delItem.execute(frame, inliningTarget, storage, key, self)) {
-                return PNone.NONE;
+            if (!delItem.execute(frame, inliningTarget, storage, key, self)) {
+                throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
             }
-            throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
         }
     }
 
@@ -566,7 +557,6 @@ public final class DictBuiltins extends PythonBuiltins {
 
     // fromkeys()
     @Builtin(name = "fromkeys", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "iterable", "value"}, isClassmethod = true)
-    @ImportStatic(SpecialMethodSlot.class)
     @GenerateNodeFactory
     public abstract static class FromKeysNode extends PythonTernaryBuiltinNode {
 
@@ -585,30 +575,22 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callCtor,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetItem,
-                        @Cached CallTernaryMethodNode callSetItem,
+                        @Cached PyObjectSetItem setItem,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             Object dict = callCtor.execute(frame, cls);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             Object it = getIter.execute(frame, inliningTarget, iterable);
-            Object setitemMethod = lookupSetItem.execute(frame, getClassNode.execute(inliningTarget, dict), dict);
-            if (setitemMethod != PNone.NO_VALUE) {
-                while (true) {
-                    try {
-                        Object key = nextNode.execute(frame, it);
-                        callSetItem.execute(frame, setitemMethod, dict, key, val);
-                    } catch (PException e) {
-                        e.expectStopIteration(inliningTarget, errorProfile);
-                        break;
-                    }
+            while (true) {
+                try {
+                    Object key = nextNode.execute(frame, it);
+                    setItem.execute(frame, inliningTarget, dict, key, val);
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, errorProfile);
+                    break;
                 }
-                return dict;
-            } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, iterable);
             }
+            return dict;
         }
 
         protected static boolean isBuiltinDict(Node inliningTarget, Object cls, IsSameTypeNode isSameTypeNode) {

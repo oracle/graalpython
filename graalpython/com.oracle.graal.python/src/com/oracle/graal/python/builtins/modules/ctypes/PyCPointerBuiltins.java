@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_STEP_CANNOT_BE_Z
 import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_STOP_IS_REQUIRED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -87,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -94,7 +94,6 @@ import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -242,12 +241,12 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.sq_ass_item, isComplex = true)
     @GenerateNodeFactory
-    abstract static class PointerSetItemNode extends PythonTernaryBuiltinNode {
+    abstract static class PointerSetItemNode extends SqAssItemBuiltinNode {
 
         @Specialization
-        static Object Pointer_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
+        static void Pointer_ass_item(VirtualFrame frame, CDataObject self, int index, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCDataSetNode pyCDataSetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -275,7 +274,6 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
             int offset = index * itemdict.size;
 
             pyCDataSetNode.execute(frame, self, proto, stgdict.setfunc, value, index, size, readPointerNode.execute(inliningTarget, self.b_ptr).withOffset(offset));
-            return PNone.NONE;
         }
     }
 

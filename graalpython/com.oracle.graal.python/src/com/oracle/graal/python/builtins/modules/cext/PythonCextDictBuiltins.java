@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,12 +95,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ClearNode;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.PopNode;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -427,8 +427,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_DelItem extends CApiBinaryBuiltinNode {
         @Specialization
         static int delItem(PDict dict, Object key,
-                        @Cached DelItemNode delItemNode) {
-            delItemNode.execute(null, dict, key);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyDictDelItem delItemNode) {
+            delItemNode.execute(null, inliningTarget, dict, key);
             return 0;
         }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -650,19 +650,22 @@ def CPyExtTypeDecl(name, code='', **kwargs):
     }};
 
     static PySequenceMethods {name}_sequence_methods = {{
-        {sq_length},        /* sq_length */
-        {sq_concat},        /* sq_concat */
-        0,                  /* sq_repeat */
-        {sq_item},          /* sq_item */
-        0,                  /* sq_slice */
-        {sq_ass_item},      /* sq_ass_item */
-        0,                  /* sq_ass_slice */
-        {sq_contains},      /* sq_contains */
+        {sq_length},         /* sq_length */
+        {sq_concat},         /* sq_concat */
+        {sq_repeat},         /* sq_repeat */
+        {sq_item},           /* sq_item */
+        0,                   /* was_sq_slice */
+        {sq_ass_item},       /* sq_ass_item */
+        0,                   /* was_sq_ass_slice */
+        {sq_contains},       /* sq_contains */
+        {sq_inplace_concat}, /* sq_inplace_concat */
+        {sq_inplace_repeat}, /* sq_inplace_repeat */
     }};
 
     static PyMappingMethods {name}_mapping_methods = {{
         {mp_length},        /* mp_length */
         {mp_subscript},     /* mp_subscript */
+        {mp_ass_subscript}, /* mp_subscript */
     }};
 
     static struct PyMethodDef {name}_methods[] = {{

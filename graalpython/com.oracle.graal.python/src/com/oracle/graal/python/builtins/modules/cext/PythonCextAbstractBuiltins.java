@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,8 +95,12 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
@@ -123,7 +127,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
@@ -507,7 +510,7 @@ public final class PythonCextAbstractBuiltins {
             if ((int) key != key) {
                 throw PRaiseNode.raiseUncached(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
             }
-            setItemNode.execute(obj, (int) key, value);
+            setItemNode.execute(null, inliningTarget, obj, (int) key, value);
             return 0;
         }
     }
@@ -618,7 +621,7 @@ public final class PythonCextAbstractBuiltins {
             if ((int) i != i) {
                 throw PRaiseNode.raiseUncached(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, i);
             }
-            delItemNode.execute(o, (int) i);
+            delItemNode.execute(null, inliningTarget, o, (int) i);
             return 0;
         }
     }
@@ -652,10 +655,18 @@ public final class PythonCextAbstractBuiltins {
         @Specialization
         static int setSlice(Object sequence, Object iLow, Object iHigh, Object s,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(SetItem)") LookupAndCallTernaryNode setItemNode,
-                        @Cached PySliceNew sliceNode) {
-            setItemNode.execute(null, sequence, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE), s);
-            return 0;
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached CallSlotMpAssSubscriptNode callSetItem,
+                        @Cached PySliceNew sliceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TpSlots slots = getSlotsNode.execute(inliningTarget, sequence);
+            if (slots.mp_ass_subscript() != null) {
+                PSlice slice = sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE);
+                callSetItem.execute(null, inliningTarget, slots.mp_ass_subscript(), sequence, slice, s);
+                return 0;
+            } else {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_ASSIGNMENT, sequence);
+            }
         }
     }
 
@@ -664,10 +675,18 @@ public final class PythonCextAbstractBuiltins {
         @Specialization
         static int setSlice(Object sequence, Object iLow, Object iHigh,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(DelItem)") LookupAndCallBinaryNode delItemNode,
-                        @Cached PySliceNew sliceNode) {
-            delItemNode.executeObject(null, sequence, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
-            return 0;
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached CallSlotMpAssSubscriptNode callSetItem,
+                        @Cached PySliceNew sliceNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            TpSlots slots = getSlotsNode.execute(inliningTarget, sequence);
+            if (slots.mp_ass_subscript() != null) {
+                PSlice slice = sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE);
+                callSetItem.execute(null, inliningTarget, slots.mp_ass_subscript(), sequence, slice, PNone.NO_VALUE);
+                return 0;
+            } else {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_DELETION, sequence);
+            }
         }
     }
 

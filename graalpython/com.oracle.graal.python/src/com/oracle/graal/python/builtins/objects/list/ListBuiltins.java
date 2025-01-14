@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -43,7 +42,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
@@ -70,10 +68,6 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
-import com.oracle.graal.python.lib.PyListCheckNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.ClearListStorageNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.GetClassForNewListNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
@@ -92,9 +86,12 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyListCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -103,6 +100,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.ClearListStorageNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.GetClassForNewListNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -290,23 +290,6 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(VirtualFrame frame, Object list, Object key,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetListStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.DeleteNode deleteNode) {
-            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
-            deleteNode.execute(frame, sequenceStorage, key);
-            return PNone.NONE;
-        }
-
-    }
-
     @Slot(value = SlotKind.sq_item, isComplex = true)
     @GenerateNodeFactory
     public abstract static class ListSqItemNode extends SqItemBuiltinNode {
@@ -345,12 +328,39 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.sq_ass_item, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
+    public abstract static class SetItemNode extends SqAssItemBuiltinNode {
 
-        @Specialization
-        static Object doInt(Object self, int index, Object value,
+        @Specialization(guards = "!isNoValue(value)")
+        static void doInt(Object self, int index, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
+                        @Cached ListNodes.UpdateListStorageNode updateStorageNode,
+                        @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
+            var sequenceStorage = getStorageNode.execute(inliningTarget, self);
+            var newStorage = setItemNode.execute(sequenceStorage, index, value);
+            updateStorageNode.execute(inliningTarget, self, sequenceStorage, newStorage);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        static void doGeneric(Object list, int index, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached GetListStorageNode getStorageNode,
+                        @Cached NormalizeIndexNode normalizeIndexNode,
+                        @Cached SequenceStorageNodes.DeleteItemNode deleteItemNode) {
+            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
+            index = normalizeIndexNode.execute(index, sequenceStorage.length());
+            deleteItemNode.execute(inliningTarget, sequenceStorage, index);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class SetSubscriptNode extends MpAssSubscriptBuiltinNode {
+
+        @Specialization(guards = "!isNoValue(value)")
+        static void doIntSet(Object self, int index, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached ListNodes.UpdateListStorageNode updateStorageNode,
@@ -358,12 +368,11 @@ public final class ListBuiltins extends PythonBuiltins {
             var sequenceStorage = getStorageNode.execute(inliningTarget, self);
             var newStorage = setItemNode.execute(sequenceStorage, index, value);
             updateStorageNode.execute(inliningTarget, self, sequenceStorage, newStorage);
-            return PNone.NONE;
         }
 
         @InliningCutoff
-        @Specialization(guards = "isIndexOrSlice(this, indexCheckNode, key)")
-        static Object doGeneric(VirtualFrame frame, Object self, Object key, Object value,
+        @Specialization(guards = {"!isNoValue(value)", "isIndexOrSlice(this, indexCheckNode, key)"})
+        static void doGenericSet(VirtualFrame frame, Object self, Object key, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetListStorageNode getStorageNode,
                         @Shared @Cached ListNodes.UpdateListStorageNode updateStorageNode,
@@ -372,21 +381,30 @@ public final class ListBuiltins extends PythonBuiltins {
             var sequenceStorage = getStorageNode.execute(inliningTarget, self);
             var newStorage = setItemNode.execute(frame, sequenceStorage, key, value);
             updateStorageNode.execute(inliningTarget, self, sequenceStorage, newStorage);
-            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isNoValue(value)", "isIndexOrSlice(this, indexCheckNode, key)"})
+        static void doGenericDel(VirtualFrame frame, Object list, Object key, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Shared @Cached GetListStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.DeleteNode deleteNode) {
+            var sequenceStorage = getStorageNode.execute(inliningTarget, list);
+            deleteNode.execute(frame, sequenceStorage, key);
         }
 
         @InliningCutoff
         @SuppressWarnings("unused")
         @Specialization(guards = "!isIndexOrSlice(this, indexCheckNode, key)")
-        static Object doError(Object self, Object key, Object value,
+        static void doError(Object self, Object key, Object value,
                         @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         @NeverDefault
-        protected static SetItemNode create() {
-            return ListBuiltinsFactory.SetItemNodeFactory.create();
+        protected static SetSubscriptNode create() {
+            return ListBuiltinsFactory.SetSubscriptNodeFactory.create();
         }
     }
 

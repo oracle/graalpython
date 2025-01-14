@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.DEQUE_REMOVE_X_NOT_IN_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -68,7 +67,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS_IN_BRACKETS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
@@ -91,11 +89,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
-import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeDelItemNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInplaceMulNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInsertNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeRotateNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeSetItemNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -104,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqCo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -842,41 +839,15 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "n", "value"})
+    @Slot(value = SlotKind.sq_ass_item, isComplex = true)
     @GenerateNodeFactory
-    @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
-    public abstract static class DequeSetItemNode extends PythonTernaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return DequeSetItemNodeClinicProviderGen.INSTANCE;
-        }
+    public abstract static class DequeSetItemNode extends SqAssItemBuiltinNode {
 
         @Specialization
-        static PNone doGeneric(PDeque self, int idx, Object value,
+        static void setOrDel(PDeque self, int idx, Object value,
                         @Cached NormalizeIndexCustomMessageNode normalizeIndexNode) {
             int normIdx = normalizeIndexNode.execute(idx, self.getSize(), ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
             self.setItem(normIdx, value != PNone.NO_VALUE ? value : null);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
-    @GenerateNodeFactory
-    @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
-    public abstract static class DequeDelItemNode extends PythonBinaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return DequeDelItemNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        static PNone doGeneric(PDeque self, int idx,
-                        @Cached NormalizeIndexCustomMessageNode normalizeIndexNode) {
-            int normIdx = normalizeIndexNode.execute(idx, self.getSize(), ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
-            self.setItem(normIdx, null);
-            return PNone.NONE;
         }
     }
 

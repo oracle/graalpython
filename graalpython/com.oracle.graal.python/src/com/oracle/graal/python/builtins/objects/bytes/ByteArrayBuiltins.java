@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesNodes.compareB
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -42,7 +41,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -82,7 +80,9 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -91,7 +91,6 @@ import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -99,13 +98,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -123,11 +120,9 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -240,22 +235,52 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.sq_ass_item, isComplex = true)
     @GenerateNodeFactory
-    @ImportStatic(SpecialMethodNames.class)
-    abstract static class SetItemNode extends PythonTernaryBuiltinNode {
+    abstract static class SetItemNode extends SqAssItemBuiltinNode {
 
-        @Specialization(guards = {"!isPSlice(idx)", "indexCheckNode.execute(inliningTarget, idx)"}, limit = "1")
-        static PNone doItem(VirtualFrame frame, PByteArray self, Object idx, Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.execute(frame, self.getSequenceStorage(), idx, value);
-            return PNone.NONE;
+        @Specialization(guards = "!isNoValue(value)")
+        static void set(PByteArray self, int index, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached("forBytearray()") NormalizeIndexNode normalizeIndexNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
+            index = normalizeIndexNode.execute(index, self.getSequenceStorage().length());
+            setItemNode.execute(inliningTarget, self.getSequenceStorage(), index, value);
         }
 
-        @Specialization
-        static PNone doSliceSequence(VirtualFrame frame, PByteArray self, PSlice slice, PSequence value,
+        @Specialization(guards = "isNoValue(value)")
+        static void del(PByteArray self, int index, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Shared @Cached("forBytearray()") NormalizeIndexNode normalizeIndexNode,
+                        @Cached SequenceStorageNodes.DeleteItemNode deleteItemNode) {
+            index = normalizeIndexNode.execute(index, self.getSequenceStorage().length());
+            deleteItemNode.execute(inliningTarget, self.getSequenceStorage(), index);
+        }
+    }
+
+    @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class SetSubscriptNode extends MpAssSubscriptBuiltinNode {
+
+        @Specialization(guards = {"!isPSlice(indexObj)", "!isNoValue(value)"})
+        static void set(VirtualFrame frame, PByteArray self, Object indexObj, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached("forBytearray()") NormalizeIndexNode normalizeIndexNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            if (indexCheckNode.execute(inliningTarget, indexObj)) {
+                int index = asSizeNode.executeExact(frame, inliningTarget, indexObj);
+                index = normalizeIndexNode.execute(index, self.getSequenceStorage().length());
+                setItemNode.execute(inliningTarget, self.getSequenceStorage(), index, value);
+            } else {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", indexObj);
+            }
+        }
+
+        @Specialization(guards = "!isPString(value)")
+        static void doSliceSequence(VirtualFrame frame, PByteArray self, PSlice slice, PSequence value,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared InlinedConditionProfile differentLenProfile,
                         @Cached @Shared SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -272,11 +297,10 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                 self.checkCanResize(inliningTarget, raiseNode);
             }
             setItemSliceNode.execute(frame, inliningTarget, storage, info, value, false);
-            return PNone.NONE;
         }
 
-        @Specialization(guards = "bufferAcquireLib.hasBuffer(value)", limit = "3")
-        static PNone doSliceBuffer(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
+        @Specialization(guards = {"!isNoValue(value)", "bufferAcquireLib.hasBuffer(value)"}, limit = "3")
+        static void doSliceBuffer(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
@@ -293,14 +317,14 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
                 PBytes bytes = factory.createBytes(bufferLib.getCopiedByteArray(value));
-                return doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
+                doSliceSequence(frame, self, slice, bytes, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
-        @Specialization(replaces = {"doSliceSequence", "doSliceBuffer"})
-        static PNone doSliceGeneric(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
+        @Specialization(guards = "!isNoValue(value)", replaces = {"doSliceSequence", "doSliceBuffer"})
+        static void doSliceGeneric(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached @Shared InlinedConditionProfile differentLenProfile,
                         @Cached @Shared SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -311,23 +335,16 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             PList values = constructListNode.execute(frame, value);
-            return doSliceSequence(frame, self, slice, values, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
+            doSliceSequence(frame, self, slice, values, inliningTarget, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices, raiseNode);
         }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        static Object error(Object self, Object idx, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", idx);
-        }
-
-        @NeverDefault
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            // Note the error message should never be reached, because the storage should always be
-            // writeable and so SetItemScalarNode should always have a specialization for it and
-            // inside that specialization the conversion of RHS may fail and produce Python level
-            // ValueError
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), ErrorMessages.INTEGER_REQUIRED);
+        @Specialization(guards = "isNoValue(value)")
+        static void doDelete(VirtualFrame frame, PByteArray self, Object key, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached SequenceStorageNodes.DeleteNode deleteNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
+            deleteNode.execute(frame, self.getSequenceStorage(), key);
         }
     }
 
@@ -575,28 +592,6 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @NeverDefault
         private static NormalizeIndexNode createNormalize() {
             return NormalizeIndexNode.create(ErrorMessages.POP_INDEX_OUT_OF_RANGE);
-        }
-    }
-
-    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static PNone doGeneric(VirtualFrame frame, PByteArray self, Object key,
-                        @Bind("this") Node inliningTarget,
-                        @Cached SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            self.checkCanResize(inliningTarget, raiseNode);
-            deleteNode.execute(frame, self.getSequenceStorage(), key);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object doGeneric(Object self, Object idx,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__delitem__", "bytearray", idx);
         }
     }
 

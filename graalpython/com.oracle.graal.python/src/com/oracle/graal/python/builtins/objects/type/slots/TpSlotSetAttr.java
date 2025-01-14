@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -187,11 +186,11 @@ public class TpSlotSetAttr {
     }
 
     /**
-     * For managed types, this calls {@link TpSlots#combined_tp_getattro_getattr()}, because their
+     * For managed types, this calls {@link TpSlots#combined_tp_setattro_setattr()}, because their
      * signature difference is not visible on the managed level. For native slots, this calls
-     * {@link TpSlots#tp_getattro()} if available, otherwise {@link TpSlots#tp_getattr()} - at least
+     * {@link TpSlots#tp_setattro()} if available, otherwise {@link TpSlots#tp_setattr()} - at least
      * one of those must be available, i.e., the caller is expected to check precondition
-     * {@code combined_tp_getattro_getattr() != null}.
+     * {@code combined_tp_setattro_setattr() != null}.
      */
     @GenerateInline
     @GenerateCached(false)
@@ -278,14 +277,14 @@ public class TpSlotSetAttr {
             Object result;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
             try {
-                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETATTR__, slot.callable, selfToNativeNode.execute(self), nameArg,
+                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SETATTR__, slot.callable, selfToNativeNode.execute(self), nameArg,
                                 valueToNativeNode.execute(value));
             } finally {
                 if (isSetAttr) {
                     freeNode.free(nameArg);
                 }
             }
-            checkResultNode.execute(threadState, T___GETATTR__, result);
+            checkResultNode.execute(threadState, T___SETATTR__, result);
         }
     }
 

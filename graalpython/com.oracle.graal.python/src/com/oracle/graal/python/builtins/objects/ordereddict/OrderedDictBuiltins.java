@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
@@ -55,7 +54,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS;
@@ -84,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.ordereddict.POrderedDict.ODictNo
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -158,13 +157,13 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
     @GenerateNodeFactory
-    abstract static class SetItemNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        static PNone setitem(VirtualFrame frame, POrderedDict self, Object key, Object value,
+    abstract static class SetItemNode extends MpAssSubscriptBuiltinNode {
+        @Specialization(guards = "!isNoValue(value)")
+        static void setitem(VirtualFrame frame, POrderedDict self, Object key, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectHashNode hashNode,
+                        @Shared @Cached PyObjectHashNode hashNode,
                         @Cached HashingStorageNodes.HashingStorageSetItemWithHash setItemWithHash,
                         @Cached InlinedBranchProfile storageUpdated,
                         @Cached ObjectHashMap.GetNode getNode,
@@ -180,17 +179,12 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                 self.append(node);
                 putNode.put(frame, inliningTarget, self.nodes, key, hash, node);
             }
-            return PNone.NONE;
         }
-    }
 
-    @Builtin(name = J___DELITEM__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        static PNone delitem(VirtualFrame frame, POrderedDict self, Object key,
+        @Specialization(guards = "isNoValue(value)")
+        static void delitem(VirtualFrame frame, POrderedDict self, Object key, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectHashNode hashNode,
+                        @Shared @Cached PyObjectHashNode hashNode,
                         @Cached HashingStorageNodes.HashingStorageDelItem delItem,
                         @Cached ObjectHashMap.RemoveNode removeNode,
                         @Cached PRaiseNode raiseNode) {
@@ -202,7 +196,6 @@ public class OrderedDictBuiltins extends PythonBuiltins {
             self.remove(node);
             // TODO with hash
             delItem.execute(frame, inliningTarget, self.getDictStorage(), key, self);
-            return PNone.NONE;
         }
     }
 

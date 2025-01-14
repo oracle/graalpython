@@ -125,6 +125,8 @@ public @interface Slot {
         sq_length("__len__"),
         /** sequence item: read element at index */
         sq_item("__getitem__"),
+        /** write sequence element at index */
+        sq_ass_item("__setitem__"),
         /** seq + seq, nb_add is tried before */
         sq_concat("__add__"),
         /** seq * number, nb_multiply is tried before */
@@ -133,6 +135,8 @@ public @interface Slot {
         mp_length("__len__"),
         /** mapping subscript, e.g. o[key], o[i:j] */
         mp_subscript("__getitem__"),
+        /** o[key] = value */
+        mp_ass_subscript("__setitem__"),
         /** type descriptor get */
         tp_descr_get("__get__"),
         /** type descriptor set/delete */

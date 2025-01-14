@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_aiter;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_anext;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_await;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMappingMethods__mp_ass_subscript;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_absolute;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_float;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_floor_divide;
@@ -65,8 +64,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNu
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_negative;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_positive;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_power;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PySequenceMethods__sq_ass_item;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_mapping;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_number;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_call;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_hash;
@@ -75,7 +72,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_iternext;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_repr;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_richcompare;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_setattro;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_str;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
@@ -107,17 +103,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.HashfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TernaryFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -134,18 +126,13 @@ public enum SlotMethodDef {
     TP_ITERNEXT(PyTypeObject__tp_iternext, T___NEXT__, UnaryFuncWrapper::new),
     TP_REPR(PyTypeObject__tp_repr, T___REPR__, UnaryFuncWrapper::new),
     TP_RICHCOMPARE(PyTypeObject__tp_richcompare, T___TRUFFLE_RICHCOMPARE__, RichcmpFunctionWrapper::new),
-    TP_SETATTRO(PyTypeObject__tp_setattro, T___SETATTR__, ObjobjargWrapper::new),
     TP_STR(PyTypeObject__tp_str, T___STR__, UnaryFuncWrapper::new),
-
-    MP_ASS_SUBSCRIPT(PyMappingMethods__mp_ass_subscript, T___SETITEM__, ObjobjargWrapper::new, MethodsFlags.MP_ASS_SUBSCRIPT),
 
     AM_AWAIT(PyAsyncMethods__am_await, T___AWAIT__, UnaryFuncWrapper::new, MethodsFlags.AM_AWAIT),
     AM_AITER(PyAsyncMethods__am_aiter, T___AITER__, UnaryFuncWrapper::new, MethodsFlags.AM_AITER),
     AM_ANEXT(PyAsyncMethods__am_anext, T___ANEXT__, UnaryFuncWrapper::new, MethodsFlags.AM_ANEXT),
     // (mq) AM_SEND is an internal function and mostly called from within AWAIT, AITER, ANEXT.
     /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, TernaryFunctionWrapper::new, MethodsFlags.AM_SEND), */
-
-    SQ_ASS_ITEM(PySequenceMethods__sq_ass_item, T___SETITEM__, SsizeobjargfuncWrapper::new, MethodsFlags.SQ_ASS_ITEM),
 
     NB_ABSOLUTE(PyNumberMethods__nb_absolute, T___ABS__, UnaryFuncWrapper::new, MethodsFlags.NB_ABSOLUTE),
     NB_FLOAT(PyNumberMethods__nb_float, T___FLOAT__, UnaryFuncWrapper::new, MethodsFlags.NB_FLOAT),
@@ -198,16 +185,6 @@ public enum SlotMethodDef {
     }
 
     static {
-        // SQ_(ASS_)ITEM and MP_(ASS_)SUBSCRIPT do *not* overlap for
-        // the purposes of initialising native slots, since the sq
-        // slots use ssizeargfunc/ssizeobjargproc and the mp slots
-        // use binaryfunc/objobjargproc
-        //
-        // Similarly for NB_ADD/NB_MUL (wrap_binaryfunc_l) and
-        // SQ_CONCAT/SQ_REPEAT (wrap_binaryfunc)
-        initGroup(
-                        PyTypeObject__tp_as_mapping,
-                        MP_ASS_SUBSCRIPT);
         initGroup(
                         PyTypeObject__tp_as_number,
                         NB_ABSOLUTE,

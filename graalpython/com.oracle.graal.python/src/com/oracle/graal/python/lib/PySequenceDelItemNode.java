@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,21 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.DELITEM;
-
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionWrapperInvokeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode.IndexForSqSlotInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -68,51 +62,47 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PySequence_DelItem}. For native object it would only call
  * {@code sq_ass_item} and never {@code mp_ass_subscript}.
  */
-@ImportStatic({PGuards.class, SpecialMethodSlot.class, ExternalFunctionNodes.PExternalFunctionWrapper.class})
-@GenerateInline(false) // One lazy usage, one eager usage => not worth it
 @GenerateUncached
+@GenerateInline
+@GenerateCached(false)
+@ImportStatic(PGuards.class)
 public abstract class PySequenceDelItemNode extends Node {
-    private static final NativeCAPISymbol SYMBOL = NativeCAPISymbol.FUN_PY_SEQUENCE_DEL_ITEM;
-    private static final CApiTiming C_API_TIMING = CApiTiming.create(true, SYMBOL.getName());
+    public abstract void execute(Frame frame, Node inliningTarget, Object container, int index);
 
-    public abstract Object execute(Frame frame, Object object, int index);
-
-    public final Object execute(Object object, int index) {
-        return execute(null, object, index);
+    @Specialization(guards = "isBuiltinList(object)")
+    static void doList(VirtualFrame frame, PList object, int key,
+                    @Cached(inline = false) ListBuiltins.SetItemNode setItemNode) {
+        setItemNode.executeIntKey(frame, object, key, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = "!isNativeObject(object)")
-    static Object doGenericManaged(VirtualFrame frame, Object object, int index,
-                    @Bind("this") Node inliningTarget,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetMethodsFlagsNode getMethodsFlagsNode,
-                    @Cached(parameters = "DelItem") LookupSpecialMethodSlotNode lookupDelItem,
-                    @Cached CallBinaryMethodNode callDelItem,
-                    @Cached PRaiseNode.Lazy raise) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        if ((getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.SQ_ASS_ITEM) != 0) {
-            Object delItem = lookupDelItem.execute(frame, type, object);
-            assert delItem != PNone.NO_VALUE;
-            return callDelItem.executeObject(frame, delItem, object, index);
-        }
-        if ((getMethodsFlagsNode.execute(inliningTarget, type) & MethodsFlags.MP_ASS_SUBSCRIPT) != 0) {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_A_SEQUENCE, object);
+    @InliningCutoff
+    @Specialization(replaces = "doList")
+    static void doGeneric(VirtualFrame frame, Node inliningTarget, Object object, int index,
+                    @Cached GetObjectSlotsNode getSlotsNode,
+                    @Cached IndexForSqSlotInt indexForSqSlot,
+                    @Cached CallSlotSqAssItemNode callSetItem,
+                    @Cached PRaiseNode.Lazy raiseNode) {
+        TpSlots slots = getSlotsNode.execute(inliningTarget, object);
+        index = indexForSqSlot.execute(frame, inliningTarget, object, slots, index);
+        if (slots.sq_ass_item() != null) {
+            callSetItem.execute(frame, inliningTarget, slots.sq_ass_item(), object, index, PNone.NO_VALUE);
         } else {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_DELETION, object);
+            throw raiseNotSupported(object, inliningTarget, raiseNode, slots);
         }
     }
 
-    @Specialization
-    static Object doNative(VirtualFrame frame, PythonAbstractNativeObject object, int index,
-                    @Bind("this") Node inliningTarget,
-                    @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                    @Cached ExternalFunctionWrapperInvokeNode invokeNode) {
-        Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
-        return invokeNode.execute(frame, DELITEM, C_API_TIMING, SYMBOL.getTsName(), executable, new Object[]{toNativeNode.execute(object), index});
+    @InliningCutoff
+    static PException raiseNotSupported(Object object, Node inliningTarget, PRaiseNode.Lazy raiseNode, TpSlots slots) {
+        TruffleString message = ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_DELETION;
+        if (slots.mp_subscript() != null) {
+            message = ErrorMessages.IS_NOT_A_SEQUENCE;
+        }
+        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, message, object);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -212,9 +212,9 @@ public final class PythonCextListBuiltins {
         @Specialization
         static int getSlice(PList list, Object iLow, Object iHigh, Object s,
                         @Bind("this") Node inliningTarget,
-                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.SetItemNode setItemNode,
+                        @Cached ListBuiltins.SetSubscriptNode setItemNode,
                         @Cached PySliceNew sliceNode) {
-            setItemNode.execute(null, list, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE), s);
+            setItemNode.executeVoid(null, list, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE), s);
             return 0;
         }
 
