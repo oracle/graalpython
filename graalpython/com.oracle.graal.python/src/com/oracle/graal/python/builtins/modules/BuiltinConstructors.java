@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -73,21 +73,16 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_JOIN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUNC__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.DeprecationWarning;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
@@ -119,10 +114,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
@@ -183,14 +176,13 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
-import com.oracle.graal.python.lib.PyIndexCheckNode;
-import com.oracle.graal.python.lib.PyLongCheckExactNode;
-import com.oracle.graal.python.lib.PyLongFromDoubleNode;
+import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -202,6 +194,7 @@ import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -244,7 +237,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -262,7 +254,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
-import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -1250,619 +1241,98 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     Base 0 means to interpret the base from the string as an integer literal.""")
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonTernaryBuiltinNode {
-        @Child private BytesNodes.ToBytesNode toByteArrayNode;
-        @Child private LookupAndCallUnaryNode callIndexNode;
-        @Child private LookupAndCallUnaryNode callTruncNode;
-        @Child private LookupAndCallUnaryNode callReprNode;
-        @Child private LookupAndCallUnaryNode callIntNode;
-        @Child private WarnNode warnNode;
-
-        public final Object executeWith(VirtualFrame frame, Object number) {
-            return execute(frame, PythonBuiltinClassType.PInt, number, 10);
-        }
-
-        public final Object executeWith(VirtualFrame frame, Object number, Object base) {
-            return execute(frame, PythonBuiltinClassType.PInt, number, base);
-        }
-
-        @TruffleBoundary
-        private static Object stringToIntInternal(String num, int base, PythonContext context) {
-            try {
-                BigInteger bi = asciiToBigInteger(num, base, context);
-                if (bi == null) {
-                    return null;
-                }
-                if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
-                    return bi;
-                } else {
-                    return bi.intValue();
-                }
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-
-        private Object stringToInt(VirtualFrame frame, Object cls, String number, int base, Object origObj,
-                        Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        InlinedBranchProfile notSimpleDecimalLiteralProfile, InlinedBranchProfile invalidValueProfile,
-                        InlinedBranchProfile bigIntegerProfile, InlinedBranchProfile primitiveIntProfile, InlinedBranchProfile fullIntProfile,
-                        PythonObjectFactory factory, PRaiseNode.Lazy raiseNode) {
-            if (base == 0 || base == 10) {
-                Object value = parseSimpleDecimalLiteral(number, 0, number.length());
-                if (value != null) {
-                    return createInt(cls, value, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory);
-                }
-            }
-            notSimpleDecimalLiteralProfile.enter(inliningTarget);
-            Object value = stringToIntInternal(number, base, getContext());
-            if (value == null) {
-                invalidValueProfile.enter(inliningTarget);
-                if (callReprNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callReprNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Repr));
-                }
-                Object str = callReprNode.executeObject(frame, origObj);
-                if (PGuards.isString(str)) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, str);
-                } else {
-                    // During the formatting of "ValueError: invalid literal ..." exception,
-                    // CPython attempts to raise "TypeError: __repr__ returned non-string",
-                    // which gets later overwitten with the original "ValueError",
-                    // but without any message (since the message formatting failed)
-                    throw raiseNode.get(inliningTarget).raise(ValueError);
-                }
-            }
-            return createInt(cls, value, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory);
-        }
-
-        private static Object createInt(Object cls, Object value, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        InlinedBranchProfile bigIntegerProfile, InlinedBranchProfile primitiveIntProfile, InlinedBranchProfile fullIntProfile,
-                        PythonObjectFactory factory) {
-            if (value instanceof BigInteger) {
-                bigIntegerProfile.enter(inliningTarget);
-                return factory.createInt(cls, (BigInteger) value);
-            } else if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
-                primitiveIntProfile.enter(inliningTarget);
-                return value;
-            } else {
-                fullIntProfile.enter(inliningTarget);
-                if (value instanceof Integer) {
-                    return factory.createInt(cls, (Integer) value);
-                } else if (value instanceof Long) {
-                    return factory.createInt(cls, (Long) value);
-                } else if (value instanceof Boolean) {
-                    return factory.createInt(cls, (Boolean) value ? 1 : 0);
-                } else if (value instanceof PInt) {
-                    return factory.createInt(cls, ((PInt) value).getValue());
-                }
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Unexpected type");
-        }
-
-        private static void checkBase(int base, Node inliningTarget, InlinedConditionProfile invalidBase, PRaiseNode.Lazy raiseNode) {
-            if (invalidBase.profile(inliningTarget, (base < 2 || base > 36) && base != 0)) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BASE_OUT_OF_RANGE_FOR_INT);
-            }
-        }
-
-        private static void checkBase(PInt base, Node inliningTarget, InlinedConditionProfile invalidBase, PRaiseNode.Lazy raiseNode) {
-            int ibase;
-            try {
-                ibase = base.intValueExact();
-            } catch (OverflowException e) {
-                // this should just trigger the error
-                ibase = 1;
-            }
-            checkBase(ibase, inliningTarget, invalidBase, raiseNode);
-        }
-
-        // Adapted from Jython
-        private static BigInteger asciiToBigInteger(String str, int possibleBase, PythonContext context) throws NumberFormatException {
-            CompilerAsserts.neverPartOfCompilation();
-            int base = possibleBase;
-            int b = 0;
-            int e = str.length();
-
-            while (b < e && Character.isWhitespace(str.charAt(b))) {
-                b++;
-            }
-
-            while (e > b && Character.isWhitespace(str.charAt(e - 1))) {
-                e--;
-            }
-
-            boolean acceptUnderscore = false;
-            boolean raiseIfNotZero = false;
-            char sign = 0;
-            if (b < e) {
-                sign = str.charAt(b);
-                if (sign == '-' || sign == '+') {
-                    b++;
-                }
-
-                if (base == 16) {
-                    if (str.charAt(b) == '0') {
-                        if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'X') {
-                            b += 2;
-                            acceptUnderscore = true;
-                        }
-                    }
-                } else if (base == 0) {
-                    if (str.charAt(b) == '0') {
-                        if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'X') {
-                            base = 16;
-                            b += 2;
-                            acceptUnderscore = true;
-                        } else if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'O') {
-                            base = 8;
-                            b += 2;
-                            acceptUnderscore = true;
-                        } else if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'B') {
-                            base = 2;
-                            b += 2;
-                            acceptUnderscore = true;
-                        } else {
-                            raiseIfNotZero = true;
-                        }
-                    }
-                } else if (base == 8) {
-                    if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'O') {
-                        b += 2;
-                        acceptUnderscore = true;
-                    }
-                } else if (base == 2) {
-                    if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'B') {
-                        b += 2;
-                        acceptUnderscore = true;
-                    }
-                }
-            }
-
-            if (base == 0) {
-                base = 10;
-            }
-
-            // reject invalid characters without going to BigInteger
-            for (int i = b; i < e; i++) {
-                char c = str.charAt(i);
-                if (c == '_') {
-                    if (!acceptUnderscore || i == e - 1) {
-                        throw new NumberFormatException("Illegal underscore in int literal");
-                    } else {
-                        acceptUnderscore = false;
-                    }
-                } else {
-                    acceptUnderscore = true;
-                    if (Character.digit(c, base) == -1) {
-                        // invalid char
-                        return null;
-                    }
-                }
-            }
-
-            String s = str;
-            if (b > 0 || e < str.length()) {
-                s = str.substring(b, e);
-            }
-            s = s.replace("_", "");
-
-            checkMaxDigits(context, s.length(), base);
-
-            BigInteger bi;
-            if (sign == '-') {
-                bi = new BigInteger("-" + s, base);
-            } else {
-                bi = new BigInteger(s, base);
-            }
-
-            if (raiseIfNotZero && !bi.equals(BigInteger.ZERO)) {
-                throw new NumberFormatException("Obsolete octal int literal");
-            }
-            return bi;
-        }
-
-        private static void checkMaxDigits(PythonContext context, int digits, int base) {
-            if (digits > SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD && Integer.bitCount(base) != 1) {
-                int maxDigits = context.getIntMaxStrDigits();
-                if (maxDigits > 0 && digits > maxDigits) {
-                    throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D, maxDigits, digits);
-                }
-            }
-        }
-
-        /**
-         * Fast path parser of integer literals. Accepts only a subset of allowed literals - no
-         * underscores, no leading zeros, no plus sign, no spaces, only ascii digits and the result
-         * must be small enough to fit into long.
-         *
-         * @param arg the string to parse
-         * @return parsed integer, long or null if the literal is not simple enough
-         */
-        public static Object parseSimpleDecimalLiteral(String arg, int offset, int remaining) {
-            if (remaining <= 0) {
-                return null;
-            }
-            int start = arg.charAt(offset) == '-' ? 1 : 0;
-            if (remaining <= start || remaining > 18 + start) {
-                return null;
-            }
-            if (arg.charAt(start + offset) == '0') {
-                if (remaining > start + 1) {
-                    return null;
-                }
-                return 0;
-            }
-            long value = 0;
-            for (int i = start; i < remaining; i++) {
-                char c = arg.charAt(i + offset);
-                if (c < '0' || c > '9') {
-                    return null;
-                }
-                value = value * 10 + (c - '0');
-            }
-            if (start != 0) {
-                value = -value;
-            }
-            if (value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE) {
-                return (int) value;
-            }
-            return value;
-        }
-
-        protected static boolean isPrimitiveInt(Node inliningTarget, Object cls, IsBuiltinClassExactProfile profile) {
-            return profile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PInt);
-        }
 
         @Specialization
-        static Object parseInt(Object cls, boolean arg, @SuppressWarnings("unused") PNone base,
+        static Object doGeneric(VirtualFrame frame, Object cls, Object x, Object baseObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
-                return arg ? 1 : 0;
-            } else {
-                return factory.createInt(cls, arg ? 1 : 0);
-            }
-        }
-
-        @Specialization(guards = "isNoValue(base)")
-        static Object createInt(Object cls, int arg, @SuppressWarnings("unused") PNone base,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        // Dummy argument just so that it can be @Shared in the other
-                        // specialization, which generated better code for interpreter
-                        @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile isIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
-                return arg;
-            }
-            return factory.createInt(cls, arg);
-        }
-
-        @Specialization(guards = "isNoValue(base)")
-        static Object createInt(Object cls, long arg, @SuppressWarnings("unused") PNone base,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        @Shared @Cached InlinedConditionProfile isIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
-                int intValue = (int) arg;
-                if (isIntProfile.profile(inliningTarget, intValue == arg)) {
-                    return intValue;
-                } else {
-                    return arg;
-                }
-            }
-            return factory.createInt(cls, arg);
-        }
-
-        @Specialization(guards = "isNoValue(base)")
-        static Object createInt(Object cls, double arg, @SuppressWarnings("unused") PNone base,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        @Cached PyLongFromDoubleNode pyLongFromDoubleNode,
-                        @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
-                        @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
-                        @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            Object result = pyLongFromDoubleNode.execute(inliningTarget, arg);
-            return createInt(cls, result, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory);
-        }
-
-        // String
-
-        @Specialization
-        @Megamorphic
-        @InliningCutoff
-        @SuppressWarnings("truffle-static-method")
-        Object parseTStringError(VirtualFrame frame, Object cls, TruffleString number, Object base,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached InlinedBranchProfile baseIsNoneBranchProfile,
-                        @Exclusive @Cached InlinedBranchProfile baseIsIntBranchProfile,
-                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
-                        @Exclusive @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Exclusive @Cached InlinedConditionProfile invalidBase,
-                        @Exclusive @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
-                        @Exclusive @Cached InlinedBranchProfile invalidValueProfile,
-                        @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
-                        @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
-                        @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            int intBase;
-            if (PGuards.isNoValue(base)) {
-                baseIsNoneBranchProfile.enter(inliningTarget);
-                intBase = 10;
-            } else if (base instanceof Integer) {
-                baseIsIntBranchProfile.enter(inliningTarget);
-                intBase = (int) base;
-            } else {
-                intBase = asSizeNode.executeLossy(frame, inliningTarget, base);
-            }
-            checkBase(intBase, inliningTarget, invalidBase, raiseNode);
-            return stringToInt(frame, cls, toJavaStringNode.execute(number), intBase, number,
-                            inliningTarget, isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile,
-                            bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory, raiseNode);
-        }
-
-        // PIBytesLike
-        @Specialization(guards = "isNoValue(base) || isInt(base)")
-        @InliningCutoff
-        @Megamorphic
-        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, Object base,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached InlinedConditionProfile baseIsNoneBranchProfile,
-                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        @Exclusive @Cached InlinedConditionProfile invalidBase,
-                        @Exclusive @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
-                        @Exclusive @Cached InlinedBranchProfile invalidValueProfile,
-                        @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
-                        @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
-                        @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            int intBase;
-            if (baseIsNoneBranchProfile.profile(inliningTarget, PGuards.isNoValue(base))) {
-                intBase = 10;
-            } else {
-                intBase = (int) base;
-                checkBase(intBase, inliningTarget, invalidBase, raiseNode);
-            }
-            return stringToInt(frame, cls, toString(arg), intBase, arg, inliningTarget,
-                            isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile,
-                            primitiveIntProfile, fullIntProfile, factory, raiseNode);
-        }
-
-        // PString
-        static boolean isNoValueOrIntOrPInt(Object x) {
-            return isNoValue(x) || x instanceof Integer || x instanceof PInt;
-        }
-
-        @Specialization(guards = "isNoValueOrIntOrPInt(base)")
-        @InliningCutoff
-        @Megamorphic
-        @SuppressWarnings("truffle-static-method")
-        Object parsePString(VirtualFrame frame, Object cls, PString arg, Object base,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        @Exclusive @Cached CastToJavaStringNode castToStringNode,
-                        @Exclusive @Cached InlinedConditionProfile invalidBase,
-                        @Exclusive @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
-                        @Exclusive @Cached InlinedBranchProfile invalidValueProfile,
-                        @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
-                        @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
-                        @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            int intBase;
-            if (PGuards.isNoValue(base)) {
-                intBase = 10;
-            } else if (base instanceof Integer) {
-                intBase = (int) base;
-                checkBase(intBase, inliningTarget, invalidBase, raiseNode);
-            } else {
-                assert base instanceof PInt;
-                PInt pintBase = (PInt) base;
-                checkBase(pintBase, inliningTarget, invalidBase, raiseNode);
-                intBase = (pintBase).intValue();
-            }
-            Object result = callInt(frame, inliningTarget, arg, raiseNode);
-            if (result != PNone.NO_VALUE) {
+                        @Cached IntNodeInnerNode innerNode,
+                        @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
+                        @Cached CreateIntSubclassNode createIntSubclassNode) {
+            Object result = innerNode.execute(frame, inliningTarget, x, baseObj);
+            if (isPrimitiveIntProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PInt)) {
                 return result;
-            }
-            return stringToInt(frame, cls, castToStringNode.execute(arg), intBase, arg, inliningTarget,
-                            isPrimitiveIntProfile, notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile,
-                            primitiveIntProfile, fullIntProfile, factory, raiseNode);
-        }
-
-        // other
-
-        @Specialization(guards = "isNoValue(base)")
-        static Object createInt(Object cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone base,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile) {
-            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
-                return arg;
             } else {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("cannot wrap void ptr in int subclass");
+                return createIntSubclassNode.execute(inliningTarget, cls, result);
             }
         }
 
-        @Specialization(guards = "isNoValue(none)")
-        static Object createInt(Object cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone base,
-                        @Bind("this") Node inliningTarget,
-                        @Shared("primitiveInt") @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
-            if (isPrimitiveInt(inliningTarget, cls, isPrimitiveIntProfile)) {
-                return 0;
-            }
-            return factory.createInt(cls, 0);
-        }
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class CreateIntSubclassNode extends Node {
+            public abstract Object execute(Node inliningTarget, Object cls, Object intObj);
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isString(arg)", "!isBytes(arg)", "!isNoValue(base)"})
-        static Object fail(Object cls, Object arg, Object base,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
-        }
-
-        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
-        @SuppressWarnings("truffle-static-method")
-        @InliningCutoff
-        @Megamorphic
-        Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
-                        @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyLongCheckExactNode longCheckExact,
-                        @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
-                        @Exclusive @Cached InlinedBranchProfile invalidValueProfile,
-                        @Exclusive @Cached InlinedBranchProfile bigIntegerProfile,
-                        @Exclusive @Cached InlinedBranchProfile primitiveIntProfile,
-                        @Exclusive @Cached InlinedBranchProfile fullIntProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            /*
-             * This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
-             * in CPython. We don't use PythonObjectLibrary here since the original CPython function
-             * does not use any of the conversion functions (such as _PyLong_AsInt or
-             * PyNumber_Index) either, but it reimplements the logic in a slightly different way
-             * (e.g. trying __int__ before __index__ whereas _PyLong_AsInt does it the other way)
-             * and also with specific exception messages which are expected by Python unittests.
-             * This unfortunately means that this method relies on the internal logic of NO_VALUE
-             * return values representing missing magic methods which should be ideally hidden by
-             * PythonObjectLibrary.
-             */
-            Object result = callInt(frame, inliningTarget, obj, raiseNode);
-            if (result == PNone.NO_VALUE) {
-                result = callIndex(frame, inliningTarget, obj, raiseNode);
-                if (result == PNone.NO_VALUE) {
-                    Object truncResult = callTrunc(frame, inliningTarget, obj, indexCheckNode, raiseNode);
-                    if (truncResult == PNone.NO_VALUE) {
-                        Object buffer;
-                        try {
-                            buffer = bufferAcquireLib.acquireReadonly(obj, frame, indirectCallData);
-                        } catch (PException e) {
-                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
-                        }
-                        try {
-                            String number = newString(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
-                            return stringToInt(frame, cls, number, 10, obj, inliningTarget, isPrimitiveIntProfile,
-                                            notSimpleDecimalLiteralProfile, invalidValueProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory, raiseNode);
-                        } finally {
-                            bufferLib.release(buffer, frame, indirectCallData);
-                        }
-                    }
-                    if (isIntegerType(truncResult)) {
-                        result = truncResult;
-                    } else {
-                        result = callIndex(frame, inliningTarget, truncResult, raiseNode);
-                        if (result == PNone.NO_VALUE) {
-                            result = callInt(frame, inliningTarget, truncResult, raiseNode);
-                            if (result == PNone.NO_VALUE) {
-                                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, "__trunc__", truncResult);
-                            }
-                        }
-                    }
-                }
+            @Specialization
+            static Object doSubclass(Object cls, int value,
+                            @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                return factory.createInt(cls, value);
             }
 
-            // If a subclass of int is returned by __int__ or __index__, a conversion to int is
-            // performed and a DeprecationWarning should be triggered (see PyNumber_Long).
-            if (!longCheckExact.execute(inliningTarget, result)) {
-                getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                ErrorMessages.WARN_P_RETURNED_NON_P,
-                                obj, "__int__/__index__", "int", result, "int");
-                if (PGuards.isPInt(result)) {
-                    result = ((PInt) result).getValue();
-                } else if (PGuards.isBoolean(result)) {
-                    result = (boolean) result ? 1 : 0;
-                }
+            @Specialization
+            static Object doSubclass(Object cls, long value,
+                            @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                return factory.createInt(cls, value);
             }
-            return createInt(cls, result, inliningTarget, isPrimitiveIntProfile, bigIntegerProfile, primitiveIntProfile, fullIntProfile, factory);
+
+            @Specialization
+            static Object doSubclass(Object cls, boolean value,
+                            @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                return factory.createInt(cls, PInt.intValue(value));
+            }
+
+            @Specialization
+            static Object doSubclass(Object cls, PInt value,
+                            @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                return factory.createInt(cls, value.getValue());
+            }
         }
 
-        protected static boolean isIntegerType(Object obj) {
-            return PGuards.isBoolean(obj) || PGuards.isInteger(obj) || PGuards.isPInt(obj);
-        }
+        @GenerateInline
+        @GenerateCached(false)
+        @ImportStatic(PGuards.class)
+        abstract static class IntNodeInnerNode extends Node {
+            public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object x, Object base);
 
-        protected static boolean isHandledType(Object obj) {
-            return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
-        }
-
-        private Object callIndex(VirtualFrame frame, Node inliningTarget, Object obj, PRaiseNode.Lazy raiseNode) {
-            if (callIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Index));
-            }
-            Object result = callIndexNode.executeObject(frame, obj);
-            // the case when the result is NO_VALUE (i.e. the object does not provide __index__)
-            // is handled in createIntGeneric
-            if (result != PNone.NO_VALUE && !isIntegerType(result)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INT, J___INDEX__, result);
-            }
-            return result;
-        }
-
-        private Object callTrunc(VirtualFrame frame, Node inliningTarget, Object obj, PyIndexCheckNode indexCheckNode, PRaiseNode.Lazy raiseNode) {
-            if (callTruncNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callTruncNode = insert(LookupAndCallUnaryNode.create(T___TRUNC__));
-            }
-            Object result = callTruncNode.executeObject(frame, obj);
-            if (result != PNone.NO_VALUE) {
-                getWarnNode().warnEx(frame, DeprecationWarning, ErrorMessages.WARN_DELEGATION_OF_INT_TO_TRUNC_IS_DEPRECATED, 1);
-                if (indexCheckNode.execute(inliningTarget, result)) {
-                    return callIndex(frame, inliningTarget, result, raiseNode);
+            @Specialization(guards = "isNoValue(baseObj)")
+            static Object doNoBase(VirtualFrame frame, Node inliningTarget, Object x, @SuppressWarnings("unused") Object baseObj,
+                            @Cached InlinedBranchProfile noX,
+                            @Cached PyNumberLongNode pyNumberLongNode) {
+                if (x == PNone.NO_VALUE) {
+                    noX.enter(inliningTarget);
+                    return 0;
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, J___TRUNC__, result);
+                    return pyNumberLongNode.execute(frame, inliningTarget, x);
                 }
             }
-            return result;
-        }
 
-        private Object callInt(VirtualFrame frame, Node inliningTarget, Object object, PRaiseNode.Lazy raiseNode) {
-            if (callIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callIntNode = insert(LookupAndCallUnaryNode.create(SpecialMethodSlot.Int));
+            @Fallback
+            @InliningCutoff
+            static Object doWithBase(VirtualFrame frame, Node inliningTarget, Object x, Object baseObj,
+                            @Cached InlinedBranchProfile missingArgument,
+                            @Cached InlinedBranchProfile wrongBase,
+                            @Cached InlinedBranchProfile cannotConvert,
+                            @Cached PyNumberAsSizeNode asSizeNode,
+                            @Cached PyUnicodeCheckNode unicodeCheckNode,
+                            @Cached PyLongFromUnicodeObject longFromUnicode,
+                            @Cached BytesNodes.BytesLikeCheck bytesLikeCheck,
+                            @Cached PyNumberLongNode.LongFromBufferNode fromBufferNode,
+                            @Cached PRaiseNode.Lazy raiseNode) {
+                if (x == PNone.NO_VALUE) {
+                    missingArgument.enter(inliningTarget);
+                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INT_MISSING_STRING_ARGUMENT);
+                }
+                int base = asSizeNode.executeLossy(frame, inliningTarget, baseObj);
+                if ((base != 0 && base < 2) || base > 36) {
+                    wrongBase.enter(inliningTarget);
+                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INT_BASE_MUST_BE_2_AND_36_OR_0);
+                }
+                if (unicodeCheckNode.execute(inliningTarget, x)) {
+                    return longFromUnicode.execute(inliningTarget, x, base);
+                } else if (bytesLikeCheck.execute(inliningTarget, x)) {
+                    return fromBufferNode.execute(frame, x, base);
+                }
+                cannotConvert.enter(inliningTarget);
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
             }
-            Object result = callIntNode.executeObject(frame, object);
-            if (result != PNone.NO_VALUE && !isIntegerType(result)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INT, T___INT__, result);
-            }
-            return result;
-        }
-
-        private WarnNode getWarnNode() {
-            if (warnNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                warnNode = insert(WarnNode.create());
-            }
-            return warnNode;
-        }
-
-        private String toString(PBytesLike pByteArray) {
-            if (toByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
-            }
-            return newString(toByteArrayNode.execute(pByteArray));
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static String newString(byte[] bytes) {
-            return new String(bytes);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static String newString(byte[] bytes, int offset, int length) {
-            return new String(bytes, offset, length);
         }
     }
 

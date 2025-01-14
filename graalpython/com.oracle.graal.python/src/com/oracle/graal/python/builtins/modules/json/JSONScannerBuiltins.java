@@ -1,9 +1,15 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.builtins.modules.json;
+
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -11,7 +17,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -21,6 +26,7 @@ import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
+import com.oracle.graal.python.lib.PyLongFromString;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -44,13 +50,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.math.BigInteger;
-import java.util.List;
-
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.JSONScanner)
 public final class JSONScannerBuiltins extends PythonBuiltins {
@@ -347,23 +346,8 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                 }
             } else {
                 if (PyLongCheckExactNode.executeUncached(scanner.parseInt)) {
-                    Object rval = BuiltinConstructors.IntNode.parseSimpleDecimalLiteral(string, start, idx - start);
-                    if (rval != null) {
-                        return rval;
-                    }
                     String numStr = string.substring(start, idx);
-                    BigInteger bi = new BigInteger(numStr);
-                    try {
-                        return bi.intValueExact();
-                    } catch (ArithmeticException e) {
-                        // fall through
-                    }
-                    try {
-                        return bi.longValueExact();
-                    } catch (ArithmeticException e) {
-                        // fall through
-                    }
-                    return factory.createInt(bi);
+                    return PyLongFromString.executeUncached(numStr, 10);
                 } else {
                     /* copy the section we determined to be a number */
                     TruffleString numStr = toTruffleStringUncached(string.substring(start, idx));
