@@ -140,6 +140,50 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput("hello java", out)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
+    def test_generated_app_utils_pkg(self):
+        # check if java classes from the deprecated embedding.utils pkg work as expected
+        with util.TemporaryTestDirectory() as tmpdir:
+
+            target_name = "generated_app_test_utils_pkg"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            self.generate_app(tmpdir, target_dir, target_name)
+
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+                "import org.graalvm.python.embedding.GraalPyResources;",
+          "import org.graalvm.python.embedding.utils.GraalPyResources;")
+
+            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
+
+            # build
+            cmd = mvnw_cmd + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+
+            # check fileslist.txt
+            fl_path = os.path.join(target_dir, "target", "classes", util.VFS_PREFIX, "fileslist.txt")
+            with open(fl_path) as f:
+                lines = f.readlines()
+            assert "/" + util.VFS_PREFIX + "/\n" in lines, "unexpected output from " + str(cmd)
+
+            # execute and check native image
+            cmd = [os.path.join(target_dir, "target", target_name)]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("hello java", out)
+
+            # 2.) check java build and exec
+            # run with java asserts on
+            if self.env.get("MAVEN_OPTS"):
+                self.env["MAVEN_OPTS"] = self.env.get("MAVEN_OPTS") + " -ea -esa"
+            else:
+                self.env["MAVEN_OPTS"] = "-ea -esa"
+
+            # rebuild and exec
+            cmd = mvnw_cmd + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("hello java", out)
+
+    @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app_external_resources(self):
         with util.TemporaryTestDirectory() as tmpdir:
             target_name = "generated_app_ext_resources_test"
@@ -278,7 +322,7 @@ class MavenPluginTest(util.BuildToolTestBase):
             log = Logger()
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "<fallback>false</fallback>",
                                  textwrap.dedent("""<systemProperties>
-                                    <org.graalvm.python.resources.include>.*</org.graalvm.python.resources.include>                                
+                                    <org.graalvm.python.resources.include>.*</org.graalvm.python.resources.include>
                                     <org.graalvm.python.resources.log>true</org.graalvm.python.resources.log>
                                  </systemProperties>
                                  <fallback>false</fallback>"""))
