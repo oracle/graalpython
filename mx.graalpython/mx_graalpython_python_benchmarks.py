@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -97,6 +97,8 @@ SKIPPED_PANDAS_BENCHMARKS = [
     "reshape.GetDummies.time_get_dummies_1d_sparse",  # Times out
     "reshape.PivotTable.time_pivot_table_margins",  # Times out
     "reshape.WideToLong.time_wide_to_long_big",  # Times out
+    "reshape.Cut.time_qcut_datetime",  # Transient failure GR-61245, exit code -11
+    "reshape.Explode.time_explode",  # Transient failure GR-61245, exit code -11
 ]
 
 DEFAULT_PYPERFORMANCE_BENCHMARKS = [
