@@ -6,6 +6,7 @@
 package com.oracle.graal.python.builtins.modules.json;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -26,7 +27,7 @@ import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
-import com.oracle.graal.python.lib.PyLongFromString;
+import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -346,8 +347,8 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                 }
             } else {
                 if (PyLongCheckExactNode.executeUncached(scanner.parseInt)) {
-                    String numStr = string.substring(start, idx);
-                    return PyLongFromString.executeUncached(numStr, 10);
+                    TruffleString numStr = TruffleString.fromJavaStringUncached(string, start, idx - start, TS_ENCODING, false);
+                    return PyLongFromUnicodeObject.executeUncached(numStr, 10);
                 } else {
                     /* copy the section we determined to be a number */
                     TruffleString numStr = toTruffleStringUncached(string.substring(start, idx));

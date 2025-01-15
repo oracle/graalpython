@@ -44,8 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUNC__;
-
-import java.nio.charset.StandardCharsets;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -65,7 +64,6 @@ import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -235,7 +233,9 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
         @InliningCutoff
         static Object doGeneric(VirtualFrame frame, Object object, int base,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyLongFromString fromString,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached PyLongFromUnicodeObject fromString,
                         @Cached(value = "createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
@@ -246,16 +246,14 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                 return null;
             }
             try {
-                String javaString = toJavaString(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
-                return fromString.execute(inliningTarget, javaString, base);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int len = bufferLib.getBufferLength(buffer);
+                TruffleString string = fromByteArrayNode.execute(bytes, 0, len, TruffleString.Encoding.US_ASCII, false);
+                string = switchEncodingNode.execute(string, TS_ENCODING);
+                return fromString.execute(inliningTarget, string, base);
             } finally {
                 bufferLib.release(buffer);
             }
-        }
-
-        @TruffleBoundary
-        private static String toJavaString(byte[] bytes, int len) {
-            return new String(bytes, 0, len, StandardCharsets.US_ASCII);
         }
     }
 }
