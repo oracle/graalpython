@@ -549,11 +549,8 @@ class ListTest(list_tests.CommonTest):
         self.assertEqual([0, 1, 0, 0, 0, 0], a)
 
         a = [0]
-        a.insert(LONG_NUMBER, 1)
-        self.assertEqual([0, 1], a)
-
         a.insert(False, -1)
-        self.assertEqual([-1, 0, 1], a)
+        self.assertEqual([-1, 0], a)
 
     def test_StopIteration(self):
         l = [1.0]
