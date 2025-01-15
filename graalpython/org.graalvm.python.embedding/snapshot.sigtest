@@ -48,6 +48,15 @@ meth public java.lang.String toString()
 CLSS public abstract interface java.lang.constant.Constable
 meth public abstract java.util.Optional<? extends java.lang.constant.ConstantDesc> describeConstable()
 
+CLSS public final org.graalvm.python.embedding.GraalPyResources
+meth public static java.nio.file.Path getNativeExecutablePath()
+meth public static org.graalvm.polyglot.Context createContext()
+meth public static org.graalvm.polyglot.Context$Builder contextBuilder()
+meth public static org.graalvm.polyglot.Context$Builder contextBuilder(java.nio.file.Path)
+meth public static org.graalvm.polyglot.Context$Builder contextBuilder(org.graalvm.python.embedding.VirtualFileSystem)
+meth public static void extractVirtualFileSystemResources(org.graalvm.python.embedding.VirtualFileSystem,java.nio.file.Path) throws java.io.IOException
+supr java.lang.Object
+
 CLSS public abstract org.graalvm.python.embedding.KeywordArguments
 meth public static org.graalvm.python.embedding.KeywordArguments from(java.util.Map<java.lang.String,java.lang.Object>)
 meth public static org.graalvm.python.embedding.KeywordArguments of(java.lang.String,java.lang.Object)
@@ -68,15 +77,6 @@ meth public !varargs static org.graalvm.python.embedding.PositionalArguments of(
 meth public static org.graalvm.python.embedding.PositionalArguments from(java.util.List<java.lang.Object>)
 supr java.lang.Object
 hcls Implementation
-
-CLSS public final org.graalvm.python.embedding.GraalPyResources
-meth public static java.nio.file.Path getNativeExecutablePath()
-meth public static org.graalvm.polyglot.Context createContext()
-meth public static org.graalvm.polyglot.Context$Builder contextBuilder()
-meth public static org.graalvm.polyglot.Context$Builder contextBuilder(java.nio.file.Path)
-meth public static org.graalvm.polyglot.Context$Builder contextBuilder(org.graalvm.python.embedding.VirtualFileSystem)
-meth public static void extractVirtualFileSystemResources(org.graalvm.python.embedding.VirtualFileSystem,java.nio.file.Path) throws java.io.IOException
-supr java.lang.Object
 
 CLSS public final org.graalvm.python.embedding.VirtualFileSystem
 innr public final static !enum HostIO
