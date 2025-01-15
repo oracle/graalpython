@@ -44,6 +44,7 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -70,7 +71,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline(inlineByDefault = true)
 @GenerateUncached
 public abstract class PyLongFromUnicodeObject extends Node {
-    public abstract Object execute(Node inliningTarget, Object string, int base);
+    public final Object execute(Node inliningTarget, Object string, int base) {
+        return execute(inliningTarget, string, base, null, 0);
+    }
+
+    public abstract Object execute(Node inliningTarget, Object string, int base, byte[] originalBytes, int originalBytesLen);
 
     public final Object executeCached(Object string, int base) {
         return execute(null, string, base);
@@ -81,7 +86,7 @@ public abstract class PyLongFromUnicodeObject extends Node {
     }
 
     @Specialization
-    static Object doString(Node inliningTarget, Object stringObj, int base,
+    static Object doString(Node inliningTarget, Object stringObj, int base, byte[] originalBytes, int originalBytesLen,
                     @Cached CastToTruffleStringNode cast,
                     @Cached TruffleString.ParseLongNode parseLongNode,
                     @Cached InlinedConditionProfile intOrLongResult,
@@ -102,17 +107,17 @@ public abstract class PyLongFromUnicodeObject extends Node {
                 // Fall through to the generic parser
             }
         }
-        return fromString.execute(string, base);
+        return fromString.execute(string, base, originalBytes, originalBytesLen);
     }
 
     @GenerateInline(false) // Slow path
     @GenerateUncached
     abstract static class GenericIntParserNode extends Node {
-        public abstract Object execute(TruffleString number, int base);
+        public abstract Object execute(TruffleString number, int base, byte[] originalBytes, int originalBytesLen);
 
         @Specialization
         @InliningCutoff
-        static Object doGeneric(TruffleString numberTs, int base,
+        static Object doGeneric(TruffleString numberTs, int base, byte[] originalBytes, int originalBytesLen,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached InlinedBranchProfile invalidBase,
@@ -120,7 +125,8 @@ public abstract class PyLongFromUnicodeObject extends Node {
                         @Cached InlinedBranchProfile invalidValueProfile,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached StringNodes.StringReprNode reprNode) {
+                        @Cached StringNodes.StringReprNode stringReprNode,
+                        @Cached BytesNodes.BytesReprNode bytesReprNode) {
             String number = toJavaStringNode.execute(numberTs);
             if ((base != 0 && base < 2) || base > 36) {
                 invalidBase.enter(inliningTarget);
@@ -131,7 +137,13 @@ public abstract class PyLongFromUnicodeObject extends Node {
             Object value = stringToIntInternal(number, base, context, factory);
             if (value == null) {
                 invalidValueProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, reprNode.execute(numberTs));
+                Object repr;
+                if (originalBytes == null) {
+                    repr = stringReprNode.execute(numberTs);
+                } else {
+                    repr = bytesReprNode.execute(inliningTarget, factory.createBytes(originalBytes, originalBytesLen));
+                }
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, repr);
             }
             return value;
         }

@@ -250,7 +250,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                 int len = bufferLib.getBufferLength(buffer);
                 TruffleString string = fromByteArrayNode.execute(bytes, 0, len, TruffleString.Encoding.US_ASCII, false);
                 string = switchEncodingNode.execute(string, TS_ENCODING);
-                return fromString.execute(inliningTarget, string, base);
+                return fromString.execute(inliningTarget, string, base, bytes, len);
             } finally {
                 bufferLib.release(buffer);
             }
