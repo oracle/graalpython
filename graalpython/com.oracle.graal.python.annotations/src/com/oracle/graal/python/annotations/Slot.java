@@ -101,6 +101,14 @@ public @interface Slot {
         nb_int("__int__"),
         /** Conversion to float */
         nb_float("__float__"),
+        /** abs(foo) */
+        nb_absolute("__abs__"),
+        /** +foo */
+        nb_positive("__pos__"),
+        /** -foo */
+        nb_negative("__neg__"),
+        /** ~foo */
+        nb_invert("__invert__"),
         /** foo + bar */
         nb_add("__add__, __radd__"),
         /** foo - bar */

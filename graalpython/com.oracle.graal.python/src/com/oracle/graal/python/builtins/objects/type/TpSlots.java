@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
@@ -55,12 +56,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
@@ -237,6 +241,10 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot nb_index, //
                 TpSlot nb_int, //
                 TpSlot nb_float, //
+                TpSlot nb_absolute, //
+                TpSlot nb_positive, //
+                TpSlot nb_negative, //
+                TpSlot nb_invert, //
                 TpSlot nb_add, //
                 TpSlot nb_subtract, //
                 TpSlot nb_multiply, //
@@ -378,6 +386,38 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotUnaryFuncBuiltin.class,
                         TpSlotGroup.AS_NUMBER,
                         CFields.PyNumberMethods__nb_float,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
+        NB_ABSOLUTE(
+                        TpSlots::nb_absolute,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_absolute,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
+        NB_POSITIVE(
+                        TpSlots::nb_positive,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_positive,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
+        NB_NEGATIVE(
+                        TpSlots::nb_negative,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_negative,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
+        NB_INVERT(
+                        TpSlots::nb_invert,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_invert,
                         PExternalFunctionWrapper.UNARYFUNC,
                         UnaryFuncWrapper::new),
         NB_ADD(
@@ -818,6 +858,10 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_INDEX, TpSlotDef.withSimpleFunction(T___INDEX__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INT, TpSlotDef.withSimpleFunction(T___INT__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_FLOAT, TpSlotDef.withSimpleFunction(T___FLOAT__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_ABSOLUTE, TpSlotDef.withSimpleFunction(T___ABS__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_POSITIVE, TpSlotDef.withSimpleFunction(T___POS__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_NEGATIVE, TpSlotDef.withSimpleFunction(T___NEG__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INVERT, TpSlotDef.withSimpleFunction(T___INVERT__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
         addSlotDef(s, TpSlotMeta.MP_SUBSCRIPT, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.MP_ASS_SUBSCRIPT,
@@ -1414,6 +1458,10 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.NB_INDEX), //
                             get(TpSlotMeta.NB_INT), //
                             get(TpSlotMeta.NB_FLOAT), //
+                            get(TpSlotMeta.NB_ABSOLUTE), //
+                            get(TpSlotMeta.NB_POSITIVE), //
+                            get(TpSlotMeta.NB_NEGATIVE), //
+                            get(TpSlotMeta.NB_INVERT), //
                             get(TpSlotMeta.NB_ADD), //
                             get(TpSlotMeta.NB_SUBTRACT), //
                             get(TpSlotMeta.NB_MULTIPLY), //

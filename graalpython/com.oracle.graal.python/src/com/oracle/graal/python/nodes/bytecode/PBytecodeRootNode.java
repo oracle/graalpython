@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,6 +109,9 @@ import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.graal.python.compiler.QuickeningTypes;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
+import com.oracle.graal.python.lib.PyNumberInvertNode;
+import com.oracle.graal.python.lib.PyNumberNegativeNode;
+import com.oracle.graal.python.lib.PyNumberPositiveNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
 import com.oracle.graal.python.lib.PyObjectDelItem;
@@ -170,9 +173,6 @@ import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic.InvertNode;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic.NegNode;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
@@ -401,11 +401,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case UnaryOpsConstants.NOT:
                 return CoerceToBooleanNode.createIfFalseNode();
             case UnaryOpsConstants.POSITIVE:
-                return PosNode.create();
+                return PyNumberPositiveNode.create();
             case UnaryOpsConstants.NEGATIVE:
-                return NegNode.create();
+                return PyNumberNegativeNode.create();
             case UnaryOpsConstants.INVERT:
-                return InvertNode.create();
+                return PyNumberInvertNode.create();
             default:
                 throw CompilerDirectives.shouldNotReachHere();
         }

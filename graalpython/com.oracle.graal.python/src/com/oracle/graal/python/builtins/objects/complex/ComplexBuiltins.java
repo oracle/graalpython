@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.complex;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__imag;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__real;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
@@ -52,9 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
@@ -229,8 +226,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.nb_absolute, isComplex = true)
     @GenerateNodeFactory
-    @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
 
         public abstract double executeDouble(Object arg);
@@ -807,8 +804,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.nb_negative, isComplex = true)
     @GenerateNodeFactory
-    @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PComplex neg(Object self,
@@ -820,8 +817,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.nb_positive, isComplex = true)
     @GenerateNodeFactory
-    @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PComplex pos(Object self,

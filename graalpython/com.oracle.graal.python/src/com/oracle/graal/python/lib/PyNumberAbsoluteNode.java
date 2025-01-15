@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,83 +40,67 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode.HandleFloatResultNode;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-/**
- * Equivalent of CPython's {@code PyNumber_Float}. Converts the argument to a Java {@code double}
- * using its {@code __float__} special method. If not available, falls back to {@code __index__}
- * special method. If not available, falls back to {@link PyFloatFromString}. Otherwise, raises a
- * {@code TypeError}. Can raise {@code OverflowError} when using {@code __index__} and the returned
- * integer wouldn't fit into double.
- */
 @GenerateUncached
-@GenerateInline
-@GenerateCached(false)
-public abstract class PyNumberFloatNode extends PNodeWithContext {
-    public abstract double execute(Frame frame, Node inliningTarget, Object object);
+@GenerateInline(inlineByDefault = true)
+public abstract class PyNumberAbsoluteNode extends UnaryOpNode {
+    protected static final int INT_MIN_VALUE = Integer.MIN_VALUE;
+    protected static final long LONG_MIN_VALUE = Long.MIN_VALUE;
 
-    public final double execute(Node inliningTarget, Object object) {
-        return execute(null, inliningTarget, object);
+    @Specialization(guards = "object != INT_MIN_VALUE")
+    static int doInt(int object) {
+        return Math.abs(object);
+    }
+
+    @Specialization(guards = "object == INT_MIN_VALUE")
+    static long doIntMin(@SuppressWarnings("unused") int object) {
+        return -(long) INT_MIN_VALUE;
+    }
+
+    @Specialization(guards = "object != LONG_MIN_VALUE")
+    static long doLong(long object) {
+        return Math.abs(object);
     }
 
     @Specialization
     static double doDouble(double object) {
-        return object;
-    }
-
-    @Specialization
-    static double doInt(int object) {
-        return object;
-    }
-
-    @Specialization
-    static double doLong(long object) {
-        return object;
-    }
-
-    @Specialization
-    static double doBoolean(boolean object) {
-        return object ? 1.0 : 0.0;
+        return Math.abs(object);
     }
 
     @Fallback
     @InliningCutoff
-    static double doObject(VirtualFrame frame, Node inliningTarget, Object object,
+    static Object doObject(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlots,
-                    @Cached CallSlotUnaryNode callFloat,
-                    @Cached PyNumberIndexNode indexNode,
-                    @Cached PyLongAsDoubleNode asDoubleNode,
-                    @Cached HandleFloatResultNode handleFloatResultNode,
-                    @Cached PyFloatFromString fromString) {
+                    @Cached CallSlotUnaryNode callSlot,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlots.execute(inliningTarget, type);
-        if (slots.nb_float() != null) {
-            Object result = callFloat.execute(frame, inliningTarget, slots.nb_float(), object);
-            if (result instanceof Double doubleResult) {
-                return doubleResult;
-            }
-            return PyFloatAsDoubleNode.handleFloatResult(frame, result, object, handleFloatResultNode);
+        if (slots.nb_absolute() != null) {
+            return callSlot.execute(frame, inliningTarget, slots.nb_absolute(), object);
         }
-        if (slots.nb_index() != null) {
-            Object index = indexNode.execute(frame, inliningTarget, object);
-            return asDoubleNode.execute(inliningTarget, index);
-        }
-        return fromString.execute(frame, inliningTarget, object);
+        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_OPERAND_FOR, "abs()", "", object);
+    }
+
+    @NeverDefault
+    public static PyNumberAbsoluteNode create() {
+        return PyNumberAbsoluteNodeGen.create();
     }
 }

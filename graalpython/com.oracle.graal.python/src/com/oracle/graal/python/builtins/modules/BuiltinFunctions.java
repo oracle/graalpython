@@ -166,6 +166,7 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyEvalGetLocals;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
@@ -330,26 +331,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_ABS, minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = "x")
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object absInt(int arg) {
-            return PInt.abs(arg);
-        }
-
-        @Specialization
-        static double absDouble(double arg) {
-            return Math.abs(arg);
-        }
 
         @Specialization
         static Object absObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
-                        @Cached("create(T___ABS__)") LookupAndCallUnaryNode callAbs,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            Object result = callAbs.executeObject(frame, object);
-            if (result == NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
-            }
-            return result;
+                        @Cached PyNumberAbsoluteNode absoluteNode) {
+            return absoluteNode.execute(frame, inliningTarget, object);
         }
     }
 
