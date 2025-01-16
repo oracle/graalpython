@@ -151,7 +151,7 @@ license = 'Apache-2.0'
 
 [[grpcio.rules]]
 # Force re-cythonize + other fixes
-version = '== 1.66.1'
+version = '>= 1.66.1, < 1.70'
 patch = 'grpcio-1.66.1.patch'
 license = 'Apache-2.0'
 
