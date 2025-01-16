@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -203,8 +203,8 @@ public final class TopLevelExceptionHandler extends RootNode {
             }
         }
         // Before we leave Python, format the message since outside the context
-        if (e instanceof PException pe && pythonException instanceof PBaseException managedException) {
-            pe.setMessage(managedException.getFormattedMessage());
+        if (e instanceof PException pe) {
+            pe.materializeMessage();
         }
         throw e;
     }

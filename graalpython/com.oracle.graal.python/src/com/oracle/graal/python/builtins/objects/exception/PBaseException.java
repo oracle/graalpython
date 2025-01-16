@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -54,21 +53,17 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -235,36 +230,6 @@ public class PBaseException extends PythonObject {
         return messageArgs != null ? messageArgs.clone() : PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
-    @TruffleBoundary
-    public String getFormattedMessage() {
-        final Object clazz = GetPythonObjectClassNode.executeUncached(this);
-        String typeName = GetNameNode.doSlowPath(clazz).toJavaStringUncached();
-        if (args == null) {
-            if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + ErrorMessageFormatter.format(messageFormat.toJavaStringUncached(), getMessageArgs());
-            } else if (hasMessageFormat) {
-                return typeName + ": " + messageFormat.toJavaStringUncached();
-            } else {
-                return typeName;
-            }
-        } else {
-            SequenceStorage storage = args.getSequenceStorage();
-            if (storage.length() == 0) {
-                return typeName;
-            } else {
-                StringBuilder builder = new StringBuilder(typeName);
-                builder.append(": ");
-                for (int i = 0; i < storage.length(); i++) {
-                    if (i > 0) {
-                        builder.append(", ");
-                    }
-                    builder.append(GetItemScalarNode.executeUncached(storage, i));
-                }
-                return builder.toString();
-            }
-        }
-    }
-
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
@@ -384,7 +349,7 @@ public class PBaseException extends PythonObject {
     String getExceptionMessage(@Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return getFormattedMessage();
+            return ExceptionUtils.getExceptionMessage(this);
         } finally {
             gil.release(mustRelease);
         }
@@ -425,32 +390,21 @@ public class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    boolean hasExceptionCause(@Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return cause != null || (!suppressContext && context != null);
-        } finally {
-            gil.release(mustRelease);
-        }
+    boolean hasExceptionCause() {
+        return cause != null || !suppressContext && context != null;
     }
 
     @ExportMessage
     Object getExceptionCause(
                     @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached InlinedBranchProfile unsupportedProfile,
-                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (cause != null) {
-                return cause;
-            }
-            if (!suppressContext && context != null) {
-                return context;
-            }
-            unsupportedProfile.enter(inliningTarget);
-            throw UnsupportedMessageException.create();
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
+        if (cause != null) {
+            return cause;
         }
+        if (!suppressContext && context != null) {
+            return context;
+        }
+        unsupportedProfile.enter(inliningTarget);
+        throw UnsupportedMessageException.create();
     }
 }
