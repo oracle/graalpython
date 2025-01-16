@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,7 +109,7 @@ public class GraalPyRunner {
         var cmd = new ArrayList<String>();
         cmd.add(venvDirectory.resolve(BIN_DIR).resolve(command + EXE_SUFFIX).toString());
         cmd.addAll(args);
-        log.info(String.join(" ", cmd));
+        log.info("executing: " + String.join(" ", cmd));
         var pb = new ProcessBuilder(cmd);
         runProcess(pb, log);
     }
