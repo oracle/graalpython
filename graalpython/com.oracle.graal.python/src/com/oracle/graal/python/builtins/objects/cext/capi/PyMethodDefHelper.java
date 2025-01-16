@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -156,7 +156,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         assert name != null;
         CStringWrapper nameWrapper;
         try {
-            nameWrapper = new CStringWrapper(name);
+            nameWrapper = new CStringWrapper(name.switchEncodingUncached(TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
         } catch (CannotCastException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
@@ -166,7 +166,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
             docWrapper = PythonContext.get(null).getNativeNull();
         } else {
             try {
-                docWrapper = new CStringWrapper(doc);
+                docWrapper = new CStringWrapper(doc.switchEncodingUncached(TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }

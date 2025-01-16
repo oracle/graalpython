@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonObjectNativeWrap
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -65,6 +66,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -172,15 +174,17 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     @Specialization
     static PythonNativeWrapper doPythonClassUncached(PythonManagedClass object,
                     @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached TypeNodes.GetNameNode getNameNode) {
-        return PythonClassNativeWrapper.wrap(object, getNameNode.execute(inliningTarget, object));
+                    @Cached TypeNodes.GetNameNode getNameNode,
+                    @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding) {
+        return PythonClassNativeWrapper.wrap(object, getNameNode.execute(inliningTarget, object), switchEncoding);
     }
 
     @Specialization
     static PythonNativeWrapper doPythonTypeUncached(PythonBuiltinClassType object,
                     @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached TypeNodes.GetNameNode getNameNode) {
-        return PythonClassNativeWrapper.wrap(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(inliningTarget, object));
+                    @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding) {
+        PythonBuiltinClass type = PythonContext.get(inliningTarget).lookupType(object);
+        return PythonClassNativeWrapper.wrap(type, type.getName(), switchEncoding);
     }
 
     @Specialization(guards = {"!isClass(inliningTarget, object, isTypeNode)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "1")

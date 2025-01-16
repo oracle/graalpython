@@ -943,10 +943,11 @@ public final class PythonCextAbstractBuiltins {
         static int set(PythonAbstractNativeObject type, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isType,
+                        @Cached TruffleString.SwitchEncodingNode switchEncoding,
                         @Cached CStructAccess.WritePointerNode writePointerNode) {
             Object cValue;
             if (value instanceof TruffleString stringValue) {
-                cValue = new CStringWrapper(stringValue);
+                cValue = new CStringWrapper(switchEncoding.execute(stringValue, TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
             } else {
                 cValue = PythonContext.get(inliningTarget).getNativeNull();
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.byteArraySupport;
 
 import java.nio.ByteOrder;
@@ -58,7 +57,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
@@ -175,25 +173,22 @@ public abstract class CArrayWrappers {
      * wrapper let's a TruffleString look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
-    @SuppressWarnings("truffle-abstract-export")
     public static final class CStringWrapper extends CArrayWrapper {
+        private TruffleString.Encoding encoding;
 
-        public CStringWrapper(TruffleString delegate) {
+        public CStringWrapper(TruffleString delegate, TruffleString.Encoding encoding) {
             super(delegate);
+            this.encoding = encoding;
+            assert delegate.isValidUncached(encoding);
         }
 
         public TruffleString getString() {
-            TruffleString s = (TruffleString) getDelegate();
-            // TODO GR-37217: use sys.getdefaultencoding if the string contains non-latin1
-            // codepoints
-            assert s.getCodeRangeUncached(TS_ENCODING) == TruffleString.CodeRange.ASCII;
-            return s;
+            return (TruffleString) getDelegate();
         }
 
         @ExportMessage
-        long getArraySize(
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return codePointLengthNode.execute(getString(), TS_ENCODING) + 1;
+        long getArraySize() {
+            return getString().byteLength(encoding) + 1;
         }
 
         @ExportMessage
@@ -204,28 +199,17 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         byte readArrayElement(long index,
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) throws InvalidArrayIndexException {
+                        @CachedLibrary("this") InteropLibrary thisLib) throws InvalidArrayIndexException, UnsupportedMessageException {
             try {
-                int idx = PInt.intValueExact(index);
-                TruffleString s = getString();
-                int len = codePointLengthNode.execute(s, TS_ENCODING);
-                if (idx >= 0 && idx < len) {
-                    return (byte) codePointAtIndexNode.execute(s, idx, TS_ENCODING);
-                } else if (idx == len) {
-                    return 0;
-                }
-            } catch (OverflowException e) {
-                // fall through
+                return thisLib.readBufferByte(this, index);
+            } catch (InvalidBufferOffsetException e) {
+                throw InvalidArrayIndexException.create(index);
             }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
         }
 
         @ExportMessage
-        boolean isArrayElementReadable(long identifier,
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return 0 <= identifier && identifier < getArraySize(codePointLengthNode);
+        boolean isArrayElementReadable(long index) {
+            return 0 <= index && index <= getString().byteLength(encoding);
         }
 
         @ExportMessage
@@ -248,19 +232,17 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        long getBufferSize(
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return codePointLengthNode.execute(getString(), TS_ENCODING) + 1;
+        long getBufferSize() {
+            return getString().byteLength(encoding) + 1;
         }
 
         @ExportMessage
         byte readBufferByte(long byteOffset,
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) throws InvalidBufferOffsetException {
+                        @Cached TruffleString.ReadByteNode readByteNode) throws InvalidBufferOffsetException {
             TruffleString s = getString();
-            int len = codePointLengthNode.execute(s, TS_ENCODING);
+            int len = s.byteLength(encoding);
             if (byteOffset >= 0 && byteOffset < len) {
-                return (byte) codePointAtIndexNode.execute(s, (int) byteOffset, TS_ENCODING);
+                return (byte) readByteNode.execute(s, (int) byteOffset, encoding);
             } else if (byteOffset == len) {
                 return 0;
             } else {
