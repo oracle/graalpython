@@ -1219,9 +1219,18 @@ def graalpython_gate_runner(args, tasks):
                 finally:
                     jdk.java_args_pfx = prev
             if report():
-                with tempfile.NamedTemporaryFile(delete=True, suffix='.json.gz') as tmpfile:
+                tmpfile = tempfile.NamedTemporaryFile(delete=False, suffix='.json.gz')
+                try:
+                    # Cannot use context manager because windows doesn't allow
+                    # make_test_report to read the file while it is open for
+                    # writing
                     mx.command_function('tck')([f'--json-results={tmpfile.name}'])
                     mx_gate.make_test_report(tmpfile.name, GraalPythonTags.junit + "-TCK")
+                finally:
+                    try:
+                        os.unlink(tmpfile.name)
+                    except:
+                        pass # Sometimes this fails on windows
             else:
                 mx.command_function('tck')()
 
