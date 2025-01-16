@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,11 +50,27 @@ final class MavenDelegateLog implements BuildToolLog {
         this.delegate = delegate;
     }
 
-    public void info(String var1) {
-        delegate.info(var1);
+    public void info(String txt) {
+        delegate.info(txt);
     }
 
-    public void warning(String var1, Throwable t) {
-        delegate.warn(var1, t);
+    public void warning(String txt) {
+        delegate.warn(txt);
+    }
+
+    public void warning(String txt, Throwable t) {
+        delegate.warn(txt, t);
+    }
+
+    public void error(String txt) {
+        delegate.error(txt);
+    }
+
+    public boolean isDebugEnabled() {
+        return delegate.isDebugEnabled();
+    }
+
+    public void debug(String txt) {
+        delegate.debug(txt);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,17 @@ public class GradleLogger implements BuildToolLog {
 
     @Override
     public void warning(String txt, Throwable t) {
-        logger.lifecycle(txt.toString(), t);
+        logger.warn(txt, t);
+    }
+
+    @Override
+    public void warning(String txt) {
+        logger.warn(txt);
+    }
+
+    @Override
+    public void error(String txt) {
+        logger.error(txt);
     }
 
     public static GradleLogger of(Logger logger) {
