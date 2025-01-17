@@ -304,6 +304,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ForeignObject("ForeignObject", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
     ForeignNumber("ForeignNumber", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
     ForeignBoolean("ForeignBoolean", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignBooleanBuiltins.SLOTS),
+    ForeignAbstractClass("ForeignAbstractClass", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
@@ -839,6 +840,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         ForeignNumber.base = ForeignObject;
         ForeignBoolean.base = ForeignNumber;
+        ForeignAbstractClass.base = ForeignObject;
 
         PBaseExceptionGroup.base = PBaseException;
         SystemExit.base = PBaseException;

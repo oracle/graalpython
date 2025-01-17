@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -29,17 +29,13 @@ package com.oracle.graal.python.builtins.objects.foreign;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INSTANCECHECK__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
@@ -66,7 +62,6 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -82,7 +77,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -494,49 +488,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 defaultReprNode = insert(ObjectNodes.DefaultObjectReprNode.create());
             }
             return defaultReprNode.executeCached(frame, object);
-        }
-    }
-
-    @Builtin(name = J___BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    abstract static class BasesNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        static Object getBases(Object self,
-                        @Bind("this") Node inliningTarget,
-                        @CachedLibrary("self") InteropLibrary lib,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (lib.isMetaObject(self)) {
-                return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
-            } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___BASES__);
-            }
-        }
-    }
-
-    @Builtin(name = J___INSTANCECHECK__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
-    abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
-        static Object check(Object self, Object instance,
-                        @Bind("this") Node inliningTarget,
-                        @CachedLibrary("self") InteropLibrary lib,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            if (lib.isMetaObject(self)) {
-                gil.release(true);
-                try {
-                    return lib.isMetaInstance(self, instance);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                } finally {
-                    gil.acquire();
-                }
-            } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, T___INSTANCECHECK__);
-            }
         }
     }
 
