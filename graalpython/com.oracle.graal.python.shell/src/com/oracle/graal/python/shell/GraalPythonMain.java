@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -825,6 +825,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 } catch (PolyglotException e) {
                     if (e.isExit()) {
                         rc = e.getExitStatus();
+                    } else {
+                        throw e;
                     }
                 } catch (NoSuchFileException e) {
                     printFileNotFoundException(e);

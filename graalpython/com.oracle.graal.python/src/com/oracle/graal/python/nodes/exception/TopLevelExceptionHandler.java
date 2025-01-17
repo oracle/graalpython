@@ -195,18 +195,22 @@ public final class TopLevelExceptionHandler extends RootNode {
             if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage()) && e instanceof PException pe) {
                 ExceptionUtils.printJavaStackTrace(pe);
             }
-            if (!getSourceSection().getSource().isInteractive()) {
-                if (getContext().isChildContext()) {
-                    getContext().getChildContextData().setExitCode(1);
-                }
-                throw new PythonExitException(this, 1);
-            }
+            exit(1);
         }
         // Before we leave Python, format the message since outside the context
         if (e instanceof PException pe) {
             pe.materializeMessage();
         }
         throw e;
+    }
+
+    private void exit(int exitCode) {
+        if (!getSourceSection().getSource().isInteractive()) {
+            if (getContext().isChildContext()) {
+                getContext().getChildContextData().setExitCode(1);
+            }
+            throw new PythonExitException(this, exitCode);
+        }
     }
 
     private static boolean isSystemExit(PBaseException pythonException) {
@@ -227,6 +231,7 @@ public final class TopLevelExceptionHandler extends RootNode {
                     if (PythonOptions.shouldPrintJavaStacktrace(getPythonLanguage(), e)) {
                         e.printStackTrace();
                     }
+                    exit(1);
                 }
             } catch (UnsupportedMessageException unsupportedMessageException) {
                 throw CompilerDirectives.shouldNotReachHere();
@@ -250,12 +255,12 @@ public final class TopLevelExceptionHandler extends RootNode {
             int exitcode = getExitCode(pythonException);
             throw new PythonExitException(this, exitcode);
         } catch (CannotCastException e) {
-            // fall through
+            if (handleAlwaysRunExceptHook(theContext, pythonException)) {
+                throw new PythonExitException(this, 1);
+            } else {
+                throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+            }
         }
-        if (handleAlwaysRunExceptHook(theContext, pythonException)) {
-            throw new PythonExitException(this, 1);
-        }
-        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
     }
 
     @TruffleBoundary
@@ -264,12 +269,12 @@ public final class TopLevelExceptionHandler extends RootNode {
         try {
             return getExitCode(pythonException);
         } catch (CannotCastException cce) {
-            // fall through
+            if (handleAlwaysRunExceptHook(getContext(), pythonException)) {
+                return 1;
+            } else {
+                throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+            }
         }
-        if (handleAlwaysRunExceptHook(getContext(), pythonException)) {
-            return 1;
-        }
-        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
     }
 
     private static int getExitCode(PBaseException pythonException) throws CannotCastException {
