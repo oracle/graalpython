@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,21 +87,26 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         // The type field is only set for cases which are already implemented.
 
         // First in MRO
+        // Interop types first as they are the most concrete/specific types
+        NULL("None", PythonBuiltinClassType.PNone),
         BOOLEAN("Boolean", PythonBuiltinClassType.ForeignBoolean),
         NUMBER("Number", PythonBuiltinClassType.ForeignNumber), // int, float, complex
         STRING("String", PythonBuiltinClassType.PString),
+        EXCEPTION("Exception", PythonBuiltinClassType.PBaseException),
+        META_OBJECT("AbstractClass"), // PythonBuiltinClassType.PythonClass ?
+
+        // Interop traits
+        EXECUTABLE("Executable"),
+        INSTANTIABLE("Instantiable"),
+
+        // Container traits/types must be last, see comment above
         // Hash before Array so that foreign dict+list prefers dict.[]
         HASH("Dict", PythonBuiltinClassType.PDict),
         // Array before Iterable so that foreign list+iterable prefers list.__iter__
         ARRAY("List", PythonBuiltinClassType.PList),
-        EXCEPTION("Exception", PythonBuiltinClassType.PBaseException),
-        EXECUTABLE("Executable"),
-        INSTANTIABLE("Instantiable"),
         // Iterator before Iterable so that foreign iterator+iterable prefers iterator.__iter__
         ITERATOR("Iterator", PythonBuiltinClassType.PIterator),
-        ITERABLE("Iterable"),
-        META_OBJECT("AbstractClass"), // PythonBuiltinClassType.PythonClass ?
-        NULL("None", PythonBuiltinClassType.PNone);
+        ITERABLE("Iterable");
         // Last in MRO
 
         public static final Trait[] VALUES = Trait.values();
@@ -217,14 +222,14 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
                     traitsList.add(classForTraits(trait.bit));
                 }
 
-                if (trait == Trait.INSTANTIABLE && Trait.META_OBJECT.isSet(traits)) {
-                    // Deal with it when we are at trait META_OBJECT
-                } else if (trait == Trait.META_OBJECT) {
+                if (trait == Trait.META_OBJECT) {
                     if (Trait.INSTANTIABLE.isSet(traits)) {
                         nameBuilder.append("Class");
                     } else {
                         nameBuilder.append("AbstractClass");
                     }
+                } else if (trait == Trait.INSTANTIABLE && Trait.META_OBJECT.isSet(traits)) {
+                    // Dealt with above
                 } else {
                     nameBuilder.append(trait.name);
                 }

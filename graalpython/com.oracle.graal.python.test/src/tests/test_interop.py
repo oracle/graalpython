@@ -150,7 +150,7 @@ class InteropTests(unittest.TestCase):
         # ForeignInstantiable
         self.assertEqual(t((e for e in [1])), polyglot.ForeignIteratorIterable)
         self.assertEqual(t(iter([1])), polyglot.ForeignIteratorIterable)
-        self.assertEqual(t(object), polyglot.ForeignExecutableClass)
+        self.assertEqual(t(object), polyglot.ForeignClassExecutable)
         self.assertEqual(t(None), polyglot.ForeignNone)
         self.assertEqual(t(1), polyglot.ForeignNumber)
         self.assertEqual(t("abc"), polyglot.ForeignString)
@@ -472,9 +472,9 @@ class InteropTests(unittest.TestCase):
 
     def test_java_class(self):
         from java.lang import Integer, Number, NumberFormatException
-        self.assertEqual(type(Integer).mro(), [polyglot.ForeignClass, polyglot.ForeignInstantiable, polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
+        self.assertEqual(type(Integer).mro(), [polyglot.ForeignClass, polyglot.ForeignAbstractClass, polyglot.ForeignInstantiable, polyglot.ForeignObject, object])
         self.assertEqual(type(Number).mro(), [polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
-        self.assertEqual(type(NumberFormatException).mro(), [polyglot.ForeignClass, polyglot.ForeignInstantiable, polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
+        self.assertEqual(type(NumberFormatException).mro(), [polyglot.ForeignClass, polyglot.ForeignAbstractClass, polyglot.ForeignInstantiable, polyglot.ForeignObject, object])
 
     def test_java_exceptions(self):
         # TODO: more tests
