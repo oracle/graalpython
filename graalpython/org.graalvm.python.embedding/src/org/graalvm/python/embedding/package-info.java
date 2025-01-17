@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,37 +38,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-///usr/bin/env jbang "$0" "$@" ; exit $?
-//JAVA 17+
-//DEPS org.graalvm.python:jbang:${env.GRAALPY_VERSION:25.0.0}
-// specify python packages and their versions as if used with pip
-//PIP termcolor==2.2
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.python.embedding.GraalPyResources;
-
-public class hello {
-    public static void main(String[] args) {
-        System.out.println("Running main method from Java.");
-        try (Context context = GraalPyResources.createContext()) {
-            switch (args.length) {
-                case 0:
-                    context.eval("python", "from termcolor import colored; print(print(colored('hello java', 'red', attrs=['reverse', 'blink'])))");
-                    break;
-                case 1:
-                    context.eval("python", args[0]);
-                    break;
-                default:
-                    throw new IllegalArgumentException("The main() helper only takes 0-1 arguments.");
-            }
-        } catch (PolyglotException e) {
-            if (e.isExit()) {
-                System.exit(e.getExitStatus());
-            } else {
-                throw e;
-            }
-        }
-    }
-}
-
+/**
+ * Utilities for GraalPy embedding scenarios.
+ *
+ * <p/>
+ * For an overview on how to create and configure a GraalPy context to get access to Python related
+ * resources in GraalPy embedding scenarios see
+ * {@link org.graalvm.python.embedding.GraalPyResources}.
+ * <p/>
+ * For passing python keyword and positional arguments from java to python, see:
+ * {@link org.graalvm.python.embedding.KeywordArguments} and
+ * {@link org.graalvm.python.embedding.PositionalArguments}
+ *
+ * @since 24.2.0
+ */
+package org.graalvm.python.embedding;

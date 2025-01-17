@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,10 +39,10 @@
  * SOFTWARE.
  */
 
-package org.graalvm.python.embedding.utils.test;
+package org.graalvm.python.embedding.test;
 
 import org.graalvm.polyglot.io.FileSystem;
-import org.graalvm.python.embedding.utils.VirtualFileSystem;
+import org.graalvm.python.embedding.VirtualFileSystem;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -83,9 +83,9 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
-import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.NONE;
-import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ;
-import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ_WRITE;
+import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.NONE;
+import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.READ;
+import static org.graalvm.python.embedding.VirtualFileSystem.HostIO.READ_WRITE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;

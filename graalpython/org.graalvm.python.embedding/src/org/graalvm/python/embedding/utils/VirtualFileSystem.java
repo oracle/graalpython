@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,23 @@
  */
 package org.graalvm.python.embedding.utils;
 
-import org.graalvm.polyglot.io.FileSystem;
-
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.function.Predicate;
 
+/**
+ * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem} instead
+ */
+@Deprecated
 public final class VirtualFileSystem implements AutoCloseable {
 
-    final VirtualFileSystemImpl impl;
-    final FileSystem delegatingFileSystem;
+    final org.graalvm.python.embedding.VirtualFileSystem delegate;
 
+    /**
+     * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem} instead
+     */
+    @Deprecated
     public static enum HostIO {
         NONE,
         READ,
@@ -58,158 +64,123 @@ public final class VirtualFileSystem implements AutoCloseable {
     }
 
     /**
-     * Builder class to create {@link VirtualFileSystem} instances.
+     * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem.Builder} instead
      */
+    @Deprecated
     public static final class Builder {
-        private static final Predicate<Path> DEFAULT_EXTRACT_FILTER = (p) -> {
-            var s = p.toString();
-            return s.endsWith(".so") || s.endsWith(".dylib") || s.endsWith(".pyd") || s.endsWith(".dll") || s.endsWith(".ttf");
-        };
 
-        private static final String DEFAULT_WINDOWS_MOUNT_POINT = "X:\\graalpy_vfs";
-        private static final String DEFAULT_UNIX_MOUNT_POINT = "/graalpy_vfs";
-        private Path mountPoint;
-        private Predicate<Path> extractFilter = DEFAULT_EXTRACT_FILTER;
-        private HostIO allowHostIO = HostIO.READ_WRITE;
-        private boolean caseInsensitive = VirtualFileSystemImpl.isWindows();
+        org.graalvm.python.embedding.VirtualFileSystem.Builder delegate;
 
-        private Class<?> resourceLoadingClass;
-
-        private Builder() {
+        private Builder(org.graalvm.python.embedding.VirtualFileSystem.Builder delegate) {
+            this.delegate = delegate;
         }
 
         /**
-         * Sets the file system to be case-insensitive. Defaults to true on Windows and false
-         * elsewhere.
+         * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem.Builder} instead
          */
+        @Deprecated
         public Builder caseInsensitive(boolean value) {
-            caseInsensitive = value;
+            delegate = delegate.caseInsensitive(value);
             return this;
         }
 
         /**
-         * Determines if and how much host IO is allowed outside of the virtual filesystem.
+         * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem.Builder} instead
          */
+        @Deprecated
         public Builder allowHostIO(HostIO b) {
-            allowHostIO = b;
+            delegate = delegate.allowHostIO(switch (b) {
+                case NONE -> org.graalvm.python.embedding.VirtualFileSystem.HostIO.NONE;
+                case READ -> org.graalvm.python.embedding.VirtualFileSystem.HostIO.READ;
+                case READ_WRITE -> org.graalvm.python.embedding.VirtualFileSystem.HostIO.READ_WRITE;
+            });
             return this;
         }
 
         /**
-         * The mount point for the virtual filesystem on Windows. This mount point shadows any real
-         * filesystem, so should be chosen to avoid clashes with the users machine, e.g. if set to
-         * "X:\graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
-         * "X:\graalpy_vfs\xyz\abc". This needs to be an absolute path with platform-specific
-         * separators without any trailing separator. If that file or directory actually exists, it
-         * will not be accessible.
+         * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem.Builder} instead
          */
-        public Builder windowsMountPoint(String s) {
-            if (VirtualFileSystemImpl.isWindows()) {
-                mountPoint = getMountPointAsPath(s);
-            }
+        @Deprecated
+        public Builder windowsMountPoint(String windowsMountPoint) {
+            delegate = delegate.windowsMountPoint(windowsMountPoint);
             return this;
         }
 
         /**
-         * The mount point for the virtual filesystem on Unices. This mount point shadows any real
-         * filesystem, so should be chosen to avoid clashes with the users machine, e.g. if set to
-         * "/graalpy_vfs", then a resource with path /org.graalvm.python.vfs/xyz/abc is visible as
-         * "/graalpy_vfs/xyz/abc". This needs to be an absolute path with platform-specific
-         * separators without any trailing separator. If that file or directory actually exists, it
-         * will not be accessible.
+         * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem.Builder} instead
          */
-        public Builder unixMountPoint(String s) {
-            if (!VirtualFileSystemImpl.isWindows()) {
-                mountPoint = getMountPointAsPath(s);
-            }
+        @Deprecated
+        public Builder unixMountPoint(String unixMountPoint) {
+            delegate = delegate.unixMountPoint(unixMountPoint);
             return this;
         }
 
         /**
-         * By default, virtual filesystem resources are loaded by delegating to
-         * <code>VirtualFileSystem.class.getResource(name)</code>. Use
-         * <code>resourceLoadingClass</code> to determine where to locate resources in cases when
-         * for example <code>VirtualFileSystem</code> is on module path and the jar containing the
-         * resources is on class path.
+         * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem.Builder} instead
          */
+        @Deprecated
         public Builder resourceLoadingClass(Class<?> c) {
-            resourceLoadingClass = c;
+            delegate = delegate.resourceLoadingClass(c);
             return this;
         }
 
         /**
-         * This filter applied to files in the virtual filesystem treats them as symlinks to real
-         * files in the host filesystem. This is useful, for example, if files in the virtual
-         * filesystem need to be accessed outside the Truffle sandbox. They will be extracted to the
-         * Java temporary directory on demand. The default filter matches any DLLs, dynamic
-         * libraries, shared objects, and Python C extension files, because these need to be
-         * accessed by the operating system loader. Setting this filter to <code>null</code> denies
-         * any extraction. Any other filter is combined with the default filter.
-         *
-         * @param filter the extraction filter, where the provided path is an absolute path from the
-         *            VirtualFileSystem.
+         * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem.Builder} instead
          */
+        @Deprecated
         public Builder extractFilter(Predicate<Path> filter) {
-            if (filter == null) {
-                extractFilter = null;
-            } else {
-                extractFilter = (p) -> filter.test(p) || DEFAULT_EXTRACT_FILTER.test(p);
-            }
+            delegate.extractFilter(filter);
             return this;
         }
 
+        /**
+         * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem.Builder} instead
+         */
+        @Deprecated
         public VirtualFileSystem build() {
-            if (mountPoint == null) {
-                mountPoint = VirtualFileSystemImpl.isWindows() ? Path.of(DEFAULT_WINDOWS_MOUNT_POINT) : Path.of(DEFAULT_UNIX_MOUNT_POINT);
-            }
-            return new VirtualFileSystem(extractFilter, mountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
+            return new VirtualFileSystem(delegate.build());
         }
     }
 
-    private static Path getMountPointAsPath(String mp) {
-        Path mountPoint = Path.of(mp);
-        if (mp.endsWith(VirtualFileSystemImpl.PLATFORM_SEPARATOR) || !mountPoint.isAbsolute()) {
-            throw new IllegalArgumentException(String.format("Virtual filesystem mount point must be set to an absolute path without a trailing separator: '%s'", mp));
-        }
-        return mountPoint;
+    private VirtualFileSystem(org.graalvm.python.embedding.VirtualFileSystem delegate) {
+        this.delegate = delegate;
     }
 
-    private VirtualFileSystem(Predicate<Path> extractFilter,
-                    Path mountPoint,
-                    HostIO allowHostIO,
-                    Class<?> resourceLoadingClass,
-                    boolean caseInsensitive) {
-
-        this.impl = new VirtualFileSystemImpl(extractFilter, mountPoint, allowHostIO, resourceLoadingClass, caseInsensitive);
-        this.delegatingFileSystem = VirtualFileSystemImpl.createDelegatingFileSystem(impl);
-    }
-
+    /**
+     * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem} instead
+     */
+    @Deprecated
     public static Builder newBuilder() {
-        return new Builder();
+        return new Builder(org.graalvm.python.embedding.VirtualFileSystem.newBuilder());
     }
 
+    /**
+     * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem} instead
+     */
+    @Deprecated
     public static VirtualFileSystem create() {
         return newBuilder().build();
     }
 
     /**
-     * The mount point for the virtual filesystem.
-     *
-     * @see VirtualFileSystem.Builder#windowsMountPoint(String)
-     * @see VirtualFileSystem.Builder#unixMountPoint(String)
+     * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem} instead
      */
+    @Deprecated
     public String getMountPoint() {
-        return this.impl.mountPoint.toString();
+        return delegate.getMountPoint();
     }
 
     /**
-     * Closes the VirtualFileSystem and frees up potentially allocated resources.
-     *
-     * @throws IOException if the resources could not be freed.
+     * @deprecated use {@link org.graalvm.python.embedding.VirtualFileSystem} instead
      */
     @Override
+    @Deprecated
     public void close() throws IOException {
-        impl.close();
+        delegate.close();
+    }
+
+    static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
 }

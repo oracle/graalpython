@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,7 @@ import zipfile
 
 assert sys.pycache_prefix is None
 
-# Prefix and filelist match the defaults in org.graalvm.python.embedding.utils.VirtualFileSystemImpl
+# Prefix and filelist match the defaults in org.graalvm.python.embedding.VirtualFileSystemImpl
 VFS_PREFIX = "org.graalvm.python.vfs"
 FILES_LIST_NAME = "fileslist.txt"
 FILES_LIST_PATH = VFS_PREFIX + "/" + FILES_LIST_NAME

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.utils.test.integration;
+package org.graalvm.python.embedding.test.integration;
 
 import org.graalvm.polyglot.Engine;
 import org.graalvm.python.embedding.utils.GraalPyResources;
@@ -47,7 +47,11 @@ import org.junit.Test;
 
 import java.nio.file.Path;
 
-public class GraalPyResourcesTests {
+/**
+ * Siple copy of GraalPyResourcesTests to test also the deprecated
+ * org.graalvm.python.embedding.utils pkg
+ */
+public class GraalPyResourcesUtilsTests {
 
     @Test
     public void sharedEngine() {

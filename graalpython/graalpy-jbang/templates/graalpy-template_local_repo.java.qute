@@ -17,7 +17,7 @@ import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.io.IOAccess;
-import org.graalvm.python.embedding.utils.GraalPyResources;
+import org.graalvm.python.embedding.GraalPyResources;
 
 public class {baseName} {
     public static void main(String[] args) {
