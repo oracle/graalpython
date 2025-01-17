@@ -843,6 +843,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 } catch (PolyglotException e) {
                     if (e.isExit()) {
                         rc = e.getExitStatus();
+                    } else {
+                        throw e;
                     }
                 } catch (NoSuchFileException e) {
                     printFileNotFoundException(e);
