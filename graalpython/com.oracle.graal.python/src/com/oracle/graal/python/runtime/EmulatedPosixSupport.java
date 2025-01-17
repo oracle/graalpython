@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -729,7 +729,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     public long lseek(int fd, long offset, int how,
                     @Bind("$node") Node inliningTarget,
                     @Exclusive @Cached InlinedBranchProfile errorBranch,
-                    @Exclusive @Cached InlinedConditionProfile notSupported,
                     @Exclusive @Cached InlinedConditionProfile noFile,
                     @Exclusive @Cached InlinedConditionProfile notSeekable,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
@@ -754,9 +753,6 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.fromException(e, eqNode));
         }
-        if (notSupported.profile(inliningTarget, newPos < 0)) {
-            throw createUnsupportedFeature("cannot seek beyond the file size");
-        }
         return newPos;
     }
 
@@ -779,8 +775,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw new IllegalArgumentException();
         }
         fc.position(newPos);
-        long p = fc.position();
-        return p != newPos ? -1 : p;
+        return fc.position();
     }
 
     @ExportMessage(name = "ftruncate")

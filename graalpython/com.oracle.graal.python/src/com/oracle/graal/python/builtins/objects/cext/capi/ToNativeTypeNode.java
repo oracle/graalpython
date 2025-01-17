@@ -103,6 +103,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ToNativeTypeNode {
 
@@ -279,7 +280,7 @@ public abstract class ToNativeTypeNode {
         // return a C string wrapper that really allocates 'char*' on TO_NATIVE
         Object docObj = clazz.getAttribute(SpecialAttributeNames.T___DOC__);
         try {
-            docObj = new CStringWrapper(CastToTruffleStringNode.executeUncached(docObj));
+            docObj = new CStringWrapper(CastToTruffleStringNode.executeUncached(docObj).switchEncodingUncached(TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
         } catch (CannotCastException e) {
             // if not directly a string, give up (we don't call descriptors here)
             docObj = ctx.getNativeNull();
