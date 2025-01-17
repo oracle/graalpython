@@ -823,6 +823,7 @@ suite = {
             "liblang_relpath": "../lib/<lib:pythonvm>",
             "default_vm_args": [
                 "--vm.Xss16777216", # request 16M of stack
+                '--vm.-enable-native-access=org.graalvm.shadowed.jline',
             ],
         },
 
@@ -845,6 +846,9 @@ suite = {
                 "-Dorg.graalvm.launcher.class=com.oracle.graal.python.shell.GraalPythonMain",
                 # GraalPy standalone specific flags
                 "-J-Xms14g", # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
+                # uncomment to disable JLine FFM provider at native image build time
+                #'-Dorg.graalvm.shadowed.org.jline.terminal.ffm.disable=true',
+                 '--enable-native-access=org.graalvm.shadowed.jline',
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
             ],

@@ -2036,12 +2036,16 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 '-J-Xms14g', # GR-46399: libpythonvm needs more than the default minimum of 8 GB to be built
                 '-H:+DetectUserDirectoriesInImageHeap',
                 '-H:-CopyLanguageResources',
+                # Uncomment to disable JLine FFM provider at native image build time
+                # '-Dorg.graalvm.shadowed.org.jline.terminal.ffm.disable=true',
+                '--enable-native-access=org.graalvm.shadowed.jline',
                 '-Dpolyglot.python.PosixModuleBackend=native',
                 '-Dpolyglot.python.Sha3ModuleBackend=native',
             ] + bytecode_dsl_build_args(),
             language='python',
             default_vm_args=[
                 '--vm.Xss16777216', # request 16M of stack
+                '--vm.-enable-native-access=org.graalvm.shadowed.jline',
             ],
         ),
     ],
