@@ -259,6 +259,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignAbstractClassBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
@@ -487,6 +488,7 @@ public abstract class Python3Core {
                         new ForeignObjectBuiltins(),
                         new ForeignNumberBuiltins(),
                         new ForeignBooleanBuiltins(),
+                        new ForeignAbstractClassBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),

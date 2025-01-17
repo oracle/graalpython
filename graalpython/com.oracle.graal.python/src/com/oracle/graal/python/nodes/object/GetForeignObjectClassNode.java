@@ -93,7 +93,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         NUMBER("Number", PythonBuiltinClassType.ForeignNumber), // int, float, complex
         STRING("String", PythonBuiltinClassType.PString),
         EXCEPTION("Exception", PythonBuiltinClassType.PBaseException),
-        META_OBJECT("AbstractClass"), // PythonBuiltinClassType.PythonClass ?
+        META_OBJECT("AbstractClass", PythonBuiltinClassType.ForeignAbstractClass),
 
         // Interop traits
         EXECUTABLE("Executable"),
