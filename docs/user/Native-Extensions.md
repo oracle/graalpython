@@ -49,6 +49,11 @@ You can also manually trigger the detector with the Python `gc.collect()` call.
 
 ### Multi-Context and Native Libraries
 
+Using C extensions in multiple contexts is only possible on Linux for now, and many C extensions still have issues in this mode.
+You should test your applications thoroughly if you want to use this feature.
+There are many possiblities for native code to sidestep the library isolation through other process-wide global state, corrupting the state and leading to incorrect results or crashing.
+The implementation also relies on a venv to work, even if you are not using external packages.
+
 To support creating multiple GraalPy contexts that access native modules within the same JVM or Native Image, we need to isolate them from each other.
 The current strategy for this is to copy the libraries and modify them such that the dynamic library loader of the operating system will isolate them for us.
 To do this, all GraalPy contexts in the same process (not just those in the same engine!) must set the `python.IsolateNativeModules` option to `true`.
