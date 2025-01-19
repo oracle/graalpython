@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,7 +65,7 @@ abstract class SharedObject implements AutoCloseable {
             case 0x4d, 0x5a:
                 return new PEFile(f, context);
             case (byte) 0xca, (byte) 0xfe, (byte) 0xce, (byte) 0xcf:
-                return new MachOFile(f, context);
+                throw new IOException("Modifying Mach-O files is not yet supported");
             default:
                 throw new IOException("Unknown shared object format");
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,10 +60,18 @@ final class ElfFile extends SharedObject {
         var executable = env.getPublicTruffleFile(context.getOption(PythonOptions.Executable).toJavaStringUncached());
         var patchelf = executable.resolveSibling("patchelf");
         var i = 0;
-        while (!patchelf.isExecutable() && i < path.length) {
+        while (!isExecutable(patchelf) && i < path.length) {
             patchelf = env.getPublicTruffleFile(path[i++]).resolve("patchelf");
         }
         return patchelf.toString();
+    }
+
+    private static boolean isExecutable(TruffleFile patchelf) {
+        try {
+            return patchelf.isExecutable();
+        } catch (SecurityException e) {
+            return false;
+        }
     }
 
     ElfFile(byte[] b, PythonContext context) throws IOException {
