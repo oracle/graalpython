@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRef
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.GraalPyPrivate_Type_AddMember;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -222,6 +223,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -237,6 +239,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
@@ -1482,23 +1486,23 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClassType right) {
+        static boolean doTypeType(PythonBuiltinClassType left, PythonBuiltinClassType right) {
             return left == right;
         }
 
         @Specialization
-        static boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClass right) {
+        static boolean doTypeClass(PythonBuiltinClassType left, PythonBuiltinClass right) {
             return left == right.getType();
         }
 
         @Specialization
-        static boolean doManaged(PythonBuiltinClass left, PythonBuiltinClassType right) {
+        static boolean doClassType(PythonBuiltinClass left, PythonBuiltinClassType right) {
             return left.getType() == right;
         }
 
         @Specialization
         @InliningCutoff
-        static boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+        static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             if (left == right) {
                 return true;
@@ -1507,6 +1511,42 @@ public abstract class TypeNodes {
                 return (long) left.getPtr() == (long) right.getPtr();
             }
             return lib.isIdentical(left.getPtr(), right.getPtr(), lib);
+        }
+
+        @Specialization(guards = {"!isAnyPythonObject(left)", "!isAnyPythonObject(right)"})
+        @InliningCutoff
+        static boolean doOther(Object left, Object right,
+                        @Bind PythonContext context,
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+            if (left == right) {
+                return true;
+            }
+            if (lib.isMetaObject(left) && lib.isMetaObject(right)) {
+                // *sigh*... Host classes have split personality with a "static" and a "class"
+                // side, and that affects identity comparisons. And they report their "class" sides
+                // as bases, but importing from Java gives you the "static" side.
+                Env env = context.getEnv();
+                if (env.isHostObject(left) && env.isHostObject(right)) {
+                    // the activation of isMemberReadable and later readMember serves as branch
+                    // profile
+                    boolean leftIsStatic = lib.isMemberReadable(left, "class");
+                    if (leftIsStatic != lib.isMemberReadable(right, "class")) {
+                        try {
+                            if (leftIsStatic) {
+                                left = lib.readMember(left, "class");
+                            } else {
+                                right = lib.readMember(right, "class");
+                            }
+                        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                            throw CompilerDirectives.shouldNotReachHere(e);
+                        }
+                    }
+                }
+                if (lib.isIdentical(left, right, lib)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Fallback

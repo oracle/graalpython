@@ -720,6 +720,13 @@ class InteropTests(unittest.TestCase):
         super(list, l).remove(0) # ArrayList#remove(int index)
         assert l == [6]
 
+    def test_issubclass_isinstance(self):
+        from java.util import ArrayList, List
+        assert issubclass(ArrayList, List)
+        assert issubclass(ArrayList, ArrayList)
+        assert isinstance(ArrayList(), List)
+        assert isinstance(ArrayList(), ArrayList)
+
     def test_java_array(self):
         import java
         il = java.type("int[]")(20)
