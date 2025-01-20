@@ -713,6 +713,7 @@ suite = {
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_sha3<graalpy_ext:native>",
+                            "bin/modules/pyexpat<graalpy_ext:native>",
                         ],
                     },
                 },

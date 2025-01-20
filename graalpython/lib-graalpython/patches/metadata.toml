@@ -145,13 +145,13 @@ license = 'Apache-2.0'
 
 [[grpcio.rules]]
 # Force re-cythonize + other fixes
-version = '== 1.60.0'
+version = '>= 1.60.0, < 1.64.0'
 patch = 'grpcio-1.60.0.patch'
 license = 'Apache-2.0'
 
 [[grpcio.rules]]
 # Force re-cythonize + other fixes
-version = '>= 1.66.1, < 1.70'
+version = '>= 1.64.0'
 patch = 'grpcio-1.66.1.patch'
 license = 'Apache-2.0'
 
@@ -440,6 +440,11 @@ version = '== 2.10.3'
 [[pydantic-core.rules]]
 version = '== 2.10.1'
 patch = 'pydantic-core-2.10.1.patch'
+license = 'MIT'
+
+[[pydantic-core.rules]]
+version = '== 2.23.4'
+patch = 'pydantic-core-2.23.4.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
