@@ -443,6 +443,11 @@ patch = 'pydantic-core-2.10.1.patch'
 license = 'MIT'
 
 [[pydantic-core.rules]]
+version = '== 2.23.4'
+patch = 'pydantic-core-2.23.4.patch'
+license = 'MIT'
+
+[[pydantic-core.rules]]
 version = '== 2.27.1'
 patch = 'pydantic-core-2.27.1.patch'
 license = 'MIT'
