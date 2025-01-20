@@ -2434,22 +2434,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         // No BoundaryCallContext: calls only internal well-behaved Python code
         @TruffleBoundary
-        private static Object buildJavaClass(Object namespace, TruffleString name, Object base) {
+        private static Object buildJavaClass(Object namespace, TruffleString name, Object base, PKeyword[] keywords) {
             // uncached PythonContext get, since this code path is slow in any case
             Object module = PythonContext.get(null).lookupBuiltinModule(T___GRAALPYTHON__);
             Object buildFunction = PyObjectLookupAttr.executeUncached(module, T_BUILD_JAVA_CLASS);
-            return CallNode.executeUncached(buildFunction, namespace, name, base);
+            return CallNode.executeUncached(buildFunction, new Object[]{namespace, name, base}, keywords);
         }
 
         @InliningCutoff
         private static Object buildJavaClass(VirtualFrame frame, Node inliningTarget, PythonLanguage language, PFunction function, Object[] arguments,
-                        CallDispatchers.FunctionCachedInvokeNode invokeBody,
+                        PKeyword[] keywords, CallDispatchers.FunctionCachedInvokeNode invokeBody,
                         TruffleString name) {
             PDict ns = PFactory.createDict(language, new DynamicObjectStorage(language));
             Object[] args = PArguments.create(0);
             PArguments.setSpecialArgument(args, ns);
             invokeBody.execute(frame, inliningTarget, function, args);
-            return buildJavaClass(ns, name, arguments[1]);
+            return buildJavaClass(ns, name, arguments[1], keywords);
         }
 
         @Specialization
@@ -2492,7 +2492,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
                 // we want to subclass a Java class
-                return buildJavaClass(frame, inliningTarget, language, (PFunction) function, arguments, invokeBody, name);
+                return buildJavaClass(frame, inliningTarget, language, (PFunction) function, arguments, keywords, invokeBody, name);
             }
 
             class InitializeBuildClass {
