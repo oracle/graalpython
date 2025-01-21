@@ -1598,7 +1598,7 @@ def tox_example(args=None):
         "toml==0.10.2",
         "tox==3.24.5",
         "virtualenv==20.13.4",
-        os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv"),
+        os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv_seeder"),
     ]
 
     def get_new_vm(project_name, svm=False, install_libs=None, reuse_existing=False):
@@ -2176,7 +2176,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
         'graalpython:GRAALPYTHON_GRAALVM_DOCS',
-        'graalpython:GRAALPY_VIRTUALENV',
+        'graalpython:GRAALPY_VIRTUALENV_SEEDER',
     ],
     library_configs=[
         mx_sdk.LanguageLibraryConfig(

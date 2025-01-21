@@ -255,9 +255,9 @@ suite = {
             "source": [],
         },
 
-        "graalpy-virtualenv": {
+        "graalpy-virtualenv-seeder": {
             "type": "python",
-            "path": "graalpy_virtualenv",
+            "path": "graalpy_virtualenv_seeder",
             "source": [],
         }
     },
@@ -1480,12 +1480,12 @@ suite = {
             "maven": False,
         },
 
-        "GRAALPY_VIRTUALENV": {
+        "GRAALPY_VIRTUALENV_SEEDER": {
             "native": True, # so it produces a tar, not a jar file
             "platformDependent": False,
-            "description": "graalpy-virtualenv plugin sources usable to be installed into other interpreters",
+            "description": "graalpy-virtualenv-seeder plugin sources usable to be installed into other interpreters",
             "layout": {
-                "graalpy_virtualenv": "file:graalpy_virtualenv",
+                "graalpy_virtualenv_seeder": "file:graalpy_virtualenv_seeder",
             },
             "maven": False,
         },
