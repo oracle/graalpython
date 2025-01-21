@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,32 +37,3 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
-name = "graalpy-virtualenv"
-version = "0.0.1"
-license = "UPL-1.0"
-authors = [
-    { name = "GraalPy Developers", email = "graalvm-users@oss.oracle.com" },
-]
-keywords = [
-    "environments",
-    "isolated",
-    "virtual",
-]
-dependencies = [
-    "virtualenv",
-]
-
-[project.entry-points."virtualenv.create"]
-graalpy-posix = "graalpy_virtualenv.graalpy:GraalPyPosix"
-graalpy-win = "graalpy_virtualenv.graalpy:GraalPyWindows"
-
-[project.entry-points."virtualenv.seed"]
-graalpy = "graalpy_virtualenv.graalpy:GraalPySeeder"
-
-[project.urls]
-Homepage = "https://graalvm.org/python"
