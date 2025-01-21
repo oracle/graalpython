@@ -596,6 +596,7 @@ suite = {
                 "bin/<lib:bz2support>",
             ],
             "cmakeConfig": {
+                "CMAKE_BUILD_TYPE": "Release",
                 "BZIP2_ROOT": "<path:BZIP2>",
                 "BZIP2_VERSION_MAJOR": "1",
                 "BZIP2_VERSION_MINOR": "0",
@@ -1073,6 +1074,7 @@ suite = {
                                 "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
+                                "dependency:python-libbz2/bin/*",
                             ]
                         },
                     },
