@@ -26,6 +26,8 @@ language runtime. The main focus is on user-observable behavior of the engine.
   * Deprecated the org.graalvm.python.embedding.util API package and added new equivalents to org.graalvm.python.embedding
   * Maven and Gradle plugins do not embed Python home into the generated virtual filesystem. Instead, the handling of language home for any Truffle language, including GraalPy, for the GraalVM Native Image build can be controlled by new Native Image options +H:IncludeLanguageResources and +H:CopyLanguageResources. By default, the whole Python home is embedded into the native executable. In the case of JVM deployment, the language home is embedded in the GraalPy artifacts at Mavencentral.
   * Removed deprecated methods in VirtualFileSystem
+* No longer ship `graalpy_virtualenv` virtualenv plugin within the standard library. Instead, inject the dependency on it into virtualenv, so that it gets installed only when necessary and can be uninstalled.
+* Rename `graalpy_virtualenv` to `graalpy_virtualenv_seeder`.
 
 ## Version 24.1.0
 * GraalPy is now considered stable for pure Python workloads. While many workloads involving native extension modules work, we continue to consider them experimental. You can use the command-line option `--python.WarnExperimentalFeatures` to enable warnings for such modules at runtime. In Java embeddings the warnings are enabled by default and you can suppress them by setting the context option 'python.WarnExperimentalFeatures' to 'false'.
