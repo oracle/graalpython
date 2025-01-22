@@ -4070,16 +4070,33 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static SequenceStorage doNativeStorage(Node inliningTarget, NativeSequenceStorage storage, int index, Object value,
+        protected static SequenceStorage doNativeObjectStorage(Node inliningTarget, NativeObjectSequenceStorage storage, int index, Object value,
                         @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Cached(inline = false) GetItemScalarNode getItem,
-                        @Cached SetItemScalarNode setItem) {
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                        @Cached PythonToNativeNewRefNode toNative) {
             int newLength = storage.length() + 1;
             ensureCapacityNode.execute(inliningTarget, storage, newLength);
             for (int i = storage.length(); i > index; i--) {
-                setItem.execute(inliningTarget, storage, i, getItem.execute(inliningTarget, storage, i - 1));
+                writePointerNode.writeArrayElement(storage.getPtr(), i, readPointerNode.readArrayElement(storage.getPtr(), i - 1));
             }
-            setItem.execute(inliningTarget, storage, index, value);
+            writePointerNode.writeArrayElement(storage.getPtr(), index, toNative.execute(value));
+            storage.setNewLength(newLength);
+            return storage;
+        }
+
+        @Specialization
+        protected static SequenceStorage doNativeByteStorage(Node inliningTarget, NativeByteSequenceStorage storage, int index, Object value,
+                        @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached(inline = false) CStructAccess.ReadByteNode readByteNode,
+                        @Cached(inline = false) CStructAccess.WriteByteNode writeByteNode,
+                        @Cached CastToByteNode castToByteNode) {
+            int newLength = storage.length() + 1;
+            ensureCapacityNode.execute(inliningTarget, storage, newLength);
+            for (int i = storage.length(); i > index; i--) {
+                writeByteNode.writeArrayElement(storage.getPtr(), i, readByteNode.readArrayElement(storage.getPtr(), i - 1));
+            }
+            writeByteNode.writeArrayElement(storage.getPtr(), index, castToByteNode.execute(null, value));
             storage.setNewLength(newLength);
             return storage;
         }
