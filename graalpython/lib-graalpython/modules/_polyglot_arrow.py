@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,99 +48,106 @@ except KeyError:
 
 if not __graalpython__.host_import_enabled:
     raise NotImplementedError("Host lookup is not allowed. You can allow it while building python context.")
-else:
-    class TinyIntVector:
-
-        def __len__(self):
-            return self.getValueCount()
-
-        def __arrow_c_array__(self, requested_schema=None):
-            return __graalpython__.export_arrow_vector(self)
 
 
-    class SmallIntVector:
+class TinyIntVector:
 
-        def __len__(self):
-            return self.getValueCount()
+    def __len__(self):
+        return self.getValueCount()
 
-        def __arrow_c_array__(self, requested_schema=None):
-            return __graalpython__.export_arrow_vector(self)
-
-
-    class IntVector:
-
-        def __len__(self):
-            return self.getValueCount()
-
-        def __arrow_c_array__(self, requested_schema=None):
-            return __graalpython__.export_arrow_vector(self)
+    def __arrow_c_array__(self, requested_schema=None):
+        return __graalpython__.export_arrow_vector(self)
 
 
-    class BigIntVector:
+class SmallIntVector:
 
-        def __len__(self):
-            return self.getValueCount()
+    def __len__(self):
+        return self.getValueCount()
 
-        def __arrow_c_array__(self, requested_schema=None):
-            return __graalpython__.export_arrow_vector(self)
-
-
-    class BitVector:
-
-        def __len__(self):
-            return self.getValueCount()
-
-        def __arrow_c_array__(self, requested_schema=None):
-            return __graalpython__.export_arrow_vector(self)
+    def __arrow_c_array__(self, requested_schema=None):
+        return __graalpython__.export_arrow_vector(self)
 
 
-    class Float2Vector:
+class IntVector:
 
-        def __len__(self):
-            return self.getValueCount()
+    def __len__(self):
+        return self.getValueCount()
 
-        def __arrow_c_array__(self, requested_schema=None):
-            return __graalpython__.export_arrow_vector(self)
-
-
-    class Float4Vector:
-
-        def __len__(self):
-            return self.getValueCount()
-
-        def __arrow_c_array__(self, requested_schema=None):
-            return __graalpython__.export_arrow_vector(self)
+    def __arrow_c_array__(self, requested_schema=None):
+        return __graalpython__.export_arrow_vector(self)
 
 
-    class Float8Vector:
+class BigIntVector:
 
-        def __len__(self):
-            return self.getValueCount()
+    def __len__(self):
+        return self.getValueCount()
 
-        def __arrow_c_array__(self, requested_schema=None):
-            return __graalpython__.export_arrow_vector(self)
+    def __arrow_c_array__(self, requested_schema=None):
+        return __graalpython__.export_arrow_vector(self)
+
+
+class BitVector:
+
+    def __len__(self):
+        return self.getValueCount()
+
+    def __arrow_c_array__(self, requested_schema=None):
+        return __graalpython__.export_arrow_vector(self)
+
+
+class Float2Vector:
+
+    def __len__(self):
+        return self.getValueCount()
+
+    def __arrow_c_array__(self, requested_schema=None):
+        return __graalpython__.export_arrow_vector(self)
+
+
+class Float4Vector:
+
+    def __len__(self):
+        return self.getValueCount()
+
+    def __arrow_c_array__(self, requested_schema=None):
+        return __graalpython__.export_arrow_vector(self)
+
+
+class Float8Vector:
+
+    def __len__(self):
+        return self.getValueCount()
+
+    def __arrow_c_array__(self, requested_schema=None):
+        return __graalpython__.export_arrow_vector(self)
+
+
+__interop_registered = False
 
 
 def register_interop_behavior():
-    # Ints
-    int8_vector_class_path = java.type("org.apache.arrow.vector.TinyIntVector")
-    int16_vector_class_path = java.type("org.apache.arrow.vector.SmallIntVector")
-    int32_vector_class_path = java.type("org.apache.arrow.vector.IntVector")
-    int64_vector_class_path = java.type("org.apache.arrow.vector.BigIntVector")
-    # Boolean
-    boolean_vector_class_path = java.type("org.apache.arrow.vector.BitVector")
-    # Floats
-    float2_vector_class_path = java.type("org.apache.arrow.vector.Float2Vector")
-    float4_vector_class_path = java.type("org.apache.arrow.vector.Float4Vector")
-    float8_vector_class_path = java.type("org.apache.arrow.vector.Float8Vector")
+    global __interop_registered
+    if not __interop_registered:
+        __interop_registered = True
+        # Ints
+        int8_vector_class_path = java.type("org.apache.arrow.vector.TinyIntVector")
+        int16_vector_class_path = java.type("org.apache.arrow.vector.SmallIntVector")
+        int32_vector_class_path = java.type("org.apache.arrow.vector.IntVector")
+        int64_vector_class_path = java.type("org.apache.arrow.vector.BigIntVector")
+        # Boolean
+        boolean_vector_class_path = java.type("org.apache.arrow.vector.BitVector")
+        # Floats
+        float2_vector_class_path = java.type("org.apache.arrow.vector.Float2Vector")
+        float4_vector_class_path = java.type("org.apache.arrow.vector.Float4Vector")
+        float8_vector_class_path = java.type("org.apache.arrow.vector.Float8Vector")
 
-    polyglot.register_interop_type(int8_vector_class_path, TinyIntVector)
-    polyglot.register_interop_type(int16_vector_class_path, SmallIntVector)
-    polyglot.register_interop_type(int32_vector_class_path, IntVector)
-    polyglot.register_interop_type(int64_vector_class_path, BigIntVector)
+        polyglot.register_interop_type(int8_vector_class_path, TinyIntVector)
+        polyglot.register_interop_type(int16_vector_class_path, SmallIntVector)
+        polyglot.register_interop_type(int32_vector_class_path, IntVector)
+        polyglot.register_interop_type(int64_vector_class_path, BigIntVector)
 
-    polyglot.register_interop_type(boolean_vector_class_path, BitVector)
+        polyglot.register_interop_type(boolean_vector_class_path, BitVector)
 
-    polyglot.register_interop_type(float2_vector_class_path, Float2Vector)
-    polyglot.register_interop_type(float4_vector_class_path, Float4Vector)
-    polyglot.register_interop_type(float8_vector_class_path, Float8Vector)
+        polyglot.register_interop_type(float2_vector_class_path, Float2Vector)
+        polyglot.register_interop_type(float4_vector_class_path, Float4Vector)
+        polyglot.register_interop_type(float8_vector_class_path, Float8Vector)
