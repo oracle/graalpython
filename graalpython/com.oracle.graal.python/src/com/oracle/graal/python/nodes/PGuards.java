@@ -113,6 +113,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -295,6 +296,10 @@ public abstract class PGuards {
 
     public static boolean isForeignSequenceStorage(SequenceStorage sequenceStorage) {
         return sequenceStorage instanceof ForeignSequenceStorage;
+    }
+
+    public static boolean isNativeObjectStorage(SequenceStorage sequenceStorage) {
+        return sequenceStorage instanceof NativeObjectSequenceStorage;
     }
 
     public static boolean isList(Object o) {

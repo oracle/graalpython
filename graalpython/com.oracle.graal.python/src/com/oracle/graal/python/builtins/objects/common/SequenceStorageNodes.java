@@ -3597,7 +3597,7 @@ public abstract class SequenceStorageNodes {
             setLenNode.execute(inliningTarget, s, s.length() - 1);
         }
 
-        @Specialization(guards = "!isForeignSequenceStorage(s)")
+        @Specialization(guards = {"!isNativeObjectStorage(s)", "!isForeignSequenceStorage(s)"})
         static void doGeneric(Node inliningTarget, SequenceStorage s, int idx,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached SetItemScalarNode setItemNode,
@@ -3608,6 +3608,21 @@ public abstract class SequenceStorageNodes {
                 setItemNode.execute(inliningTarget, s, i, getItemNode.execute(inliningTarget, s, i + 1));
             }
             setLenNode.execute(inliningTarget, s, len - 1);
+        }
+
+        @Specialization
+        static void doNativeObjectStorage(Node inliningTarget, NativeObjectSequenceStorage s, int idx,
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CExtNodes.XDecRefPointerNode decRefNode) {
+            int len = s.length();
+            Object deleted = readPointerNode.readArrayElement(s.getPtr(), idx);
+            for (int i = idx; i < len - 1; i++) {
+                writePointerNode.writeArrayElement(s.getPtr(), i, readPointerNode.readArrayElement(s.getPtr(), i + 1));
+            }
+            writePointerNode.writeArrayElement(s.getPtr(), len - 1, 0L);
+            s.setNewLength(len - 1);
+            decRefNode.execute(inliningTarget, deleted);
         }
 
         @Specialization
