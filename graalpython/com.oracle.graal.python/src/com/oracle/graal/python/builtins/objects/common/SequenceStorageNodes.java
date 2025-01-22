@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -124,15 +124,15 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
-import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -167,6 +167,7 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+
 import sun.misc.Unsafe;
 
 public abstract class SequenceStorageNodes {
@@ -3492,12 +3493,14 @@ public abstract class SequenceStorageNodes {
         static void doShrink(NativeObjectSequenceStorage s, int len,
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadPointerNode readNode,
+                        @Cached CStructAccess.WritePointerNode writeNode,
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             if (len < s.length()) {
                 // When shrinking, we need to decref the items that are now past the end
                 for (int i = len; i < s.length(); i++) {
                     Object elementPointer = readNode.readArrayElement(s.getPtr(), i);
                     decRefPointerNode.execute(inliningTarget, elementPointer);
+                    writeNode.writeArrayElement(s.getPtr(), i, 0L);
                 }
             }
             s.setNewLength(len);
