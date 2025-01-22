@@ -122,13 +122,20 @@ class Float8Vector:
         return __graalpython__.export_arrow_vector(self)
 
 
-__interop_registered = False
+__enabled_java_integration = False
 
 
-def register_interop_behavior():
-    global __interop_registered
-    if not __interop_registered:
-        __interop_registered = True
+def enable_java_integration(allow_method_overwrites: bool = False):
+    """
+    This method enables passing Java Apache Arrow vector classes directly to Python code without copying any memory.
+    It basically calls `polyglot.register_interop_type` on every vector class defined in the library.
+    Calling the method more than once has no effect.
+
+    If allow_method_overwrites=True, defining the same method is explicitly allowed.
+    """
+    global __enabled_java_integration
+    if not __enabled_java_integration:
+        __enabled_java_integration = True
         # Ints
         int8_vector_class_path = java.type("org.apache.arrow.vector.TinyIntVector")
         int16_vector_class_path = java.type("org.apache.arrow.vector.SmallIntVector")
@@ -141,13 +148,19 @@ def register_interop_behavior():
         float4_vector_class_path = java.type("org.apache.arrow.vector.Float4Vector")
         float8_vector_class_path = java.type("org.apache.arrow.vector.Float8Vector")
 
-        polyglot.register_interop_type(int8_vector_class_path, TinyIntVector)
-        polyglot.register_interop_type(int16_vector_class_path, SmallIntVector)
-        polyglot.register_interop_type(int32_vector_class_path, IntVector)
-        polyglot.register_interop_type(int64_vector_class_path, BigIntVector)
-
-        polyglot.register_interop_type(boolean_vector_class_path, BitVector)
-
-        polyglot.register_interop_type(float2_vector_class_path, Float2Vector)
-        polyglot.register_interop_type(float4_vector_class_path, Float4Vector)
-        polyglot.register_interop_type(float8_vector_class_path, Float8Vector)
+        polyglot.register_interop_type(int8_vector_class_path, TinyIntVector,
+                                       allow_method_overwrites=allow_method_overwrites)
+        polyglot.register_interop_type(int16_vector_class_path, SmallIntVector,
+                                       allow_method_overwrites=allow_method_overwrites)
+        polyglot.register_interop_type(int32_vector_class_path, IntVector,
+                                       allow_method_overwrites=allow_method_overwrites)
+        polyglot.register_interop_type(int64_vector_class_path, BigIntVector,
+                                       allow_method_overwrites=allow_method_overwrites)
+        polyglot.register_interop_type(boolean_vector_class_path, BitVector,
+                                       allow_method_overwrites=allow_method_overwrites)
+        polyglot.register_interop_type(float2_vector_class_path, Float2Vector,
+                                       allow_method_overwrites=allow_method_overwrites)
+        polyglot.register_interop_type(float4_vector_class_path, Float4Vector,
+                                       allow_method_overwrites=allow_method_overwrites)
+        polyglot.register_interop_type(float8_vector_class_path, Float8Vector,
+                                       allow_method_overwrites=allow_method_overwrites)
