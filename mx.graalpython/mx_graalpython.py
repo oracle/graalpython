@@ -1227,6 +1227,7 @@ def graalpython_gate_runner(args, tasks):
                     mx.command_function('tck')([f'--json-results={tmpfile.name}'])
                     mx_gate.make_test_report(tmpfile.name, GraalPythonTags.junit + "-TCK")
                 finally:
+                    tmpfile.close()
                     try:
                         os.unlink(tmpfile.name)
                     except:

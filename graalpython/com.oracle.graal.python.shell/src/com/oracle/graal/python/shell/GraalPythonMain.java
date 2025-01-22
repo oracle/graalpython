@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
 import org.graalvm.nativeimage.ImageInfo;
@@ -530,11 +531,17 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
      *            {@link #getEnv(String)} is used to retrieve $PATH.
      * @return The absolute path to the program or {@code null}.
      */
-    private String calculateProgramFullPath(String program, Function<Path, Boolean> isExecutable, String envPath) {
+    private String calculateProgramFullPath(String program, Predicate<Path> isExecutable, String envPath) {
         Path programPath = Paths.get(program);
 
         // If this is an absolute path, we are already fine.
         if (programPath.isAbsolute()) {
+            if (IS_WINDOWS) {
+                String resolvedProgramNameWithExtension = getProgramNameWithExtension(isExecutable, program);
+                if (resolvedProgramNameWithExtension != null) {
+                    return resolvedProgramNameWithExtension;
+                }
+            }
             return program;
         }
 
@@ -553,26 +560,15 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     i = path.indexOf(File.pathSeparatorChar, previous);
                     int end = i == -1 ? path.length() : i;
                     Path resolvedProgramName = Paths.get(path.substring(previous, end)).resolve(programPath);
-                    if (isExecutable.apply(resolvedProgramName)) {
+                    if (isExecutable.test(resolvedProgramName)) {
                         return resolvedProgramName.toString();
                     }
 
                     // On windows, the program name may be without the extension
                     if (IS_WINDOWS) {
-                        String pathExtEnvvar = getEnv("PATHEXT");
-                        if (pathExtEnvvar != null) {
-                            // default extensions are defined
-                            String resolvedStr = resolvedProgramName.toString();
-                            if (resolvedStr.length() <= 3 || resolvedStr.charAt(resolvedStr.length() - 4) != '.') {
-                                // program has no file extension
-                                String[] pathExts = pathExtEnvvar.toLowerCase().split(";");
-                                for (String pathExt : pathExts) {
-                                    resolvedProgramName = Path.of(resolvedStr + pathExt);
-                                    if (isExecutable.apply(resolvedProgramName)) {
-                                        return resolvedProgramName.toString();
-                                    }
-                                }
-                            }
+                        String resolvedProgramNameWithExtension = getProgramNameWithExtension(isExecutable, resolvedProgramName.toString());
+                        if (resolvedProgramNameWithExtension != null) {
+                            return resolvedProgramNameWithExtension;
                         }
                     }
 
@@ -596,6 +592,28 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             return programPath.toAbsolutePath().normalize().toString();
         }
         return programPath.toAbsolutePath().toString();
+    }
+
+    private static String getProgramNameWithExtension(Predicate<Path> isExecutable, String programStr) {
+        if (isExecutable.test(Path.of(programStr))) {
+            return programStr;
+        }
+        if (programStr.length() <= 3 || programStr.charAt(programStr.length() - 4) != '.') {
+            // program has no file extension
+            Path programNameWithExtension = null;
+            String pathExtEnvvar = getEnv("PATHEXT");
+            if (pathExtEnvvar != null) {
+                // default extensions are defined
+                String[] pathExts = pathExtEnvvar.toLowerCase().split(";");
+                for (String pathExt : pathExts) {
+                    programNameWithExtension = Path.of(programStr + pathExt);
+                    if (isExecutable.test(programNameWithExtension)) {
+                        return programNameWithExtension.toString();
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private String[] getExecutableList() {
