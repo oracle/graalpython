@@ -43,7 +43,8 @@ import java
 try:
     java.type("org.apache.arrow.vector.BaseFixedWidthVector")
 except KeyError:
-    raise ImportError("It is not possible to import Apache Arrow Vector classes because arrow-vector package is not on the class path. Please add this library to your project.")
+    raise ImportError(
+        "It is not possible to import Apache Arrow Vector classes because arrow-vector package is not on the class path. Please add this library to your project.")
 
 if not __graalpython__.host_import_enabled:
     raise NotImplementedError("Host lookup is not allowed. You can allow it while building python context.")
@@ -120,6 +121,7 @@ else:
             return __graalpython__.export_arrow_vector(self)
 
 
+def register_interop_behavior():
     # Ints
     int8_vector_class_path = java.type("org.apache.arrow.vector.TinyIntVector")
     int16_vector_class_path = java.type("org.apache.arrow.vector.SmallIntVector")
