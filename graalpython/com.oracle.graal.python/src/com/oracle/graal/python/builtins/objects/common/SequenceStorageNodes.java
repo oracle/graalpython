@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -124,15 +124,15 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
-import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -167,6 +167,7 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+
 import sun.misc.Unsafe;
 
 public abstract class SequenceStorageNodes {
@@ -3492,12 +3493,14 @@ public abstract class SequenceStorageNodes {
         static void doShrink(NativeObjectSequenceStorage s, int len,
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadPointerNode readNode,
+                        @Cached CStructAccess.WritePointerNode writeNode,
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             if (len < s.length()) {
                 // When shrinking, we need to decref the items that are now past the end
                 for (int i = len; i < s.length(); i++) {
                     Object elementPointer = readNode.readArrayElement(s.getPtr(), i);
                     decRefPointerNode.execute(inliningTarget, elementPointer);
+                    writeNode.writeArrayElement(s.getPtr(), i, 0L);
                 }
             }
             s.setNewLength(len);
@@ -3594,7 +3597,7 @@ public abstract class SequenceStorageNodes {
             setLenNode.execute(inliningTarget, s, s.length() - 1);
         }
 
-        @Specialization(guards = "!isForeignSequenceStorage(s)")
+        @Specialization(guards = {"!isNativeObjectStorage(s)", "!isForeignSequenceStorage(s)"})
         static void doGeneric(Node inliningTarget, SequenceStorage s, int idx,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached SetItemScalarNode setItemNode,
@@ -3605,6 +3608,21 @@ public abstract class SequenceStorageNodes {
                 setItemNode.execute(inliningTarget, s, i, getItemNode.execute(inliningTarget, s, i + 1));
             }
             setLenNode.execute(inliningTarget, s, len - 1);
+        }
+
+        @Specialization
+        static void doNativeObjectStorage(Node inliningTarget, NativeObjectSequenceStorage s, int idx,
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                        @Cached CExtNodes.XDecRefPointerNode decRefNode) {
+            int len = s.length();
+            Object deleted = readPointerNode.readArrayElement(s.getPtr(), idx);
+            for (int i = idx; i < len - 1; i++) {
+                writePointerNode.writeArrayElement(s.getPtr(), i, readPointerNode.readArrayElement(s.getPtr(), i + 1));
+            }
+            writePointerNode.writeArrayElement(s.getPtr(), len - 1, 0L);
+            s.setNewLength(len - 1);
+            decRefNode.execute(inliningTarget, deleted);
         }
 
         @Specialization
@@ -4067,16 +4085,33 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static SequenceStorage doNativeStorage(Node inliningTarget, NativeSequenceStorage storage, int index, Object value,
+        protected static SequenceStorage doNativeObjectStorage(Node inliningTarget, NativeObjectSequenceStorage storage, int index, Object value,
                         @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Cached(inline = false) GetItemScalarNode getItem,
-                        @Cached SetItemScalarNode setItem) {
+                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
+                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                        @Cached PythonToNativeNewRefNode toNative) {
             int newLength = storage.length() + 1;
             ensureCapacityNode.execute(inliningTarget, storage, newLength);
             for (int i = storage.length(); i > index; i--) {
-                setItem.execute(inliningTarget, storage, i, getItem.execute(inliningTarget, storage, i - 1));
+                writePointerNode.writeArrayElement(storage.getPtr(), i, readPointerNode.readArrayElement(storage.getPtr(), i - 1));
             }
-            setItem.execute(inliningTarget, storage, index, value);
+            writePointerNode.writeArrayElement(storage.getPtr(), index, toNative.execute(value));
+            storage.setNewLength(newLength);
+            return storage;
+        }
+
+        @Specialization
+        protected static SequenceStorage doNativeByteStorage(Node inliningTarget, NativeByteSequenceStorage storage, int index, Object value,
+                        @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached(inline = false) CStructAccess.ReadByteNode readByteNode,
+                        @Cached(inline = false) CStructAccess.WriteByteNode writeByteNode,
+                        @Cached CastToByteNode castToByteNode) {
+            int newLength = storage.length() + 1;
+            ensureCapacityNode.execute(inliningTarget, storage, newLength);
+            for (int i = storage.length(); i > index; i--) {
+                writeByteNode.writeArrayElement(storage.getPtr(), i, readByteNode.readArrayElement(storage.getPtr(), i - 1));
+            }
+            writeByteNode.writeArrayElement(storage.getPtr(), index, castToByteNode.execute(null, value));
             storage.setNewLength(newLength);
             return storage;
         }
