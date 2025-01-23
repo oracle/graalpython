@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -280,6 +280,9 @@ class BasicTests(unittest.TestCase):
             self.assertTrue(num >= ninf)
             self.assertFalse(num < ninf)
             self.assertFalse(num <= ninf)
+
+    def test_too_large_exponent(self):
+        self.assertEqual(float(9.6652344473471409e+13020482957104346813665225475455405808065502685256002111130525326263065544707062128277904331411231482727389186536355106830667631510992459549990606158658919), float('inf'))
 
 
 fromHex = float.fromhex

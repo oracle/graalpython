@@ -122,6 +122,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -227,6 +228,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                                     "operating system release", "operating system version", "hardware identifier"
                     });
 
+    // WNOHANG is not defined on windows, but emulated backend should support it even there
+    public static final int EMULATED_WNOHANG = 1;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PosixModuleBuiltinsFactory.getFactories();
@@ -315,7 +319,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         // fill the environ dictionary with the current environment
         // TODO we should probably use PosixSupportLibrary to get environ
-        Map<String, String> getenv = System.getenv();
+        Map<String, String> getenv = core.getContext().getEnv().getEnvironment();
         PDict environ = core.factory().createDict();
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
@@ -326,6 +330,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             Object key, val;
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                if (entry.getKey().startsWith("=")) {
+                    // Hidden variable, shouldn't be visible to python
+                    continue;
+                }
                 key = toTruffleStringUncached(entry.getKey());
             } else {
                 key = core.factory().createBytes(entry.getKey().getBytes());
@@ -384,6 +392,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             posix.setAttribute(toTruffleStringUncached("statvfs"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("geteuid"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("getegid"), PNone.NO_VALUE);
+
+            posix.setAttribute(toTruffleStringUncached("WNOHANG"), EMULATED_WNOHANG);
         }
     }
 
@@ -2632,6 +2642,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                             gil.acquire();
                             throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                         }
+                    } catch (UnsupportedPosixFeatureException e) {
+                        throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
                     }
                 }
             } finally {
@@ -2980,6 +2992,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            } catch (UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
         }
     }
@@ -3006,6 +3020,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            } catch (UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
         }
     }

@@ -37,7 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import math
 import os
+import types
 import unittest
 from unittest import skipIf, skipUnless
 
@@ -106,6 +108,72 @@ if sys.implementation.name == "graalpy":
 
 @skipUnless(sys.implementation.name == "graalpy" and not __graalpython__.is_native, "interop")
 class InteropTests(unittest.TestCase):
+    # This should run first, before other tests create foreign objects which creates more foreign classes.
+    # We want to ensure all single-trait classes are always defined, so users can rely on them.
+    def test_single_trait_classes(self):
+        classes = [
+            polyglot.ForeignObject,
+            polyglot.ForeignList,
+            polyglot.ForeignBoolean,
+            polyglot.ForeignException,
+            polyglot.ForeignExecutable,
+            polyglot.ForeignDict,
+            polyglot.ForeignInstantiable,
+            polyglot.ForeignIterable,
+            polyglot.ForeignIterator,
+            polyglot.ForeignAbstractClass,
+            polyglot.ForeignNone,
+            polyglot.ForeignNumber,
+            polyglot.ForeignString,
+        ]
+
+        for c in classes:
+            self.assertIsInstance(c, type)
+            if c is polyglot.ForeignBoolean:
+                self.assertIs(c.__base__, polyglot.ForeignNumber)
+            elif c is not polyglot.ForeignObject:
+                self.assertIs(c.__base__, polyglot.ForeignObject)
+
+    def test_get_class(self):
+        def wrap(obj):
+            return __graalpython__.foreign_wrapper(obj)
+
+        def t(obj):
+            return type(wrap(obj))
+
+        self.assertEqual(t(object()), polyglot.ForeignObject)
+        self.assertEqual(t([]), polyglot.ForeignList)
+        self.assertEqual(t(True), polyglot.ForeignBoolean)
+        self.assertEqual(t(BaseException()), polyglot.ForeignException)
+        self.assertEqual(t(lambda: None), polyglot.ForeignExecutable)
+        self.assertEqual(t({}), polyglot.ForeignDict)
+        # ForeignInstantiable
+        self.assertEqual(t((e for e in [1])), polyglot.ForeignIteratorIterable)
+        self.assertEqual(t(iter([1])), polyglot.ForeignIteratorIterable)
+        self.assertEqual(t(object), polyglot.ForeignExecutableClass)
+        self.assertEqual(t(None), polyglot.ForeignNone)
+        self.assertEqual(t(1), polyglot.ForeignNumber)
+        self.assertEqual(t("abc"), polyglot.ForeignString)
+
+        from java.lang import Object, Boolean, Integer, Throwable, Thread, Number, String
+        from java.util import ArrayList, HashMap, ArrayDeque
+        from java.math import BigInteger
+        null = Integer.getInteger("something_that_does_not_exists")
+
+        self.assertEqual(type(Object()), polyglot.ForeignObject)
+        self.assertEqual(type(ArrayList()), polyglot.ForeignList)
+        self.assertEqual(type(wrap(Boolean.valueOf(True))), polyglot.ForeignBoolean)
+        self.assertEqual(type(Throwable()), polyglot.ForeignException)
+        self.assertEqual(type(Thread()), polyglot.ForeignExecutable) # Thread implements Runnable
+        self.assertEqual(type(HashMap()), polyglot.ForeignDict)
+        self.assertEqual(type(Object), polyglot.ForeignClass) # ForeignDictIterable
+        self.assertEqual(type(ArrayDeque()), polyglot.ForeignIterable)
+        self.assertEqual(type(ArrayList().iterator()), polyglot.ForeignIterator)
+        self.assertEqual(type(Number), polyglot.ForeignAbstractClass)
+        self.assertEqual(type(null), polyglot.ForeignNone)
+        self.assertEqual(type(BigInteger.valueOf(42)), polyglot.ForeignNumber)
+        self.assertEqual(type(wrap(String("abc"))), polyglot.ForeignString)
+
     def test_import(self):
         def some_function():
             return "hello, polyglot world!"
@@ -403,9 +471,10 @@ class InteropTests(unittest.TestCase):
                 os.unlink(tempname)
 
     def test_java_class(self):
-        from java.lang import Integer, NumberFormatException
-        self.assertEqual(['ForeignInstantiableType', 'foreign', 'object'], [t.__name__ for t in type(Integer).mro()])
-        self.assertEqual(['ForeignInstantiableType', 'foreign', 'object'], [t.__name__ for t in type(NumberFormatException).mro()])
+        from java.lang import Integer, Number, NumberFormatException
+        self.assertEqual(type(Integer).mro(), [polyglot.ForeignClass, polyglot.ForeignInstantiable, polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
+        self.assertEqual(type(Number).mro(), [polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
+        self.assertEqual(type(NumberFormatException).mro(), [polyglot.ForeignClass, polyglot.ForeignInstantiable, polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
 
     def test_java_exceptions(self):
         # TODO: more tests
@@ -417,7 +486,7 @@ class InteropTests(unittest.TestCase):
 
             assert isinstance(e, BaseException)
             assert BaseException in type(e).mro()
-            self.assertEqual(['ForeignException', 'BaseException', 'foreign', 'object'], [t.__name__ for t in type(e).mro()])
+            self.assertEqual([polyglot.ForeignException, BaseException, polyglot.ForeignObject, object], type(e).mro())
             self.assertEqual('java.lang.NumberFormatException: For input string: \"99\" under radix 8', str(e))
             self.assertEqual("ForeignException('java.lang.NumberFormatException: For input string: \"99\" under radix 8')", repr(e))
             assert True
@@ -503,10 +572,10 @@ class InteropTests(unittest.TestCase):
         y = Integer.getInteger("something_that_does_not_exists2")
         z = None
 
-        assert isinstance(x, type(None))
+        assert isinstance(x, types.NoneType)
         assert type(x) == polyglot.ForeignNone, type(x)
         assert type(None) in type(x).mro()
-        self.assertEqual(['ForeignNone', 'NoneType', 'foreign', 'object'], [t.__name__ for t in type(x).mro()])
+        self.assertEqual([polyglot.ForeignNone, types.NoneType, polyglot.ForeignObject, object], type(x).mro())
         assert repr(x) == 'None'
         assert str(x) == 'None'
 
@@ -632,13 +701,23 @@ class InteropTests(unittest.TestCase):
         my_lr2 = MyLogRecord(Level.FINEST, message)
         assert my_lr2.getLevel() == Level.WARNING
 
+    def test_super(self):
+        from java.util import ArrayList
+        l = ArrayList()
+        l.extend([5, 6, 7])
+        l.remove(7) # Python list.remove
+        assert l == [5, 6]
+
+        super(list, l).remove(0) # ArrayList#remove(int index)
+        assert l == [6]
+
     def test_java_array(self):
         import java
         il = java.type("int[]")(20)
 
         assert isinstance(il, list)
         assert list in type(il).mro()
-        self.assertEqual(['ForeignList', 'list', 'foreign', 'object'], [t.__name__ for t in type(il).mro()])
+        self.assertEqual([polyglot.ForeignList, list, polyglot.ForeignObject, object], type(il).mro())
         assert repr(il) == repr([0] * 20)
         assert str(il) == str([0] * 20)
 
@@ -695,7 +774,7 @@ class InteropTests(unittest.TestCase):
 
         assert isinstance(al, list)
         assert list in type(al).mro()
-        self.assertEqual(['ForeignList', 'list', 'foreign', 'object'], [t.__name__ for t in type(al).mro()])
+        self.assertEqual([polyglot.ForeignList, list, polyglot.ForeignObject, object], type(al).mro())
         assert repr(l(1,2)) == repr([1,2])
         assert str(l(1,2)) == str([1,2])
 
@@ -850,7 +929,7 @@ class InteropTests(unittest.TestCase):
 
         assert isinstance(h, dict)
         assert dict in type(h).mro()
-        self.assertEqual(['ForeignDict', 'dict', 'foreign', 'object'], [t.__name__ for t in type(h).mro()])
+        self.assertEqual([polyglot.ForeignDict, dict, polyglot.ForeignObject, object], type(h).mro())
         assert repr(h) == repr({1: 2})
         assert str(h) == str({1: 2}), str(h)
         assert h
@@ -981,7 +1060,7 @@ class InteropTests(unittest.TestCase):
             iterator_type = type(iter([]))
             assert isinstance(itr, iterator_type)
             assert iterator_type in type(itr).mro()
-            self.assertEqual(['ForeignIterator', 'iterator', 'foreign', 'object'], [t.__name__ for t in type(itr).mro()])
+            self.assertEqual([polyglot.ForeignIterator, iterator_type, polyglot.ForeignObject, object], type(itr).mro())
             assert '<polyglot.ForeignIterator object at 0x' in repr(itr), repr(itr)
             assert '<polyglot.ForeignIterator object at 0x' in str(itr), str(itr)
             assert bool(itr) == True
@@ -1043,7 +1122,7 @@ class InteropTests(unittest.TestCase):
 
         assert isinstance(s, str)
         assert str in type(s).mro()
-        self.assertEqual(['ForeignString', 'str', 'foreign', 'object'], [t.__name__ for t in type(s).mro()])
+        self.assertEqual([polyglot.ForeignString, str, polyglot.ForeignObject, object], type(s).mro())
         assert repr(s) == repr("ab")
         assert str(s) == str("ab"), str(s)
         assert bool(s) == True
@@ -1053,7 +1132,7 @@ class InteropTests(unittest.TestCase):
         assert not empty
 
         c = Character.valueOf(ord("A"))
-        self.assertEqual(['ForeignString', 'str', 'foreign', 'object'], [t.__name__ for t in type(c).mro()])
+        self.assertEqual([polyglot.ForeignString, str, polyglot.ForeignObject, object], type(c).mro())
         assert repr(c) == repr("A")
         assert str(c) == str("A"), str(s)
         assert c
@@ -1152,7 +1231,7 @@ class InteropTests(unittest.TestCase):
 
         assert isinstance(n, list)
         assert list in type(n).mro()
-        self.assertEqual(['ForeignNumberList', 'ForeignNumberType', 'list', 'foreign', 'object'], [t.__name__ for t in type(n).mro()])
+        self.assertEqual(type(n).mro(), [polyglot.ForeignNumberList, polyglot.ForeignNumber, polyglot.ForeignList, list, polyglot.ForeignObject, object])
         assert repr(n) == '42', repr(n)
         assert str(n) == '42', str(n)
         assert n
@@ -1181,6 +1260,121 @@ class InteropTests(unittest.TestCase):
         assert not n > l
         assert l > n
         assert n < l
+
+    def test_foreign_number(self):
+        def wrap(obj):
+            return __graalpython__.foreign_wrapper(obj)
+
+        def assertValueAndType(actual, expected):
+            self.assertEqual(expected, actual)
+            self.assertEqual(type(expected), type(actual))
+
+        n = wrap(42)
+        self.assertEqual(type(n).mro(), [polyglot.ForeignNumber, polyglot.ForeignObject, object])
+        assert repr(n) == '42', repr(n)
+        assert str(n) == '42', str(n)
+        assert n
+
+        assert wrap(2) + wrap(3) == 5
+        assert wrap(2) - wrap(3) == -1
+        assert wrap(2) * wrap(3) == 6
+        assert wrap(7) / wrap(2) == 3.5
+        assert wrap(7) // wrap(2) == 3
+        assert wrap(8) % wrap(3) == 2
+        assert wrap(2) ** wrap(3) == 8
+        assert wrap(1) << wrap(3) == 8
+        assert wrap(8) >> wrap(2) == 2
+
+        # 1 and not 1.0 is unfortunate but interop does not give us a way to know if a non-primitive/wrapped 3.0 is integral or floating point
+        assertValueAndType(wrap(3.0) // wrap(2.0), 1)
+        assertValueAndType(wrap(3.0) // 2.0, 1.0)
+        assertValueAndType(3.0 // wrap(2.0), 1.0)
+
+        assertValueAndType(wrap(3) - 2.0, 1.0)
+        assertValueAndType(3.0 - wrap(2), 1.0)
+
+        assert wrap(0b1110) & wrap(0b0111) == 0b0110
+        assert wrap(0b1110) | wrap(0b0111) == 0b1111
+        assert wrap(0b1110) ^ wrap(0b0111) == 0b1001
+
+        assert wrap((1 << 65) - 2) & wrap(0b111) == 0b110
+        assert wrap((1 << 65) - 2) | wrap(0b111) == ((1 << 65) - 1)
+        assert wrap((1 << 65) - 2) ^ wrap(0b1) == ((1 << 65) - 1)
+
+        assert wrap(42).as_integer_ratio() == (42, 1)
+        assert wrap(0b1010).bit_count() == 2
+        assert wrap(0b1010).bit_length() == 4
+        assert wrap(42).conjugate() == 42
+        assert wrap(42).is_integer()
+        assert wrap(42.0).is_integer()
+        assert not wrap(42.5).is_integer()
+        assert wrap(42.0).to_bytes() == b"*"
+
+        assert ~wrap(42) == -43
+        assert -wrap(42) == -42
+        assert +wrap(42) == 42
+
+        assertValueAndType(abs(wrap(-2)), 2)
+        assertValueAndType(float(wrap(2)), 2.0)
+        assertValueAndType(int(wrap(2.3)), 2)
+        assertValueAndType(math.floor(wrap(2.3)), 2)
+        assertValueAndType(math.ceil(wrap(2.3)), 3)
+        assertValueAndType(math.trunc(wrap(-2.3)), -2)
+        assertValueAndType(round(wrap(2.3)), 2)
+
+        missing_int_methods = set(dir(int)) - set(dir(type(wrap(1))))
+        missing_int_methods = [m for m in missing_int_methods if m.startswith('_') and m != '__getnewargs__']
+        self.assertEqual([], missing_int_methods)
+
+        missing_float_methods = set(dir(float)) - set(dir(type(wrap(1.2))))
+        missing_float_methods = [m for m in missing_float_methods if m.startswith('_') and m not in ('__getnewargs__', '__getformat__')]
+        self.assertEqual([], missing_float_methods)
+
+    def test_foreign_boolean(self):
+        def wrap(obj):
+            return __graalpython__.foreign_wrapper(obj)
+
+        def assertValueAndType(actual, expected):
+            self.assertEqual(expected, actual)
+            self.assertEqual(type(expected), type(actual))
+
+        self.assertEqual(type(wrap(True)).mro(), [polyglot.ForeignBoolean, polyglot.ForeignNumber, polyglot.ForeignObject, object])
+        assert repr(wrap(True)) == 'True'
+        assert repr(wrap(False)) == 'False'
+        assert str(wrap(True)) == 'True'
+        assert str(wrap(False)) == 'False'
+        assert wrap(True)
+        assert not wrap(False)
+
+        assert bool(wrap(True)) is True
+        assert bool(wrap(False)) is False
+
+        assertValueAndType(wrap(True) + wrap(2), 3)
+        assertValueAndType(wrap(False) + wrap(2), 2)
+        assertValueAndType(wrap(2) + wrap(True), 3)
+        assertValueAndType(wrap(2) + wrap(False), 2)
+
+        assertValueAndType(wrap(True) - wrap(2), -1)
+        assertValueAndType(wrap(2) - wrap(True), 1)
+
+        assert wrap(True) & wrap(True) is True
+        assert wrap(True) & wrap(False) is False
+
+        assert wrap(True) | wrap(False) is True
+        assert wrap(False) | wrap(False) is False
+
+        assert wrap(True) ^ wrap(False) is True
+        assert wrap(False) ^ wrap(False) is False
+
+        assertValueAndType(~wrap(True), -2)
+        assertValueAndType(~wrap(False), -1)
+
+        assertValueAndType(float(wrap(True)), 1.0)
+        assertValueAndType(int(wrap(True)), 1)
+
+        missing_bool_methods = set(dir(bool)) - set(dir(type(wrap(True))))
+        missing_bool_methods = [m for m in missing_bool_methods if m.startswith('_') and m != '__getnewargs__']
+        self.assertEqual([], missing_bool_methods)
 
     def test_foreign_repl(self):
         from java.util.logging import LogRecord

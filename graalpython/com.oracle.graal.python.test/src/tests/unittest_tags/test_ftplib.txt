@@ -1,4 +1,4 @@
-test.test_ftplib.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_ftplib.MiscTestCase.test__all__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ftplib.TestFTPClass.test_abort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ftplib.TestFTPClass.test_acct @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_ftplib.TestFTPClass.test_all_errors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

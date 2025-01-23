@@ -313,6 +313,20 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static final LanguageReference<PythonLanguage> REFERENCE = LanguageReference.create(PythonLanguage.class);
 
+    // Should be removed when GR-59720 - allow null location for safepoint is implemented
+    @CompilationFinal public RootNode unavailableSafepointLocation;
+
+    private static final class DummyRootNode extends RootNode {
+        protected DummyRootNode(TruffleLanguage<?> language) {
+            super(language);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return null;
+        }
+    }
+
     /**
      * This assumption will be valid if no context set a trace or profile function at any point.
      * Calling sys.settrace(None) or sys.setprofile(None) will not invalidate it
@@ -534,6 +548,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private synchronized void initializeLanguage() {
         if (!isLanguageInitialized) {
             TpSlots.initializeBuiltinSlots(this);
+            unavailableSafepointLocation = new DummyRootNode(this);
             isLanguageInitialized = true;
         }
     }
@@ -1013,7 +1028,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void disposeThread(PythonContext context, Thread thread) {
-        context.disposeThread(thread);
+        context.disposeThread(thread, false);
     }
 
     public Shape getEmptyShape() {

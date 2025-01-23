@@ -38,9 +38,10 @@
 # SOFTWARE.
 
 import mmap
+import sys
 import tempfile
-from unittest import skipIf
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, RUNS_ON_LLVM
+
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
 
 
 def create_and_map_file():
@@ -49,13 +50,19 @@ def create_and_map_file():
         f.write("hello, world")
     f = open(tmp, "r")
     return mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-    
 
-@skipIf(RUNS_ON_LLVM, "Does not work on Sulong")
+
+def _reference_buffer(args):
+    if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
+        # Cannot get mmap pointer under emulated backend
+        raise OSError
+    return b"hello, world"
+
+
 class TestPyMmap(CPyExtTestCase):
 
     test_buffer = CPyExtFunction(
-        lambda args: b"hello, world",
+        _reference_buffer,
         lambda: (
             (create_and_map_file(),),
         ),
@@ -64,7 +71,7 @@ class TestPyMmap(CPyExtTestCase):
             Py_buffer buf;
             Py_ssize_t len, i;
             char* data = NULL;
-            if (PyObject_GetBuffer(mmapObj, &buf, PyBUF_SIMPLE)) {
+            if (PyObject_GetBuffer(mmapObj, &buf, PyBUF_SIMPLE) < 0) {
                 return NULL;
             }
             len = buf.len;
@@ -84,7 +91,7 @@ class TestPyMmap(CPyExtTestCase):
 
     # Exercises conversion to native and copying from the actual mmap pointer
     test_buffer_memcpy = CPyExtFunction(
-        lambda args: b"hello, world",
+        _reference_buffer,
         lambda: (
             (create_and_map_file(),),
         ),

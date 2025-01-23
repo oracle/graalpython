@@ -329,3 +329,18 @@ class TestDescr(CPyExtTestCase):
         callfunction="wrap_PyDescr_NewClassMethod",
         cmpfunc=unhandled_error_compare
     )
+
+
+def test_class_assignment_managed_subclass():
+    class IntermediateType(CPyExtType("BaseForAssignment")):
+        def __repr__(self):
+            return "intermediate"
+
+    class ChildType(IntermediateType):
+        def __repr__(self):
+            return "child"
+
+    o = ChildType()
+    assert repr(o) == "child"
+    o.__class__ = IntermediateType
+    assert repr(o) == "intermediate"

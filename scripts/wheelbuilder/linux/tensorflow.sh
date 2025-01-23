@@ -47,5 +47,9 @@ curl -L https://github.com/bazelbuild/bazel/releases/download/6.4.0/bazel-6.4.0-
 chmod +x tmp_bazel/bazel
 export PATH=$(pwd)/tmp_bazel/:$PATH
 bazel --version
-pip wheel "tensorflow==$1"
+if [ -n "$1" ]; then
+    pip wheel "tensorflow==$1"
+else
+    pip wheel tensorflow
+fi
 rm -rf tmp_bazel

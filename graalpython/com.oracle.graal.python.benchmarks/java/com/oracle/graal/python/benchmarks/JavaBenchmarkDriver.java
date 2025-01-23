@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,11 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
+/**
+ * Driver that can execute our Python benchmarks via Java embedding. Java version of the Python
+ * benchmark harness. The benchmarks must define Python function entry point named
+ * {@code java_embedded_bench_entrypoint} and this driver executes that as one benchmark iteration.
+ */
 public class JavaBenchmarkDriver extends AbstractLanguageLauncher {
     private static final String LINE = "-------------------------------------------------------------------------------";
     private static final String BENCHMARK_ENTRY_POINT = "java_embedded_bench_entrypoint";

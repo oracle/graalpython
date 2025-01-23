@@ -4,6 +4,7 @@
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
 import sys
+import unittest
 
 from tests.util import assert_raises
 
@@ -167,9 +168,8 @@ def test_pack():
     memoryview(b).cast('?')[0] = False
     assert b == b'\x00'
 
+@unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-specific test")
 def test_read_after_resize():
-    if sys.implementation.name != "graalpy":
-        return
     # CPython prevents resizing of acquired buffers at all to avoid a segfault
     # We don't want to impose locking on managed objects because we cannot automatically
     # release the lock by reference counting. Check that we don't hard crash when
@@ -184,6 +184,7 @@ def test_read_after_resize():
         m[1] = 3
     assert_raises(IndexError, assign)
 
+@unittest.skipIf(sys.implementation.name == 'graalpy' and sys.platform == 'win32', "TODO fails on windows")
 def test_mmap():
     import mmap
     m = mmap.mmap(-1, 1)

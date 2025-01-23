@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,6 +70,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.exception.PythonInterruptedException;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -145,6 +147,8 @@ public final class TopLevelExceptionHandler extends RootNode {
                     return run(frame);
                 } catch (PythonExitException e) {
                     throw e;
+                } catch (PythonThreadKillException e) {
+                    throw new PythonInterruptedException();
                 } catch (AbstractTruffleException e) {
                     assert !PArguments.isPythonFrame(frame);
                     if (e instanceof PException pe && pe.getEscapedException() instanceof PBaseException managedException && getContext().isChildContext() && isSystemExit(managedException)) {
@@ -199,8 +203,8 @@ public final class TopLevelExceptionHandler extends RootNode {
             }
         }
         // Before we leave Python, format the message since outside the context
-        if (e instanceof PException pe && pythonException instanceof PBaseException managedException) {
-            pe.setMessage(managedException.getFormattedMessage());
+        if (e instanceof PException pe) {
+            pe.materializeMessage();
         }
         throw e;
     }

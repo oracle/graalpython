@@ -39,7 +39,6 @@
 
 import sys
 import os
-from posix import *
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -130,8 +129,9 @@ def test_import_error():
 
 
 def test_import_some_star():
-    import posix
-    assert stat == posix.stat
+    g = {}
+    exec("from os import *", g)
+    assert g['stat'] is os.stat
 
 
 def test_imp_fix_co_filename():

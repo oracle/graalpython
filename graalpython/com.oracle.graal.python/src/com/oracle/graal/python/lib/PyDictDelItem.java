@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,11 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -51,7 +52,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent to use for PyDict_DelItem and PyDict_DelItemString functions available in CPython.
@@ -62,33 +62,15 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline
 @GenerateCached(false)
 public abstract class PyDictDelItem extends Node {
-    // Note: for now this simply delegates to HashingStorageDelItem, but in the future, this should,
-    // unlike HashingStorageDelItem, also handle native subclasses of dict
-
-    public final void execute(Node inliningTarget, PDict dict, TruffleString key) {
-        execute(null, inliningTarget, dict, key);
-    }
-
-    public abstract void execute(Frame frame, Node inliningTarget, PDict dict, TruffleString key);
 
     public abstract void execute(Frame frame, Node inliningTarget, PDict dict, Object key);
 
-    // We never need a frame for reading string keys
     @Specialization
-    static void delItemWithStringKey(Node inliningTarget, @SuppressWarnings("unused") PDict dict, TruffleString key,
-                    @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
-        delItem.execute(inliningTarget, dict.getDictStorage(), key, dict);
-    }
-
-    @Specialization(replaces = "delItemWithStringKey")
-    static void delItemCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PDict dict, Object key,
-                    @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
-        delItem.execute(frame, inliningTarget, dict.getDictStorage(), key, dict);
-    }
-
-    @Specialization(replaces = "delItemCached")
-    static void delItem(Node inliningTarget, PDict dict, Object key,
-                    @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
-        delItem.execute(null, inliningTarget, dict.getDictStorage(), key, dict);
+    static void delItem(VirtualFrame frame, Node inliningTarget, PDict dict, Object key,
+                    @Cached HashingStorageDelItem delItem,
+                    @Cached PRaiseNode.Lazy raiseNode) {
+        if (!delItem.execute(frame, inliningTarget, dict.getDictStorage(), key, dict)) {
+            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, new Object[]{key});
+        }
     }
 }

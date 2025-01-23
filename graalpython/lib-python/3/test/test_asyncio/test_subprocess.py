@@ -226,7 +226,9 @@ class SubprocessMixin:
             self.assertIsInstance(returncode, int)
             # expect 1 but sometimes get 0
         else:
-            self.assertEqual(-signal.SIGTERM, returncode)
+            # GraalPy change: JVM exits with 143 on SIGTERM
+            exitcodes = [-signal.SIGTERM, 128 + signal.SIGTERM]
+            self.assertIn(returncode, exitcodes)
 
     @unittest.skipIf(sys.platform == 'win32', "Don't have SIGHUP")
     def test_send_signal(self):

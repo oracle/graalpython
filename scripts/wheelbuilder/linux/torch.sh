@@ -43,4 +43,8 @@ if command -v manylinux-interpreters 2>&1 >/dev/null; then
 fi
 export MAX_JOBS=4
 export BUILD_TEST=0
-pip wheel "torch==$1"
+if [ -n "$1" ]; then
+    pip wheel "torch==$1"
+else
+    pip wheel torch
+fi

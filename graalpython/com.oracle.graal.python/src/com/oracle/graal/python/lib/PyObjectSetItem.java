@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,18 +42,20 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode.IndexForSqSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -70,7 +72,7 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
-@ImportStatic({SpecialMethodSlot.class, PGuards.class})
+@ImportStatic(PGuards.class)
 public abstract class PyObjectSetItem extends Node {
     public static void executeUncached(Frame frame, Object container, Object index, Object value) {
         PyObjectSetItemNodeGen.getUncached().execute(frame, null, container, index, value);
@@ -88,22 +90,52 @@ public abstract class PyObjectSetItem extends Node {
 
     @Specialization(guards = "isBuiltinList(object)")
     static void doList(VirtualFrame frame, PList object, Object key, Object value,
-                    @Cached(inline = false) ListBuiltins.SetItemNode setItemNode) {
-        setItemNode.execute(frame, object, key, value);
+                    @Cached(inline = false) ListBuiltins.SetSubscriptNode setItemNode) {
+        setItemNode.executeVoid(frame, object, key, value);
     }
 
     @InliningCutoff
     @Specialization(replaces = "doList")
-    static void doWithFrame(Frame frame, Node inliningTarget, Object primary, Object index, Object value,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "SetItem", inline = false) LookupSpecialMethodSlotNode lookupSetitem,
-                    @Cached PRaiseNode.Lazy raise,
-                    @Cached(inline = false) CallTernaryMethodNode callSetitem) {
-        Object setitem = lookupSetitem.execute(frame, getClassNode.execute(inliningTarget, primary), primary);
-        if (setitem == PNone.NO_VALUE) {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
+    static void doGeneric(VirtualFrame frame, Node inliningTarget, Object object, Object key, Object value,
+                    @Cached GetObjectSlotsNode getSlotsNode,
+                    @Cached PyObjectSetItemGeneric genericNode) {
+        TpSlots slots = getSlotsNode.execute(inliningTarget, object);
+        genericNode.execute(frame, inliningTarget, object, slots, key, value);
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class PyObjectSetItemGeneric extends Node {
+        public abstract void execute(Frame frame, Node inliningTarget, Object object, TpSlots objectKlassSlots, Object key, Object value);
+
+        @Specialization(guards = "slots.mp_ass_subscript() != null")
+        static void doMapping(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, Object key, Object value,
+                        @Cached CallSlotMpAssSubscriptNode callNode) {
+            callNode.execute(frame, inliningTarget, slots.mp_ass_subscript(), object, key, value);
         }
-        callSetitem.execute(frame, setitem, primary, index, value);
+
+        @Specialization(guards = {"slots.mp_ass_subscript() == null", "slots.sq_ass_item() != null", "key >= 0"})
+        static void doSequenceFastPath(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, int key, Object value,
+                        @Exclusive @Cached CallSlotSqAssItemNode callSqItem) {
+            callSqItem.execute(frame, inliningTarget, slots.sq_ass_item(), object, key, value);
+        }
+
+        @Specialization(guards = {"slots.mp_ass_subscript() == null", "slots.sq_ass_item() != null"}, replaces = "doSequenceFastPath")
+        @InliningCutoff
+        static void doSequence(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, Object key, Object value,
+                        @Cached IndexForSqSlot indexForSqSlot,
+                        @Exclusive @Cached CallSlotSqAssItemNode callSqItem) {
+            int index = indexForSqSlot.execute(frame, inliningTarget, object, slots, key);
+            callSqItem.execute(frame, inliningTarget, slots.sq_ass_item(), object, index, value);
+        }
+
+        @Fallback
+        @InliningCutoff
+        static void error(Object object, @SuppressWarnings("unused") TpSlots slots, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, object);
+        }
     }
 
     @NeverDefault

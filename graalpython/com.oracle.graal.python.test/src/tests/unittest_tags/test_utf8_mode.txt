@@ -1,5 +1,5 @@
 test.test_utf8_mode.UTF8ModeTests.test_cmd_line @ darwin-arm64,darwin-x86_64
 test.test_utf8_mode.UTF8ModeTests.test_filesystemencoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_utf8_mode.UTF8ModeTests.test_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_utf8_mode.UTF8ModeTests.test_io_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_utf8_mode.UTF8ModeTests.test_io @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_utf8_mode.UTF8ModeTests.test_io_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_utf8_mode.UTF8ModeTests.test_pyio_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

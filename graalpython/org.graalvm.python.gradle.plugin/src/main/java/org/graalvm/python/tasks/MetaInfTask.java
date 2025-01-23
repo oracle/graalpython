@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,9 +44,14 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleScriptException;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 import java.io.IOException;
+
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 
 public abstract class MetaInfTask extends DefaultTask {
 
@@ -55,10 +60,18 @@ public abstract class MetaInfTask extends DefaultTask {
     @OutputDirectory
     public abstract DirectoryProperty getManifestOutputDir();
 
+    /**
+     * The directory where the VFS was generated within Java resources.
+     */
+    @Input
+    @Optional
+    public abstract Property<String> getResourceDirectory();
+
     @TaskAction
     public void exec() {
+        String vfsRoot = getResourceDirectory().getOrElse(VFS_ROOT);
         try {
-            VFSUtils.writeNativeImageConfig(getManifestOutputDir().get().getAsFile().toPath(), GRAALPY_GRADLE_PLUGIN_ARTIFACT_ID);
+            VFSUtils.writeNativeImageConfig(getManifestOutputDir().get().getAsFile().toPath(), GRAALPY_GRADLE_PLUGIN_ARTIFACT_ID, vfsRoot);
         } catch (IOException e) {
             throw new GradleScriptException("failed to create native image configuration files", e);
         }

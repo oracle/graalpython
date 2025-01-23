@@ -89,7 +89,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         super.setAttribute(name, value);
     }
 
-    public final PythonBuiltinClassType getType() {
+    public PythonBuiltinClassType getType() {
         return type;
     }
 

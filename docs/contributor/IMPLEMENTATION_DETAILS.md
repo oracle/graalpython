@@ -85,12 +85,11 @@ and holding on to the last (if any) in a local variable.
 Some PyPI packages contain code that is not compatible with GraalPy.
 To overcome this limitation and support such packages, GraalPy contains
 patches for some popular packages. The patches are applied to packages
-installed via GraalPy specific utility `ginstall` and also to packages
 installed via `pip`. This is achieved by patching `pip` code.
 
 The patches are regular POSIX `patch` command compatible diffs located in
-`lib-graalpython/patches`. Check out the directory structure and metadate.toml
-files to get an idea of how rules are set for patches to be applied.
+`lib-graalpython/patches`. The directory has a `README.md` file describing
+how the patches are applied.
 
 ## The GIL
 
@@ -259,8 +258,9 @@ until Java GC runs we do not know if they are garbage or not.
 * We cannot traverse the managed objects: since we don't do refcounting on the managed
 side, we cannot traverse them and decrement refcounts to see if there is a cycle.
 
-The high level solution is that when we see a "dead" cycle going through a managed object
-(i.e., cycle not referenced by any native object from the "outside" of the collected set),
+The high level solution is that when we see a "dead" cycle going through an object with a managed reference,
+(i.e., cycle not referenced by any native object from the "outside" of the collected set,
+which may be, however, referenced from managed),
 we fully replicate the object graphs (and the cycle) on the managed side (refcounts of native objects
 in the cycle, which were not referenced from managed yet, will get new `NativeObjectReference`
 created and refcount incremented by `MANAGED_REFCNT`). Managed objects already refer
@@ -268,7 +268,7 @@ to the `PythonAbstractNativeObject` wrappers of the native objects (e.g., some P
 with managed storage), but we also make the native wrappers refer to whatever their referents
 are on the Java side (we use `tp_traverse` to find their referents).
 
-Then we make the managed objects in the cycle only weakly referenced on the Java side.
+As part of that, we make the objects in the cycle only weakly referenced on the Java side.
 One can think about this as pushing the baseline reference count when the
 object is eligible for being GC'ed and thus freed. Normally when the object has
 `refcount > MANAGED_REFCNT` we keep it alive with a strong reference assuming that
@@ -276,8 +276,21 @@ there are some native references to it. In this case, we know that all the nativ
 references to that object are part of potentially dead cycle, and we do not
 count them into this limit. Let us call this limit *weak to strong limit*.
 
-After this, if the managed objects are garbage, eventually Java GC will collect them
-together with the whole cycle.
+After this, if the objects on the managed side (the managed objects or `PythonAbstractNativeObject`
+mirrors of native objects) are garbage, eventually Java GC will collect them.
+This will push their references to the reference queue. When polled from the queue (`CApiTransitions#pollReferenceQueue`),
+we decrement the refcount by `MANAGED_REFCNT` (no managed references anymore) and
+if their refcount falls to `0`, they are freed - as part of that, we call the
+`tp_clear` slot for native objects, which should call `Py_CLEAR` for their references,
+which does `Py_DecRef` - eventually all objects in the cycle should fall to refcount `0`.
+
+*Example: managed object `o1` has refcount `MANAGED_REFCNT+1`: `MANAGED_REFCNT` representing all managed
+references, and `+1` for some native object `o2` referencing it. Native object `o2` has
+refcount `MANAGED_REFCNT`, because it is referenced only from managed (from `o1`).
+Both `o1` and `o2` form a cycle that was already transformed to managed during cycle GC.
+The reference queue processing will subtract `MANAGED_REFCNT` from `o1`'s refcount making it `1`.
+Then the reference queue processing will subtract `MANAGED_REFCNT` from `o2`'s refcount making it fall
+to `0` - this triggers the `tp_clear` of `o2`, which should subtract the final `1` from `o1`'s refcount.*
 
 If some of the managed objects are not garbage, and they passed back to native code,
 the native code can then access and resurrect the whole cycle. W.r.t. the refcounts
@@ -289,3 +302,19 @@ checking the same `MANAGED_REFCNT` limit for all objects, the subsequent `Py_Dec
 call for this object will not detect that the reference should be made weak again!
 However, this is OK, it only prolongs the collection: we will make it weak again in
 the next run of the cycle GC on the native side.
+
+## C extension copying
+
+On Linux, Python native extensions expect to lookup Python C API functions in the global namespace and specify no explicit dependency on any libpython.
+To isolate them, we copy them with a new name, change their `SONAME`, add a `DT_NEEDED` dependency on a copy of our libpython shared object, and finally load them with `RTLD_LOCAL`.
+The ELF format is not really meant to allow such modifications after the fact.
+The most widely used tool to do so, [patchelf](https://github.com/NixOS/patchelf), still sees regular bugfixes and can corrupt ELF files.
+
+On Windows there is no global namespace so native extensions already have a dependency on our libpython DLL.
+We copy them and just change the dependency to point to the context-local copy of libpython rather than the global one.
+
+On macOS, while two-level namespaces exist, Python extensions historically use `-undefined dynamic_lookup` where they (just like in Linux) expect to find C API functions in any loaded image.
+We have to apply a similar workaround as on Linux, copy to a new name, change the `LC_ID_DYLIB` to that name, and add a `LC_LOAD_DYLIB` section to make the linker load the symbols from our libpython.
+This is currently not fully implemented.
+
+Note that any code signatures are invalidated by this process.

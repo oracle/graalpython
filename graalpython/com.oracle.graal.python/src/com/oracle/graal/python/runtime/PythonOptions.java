@@ -285,9 +285,6 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Force to automatically import site.py module.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> ForceImportSite = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Set-up library search paths to include GraalPy's LLVM toolchain library directories.") //
-    public static final OptionKey<Boolean> SetupLLVMLibraryPaths = new OptionKey<>(false);
-
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "This option is set by the Python launcher to tell the language it can print exceptions directly", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
@@ -348,10 +345,15 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Forces AST sharing for inner contexts.") //
     public static final OptionKey<Boolean> ForceSharingForInnerContexts = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.EXPERT, help = "Whether C extension modules should be loaded as native code (as opposed to LLVM bitcode execution).") //
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether C extension modules should be loaded as native code (as opposed to LLVM bitcode execution).") //
     public static final OptionKey<Boolean> NativeModules = new OptionKey<>(true);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether the Python GC should be enabled (default) or not.") //
+    @Option(category = OptionCategory.USER, stability = OptionStability.EXPERIMENTAL, usageSyntax = "true|false", help = "Whether the context should isolate its loading of C extension modules. " +
+                    "This allows more than one context to access C extensions. " +
+                    "Note that all contexts in the operating system process must set this option to true to cooperatively allow this feature to work.") //
+    public static final OptionKey<Boolean> IsolateNativeModules = new OptionKey<>(false);
+
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Whether the Python GC should be enabled (default) or not.") //
     public static final OptionKey<Boolean> PythonGC = new OptionKey<>(true);
 
     @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "Whether the background GC task should be enabled (default) or not.") //
@@ -369,7 +371,7 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.USER, usageSyntax = "true|false", help = "Emulate some Jython features that can cause performance degradation", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
     public static final OptionKey<Boolean> TraceNativeMemory = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "If native memory tracing is enabled, also capture stack.") //

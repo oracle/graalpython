@@ -45,10 +45,10 @@ test.test_imaplib.NewIMAPTests.test_valid_authentication_bytes @ darwin-arm64,da
 test.test_imaplib.NewIMAPTests.test_valid_authentication_plain_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPTests.test_with_statement @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.NewIMAPTests.test_with_statement_logout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_imaplib.TestImaplib.test_Internaldate2tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_imaplib.TestImaplib.test_Internaldate2tuple_issue10941 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_imaplib.TestImaplib.test_Internaldate2tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_imaplib.TestImaplib.test_Internaldate2tuple_issue10941 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_imaplib.TestImaplib.test_imap4_host_default_value @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_imaplib.TestImaplib.test_that_Time2Internaldate_returns_a_result @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_imaplib.TestImaplib.test_that_Time2Internaldate_returns_a_result @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_imaplib.ThreadedNetworkedTests.test_aborted_authentication @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.ThreadedNetworkedTests.test_bad_auth_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_imaplib.ThreadedNetworkedTests.test_bracket_flags @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

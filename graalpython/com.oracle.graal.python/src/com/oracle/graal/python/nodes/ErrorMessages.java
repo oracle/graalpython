@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,11 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.builtins.PythonOS;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.StringLiterals.J_MAX_CAPI_COPIES;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
@@ -351,7 +352,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
     public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
     public static final TruffleString S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S = tsLiteral("%s() got multiple sub-patterns for attribute '%s'");
-    public static final TruffleString S_PAREN_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
+    public static final TruffleString S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG = tsLiteral("%s() got multiple values for argument '%s'");
     public static final TruffleString S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = tsLiteral("%s() got some positional-only arguments passed as keyword arguments: '%s'");
@@ -566,7 +567,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NUMBER_IS_REQUIRED = tsLiteral("a number is required");
     public static final TruffleString NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = tsLiteral("number %s cannot fit into index-sized integer");
     public static final TruffleString OBJ_INDEX_MUST_BE_INT_OR_SLICES = tsLiteral("%s indices must be integers or slices, not %p");
-    public static final TruffleString OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = tsLiteral("'%p' object cannot be interpreted as an int");
+    public static final TruffleString OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = tsLiteral("'%p' object cannot be interpreted as an integer");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_INDEXING = tsLiteral("'%p' object does not support indexing");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = tsLiteral("'%s' object does not support item assignment");
     public static final TruffleString OBJ_DOES_NOT_SUPPORT_ITEM_DELETION = tsLiteral("'%s' object does not support item deletion");
@@ -689,7 +690,6 @@ public abstract class ErrorMessages {
     public static final TruffleString STATE_IS_NOT_A_DICT = tsLiteral("state is not a dictionary");
     public static final TruffleString STATE_VECTOR_INVALID = tsLiteral("state vector invalid.");
     public static final TruffleString STATE_VECTOR_MUST_BE_A_TUPLE = tsLiteral("state vector must be a tuple");
-    public static final TruffleString STEP_1_NOT_SUPPORTED = tsLiteral("step != 1 not supported");
     public static final TruffleString STEP_FOR_ISLICE_MUST_BE = tsLiteral("Step for islice() must be a positive integer or None.");
     public static final TruffleString STRING_ARG_WO_ENCODING = tsLiteral("string argument without an encoding");
     public static final TruffleString STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII = tsLiteral("string argument should contain only ASCII characters");
@@ -808,6 +808,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT = tsLiteral("Alternate form (#) not allowed with integer format specifier 'c'");
     public static final TruffleString ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT = tsLiteral("Alternate form (#) not allowed in string format specifier");
     public static final TruffleString NATIVE_ACCESS_NOT_ALLOWED = tsLiteral("Cannot run any C extensions because native access is not allowed.");
+    public static final TruffleString NATIVE_ACCESS_NOT_INITIALIZED_FOR_MULTI_CONTEXT = tsLiteral("Failed to initialize C API for multiple contexts.");
     public static final TruffleString CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT = tsLiteral("can't convert negative value to unsigned int");
     public static final TruffleString SEND_NON_NONE_TO_UNSTARTED_GENERATOR = tsLiteral("can't send non-None value to a just-started generator");
     public static final TruffleString UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT = tsLiteral("unsupported format string passed to %p.__format__");
@@ -984,6 +985,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET = tsLiteral("casting a native int object is not implemented yet");
     public static final TruffleString PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED = tsLiteral("Putting non-module objects in sys.modules is not supported");
     public static final TruffleString GETTING_POLYGLOT_STORAGE_FOR_NATIVE_STORAGE_NOT_IMPLEMENTED = tsLiteral("Getting polyglot storage for native storage not implemented");
+    public static final TruffleString P_OBJECT_DOESNT_SUPPORT_SLICE_ASSIGNMENT = tsLiteral("%p object doesn't support slice assignment");
+    public static final TruffleString P_OBJECT_DOESNT_SUPPORT_SLICE_DELETION = tsLiteral("%p object doesn't support slice deletion");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1031,6 +1034,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL_AEXIT = tsLiteral(
                     "'%N' object does not support the asynchronous context manager protocol (missed __aexit__ method)");
     public static final TruffleString IOCTL_STRING_ARG_TOO_LONG = tsLiteral("ioctl string arg too long");
+    public static final TruffleString S_NOT_SUPPORTED_ON_JAVA_POSIX_BACKEND = tsLiteral("'%s' not supported when using 'java' posix backend");
 
     // mmap
     public static final TruffleString MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = tsLiteral("memory mapped length must be positive");
@@ -1042,6 +1046,14 @@ public abstract class ErrorMessages {
     public static final TruffleString TOO_MANY_REMAINING_BYTES_TO_BE_STORED = tsLiteral("There are too many remaining bytes to be stored in a bytes object.");
     public static final TruffleString MMAP_CANNOT_MODIFY_READONLY_MEMORY = tsLiteral("mmap can't modify a readonly memory map.");
     public static final TruffleString DATA_OUT_OF_RANGE = tsLiteral("data out of range");
+    public static final TruffleString MMAP_CLOSED_OR_INVALID = tsLiteral("mmap closed or invalid");
+    public static final TruffleString MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION = tsLiteral("mmap object doesn't support item deletion");
+    public static final TruffleString MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION = tsLiteral("mmap object doesn't support slice deletion");
+    public static final TruffleString MMAP_ASSIGNMENT_MUST_BE_LENGTH_1_BYTES = tsLiteral("mmap assignment must be length-1 bytes()");
+    public static final TruffleString MMAP_INDICES_MUST_BE_INTEGER = tsLiteral("mmap indices must be integer");
+    public static final TruffleString MMAP_ITEM_VALUE_MUST_BE_AN_INT = tsLiteral("mmap item value must be an int");
+    public static final TruffleString MMAP_ITEM_VALUE_MUST_BE_IN_RANGE = tsLiteral("mmap item value must be in range(0, 256)");
+    public static final TruffleString MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE = tsLiteral("mmap slice assignment is wrong size");
 
     // zlib errors
     public static final TruffleString WHILE_FLUSHING = tsLiteral("while flushing");
@@ -1182,6 +1194,7 @@ public abstract class ErrorMessages {
 
     // ctypes
     public static final TruffleString PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED = tsLiteral("Passing structs by value is not supported on NFI backend");
+    public static final TruffleString RETURNING_STRUCT_BY_VALUE_NOT_SUPPORTED = tsLiteral("ctypes: returning struct by value is not supported.");
     public static final TruffleString MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY = tsLiteral("Memoryview cannot be converted to native memory");
     public static final TruffleString CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE = tsLiteral("Cannot convert Object pointer to native");
     public static final TruffleString CANNOT_APPLY_OFFSET_TO_AN_OBJECT_POINTER = tsLiteral("Cannot apply offset to an object pointer");
@@ -1664,4 +1677,15 @@ public abstract class ErrorMessages {
     public static final TruffleString STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0 = tsLiteral("cannot iteratively unpack with a struct of length 0");
     public static final TruffleString STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES = tsLiteral("iterative unpacking requires a buffer of a multiple of %d bytes");
     public static final TruffleString CANNOT_CREATE_P_OBJECTS = tsLiteral("Cannot create %p objects");
+    public static final TruffleString ARROW_ARRAY_ALREADY_RELEASED = tsLiteral("Cannot release already released ArrowArray");
+    public static final TruffleString ARROW_SCHEMA_ALREADY_RELEASED = tsLiteral("Cannot release already released ArrowSchema");
+    public static final TruffleString CAPI_ISOLATION_CAPPED_AT_D = tsLiteral(
+                    "There is no available slot for C API isolation. The current limit for concurrent Python contexts accessing the Python C API is %d. This can be changed with the" +
+                                    J_MAX_CAPI_COPIES + " System property.");
+    public static final TruffleString SYS_PREFIX_MUST_BE_STRING_NOT_P_FOR_CAPI_ISOLATION = tsLiteral(
+                    "The sys.prefix must be a str, not '%p' when the `IsolateNativeModules' option is used, because it is the base path for searching the relocated C API. " +
+                                    "Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
+    public static final TruffleString SYS_PREFIX_MUST_POINT_TO_A_VENV_FOR_CAPI_ISOLATION = tsLiteral(
+                    "The sys.prefix must point to a venv, not be identical to sys.base_prefix when the `IsolateNativeModules' option is used, because it is the base path for searching and creating the relocated C API and extension modules. " +
+                                    "Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
 }

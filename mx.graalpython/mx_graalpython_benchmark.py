@@ -397,7 +397,7 @@ class GraalPythonVmBase(GuestVm):
         if isinstance(self._extra_vm_args, list):
             vm_args += self._extra_vm_args
         vm_args += [
-            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
+            "-Dorg.graalvm.language.python.home=%s" % mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output(),
             self.launcher_class(),
         ]
         for a in args[:]:
@@ -928,41 +928,6 @@ class PythonJavaEmbeddingBenchmarkSuite(PythonBaseBenchmarkSuite):
                 for suite_name, suite_info in benchmarks.items()]
 
 
-class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
-    def get_vm_registry(self):
-        return java_vm_registry
-
-    def get_bench_name(self, benchmarks):
-        return benchmarks[0]
-
-    def get_arg(self, bmSuiteArgs, bench_name):
-        return " ".join(self._benchmarks[bench_name][1:] + bmSuiteArgs)
-
-    def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
-        vmArgs = self.vmArgs(bmSuiteArgs)
-        dists = ["GRAALPYTHON", "TRUFFLE_NFI", "GRAALPYTHON-LAUNCHER"]
-        if mx.suite("tools", fatalIfMissing=False):
-            dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
-        if mx.suite("sulong", fatalIfMissing=False):
-            dists.append('SULONG_NATIVE')
-
-        vmArgs += [
-            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
-        ]
-        vmArgs += mx.get_runtime_jvm_args(dists + ['com.oracle.graal.python.benchmarks'], jdk=mx.get_jdk())
-        jmh_entry = ["com.oracle.graal.python.benchmarks.interop.BenchRunner"]
-        runArgs = self.runArgs(bmSuiteArgs)
-
-        bench_name = benchmarks[0]
-        bench_args = self._benchmarks[bench_name]
-        return vmArgs + jmh_entry + runArgs + [bench_name] + bench_args
-
-    @classmethod
-    def get_benchmark_suites(cls, benchmarks):
-        assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
-        return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
-
-
 class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = self.get_bench_name(benchmarks)
@@ -1033,7 +998,7 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
             dists.append('SULONG_NATIVE')
 
         vmArgs += [
-            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
+            "-Dorg.graalvm.language.python.home=%s" % mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output(),
         ]
         vmArgs += mx.get_runtime_jvm_args(dists + ['com.oracle.graal.python.benchmarks'], jdk=mx.get_jdk())
         jmh_entry = ["com.oracle.graal.python.benchmarks.parser.ParserBenchRunner"]
@@ -1050,3 +1015,19 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
     def get_benchmark_suites(cls, benchmarks):
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
         return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
+
+class PythonJMHDistMxBenchmarkSuite(mx_benchmark.JMHDistBenchmarkSuite):
+    def name(self):
+        return "python-jmh"
+
+    def group(self):
+        return "Graal"
+
+    def subgroup(self):
+        return "graalpython"
+
+    def filter_distribution(self, dist):
+        # Note: for some reason the GRAALPYTHON_BENCH is filtered out by the base class,
+        # but by overriding this method we fix that and also get the nice property
+        # that one cannot accidentally run some other JMH benchmarks via this class
+        return dist.name == 'GRAALPYTHON_BENCH'

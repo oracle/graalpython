@@ -1,3 +1,3 @@
-test.test_errno.ErrnoAttributeTests.test_for_improper_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_errno.ErrnoAttributeTests.test_using_errorcode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_errno.ErrorcodeTests.test_attributes_in_errorcode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_errno.ErrnoAttributeTests.test_for_improper_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_errno.ErrnoAttributeTests.test_using_errorcode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_errno.ErrorcodeTests.test_attributes_in_errorcode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

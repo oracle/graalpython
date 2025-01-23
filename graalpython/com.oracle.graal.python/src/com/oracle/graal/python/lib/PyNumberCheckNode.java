@@ -66,6 +66,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PyNumberCheckNode extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object);
 
+    public static boolean executeUncached(Object object) {
+        return PyNumberCheckNodeGen.getUncached().execute(null, object);
+    }
+
     @Specialization
     static boolean doString(@SuppressWarnings("unused") TruffleString object) {
         return false;

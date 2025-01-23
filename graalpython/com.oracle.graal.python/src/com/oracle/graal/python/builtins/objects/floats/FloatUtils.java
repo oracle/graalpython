@@ -239,7 +239,11 @@ public final class FloatUtils {
     public static double parseValidString(String substr) {
         double d = Double.parseDouble(substr);
         if (!Double.isFinite(d)) {
-            d = new BigDecimal(substr).doubleValue();
+            try {
+                d = new BigDecimal(substr).doubleValue();
+            } catch (NumberFormatException e) {
+                // Can happen when the number is too large, just let it return +-infinity then
+            }
         }
         return d;
     }

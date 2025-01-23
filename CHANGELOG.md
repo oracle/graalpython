@@ -9,13 +9,25 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * When calling a method on a foreign object in Python code, Python methods are now prioritized over foreign members.
 * Added `polyglot.register_interop_type` and `@polyglot.interop_type` to define custom Python methods for a given foreign class/type. See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Interoperability.md#the-interoperability-extension-api) for more information.
 * Foreign objects are now given a Python class corresponding to their interop traits.
-  * Foreign lists now inherit from Python `list`, foreign dictionaries from `dict`, foreign strings from `str`, foreign iterators from `iterator`, foreign exceptions from `BaseException`, foreign numbers from `ForeignNumberType` and foreign none/null from `NoneType`.
+  * Foreign lists now inherit from Python `list`, foreign dictionaries from `dict`, foreign strings from `str`, foreign iterators from `iterator`, foreign exceptions from `BaseException`, foreign numbers from `polyglot.ForeignNumber`, foreign booleans from `polyglot.ForeignBoolean`, and foreign null values from `NoneType`.
   * This means all Python methods of these types are available on the corresponding foreign objects, which behave as close as possible as if they were Python objects.
   * See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Interoperability.md#interacting-with-foreign-objects-from-python-scripts) for more information.
 * Remove support for running with Sulong managed both in embeddings as well as through the `graalpy-managed` launcher.
 * Rewrite wheelbuilder to be easier to use and contribute to. This version is now the same we run internally to build publishable wheels for some platforms we support, so the community can build the same wheels on their own hardware easily if desired.
 * `pip` is now able to fetch newer versions of GraalPy patches for third-party packages from `graalpython` GitHub repository, allowing us to add new patches to released versions.
   * The patch repository can be overridden using `PIP_GRAALPY_PATCHES_URL` environment variable, which can point to a local path or a URL. It can be disabled by setting it to an empty string.
+* Added `GRAALPY_VERSION` and `GRAALPY_VERSION_NUM` C macros.
+* Remove `ginstall` module. It hasn't been necessary for several releases. Please, use `pip install`.
+* Remove experimental `SetupLLVMLibraryPaths` option. It was used to pre-set library path for LLVM toolchain's libc++. The path can still be set manually.
+* Added `GRAALPY_VERSION` and `GRAALPY_VERSION_NUM` C macros
+* Added experimental `python.IsolateNativeModules` option to allow loading native extensions multiple times in different contexts. See [the documentation](https://github.com/oracle/graalpython/blob/master/docs/user/Native-Extensions.md) for more information.
+* GraalPy Embedding:
+  * Introduced new types: KeywordArguments and PositionalArguments, in the GraalPy Embedding library (org.graalvm.python:python-embedding), to support directly passing [keyword and positional arguments](https://docs.python.org/3/glossary.html#term-argument) from Java to Python.
+  * Deprecated the org.graalvm.python.embedding.util API package and added new equivalents to org.graalvm.python.embedding
+  * Maven and Gradle plugins do not embed Python home into the generated virtual filesystem. Instead, the handling of language home for any Truffle language, including GraalPy, for the GraalVM Native Image build can be controlled by new Native Image options +H:IncludeLanguageResources and +H:CopyLanguageResources. By default, the whole Python home is embedded into the native executable. In the case of JVM deployment, the language home is embedded in the GraalPy artifacts at Mavencentral.
+  * Removed deprecated methods in VirtualFileSystem
+* No longer ship `graalpy_virtualenv` virtualenv plugin within the standard library. Instead, inject the dependency on it into virtualenv, so that it gets installed only when necessary and can be uninstalled.
+* Rename `graalpy_virtualenv` to `graalpy_virtualenv_seeder`.
 
 ## Version 24.1.0
 * GraalPy is now considered stable for pure Python workloads. While many workloads involving native extension modules work, we continue to consider them experimental. You can use the command-line option `--python.WarnExperimentalFeatures` to enable warnings for such modules at runtime. In Java embeddings the warnings are enabled by default and you can suppress them by setting the context option 'python.WarnExperimentalFeatures' to 'false'.

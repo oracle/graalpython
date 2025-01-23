@@ -25,6 +25,7 @@ selector = [
     # trying to avoid transient issues there, not sure about the reason
     'test_unittest',
     'test_logging',
+    'test_zipfile',
 ]
 
 [[test_rules]]

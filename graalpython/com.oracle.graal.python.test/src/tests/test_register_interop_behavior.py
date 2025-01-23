@@ -252,7 +252,7 @@ if EXECUTE_TESTS:
             self.assertEqual(readerClass.__name__, "Java_java.io.BufferedReader_generated")
 
             __graalpython__.clear_interop_type_registry()
-            self.assertEqual(type(reader).__name__, "foreign")
+            self.assertEqual(type(reader).__name__, "ForeignObject")
 
 
     from java.lang import Object

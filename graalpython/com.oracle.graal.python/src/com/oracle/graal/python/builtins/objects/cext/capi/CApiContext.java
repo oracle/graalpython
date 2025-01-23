@@ -47,26 +47,32 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
-import java.nio.file.LinkOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
+import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -91,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -103,17 +110,21 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Function;
+import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
@@ -123,11 +134,13 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -143,11 +156,14 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 import sun.misc.Unsafe;
 
 public final class CApiContext extends CExtContext {
+    private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
+    private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
 
     public static final String LOGGER_CAPI_NAME = "capi";
 
@@ -228,6 +244,71 @@ public final class CApiContext extends CExtContext {
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
 
+    /**
+     * A simple helper object that just remembers the name and the path of the original module spec
+     * object and also keeps a reference to it. This should avoid redundant attribute reads.
+     */
+    @ValueType
+    public static final class ModuleSpec {
+        public final TruffleString name;
+        public final TruffleString path;
+        public final Object originalModuleSpec;
+        private TruffleString encodedName;
+        private boolean ascii;
+
+        public ModuleSpec(TruffleString name, TruffleString path, Object originalModuleSpec) {
+            this.name = name;
+            this.path = path;
+            this.originalModuleSpec = originalModuleSpec;
+        }
+
+        /**
+         * Get the variable part of a module's export symbol name. For non-ASCII-named modules, the
+         * name is encoded as per PEP 489. The hook_prefix pointer is set to either
+         * ascii_only_prefix or nonascii_prefix, as appropriate.
+         */
+        @TruffleBoundary
+        TruffleString getEncodedName() {
+            if (encodedName != null) {
+                return encodedName;
+            }
+
+            // Get the short name (substring after last dot)
+            TruffleString basename = getBaseName(name);
+
+            boolean canEncode = canEncode(basename);
+
+            if (canEncode) {
+                ascii = true;
+            } else {
+                ascii = false;
+                try {
+                    basename = TruffleString.fromJavaStringUncached(Punycode.encode(basename.toJavaStringUncached(), null).toString(), PythonUtils.TS_ENCODING);
+                } catch (StringPrepParseException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+
+            // replace '-' by '_'; note: this is fast and does not use regex
+            return (encodedName = StringNodes.StringReplaceNode.getUncached().execute(basename, T_DASH, T_UNDERSCORE, -1));
+        }
+
+        @TruffleBoundary
+        private static boolean canEncode(TruffleString basename) {
+            return TruffleString.GetCodeRangeNode.getUncached().execute(basename, PythonUtils.TS_ENCODING) == CodeRange.ASCII;
+        }
+
+        @TruffleBoundary
+        public TruffleString getInitFunctionName() {
+            /*
+             * n.b.: 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii'
+             * is queried
+             */
+            TruffleString s = getEncodedName();
+            return StringUtils.cat((ascii ? T_PY_INIT : T_PY_INIT_U), s);
+        }
+    }
+
     /*
      * The key is the executable instance, i.e., an instance of a class that exports the
      * InteropLibrary.
@@ -257,6 +338,8 @@ public final class CApiContext extends CExtContext {
      */
     private final List<Object> loadedExtensions = new LinkedList<>();
 
+    private final NativeLibraryLocator nativeLibraryLocator;
+
     public final BackgroundGCTask gcTask;
     private Thread backgroundGCTaskThread;
 
@@ -264,9 +347,10 @@ public final class CApiContext extends CExtContext {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    public CApiContext(PythonContext context, Object llvmLibrary, boolean useNativeBackend) {
-        super(context, llvmLibrary, useNativeBackend);
+    public CApiContext(PythonContext context, Object llvmLibrary, NativeLibraryLocator locator) {
+        super(context, llvmLibrary, locator != null);
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
+        this.nativeLibraryLocator = locator;
 
         /*
          * Publish the native symbol cache to the static field if following is given: (1) The static
@@ -562,15 +646,15 @@ public final class CApiContext extends CExtContext {
      * instance of {@link CApiContext}, it will load the cache stored from the static field
      * {@link CApiContext#nativeSymbolCacheSingleContext}. Otherwise, it will load the cache from
      * the instance field {@link CApiContext#nativeSymbolCache}.
-     * 
+     *
      * @param caller The requesting node (may be {@code null}). Used for the fast-path lookup of the
      *            {@link CApiContext} instance (if necessary).
      * @return The C API symbol cache.
      */
     private static Object[] getSymbolCache(Node caller) {
-        Object[] nativeSymbolCacheSingleContext = CApiContext.nativeSymbolCacheSingleContext;
-        if (nativeSymbolCacheSingleContext != null) {
-            return nativeSymbolCacheSingleContext;
+        Object[] cache = nativeSymbolCacheSingleContext;
+        if (cache != null) {
+            return cache;
         }
         return PythonContext.get(caller).getCApiContext().nativeSymbolCache;
     }
@@ -613,9 +697,10 @@ public final class CApiContext extends CExtContext {
         // TODO(fa): implement untracking of container objects
     }
 
-    private static final class BackgroundGCTask implements Runnable {
+    private static final class BackgroundGCTask extends PythonSystemThreadTask {
 
         private BackgroundGCTask(PythonContext context) {
+            super("Python GC", LOGGER);
             this.ctx = new WeakReference<>(context);
             this.rssInterval = context.getOption(PythonOptions.BackgroundGCTaskInterval);
             this.gcRSSThreshold = context.getOption(PythonOptions.BackgroundGCTaskThreshold) / (double) 100;
@@ -636,14 +721,14 @@ public final class CApiContext extends CExtContext {
         /**
          * RSS percentage increase between System.gc() calls. Low percentage will trigger
          * System.gc() more often which can cause unnecessary overhead.
-         * 
+         *
          * <ul>
          * Based on the {@code huggingface} example:
          * <li>less than 30%: max RSS ~22GB (>200 second per iteration)</li>
          * <li>30%: max RSS ~24GB (~150 second per iteration)</li>
          * <li>larger than 30%: max RSS ~38GB (~140 second per iteration)</li>
          * </ul>
-         * 
+         *
          * <pre>
          */
         final double gcRSSThreshold;
@@ -667,15 +752,23 @@ public final class CApiContext extends CExtContext {
         }
 
         @Override
-        public void run() {
-            try {
-                while (true) {
-                    Thread.sleep(rssInterval);
-                    perform();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        protected void doRun() {
+            Node location = getSafepointLocation();
+            if (location == null) {
+                return;
             }
+            while (true) {
+                TruffleSafepoint.setBlockedThreadInterruptible(location, Thread::sleep, rssInterval);
+                perform();
+            }
+        }
+
+        private Node getSafepointLocation() {
+            PythonContext context = ctx.get();
+            if (context == null) {
+                return null;
+            }
+            return context.getLanguage().unavailableSafepointLocation;
         }
 
         private void perform() {
@@ -764,33 +857,48 @@ public final class CApiContext extends CExtContext {
                         || !context.getOption(PythonOptions.BackgroundGCTask)) {
             return;
         }
-        backgroundGCTaskThread = context.getEnv().newTruffleThreadBuilder(gcTask).context(context.getEnv().getContext()).build();
-        backgroundGCTaskThread.setDaemon(true);
-        backgroundGCTaskThread.setName("python-gc-task");
+        backgroundGCTaskThread = context.createSystemThread(gcTask);
         backgroundGCTaskThread.start();
     }
 
     /**
      * This represents whether the current process has already loaded an instance of the native CAPI
-     * extensions - this can only be loaded once per process.
+     * extensions - this can only be loaded globally once per process or in isolation multiple
+     * times.
      */
-    private static final AtomicBoolean nativeCAPILoaded = new AtomicBoolean();
-    private static final AtomicBoolean warnedSecondContexWithNativeCAPI = new AtomicBoolean();
+    private static final AtomicInteger nativeCAPILoaded = new AtomicInteger();
+    private static final byte NO_NATIVE_CONTEXT = 0;
+    private static final byte ISOLATED_NATIVE_CONTEXT = 1;
+    private static final byte GLOBAL_NATIVE_CONTEXT = 2;
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;
 
     @TruffleBoundary
-    public static CApiContext ensureCapiWasLoaded() {
+    public static CApiContext ensureCapiWasLoaded(String reason) {
         try {
-            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING);
+            return CApiContext.ensureCapiWasLoaded(null, PythonContext.get(null), T_EMPTY_STRING, T_EMPTY_STRING, reason);
         } catch (Exception e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
     @TruffleBoundary
+    public static Object ensureCApiLLVMLibrary(PythonContext context) throws IOException, ImportException, ApiInitException {
+        assert !PythonOptions.NativeModules.getValue(context.getEnv().getOptions());
+        CApiContext cApiContext = ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING,
+                        " load LLVM library (this is an internal bug, LLVM library should not be loaded when running on native backend)");
+        return cApiContext.getLLVMLibrary();
+    }
+
+    @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path) throws IOException, ImportException, ApiInitException {
+        return ensureCapiWasLoaded(node, context, name, path, null);
+    }
+
+    @TruffleBoundary
+    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
+        assert PythonContext.get(null).ownsGil(); // unsafe lazy initialization
         if (!context.hasCApiContext()) {
             Env env = context.getEnv();
             InteropLibrary U = InteropLibrary.getUncached();
@@ -798,37 +906,53 @@ public final class CApiContext extends CExtContext {
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             // e.g. "libpython-native.so"
             String libName = context.getLLVMSupportExt("python");
-            TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
+            final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
             try {
                 SourceBuilder capiSrcBuilder;
-                final boolean useNative;
-                if (PythonOptions.NativeModules.getValue(env.getOptions())) {
-                    useNative = nativeCAPILoaded.compareAndSet(false, true);
-                    if (!useNative && warnedSecondContexWithNativeCAPI.compareAndSet(false, true)) {
-                        LOGGER.warning("GraalPy option 'NativeModules' is set to true, " +
-                                        "but only one context in the process can use native modules, " +
-                                        "second and other contexts fallback to NativeModules=false and " +
-                                        "will use LLVM bitcode execution via GraalVM LLVM.");
-                    }
-                } else {
-                    useNative = false;
-                }
+                boolean useNative = PythonOptions.NativeModules.getValue(env.getOptions());
+                boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
+                final NativeLibraryLocator loc;
                 if (useNative) {
+                    if (!isolateNative) {
+                        useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
+                    } else {
+                        useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
+                    }
+                    if (!useNative) {
+                        String actualReason = "initialize native extensions support";
+                        if (reason != null) {
+                            actualReason = reason;
+                        } else if (name != null && path != null) {
+                            actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
+                        }
+                        throw new ApiInitException(toTruffleStringUncached(
+                                        String.format("Option python.NativeModules is set to 'true' and a second GraalPy context attempted to %s. " +
+                                                        "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
+                                                        "Depending on the order of context creation, this means some contexts in the process " +
+                                                        "cannot use native module, all other contexts must fall back and set python.NativeModules " +
+                                                        "to 'false' to run native extensions in LLVM mode. This is recommended only " +
+                                                        "for extensions included in the Python standard library. Running a 3rd party extension in LLVM mode requires " +
+                                                        "a custom build of the extension and is generally discouraged due to compatibility reasons.", actualReason)));
+                    }
+                    loc = new NativeLibraryLocator(context, capiFile, isolateNative);
                     context.ensureNFILanguage(node, "NativeModules", "true");
-                    capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, "load(RTLD_GLOBAL) \"" + capiFile.getPath() + "\"", "<libpython>");
+                    String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";
+                    capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, String.format("load(%s) \"%s\"", dlopenFlags, loc.getCapiLibrary()), "<libpython>");
+                    LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
                 } else {
+                    loc = null;
                     context.ensureLLVMLanguage(node);
                     capiSrcBuilder = Source.newBuilder(J_LLVM_LANGUAGE, capiFile);
+                    LOGGER.config(() -> "loading CAPI from " + capiFile + " as bitcode");
                 }
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
-                LOGGER.config(() -> "loading CAPI from " + capiFile + " as " + (useNative ? "native" : "bitcode"));
                 CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
 
                 Object capiLibrary = capiLibraryCallTarget.call();
                 Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
-                CApiContext cApiContext = new CApiContext(context, capiLibrary, useNative);
+                CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
                 context.setCApiContext(cApiContext);
                 try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
                     /*
@@ -865,7 +989,7 @@ public final class CApiContext extends CExtContext {
                     Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
                     Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
                     try {
-                        cApiContext.addNativeFinalizer(env, finalizingPointer);
+                        cApiContext.addNativeFinalizer(context, finalizingPointer);
                         cApiContext.runBackgroundGCTask(context);
                     } catch (RuntimeException e) {
                         // This can happen when other languages restrict multithreading
@@ -892,20 +1016,135 @@ public final class CApiContext extends CExtContext {
         return context.getCApiContext();
     }
 
+    private static final Set<String> C_EXT_SUPPORTED_LIST = Set.of(
+                    // Stdlib modules are considered supported
+                    "_cpython_sre",
+                    "_cpython_unicodedata",
+                    "_sha3",
+                    "_sqlite3",
+                    "termios",
+                    "pyexpat");
+
+    private static String dlopenFlagsToString(int flags) {
+        String str = "RTLD_NOW";
+        if ((flags & PosixConstants.RTLD_LAZY.value) != 0) {
+            str = "RTLD_LAZY";
+        }
+        if ((flags & PosixConstants.RTLD_GLOBAL.value) != 0) {
+            str += "|RTLD_GLOBAL";
+        }
+        if ((flags & PosixConstants.RTLD_LOCAL.value) != 0) {
+            str += "|RTLD_LOCAL";
+        }
+        return str;
+    }
+
+    /**
+     * This method loads a C extension module (C API) and will initialize the corresponding native
+     * contexts if necessary.
+     *
+     * @param location The node that's requesting this operation. This is required for reporting
+     *            correct source code location in case exceptions occur.
+     * @param context The Python context object.
+     * @param spec The name and path of the module (also containing the original module spec
+     *            object).
+     * @param checkFunctionResultNode A node to check that the function result does not indicate
+     *            that an exception was raised on the native side. It should be an adopted node,
+     *            because only an adopted node will report useful source locations.
+     * @return A Python module.
+     * @throws IOException If the specified file cannot be loaded.
+     * @throws ApiInitException If the corresponding native context could not be initialized.
+     * @throws ImportException If an exception occurred during C extension initialization.
+     */
+    @TruffleBoundary
+    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
+                    throws IOException, ApiInitException, ImportException {
+        if (getLogger(CApiContext.class).isLoggable(Level.WARNING) && context.getOption(PythonOptions.WarnExperimentalFeatures)) {
+            if (!C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
+                String message = "Loading C extension module %s from '%s'. Support for the Python C API is considered experimental.";
+                if (!(boolean) context.getOption(PythonOptions.RunViaLauncher)) {
+                    message += " See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions/#embedding-limitations for the limitations. " +
+                                    "You can suppress this warning by setting the context option 'python.WarnExperimentalFeatures' to 'false'.";
+                }
+                getLogger(CApiContext.class).warning(message.formatted(spec.name, spec.path));
+            }
+        }
+
+        // we always need to load the CPython C API
+        CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
+        Object library;
+        InteropLibrary interopLib;
+
+        if (cApiContext.useNativeBackend) {
+            TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
+            String loadPath = cApiContext.nativeLibraryLocator.resolve(context, realPath);
+            getLogger(CApiContext.class).config(String.format("loading module %s (real path: %s) as native", spec.path, loadPath));
+            int dlopenFlags = context.getDlopenFlags();
+            if (context.getOption(PythonOptions.IsolateNativeModules)) {
+                if ((dlopenFlags & PosixConstants.RTLD_GLOBAL.value) != 0) {
+                    getLogger(CApiContext.class).warning("The IsolateNativeModules option was specified, but the dlopen flags were set to include RTLD_GLOBAL " +
+                                    "(likely via some call to sys.setdlopenflags). This will probably lead to broken isolation and possibly incorrect results and crashing. " +
+                                    "You can patch sys.setdlopenflags to trace callers and/or prevent setting the RTLD_GLOBAL flags. " +
+                                    "See https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for more details.");
+                }
+                dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
+            }
+            String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(dlopenFlags), loadPath);
+            if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
+                loadExpr = "with panama " + loadExpr;
+            }
+            try {
+                Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
+                library = context.getEnv().parseInternal(librarySource).call();
+                interopLib = InteropLibrary.getUncached(library);
+            } catch (PException e) {
+                throw e;
+            } catch (AbstractTruffleException e) {
+                if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
+                    // file does not exist and it is from VirtualFileSystem
+                    // => we probably failed to extract it due to unconventional libs location
+                    getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
+                                    "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n", spec.path, realPath));
+
+                }
+
+                throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
+            }
+        } else {
+            library = loadLLVMLibrary(location, context, spec.name, spec.path);
+            interopLib = InteropLibrary.getUncached(library);
+            try {
+                if (interopLib.getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
+                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
+                }
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        try {
+            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, interopLib, checkFunctionResultNode);
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
+        }
+    }
+
     /**
      * Registers a VM shutdown hook, that sets {@code graalpy_finalizing} variable to let the C side
      * know that it's not safe to do upcalls and that native wrappers might have been deallocated.
      * We need to do it in a VM shutdown hook to make sure C atexit won't crash even if our context
      * finalization didn't run.
      */
-    private void addNativeFinalizer(Env env, Object finalizingPointerObj) {
-        final Unsafe unsafe = getContext().getUnsafe();
+    private void addNativeFinalizer(PythonContext context, Object finalizingPointerObj) {
+        final Unsafe unsafe = context.getUnsafe();
         InteropLibrary lib = InteropLibrary.getUncached(finalizingPointerObj);
         if (!lib.isNull(finalizingPointerObj) && lib.isPointer(finalizingPointerObj)) {
             try {
                 long finalizingPointer = lib.asPointer(finalizingPointerObj);
+                // We are writing off heap memory and registering a VM shutdown hook, there is no
+                // point in creating this thread via Truffle sandbox at this point
                 nativeFinalizerRunnable = () -> unsafe.putInt(finalizingPointer, 1);
-                nativeFinalizerShutdownHook = env.newTruffleThreadBuilder(nativeFinalizerRunnable).build();
+                nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
                 Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
             } catch (UnsupportedMessageException e) {
                 throw new RuntimeException(e);
@@ -946,14 +1185,16 @@ public final class CApiContext extends CExtContext {
     @SuppressWarnings("try")
     public void finalizeCApi() {
         CompilerAsserts.neverPartOfCompilation();
-        HandleContext handleContext = getContext().nativeContext;
+        PythonContext context = getContext();
+        HandleContext handleContext = context.nativeContext;
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
+            context.killSystemThread(backgroundGCTaskThread);
             try {
-                backgroundGCTaskThread.interrupt();
-                backgroundGCTaskThread.join();
+                backgroundGCTaskThread.join(10);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                LOGGER.finest("got interrupt while joining GC thread before cleaning up C API state");
             }
+            backgroundGCTaskThread = null;
         }
 
         /*
@@ -1005,10 +1246,14 @@ public final class CApiContext extends CExtContext {
          * after this can use it.
          */
         synchronized (CApiContext.class) {
-            if (CApiContext.nativeSymbolCacheSingleContext != null) {
-                CApiContext.nativeSymbolCacheSingleContext = null;
-                CApiContext.nativeSymbolCacheSingleContextUsed = false;
+            if (nativeSymbolCacheSingleContext != null) {
+                nativeSymbolCacheSingleContext = null;
+                nativeSymbolCacheSingleContextUsed = false;
             }
+        }
+
+        if (nativeLibraryLocator != null) {
+            nativeLibraryLocator.close();
         }
     }
 

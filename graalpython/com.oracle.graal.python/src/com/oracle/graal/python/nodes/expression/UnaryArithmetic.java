@@ -60,6 +60,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -252,6 +253,38 @@ public enum UnaryArithmetic {
         @NeverDefault
         public static InvertNode create() {
             return UnaryArithmeticFactory.InvertNodeGen.create();
+        }
+    }
+
+    @GenerateCached
+    public abstract static class GenericUnaryArithmeticNode extends UnaryArithmeticNode {
+
+        private final TruffleString specialMethodName;
+
+        protected GenericUnaryArithmeticNode(TruffleString specialMethodName) {
+            this.specialMethodName = specialMethodName;
+        }
+
+        public final Object execute(VirtualFrame frame, Node inliningTarget, Object value) {
+            return execute(frame, value);
+        }
+
+        protected abstract Object execute(VirtualFrame frame, Object value);
+
+        @Specialization
+        public Object doGeneric(VirtualFrame frame, Object arg,
+                        @Cached("createCallNode()") LookupAndCallUnaryNode callNode) {
+            return callNode.executeObject(frame, arg);
+        }
+
+        @NeverDefault
+        protected LookupAndCallUnaryNode createCallNode() {
+            return createCallNode(specialMethodName, createHandler(specialMethodName.toString()));
+        }
+
+        @NeverDefault
+        public static GenericUnaryArithmeticNode create(TruffleString specialMethodName) {
+            return UnaryArithmeticFactory.GenericUnaryArithmeticNodeGen.create(specialMethodName);
         }
     }
 }

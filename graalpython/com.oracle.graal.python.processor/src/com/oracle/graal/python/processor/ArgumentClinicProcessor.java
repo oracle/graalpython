@@ -358,6 +358,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         Stream<?> parameterNames = null;
         Stream<?> keywordOnlyNames = null;
         int minNumOfPositionalArgs = -1;
+        boolean takesVarArgs = false;
         AnnotationMirror annot = findAnnotationMirror(type, BuiltinAnnotationClass);
         if (annot == null) {
             annot = findAnnotationMirror(type, BuiltinsAnnotationClass);
@@ -392,18 +393,22 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
                     builtinName = (String) item.getValue().getValue();
                 } else if (item.getKey().getSimpleName().toString().equals("minNumOfPositionalArgs")) {
                     minNumOfPositionalArgs = (int) item.getValue().getValue();
+                } else if (item.getKey().getSimpleName().toString().equals("takesVarArgs")) {
+                    takesVarArgs = (boolean) item.getValue().getValue();
                 }
             }
         }
         if ((parameterNames == null && keywordOnlyNames == null) || builtinName == null) {
             throw error(type, "In order to use Argument Clinic, the Builtin annotation must contain 'name' and 'parameterNames' and/or 'keywordOnlyNames' fields.");
         }
+        if (parameterNames == null) {
+            parameterNames = Stream.of();
+        }
+        if (takesVarArgs) {
+            parameterNames = Stream.concat(parameterNames, Stream.of("*args"));
+        }
         if (keywordOnlyNames != null) {
-            if (parameterNames == null) {
-                parameterNames = keywordOnlyNames;
-            } else {
-                parameterNames = Stream.concat(parameterNames, keywordOnlyNames);
-            }
+            parameterNames = Stream.concat(parameterNames, keywordOnlyNames);
         }
         return new BuiltinAnnotation(builtinName, parameterNames.toArray(String[]::new), minNumOfPositionalArgs);
     }

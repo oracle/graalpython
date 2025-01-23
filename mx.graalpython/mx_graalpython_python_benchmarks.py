@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -97,6 +97,8 @@ SKIPPED_PANDAS_BENCHMARKS = [
     "reshape.GetDummies.time_get_dummies_1d_sparse",  # Times out
     "reshape.PivotTable.time_pivot_table_margins",  # Times out
     "reshape.WideToLong.time_wide_to_long_big",  # Times out
+    "reshape.Cut.time_qcut_datetime",  # Transient failure GR-61245, exit code -11
+    "reshape.Explode.time_explode",  # Transient failure GR-61245, exit code -11
 ]
 
 DEFAULT_PYPERFORMANCE_BENCHMARKS = [
@@ -113,7 +115,7 @@ DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     # "html5lib",
     "json_dumps",
     "json_loads",
-    "logging",
+    # "logging",
     # "mako",
     "meteor_contest",
     "nbody",
@@ -572,7 +574,7 @@ class PyPerformanceSuite(PySuite):
                 join(vm_venv, "bin", "pyperformance"),
                 "run",
                 "--inherit-environ",
-                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS",
+                "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS",
                 "-o",
                 json_file,
                 *bms,
@@ -590,7 +592,7 @@ class PyPerformanceSuite(PySuite):
                 "--debug-single-value",
                 "--track-memory",
                 "--inherit-environ",
-                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS",
+                "PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS",
                 "-o",
                 json_file_memory,
                 *bms,

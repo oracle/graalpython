@@ -1,7 +1,7 @@
-DocTestCase.test.test_descrtut.__test__.tut1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut7 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+DocTestCase.test.test_descrtut.__test__.tut1 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_descrtut.__test__.tut2 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_descrtut.__test__.tut4 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_descrtut.__test__.tut5 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_descrtut.__test__.tut6 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_descrtut.__test__.tut7 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_descrtut.__test__.tut8 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

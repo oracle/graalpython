@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -859,6 +859,115 @@ class ListCompareTest(CompareTest):
 
         with self.assertRaisesRegex(TypeError, "list"):
             list.clear(42)
+
+
+class TestObject:
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+
+class NativeStorageTests(unittest.TestCase):
+    def setUp(self):
+        self.o1 = TestObject('o1')
+        self.o2 = TestObject('o2')
+        self.o3 = TestObject('o3')
+        self.o4 = TestObject('o4')
+        self.list = [self.o1, self.o2, self.o3]
+        storage_to_native(self.list)
+
+    def assert_refcount(self, o, expected_refcount):
+        expected_refcount += 10 if sys.implementation.name == 'graalpy' else 3
+        refcount = sys.getrefcount(o)
+        if refcount == -1 and sys.implementation.name == 'graalpy':
+            refcount = 10
+        self.assertEqual(refcount, expected_refcount,
+                         f"Expected {o} to have refcount {expected_refcount}, was {refcount}")
+
+    def check_refcounts(self, o1=1, o2=1, o3=1, o4=0):
+        self.assert_refcount(self.o1, o1)
+        self.assert_refcount(self.o2, o2)
+        self.assert_refcount(self.o3, o3)
+        self.assert_refcount(self.o4, o4)
+
+    def test_get(self):
+        self.assertEqual(self.list[1], self.o2)
+        self.assertEqual(self.list[-1], self.o3)
+        self.assertEqual(self.list[1:], [self.o2, self.o3])
+
+    def test_set_del(self):
+        # n.b. it's important to test the setting and deleting operations together to properly test interactions between
+        # shrinking and then growing the same storage
+        self.list[1] = self.o4
+        self.assertEqual(self.list, [self.o1, self.o4, self.o3])
+        self.check_refcounts(o1=1, o2=0, o3=1, o4=1)
+        self.list[1:] = [self.o2, self.o3, self.o4]
+        self.assertEqual(self.list, [self.o1, self.o2, self.o3, self.o4])
+        self.check_refcounts(o1=1, o2=1, o3=1, o4=1)
+        del self.list[1]
+        self.assertEqual(self.list, [self.o1, self.o3, self.o4])
+        self.check_refcounts(o1=1, o2=0, o3=1, o4=1)
+        self.list[1:1] = [self.o2]
+        self.assertEqual(self.list, [self.o1, self.o2, self.o3, self.o4])
+        self.check_refcounts(o1=1, o2=1, o3=1, o4=1)
+        del self.list[1:3]
+        self.assertEqual(self.list, [self.o1, self.o4])
+        self.check_refcounts(o1=1, o2=0, o3=0, o4=1)
+        self.list[1:] = [self.o2, self.o3]
+        self.assertEqual(self.list, [self.o1, self.o2, self.o3])
+        self.check_refcounts(o1=1, o2=1, o3=1, o4=0)
+
+    def test_insert_remove(self):
+        self.list.remove(self.o3)
+        self.assertEqual(self.list, [self.o1, self.o2])
+        self.check_refcounts(o1=1, o2=1, o3=0, o4=0)
+        self.list.insert(0, self.o4)
+        self.assertEqual(self.list, [self.o4, self.o1, self.o2])
+        self.check_refcounts(o1=1, o2=1, o3=0, o4=1)
+
+    def test_append_pop(self):
+        self.list.pop(1)
+        self.assertEqual(self.list, [self.o1, self.o3])
+        self.check_refcounts(o1=1, o2=0, o3=1, o4=0)
+        self.list.append(self.o4)
+        self.assertEqual(self.list, [self.o1, self.o3, self.o4])
+        self.check_refcounts(o1=1, o2=0, o3=1, o4=1)
+
+    def test_extend(self):
+        self.list.extend([self.o4, self.o1])
+        self.assertEqual(self.list, [self.o1, self.o2, self.o3, self.o4, self.o1])
+        self.check_refcounts(o1=2, o2=1, o3=1, o4=1)
+        del self.list[1:]
+        self.assertEqual(self.list, [self.o1])
+        self.check_refcounts(o1=1, o2=0, o3=0, o4=0)
+        self.list += [self.o2, self.o3]
+        self.assertEqual(self.list, [self.o1, self.o2, self.o3])
+        self.check_refcounts(o1=1, o2=1, o3=1, o4=0)
+
+    def test_inplace_repeat(self):
+        self.list *= 2
+        self.assertEqual(self.list, [self.o1, self.o2, self.o3, self.o1, self.o2, self.o3])
+        # We don't actually do it in place, we make a new managed storage
+        # self.check_refcounts(o1=2, o2=2, o3=2, o4=0)
+
+    def test_sort(self):
+        self.list.sort(key=lambda x: x.name, reverse=True)
+        self.assertEqual(self.list, [self.o3, self.o2, self.o1])
+        self.check_refcounts(o1=1, o2=1, o3=1, o4=0)
+
+    def test_reverse(self):
+        self.list.reverse()
+        self.assertEqual(self.list, [self.o3, self.o2, self.o1])
+        self.check_refcounts(o1=1, o2=1, o3=1, o4=0)
+
+    def test_clear(self):
+        self.list.clear()
+        self.assertEqual(self.list, [])
+        # We create a new storage and let the old be GC'ed
+        # self.check_refcounts(o1=0, o2=0, o3=0, o4=0)
+
 
 if __name__ == '__main__':
     unittest.main()

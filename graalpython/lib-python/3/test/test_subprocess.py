@@ -685,6 +685,9 @@ class ProcessTestCase(BaseTestCase):
         self.assertEqual(out.rstrip(), b'test with stdout=1')
 
     def test_stdout_devnull(self):
+        if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
+            # We currently don't have output redirection and so this test would dump 10MB of text on stdout. We don't want that in the CI
+            raise NotImplementedError
         p = subprocess.Popen([sys.executable, "-c",
                               'for i in range(10240):'
                               'print("x" * 1024)'],
@@ -693,6 +696,9 @@ class ProcessTestCase(BaseTestCase):
         self.assertEqual(p.stdout, None)
 
     def test_stderr_devnull(self):
+        if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
+            # We currently don't have output redirection and so this test would dump 10MB of text on stderr. We don't want that in the CI
+            raise NotImplementedError
         p = subprocess.Popen([sys.executable, "-c",
                               'import sys\n'
                               'for i in range(10240):'

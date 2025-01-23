@@ -41,9 +41,12 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.TimeUtils.SEC_TO_US;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,6 +85,8 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -122,11 +127,23 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("ITIMER_VIRTUAL", ITIMER_VIRTUAL);
         addBuiltinConstant("ITIMER_PROF", ITIMER_PROF);
         addBuiltinConstant("NSIG", Signals.SIGMAX + 1);
-        for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
-            String name = Signals.SIGNAL_NAMES[i];
-            if (name != null) {
-                addBuiltinConstant("SIG" + name, i);
-            }
+    }
+
+    /*
+     * When using emulated posix mode (where we esentially emulate Linux), we rely on some signals
+     * being present even if they don't exist on the underlying platform, i.e. SIGKILL doesn't exist
+     * on Windows, but we still need to pass it to emulated kill.
+     */
+    private enum EmulatedSignal {
+        TERM(15),
+        KILL(9);
+
+        public final TruffleString name;
+        public final int number;
+
+        EmulatedSignal(int number) {
+            this.name = tsLiteral("SIG" + name());
+            this.number = number;
         }
     }
 
@@ -137,6 +154,23 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         PythonModule signalModule = core.lookupBuiltinModule(T__SIGNAL);
         ModuleData moduleData = new ModuleData();
         signalModule.setModuleState(moduleData);
+
+        for (int i = 0; i < Signals.PYTHON_SIGNAL_NAMES.length; i++) {
+            TruffleString name = Signals.PYTHON_SIGNAL_NAMES[i];
+            if (name != null) {
+                moduleData.signals.put(Signals.SIGNAL_NAMES[i], i);
+                signalModule.setAttribute(name, i);
+            }
+        }
+
+        if (PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).equalsUncached(T_JAVA, TS_ENCODING)) {
+            for (EmulatedSignal signal : EmulatedSignal.values()) {
+                if (signalModule.getAttribute(signal.name) == PNone.NO_VALUE) {
+                    moduleData.signals.put(signal.name(), signal.number);
+                    signalModule.setAttribute(signal.name, signal.number);
+                }
+            }
+        }
 
         core.getContext().registerAsyncAction(() -> {
             SignalTriggerAction poll = moduleData.signalQueue.poll();
@@ -158,6 +192,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             assert defaultSigintHandler != PNone.NO_VALUE;
             SignalNode.signal(null, new Signal("INT").getNumber(), defaultSigintHandler, moduleData);
         }
+    }
+
+    @TruffleBoundary
+    public static int signalFromName(PythonContext context, String name) {
+        PythonModule mod = context.lookupBuiltinModule(T__SIGNAL);
+        return mod.getModuleState(ModuleData.class).signals.getOrDefault(name, -1);
     }
 
     public static void resetSignalHandlers(PythonModule mod) {
@@ -520,6 +560,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     private static final class ModuleData {
+        final Map<String, Integer> signals = new HashMap<>();
         final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
         final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
         final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
@@ -542,6 +583,7 @@ final class Signals {
     static final int SIG_IGN = 1;
     static final int SIGMAX = 64;
     static final String[] SIGNAL_NAMES = new String[SIGMAX + 1];
+    static final TruffleString[] PYTHON_SIGNAL_NAMES = new TruffleString[SIGMAX + 1];
 
     static {
         for (String signal : new String[]{"HUP", "INT", "BREAK", "QUIT", "ILL", "TRAP", "IOT", "ABRT", "EMT", "FPE",
@@ -554,6 +596,7 @@ final class Signals {
                     continue;
                 }
                 SIGNAL_NAMES[number] = signal;
+                PYTHON_SIGNAL_NAMES[number] = tsLiteral("SIG" + signal);
             } catch (IllegalArgumentException e) {
                 // Ignore
             }

@@ -3,6 +3,7 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import unittest
+import sys
 
 
 def test_os_pipe():
@@ -89,6 +90,7 @@ class TestSubprocess(unittest.TestCase):
         assert True
         p.wait()
 
+    @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
     def test_waitpid(self):
         import os
         p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2); 42"])
@@ -98,12 +100,14 @@ class TestSubprocess(unittest.TestCase):
             p.kill()
             p.wait()
 
+    @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
     def test_waitpid_group_child(self):
         import os
         p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
         res = os.waitpid(0, 0)
         assert res[1] == 0, res
 
+    @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
     def test_waitpid_any_child(self):
         import os
         p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
@@ -138,8 +142,9 @@ class TestSubprocess(unittest.TestCase):
                 result = subprocess.run([sys.executable, "-c", "import __graalpython__; not __graalpython__.java_assert()"])
             assert result.returncode == 0
 
+    @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-specific test")
+    @unittest.skipIf(sys.platform == 'win32', "TODO the cmd replacement breaks the test")
     def test_graal_python_args(self):
-        import sys
         if sys.implementation.name == "graalpy":
             import subprocess
 

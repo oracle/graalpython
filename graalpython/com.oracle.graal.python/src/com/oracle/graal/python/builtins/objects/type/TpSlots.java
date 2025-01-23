@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,19 +41,43 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RLSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.getUncachedInterop;
 
@@ -82,8 +106,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSe
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargprocWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
@@ -115,9 +141,13 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotG
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotInquiryBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.TpSlotLenBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.TpSlotMpAssSubscriptBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.TpSlotMpAssSubscriptPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotSetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlotSqAssItemBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlotSqAssItemPython;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -199,14 +229,27 @@ import com.oracle.truffle.api.strings.TruffleString;
  *            should be {@link #tp_getattro()}. We assume that no builtins define this slot.
  */
 public record TpSlots(TpSlot nb_bool, //
-                TpSlot nb_add,
+                TpSlot nb_add, //
+                TpSlot nb_subtract, //
                 TpSlot nb_multiply, //
+                TpSlot nb_remainder, //
+                TpSlot nb_lshift, //
+                TpSlot nb_rshift, //
+                TpSlot nb_and, //
+                TpSlot nb_xor, //
+                TpSlot nb_or, //
+                TpSlot nb_floor_divide, //
+                TpSlot nb_true_divide, //
+                TpSlot nb_divmod, //
+                TpSlot nb_matrix_multiply, //
                 TpSlot sq_length, //
                 TpSlot sq_item, //
+                TpSlot sq_ass_item, //
                 TpSlot sq_concat, //
                 TpSlot sq_repeat, //
                 TpSlot mp_length, //
                 TpSlot mp_subscript, //
+                TpSlot mp_ass_subscript, //
                 TpSlot combined_sq_mp_length, //
                 TpSlot combined_mp_sq_length, //
                 TpSlot tp_descr_get, //
@@ -313,6 +356,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PyNumberMethods__nb_add,
                         PExternalFunctionWrapper.BINARYFUNC,
                         BinaryOpSlotFuncWrapper::createAdd),
+        NB_SUBTRACT(
+                        TpSlots::nb_subtract,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_subtract,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createSubtract),
         NB_MULTIPLY(
                         TpSlots::nb_multiply,
                         TpSlotBinaryOpPython.class,
@@ -321,6 +372,86 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PyNumberMethods__nb_multiply,
                         PExternalFunctionWrapper.BINARYFUNC,
                         BinaryOpSlotFuncWrapper::createMultiply),
+        NB_REMAINDER(
+                        TpSlots::nb_remainder,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_remainder,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createRemainder),
+        NB_LSHIFT(
+                        TpSlots::nb_lshift,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_lshift,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createLShift),
+        NB_RSHIFT(
+                        TpSlots::nb_rshift,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_rshift,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createRShift),
+        NB_AND(
+                        TpSlots::nb_and,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_and,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createAnd),
+        NB_XOR(
+                        TpSlots::nb_xor,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_xor,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createXor),
+        NB_OR(
+                        TpSlots::nb_or,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_or,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createOr),
+        NB_FLOOR_DIVIDE(
+                        TpSlots::nb_floor_divide,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_floor_divide,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createFloorDivide),
+        NB_TRUE_DIVIDE(
+                        TpSlots::nb_true_divide,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_true_divide,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createTrueDivide),
+        NB_DIVMOD(
+                        TpSlots::nb_divmod,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_divmod,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createDivMod),
+        NB_MATRIX_MULTIPLY(
+                        TpSlots::nb_matrix_multiply,
+                        TpSlotBinaryOpPython.class,
+                        TpSlotBinaryOpBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_matrix_multiply,
+                        PExternalFunctionWrapper.BINARYFUNC,
+                        BinaryOpSlotFuncWrapper::createMatrixMultiply),
         SQ_LENGTH(
                         TpSlots::sq_length,
                         TpSlotPythonSingle.class,
@@ -345,6 +476,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PySequenceMethods__sq_item,
                         PExternalFunctionWrapper.GETITEM,
                         SsizeargfuncSlotWrapper::new),
+        SQ_ASS_ITEM(
+                        TpSlots::sq_ass_item,
+                        TpSlotSqAssItemPython.class,
+                        TpSlotSqAssItemBuiltin.class,
+                        TpSlotGroup.AS_SEQUENCE,
+                        CFields.PySequenceMethods__sq_ass_item,
+                        PExternalFunctionWrapper.SETITEM,
+                        SsizeobjargprocWrapper::new),
         SQ_REPEAT(
                         TpSlots::sq_repeat,
                         TpSlotPythonSingle.class,
@@ -369,6 +508,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PyMappingMethods__mp_subscript,
                         PExternalFunctionWrapper.BINARYFUNC,
                         BinarySlotFuncWrapper::new),
+        MP_ASS_SUBSCRIPT(
+                        TpSlots::mp_ass_subscript,
+                        TpSlotMpAssSubscriptPython.class,
+                        TpSlotMpAssSubscriptBuiltin.class,
+                        TpSlotGroup.AS_MAPPING,
+                        CFields.PyMappingMethods__mp_ass_subscript,
+                        PExternalFunctionWrapper.OBJOBJARGPROC,
+                        ObjobjargWrapper::new),
         TP_DESCR_GET(
                         TpSlots::tp_descr_get,
                         TpSlotPythonSingle.class,
@@ -599,12 +746,48 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_ADD,
                         TpSlotDef.withoutHPy(T___ADD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RADD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_SUBTRACT,
+                        TpSlotDef.withoutHPy(T___SUB__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RSUB__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_MULTIPLY,
                         TpSlotDef.withoutHPy(T___MUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RMUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_REMAINDER,
+                        TpSlotDef.withoutHPy(T___MOD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RMOD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_LSHIFT,
+                        TpSlotDef.withoutHPy(T___LSHIFT__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RLSHIFT__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_RSHIFT,
+                        TpSlotDef.withoutHPy(T___RSHIFT__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RRSHIFT__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_AND,
+                        TpSlotDef.withoutHPy(T___AND__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RAND__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_XOR,
+                        TpSlotDef.withoutHPy(T___XOR__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RXOR__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_OR,
+                        TpSlotDef.withoutHPy(T___OR__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___ROR__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_FLOOR_DIVIDE,
+                        TpSlotDef.withoutHPy(T___FLOORDIV__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RFLOORDIV__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_TRUE_DIVIDE,
+                        TpSlotDef.withoutHPy(T___TRUEDIV__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RTRUEDIV__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_DIVMOD,
+                        TpSlotDef.withoutHPy(T___DIVMOD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RDIVMOD__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
+        addSlotDef(s, TpSlotMeta.NB_MATRIX_MULTIPLY,
+                        TpSlotDef.withoutHPy(T___MATMUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
+                        TpSlotDef.withoutHPy(T___RMATMUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
         addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
         addSlotDef(s, TpSlotMeta.MP_SUBSCRIPT, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.MP_ASS_SUBSCRIPT,
+                        TpSlotDef.withoutHPy(T___SETITEM__, TpSlotMpAssSubscriptPython::create, PExternalFunctionWrapper.OBJOBJARGPROC),
+                        TpSlotDef.withoutHPy(T___DELITEM__, TpSlotMpAssSubscriptPython::create, PExternalFunctionWrapper.MP_DELITEM));
         addSlotDef(s, TpSlotMeta.SQ_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
         // sq_concat does not have a slotdef for __radd__ unlike sq_repeat. This have consequences
         // w.r.t. inheritance from native classes, where sq_repeat is not overridden by __mul__.
@@ -615,6 +798,9 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC),
                         TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC));
         addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.GETITEM, HPySlotWrapper.SQ_ITEM));
+        addSlotDef(s, TpSlotMeta.SQ_ASS_ITEM,
+                        TpSlotDef.withoutHPy(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SETITEM),
+                        TpSlotDef.withoutHPy(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.DELITEM));
 
         SLOTDEFS = s;
         SPECIAL2SLOT = new HashMap<>(SLOTDEFS.size() * 2);
@@ -1191,13 +1377,26 @@ public record TpSlots(TpSlot nb_bool, //
             return new TpSlots(
                             get(TpSlotMeta.NB_BOOL), //
                             get(TpSlotMeta.NB_ADD), //
+                            get(TpSlotMeta.NB_SUBTRACT), //
                             get(TpSlotMeta.NB_MULTIPLY), //
+                            get(TpSlotMeta.NB_REMAINDER), //
+                            get(TpSlotMeta.NB_LSHIFT), //
+                            get(TpSlotMeta.NB_RSHIFT), //
+                            get(TpSlotMeta.NB_AND), //
+                            get(TpSlotMeta.NB_XOR), //
+                            get(TpSlotMeta.NB_OR), //
+                            get(TpSlotMeta.NB_FLOOR_DIVIDE), //
+                            get(TpSlotMeta.NB_TRUE_DIVIDE), //
+                            get(TpSlotMeta.NB_DIVMOD), //
+                            get(TpSlotMeta.NB_MATRIX_MULTIPLY), //
                             get(TpSlotMeta.SQ_LENGTH), //
                             get(TpSlotMeta.SQ_ITEM), //
+                            get(TpSlotMeta.SQ_ASS_ITEM), //
                             get(TpSlotMeta.SQ_CONCAT), //
                             get(TpSlotMeta.SQ_REPEAT), //
                             get(TpSlotMeta.MP_LENGTH), //
                             get(TpSlotMeta.MP_SUBSCRIPT), //
+                            get(TpSlotMeta.MP_ASS_SUBSCRIPT), //
                             sq_mp_length, //
                             mp_sq_length, //
                             get(TpSlotMeta.TP_DESCR_GET), //

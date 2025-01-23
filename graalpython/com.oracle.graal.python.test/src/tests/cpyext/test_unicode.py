@@ -946,6 +946,19 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_EncodeLocale = CPyExtFunction(
+        # We don't want to make tests dependent on the current locale, so just test that ascii works
+        lambda args: args[0].encode('ascii', args[1]),
+        lambda: (
+            ("hello", "strict"),
+            (UnicodeSubclass("asdf"), "strict"),
+        ),
+        resultspec="O",
+        argspec='Os',
+        arguments=["PyObject* str", "const char* errors"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyUnicode_AsUnicodeEscapeString = CPyExtFunction(
         _reference_as_unicode_escape_string,
         lambda: (
@@ -1130,6 +1143,16 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* string"],
         cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyUnicodeDecodeError_Create = CPyExtFunction(
+        lambda args: UnicodeDecodeError(*args),
+        lambda: (
+            ("utf-8", b"asdf", 1, 2, "some reason"),
+        ),
+        resultspec="O",
+        argspec="sy#nns",
+        arguments=["const char* encoding", "const char* object", "Py_ssize_t length", "Py_ssize_t start", "Py_ssize_t end", "const char* reason"]
     )
 
 

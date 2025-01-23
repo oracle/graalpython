@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -57,9 +57,9 @@ set_target_properties(${TARGET_LIBBZ2} PROPERTIES POSITION_INDEPENDENT_CODE TRUE
 target_compile_definitions(${TARGET_LIBBZ2} PRIVATE _FILE_OFFSET_BITS=64)
 
 if(WIN32)
-    target_compile_options(${TARGET_LIBBZ2} PRIVATE /Z7 /O2 /Wall)
+    target_compile_options(${TARGET_LIBBZ2} PRIVATE /O2 /Wall)
 else()
-    target_compile_options(${TARGET_LIBBZ2} PRIVATE -Wall -Winline -O2 -g)
+    target_compile_options(${TARGET_LIBBZ2} PRIVATE -Wall -Winline -O2)
 endif()
 
 # don't install into the system but into the MX project's output dir

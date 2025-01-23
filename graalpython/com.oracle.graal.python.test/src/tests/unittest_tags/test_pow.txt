@@ -1,7 +1,7 @@
-test.test_pow.PowTest.test_big_exp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pow.PowTest.test_bug643260 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pow.PowTest.test_bug705231 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pow.PowTest.test_negative_exponent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pow.PowTest.test_other @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pow.PowTest.test_powfloat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_pow.PowTest.test_powint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pow.PowTest.test_big_exp @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pow.PowTest.test_bug643260 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pow.PowTest.test_bug705231 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pow.PowTest.test_negative_exponent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pow.PowTest.test_other @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pow.PowTest.test_powfloat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pow.PowTest.test_powint @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

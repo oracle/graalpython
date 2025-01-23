@@ -17,6 +17,3 @@ val r = tasks.run.get()
 r.enableAssertions = true
 r.outputs.upToDateWhen {false}
 
-dependencies {
-    implementation("org.graalvm.python:python-community:24.2.0")
-}

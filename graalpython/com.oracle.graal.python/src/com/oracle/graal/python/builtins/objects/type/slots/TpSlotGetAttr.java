@@ -63,6 +63,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
@@ -297,6 +299,8 @@ public class TpSlotGetAttr {
 
         @Specialization(guards = "slot.hasGetattr()")
         static Object callPythonSimple(VirtualFrame frame, Node inliningTarget, TpSlotGetAttrPython slot, Object self, Object name,
+                        @Cached MaybeBindDescriptorNode bindDescriptorNode,
+                        @Cached CallBinaryMethodNode callGetAttributeNode,
                         @Exclusive @Cached BinaryPythonSlotDispatcherNode callPythonFun,
                         @Cached IsBuiltinObjectProfile errorProfile) {
             // equivalent of slot_tp_getattr_hook
@@ -309,7 +313,13 @@ public class TpSlotGetAttr {
                 // TODO: CPython calls PyObject_GenericGetAttr if there is no __getattribute__. Can
                 // we create a type that does not inherit tp_getattro and so no __getattribute__ is
                 // created for it in add_operators?
-                return callPythonFun.execute(frame, inliningTarget, slot.getGetattribute(), type, self, name);
+
+                // NOTE: we use CallBinaryMethodNode, because it is common that the __getattribute__
+                // callable is PBuiltinFunction wrapper is wrapping raw tp_getattro slot. This
+                // happens if a Python class declares __getattr__ and inherits __getattribute__
+                // wrapping some builtin slot.
+                Object bound = bindDescriptorNode.execute(frame, inliningTarget, slot.getGetattribute(), self, type);
+                return callGetAttributeNode.executeObject(frame, bound, self, name);
             } catch (PException pe) {
                 pe.expect(inliningTarget, AttributeError, errorProfile);
                 if (getattr == null) {

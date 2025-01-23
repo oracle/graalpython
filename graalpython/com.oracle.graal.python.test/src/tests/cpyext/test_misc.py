@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,9 @@ import builtins
 import os
 import pathlib
 import sys
+import unittest
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
-
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtType
 
 __global_builtins_dict = builtins.__dict__
 
@@ -172,36 +172,6 @@ class TestMisc(CPyExtTestCase):
         resultspec="O",
         argspec="O",
         arguments=["PyObject* name"],
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyTruffle_Intrinsic_Pmovmskb = CPyExtFunction(
-        lambda args: True,
-        lambda: (
-            (0xffffcafebabe, 0xefffdeadbeef),
-        ),
-        code="""
-#ifndef __aarch64__
-        #include <emmintrin.h>
-#endif
-        PyObject* PyTruffle_Intrinsic_Pmovmskb(PyObject* arg0, PyObject* arg1) {
-#ifdef __aarch64__
-            return Py_True;
-#else
-            int r;
-            int64_t a = (int64_t) PyLong_AsSsize_t(arg0);
-            int64_t b = (int64_t) PyLong_AsSsize_t(arg1);
-            __m128i zero = _mm_setzero_si128();
-            __m128i v = _mm_set_epi64(_m_from_int64(b), _m_from_int64(a));
-            v = _mm_cmpeq_epi8(v, zero);
-            r = _mm_movemask_epi8(v);
-            return (r == 0 || r == 49344) ? Py_True : Py_False;
-#endif
-        }
-        """,
-        resultspec="O",
-        argspec="OO",
-        arguments=["PyObject* arg0", "PyObject* arg1"],
         cmpfunc=unhandled_error_compare
     )
 
@@ -370,3 +340,48 @@ class TestMisc(CPyExtTestCase):
         arguments=["PyObject* value"],
         cmpfunc=unhandled_error_compare
     )
+
+
+@unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-only")
+def test_graalpy_version():
+    tester = CPyExtType(
+        "VersionTester",
+        code='''
+        static PyObject* get_version_str(PyObject* unused) {
+            return PyUnicode_FromString(GRAALPY_VERSION);
+        }
+        static PyObject* get_version_num(PyObject* unused) {
+            return PyLong_FromLong(GRAALPY_VERSION_NUM);
+        }
+        ''',
+        tp_methods='''
+        {"get_version_str", (PyCFunction)get_version_str, METH_NOARGS | METH_STATIC, ""},
+        {"get_version_num", (PyCFunction)get_version_num, METH_NOARGS | METH_STATIC, ""}
+        ''',
+    )
+    expected_version = __graalpython__.get_graalvm_version().removesuffix('-dev')
+    assert tester.get_version_str() == expected_version
+    parts = [int(v) for v in expected_version.split('.')] + [0]
+    expected_num = 0
+    for i in range(3):
+        expected_num <<= 8
+        expected_num |= parts[i]
+    assert tester.get_version_num() == expected_num
+
+
+def test_unicode_docstring():
+    class ClassWithDoc:
+        """This class has a doc 🙂"""
+
+    tester = CPyExtType(
+        "DocstringTester",
+        code='''
+        static PyObject* get_doc(PyObject* unused, PyObject* type) {
+            return PyUnicode_FromString(((PyTypeObject*)type)->tp_doc);
+        }
+        ''',
+        tp_methods='''
+        {"get_doc", (PyCFunction)get_doc, METH_O | METH_STATIC, ""}
+        ''',
+    )
+    assert tester.get_doc(ClassWithDoc)

@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins.ForeignGetattrNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -423,7 +425,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.createForceType();
         @Child private CallSlotDescrGet callGetSlotNode;
         @Child private GetTypeNode getType;
-        @Child private GetObjectNode getObject;
+        @Child private GetObjectNode getObject = GetObjectNodeGen.create();
         @Child private ObjectBuiltins.GetAttributeNode objectGetattributeNode;
         @Child private GetMroNode getMroNode;
         @Child private IsSameTypeNode isSameTypeNode;
@@ -444,7 +446,9 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached GetObjectTypeNode getObjectType,
                         @Cached CastToTruffleStringCheckedNode castToTruffleStringNode,
                         @Cached InlinedConditionProfile hasDescrGetProfile,
-                        @Cached InlinedConditionProfile getObjectIsStartObjectProfile) {
+                        @Cached InlinedConditionProfile getObjectIsStartObjectProfile,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached ForeignGetattrNode foreignGetattrNode) {
             Object startType = getObjectType.execute(inliningTarget, self);
             if (startType == null) {
                 return genericGetAttr(frame, self, attr);
@@ -465,12 +469,13 @@ public final class SuperBuiltins extends PythonBuiltins {
                 getType = insert(GetTypeNodeGen.create());
             }
 
+            Object type = getType.executeCached(self);
             PythonAbstractClass[] mro = getMro(startType);
             /* No need to check the last one: it's gonna be skipped anyway. */
             int i = 0;
             int n = mro.length;
             for (i = 0; i + 1 < n; i++) {
-                if (isSameType(getType.executeCached(self), mro[i])) {
+                if (isSameType(type, mro[i])) {
                     break;
                 }
             }
@@ -493,19 +498,25 @@ public final class SuperBuiltins extends PythonBuiltins {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             callGetSlotNode = insert(CallSlotDescrGet.create());
                         }
-                        if (getObject == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            getObject = insert(GetObjectNodeGen.create());
-                        }
+                        Object object = getObject.executeCached(self);
                         Object obj;
-                        if (getObjectIsStartObjectProfile.profile(inliningTarget, getObject.executeCached(self) == startType)) {
+                        if (getObjectIsStartObjectProfile.profile(inliningTarget, object == startType)) {
                             obj = PNone.NO_VALUE;
                         } else {
-                            obj = self.getObject();
+                            obj = object;
                         }
                         res = callGetSlotNode.executeCached(frame, resSlots.tp_descr_get(), res, obj, startType);
                     }
                     return res;
+                }
+            }
+
+            Object object = getObject.executeCached(self);
+            if (isForeignObjectNode.execute(inliningTarget, object)) {
+                try {
+                    return foreignGetattrNode.execute(inliningTarget, object, stringAttr);
+                } catch (PException e) {
+                    // continue to genericGetAttr()
                 }
             }
 

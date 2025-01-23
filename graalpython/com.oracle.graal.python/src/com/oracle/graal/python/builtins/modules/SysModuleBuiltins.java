@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -112,6 +112,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SIZEOF__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BACKSLASHREPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_BASE_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BIG;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
@@ -120,6 +121,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
@@ -127,7 +129,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_VALUE_UNKNOWN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
@@ -285,8 +286,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         COMPILE_TIME = compile_time;
     }
 
-    private static final TruffleString[] SYS_PREFIX_ATTRIBUTES = tsArray("prefix", "exec_prefix");
-    private static final TruffleString[] BASE_PREFIX_ATTRIBUTES = tsArray("base_prefix", "base_exec_prefix");
+    private static final TruffleString[] SYS_PREFIX_ATTRIBUTES = new TruffleString[]{T_PREFIX, tsLiteral("exec_prefix")};
+    private static final TruffleString[] BASE_PREFIX_ATTRIBUTES = new TruffleString[]{T_BASE_PREFIX, tsLiteral("base_exec_prefix")};
 
     static final StructSequence.BuiltinTypeDescriptor VERSION_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PVersionInfo,
@@ -858,6 +859,25 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, currentException);
                 Object traceback = getTracebackNode.execute(inliningTarget, exceptionObject);
                 return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exceptionObject), exceptionObject, traceback});
+            }
+        }
+    }
+
+    @Builtin(name = "exception", needsFrame = true)
+    @GenerateNodeFactory
+    abstract static class ExceptionNode extends PythonBuiltinNode {
+
+        @Specialization
+        static Object run(VirtualFrame frame,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
+                        @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
+            AbstractTruffleException currentException = getCaughtExceptionNode.execute(frame);
+            assert currentException != PException.NO_EXCEPTION;
+            if (currentException == null) {
+                return PNone.NONE;
+            } else {
+                return getEscapedExceptionNode.execute(inliningTarget, currentException);
             }
         }
     }

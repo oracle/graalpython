@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -680,7 +680,7 @@ public class LZMANodes {
         }
     }
 
-    @ImportStatic(LZMAModuleBuiltins.class)
+    @ImportStatic({LZMAModuleBuiltins.class, PGuards.class})
     @SuppressWarnings("truffle-inlining")       // footprint reduction 60 -> 42
     public abstract static class LZMACompressInit extends Node {
 
@@ -702,7 +702,7 @@ public class LZMANodes {
             }
         }
 
-        @Specialization(guards = "format == FORMAT_XZ")
+        @Specialization(guards = {"format == FORMAT_XZ", "!isPNone(filters)"})
         static void xz(VirtualFrame frame, LZMACompressor.Native self, @SuppressWarnings("unused") int format, @SuppressWarnings("unused") long preset, Object filters,
                         @Bind("this") Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
@@ -739,7 +739,7 @@ public class LZMANodes {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "format == FORMAT_ALONE")
+        @Specialization(guards = {"format == FORMAT_ALONE", "!isPNone(filters)"})
         static void alone(VirtualFrame frame, LZMACompressor.Native self, int format, long preset, Object filters,
                         @Bind("this") Node inliningTarget,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
@@ -789,7 +789,7 @@ public class LZMANodes {
             }
         }
 
-        @Specialization(guards = "format == FORMAT_XZ")
+        @Specialization(guards = {"format == FORMAT_XZ", "!isPNone(filters)"})
         static void xz(VirtualFrame frame, LZMACompressor.Java self, @SuppressWarnings("unused") int format, @SuppressWarnings("unused") long preset, Object filters,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached JavaFilterChain filterChain,
@@ -814,7 +814,7 @@ public class LZMANodes {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "format == FORMAT_ALONE")
+        @Specialization(guards = {"format == FORMAT_ALONE", "!isPNone(filters)"})
         static void alone(VirtualFrame frame, LZMACompressor.Java self, int format, long preset, Object filters,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached JavaFilterChain filterChain,

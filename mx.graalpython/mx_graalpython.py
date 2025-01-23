@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -41,6 +41,7 @@ from functools import wraps
 from pathlib import Path
 from textwrap import dedent
 
+import mx_graalpython_gradleproject
 import mx_urlrewrites
 
 if sys.version_info[0] < 3:
@@ -67,20 +68,21 @@ import mx_graalpython_python_benchmarks
 # re-export custom mx project classes so they can be used from suite.py
 from mx import MavenProject #pylint: disable=unused-import
 from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
+from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=unused-import
 
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, JAVA_DRIVER_BENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JAVA_DRIVER_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
     GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
     CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
-    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, \
+    PythonVmWarmupBenchmarkSuite, \
     CONFIGURATION_INTERPRETER, CONFIGURATION_INTERPRETER_MULTI, CONFIGURATION_NATIVE_INTERPRETER, \
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA
+    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA, PythonJMHDistMxBenchmarkSuite
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -374,13 +376,14 @@ def _dev_pythonhome():
 
 def punittest(ars, report=False):
     """
-    Runs GraalPython junit tests, TCK, and memory leak tests, which can be skipped using --no-leak-tests.
+    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
     Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
     with language home on filesystem and with language home served from the Truffle resources.
     """
     args = [] if ars is None else ars
     @dataclass
     class TestConfig:
+        identifier: str
         args: list
         useResources: bool
         reportConfig: bool = report
@@ -392,27 +395,34 @@ def punittest(ars, report=False):
     if "--no-leak-tests" in args:
         skip_leak_tests = True
         args.remove("--no-leak-tests")
+    if is_collecting_coverage():
+        skip_leak_tests = True
 
     vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
 
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
-    graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test', 'org.graalvm.python.embedding.utils.test']
+    graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test', 'org.graalvm.python.embedding.test']
+    has_compiler = bool(mx.suite('compiler', fatalIfMissing=False))
     configs += [
-        TestConfig(vm_args + graalpy_tests + args, True),
-        TestConfig(vm_args + graalpy_tests + args, False),
-        # TCK suite is not compatible with the PythonMxUnittestConfig,
-        # so it must have its own run and the useResources config is ignored
-        TestConfig(vm_args + ['com.oracle.truffle.tck.tests'] + args, False),
+        TestConfig("junit", vm_args + graalpy_tests + args, True),
+        TestConfig("junit", vm_args + graalpy_tests + args, False),
     ]
+    if mx.is_linux():
+        # see GR-60656 and GR-60658 for what's missing in darwin and windows support
+        configs.append(
+            # MultiContext cext tests should run by themselves so they aren't influenced by others
+            TestConfig("multi-cext", vm_args + ['org.graalvm.python.embedding.cext.test'] + args + (["--use-graalvm"] if has_compiler else []), True),
+        )
+
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
-        configs.append(TestConfig(vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test', 'org.graalvm.python.embedding.utils.test'] + async_regex + args, True, False))
+        configs.append(TestConfig("async", vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test', 'org.graalvm.python.embedding.test'] + async_regex + args, True, False))
 
     for c in configs:
         mx.log(f"Python JUnit tests configuration: {c}")
         PythonMxUnittestConfig.useResources = c.useResources
-        mx_unittest.unittest(c.args, test_report_tags=({"task": "punittest"} if c.reportConfig else None))
+        mx_unittest.unittest(c.args, test_report_tags=({"task": f"punittest-{c.identifier}-{'w' if c.useResources else 'wo'}-resources"} if c.reportConfig else None))
 
     if skip_leak_tests:
         return
@@ -479,8 +489,9 @@ class GraalPythonTags(object):
     unittest_posix = 'python-unittest-posix'
     unittest_standalone = 'python-unittest-standalone'
     unittest_gradle_plugin = 'python-unittest-gradle-plugin'
+    unittest_gradle_plugin_long_run = 'python-unittest-gradle-plugin-long-run'
     unittest_maven_plugin = 'python-unittest-maven-plugin'
-    ginstall = 'python-ginstall'
+    unittest_maven_plugin_long_run = 'python-unittest-maven-plugin-long-run'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
@@ -490,7 +501,6 @@ class GraalPythonTags(object):
     svm = 'python-svm'
     native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
-    windows = 'python-windows-smoketests'
     language_checker = 'python-language-checker'
     exclusions_checker = 'python-class-exclusion-checker'
 
@@ -564,7 +574,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         python_home = os.path.abspath(glob.glob(python_home)[0])
         mx.log("Using GraalPy standalone from GRAALPY_HOME: " + python_home)
         # Try to verify that we're getting what we expect:
-        has_java = os.path.exists(os.path.join(python_home, 'jvm', 'bin', 'java.exe' if WIN32 else 'java'))
+        has_java = os.path.exists(os.path.join(python_home, 'jvm', 'bin', mx.exe_suffix('java')))
         if has_java != (standalone_type == 'jvm'):
             mx.abort(f"GRAALPY_HOME is not compatible with the requested distribution type.\n"
                      f"jvm/bin/java exists?: {has_java}, requested type={standalone_type}.")
@@ -666,7 +676,7 @@ def graalvm_jdk():
         mx.log("Using GraalPy standalone from GRAAL_JDK_HOME: " + graal_jdk_home)
 
         # Try to verify that we're getting what we expect:
-        has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', 'java.exe' if WIN32 else 'java'))
+        has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', mx.exe_suffix('java')))
         if not has_java:
             mx.abort(f"GRAAL_JDK_HOME does not contain java executable.")
 
@@ -751,6 +761,11 @@ def deploy_local_maven_repo():
     return path, version, env
 
 
+def deploy_local_maven_repo_wrapper(*args):
+    p, _, _ = deploy_local_maven_repo()
+    print(f"local Maven repo path: {p}")
+
+
 def python_jvm(_=None):
     """Returns the path to GraalPy from 'jvm' standalone dev build. Also builds the standalone."""
     launcher = graalpy_standalone('jvm', dev=True)
@@ -769,26 +784,37 @@ def make_coverage_launcher_if_needed(launcher):
         # patch our launchers created under jacoco to also run with jacoco.
         # do not use is_collecting_coverage() here, we only want to patch when
         # jacoco agent is requested.
+        quote = shlex.quote if sys.platform != 'win32' else lambda x: x
         def graalvm_vm_arg(java_arg):
             if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
                 with open(java_arg[1:], "r") as f:
                     java_arg = f.read()
             assert java_arg[0] == "-", java_arg
-            return shlex.quote(f'--vm.{java_arg[1:]}')
+            return quote(f'--vm.{java_arg[1:]}')
 
         agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments. We also disable compilation, it hardly helps for this use case
         original_launcher = os.path.abspath(os.path.realpath(launcher))
-        bash_launcher = f'{original_launcher}.sh'
-        with open(bash_launcher, "w") as f:
-            f.write("#!/bin/sh\n")
-            exe_arg = shlex.quote(f"--python.Executable={bash_launcher}")
-            f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
-        os.chmod(bash_launcher, 0o775)
-        mx.log(f"Replaced {launcher} with {bash_launcher} to collect coverage")
-        launcher = bash_launcher
+        if sys.platform != 'win32':
+            coverage_launcher = original_launcher + '.sh'
+            preamble = '#!/bin/sh'
+            pass_args = '"$@"'
+        else:
+            coverage_launcher = original_launcher.replace('.exe', '.cmd')
+            # Windows looks for libraries on PATH, we need to add the jvm bin dir there or it won't find the instrumentation dlls
+            jvm_bindir = os.path.join(os.path.dirname(os.path.dirname(original_launcher)), 'jvm', 'bin')
+            preamble = f'@echo off\nset PATH=%PATH%;{jvm_bindir}'
+            pass_args = '%*'
+        with open(coverage_launcher, "w") as f:
+            f.write(f'{preamble}\n')
+            exe_arg = quote(f"--python.Executable={coverage_launcher}")
+            f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} {pass_args}\n')
+        if sys.platform != 'win32':
+            os.chmod(coverage_launcher, 0o775)
+        mx.log(f"Replaced {launcher} with {coverage_launcher} to collect coverage")
+        launcher = coverage_launcher
     return launcher
 
 
@@ -915,7 +941,11 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         lock.acquire()
 
     if parallel is None:
-        parallel = 6 if paths is None else 1
+        parallel = 4 if paths is None else 1
+
+    if sys.platform == 'win32':
+        # Windows machines don't seem to have much memory
+        parallel = min(parallel, 2)
 
     args = args or []
     args = [
@@ -956,8 +986,6 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
             args += ['--ignore', file]
 
     if is_collecting_coverage() and mx_gate.get_jacoco_agent_args():
-        with open(python_binary, "r") as f:
-            assert f.read(9) == "#!/bin/sh"
         if not use_pytest:
             # jacoco only dumps the data on exit, and when we run all our unittests
             # at once it generates so much data we run out of heap space
@@ -1086,7 +1114,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
-                         report=False, parallel=8, exclude=None, runner_args=()):
+                         report=False, parallel=8, exclude=None, paths=()):
     sub_env = dict(env or os.environ)
     sub_env['PYTHONPATH'] = os.path.join(_dev_pythonhome(), 'lib-python', '3')
 
@@ -1094,8 +1122,8 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True,
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
-        runner_args=['--tagged', *runner_args],
-        paths=[os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))],
+        runner_args=['--tagged'],
+        paths=paths or [os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))],
         env=sub_env,
         cwd=cwd,
         nonZeroIsFatal=nonZeroIsFatal,
@@ -1127,12 +1155,53 @@ def get_wrapper_urls(wrapper_properties_file, keys):
 
     return ret
 
+def setup_graalpy_plugin_tests():
+    gvm_jdk = graalvm_jdk()
+    standalone_home = graalpy_standalone_home('jvm')
+    mvn_repo_path, version, env = deploy_local_maven_repo()
+
+    env['JAVA_HOME'] = gvm_jdk
+    env['PYTHON_STANDALONE_HOME'] = standalone_home
+
+    # setup maven downloader overrides
+    env['MAVEN_REPO_OVERRIDE'] = ",".join([
+        f"{pathlib.Path(mvn_repo_path).as_uri()}/",
+        mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
+    ])
+
+    env["org.graalvm.maven.downloader.version"] = version
+    env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+
+    return standalone_home, env
+
+def setup_maven_plugin_tests():
+    standalone_home, env = setup_graalpy_plugin_tests()
+
+    override_path = os.path.join(SUITE.get_mx_output_dir(), 'maven-properties-override')
+    original_props_file = "graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties"
+    mx.copyfile(original_props_file, override_path)
+    mx_graalpython_gradleproject.patch_distribution_url(override_path, original_props_file, escape_colon=False)
+    env['MAVEN_PROPERTIES_OVERRIDE'] = override_path
+
+    return standalone_home, env
+
+def setup_gradle_plugin_tests():
+    standalone_home, env = setup_graalpy_plugin_tests()
+
+    override_path = os.path.join(SUITE.get_mx_output_dir(), 'gradle-properties-override')
+    original_props_file = "graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties"
+    mx.copyfile(original_props_file, override_path)
+    mx_graalpython_gradleproject.patch_distribution_url(override_path, original_props_file)
+    env['GRADLE_PROPERTIES_OVERRIDE'] = override_path
+
+    return standalone_home, env
+
 def graalpython_gate_runner(args, tasks):
     report = lambda: (not is_collecting_coverage()) and task
     nonZeroIsFatal = not is_collecting_coverage()
 
     # JUnit tests
-    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit, GraalPythonTags.windows]) as task:
+    with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
             if WIN32:
                 punittest(
@@ -1140,7 +1209,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'((com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util)))'
+                        r'((graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util)))'
                     ],
                     report=True
                 )
@@ -1154,6 +1223,22 @@ def graalpython_gate_runner(args, tasks):
                     punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advanced.ExclusionsTest'])
                 finally:
                     jdk.java_args_pfx = prev
+            if report():
+                tmpfile = tempfile.NamedTemporaryFile(delete=False, suffix='.json.gz')
+                try:
+                    # Cannot use context manager because windows doesn't allow
+                    # make_test_report to read the file while it is open for
+                    # writing
+                    mx.command_function('tck')([f'--json-results={tmpfile.name}'])
+                    mx_gate.make_test_report(tmpfile.name, GraalPythonTags.junit + "-TCK")
+                finally:
+                    tmpfile.close()
+                    try:
+                        os.unlink(tmpfile.name)
+                    except:
+                        pass # Sometimes this fails on windows
+            else:
+                mx.command_function('tck')()
 
     # JUnit tests with Maven
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
@@ -1261,26 +1346,23 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython gradle plugin tests', tasks, tags=[GraalPythonTags.unittest_gradle_plugin]) as task:
         if task:
-            gvm_jdk = graalvm_jdk()
-            standalone_home = graalpy_standalone_home('jvm')
-            mvn_repo_path, version, env = deploy_local_maven_repo()
-
+            standalone_home, env = setup_gradle_plugin_tests()
             env['ENABLE_GRADLE_PLUGIN_UNITTESTS'] = 'true'
-            env['JAVA_HOME'] = gvm_jdk
-            env['PYTHON_STANDALONE_HOME'] = standalone_home
 
-            # setup maven downloader overrides
-            env['MAVEN_REPO_OVERRIDE'] = ",".join([
-                f"{pathlib.Path(mvn_repo_path).as_uri()}/",
-                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
-            ])
+            # run the test
+            mx.logv(f"running with os.environ extended with: {env=}")
 
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/gradle/gradle-test-project/gradle/wrapper/gradle-wrapper.properties", ["distributionUrl"])
-            if "distributionUrl" in urls:
-                env["GRADLE_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+            run_python_unittests(
+                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_gradle_plugin.py"],
+                env=env,
+                parallel=3,
+            )
 
-            env["org.graalvm.maven.downloader.version"] = version
-            env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+    with Task('GraalPython gradle plugin long running tests', tasks, tags=[GraalPythonTags.unittest_gradle_plugin_long_run]) as task:
+        if task:
+            standalone_home, env = setup_gradle_plugin_tests()
+            env['ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS'] = 'true'
 
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
@@ -1294,26 +1376,23 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython maven plugin tests', tasks, tags=[GraalPythonTags.unittest_maven_plugin]) as task:
         if task:
-            gvm_jdk = graalvm_jdk()
-            standalone_home = graalpy_standalone_home('jvm')
-            mvn_repo_path, version, env = deploy_local_maven_repo()
-
+            standalone_home, env = setup_maven_plugin_tests()
             env['ENABLE_MAVEN_PLUGIN_UNITTESTS'] = 'true'
-            env['JAVA_HOME'] = gvm_jdk
-            env['PYTHON_STANDALONE_HOME'] = standalone_home
 
-            # setup maven downloader overrides
-            env['MAVEN_REPO_OVERRIDE'] = ",".join([
-                f"{pathlib.Path(mvn_repo_path).as_uri()}/",
-                mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/'),
-            ])
+            # run the test
+            mx.logv(f"running with os.environ extended with: {env=}")
 
-            urls = get_wrapper_urls("graalpython/com.oracle.graal.python.test/src/tests/standalone/mvnw/.mvn/wrapper/maven-wrapper.properties", ["distributionUrl"])
-            if "distributionUrl" in urls:
-                env["MAVEN_DISTRIBUTION_URL_OVERRIDE"] = mx_urlrewrites.rewriteurl(urls["distributionUrl"])
+            run_python_unittests(
+                os.path.join(standalone_home, 'bin', _graalpy_launcher()),
+                paths=["graalpython/com.oracle.graal.python.test/src/tests/standalone/test_maven_plugin.py"],
+                env=env,
+                parallel=3,
+            )
 
-            env["org.graalvm.maven.downloader.version"] = version
-            env["org.graalvm.maven.downloader.repository"] = f"{pathlib.Path(mvn_repo_path).as_uri()}/"
+    with Task('GraalPython maven plugin long runnning tests', tasks, tags=[GraalPythonTags.unittest_maven_plugin_long_run]) as task:
+        if task:
+            standalone_home, env = setup_maven_plugin_tests()
+            env['ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS'] = 'true'
 
             # run the test
             mx.logv(f"running with os.environ extended with: {env=}")
@@ -1331,7 +1410,7 @@ def graalpython_gate_runner(args, tasks):
             run_tagged_unittests(graalpy_standalone_native(), nonZeroIsFatal=(not is_collecting_coverage()), report=report())
 
     # Unittests on SVM
-    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit, GraalPythonTags.windows]) as task:
+    with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
             run_python_unittests(graalpy_standalone_native(), parallel=8, report=report())
 
@@ -1525,7 +1604,7 @@ def tox_example(args=None):
         "toml==0.10.2",
         "tox==3.24.5",
         "virtualenv==20.13.4",
-        os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv"),
+        os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv_seeder"),
     ]
 
     def get_new_vm(project_name, svm=False, install_libs=None, reuse_existing=False):
@@ -1667,6 +1746,10 @@ def _get_suite_dir(suitename):
     return mx.suite(suitename).dir
 
 
+def _get_suite_parent_dir(suitename):
+    return os.path.dirname(mx.suite(suitename).dir)
+
+
 def _get_src_dir(projectname):
     for suite in mx.suites():
         for p in suite.projects:
@@ -1705,12 +1788,21 @@ def py_version_short(variant=None, **kwargs):
 def graal_version_short(variant=None, **kwargs):
     if variant == 'major_minor_nodot':
         return GRAAL_VERSION_MAJ_MIN.replace(".", "")
+    elif variant == 'major_minor':
+        return GRAAL_VERSION_MAJ_MIN
     elif variant == 'binary':
         # PythonLanguage and PythonResource consume this data, and they assume 3 components, so we cap the list size
         # to 3 although the version may have even more components
         return "".join([chr(int(p) + ord(VERSION_BASE)) for p in GRAAL_VERSION.split(".")[:3]])
+    elif variant == 'hex':
+        parts = GRAAL_VERSION.split(".")
+        num = 0
+        for i in range(3):
+            num <<= 8
+            num |= int(parts[i]) if i < len(parts) else 0
+        return hex(num)
     else:
-        return GRAAL_VERSION_MAJ_MIN
+        return '.'.join(GRAAL_VERSION.split('.')[:3])
 
 
 def release_level(variant=None):
@@ -1774,6 +1866,7 @@ def dev_tag(arg=None, **kwargs):
 
 
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
+mx_subst.path_substitutions.register_with_arg('suite_parent', _get_suite_parent_dir)
 mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
 mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
 mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
@@ -1972,6 +2065,8 @@ def python_style_checks(args):
         mx.command_function("eclipseformat")(["--primary"])
     if "--no-spotbugs" not in args:
         mx.command_function("spotbugs")([])
+    if "--no-sigcheck" not in args:
+        mx.command_function("sigtest")([])
 
 
 def python_checkcopyrights(args):
@@ -2087,7 +2182,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
         'graalpython:GRAALPYTHON_GRAALVM_DOCS',
-        'graalpython:GRAALPY_VIRTUALENV',
+        'graalpython:GRAALPY_VIRTUALENV_SEEDER',
     ],
     library_configs=[
         mx_sdk.LanguageLibraryConfig(
@@ -2184,8 +2279,7 @@ def _register_bench_suites(namespace):
         mx_benchmark.add_bm_suite(py_bench_suite)
     for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
-    for java_bench_suite in PythonInteropBenchmarkSuite.get_benchmark_suites(JBENCHMARKS):
-        mx_benchmark.add_bm_suite(java_bench_suite)
+    mx_benchmark.add_bm_suite(PythonJMHDistMxBenchmarkSuite())
 
 
 class CharsetFilteringPariticpant:
@@ -2271,8 +2365,12 @@ def mx_post_parse_cmd_line(namespace):
 def python_coverage(args):
     "Generate coverage report for our unittests"
     parser = ArgumentParser(prog='mx python-coverage')
-    parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
-    parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
+    subparsers = parser.add_subparsers()
+    jacoco_parser = subparsers.add_parser('jacoco', help="Generate Jacoco (Java) coverage")
+    jacoco_parser.set_defaults(mode='jacoco')
+    jacoco_parser.add_argument('--tags', required=True, help="Tags for mx gate")
+    truffle_parser = subparsers.add_parser('truffle', help="Generate Truffle (Python) coverage")
+    truffle_parser.set_defaults(mode='truffle')
     args = parser.parse_args(args)
 
     # do not endlessly rebuild tests
@@ -2285,7 +2383,7 @@ def python_coverage(args):
     global _COLLECTING_COVERAGE
     _COLLECTING_COVERAGE = True
 
-    if args.jacoco:
+    if args.mode == 'jacoco':
         jacoco_args = [
             '--jacoco-omit-excluded',
             '--jacoco-generic-paths',
@@ -2293,25 +2391,12 @@ def python_coverage(args):
             '--jacocout', 'coverage',
             '--jacoco-format', 'lcov',
         ]
-        if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
-            jacoco_gates = (
-                GraalPythonTags.tagged,
-            )
-        else:
-            jacoco_gates = (
-                GraalPythonTags.junit,
-                GraalPythonTags.unittest,
-                GraalPythonTags.unittest_multi,
-                GraalPythonTags.unittest_jython,
-                GraalPythonTags.unittest_hpy,
-            )
-
         mx.run_mx([
             '--strict-compliance',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
-            '--tags', ",".join(jacoco_gates),
+            '--tags', args.tags,
         ] + jacoco_args, env=env)
         mx.run_mx([
             '--strict-compliance',
@@ -2323,20 +2408,18 @@ def python_coverage(args):
             '--generic-paths',
             '--exclude-src-gen',
         ], env=env)
-    if args.truffle:
+    if args.mode == 'truffle':
         executable = graalpy_standalone_jvm()
         file_filter = f"*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*,*lib/graalpy{graal_version_short()}*,*include/python{py_version_short()}*"
-        if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
-            variants = [
-                {"tagged": True},
-            ]
-        else:
-            variants = [
-                {"args": []},
-                # {"args": SANDBOXED_OPTIONS}, # Sulong is not reporting coverage with Truffle coverage very well, so we just disable it
-                {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
-                {"hpy": True},
-            ]
+        variants = [
+            {"args": []},
+            # Run only a few tagged tests that are relevant to the files in lib-graalpython
+            {"tagged": True, "paths": ["test_re.py", "test_unicodedata.py"]},
+            # Sulong is not reporting coverage with Truffle coverage very well, so we just disable it
+            # {"args": SANDBOXED_OPTIONS},
+            {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+            {"hpy": True},
+        ]
 
         common_coverage_args = [
             "--experimental-options",
@@ -2357,14 +2440,8 @@ def python_coverage(args):
                 f"--coverage.OutputFile={outfile}",
             ]
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
-            # deselect some tagged unittests that hang with coverage enabled
-            tagged_exclude = [
-                "test_multiprocessing_spawn",
-                "test_multiprocessing_main_handling",
-                "test_multiprocessing_graalpy",
-            ]
             if kwds.pop("tagged", False):
-                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, parallel=6, exclude=tagged_exclude, runner_args=['--continue-on-collection-errors'])
+                run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
             elif kwds.pop("hpy", False):
                 run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
@@ -2441,22 +2518,8 @@ def python_coverage(args):
                     cmdargs += ["-a", f]
                 else:
                     mx.warn(f"Skipping {f}")
-
         # actually run the merge command
         mx.run(cmdargs)
-
-    # upload coverage data
-    out = mx.OutputCapture()
-    mx.run_mx(['sversions', '--print-repositories', '--json'], out=out)
-    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8') as f:
-        f.write(out.data)
-        f.flush()
-        print(f"Associated data", out.data, sep="\n")
-        if os.environ.get('CI'):
-            mx.run(['coverage-uploader.py', '--associated-repos', f.name])
-        else:
-            mx.run(['genhtml', '--output-directory', 'coverage-html', '--source-directory', os.path.abspath(os.path.join(SUITE.dir, '..')), '--quiet', 'coverage/lcov.info'])
-            print('Generated html report in ./coverage-html')
 
 
 class GraalpythonBuildTask(mx.ProjectBuildTask):
@@ -2893,11 +2956,14 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
     def apply(self, config):
         (vmArgs, mainClass, mainClassArgs) = config
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/com.oracle.truffle.api.impl=ALL-UNNAMED'])  # for TruffleRunner/TCK
+        mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/com.oracle.truffle.polyglot=ALL-UNNAMED'])  # for TruffleRunner/TCK
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py/*=ALL-UNNAMED'])  # for Python internals
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py.launcher/*=ALL-UNNAMED'])  # for Python launcher internals
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.python.embedding/*=ALL-UNNAMED'])
         if not PythonMxUnittestConfig.useResources:
             vmArgs.append('-Dorg.graalvm.language.python.home=' + mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
+        if mx._opts.verbose:
+            vmArgs.append('-Dcom.oracle.graal.python.test.verbose=true')
         return (vmArgs, mainClass, mainClassArgs)
 
     def processDeps(self, deps):
@@ -2918,6 +2984,16 @@ def graalpy_standalone_wrapper(args_in):
         if not mx.suite('graalpython-enterprise', fatalIfMissing=False):
             mx.abort("You must add --dynamicimports graalpython-enterprise for EE edition")
     print(graalpy_standalone(args.type, enterprise=args.edition == 'ee', build=not args.no_build))
+
+def graalpy_jmh(args):
+    """
+    JMH benchmarks launcher for manual benchmark execution during development.
+    The real benchmark runs are drive by "mx benchmark python-jmh:GRAALPYTHON_BENCH".
+    All arguments are forwarded to the JMH launcher entry point. Run with "-help" to
+    get more info. Example arguments: "-f 0 -i 5 -wi 5 -w 5 -r 5 initCtx".
+    """
+    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_BENCH'])
+    mx.run_java(vm_args + ['org.openjdk.jmh.Main'] + args)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2953,4 +3029,6 @@ mx.update_commands(SUITE, {
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
     'tox-example': [tox_example, ''],
+    'graalpy-jmh': [graalpy_jmh, ''],
+    'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, ''],
 })

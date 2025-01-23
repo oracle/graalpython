@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.nio.file.LinkOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -188,7 +187,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -461,7 +459,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         PythonContext context = PythonContext.get(null);
         TruffleFile libPath = context.getPublicTruffleFileRelaxed(context.getJNIHome()).resolve(PythonContext.J_PYTHON_JNI_LIBRARY_NAME).getAbsoluteFile();
         try {
-            return libPath.getCanonicalFile(LinkOption.NOFOLLOW_LINKS).toString();
+            return libPath.getCanonicalFile().toString();
         } catch (IOException e) {
             LOGGER.severe(String.format("Cannot determine canonical path for %s: %s", libPath, e));
             throw new IllegalStateException(e);
@@ -1927,7 +1925,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             } else if (clazz == PythonBuiltinClassType.PList && PGuards.isInteger(key) && ctxListSetItem(receiver, ((Number) key).longValue(), hValue)) {
                 return 0;
             }
-            return setItemGeneric(receiver, clazz, key, value);
+            PyObjectSetItem.executeUncached(receiver, key, value);
+            return 0;
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
             // non-null value indicates an error
@@ -1949,7 +1948,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 return 0;
             }
             Object value = HPyAsPythonObjectNodeGen.getUncached().execute(hValue);
-            return setItemGeneric(receiver, clazz, lidx, value);
+            PyObjectSetItem.executeUncached(receiver, lidx, value);
+            return 0;
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
             // non-null value indicates an error
@@ -1981,16 +1981,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         }
         // TODO: other storages...
         return false;
-    }
-
-    @TruffleBoundary
-    private static int setItemGeneric(Object receiver, Object clazz, Object key, Object value) {
-        Object setItemAttribute = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.SetItem).execute(clazz);
-        if (setItemAttribute == PNone.NO_VALUE) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, receiver);
-        }
-        CallTernaryMethodNode.getUncached().execute(null, setItemAttribute, receiver, key, value);
-        return 0;
     }
 
     public int ctxNumberCheck(long handle) {

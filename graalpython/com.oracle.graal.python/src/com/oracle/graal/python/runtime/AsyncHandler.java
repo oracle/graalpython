@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -363,7 +363,7 @@ public class AsyncHandler {
                          * Some other thread will run and eventually get another gil release
                          * request.
                          */
-                        ctx.getEnv().submitThreadLocal(new Thread[]{gilOwner}, new ThreadLocalAction(false, false) {
+                        ctx.getEnv().submitThreadLocal(new Thread[]{gilOwner}, new ThreadLocalAction(true, false) {
                             @Override
                             protected void perform(ThreadLocalAction.Access access) {
                                 // it may happen that we request a GIL release and no thread is

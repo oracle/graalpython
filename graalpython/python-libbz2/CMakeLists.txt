@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -44,16 +44,18 @@ add_library(${TARGET_BZIP2SUPPORT} SHARED)
 target_compile_definitions(${TARGET_BZIP2SUPPORT} PRIVATE NDEBUG)
 
 if(WIN32)
-    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE /Z7 /O2 /WX)
+    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE /O2)
 else()
-    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE -Wall -Werror -O3 -g)
+    target_compile_options(${TARGET_BZIP2SUPPORT} PRIVATE -Wall -Werror -O3)
 endif()
 
 # don't install into the system but into the MX project's output dir
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
 target_sources(${TARGET_BZIP2SUPPORT} PRIVATE "src/bz2.c")
-set_target_properties(${TARGET_BZIP2SUPPORT} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
+if(NOT WIN32)
+    set_target_properties(${TARGET_BZIP2SUPPORT} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
+endif()
 # variable 'BZIP2_SRC' is provided by file 'libbz2.cmake'
 target_include_directories(${TARGET_BZIP2SUPPORT} PRIVATE ${BZIP2_SRC})
 target_link_libraries(${TARGET_BZIP2SUPPORT} PRIVATE ${TARGET_LIBBZ2})

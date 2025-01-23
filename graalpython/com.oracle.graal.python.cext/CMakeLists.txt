@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -43,8 +43,10 @@ endif()
 
 if(WIN32)
     require_var(GRAALVM_LLVM_LIB_DIR)
-  endif()
+endif()
+require_var(GRAALPY_PARENT_DIR)
 require_var(CAPI_INC_DIR)
+require_var(PYCONFIG_INCLUDE_DIR)
 require_var(TRUFFLE_H_INC)
 require_var(TRUFFLE_NFI_H_INC)
 require_var(GRAALPY_EXT)
@@ -67,6 +69,8 @@ set(CFLAGS_WARNINGS -Wall -Werror,-Wunknown-warning-option -Wno-unused-function 
                     -Wno-int-to-pointer-cast -Wno-int-conversion -Wno-void-pointer-to-int-cast
                     -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
                     -Wno-braced-scalar-init -Wno-deprecated-declarations)
+
+add_compile_options(-ffile-prefix-map=${GRAALPY_PARENT_DIR}=.)
 
 # preprocessor defines for all platforms
 add_compile_definitions(
@@ -150,6 +154,7 @@ include_directories(
     ${CAPI_SRC}
     "${SRC_DIR}/include"
     "${CAPI_INC_DIR}"
+    "${PYCONFIG_INCLUDE_DIR}"
     "${TRUFFLE_H_INC}"
     "${TRUFFLE_NFI_H_INC}"
 )
@@ -221,27 +226,27 @@ if(NOT WIN32)
         # variable 'TARGET_LIBBZ2' is defined in file 'LIBBZ2_BUILD_FILE'
         target_link_libraries(${TARGET_BZ2} ${TARGET_LIBBZ2})
     endif()
-
-
-    ###################### PYEXPAT ######################
-    set(TARGET_PYEXPAT "pyexpat")
-    simple_native_module(${TARGET_PYEXPAT})
-    set(EXPAT_SRC "${SRC_DIR}/expat")
-    set(PYEXPAT_HEADERS
-        ${EXPAT_SRC}/ascii.h ${EXPAT_SRC}/asciitab.h ${EXPAT_SRC}/expat.h ${EXPAT_SRC}/expat_config.h
-        ${EXPAT_SRC}/expat_external.h ${EXPAT_SRC}/internal.h ${EXPAT_SRC}/latin1tab.h ${EXPAT_SRC}/utf8tab.h
-        ${EXPAT_SRC}/xmlrole.h ${EXPAT_SRC}/xmltok.h ${EXPAT_SRC}/xmltok_impl.h
-    )
-    target_sources(${TARGET_PYEXPAT} PRIVATE ${PYEXPAT_HEADERS})
-    target_sources(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC}/xmlparse.c ${EXPAT_SRC}/xmlrole.c ${EXPAT_SRC}/xmltok.c)
-    target_include_directories(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC})
-    # bpo-30947: Python uses best available entropy sources to call XML_SetHashSalt(),
-    # expat entropy sources are not needed
-    target_compile_definitions(${TARGET_PYEXPAT} PRIVATE
-        HAVE_EXPAT_CONFIG_H=1
-        XML_POOR_ENTROPY=1
-    )
 endif()
+
+###################### PYEXPAT ######################
+set(TARGET_PYEXPAT "pyexpat")
+simple_native_module(${TARGET_PYEXPAT})
+set(EXPAT_SRC "${SRC_DIR}/expat")
+set(PYEXPAT_HEADERS
+    ${EXPAT_SRC}/ascii.h ${EXPAT_SRC}/asciitab.h ${EXPAT_SRC}/expat.h ${EXPAT_SRC}/expat_config.h
+    ${EXPAT_SRC}/expat_external.h ${EXPAT_SRC}/internal.h ${EXPAT_SRC}/latin1tab.h ${EXPAT_SRC}/utf8tab.h
+    ${EXPAT_SRC}/xmlrole.h ${EXPAT_SRC}/xmltok.h ${EXPAT_SRC}/xmltok_impl.h
+)
+target_sources(${TARGET_PYEXPAT} PRIVATE ${PYEXPAT_HEADERS})
+target_sources(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC}/xmlparse.c ${EXPAT_SRC}/xmlrole.c ${EXPAT_SRC}/xmltok.c)
+target_include_directories(${TARGET_PYEXPAT} PRIVATE ${EXPAT_SRC})
+# bpo-30947: Python uses best available entropy sources to call XML_SetHashSalt(),
+# expat entropy sources are not needed
+target_compile_definitions(${TARGET_PYEXPAT} PRIVATE
+    HAVE_EXPAT_CONFIG_H=1
+    XML_POOR_ENTROPY=1
+    XML_DTD=1
+)
 
 target_sources(${TARGET_LIBPYTHON} PRIVATE ${SRC_FILES})
 target_include_directories(${TARGET_LIBPYTHON} PRIVATE

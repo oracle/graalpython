@@ -1,8 +1,8 @@
-test.test_opcodes.OpcodeTest.test_compare_function_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_opcodes.OpcodeTest.test_default_annotations_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_opcodes.OpcodeTest.test_do_not_recreate_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_opcodes.OpcodeTest.test_modulo_of_string_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_opcodes.OpcodeTest.test_raise_class_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_opcodes.OpcodeTest.test_setup_annotations_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_opcodes.OpcodeTest.test_try_inside_for_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_opcodes.OpcodeTest.test_use_existing_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_opcodes.OpcodeTest.test_compare_function_objects @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_opcodes.OpcodeTest.test_default_annotations_exist @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_opcodes.OpcodeTest.test_do_not_recreate_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_opcodes.OpcodeTest.test_modulo_of_string_subclasses @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_opcodes.OpcodeTest.test_raise_class_exceptions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_opcodes.OpcodeTest.test_setup_annotations_line @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_opcodes.OpcodeTest.test_try_inside_for_loop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_opcodes.OpcodeTest.test_use_existing_annotations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.runtime;
 
+import java.lang.ref.ReferenceQueue;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
@@ -47,14 +50,15 @@ import com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference;
 import com.oracle.graal.python.runtime.sequence.storage.NativeIntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
-import sun.misc.Unsafe;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.RootNode;
 
-import java.lang.ref.ReferenceQueue;
-import java.util.concurrent.ConcurrentHashMap;
+import sun.misc.Unsafe;
 
 public class NativeBufferContext {
     private static final Unsafe unsafe = PythonUtils.initUnsafe();
@@ -62,8 +66,6 @@ public class NativeBufferContext {
     private ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
     // Storing references here to keep them alive
     private ConcurrentHashMap<NativePrimitiveReference, NativePrimitiveReference> phantomReferences;
-
-    private Thread nativeBufferReferenceCleanerThread;
 
     @TruffleBoundary
     public void initReferenceQueue() {
@@ -73,10 +75,7 @@ public class NativeBufferContext {
         TruffleLanguage.Env env = context.getEnv();
         if (env.isCreateThreadAllowed()) {
             var runnable = new NativeBufferDeallocatorRunnable(referenceQueue, this.phantomReferences);
-            Thread thread = env.newTruffleThreadBuilder(runnable).build();
-            thread.setDaemon(true);
-            thread.start();
-            this.nativeBufferReferenceCleanerThread = thread;
+            context.createSystemThread(runnable).start();
         }
     }
 
@@ -87,20 +86,6 @@ public class NativeBufferContext {
         phantomReferences.put(phantomRef, phantomRef);
 
         return storage;
-    }
-
-    public void finalizeContext() {
-        Thread thread = this.nativeBufferReferenceCleanerThread;
-        if (thread != null) {
-            if (thread.isAlive() && !thread.isInterrupted()) {
-                thread.interrupt();
-            }
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                // ignore
-            }
-        }
     }
 
     public NativeIntSequenceStorage toNativeIntStorage(int[] arr) {
@@ -121,7 +106,7 @@ public class NativeBufferContext {
         return referenceQueue;
     }
 
-    static final class NativeBufferDeallocatorRunnable implements Runnable {
+    static final class NativeBufferDeallocatorRunnable extends PythonSystemThreadTask {
         private static final TruffleLogger LOGGER = GraalHPyContext.getLogger(NativeBufferDeallocatorRunnable.class);
 
         private final ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue;
@@ -129,27 +114,21 @@ public class NativeBufferContext {
 
         public NativeBufferDeallocatorRunnable(ReferenceQueue<NativePrimitiveSequenceStorage> referenceQueue,
                         ConcurrentHashMap<NativePrimitiveReference, NativePrimitiveReference> references) {
+            super("Arrow cleaner", LOGGER);
             this.referenceQueue = referenceQueue;
             this.references = references;
         }
 
         @Override
-        public void run() {
+        public void doRun() {
             PythonContext pythonContext = PythonContext.get(null);
             PythonLanguage language = pythonContext.getLanguage();
-
+            RootNode location = language.unavailableSafepointLocation;
             while (!pythonContext.getThreadState(language).isShuttingDown()) {
-                try {
-                    NativePrimitiveReference phantomRef = (NativePrimitiveReference) referenceQueue.remove();
-                    phantomRef.release();
-                    references.remove(phantomRef);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    LOGGER.fine("Native buffer reference cleaner thread was interrupted and is exiting");
-                    return;
-                }
+                NativePrimitiveReference phantomRef = (NativePrimitiveReference) TruffleSafepoint.setBlockedThreadInterruptibleFunction(location, ReferenceQueue::remove, referenceQueue);
+                phantomRef.release();
+                references.remove(phantomRef);
             }
-            LOGGER.fine("Native buffer reference cleaner thread is exiting.");
         }
     }
 }
