@@ -46,17 +46,23 @@
         <version>${symbol_dollar}{graalpy.version}</version>
         <executions>
           <execution>
-            <configuration>
-              <!-- specify python packages and their versions as if used with pip -->
-              <packages>
-                <package>termcolor==2.2</package>
-              </packages>
-            </configuration>
             <goals>
               <goal>process-graalpy-resources</goal>
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <!-- specify the Java resource directory for the virtual filesystem -->
+          <!-- put your custom scripts, datasets and other data into this directory
+               to make them available in Python. Subdirectory "src" will be also
+               added to PYTHONPATH, i.e., Python scripts from that directory can
+               be imported as modules in Python -->
+          <resourceDirectory>GRAALPY-VFS/${symbol_dollar}{project.groupId}/${symbol_dollar}{project.artifactId}</resourceDirectory>
+          <!-- specify python packages and their versions as if used with pip -->
+          <packages>
+            <package>termcolor==2.2</package>
+          </packages>
+        </configuration>
       </plugin>
     </plugins>
   </build>

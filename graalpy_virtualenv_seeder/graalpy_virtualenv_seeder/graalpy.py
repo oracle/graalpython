@@ -100,6 +100,15 @@ except ImportError:
         def _shared_libs(cls, python_dir):
             raise NotImplementedError
 
+        def set_pyenv_cfg(self):
+            super().set_pyenv_cfg()
+            # GraalPy 24.0 and older had home without the bin
+            version = self.interpreter.version_info
+            if version.major == 3 and version.minor <= 10:  # noqa: PLR2004
+                home = Path(self.pyenv_cfg["home"])
+                if home.name == "bin":
+                    self.pyenv_cfg["home"] = str(home.parent)
+
 
     class GraalPyPosix(GraalPy, PosixSupports):
         @classmethod

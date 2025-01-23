@@ -74,6 +74,7 @@ import static org.junit.Assert.assertTrue;
  * Siple copy of VirtualFileSystemIntegrationTest to test also the deprecated
  * org.graalvm.python.embedding.utils pkg
  */
+@SuppressWarnings("deprecation")
 public class VirtualFileSystemIntegrationUtilsTest {
 
     static final String VFS_UNIX_MOUNT_POINT = "/test_mount_point";

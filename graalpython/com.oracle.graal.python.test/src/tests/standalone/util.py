@@ -52,7 +52,7 @@ GLOBAL_MVN_CMD = [shutil.which('mvn'), "--batch-mode"]
 
 GRADLE_VERSION = "8.9"
 
-VFS_PREFIX = "org.graalvm.python.vfs"
+DEFAULT_VFS_PREFIX = "org.graalvm.python.vfs"
 
 is_maven_plugin_test_enabled = 'ENABLE_MAVEN_PLUGIN_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_UNITTESTS'] == "true"
 is_maven_plugin_long_running_test_enabled = 'ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS' in os.environ and os.environ['ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS'] == "true"
@@ -321,9 +321,22 @@ def patch_pom_repositories(pom):
 def replace_in_file(file, str, replace_str):
     with open(file, "r") as f:
         contents = f.read()
-    assert str in contents
+    assert str in contents, f"cannot find '{str}' in file '{file}' with contents:\n {contents}\n------"
     with open(file, "w") as f:
         f.write(contents.replace(str, replace_str))
+
+
+def replace_main_body(filename, new_main_body):
+    with open(filename, "r") as f:
+        lines = f.readlines()
+    with open(filename, "w") as f:
+        for l in lines:
+            f.write(l)
+            if 'public static void main(String[] args) {' in l:
+                break
+        f.write(new_main_body)
+        f.write('    }\n')
+        f.write('}\n')
 
 
 def override_gradle_properties_file(gradle_project_root):
