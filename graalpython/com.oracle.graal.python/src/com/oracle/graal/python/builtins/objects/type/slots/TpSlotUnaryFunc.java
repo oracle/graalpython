@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
@@ -101,6 +101,7 @@ public final class TpSlotUnaryFunc {
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class CallSlotUnaryNode extends Node {
+        private static final TruffleString T_UNARY_SLOT = tsLiteral("<unary slot>");
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "unaryfunc");
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self);
@@ -126,10 +127,9 @@ public final class TpSlotUnaryFunc {
                         @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget);
-            TruffleString name = T___INDEX__; // TODO: how to determine
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, name, slot.callable,
+            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_UNARY_SLOT, slot.callable,
                             toNativeNode.execute(self));
-            return checkResultNode.execute(state, name, toPythonNode.execute(result));
+            return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(result));
         }
 
         @Specialization(replaces = "callCachedBuiltin")
