@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,68 +40,68 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Checks whether a value can be converted to {@code double} using {@link PyFloatAsDoubleNode} or
- * {@link PyNumberFloatNode}. There is no direct CPython function equivalent, as CPython typically
- * checks for the {@code nb_float} and {@code nb_index} slots directly.
+ * Creates a new builtin int object from a given int, which might be a subclass. Equivalent of
+ * {@code _PyLong_Copy}.
  */
-@GenerateUncached
 @GenerateInline
 @GenerateCached(false)
-public abstract class CanBeDoubleNode extends PNodeWithContext {
-    public static boolean executeUncached(Object receiver) {
-        return CanBeDoubleNodeGen.getUncached().execute(null, receiver);
-    }
-
-    public abstract boolean execute(Node inliningTarget, Object object);
+@GenerateUncached
+@ImportStatic(PGuards.class)
+public abstract class PyLongCopy extends Node {
+    public abstract Object execute(Node inliningTarget, Object obj);
 
     @Specialization
-    static boolean doDouble(@SuppressWarnings("unused") Double object) {
-        return true;
+    static int doB(boolean obj) {
+        return obj ? 1 : 0;
     }
 
     @Specialization
-    static boolean doInt(@SuppressWarnings("unused") Integer object) {
-        return true;
+    static int doI(int obj) {
+        return obj;
     }
 
     @Specialization
-    static boolean doLong(@SuppressWarnings("unused") Long object) {
-        return true;
+    static long doL(long obj) {
+        return obj;
+    }
+
+    @Specialization(guards = "isBuiltinPInt(obj)")
+    static PInt doPInt(PInt obj) {
+        return obj;
+    }
+
+    @Specialization(guards = "!isBuiltinPInt(obj)", rewriteOn = OverflowException.class)
+    static int doPIntOverridenNarrowInt(PInt obj) throws OverflowException {
+        return obj.intValueExact();
+    }
+
+    @Specialization(guards = "!isBuiltinPInt(obj)", replaces = "doPIntOverridenNarrowInt", rewriteOn = OverflowException.class)
+    static long doPIntOverridenNarrowLong(PInt obj) throws OverflowException {
+        return obj.longValueExact();
+    }
+
+    @Specialization(guards = "!isBuiltinPInt(obj)", replaces = "doPIntOverridenNarrowLong")
+    static PInt doPIntOverriden(PInt obj,
+                    @Cached(inline = false) PythonObjectFactory factory) {
+        return factory.createInt(obj.getValue());
     }
 
     @Specialization
-    static boolean doBoolean(@SuppressWarnings("unused") Boolean object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
-        return false;
-    }
-
-    @Specialization
-    static boolean doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
-        return false;
-    }
-
-    @Fallback
-    static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached GetObjectSlotsNode getSlots) {
-        TpSlots slots = getSlots.execute(inliningTarget, object);
-        return slots.nb_float() != null || slots.nb_index() != null;
+    static PythonNativeVoidPtr doL(PythonNativeVoidPtr obj) {
+        return obj;
     }
 }

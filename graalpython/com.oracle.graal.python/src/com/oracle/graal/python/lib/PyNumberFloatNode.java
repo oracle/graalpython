@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,25 +40,16 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
-
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode.HandleFloatResultNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -106,38 +97,28 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
         return object ? 1.0 : 0.0;
     }
 
-    @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)"})
+    @Fallback
     @InliningCutoff
     static double doObject(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Float", inline = false) LookupSpecialMethodSlotNode lookup,
-                    @Cached(inline = false) CallUnaryMethodNode call,
-                    @Cached GetClassNode resultClassNode,
-                    @Cached IsBuiltinClassExactProfile resultProfile,
-                    @Cached(inline = false) IsSubtypeNode resultSubtypeNode,
-                    @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached GetCachedTpSlotsNode getSlots,
+                    @Cached CallSlotUnaryNode callFloat,
                     @Cached PyNumberIndexNode indexNode,
-                    @Cached CastToJavaDoubleNode cast,
-                    @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
-                    @Cached PRaiseNode.Lazy raiseNode,
+                    @Cached PyLongAsDoubleNode asDoubleNode,
+                    @Cached HandleFloatResultNode handleFloatResultNode,
                     @Cached PyFloatFromString fromString) {
-        Object floatDescr = lookup.execute(frame, getClassNode.execute(inliningTarget, object), object);
-        if (floatDescr != PNone.NO_VALUE) {
-            Object result = call.executeObject(frame, floatDescr, object);
-            Object resultType = resultClassNode.execute(inliningTarget, result);
-            if (!resultProfile.profileClass(inliningTarget, resultType, PythonBuiltinClassType.PFloat)) {
-                if (!resultSubtypeNode.execute(resultType, PythonBuiltinClassType.PFloat)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, object, result);
-                } else {
-                    warnNode.warnFormat(frame, null, DeprecationWarning, 1,
-                                    ErrorMessages.WARN_P_RETURNED_NON_P, object, T___FLOAT__, "float", result, "float");
-                }
+        Object type = getClassNode.execute(inliningTarget, object);
+        TpSlots slots = getSlots.execute(inliningTarget, type);
+        if (slots.nb_float() != null) {
+            Object result = callFloat.execute(frame, inliningTarget, slots.nb_float(), object);
+            if (result instanceof Double doubleResult) {
+                return doubleResult;
             }
-            return cast.execute(inliningTarget, result);
+            return PyFloatAsDoubleNode.handleFloatResult(frame, result, object, handleFloatResultNode);
         }
-        if (indexCheckNode.execute(inliningTarget, object)) {
+        if (slots.nb_index() != null) {
             Object index = indexNode.execute(frame, inliningTarget, object);
-            return cast.execute(inliningTarget, index);
+            return asDoubleNode.execute(inliningTarget, index);
         }
         return fromString.execute(frame, inliningTarget, object);
     }

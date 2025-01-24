@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,13 +57,12 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -141,7 +140,7 @@ public final class PicklerNodes {
         @Child private CallVarargsMethodNode callVarargsMethodNode;
         @Child private ExecutePositionalStarargsNode getArgsNode;
         @Child private ExpandKeywordStarargsNode getKwArgsNode;
-        @Child private BuiltinConstructors.IntNode intNode;
+        @Child private PyLongFromUnicodeObject pyLongFromUnicodeObject;
         @Child private CodecsModuleBuiltins.CodecsDecodeNode codecsDecodeNode;
         @Child private CodecsModuleBuiltins.CodecsEscapeDecodeNode codecsEscapeDecodeNode;
         @Child private CodecsModuleBuiltins.CodecsEncodeNode codecsEncodeNode;
@@ -398,16 +397,16 @@ public final class PicklerNodes {
             return getItem(frame, ensureEscapeDecodeNode().execute(frame, data, T_ERRORS_STRICT), 0);
         }
 
-        protected Object parseInt(VirtualFrame frame, byte[] bytes) {
-            return parseInt(frame, PickleUtils.getValidIntString(bytes));
+        protected Object parseInt(byte[] bytes) {
+            return parseInt(PickleUtils.getValidIntString(bytes));
         }
 
-        protected Object parseInt(VirtualFrame frame, TruffleString number) {
-            if (intNode == null) {
+        protected Object parseInt(TruffleString number) {
+            if (pyLongFromUnicodeObject == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                intNode = insert(BuiltinConstructorsFactory.IntNodeFactory.create());
+                pyLongFromUnicodeObject = insert(PyLongFromUnicodeObject.create());
             }
-            return intNode.executeWith(frame, number);
+            return pyLongFromUnicodeObject.executeCached(number, 0);
         }
 
         protected CallVarargsMethodNode ensureCallVarargsNode() {

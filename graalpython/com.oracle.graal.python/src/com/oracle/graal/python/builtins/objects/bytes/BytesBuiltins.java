@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,7 +37,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -90,7 +89,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
 public class BytesBuiltins extends PythonBuiltins {
@@ -163,16 +161,8 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         public static TruffleString repr(Object self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BytesNodes.GetBytesStorage getBytesStorage,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            SequenceStorage store = getBytesStorage.execute(inliningTarget, self);
-            byte[] bytes = getBytes.execute(inliningTarget, store);
-            int len = store.length();
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            BytesUtils.reprLoop(sb, bytes, len, appendCodePointNode);
-            return toStringNode.execute(sb);
+                        @Cached BytesNodes.BytesReprNode reprNode) {
+            return reprNode.execute(inliningTarget, self);
         }
     }
 

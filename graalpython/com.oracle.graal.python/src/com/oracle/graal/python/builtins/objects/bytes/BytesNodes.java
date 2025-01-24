@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -125,6 +125,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class BytesNodes {
@@ -1110,6 +1111,27 @@ public abstract class BytesNodes {
         @Override
         protected final TruffleString getErrorMessage() {
             return ErrorMessages.BYTE_MUST_BE_IN_RANGE;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class BytesReprNode extends Node {
+        public abstract TruffleString execute(Node inliningTarget, Object self);
+
+        @Specialization
+        public static TruffleString repr(Node inliningTarget, Object self,
+                        @Cached BytesNodes.GetBytesStorage getBytesStorage,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            SequenceStorage store = getBytesStorage.execute(inliningTarget, self);
+            byte[] bytes = getBytes.execute(inliningTarget, store);
+            int len = store.length();
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            BytesUtils.reprLoop(sb, bytes, len, appendCodePointNode);
+            return toStringNode.execute(sb);
         }
     }
 }

@@ -134,7 +134,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BAD_OPERAND_FOR = tsLiteral("bad operand type for %s%s: '%p'");
     public static final TruffleString BAD_VALUES_IN_FDS_TO_KEEP = tsLiteral("bad value(s) in fds_to_keep");
     public static final TruffleString BAD_TYPECODE = tsLiteral("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
-    public static final TruffleString BASE_OUT_OF_RANGE_FOR_INT = tsLiteral("base is out of range for int()");
+    public static final TruffleString INT_BASE_MUST_BE_2_AND_36_OR_0 = tsLiteral("int() base must be >= 2 and <= 36, or 0");
     public static final TruffleString BASES_ITEM_CAUSES_INHERITANCE_CYCLE = tsLiteral("a __bases__ item causes an inheritance cycle");
     public static final TruffleString BASE_MUST_BE = tsLiteral("PyNumber_ToBase: base must be 2, 8, 10 or 16");
     public static final TruffleString BOOL_SHOULD_RETURN_BOOL = tsLiteral("__bool__ should return bool, returned %p");
@@ -387,7 +387,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = tsLiteral("instance exception may not have a separate value");
     public static final TruffleString INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = tsLiteral("int() can't convert non-string with explicit base");
     public static final TruffleString INT_TOO_LARGE_TO_CONVERT_TO_FLOAT = tsLiteral("int too large to convert to float");
-    public static final TruffleString INTEGER_DIVISION_BY_ZERO = tsLiteral("ZeroDivisionError: integer division or modulo by zero");
+    public static final TruffleString INT_MISSING_STRING_ARGUMENT = tsLiteral("int() missing string argument");
     public static final TruffleString INTEGER_DIVISION_RESULT_TOO_LARGE = tsLiteral("integer division result too large for a float");
     public static final TruffleString S_EXPECTED_GOT_P = tsLiteral("%s argument expected, got %p");
     public static final TruffleString REC_LIMIT_GREATER_THAN_1 = tsLiteral("recursion limit must be greater or equal than 1");

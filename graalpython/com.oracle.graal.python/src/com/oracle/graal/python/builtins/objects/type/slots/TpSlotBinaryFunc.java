@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
@@ -126,6 +127,7 @@ public class TpSlotBinaryFunc {
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class CallSlotBinaryFuncNode extends Node {
+        private static final TruffleString T_BINARY_SLOT = tsLiteral("<binary slot>");
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "binaryfunc");
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object arg);
@@ -153,10 +155,9 @@ public class TpSlotBinaryFunc {
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            TruffleString name = T___GETITEM__; // TODO: how to determine...
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, name, slot.callable,
+            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_BINARY_SLOT, slot.callable,
                             selfToNativeNode.execute(self), argToNativeNode.execute(arg));
-            return checkResultNode.execute(state, name, toPythonNode.execute(result));
+            return checkResultNode.execute(state, T_BINARY_SLOT, toPythonNode.execute(result));
         }
 
         @Specialization

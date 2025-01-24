@@ -95,6 +95,12 @@ public @interface Slot {
     enum SlotKind {
         /** Whether this object is treated as true or false for {@code if object} */
         nb_bool("__bool__"),
+        /** Conversion to index (operator.index) */
+        nb_index("__index__"),
+        /** Conversion to int */
+        nb_int("__int__"),
+        /** Conversion to float */
+        nb_float("__float__"),
         /** foo + bar */
         nb_add("__add__, __radd__"),
         /** foo - bar */

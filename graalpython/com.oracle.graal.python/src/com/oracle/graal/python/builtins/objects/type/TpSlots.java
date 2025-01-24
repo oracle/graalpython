@@ -47,11 +47,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
@@ -111,6 +114,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.Setattr
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargprocWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
@@ -148,6 +152,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.TpSlotS
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlotSqAssItemBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.TpSlotSqAssItemPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -229,6 +234,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  *            should be {@link #tp_getattro()}. We assume that no builtins define this slot.
  */
 public record TpSlots(TpSlot nb_bool, //
+                TpSlot nb_index, //
+                TpSlot nb_int, //
+                TpSlot nb_float, //
                 TpSlot nb_add, //
                 TpSlot nb_subtract, //
                 TpSlot nb_multiply, //
@@ -348,6 +356,30 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PyNumberMethods__nb_bool,
                         PExternalFunctionWrapper.INQUIRY,
                         InquiryWrapper::new),
+        NB_INDEX(
+                        TpSlots::nb_index,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_index,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
+        NB_INT(
+                        TpSlots::nb_int,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_int,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
+        NB_FLOAT(
+                        TpSlots::nb_float,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_float,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new),
         NB_ADD(
                         TpSlots::nb_add,
                         TpSlotBinaryOpPython.class,
@@ -783,6 +815,9 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotDef.withoutHPy(T___MATMUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RMATMUL__, TpSlotBinaryOpPython::create, PExternalFunctionWrapper.BINARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
+        addSlotDef(s, TpSlotMeta.NB_INDEX, TpSlotDef.withSimpleFunction(T___INDEX__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INT, TpSlotDef.withSimpleFunction(T___INT__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_FLOAT, TpSlotDef.withSimpleFunction(T___FLOAT__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.MP_LENGTH, TpSlotDef.withSimpleFunction(T___LEN__, PExternalFunctionWrapper.LENFUNC, HPySlotWrapper.LENFUNC));
         addSlotDef(s, TpSlotMeta.MP_SUBSCRIPT, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.MP_ASS_SUBSCRIPT,
@@ -1376,6 +1411,9 @@ public record TpSlots(TpSlot nb_bool, //
             TpSlot tp_set_attro_attr = fistNonNull(TpSlotMeta.TP_SETATTRO, TpSlotMeta.TP_SETATTR);
             return new TpSlots(
                             get(TpSlotMeta.NB_BOOL), //
+                            get(TpSlotMeta.NB_INDEX), //
+                            get(TpSlotMeta.NB_INT), //
+                            get(TpSlotMeta.NB_FLOAT), //
                             get(TpSlotMeta.NB_ADD), //
                             get(TpSlotMeta.NB_SUBTRACT), //
                             get(TpSlotMeta.NB_MULTIPLY), //

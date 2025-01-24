@@ -64,7 +64,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AbsNode;
@@ -108,6 +107,7 @@ import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -197,19 +197,10 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyNumber_Long extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static int nlong(int i) {
-            return i;
-        }
-
-        @Specialization
-        static long nlong(long i) {
-            return i;
-        }
-
-        @Fallback
-        static Object nlong(Object obj,
-                        @Cached BuiltinConstructors.IntNode intNode) {
-            return intNode.executeWith(null, obj, PNone.NO_VALUE);
+        static Object nlong(Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberLongNode pyNumberLongNode) {
+            return pyNumberLongNode.execute(null, inliningTarget, object);
         }
     }
 
