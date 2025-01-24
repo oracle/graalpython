@@ -90,9 +90,10 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Siple copy of VirtualFileSystemTest to test also the deprecated
+ * Simple copy of VirtualFileSystemTest to test also the deprecated
  * org.graalvm.python.embedding.utils pkg
  */
+@SuppressWarnings("deprecation")
 public class VirtualFileSystemUtilsTest {
 
     private static String MOUNT_POINT_NAME = "test_mount_point";
