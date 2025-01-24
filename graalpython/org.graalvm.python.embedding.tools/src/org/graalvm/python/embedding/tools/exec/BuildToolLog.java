@@ -77,7 +77,7 @@ public interface BuildToolLog {
     default void debug(String s) {
         System.out.println(s);
     }
-    
+
     final class CollectOutputLog implements BuildToolLog {
         private final List<String> output = new ArrayList<>();
 

@@ -194,17 +194,17 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
                         "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
                         "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources.");
             }
-            t.getPackages().set(extension.getPackages());
+        t.getPackages().set(extension.getPackages());
 
-            t.getOutput().convention(
-                    extension.getExternalDirectory().orElse(
-                        extension.getPythonResourcesDirectory()
-                                .orElse(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY))));
-            t.getIncludeVfsRoot().convention(extension.getExternalDirectory().map(d -> false)
-                    .orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
-            t.getResourceDirectory().set(extension.getResourceDirectory());
+        t.getOutput().convention(
+                extension.getExternalDirectory().orElse(
+                    extension.getPythonResourcesDirectory()
+                            .orElse(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY))));
+        t.getIncludeVfsRoot().convention(extension.getExternalDirectory().map(d -> false)
+                .orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
+        t.getResourceDirectory().set(extension.getResourceDirectory());
 
-            t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
+        t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
     }
 

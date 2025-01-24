@@ -44,6 +44,7 @@ import org.graalvm.python.GraalPyGradlePlugin;
 import org.graalvm.python.GradleLogger;
 import org.graalvm.python.dsl.GraalPyExtension;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils.Launcher;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -131,8 +132,12 @@ public abstract class ResourcesTask extends DefaultTask {
     private void manageVenv() {
         List<String> packages = getPackages().getOrElse(null);
         try {
-            VFSUtils.createVenv(getVenvDirectory(), new ArrayList<String>(packages), getLauncherPath(), this::calculateLauncherClasspath, getPolyglotVersion().get(),
-                            GradleLogger.of(getLogger()));
+            Launcher launcher = new Launcher( getLauncherPath()) {
+                public Set<String> computeClassPath() {
+                    return calculateLauncherClasspath();
+                }
+            };
+            VFSUtils.createVenv(getVenvDirectory(), new ArrayList<String>(packages), launcher, getPolyglotVersion().get(), GradleLogger.of(getLogger()));
         } catch (IOException e) {
             throw new GradleException(String.format("failed to create venv %s", getVenvDirectory()), e);
         }

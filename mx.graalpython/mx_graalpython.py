@@ -415,6 +415,10 @@ def punittest(ars, report=False):
             TestConfig("multi-cext", vm_args + ['org.graalvm.python.embedding.cext.test'] + args + (["--use-graalvm"] if has_compiler else []), True),
         )
 
+    configs.append(
+        TestConfig("vfsutil", vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + (["--use-graalvm"] if has_compiler else []), True),
+    )
+
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
         configs.append(TestConfig("async", vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test', 'org.graalvm.python.embedding.test'] + async_regex + args, True, False))
@@ -1209,7 +1213,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'((graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util)))'
+                        r'((graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util))|(org\.graalvm\.python\.embedding\.(test|test\.integration))|(org\.graalvm\.python\.embedding\.vfs\.test))'
                     ],
                     report=True
                 )
@@ -2985,6 +2989,7 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py/*=ALL-UNNAMED'])  # for Python internals
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py.launcher/*=ALL-UNNAMED'])  # for Python launcher internals
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.python.embedding/*=ALL-UNNAMED'])
+        mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.python.embedding.tools/*=ALL-UNNAMED'])
         if not PythonMxUnittestConfig.useResources:
             vmArgs.append('-Dorg.graalvm.language.python.home=' + mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
         if mx._opts.verbose:

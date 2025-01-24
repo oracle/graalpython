@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package org.graalvm.python.jbang;
 
 import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils.Launcher;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,6 +59,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,6 +78,12 @@ public class JBangIntegration {
     private static final String LAUNCHER = IS_WINDOWS ? "graalpy.exe" : "graalpy.sh";
 
     private static final BuildToolLog BUILD_TOOL_LOG = new BuildToolLog() {
+        private static final boolean debugEnabled = Boolean.getBoolean("org.graalvm.python.jbang.log.debug");
+
+        @Override
+        public boolean isDebugEnabled() {
+            return debugEnabled;
+        }
     };
 
     private static final String JBANG_COORDINATES = "org.graalvm.python:jbang:jar";
@@ -171,7 +179,12 @@ public class JBangIntegration {
             // perhaps already checked by jbang
             throw new IllegalStateException("could not resolve parent for venv path: " + venv);
         }
-        VFSUtils.createVenv(venv, pkgs, getLauncherPath(venvParent.toString()), () -> calculateClasspath(dependencies), graalPyVersion, BUILD_TOOL_LOG);
+        Launcher launcher = new Launcher(getLauncherPath(venvParent.toString())) {
+            public Set<String> computeClassPath() {
+                return calculateClasspath(dependencies);
+            };
+        };
+        VFSUtils.createVenv(venv, pkgs, launcher, graalPyVersion, BUILD_TOOL_LOG);
 
         if (dropPip) {
             try {

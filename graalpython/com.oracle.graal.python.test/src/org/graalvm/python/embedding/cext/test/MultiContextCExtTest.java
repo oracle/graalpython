@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,14 +46,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
@@ -62,8 +58,10 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.python.embedding.tools.exec.BuildToolLog;
-import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 import org.junit.Test;
+
+import static org.graalvm.python.embedding.test.EmbeddingTestUtils.deleteDirOnShutdown;
+import static org.graalvm.python.embedding.test.EmbeddingTestUtils.createVenv;
 
 public class MultiContextCExtTest {
     static final class TestLog extends Handler implements BuildToolLog {
@@ -117,61 +115,30 @@ public class MultiContextCExtTest {
         }
     }
 
-    private static Path createVenv(TestLog log, String... packages) throws IOException {
-        var tmpdir = Files.createTempDirectory("graalpytest");
-        deleteDirOnShutdown(tmpdir);
-        var venvdir = tmpdir.resolve("venv");
-        try {
-            VFSUtils.createVenv(venvdir, Arrays.asList(packages), tmpdir.resolve("graalpy.exe"), () -> getClasspath(), "", log);
-        } catch (RuntimeException e) {
-            System.err.println(getClasspath());
-            throw e;
-        }
-        return venvdir;
-    }
-
-    private static void deleteDirOnShutdown(Path tmpdir) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try (var fs = Files.walk(tmpdir)) {
-                fs.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-            } catch (IOException e) {
-            }
-        }));
-    }
-
-    private static Set<String> getClasspath() {
-        var sb = new ArrayList<String>();
-        var modPath = System.getProperty("jdk.module.path");
-        if (modPath != null) {
-            sb.add(modPath);
-        }
-        var classPath = System.getProperty("java.class.path");
-        if (classPath != null) {
-            sb.add(classPath);
-        }
-        var cp = String.join(File.pathSeparator, sb);
-        return Set.copyOf(Arrays.stream(cp.split(File.pathSeparator)).toList());
-    }
-
     @Test
     public void testCreatingVenvForMulticontext() throws IOException {
         var log = new TestLog();
-        Path venv;
+        Path tmpdir = Files.createTempDirectory("MultiContextCExtTest");
+        Path venvDir = tmpdir.resolve("venv");
+        deleteDirOnShutdown(tmpdir);
 
         String pythonNative;
         String exe;
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
             pythonNative = "python-native.dll";
-            venv = createVenv(log, "delvewheel==1.9.0");
-            exe = venv.resolve("Scripts").resolve("python.exe").toString().replace('\\', '/');
+            createVenv(venvDir, "0.1", log, "delvewheel==1.9.0");
+
+            exe = venvDir.resolve("Scripts").resolve("python.exe").toString().replace('\\', '/');
         } else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
             pythonNative = "libpython-native.dylib";
-            venv = createVenv(log);
-            exe = venv.resolve("bin").resolve("python").toString();
+            createVenv(venvDir, "0.1", log);
+
+            exe = venvDir.resolve("bin").resolve("python").toString();
         } else {
             pythonNative = "libpython-native.so";
-            venv = createVenv(log, "patchelf");
-            exe = venv.resolve("bin").resolve("python").toString();
+            createVenv(venvDir, "0.1", log, "patchelf");
+
+            exe = venvDir.resolve("bin").resolve("python").toString();
         }
 
         var engine = Engine.newBuilder("python").logHandler(log).build();
@@ -182,11 +149,11 @@ public class MultiContextCExtTest {
             Context c0, c1, c2, c3, c4, c5;
             contexts.add(c0 = builder.build());
             c0.initialize("python");
-            c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venv.toString().replace('\\', '/')));
+            c0.eval("python", String.format("__graalpython__.replicate_extensions_in_venv('%s', 2)", venvDir.toString().replace('\\', '/')));
 
-            assertTrue("created a copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup0")));
-            assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup1")));
-            assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
+            assertTrue("created a copy of the capi", Files.list(venvDir).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup0")));
+            assertTrue("created another copy of the capi", Files.list(venvDir).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup1")));
+            assertFalse("created no more copies of the capi", Files.list(venvDir).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
 
             builder.option("python.IsolateNativeModules", "true");
             contexts.add(c1 = builder.build());
@@ -205,7 +172,7 @@ public class MultiContextCExtTest {
             // First one works
             var r1 = c1.eval(code);
             assertEquals("tiny_sha3", r1.asString());
-            assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
+            assertFalse("created no more copies of the capi", Files.list(venvDir).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
             // Second one works because of isolation
             var r2 = c2.eval(code);
             assertEquals("tiny_sha3", r2.asString());
@@ -215,10 +182,10 @@ public class MultiContextCExtTest {
             // first context is unaffected
             r1 = c1.eval(code);
             assertEquals("tiny_sha3", r1.asString());
-            assertFalse("created no more copies of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
+            assertFalse("created no more copies of the capi", Files.list(venvDir).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
             // Third one works and triggers a dynamic relocation
             c3.eval(code);
-            assertTrue("created another copy of the capi", Files.list(venv).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
+            assertTrue("created another copy of the capi", Files.list(venvDir).anyMatch((p) -> p.getFileName().toString().startsWith(pythonNative) && p.getFileName().toString().endsWith(".dup2")));
             // Fourth one does not work because we changed the sys.prefix
             c4.eval("python", "import sys; sys.prefix = 12");
             try {

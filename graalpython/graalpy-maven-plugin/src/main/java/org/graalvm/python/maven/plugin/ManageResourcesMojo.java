@@ -55,11 +55,15 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import org.apache.maven.plugins.annotations.*;
 import org.apache.maven.project.*;
 import org.eclipse.aether.graph.Dependency;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils.Launcher;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.LAUNCHER_NAME;
@@ -172,7 +176,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         for(Resource r : project.getBuild().getResources()) {
             if (Files.exists(Path.of(r.getDirectory(), resourceDirectory, "proj"))) {
                 getLog().warn(String.format("usage of %s is deprecated, use %s instead", Path.of(resourceDirectory, "proj"), Path.of(resourceDirectory, "src")));
-            }
+    }
             if (!Files.exists(Path.of(r.getDirectory(), resourceDirectory)) && Files.exists(Path.of(r.getDirectory(), "vfs", "proj"))) {
                 // there isn't the actual vfs resource root "org.graalvm.python.vfs" (VFS_ROOT), and there is only the outdated "vfs/proj"
                 // => looks like a project created < 24.1.0
@@ -229,8 +233,14 @@ public class ManageResourcesMojo extends AbstractMojo {
                 delete(venvDirectory);
                 return;
             }
+            
+            Launcher launcher = new Launcher( getLauncherPath()) {
+                public Set<String> computeClassPath() throws IOException {
+                    return calculateLauncherClasspath(project);
+                }
+            };
 
-            VFSUtils.createVenv(venvDirectory, new ArrayList<String>(packages), getLauncherPath(), () -> calculateLauncherClasspath(project), getGraalPyVersion(project), new MavenDelegateLog(getLog()));
+            VFSUtils.createVenv(venvDirectory, new ArrayList<String>(packages), launcher, getGraalPyVersion(project), new MavenDelegateLog(getLog()));
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }
