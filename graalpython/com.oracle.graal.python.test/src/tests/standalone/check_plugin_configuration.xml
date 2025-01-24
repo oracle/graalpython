@@ -75,13 +75,13 @@ SOFTWARE.
             <goals>
               <goal>process-graalpy-resources</goal>
             </goals>
+            <configuration>
+              <packages>
+                <package>termcolor</package>
+              </packages>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-          <packages>
-
-          </packages>
-        </configuration>
       </plugin>
     </plugins>
   </build>

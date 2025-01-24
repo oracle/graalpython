@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,80 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package org.graalvm.python.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
-                requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
-                requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
-public class ManageResourcesMojo extends AbstractGraalPyMojo {
+@Mojo(name = "freeze-installed-packages",
+        requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+public class FreezeInstalledPackagesMojo extends AbstractGraalPyMojo {
 
     public void execute() throws MojoExecutionException {
-        preExec();
+        checkEmptyPackages();
 
+        preExec();
+        
         manageVenv();
         listGraalPyResources();
-        manageNativeImageConfig();
-
+        
         postExec();
     }
 
-    private void manageVenv() throws MojoExecutionException {
+    protected void manageVenv() throws MojoExecutionException {
         Path venvDirectory = getVenvDirectory();
         MavenDelegateLog log = new MavenDelegateLog(getLog());
         Path requirements = getRequirementsFile();
+
         try {
-            VFSUtils.createVenv(venvDirectory, packages, requirements, INCONSISTENT_PACKAGES_ERROR, WRONG_PACKAGE_VERSION_FORMAT_ERROR, createLauncher(), getGraalPyVersion(project), log);
-            VFSUtils.warnMissingRequirementsFile(requirements, MISSING_REQUIREMENTS_FILE_WARNING, log);
+            VFSUtils.checkVersionFormat(packages, WRONG_PACKAGE_VERSION_FORMAT_ERROR, log);
+
+            VFSUtils.createVenv(venvDirectory, packages, createLauncher(), getGraalPyVersion(project), log);
+
+            if(Files.exists(venvDirectory)) {
+                VFSUtils.createRequirementsFile(venvDirectory, requirements, REQUIREMENTS_FILE_HEADER, log);
+            } else {
+                // how comes?
+                log.warning("did not generate new python requirements file due to missing venv");
+            }
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }
     }
 
+    private void checkEmptyPackages() throws MojoExecutionException {
+        if((packages == null || packages.isEmpty())) {
+            getLog().error("");
+            getLog().error("In order to run the freeze-installed-packages goal there have to be python packages declared in the graalpy-maven-plugin configuration.");
+            getLog().error("");
+            getLog().error("NOTE that the <configuration> section has to be declared for the whole graalpy-maven-plugin");
+            getLog().error("and not specifically for the process-graalpy-resources execution goal.");
+            getLog().error("");
+            getLog().error("Please add the <packages> section to your configuration as follows:");
+            getLog().error("<plugin>");
+            getLog().error("  <groupId>org.graalvm.python</groupId>");
+            getLog().error("  <artifactId>graalpy-maven-plugin</artifactId>");
+            getLog().error("  <configuration>");
+            getLog().error("    <packages>");
+            getLog().error("      <package>{package_name}=={package_version}</package>");
+            getLog().error("    </packages>");
+            getLog().error("    ...");
+            getLog().error("  </configuration>");
+            getLog().error("");
+
+            getLog().error("For more information, please refer to https://github.com/oracle/graalpython/blob/master/docs/user/Embedding-Build-Tools.md");
+            getLog().error("");
+
+            throw new MojoExecutionException("missing packages");
+        }
+    }
 }
