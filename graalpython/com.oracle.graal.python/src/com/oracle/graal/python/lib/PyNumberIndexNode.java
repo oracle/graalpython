@@ -120,6 +120,11 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         if (checkNode.execute(inliningTarget, result)) {
             return result;
         }
+        return checkResult(frame, result, object, checkResult);
+    }
+
+    @InliningCutoff
+    private static Object checkResult(VirtualFrame frame, Object result, Object object, CheckIndexResultNotInt checkResult) {
         return checkResult.execute(frame, object, result);
     }
 
@@ -129,7 +134,6 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         abstract Object execute(VirtualFrame frame, Object original, Object result);
 
         @Specialization
-        @InliningCutoff
         static Object doGeneric(VirtualFrame frame, Object original, Object result,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,

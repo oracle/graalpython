@@ -141,13 +141,18 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
             if (result instanceof Double doubleResult) {
                 return doubleResult;
             }
-            return handleFloatResultNode.execute(frame, result, object);
+            return handleFloatResult(frame, result, object, handleFloatResultNode);
         }
         if (slots.nb_index() != null) {
             Object index = indexNode.execute(frame, inliningTarget, object);
             return asDoubleNode.execute(inliningTarget, index);
         }
         throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
+    }
+
+    @InliningCutoff
+    static double handleFloatResult(VirtualFrame frame, Object result, Object object, HandleFloatResultNode handleFloatResultNode) {
+        return handleFloatResultNode.execute(frame, result, object);
     }
 
     static boolean isFloatSubtype(Node inliningTarget, Object object, GetClassNode getClass, IsSubtypeNode isSubtype) {

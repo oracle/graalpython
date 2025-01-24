@@ -138,11 +138,21 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
             if (longCheckExactNode.execute(inliningTarget, result)) {
                 return result;
             }
-            return handleIntResult.execute(frame, object, result);
+            return handleIntResult(frame, object, handleIntResult, result);
         }
         if (slots.nb_index() != null) {
             return indexNode.execute(frame, inliningTarget, object);
         }
+        return complexCase(frame, object, helperNode);
+    }
+
+    @InliningCutoff
+    private static Object handleIntResult(VirtualFrame frame, Object object, HandleIntResult handleIntResult, Object result) {
+        return handleIntResult.execute(frame, object, result);
+    }
+
+    @InliningCutoff
+    private static Object complexCase(VirtualFrame frame, Object object, ComplexCasesHelperNode helperNode) {
         return helperNode.execute(frame, object);
     }
 
@@ -152,7 +162,6 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
         abstract Object execute(VirtualFrame frame, Object original, Object result);
 
         @Specialization
-        @InliningCutoff
         static Object doGeneric(VirtualFrame frame, Object original, Object result,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
@@ -175,7 +184,6 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
         abstract Object execute(VirtualFrame frame, Object object);
 
         @Specialization
-        @InliningCutoff
         static Object doGeneric(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,

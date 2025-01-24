@@ -90,7 +90,7 @@ public abstract class PyLongFromUnicodeObject extends Node {
                     @Cached CastToTruffleStringNode cast,
                     @Cached TruffleString.ParseLongNode parseLongNode,
                     @Cached InlinedConditionProfile intOrLongResult,
-                    @Cached GenericIntParserNode fromString) {
+                    @Cached GenericIntParserNode genericParser) {
         TruffleString string = cast.castKnownString(inliningTarget, stringObj);
         /*
          * For other bases, we would have to pre-process the possible 0? prefix. That applies even
@@ -107,6 +107,11 @@ public abstract class PyLongFromUnicodeObject extends Node {
                 // Fall through to the generic parser
             }
         }
+        return parseGeneric(string, base, originalBytes, originalBytesLen, genericParser);
+    }
+
+    @InliningCutoff
+    private static Object parseGeneric(TruffleString string, int base, byte[] originalBytes, int originalBytesLen, GenericIntParserNode fromString) {
         return fromString.execute(string, base, originalBytes, originalBytesLen);
     }
 
@@ -116,7 +121,6 @@ public abstract class PyLongFromUnicodeObject extends Node {
         public abstract Object execute(TruffleString number, int base, byte[] originalBytes, int originalBytesLen);
 
         @Specialization
-        @InliningCutoff
         static Object doGeneric(TruffleString numberTs, int base, byte[] originalBytes, int originalBytesLen,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,

@@ -114,7 +114,7 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
             if (result instanceof Double doubleResult) {
                 return doubleResult;
             }
-            return handleFloatResultNode.execute(frame, result, object);
+            return PyFloatAsDoubleNode.handleFloatResult(frame, result, object, handleFloatResultNode);
         }
         if (slots.nb_index() != null) {
             Object index = indexNode.execute(frame, inliningTarget, object);
