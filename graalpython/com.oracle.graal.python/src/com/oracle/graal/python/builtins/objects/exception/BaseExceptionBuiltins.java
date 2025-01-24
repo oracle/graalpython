@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -93,7 +94,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -151,20 +152,22 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length != 0", "keywords.length == 0"})
-        Object doWithArguments(PBaseException self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
-            self.setArgs(factory().createTuple(args));
+        Object doWithArguments(PBaseException self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind PythonLanguage language) {
+            self.setArgs(PFactory.createTuple(language, args));
             return PNone.NONE;
         }
 
         @Specialization(replaces = {"doNoArguments", "doWithArguments"})
-        Object doGeneric(PBaseException self, Object[] args, PKeyword[] keywords) {
+        Object doGeneric(PBaseException self, Object[] args, PKeyword[] keywords,
+                        @Bind PythonLanguage language) {
             if (keywords.length != 0) {
                 throw raise(TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
             }
             if (args.length == 0) {
                 self.setArgs(null);
             } else {
-                self.setArgs(factory().createTuple(args));
+                self.setArgs(PFactory.createTuple(language, args));
             }
             return PNone.NONE;
         }
@@ -172,14 +175,15 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization
         Object doNative(PythonAbstractNativeObject self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @Cached ExceptionNodes.SetArgsNode setArgsNode) {
+                        @Cached ExceptionNodes.SetArgsNode setArgsNode,
+                        @Bind PythonLanguage language) {
             if (keywords.length != 0) {
                 throw raise(TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
             }
             if (args.length == 0) {
-                setArgsNode.execute(inliningTarget, self, factory().createEmptyTuple());
+                setArgsNode.execute(inliningTarget, self, PFactory.createEmptyTuple(language));
             } else {
-                setArgsNode.execute(inliningTarget, self, factory().createTuple(args));
+                setArgsNode.execute(inliningTarget, self, PFactory.createTuple(language, args));
             }
             return PNone.NONE;
         }
@@ -202,9 +206,9 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached CastToListNode castToList,
                         @Cached SequenceStorageNodes.CopyInternalArrayNode copy,
                         @Cached ExceptionNodes.SetArgsNode setArgsNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PList list = castToList.execute(frame, value);
-            setArgsNode.execute(inliningTarget, self, factory.createTuple(copy.execute(inliningTarget, list.getSequenceStorage())));
+            setArgsNode.execute(inliningTarget, self, PFactory.createTuple(language, copy.execute(inliningTarget, list.getSequenceStorage())));
             return PNone.NONE;
         }
     }
@@ -397,11 +401,11 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetArgsNode argsNode,
                         @Cached DictNode dictNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             PTuple args = argsNode.execute(inliningTarget, self);
             Object dict = dictNode.execute(frame, self, PNone.NO_VALUE);
-            return factory.createTuple(new Object[]{clazz, args, dict});
+            return PFactory.createTuple(language, new Object[]{clazz, args, dict});
         }
     }
 
@@ -536,14 +540,14 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached ListNodes.AppendNode appendNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!unicodeCheckNode.execute(inliningTarget, note)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOTE_MUST_BE_A_STR_NOT_P, note);
             }
             Object notes = lookupAttr.execute(frame, inliningTarget, self, T___NOTES__);
             if (notes == PNone.NO_VALUE) {
-                notes = factory.createList();
+                notes = PFactory.createList(language);
                 setAttr.execute(frame, inliningTarget, self, T___NOTES__, notes);
             }
             if (notes instanceof PList notesList) {

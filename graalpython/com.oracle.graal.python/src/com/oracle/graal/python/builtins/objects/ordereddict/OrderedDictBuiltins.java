@@ -64,6 +64,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -109,7 +110,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -292,14 +293,14 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetStateNode getStateNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
             Object state = getStateNode.execute(frame, inliningTarget, self);
-            Object args = factory.createEmptyTuple();
+            Object args = PFactory.createEmptyTuple(language);
             // Might be overridden
             Object items = callMethod.execute(frame, inliningTarget, self, T_ITEMS);
             Object itemsIter = getIter.execute(frame, inliningTarget, items);
-            return factory.createTuple(new Object[]{type, args, state, PNone.NONE, itemsIter});
+            return PFactory.createTuple(language, new Object[]{type, args, state, PNone.NONE, itemsIter});
         }
     }
 
@@ -360,7 +361,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageNodes.HashingStorageDelItem delItem,
                         @Cached ObjectHashMap.RemoveNode removeNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raise) {
             ODictNode node = last ? self.last : self.first;
             if (node == null) {
@@ -370,7 +371,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
             removeNode.execute(frame, inliningTarget, self.nodes, node.key, node.hash);
             // TODO with hash
             Object value = delItem.executePop(frame, inliningTarget, self.getDictStorage(), node.key, self);
-            return factory.createTuple(new Object[]{node.key, value});
+            return PFactory.createTuple(language, new Object[]{node.key, value});
         }
 
         @Override
@@ -453,8 +454,8 @@ public class OrderedDictBuiltins extends PythonBuiltins {
     abstract static class KeysNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object keys(POrderedDict self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createOrderedDictKeys(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createOrderedDictKeys(language, self);
         }
     }
 
@@ -463,8 +464,8 @@ public class OrderedDictBuiltins extends PythonBuiltins {
     abstract static class ValuesNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object values(POrderedDict self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createOrderedDictValues(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createOrderedDictValues(language, self);
         }
     }
 
@@ -473,8 +474,8 @@ public class OrderedDictBuiltins extends PythonBuiltins {
     abstract static class ItemsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object items(POrderedDict self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createOrderedDictItems(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createOrderedDictItems(language, self);
         }
     }
 
@@ -483,8 +484,8 @@ public class OrderedDictBuiltins extends PythonBuiltins {
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object iter(POrderedDict self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createOrderedDictIterator(self, POrderedDictIterator.IteratorType.KEYS, false);
+                        @Bind PythonLanguage language) {
+            return PFactory.createOrderedDictIterator(language, self, POrderedDictIterator.IteratorType.KEYS, false);
         }
     }
 
@@ -493,8 +494,8 @@ public class OrderedDictBuiltins extends PythonBuiltins {
     abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object iter(POrderedDict self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createOrderedDictIterator(self, POrderedDictIterator.IteratorType.KEYS, true);
+                        @Bind PythonLanguage language) {
+            return PFactory.createOrderedDictIterator(language, self, POrderedDictIterator.IteratorType.KEYS, true);
         }
     }
 

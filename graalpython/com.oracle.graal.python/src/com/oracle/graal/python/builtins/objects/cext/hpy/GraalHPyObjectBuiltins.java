@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,7 +68,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -286,7 +286,7 @@ public abstract class GraalHPyObjectBuiltins {
             }
             RootCallTarget callTarget = language.createCachedCallTarget(l -> new HPyObjectNewNode(language, builtinShape), HPyObjectNewNode.class, builtinShape);
             int flags = CExtContext.METH_KEYWORDS | CExtContext.METH_VARARGS;
-            return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.T___NEW__, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(superConstructor), flags, callTarget);
+            return PFactory.createBuiltinFunction(language, SpecialMethodNames.T___NEW__, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(superConstructor), flags, callTarget);
         }
 
         public static Object getDecoratedSuperConstructor(PBuiltinFunction builtinFunction) {

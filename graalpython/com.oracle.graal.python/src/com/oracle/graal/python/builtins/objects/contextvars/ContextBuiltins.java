@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -64,7 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -110,8 +111,8 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Iter extends PythonUnaryBuiltinNode {
         @Specialization
         static Object iter(PContextVarsContext self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createContextIterator(self, PContextIterator.ItemKind.KEYS);
+                        @Bind PythonLanguage language) {
+            return PFactory.createContextIterator(language, self, PContextIterator.ItemKind.KEYS);
         }
     }
 
@@ -120,8 +121,8 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Keys extends PythonUnaryBuiltinNode {
         @Specialization
         static Object keys(PContextVarsContext self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createContextIterator(self, PContextIterator.ItemKind.KEYS);
+                        @Bind PythonLanguage language) {
+            return PFactory.createContextIterator(language, self, PContextIterator.ItemKind.KEYS);
         }
     }
 
@@ -130,8 +131,8 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Values extends PythonUnaryBuiltinNode {
         @Specialization
         static Object values(PContextVarsContext self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createContextIterator(self, PContextIterator.ItemKind.VALUES);
+                        @Bind PythonLanguage language) {
+            return PFactory.createContextIterator(language, self, PContextIterator.ItemKind.VALUES);
         }
     }
 
@@ -140,8 +141,8 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Items extends PythonUnaryBuiltinNode {
         @Specialization
         static Object items(PContextVarsContext self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createContextIterator(self, PContextIterator.ItemKind.ITEMS);
+                        @Bind PythonLanguage language) {
+            return PFactory.createContextIterator(language, self, PContextIterator.ItemKind.ITEMS);
         }
     }
 
@@ -169,8 +170,8 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Copy extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doCopy(PContextVarsContext self,
-                        @Cached PythonObjectFactory factory) {
-            PContextVarsContext ret = factory.createContextVarsContext();
+                        @Bind PythonLanguage language) {
+            PContextVarsContext ret = PFactory.createContextVarsContext(language);
             ret.contextVarValues = self.contextVarValues;
             return ret;
         }

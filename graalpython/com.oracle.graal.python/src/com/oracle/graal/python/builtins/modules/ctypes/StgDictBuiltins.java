@@ -90,7 +90,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -171,12 +171,12 @@ public final class StgDictBuiltins extends PythonBuiltins {
     @SuppressWarnings("truffle-inlining")       // footprint reduction 112 -> 94
     protected abstract static class MakeFieldsNode extends PNodeWithContext {
 
-        abstract void execute(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory);
+        abstract void execute(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset);
 
         @TruffleBoundary
-        private void executeBoundary(Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory) {
+        private void executeBoundary(Object type, CFieldObject descr, int index, int offset) {
             // recursive calls are done as boundary calls to avoid too many deopts
-            execute(null, type, descr, index, offset, factory);
+            execute(null, type, descr, index, offset);
         }
 
         /*
@@ -185,7 +185,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
          * into type.
          */
         @Specialization
-        static void MakeFields(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory,
+        static void MakeFields(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttrO getAttributeNode,
@@ -220,13 +220,13 @@ public final class StgDictBuiltins extends PythonBuiltins {
                 if (fdescr.anonymous != 0) {
                     Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                     try {
-                        recursiveNode.executeBoundary(type, fdescr, index + fdescr.index, offset + fdescr.offset, context.factory());
+                        recursiveNode.executeBoundary(type, fdescr, index + fdescr.index, offset + fdescr.offset);
                     } finally {
                         IndirectCallContext.exit(frame, language, context, state);
                     }
                     continue;
                 }
-                CFieldObject new_descr = factory.createCFieldObject(CField);
+                CFieldObject new_descr = PFactory.createCFieldObject(language);
                 // assert (Py_TYPE(new_descr) == PythonBuiltinClassType.CField);
                 new_descr.size = fdescr.size;
                 new_descr.offset = fdescr.offset + offset;
@@ -305,13 +305,13 @@ public final class StgDictBuiltins extends PythonBuiltins {
     @SuppressWarnings("truffle-inlining")       // footprint reduction 132 -> 115
     protected abstract static class MakeAnonFieldsNode extends Node {
 
-        abstract void execute(VirtualFrame frame, Object type, PythonObjectFactory factory);
+        abstract void execute(VirtualFrame frame, Object type);
 
         /*
          * Iterate over the names in the type's _anonymous_ attribute, if present,
          */
         @Specialization
-        static void MakeAnonFields(VirtualFrame frame, Object type, PythonObjectFactory factory,
+        static void MakeAnonFields(VirtualFrame frame, Object type,
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
@@ -338,7 +338,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
                 descr.anonymous = 1;
 
                 /* descr is in the field descriptor. */
-                makeFieldsNode.execute(frame, type, descr, descr.index, descr.offset, factory);
+                makeFieldsNode.execute(frame, type, descr, descr.index, descr.offset);
             }
         }
     }

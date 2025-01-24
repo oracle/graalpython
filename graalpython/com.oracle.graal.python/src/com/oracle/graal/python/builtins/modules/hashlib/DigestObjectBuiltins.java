@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.hashlib;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -59,7 +60,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -89,10 +90,9 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
         @Specialization
         static DigestObject copy(DigestObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return self.copy(factory);
+                return self.copy();
             } catch (CloneNotSupportedException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError);
             }
@@ -104,8 +104,8 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
     abstract static class DigestNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PBytes digest(DigestObject self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(self.digest());
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, self.digest());
         }
     }
 

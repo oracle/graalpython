@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,10 +42,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.nio.ByteOrder;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -93,7 +94,7 @@ public abstract class UnicodeObjectNodes {
             } else {
                 throw new RuntimeException("unsupported wchar size; was: " + elementSize);
             }
-            return PythonObjectFactory.getUncached().createBytes(getBytes(s, encoding));
+            return PFactory.createBytes(PythonLanguage.get(null), getBytes(s, encoding));
         }
 
         private static byte[] getBytes(TruffleString s, TruffleString.Encoding encoding) {

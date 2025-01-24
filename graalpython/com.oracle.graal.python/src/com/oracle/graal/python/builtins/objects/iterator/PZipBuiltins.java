@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -48,7 +49,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -80,13 +81,13 @@ public final class PZipBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
         static Object doNext(VirtualFrame frame, PZip self,
                         @Shared @Cached GetNextNode next,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
                 tupleElements[i] = next.execute(frame, iterators[i]);
             }
-            return factory.createTuple(tupleElements);
+            return PFactory.createTuple(language, tupleElements);
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "self.isStrict()"})
@@ -94,7 +95,7 @@ public final class PZipBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetNextNode next,
                         @Cached IsBuiltinObjectProfile classProfile,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
@@ -103,7 +104,7 @@ public final class PZipBuiltins extends PythonBuiltins {
                 for (; i < iterators.length; i++) {
                     tupleElements[i] = next.execute(frame, iterators[i]);
                 }
-                return factory.createTuple(tupleElements);
+                return PFactory.createTuple(language, tupleElements);
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, classProfile);
                 if (i > 0) {
@@ -141,11 +142,11 @@ public final class PZipBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile strictProfile,
                         @Cached GetClassNode getClass,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClass.execute(inliningTarget, self);
-            PTuple tuple = factory.createTuple(self.getIterators());
+            PTuple tuple = PFactory.createTuple(language, self.getIterators());
             Object[] elements = strictProfile.profile(inliningTarget, self.isStrict()) ? new Object[]{type, tuple, true} : new Object[]{type, tuple};
-            return factory.createTuple(elements);
+            return PFactory.createTuple(language, elements);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,6 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
 import static com.oracle.graal.python.nodes.ErrorMessages.EMBEDDED_NULL_CHARACTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_MODE_S;
@@ -53,6 +50,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -67,7 +65,7 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -467,7 +465,7 @@ public class IONodes {
     @GenerateCached(false)
     @GenerateInline
     public abstract static class CreateBufferedIONode extends Node {
-        public abstract PBuffered execute(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, IONodes.IOMode mode);
+        public abstract PBuffered execute(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, IONodes.IOMode mode);
 
         protected static boolean isRandom(IONodes.IOMode mode) {
             return mode.updating;
@@ -482,26 +480,29 @@ public class IONodes {
         }
 
         @Specialization(guards = "isRandom(mode)")
-        static PBuffered createRandom(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
-                        @Cached BufferedRandomBuiltins.BufferedRandomInit initBuffered) {
-            PBuffered buffer = factory.createBufferedRandom(PBufferedRandom);
-            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
+        static PBuffered createRandom(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, @SuppressWarnings("unused") IONodes.IOMode mode,
+                        @Cached BufferedRandomBuiltins.BufferedRandomInit initBuffered,
+                        @Bind PythonLanguage language) {
+            PBuffered buffer = PFactory.createBufferedRandom(language);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering);
             return buffer;
         }
 
         @Specialization(guards = {"!isRandom(mode)", "isWriting(mode)"})
-        static PBuffered createWriter(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
-                        @Cached BufferedWriterBuiltins.BufferedWriterInit initBuffered) {
-            PBuffered buffer = factory.createBufferedWriter(PBufferedWriter);
-            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
+        static PBuffered createWriter(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, @SuppressWarnings("unused") IONodes.IOMode mode,
+                        @Cached BufferedWriterBuiltins.BufferedWriterInit initBuffered,
+                        @Bind PythonLanguage language) {
+            PBuffered buffer = PFactory.createBufferedWriter(language);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering);
             return buffer;
         }
 
         @Specialization(guards = {"!isRandom(mode)", "!isWriting(mode)", "isReading(mode)"})
-        static PBuffered createWriter(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, PythonObjectFactory factory, @SuppressWarnings("unused") IONodes.IOMode mode,
-                        @Cached BufferedReaderBuiltins.BufferedReaderInit initBuffered) {
-            PBuffered buffer = factory.createBufferedReader(PBufferedReader);
-            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering, factory);
+        static PBuffered createWriter(VirtualFrame frame, Node inliningTarget, PFileIO fileIO, int buffering, @SuppressWarnings("unused") IONodes.IOMode mode,
+                        @Cached BufferedReaderBuiltins.BufferedReaderInit initBuffered,
+                        @Bind PythonLanguage language) {
+            PBuffered buffer = PFactory.createBufferedReader(language);
+            initBuffered.execute(frame, inliningTarget, buffer, fileIO, buffering);
             return buffer;
         }
     }

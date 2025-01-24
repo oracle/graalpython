@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.zlib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZlibCompress;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZlibDecompress;
 import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.MAX_WBITS;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.mask;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
@@ -51,12 +49,13 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
@@ -77,7 +76,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         this.unconsumedTail = null;
     }
 
-    // Note: some IDEs mark this class as inaccessible in PythonObjectFactory, but changing this to
+    // Note: some IDEs mark this class as inaccessible in PFactory, but changing this to
     // public will cause a warning: [this-escape] possible 'this' escape before subclass is fully
     // initialized
     protected static class NativeZlibCompObject extends ZLibCompObject {
@@ -176,7 +175,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         }
 
         @TruffleBoundary
-        public ZLibCompObject copyCompressObj(PythonObjectFactory factory) {
+        public ZLibCompObject copyCompressObj() {
             assert canCopy;
             Deflater deflater = new Deflater(level, wbits < 0 || wbits > (MAX_WBITS + 9));
 
@@ -184,7 +183,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             if (zdict.length > 0) {
                 deflater.setDictionary(zdict);
             }
-            ZLibCompObject obj = factory.createJavaZLibCompObject(ZlibCompress, deflater, level, wbits, strategy, zdict);
+            ZLibCompObject obj = PFactory.createJavaZLibCompObjectCompress(PythonLanguage.get(null), deflater, level, wbits, strategy, zdict);
             if (inputData != null) {
                 // feed the new copy of deflater the same input data
                 ((JavaZlibCompObject) obj).setDeflaterInput(inputData, inputLen);
@@ -194,14 +193,14 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
         }
 
         @TruffleBoundary
-        public ZLibCompObject copyDecompressObj(PythonObjectFactory factory, Node node) {
+        public ZLibCompObject copyDecompressObj(Node node) {
             assert canCopy;
             boolean isRAW = wbits < 0;
             Inflater inflater = new Inflater(isRAW || wbits > (MAX_WBITS + 9));
             if (isRAW && zdict.length > 0) {
                 inflater.setDictionary(zdict);
             }
-            ZLibCompObject obj = factory.createJavaZLibCompObject(ZlibDecompress, inflater, wbits, zdict);
+            ZLibCompObject obj = PFactory.createJavaZLibCompObjectDecompress(PythonLanguage.get(null), inflater, wbits, zdict);
             if (inputData != null) {
                 try {
                     ((JavaZlibCompObject) obj).setInflaterInput(inputData, inputLen, node);

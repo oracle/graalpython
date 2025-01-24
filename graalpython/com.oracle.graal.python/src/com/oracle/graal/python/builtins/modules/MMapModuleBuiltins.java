@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -75,7 +76,7 @@ import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -167,7 +168,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (lengthIn < 0) {
                 throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MEM_MAPPED_LENGTH_MUST_BE_POSITIVE);
@@ -252,7 +253,8 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
-            return factory.createMMap(PythonContext.get(inliningTarget), clazz, mmapHandle, dupFd, length, access);
+            PythonContext context = PythonContext.get(inliningTarget);
+            return PFactory.createMMap(context.getLanguage(inliningTarget), context, clazz, getInstanceShape.execute(clazz), mmapHandle, dupFd, length, access);
         }
 
         @Specialization(guards = "isIllegal(fd)")

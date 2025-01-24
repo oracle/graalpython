@@ -65,6 +65,7 @@ import java.util.WeakHashMap;
 
 import org.graalvm.collections.Pair;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -107,7 +108,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.NumericSupport;
@@ -353,9 +354,9 @@ public class PPickler extends PythonBuiltinObject {
         frameStart = -1;
     }
 
-    public PBytes getString(PythonObjectFactory factory) {
+    public PBytes getString(PythonLanguage language) {
         commitFrame();
-        return factory.createBytes(outputBuffer, outputLen);
+        return PFactory.createBytes(language, outputBuffer, outputLen);
     }
 
     // inner nodes
@@ -528,7 +529,7 @@ public class PPickler extends PythonBuiltinObject {
                 if (pld == null) {
                     // TODO: It would be better to use a memoryview with a linked original string if
                     // this is possible.
-                    pld = factory().createBytes(data, 0, dataSize);
+                    pld = PFactory.createBytes(PythonLanguage.get(this), data, dataSize);
                 }
                 getCallNode().execute(frame, pickler.write, pld);
                 // Reinitialize the buffer for subsequent calls to _Pickler_Write.
@@ -543,9 +544,9 @@ public class PPickler extends PythonBuiltinObject {
 
         protected PTuple createTuple(Object... items) {
             if (items.length == 0) {
-                return factory().createEmptyTuple();
+                return PFactory.createEmptyTuple(PythonLanguage.get(this));
             }
-            return factory().createTuple(items);
+            return PFactory.createTuple(PythonLanguage.get(this), items);
         }
 
         protected void fastSaveEnter(PPickler pickler, Object obj) {
@@ -570,10 +571,11 @@ public class PPickler extends PythonBuiltinObject {
         public abstract void execute(VirtualFrame frame, PPickler pickler);
 
         @Specialization
-        public void flush(VirtualFrame frame, PPickler pickler) {
+        public void flush(VirtualFrame frame, PPickler pickler,
+                        @Bind PythonLanguage language) {
             assert pickler.write != null;
             // This will commit the frame first
-            PBytes output = pickler.getString(factory());
+            PBytes output = pickler.getString(language);
             call(frame, pickler.write, output);
         }
     }
@@ -1054,7 +1056,7 @@ public class PPickler extends PythonBuiltinObject {
                     callable = callStarArgsAndKwArgs(frame, st.partial, newargs, kwargs);
 
                     save(frame, pickler, callable, 0);
-                    save(frame, pickler, factory().createEmptyTuple(), 0);
+                    save(frame, pickler, PFactory.createEmptyTuple(PythonLanguage.get(this)), 0);
                     write(pickler, PickleUtils.OPCODE_REDUCE);
                 }
             } else if (useNewobj) {
@@ -1110,7 +1112,7 @@ public class PPickler extends PythonBuiltinObject {
 
                 // Save the class and its __new__ arguments
                 save(frame, pickler, cls, 0);
-                newargtup = getItem(frame, argtup, factory().createIntSlice(1, argtupSize, 1));
+                newargtup = getItem(frame, argtup, PFactory.createIntSlice(PythonLanguage.get(this), 1, argtupSize, 1));
                 save(frame, pickler, newargtup, 0);
                 write(pickler, PickleUtils.OPCODE_NEWOBJ);
             } else {
@@ -1738,7 +1740,7 @@ public class PPickler extends PythonBuiltinObject {
             memoPut(pickler, obj);
         }
 
-        private void saveBytearray(VirtualFrame frame, PythonContext ctx, PPickler pickler, Object obj, IndirectCallData indirectCallData) {
+        private void saveBytearray(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PPickler pickler, Object obj, IndirectCallData indirectCallData) {
             Object buffer = getBufferAcquireLibrary().acquireReadonly(obj, frame, indirectCallData);
             try {
                 if (pickler.proto < 5) {
@@ -1750,7 +1752,7 @@ public class PPickler extends PythonBuiltinObject {
                         reduceValue = createTuple(byteArrayClass, createTuple());
                     } else {
                         byte[] bytes = getBufferLibrary().getCopiedByteArray(buffer);
-                        reduceValue = createTuple(byteArrayClass, createTuple(factory().createBytes(bytes)));
+                        reduceValue = createTuple(byteArrayClass, createTuple(PFactory.createBytes(ctx.getLanguage(inliningTarget), bytes)));
                     }
 
                     // save_reduce() will memoize the object automatically.
@@ -2026,7 +2028,7 @@ public class PPickler extends PythonBuiltinObject {
                 saveTuple(frame, pickler, obj);
                 return;
             } else if (isBuiltinClass(type, PythonBuiltinClassType.PByteArray)) {
-                saveBytearray(frame, ctx, pickler, obj, indirectCallData);
+                saveBytearray(frame, inliningTarget, ctx, pickler, obj, indirectCallData);
                 return;
             } else if (obj instanceof PPickleBuffer buffer) {
                 savePicklebuffer(frame, pickler, buffer);

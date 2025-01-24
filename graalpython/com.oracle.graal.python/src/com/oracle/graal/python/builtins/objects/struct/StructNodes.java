@@ -6,12 +6,6 @@
 package com.oracle.graal.python.builtins.objects.struct;
 
 import static com.oracle.graal.python.builtins.modules.StructModuleBuiltins.ConstructStructNode.NUM_BYTES_LIMIT;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_FOR_N_MUST_BE;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_NOT_T;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_O_O_RANGE;
-import static com.oracle.graal.python.nodes.ErrorMessages.FMT_REQ_RANGE;
-import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_CHR_FMT_BYTES_1;
-import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_FMT_NOT_YET_SUPPORTED;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_BOOL;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_CHAR;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_DOUBLE;
@@ -20,12 +14,19 @@ import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_HAL
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_PASCAL_STRING;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_STRING;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_VOID_PTR;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_FOR_N_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_NOT_T;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_O_O_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.FMT_REQ_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_CHR_FMT_BYTES_1;
+import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_FMT_NOT_YET_SUPPORTED;
 import static com.oracle.graal.python.nodes.PGuards.isBytes;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StructError;
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -44,7 +45,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -406,8 +407,7 @@ public final class StructNodes {
                         @Cached("formatCode.numBytes()") int numBytes,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached InlinedConditionProfile profilePIntResult,
-                        @Shared @Cached InlinedConditionProfile profileSigned,
-                        @Shared @Cached PythonObjectFactory.Lazy factory) {
+                        @Shared @Cached InlinedConditionProfile profileSigned) {
             long num;
             if (profileSigned.profile(inliningTarget, formatCode.isUnsigned())) {
                 num = numericSupport.getLongUnsigned(buffer, offset, numBytes);
@@ -416,7 +416,7 @@ public final class StructNodes {
                 num = handleSign(formatCode, num);
             }
             if (profilePIntResult.profile(inliningTarget, formatCode.isUnsigned() && num < 0)) {
-                return factory.get(inliningTarget).createInt(getAsUnsignedBigInt(num));
+                return PFactory.createInt(PythonLanguage.get(inliningTarget), getAsUnsignedBigInt(num));
             }
             return num;
         }
@@ -425,10 +425,9 @@ public final class StructNodes {
         static Object unpack8(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profilePIntResult,
-                        @Shared @Cached InlinedConditionProfile profileSigned,
-                        @Shared @Cached PythonObjectFactory.Lazy factory) {
+                        @Shared @Cached InlinedConditionProfile profileSigned) {
             return unpack8Cached(formatCode, formatAlignment, buffer, offset, inliningTarget, formatCode.numBytes(),
-                            getNumericSupport(formatAlignment), profilePIntResult, profileSigned, factory);
+                            getNumericSupport(formatAlignment), profilePIntResult, profileSigned);
         }
 
         @Specialization(guards = {"isFmtFloat(formatCode)", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "3")
@@ -442,11 +441,10 @@ public final class StructNodes {
         static Object unpackVoidPtr(FormatCode formatCode, FormatAlignment formatAlignment, byte[] buffer, int offset,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profilePIntResult,
-                        @Shared @Cached PythonObjectFactory.Lazy factory,
                         @Shared @Cached PRaiseNode raiseNode) {
             long num = getNumericSupport(formatAlignment).getLongUnsigned(buffer, offset, formatCode.numBytes());
             if (profilePIntResult.profile(inliningTarget, num < 0)) {
-                return factory.get(inliningTarget).createInt(getAsUnsignedBigInt(num));
+                return PFactory.createInt(PythonLanguage.get(inliningTarget), getAsUnsignedBigInt(num));
             }
             return num;
         }
@@ -459,8 +457,7 @@ public final class StructNodes {
         @Specialization(guards = "isFmtBytes(formatCode)")
         static Object unpackBytes(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
                         @Bind("this") Node inliningTarget,
-                        @Cached(value = "createIdentityProfile()", inline = false) ValueProfile formatProfile,
-                        @Shared @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached(value = "createIdentityProfile()", inline = false) ValueProfile formatProfile) {
             byte[] bytes;
             switch (formatProfile.profile(formatCode.formatDef.format)) {
                 case FMT_CHAR:
@@ -479,7 +476,7 @@ public final class StructNodes {
                     bytes = new byte[n];
                     PythonUtils.arraycopy(buffer, offset + 1, bytes, 0, n);
             }
-            return factory.get(inliningTarget).createBytes(bytes);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
         }
 
         @Specialization(guards = "!isSupportedFormat(formatCode)")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -99,7 +100,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -412,8 +413,10 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached GetTypeNode getType,
                         @Cached(inline = false) SuperInitNode superInit,
                         @Cached GetClassNode getClass,
-                        @Cached(inline = false) PythonObjectFactory factory) {
-            SuperObject newSuper = factory.createSuperObject(getClass.execute(inliningTarget, self));
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            Object cls = getClass.execute(inliningTarget, self);
+            SuperObject newSuper = PFactory.createSuperObject(language, cls, getInstanceShape.execute(cls));
             superInit.execute(null, newSuper, getType.execute(inliningTarget, self), obj);
             return newSuper;
         }

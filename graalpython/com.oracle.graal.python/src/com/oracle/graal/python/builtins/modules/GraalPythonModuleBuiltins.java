@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,11 +83,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.nodes.arrow.ArrowArray;
-import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.nodes.arrow.capsule.CreateArrowPyCapsuleNode;
-import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowArrayNode;
-import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowSchemaNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -141,6 +136,11 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.arrow.ArrowArray;
+import com.oracle.graal.python.nodes.arrow.ArrowSchema;
+import com.oracle.graal.python.nodes.arrow.capsule.CreateArrowPyCapsuleNode;
+import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowArrayNode;
+import com.oracle.graal.python.nodes.arrow.vector.VectorToArrowSchemaNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -166,7 +166,7 @@ import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -274,7 +274,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute(tsLiteral("capi_home"), capiHome);
         mod.setAttribute(tsLiteral("jni_home"), context.getJNIHome());
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
-        PList executableList = PythonObjectFactory.getUncached().createList(arr);
+        PList executableList = PFactory.createList(language, arr);
         mod.setAttribute(tsLiteral("executable_list"), executableList);
         mod.setAttribute(tsLiteral("venvlauncher_command"), context.getOption(PythonOptions.VenvlauncherCommand));
         mod.setAttribute(tsLiteral("ForeignType"), core.lookupType(PythonBuiltinClassType.ForeignObject));
@@ -441,15 +441,15 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         PBytes doString(VirtualFrame frame, Object filenameObj,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 TruffleString filename = castToTruffleStringNode.execute(inliningTarget, filenameObj);
-                TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
+                TruffleFile file = context.getPublicTruffleFileRelaxed(filename, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                 byte[] bytes = file.readAllBytes();
-                return factory.createBytes(bytes);
+                return PFactory.createBytes(context.getLanguage(inliningTarget), bytes);
             } catch (Exception ex) {
                 ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex, eqNode);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, errAndMsg.oserror.getNumber(), errAndMsg.message);
@@ -543,8 +543,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object doIt(VirtualFrame frame, PFunction func,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectGetItem getItem,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonContext context,
+                        @Cached PyObjectGetItem getItem) {
             PFunction builtinFunc = convertToBuiltin(func);
             PythonObject globals = func.getGlobals();
             PythonModule builtinModule;
@@ -552,10 +552,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 builtinModule = (PythonModule) globals;
             } else {
                 TruffleString moduleName = (TruffleString) getItem.execute(frame, inliningTarget, globals, T___NAME__);
-                builtinModule = getContext().lookupBuiltinModule(moduleName);
+                builtinModule = context.lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }
-            return factory.createBuiltinMethod(builtinModule, builtinFunc);
+            return PFactory.createBuiltinMethod(context.getLanguage(inliningTarget), builtinModule, builtinFunc);
         }
 
         @TruffleBoundary
@@ -634,8 +634,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getToolPath() {
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            Env env = getContext().getEnv();
+            PythonContext context = getContext();
+            Env env = context.getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             List<TruffleFile> toolchainPaths = toolchain.getPaths("PATH");
@@ -658,12 +658,12 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     }
                 }
                 if (path != null) {
-                    storage.putUncached(toTruffleStringUncached(path), factory.createTuple(tool.targets));
+                    storage.putUncached(toTruffleStringUncached(path), PFactory.createTuple(context.getLanguage(), tool.targets));
                 } else {
                     LOGGER.fine("Could not locate tool " + tool.name);
                 }
             }
-            return factory.createDict(storage);
+            return PFactory.createDict(context.getLanguage(), storage);
         }
     }
 
@@ -692,7 +692,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         protected Object getToolPath(TruffleString tool) {
-            Env env = getContext().getEnv();
+            PythonContext context = getContext();
+            Env env = context.getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             List<TruffleFile> toolPaths = toolchain.getPaths(tool.toJavaStringUncached());
@@ -703,7 +704,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < pathNames.length; i++) {
                 pathNames[i] = toTruffleStringUncached(toolPaths.get(i).toString().replace("\\", "/"));
             }
-            return PythonObjectFactory.getUncached().createList(pathNames);
+            return PFactory.createList(context.getLanguage(), pathNames);
         }
     }
 
@@ -727,8 +728,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDict doGeneric(@SuppressWarnings("unused") Object unused,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDict(fromToolchain());
+                        @Bind PythonLanguage language) {
+            return PFactory.createDict(language, fromToolchain());
         }
 
         @TruffleBoundary

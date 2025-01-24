@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -67,7 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -167,26 +168,26 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
 
         @Specialization
         Object method(Object self, PFunction func,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createMethod(self, func);
+                        @Bind PythonLanguage language) {
+            return PFactory.createMethod(language, self, func);
         }
 
         @Specialization(guards = "!func.needsDeclaringType()")
         Object methodBuiltin(Object self, PBuiltinFunction func,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createBuiltinMethod(self, func);
+                        @Bind PythonLanguage language) {
+            return PFactory.createBuiltinMethod(language, self, func);
         }
 
         @Specialization(guards = "func.needsDeclaringType()")
         Object methodBuiltinWithDeclaringType(Object self, PBuiltinFunction func,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createBuiltinMethod(self, func, func.getEnclosingType());
+                        @Bind PythonLanguage language) {
+            return PFactory.createBuiltinMethod(language, self, func, func.getEnclosingType());
         }
 
         @Specialization(guards = "!isFunction(func)")
         Object generic(Object self, Object func,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createMethod(self, func);
+                        @Bind PythonLanguage language) {
+            return PFactory.createMethod(language, self, func);
         }
     }
 

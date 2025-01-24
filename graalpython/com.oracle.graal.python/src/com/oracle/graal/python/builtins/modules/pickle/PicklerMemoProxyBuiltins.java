@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,10 +56,9 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -82,16 +82,16 @@ public class PicklerMemoProxyBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static PDict picklerMemoCopyImpl(PythonContext context, MemoTable memoTable) {
-        PythonObjectFactory factory = context.factory();
+    public static PDict picklerMemoCopyImpl(MemoTable memoTable) {
+        PythonLanguage language = PythonLanguage.get(null);
         LinkedHashMap<Object, Object> copy = new LinkedHashMap<>();
         MemoIterator iterator = memoTable.iterator();
         while (iterator.advance()) {
             copy.put(System.identityHashCode(iterator.key()),
-                            factory.createTuple(new Object[]{iterator.value(), iterator.key()}));
+                            PFactory.createTuple(language, new Object[]{iterator.value(), iterator.key()}));
 
         }
-        return factory.createDictFromMapGeneric(copy);
+        return PFactory.createDictFromMapGeneric(language, copy);
     }
 
     @Builtin(name = "copy", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
@@ -100,7 +100,7 @@ public class PicklerMemoProxyBuiltins extends PythonBuiltins {
         @Specialization
         Object copy(PPicklerMemoProxy self) {
             final MemoTable memoTable = self.getPickler().getMemo();
-            return picklerMemoCopyImpl(getContext(), memoTable);
+            return picklerMemoCopyImpl(memoTable);
         }
     }
 
@@ -108,12 +108,12 @@ public class PicklerMemoProxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PicklerMemoProxyReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(PPicklerMemoProxy self,
-                        @Cached PythonObjectFactory factory) {
+        static Object reduce(PPicklerMemoProxy self,
+                        @Bind PythonLanguage language) {
             final MemoTable memoTable = self.getPickler().getMemo();
-            final PDict dictMemoCopy = picklerMemoCopyImpl(getContext(), memoTable);
-            final PTuple dictArgs = factory.createTuple(new Object[]{dictMemoCopy});
-            return factory.createTuple(new Object[]{PythonBuiltinClassType.PDict, dictArgs});
+            final PDict dictMemoCopy = picklerMemoCopyImpl(memoTable);
+            final PTuple dictArgs = PFactory.createTuple(language, new Object[]{dictMemoCopy});
+            return PFactory.createTuple(language, new Object[]{PythonBuiltinClassType.PDict, dictArgs});
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -135,11 +137,12 @@ public final class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     static PBuiltinMethod createFunction(Python3Core core, PythonModule module) {
         Builtin builtin = NotAvailable.class.getAnnotation(Builtin.class);
-        RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, NotAvailable.NODE_FACTORY, false), NotAvailable.class,
+        PythonLanguage language = core.getLanguage();
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, NotAvailable.NODE_FACTORY, false), NotAvailable.class,
                         builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         TruffleString name = PythonUtils.toTruffleStringUncached(builtin.name());
-        PBuiltinFunction fun = core.factory().createBuiltinFunction(name, null, 0, flags, callTarget);
-        return core.factory().createBuiltinMethod(module, fun);
+        PBuiltinFunction fun = PFactory.createBuiltinFunction(language, name, null, 0, flags, callTarget);
+        return PFactory.createBuiltinMethod(language, module, fun);
     }
 }

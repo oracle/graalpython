@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
@@ -78,7 +79,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
@@ -178,11 +179,11 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isFlushed()"})
         static PBytes doBytes(VirtualFrame frame, LZMACompressor self, Object data,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached GetArrayAndLengthHelperNode getArrayAndLengthHelperNode,
-                        @Cached LZMANodes.CompressNode compress,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached LZMANodes.CompressNode compress) {
             ArrayAndLength aal = getArrayAndLengthHelperNode.execute(frame, inliningTarget, data);
-            return factory.createBytes(compress.compress(inliningTarget, self, PythonContext.get(inliningTarget), aal.array, aal.length));
+            return PFactory.createBytes(language, compress.compress(inliningTarget, self, PythonContext.get(inliningTarget), aal.array, aal.length));
         }
 
         @SuppressWarnings("unused")
@@ -226,10 +227,10 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isFlushed()"})
         static PBytes doit(LZMACompressor self,
                         @Bind("this") Node inliningTarget,
-                        @Cached LZMANodes.CompressNode compress,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached LZMANodes.CompressNode compress) {
             self.setFlushed();
-            return factory.createBytes(compress.flush(inliningTarget, self, PythonContext.get(inliningTarget)));
+            return PFactory.createBytes(language, compress.flush(inliningTarget, self, PythonContext.get(inliningTarget)));
         }
 
         @SuppressWarnings("unused")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -54,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -78,9 +79,8 @@ public final class CoroutineBuiltins extends PythonBuiltins {
         @Specialization
         static Object getCode(PGenerator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasCodeProfile,
-                        @Cached PythonObjectFactory.Lazy factory) {
-            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory);
+                        @Cached InlinedConditionProfile hasCodeProfile) {
+            return self.getOrCreateCode(inliningTarget, hasCodeProfile);
         }
     }
 
@@ -127,8 +127,8 @@ public final class CoroutineBuiltins extends PythonBuiltins {
     abstract static class AwaitNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object await(PGenerator self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createCoroutineWrapper(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createCoroutineWrapper(language, self);
         }
     }
 

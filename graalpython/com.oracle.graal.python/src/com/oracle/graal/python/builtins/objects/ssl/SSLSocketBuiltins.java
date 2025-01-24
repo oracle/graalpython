@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -75,8 +76,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -104,18 +104,18 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(buffer)")
         static Object read(VirtualFrame frame, PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Shared @Cached SSLOperationNode sslOperationNode,
-                        @Cached PythonObjectFactory factory,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (len == 0) {
-                return factory.createBytes(new byte[0]);
+                return PFactory.createBytes(language, new byte[0]);
             } else if (len < 0) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
             ByteBuffer output = PythonUtils.allocateByteBuffer(len);
             sslOperationNode.read(frame, inliningTarget, self, output);
             PythonUtils.flipBuffer(output);
-            return factory.createBytes(PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
+            return PFactory.createBytes(language, PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
         }
 
         @Specialization(guards = "!isNoValue(bufferObj)", limit = "3")
@@ -316,7 +316,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "der")
         static Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory.Lazy factory,
+                        @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (!self.isHandshakeComplete()) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
@@ -324,7 +324,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate != null) {
                 try {
-                    return factory.get(inliningTarget).createBytes(getEncoded(certificate));
+                    return PFactory.createBytes(language, getEncoded(certificate));
                 } catch (CertificateEncodingException e) {
                     // Fallthrough
                 }
@@ -337,7 +337,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "!der")
         static PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory.Lazy factory,
+                        @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
             if (!self.isHandshakeComplete()) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
@@ -345,12 +345,12 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    return CertUtils.decodeCertificate(PythonContext.get(inliningTarget).factory(), (X509Certificate) certificate);
+                    return CertUtils.decodeCertificate((X509Certificate) certificate, language);
                 } catch (CertificateParsingException e) {
-                    return factory.get(inliningTarget).createDict();
+                    return PFactory.createDict(language);
                 }
             }
-            return factory.get(inliningTarget).createDict();
+            return PFactory.createDict(language);
         }
 
         @TruffleBoundary
@@ -403,7 +403,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class CipherNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getCipher(PSSLSocket self,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             if (!self.isHandshakeComplete()) {
                 return PNone.NONE;
             }
@@ -411,7 +411,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
             if (cipher == null) {
                 return PNone.NONE;
             }
-            return factory.createTuple(new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
+            return PFactory.createTuple(language, new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
         }
 
         @TruffleBoundary
@@ -434,13 +434,14 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
             if (!socket.isHandshakeComplete()) {
                 return PNone.NONE;
             }
+            PythonLanguage language = PythonLanguage.get(null);
             List<SSLCipher> ciphers = socket.getContext().computeEnabledCiphers(socket.getEngine());
             Object[] result = new Object[ciphers.size()];
             for (int i = 0; i < ciphers.size(); i++) {
                 SSLCipher cipher = ciphers.get(i);
-                result[i] = PythonObjectFactory.getUncached().createTuple(new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
+                result[i] = PFactory.createTuple(language, new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
             }
-            return PythonObjectFactory.getUncached().createList(result);
+            return PFactory.createList(language, result);
         }
     }
 

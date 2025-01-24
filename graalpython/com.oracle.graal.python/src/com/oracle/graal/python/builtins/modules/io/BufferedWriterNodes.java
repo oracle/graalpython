@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.WRITE_COULD_NOT_COMPLE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -63,7 +64,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -223,11 +224,11 @@ public class BufferedWriterNodes {
          */
         @Specialization
         static int bufferedwriterRawWrite(VirtualFrame frame, Node inliningTarget, PBuffered self, byte[] buf, int len,
-                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode.Lazy lazyRaiseNode) {
-            PBytes memobj = factory.createBytes(buf, len);
+            PBytes memobj = PFactory.createBytes(language, buf, len);
             Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_WRITE, memobj);
             if (res == PNone.NONE) {
                 /*

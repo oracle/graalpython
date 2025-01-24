@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,7 +63,7 @@ import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -112,7 +112,7 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (self.ref.isReleased()) {
                 throw raiseNode.get(inliningTarget).raiseStopIteration();
@@ -124,7 +124,7 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
                     self.ref.rewindAndClose(posixLib, posixSupport);
                     throw raiseNode.get(inliningTarget).raiseStopIteration();
                 }
-                return factory.createDirEntry(dirEntryData, self.path);
+                return PFactory.createDirEntry(language, dirEntryData, self.path);
             } catch (PosixException e) {
                 self.ref.rewindAndClose(posixLib, posixSupport);
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

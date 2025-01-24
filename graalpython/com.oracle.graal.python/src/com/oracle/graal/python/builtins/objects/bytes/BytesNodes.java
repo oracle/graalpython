@@ -58,6 +58,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentIndex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -98,7 +99,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -135,33 +136,37 @@ public abstract class BytesNodes {
     @GenerateCached(false)
     public abstract static class CreateBytesNode extends Node {
 
-        public final PBytesLike execute(Node inliningTarget, PythonObjectFactory factory, Object basedOn, byte[] bytes) {
-            return execute(inliningTarget, factory, basedOn, new ByteSequenceStorage(bytes));
+        public final PBytesLike execute(Node inliningTarget, Object basedOn, byte[] bytes) {
+            return execute(inliningTarget, basedOn, new ByteSequenceStorage(bytes));
         }
 
-        public abstract PBytesLike execute(Node inliningTarget, PythonObjectFactory factory, Object basedOn, SequenceStorage bytes);
+        public abstract PBytesLike execute(Node inliningTarget, Object basedOn, SequenceStorage bytes);
 
         @Specialization
-        static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, SequenceStorage bytes) {
-            return factory.createBytes(bytes);
+        static PBytesLike bytes(@SuppressWarnings("unused") PBytes basedOn, SequenceStorage bytes,
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, bytes);
         }
 
         @Specialization
-        static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, SequenceStorage bytes) {
-            return factory.createByteArray(bytes);
+        static PBytesLike bytearray(@SuppressWarnings("unused") PByteArray basedOn, SequenceStorage bytes,
+                        @Bind PythonLanguage language) {
+            return PFactory.createByteArray(language, bytes);
         }
 
         @Specialization(guards = "checkBytes.execute(inliningTarget, basedOn)")
-        static PBytesLike bytes(@SuppressWarnings("unused") Node inliningTarget, PythonObjectFactory factory, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
-                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes) {
-            return factory.createBytes(bytes);
+        static PBytesLike bytes(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
+                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes,
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, bytes);
         }
 
         @Specialization(guards = "!checkBytes.execute(inliningTarget, basedOn)")
-        static PBytesLike bytearray(@SuppressWarnings("unused") Node inliningTarget, PythonObjectFactory factory, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
-                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes) {
+        static PBytesLike bytearray(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
+                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes,
+                        @Bind PythonLanguage language) {
             assert PyByteArrayCheckNode.executeUncached(basedOn);
-            return factory.createByteArray(bytes);
+            return PFactory.createByteArray(language, bytes);
         }
     }
 

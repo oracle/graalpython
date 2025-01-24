@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -54,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -86,8 +87,8 @@ public class UnpicklerMemoProxyBuiltins extends PythonBuiltins {
         Object copy(PUnpicklerMemoProxy self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDict(self.getUnpickler().copyMemoToHashingStorage(inliningTarget, setItem));
+                        @Bind PythonLanguage language) {
+            return PFactory.createDict(language, self.getUnpickler().copyMemoToHashingStorage(inliningTarget, setItem));
         }
     }
 
@@ -98,10 +99,10 @@ public class UnpicklerMemoProxyBuiltins extends PythonBuiltins {
         Object reduce(PUnpicklerMemoProxy self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setItem,
-                        @Cached PythonObjectFactory factory) {
-            final PDict dictMemoCopy = factory.createDict(self.getUnpickler().copyMemoToHashingStorage(inliningTarget, setItem));
-            final PTuple constructorArgs = factory.createTuple(new Object[]{dictMemoCopy});
-            return factory.createTuple(new Object[]{PythonBuiltinClassType.PDict, constructorArgs});
+                        @Bind PythonLanguage language) {
+            final PDict dictMemoCopy = PFactory.createDict(language, self.getUnpickler().copyMemoToHashingStorage(inliningTarget, setItem));
+            final PTuple constructorArgs = PFactory.createTuple(language, new Object[]{dictMemoCopy});
+            return PFactory.createTuple(language, new Object[]{PythonBuiltinClassType.PDict, constructorArgs});
         }
     }
 }

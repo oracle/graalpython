@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,7 +71,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -94,7 +95,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     protected static final int IDX_PATH = 2;
     public static final int IMPORT_ERR_NUM_ATTRS = IDX_PATH + 1;
 
-    public static final BaseExceptionAttrNode.StorageFactory IMPORT_ERROR_ATTR_FACTORY = (args, factory) -> {
+    public static final BaseExceptionAttrNode.StorageFactory IMPORT_ERROR_ATTR_FACTORY = (args) -> {
         Object[] attrs = new Object[IMPORT_ERR_NUM_ATTRS];
         if (args.length == 1) {
             attrs[IDX_MSG] = args[0];
@@ -136,7 +137,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
                         @Cached TruffleString.EqualNode equalNode) {
             baseExceptionInitNode.execute(self, args);
-            Object[] attrs = IMPORT_ERROR_ATTR_FACTORY.create(args, null);
+            Object[] attrs = IMPORT_ERROR_ATTR_FACTORY.create(args);
             for (PKeyword kw : kwargs) {
                 TruffleString kwName = kw.getName();
                 if (equalNode.execute(kwName, NAME, TS_ENCODING)) {
@@ -186,7 +187,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ImportErrorReduceNode extends PythonUnaryBuiltinNode {
         private static Object getState(Node inliningTarget, PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageSetItem setHashingStorageItem,
-                        HashingStorageCopy copyStorageNode, BaseExceptionAttrNode attrNode, PythonObjectFactory factory) {
+                        HashingStorageCopy copyStorageNode, BaseExceptionAttrNode attrNode, PythonLanguage language) {
             PDict dict = getDictIfExistsNode.execute(self);
             final Object name = attrNode.get(self, IDX_NAME, IMPORT_ERROR_ATTR_FACTORY);
             final Object path = attrNode.get(self, IDX_PATH, IMPORT_ERROR_ATTR_FACTORY);
@@ -198,7 +199,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                 if (path != null) {
                     storage = setHashingStorageItem.execute(inliningTarget, storage, T_PATH, path);
                 }
-                return factory.createDict(storage);
+                return PFactory.createDict(language, storage);
             } else if (dict != null) {
                 return dict;
             } else {
@@ -215,14 +216,14 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                         @Cached ExceptionNodes.GetArgsNode getArgsNode,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached HashingStorageCopy copyStorageNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object args = getArgsNode.execute(inliningTarget, self);
-            Object state = getState(inliningTarget, self, getDictIfExistsNode, setHashingStorageItem, copyStorageNode, attrNode, factory);
+            Object state = getState(inliningTarget, self, getDictIfExistsNode, setHashingStorageItem, copyStorageNode, attrNode, language);
             if (state == PNone.NONE) {
-                return factory.createTuple(new Object[]{clazz, args});
+                return PFactory.createTuple(language, new Object[]{clazz, args});
             }
-            return factory.createTuple(new Object[]{clazz, args, state});
+            return PFactory.createTuple(language, new Object[]{clazz, args, state});
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -76,7 +77,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -106,8 +107,8 @@ public final class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends DescrGetBuiltinNode {
         @Specialization(guards = {"!isPNone(instance)"})
         static PMethod doMethod(PFunction self, Object instance, @SuppressWarnings("unused") Object klass,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createMethod(instance, self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createMethod(language, instance, self);
         }
 
         @Specialization
@@ -176,10 +177,10 @@ public final class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetDefaultsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(defaults)")
         static Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object[] argDefaults = self.getDefaults();
             assert argDefaults != null;
-            return (argDefaults.length == 0) ? PNone.NONE : factory.createTuple(argDefaults);
+            return (argDefaults.length == 0) ? PNone.NONE : PFactory.createTuple(language, argDefaults);
         }
 
         @Specialization
@@ -215,9 +216,9 @@ public final class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetKeywordDefaultsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(arg)")
         static Object get(PFunction self, @SuppressWarnings("unused") PNone arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PKeyword[] kwdefaults = self.getKwDefaults();
-            return (kwdefaults.length > 0) ? factory.createDict(kwdefaults) : PNone.NONE;
+            return (kwdefaults.length > 0) ? PFactory.createDict(language, kwdefaults) : PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(arg)")

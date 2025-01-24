@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATCH_ARGS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -57,7 +58,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -85,7 +86,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
                     @Cached IsBuiltinObjectProfile isClassProfile,
                     @Cached StringBuiltins.EqNode eqStrNode,
                     @Cached PyTupleCheckExactNode tupleCheckExactNode,
-                    @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Cached PyTupleSizeNode tupleSizeNode,
                     @Cached TupleBuiltins.GetItemNode getItemNode,
                     @Cached PyUnicodeCheckNode unicodeCheckNode,
@@ -118,7 +119,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
                 // it's as if __match_args__ is some "magic" value that is lost as
                 // soon as they redefine it.
                 e.expectAttributeError(inliningTarget, isClassProfile);
-                matchArgs = factory.createEmptyTuple();
+                matchArgs = PFactory.createEmptyTuple(language);
                 matchSelf = (getTypeFlagsNode.execute(type) & MATCH_SELF) != 0;
             }
             int allowed = matchSelf ? 1 : tupleSizeNode.execute(inliningTarget, matchArgs);
@@ -138,7 +139,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
         }
         // Finally, the keyword subpatterns:
         getKwArgs(frame, inliningTarget, subject, type, kwArgs, seen, seenLength, attrs, attrsLength, getAttr, eqStrNode, raise);
-        return factory.createList(attrs);
+        return PFactory.createList(language, attrs);
     }
 
     @ExplodeLoop

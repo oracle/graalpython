@@ -42,6 +42,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -94,7 +95,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -236,14 +237,14 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStoragePop popNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             var storage = getStorageNode.execute(inliningTarget, dict);
             Object[] result = popNode.execute(inliningTarget, storage, dict);
             if (result == null) {
                 throw raiseNode.get(inliningTarget).raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
             }
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
     }
 
@@ -254,14 +255,14 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDictView keys(PDict self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createDictKeysView(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createDictKeysView(language, self);
         }
 
         @Fallback
         static PDictView foreign(Object self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createDictKeysView(self, new ForeignHashingStorage(self));
+                        @Bind PythonLanguage language) {
+            return PFactory.createDictKeysView(language, self, new ForeignHashingStorage(self));
         }
     }
 
@@ -272,14 +273,14 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDictView items(PDict self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createDictItemsView(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createDictItemsView(language, self);
         }
 
         @Fallback
         static PDictView foreign(Object self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createDictItemsView(self, new ForeignHashingStorage(self));
+                        @Bind PythonLanguage language) {
+            return PFactory.createDictItemsView(language, self, new ForeignHashingStorage(self));
         }
     }
 
@@ -382,9 +383,9 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             var storage = getStorageNode.execute(inliningTarget, self);
-            return factory.createDictKeyIterator(getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return PFactory.createDictKeyIterator(language, getIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -397,9 +398,9 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetReverseIterator getReverseIterator,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             var storage = getStorageNode.execute(inliningTarget, self);
-            return factory.createDictKeyIterator(getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
+            return PFactory.createDictKeyIterator(language, getReverseIterator.execute(inliningTarget, storage), storage, lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -468,9 +469,9 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageCopy copyNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             var storage = getStorageNode.execute(inliningTarget, dict);
-            return factory.createDict(copyNode.execute(inliningTarget, storage));
+            return PFactory.createDict(language, copyNode.execute(inliningTarget, storage));
         }
     }
 
@@ -499,14 +500,14 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDictView values(PDict self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createDictValuesView(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createDictValuesView(language, self);
         }
 
         @Fallback
         static PDictView foreign(Object self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createDictValuesView(self, new ForeignHashingStorage(self));
+                        @Bind PythonLanguage language) {
+            return PFactory.createDictValuesView(language, self, new ForeignHashingStorage(self));
         }
     }
 
@@ -561,13 +562,13 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class FromKeysNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "isBuiltinDict(inliningTarget, cls, isSameTypeNode)", limit = "1")
-        static Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
+        static Object doKeys(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable, Object value,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage s = getHashingStorageNode.execute(frame, inliningTarget, iterable, value);
-            return factory.createDict(cls, s);
+            return PFactory.createDict(language, s);
         }
 
         @Fallback
@@ -609,9 +610,9 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageCopy copyNode,
                         @Cached DictNodes.UpdateNode updateNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             var storage = getStorageNode.execute(inliningTarget, self);
-            PDict merged = factory.createDict(copyNode.execute(inliningTarget, storage));
+            PDict merged = PFactory.createDict(language, copyNode.execute(inliningTarget, storage));
             updateNode.execute(frame, merged, other);
             return merged;
         }
@@ -639,8 +640,8 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

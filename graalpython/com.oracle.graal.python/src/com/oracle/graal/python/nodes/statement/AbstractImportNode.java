@@ -79,7 +79,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -113,7 +113,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         if (builtinImport == PNone.NO_VALUE) {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, IMPORT_NOT_FOUND);
         }
-        Object fromList = context.factory().createTuple(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+        Object fromList = PFactory.createTuple(context.getLanguage(), PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
         CallNode.executeUncached(builtinImport, name, PNone.NONE, PNone.NONE, fromList, 0);
         PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
         Object modules = sysModule.getAttribute(T_MODULES);
@@ -170,7 +170,6 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         @Cached PConstructAndRaiseNode.Lazy raiseNode,
                         @Cached CallNode importCallNode,
                         @Cached GetDictFromGlobalsNode getDictNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached PyImportImportModuleLevelObject importModuleLevel) {
             Object importFunc = readAttrNode.execute(builtins, T___IMPORT__, null);
             if (importFunc == null) {
@@ -183,7 +182,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                 } else {
                     globalsArg = getDictNode.execute(inliningTarget, globals);
                 }
-                return importCallNode.execute(frame, importFunc, name, globalsArg, PNone.NONE, factory.createTuple(fromList), level);
+                return importCallNode.execute(frame, importFunc, name, globalsArg, PNone.NONE, PFactory.createTuple(PythonLanguage.get(inliningTarget), fromList), level);
             }
             return importModuleLevel.execute(frame, context, name, globals, fromList, level);
         }
@@ -259,7 +258,6 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         @Exclusive @Cached EnsureInitializedNode ensureInitialized,
                         @Cached PyObjectLookupAttr getPathNode,
                         @Cached PyObjectCallMethodObjArgs callHandleFromlist,
-                        @Cached PythonObjectFactory factory,
                         @Exclusive @Cached FindAndLoad findAndLoad,
                         @Cached InlinedConditionProfile recursiveCase,
                         @Exclusive @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -324,7 +322,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                 if (path != PNone.NO_VALUE) {
                     return callHandleFromlist.execute(frame, inliningTarget, context.getImportlib(), T__HANDLE_FROMLIST,
                                     mod,
-                                    factory.createTuple(fromList),
+                                    PFactory.createTuple(PythonLanguage.get(inliningTarget), fromList),
                                     context.importFunc());
                 } else {
                     return mod;

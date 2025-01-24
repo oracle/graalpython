@@ -60,6 +60,7 @@ import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validat
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
@@ -101,14 +102,13 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -213,13 +213,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static Object complex(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyComplexCheckExactNode check,
-                        @Cached ToComplexValueNode toComplexValueNode,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached ToComplexValueNode toComplexValueNode) {
             if (check.execute(inliningTarget, self)) {
                 return self;
             } else {
                 ComplexValue c = toComplexValueNode.execute(inliningTarget, self);
-                return factory.get(inliningTarget).createComplex(c.real, c.imag);
+                return PFactory.createComplex(PythonLanguage.get(inliningTarget), c.real, c.imag);
             }
         }
     }
@@ -380,14 +379,14 @@ public final class ComplexBuiltins extends PythonBuiltins {
     abstract static class AddNode extends BinaryOpBuiltinNode {
         @Specialization
         static PComplex doInt(PComplex left, int right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createComplex(left.getReal() + right, left.getImag());
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, left.getReal() + right, left.getImag());
         }
 
         @Specialization
         static PComplex doDouble(PComplex left, double right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createComplex(left.getReal() + right, left.getImag());
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, left.getReal() + right, left.getImag());
         }
 
         @Specialization
@@ -396,13 +395,13 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached ToComplexValueNode toComplexLeft,
                         @Cached ToComplexValueNode toComplexRight,
                         @Cached InlinedConditionProfile notImplementedProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ComplexValue left = toComplexLeft.execute(inliningTarget, leftObj);
             ComplexValue right = toComplexRight.execute(inliningTarget, rightObj);
             if (notImplementedProfile.profile(inliningTarget, left == null || right == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return factory.createComplex(left.getReal() + right.getReal(), left.getImag() + right.getImag());
+            return PFactory.createComplex(language, left.getReal() + right.getReal(), left.getImag() + right.getImag());
         }
     }
 
@@ -425,7 +424,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile notImplementedProfile,
                         @Cached InlinedConditionProfile topConditionProfile,
                         @Cached InlinedConditionProfile zeroDivisionProfile,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             ComplexValue left = toComplexLeft.execute(inliningTarget, leftObj);
             ComplexValue right = toComplexRight.execute(inliningTarget, rightObj);
@@ -453,16 +452,16 @@ public final class ComplexBuiltins extends PythonBuiltins {
                 real = (left.getReal() * ratio + left.getImag()) / denom;
                 imag = (left.getImag() * ratio - left.getReal()) / denom;
             }
-            return factory.createComplex(real, imag);
+            return PFactory.createComplex(language, real, imag);
         }
 
-        static PComplex doubleDivComplex(double left, PComplex right, PythonObjectFactory factory) {
+        static PComplex doubleDivComplex(double left, PComplex right, PythonLanguage language) {
             double oprealSq = right.getReal() * right.getReal();
             double opimagSq = right.getImag() * right.getImag();
             double realPart = right.getReal() * left;
             double imagPart = right.getImag() * left;
             double denom = oprealSq + opimagSq;
-            return factory.createComplex(realPart / denom, -imagPart / denom);
+            return PFactory.createComplex(language, realPart / denom, -imagPart / denom);
         }
     }
 
@@ -475,14 +474,14 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached ToComplexValueNode toComplexLeft,
                         @Cached ToComplexValueNode toComplexRight,
                         @Cached InlinedConditionProfile notImplementedProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ComplexValue left = toComplexLeft.execute(inliningTarget, leftObj);
             ComplexValue right = toComplexRight.execute(inliningTarget, rightObj);
             if (notImplementedProfile.profile(inliningTarget, left == null || right == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             ComplexValue res = multiply(left, right);
-            return factory.createComplex(res.getReal(), res.getImag());
+            return PFactory.createComplex(language, res.getReal(), res.getImag());
         }
 
         static ComplexValue multiply(ComplexValue left, ComplexValue right) {
@@ -496,14 +495,14 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.nb_subtract, isComplex = true)
     abstract static class SubNode extends BinaryOpBuiltinNode {
         static PComplex doComplex(PComplex left, double right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createComplex(left.getReal() - right, left.getImag());
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, left.getReal() - right, left.getImag());
         }
 
         @Specialization
         static PComplex doComplex(PComplex left, int right,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createComplex(left.getReal() - right, left.getImag());
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, left.getReal() - right, left.getImag());
         }
 
         @Specialization
@@ -512,13 +511,13 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached ToComplexValueNode toComplexLeft,
                         @Cached ToComplexValueNode toComplexRight,
                         @Cached InlinedConditionProfile notImplementedProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ComplexValue left = toComplexLeft.execute(inliningTarget, leftObj);
             ComplexValue right = toComplexRight.execute(inliningTarget, rightObj);
             if (notImplementedProfile.profile(inliningTarget, left == null || right == null)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return factory.createComplex(left.getReal() - right.getReal(), left.getImag() - right.getImag());
+            return PFactory.createComplex(language, left.getReal() - right.getReal(), left.getImag() - right.getImag());
         }
     }
 
@@ -537,7 +536,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile smallPositiveProfile,
                         @Cached InlinedBranchProfile smallNegativeProfile,
                         @Cached InlinedBranchProfile complexProfile,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             ComplexValue left = toComplexLeft.execute(inliningTarget, leftObj);
             ComplexValue right = toComplexRight.execute(inliningTarget, rightObj);
@@ -547,24 +546,24 @@ public final class ComplexBuiltins extends PythonBuiltins {
             PComplex result;
             if (right.getReal() == 0.0 && right.getImag() == 0.0) {
                 rightZeroProfile.enter(inliningTarget);
-                result = factory.createComplex(1.0, 0.0);
+                result = PFactory.createComplex(language, 1.0, 0.0);
             } else if (left.getReal() == 0.0 && left.getImag() == 0.0) {
                 leftZeroProfile.enter(inliningTarget);
                 if (right.getImag() != 0.0 || right.getReal() < 0.0) {
                     throw PRaiseNode.raiseUncached(inliningTarget, ZeroDivisionError, ErrorMessages.COMPLEX_ZERO_TO_NEGATIVE_POWER);
                 }
-                result = factory.createComplex(0.0, 0.0);
+                result = PFactory.createComplex(language, 0.0, 0.0);
             } else if (right.getImag() == 0.0 && right.getReal() == (int) right.getReal() && right.getReal() < 100 && right.getReal() > -100) {
                 if (right.getReal() >= 0) {
                     smallPositiveProfile.enter(inliningTarget);
-                    result = complexToSmallPositiveIntPower(left, (int) right.getReal(), factory);
+                    result = complexToSmallPositiveIntPower(left, (int) right.getReal(), language);
                 } else {
                     smallNegativeProfile.enter(inliningTarget);
-                    result = DivNode.doubleDivComplex(1.0, complexToSmallPositiveIntPower(left, -(int) right.getReal(), factory), factory);
+                    result = DivNode.doubleDivComplex(1.0, complexToSmallPositiveIntPower(left, -(int) right.getReal(), language), language);
                 }
             } else {
                 complexProfile.enter(inliningTarget);
-                result = complexToComplexBoundary(left.getReal(), left.getImag(), right.getReal(), right.getImag(), factory);
+                result = complexToComplexBoundary(left.getReal(), left.getImag(), right.getReal(), right.getImag(), language);
             }
             if (Double.isInfinite(result.getReal()) || Double.isInfinite(result.getImag())) {
                 throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.COMPLEX_EXPONENTIATION);
@@ -580,7 +579,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             throw raiseNode.raise(ValueError, ErrorMessages.COMPLEX_MODULO);
         }
 
-        private static PComplex complexToSmallPositiveIntPower(ComplexValue x, long n, PythonObjectFactory factory) {
+        private static PComplex complexToSmallPositiveIntPower(ComplexValue x, long n, PythonLanguage language) {
             long mask = 1;
             ComplexValue r = new ComplexValue(1.0, 0.0);
             ComplexValue p = x;
@@ -591,11 +590,11 @@ public final class ComplexBuiltins extends PythonBuiltins {
                 mask <<= 1;
                 p = MulNode.multiply(p, p);
             }
-            return factory.createComplex(r.getReal(), r.getImag());
+            return PFactory.createComplex(language, r.getReal(), r.getImag());
         }
 
         @TruffleBoundary
-        private static PComplex complexToComplexBoundary(double leftRead, double leftImag, double rightReal, double rightImag, PythonObjectFactory factory) {
+        private static PComplex complexToComplexBoundary(double leftRead, double leftImag, double rightReal, double rightImag, PythonLanguage language) {
             PComplex result;
             double vabs = Math.hypot(leftRead, leftImag);
             double len = Math.pow(vabs, rightReal);
@@ -605,7 +604,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                 len /= Math.exp(at * rightImag);
                 phase += rightImag * Math.log(vabs);
             }
-            result = factory.createComplex(len * Math.cos(phase), len * Math.sin(phase));
+            result = PFactory.createComplex(language, len * Math.cos(phase), len * Math.sin(phase));
             return result;
         }
     }
@@ -806,9 +805,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static PComplex neg(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ComplexValue c = toComplexValueNode.execute(inliningTarget, self);
-            return factory.createComplex(-c.getReal(), -c.getImag());
+            return PFactory.createComplex(language, -c.getReal(), -c.getImag());
         }
     }
 
@@ -819,9 +818,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static PComplex pos(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ComplexValue c = toComplexValueNode.execute(inliningTarget, self);
-            return factory.createComplex(c.getReal(), c.getImag());
+            return PFactory.createComplex(language, c.getReal(), c.getImag());
         }
     }
 
@@ -832,9 +831,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static PTuple get(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ComplexValue c = toComplexValueNode.execute(inliningTarget, self);
-            return factory.createTuple(new Object[]{c.getReal(), c.getImag()});
+            return PFactory.createTuple(language, new Object[]{c.getReal(), c.getImag()});
         }
     }
 
@@ -893,9 +892,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static PComplex hash(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ComplexValue c = toComplexValueNode.execute(inliningTarget, self);
-            return factory.createComplex(c.getReal(), -c.getImag());
+            return PFactory.createComplex(language, c.getReal(), -c.getImag());
         }
     }
 }

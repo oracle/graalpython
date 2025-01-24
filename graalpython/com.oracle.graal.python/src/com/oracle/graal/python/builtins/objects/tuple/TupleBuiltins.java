@@ -50,6 +50,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -77,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -97,7 +97,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -296,7 +296,7 @@ public final class TupleBuiltins extends PythonBuiltins {
                 raiseNonIntIndex(inliningTarget, raiseNode, idx);
             }
             return subscriptNode.execute(frame, inliningTarget, getTupleStorage.execute(inliningTarget, self), idx,
-                            ErrorMessages.TUPLE_OUT_OF_BOUNDS, PythonObjectFactory::createTuple);
+                            ErrorMessages.TUPLE_OUT_OF_BOUNDS, PFactory::createTuple);
         }
 
         @InliningCutoff
@@ -457,9 +457,9 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached GetTupleStorage getLeft,
                         @Cached GetTupleStorage getRight,
                         @Cached("createConcat()") ConcatNode concatNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             SequenceStorage concatenated = concatNode.execute(getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
-            return factory.createTuple(concatenated);
+            return PFactory.createTuple(language, concatenated);
         }
 
         @NeverDefault
@@ -484,13 +484,11 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached PyTupleCheckExactNode checkTuple,
                         @Cached GetTupleStorage getLeft,
                         @Cached InlinedConditionProfile isSingleRepeat,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode) {
             if (isSingleRepeat.profile(inliningTarget, repeats == 1 && checkTuple.execute(inliningTarget, left))) {
                 return left;
             } else {
-                return factory.get(inliningTarget).createTuple(repeatNode.execute(frame, getLeft.execute(inliningTarget, left), repeats));
+                return PFactory.createTuple(PythonLanguage.get(inliningTarget), repeatNode.execute(frame, getLeft.execute(inliningTarget, left), repeats));
             }
         }
     }
@@ -513,38 +511,38 @@ public final class TupleBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
         static PIntegerSequenceIterator doPTupleInt(PTuple primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createIntegerSequenceIterator(language, (IntSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isObjectStorage(primary)"})
         static PObjectSequenceIterator doPTupleObject(PTuple primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createObjectSequenceIterator((ObjectSequenceStorage) primary.getSequenceStorage(), primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createObjectSequenceIterator(language, (ObjectSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isLongStorage(primary)"})
         static PLongSequenceIterator doPTupleLong(PTuple primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createLongSequenceIterator(language, (LongSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isDoubleStorage(primary)"})
         static PDoubleSequenceIterator doPTupleDouble(PTuple primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createDoubleSequenceIterator(language, (DoubleSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
         static PSequenceIterator doPTuple(PTuple primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSequenceIterator(primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createSequenceIterator(language, primary);
         }
 
         @Specialization
         static PSequenceIterator doNativeTuple(PythonAbstractNativeObject primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSequenceIterator(primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createSequenceIterator(language, primary);
         }
     }
 
@@ -607,8 +605,8 @@ public final class TupleBuiltins extends PythonBuiltins {
         static PTuple doIt(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetTupleStorage getTupleStorage,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[]{factory.createTuple(getTupleStorage.execute(inliningTarget, self))});
+                        @Bind PythonLanguage language) {
+            return PFactory.createTuple(language, new Object[]{PFactory.createTuple(language, getTupleStorage.execute(inliningTarget, self))});
         }
     }
 
@@ -617,8 +615,8 @@ public final class TupleBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

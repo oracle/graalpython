@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -91,7 +92,7 @@ public class PythonModuleTests {
 
     @Test
     public void pythonModuleTest() {
-        PythonModule module = context.factory().createPythonModule(tsLiteral("testModule"));
+        PythonModule module = PFactory.createPythonModule(context.getLanguage(), tsLiteral("testModule"));
         assertEquals("testModule", module.getAttribute(T___NAME__).toString());
         assertEquals("None", module.getAttribute(T___DOC__).toString());
         assertEquals("None", module.getAttribute(T___PACKAGE__).toString());

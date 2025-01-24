@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -89,10 +89,10 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     @Specialization
     static PMemoryView fromMemoryView(PMemoryView object,
                     @Bind("this") Node inliningTarget,
-                    @Shared @Cached PythonObjectFactory factory,
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         object.checkReleased(inliningTarget, raiseNode);
-        return factory.createMemoryView(PythonContext.get(inliningTarget), object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
+        PythonContext context = PythonContext.get(inliningTarget);
+        return PFactory.createMemoryView(context.getLanguage(inliningTarget), context, object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
                         object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
                         object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
                         object.getBufferSuboffsets(), object.getFlags());
@@ -137,7 +137,6 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
                     @Cached HiddenAttr.ReadNode readGetBufferNode,
                     @Cached HiddenAttr.ReadNode readReleaseBufferNode,
                     @Cached CallNode callNode,
-                    @Shared @Cached PythonObjectFactory factory,
                     @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                     @Cached TruffleString.CodePointLengthNode lengthNode,
                     @Cached TruffleString.CodePointAtIndexNode atIndexNode,
@@ -145,8 +144,9 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
         Object typeObj = getClassNode.execute(inliningTarget, object);
         assert typeObj instanceof PythonBuiltinClassType || typeObj instanceof PythonAbstractObject;
         PythonAbstractObject type;
+        PythonContext context = PythonContext.get(inliningTarget);
         if (isBuiltinClassTypeProfile.profile(inliningTarget, typeObj instanceof PythonBuiltinClassType)) {
-            type = PythonContext.get(inliningTarget).lookupType((PythonBuiltinClassType) typeObj);
+            type = context.lookupType((PythonBuiltinClassType) typeObj);
         } else {
             type = (PythonAbstractObject) typeObj;
         }
@@ -179,13 +179,15 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
             // TODO when Sulong allows exposing pointers as interop buffer, we can get rid of this
             Object pythonBuffer = NativeByteSequenceStorage.create(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), false);
             TruffleString format = cBuffer.getFormat();
-            return factory.createMemoryView(PythonContext.get(inliningTarget), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
+            return PFactory.createMemoryView(context.getLanguage(inliningTarget), context, bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(),
+                            cBuffer.getItemSize(),
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode),
                             format, cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
         } else if (bufferAcquireLib.hasBuffer(object)) {
             // Managed object that implements PythonBufferAcquireLibrary
             Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
-            return factory.createMemoryViewForManagedObject(buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer), bufferLib.isReadonly(buffer),
+            return PFactory.createMemoryViewForManagedObject(context.getLanguage(inliningTarget), buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer),
+                            bufferLib.isReadonly(buffer),
                             bufferLib.getFormatString(buffer), lengthNode, atIndexNode);
         } else {
             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);

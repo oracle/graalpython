@@ -230,7 +230,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -507,8 +507,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         return SysModuleBuiltinsFactory.getFactories();
     }
 
-    protected static PSimpleNamespace makeImplementation(PythonObjectFactory factory, PTuple versionInfo, TruffleString gmultiarch) {
-        final PSimpleNamespace ns = factory.createSimpleNamespace();
+    private static PSimpleNamespace makeImplementation(PythonLanguage language, PTuple versionInfo, TruffleString gmultiarch) {
+        final PSimpleNamespace ns = PFactory.createSimpleNamespace(language);
         ns.setAttribute(tsLiteral("name"), T_GRAALPYTHON_ID);
         /*- 'cache_tag' must match the format of mx.graalpython/mx_graalpython.py:graalpy_ext */
         ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached(J_GRAALPYTHON_ID +
@@ -522,6 +522,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
+        PythonLanguage language = core.getLanguage();
         StructSequence.initType(core, VERSION_INFO_DESC);
         if (PythonOS.getPythonOS() == PLATFORM_WIN32) {
             StructSequence.initType(core, WINDOWS_VER_DESC);
@@ -536,19 +537,18 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("abiflags", T_EMPTY_STRING);
         addBuiltinConstant("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? T_LITTLE : T_BIG);
         addBuiltinConstant("copyright", T_LICENSE);
-        final PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        addBuiltinConstant(T_MODULES, factory.createDict());
-        addBuiltinConstant("path", factory.createList());
-        addBuiltinConstant("builtin_module_names", factory.createTuple(core.builtinModuleNames()));
+        addBuiltinConstant(T_MODULES, PFactory.createDict(language));
+        addBuiltinConstant("path", PFactory.createList(language));
+        addBuiltinConstant("builtin_module_names", PFactory.createTuple(language, core.builtinModuleNames()));
         addBuiltinConstant("maxsize", MAXSIZE);
-        final PTuple versionInfo = factory.createStructSeq(VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL_STRING,
+        final PTuple versionInfo = PFactory.createStructSeq(language, VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL_STRING,
                         PythonLanguage.RELEASE_SERIAL);
         addBuiltinConstant("version_info", versionInfo);
         addBuiltinConstant("api_version", PythonLanguage.API_VERSION);
         addBuiltinConstant("version", toTruffleStringUncached(PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
                         "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + " (" + System.getProperty("os.arch") + ")]"));
-        addBuiltinConstant("float_info", factory.createStructSeq(FLOAT_INFO_DESC,
+        addBuiltinConstant("float_info", PFactory.createStructSeq(language, FLOAT_INFO_DESC,
                         Double.MAX_VALUE,           // DBL_MAX
                         Double.MAX_EXPONENT + 1,    // DBL_MAX_EXP
                         308,                        // DBL_MIN_10_EXP
@@ -561,8 +561,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         2,                          // FLT_RADIX
                         1                           // FLT_ROUNDS
         ));
-        addBuiltinConstant("int_info", factory.createStructSeq(INT_INFO_DESC, 32, 4, INT_DEFAULT_MAX_STR_DIGITS, INT_MAX_STR_DIGITS_THRESHOLD));
-        addBuiltinConstant("hash_info", factory.createStructSeq(HASH_INFO_DESC,
+        addBuiltinConstant("int_info", PFactory.createStructSeq(language, INT_INFO_DESC, 32, 4, INT_DEFAULT_MAX_STR_DIGITS, INT_MAX_STR_DIGITS_THRESHOLD));
+        addBuiltinConstant("hash_info", PFactory.createStructSeq(language, HASH_INFO_DESC,
                         64,                         // width
                         HASH_MODULUS,               // modulus
                         HASH_INF,                   // inf
@@ -573,7 +573,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         0,                          // seed_bits
                         0                           // cutoff
         ));
-        addBuiltinConstant("thread_info", factory.createStructSeq(THREAD_INFO_DESC, PNone.NONE, PNone.NONE, PNone.NONE));
+        addBuiltinConstant("thread_info", PFactory.createStructSeq(language, THREAD_INFO_DESC, PNone.NONE, PNone.NONE, PNone.NONE));
         addBuiltinConstant("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 
         PythonOS os = getPythonOS();
@@ -589,7 +589,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant(T_STDOUT, PNone.NONE);
         addBuiltinConstant(T_STDERR, PNone.NONE);
 
-        addBuiltinConstant("implementation", makeImplementation(factory, versionInfo, gmultiarch));
+        addBuiltinConstant("implementation", makeImplementation(language, versionInfo, gmultiarch));
         addBuiltinConstant("hexversion", PythonLanguage.VERSION_HEX);
 
         if (os == PLATFORM_WIN32) {
@@ -597,9 +597,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
 
         addBuiltinConstant("float_repr_style", "short");
-        addBuiltinConstant("meta_path", factory.createList());
-        addBuiltinConstant("path_hooks", factory.createList());
-        addBuiltinConstant("path_importer_cache", factory.createDict());
+        addBuiltinConstant("meta_path", PFactory.createList(language));
+        addBuiltinConstant("path_hooks", PFactory.createList(language));
+        addBuiltinConstant("path_importer_cache", PFactory.createDict(language));
 
         // default prompt for interactive shell
         addBuiltinConstant("ps1", ">>> ");
@@ -607,7 +607,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("ps2", "... ");
         // CPython builds for distros report empty strings too, because they are built from
         // tarballs, not git
-        addBuiltinConstant("_git", factory.createTuple(new Object[]{T_GRAALPYTHON_ID, T_EMPTY_STRING, T_EMPTY_STRING}));
+        addBuiltinConstant("_git", PFactory.createTuple(language, new Object[]{T_GRAALPYTHON_ID, T_EMPTY_STRING, T_EMPTY_STRING}));
 
         if (PythonOS.getPythonOS() == PLATFORM_WIN32) {
             addBuiltinConstant("_vpath", "");
@@ -623,12 +623,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonModule sys = core.lookupBuiltinModule(T_SYS);
         PythonContext context = core.getContext();
+        PythonLanguage language = core.getLanguage();
         String[] args = context.getEnv().getApplicationArguments();
-        final PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        sys.setAttribute(tsLiteral("argv"), factory.createList(convertToObjectArray(args)));
-        sys.setAttribute(tsLiteral("orig_argv"), factory.createList(convertToObjectArray(PythonOptions.getOrigArgv(core.getContext()))));
+        sys.setAttribute(tsLiteral("argv"), PFactory.createList(language, convertToObjectArray(args)));
+        sys.setAttribute(tsLiteral("orig_argv"), PFactory.createList(language, convertToObjectArray(PythonOptions.getOrigArgv(core.getContext()))));
 
-        sys.setAttribute(tsLiteral("stdlib_module_names"), createStdLibModulesSet(factory));
+        sys.setAttribute(tsLiteral("stdlib_module_names"), createStdLibModulesSet(language));
 
         TruffleString prefix = context.getSysPrefix();
         for (TruffleString name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
@@ -666,7 +666,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         } else {
             warnoptions = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
-        sys.setAttribute(tsLiteral("warnoptions"), factory.createList(warnoptions));
+        sys.setAttribute(tsLiteral("warnoptions"), PFactory.createList(language, warnoptions));
 
         Env env = context.getEnv();
         TruffleString pythonPath = context.getOption(PythonOptions.PythonPath);
@@ -695,9 +695,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             // include our native modules on the path
             path[pathIdx++] = toTruffleStringUncached(capiHome + env.getFileNameSeparator() + "modules");
         }
-        PList sysPaths = factory.createList(path);
+        PList sysPaths = PFactory.createList(language, path);
         sys.setAttribute(tsLiteral("path"), sysPaths);
-        sys.setAttribute(tsLiteral("flags"), factory.createStructSeq(SysModuleBuiltins.FLAGS_DESC,
+        sys.setAttribute(tsLiteral("flags"), PFactory.createStructSeq(language, SysModuleBuiltins.FLAGS_DESC,
                         PInt.intValue(!context.getOption(PythonOptions.PythonOptimizeFlag)), // debug
                         PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
                         PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
@@ -723,18 +723,18 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute(T___BREAKPOINTHOOK__, sys.getAttribute(T_BREAKPOINTHOOK));
     }
 
-    private static PFrozenSet createStdLibModulesSet(PythonObjectFactory factory) {
+    private static PFrozenSet createStdLibModulesSet(PythonLanguage language) {
         EconomicMapStorage storage = EconomicMapStorage.create(STDLIB_MODULE_NAMES.length);
         for (String s : STDLIB_MODULE_NAMES) {
             storage.putUncachedWithJavaEq(s, PNone.NONE);
         }
-        return factory.createFrozenSet(storage);
+        return PFactory.createFrozenSet(language, storage);
     }
 
     /**
      * Like {@link PythonUtils#toTruffleStringArrayUncached(String[])}, but creates an array of
      * {@link Object}'s. The intended use of this method is in slow-path in calls to methods like
-     * {@link PythonObjectFactory#createTuple(Object[])}.
+     * {@link PFactory#createTuple}.
      */
     private static Object[] convertToObjectArray(String[] src) {
         if (src == null) {
@@ -765,8 +765,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     static void initStd(Python3Core core) {
-        PythonObjectFactory factory = core.factory();
         PythonContext context = core.getContext();
+        PythonLanguage language = core.getLanguage();
 
         // wrap std in/out/err
         GraalPythonModuleBuiltins gp = (GraalPythonModuleBuiltins) core.lookupBuiltinModule(T___GRAALPYTHON__).getBuiltins();
@@ -779,35 +779,35 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         // Note that stdin is always buffered, this only applies to stdout and stderr
         boolean buffering = !context.getOption(PythonOptions.UnbufferedIO);
 
-        PFileIO stdinFileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
+        PFileIO stdinFileIO = PFactory.createFileIO(language);
         FileIOBuiltins.FileIOInit.internalInit(stdinFileIO, toTruffleStringUncached("<stdin>"), 0, IOMode.RB);
-        PBuffered stdinBuffer = factory.createBufferedReader(PythonBuiltinClassType.PBufferedReader);
-        BufferedReaderBuiltins.BufferedReaderInit.internalInit(stdinBuffer, stdinFileIO, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport, posixLib);
-        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, stdinBuffer, sysModule, factory, true);
+        PBuffered stdinBuffer = PFactory.createBufferedReader(language);
+        BufferedReaderBuiltins.BufferedReaderInit.internalInit(stdinBuffer, stdinFileIO, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
+        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, stdinBuffer, sysModule, language, true);
 
-        PFileIO stdoutFileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
+        PFileIO stdoutFileIO = PFactory.createFileIO(language);
         FileIOBuiltins.FileIOInit.internalInit(stdoutFileIO, toTruffleStringUncached("<stdout>"), 1, IOMode.WB);
-        Object stdoutBuffer = createBufferedIO(buffering, factory, stdoutFileIO, posixSupport, posixLib);
-        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, stdoutBuffer, sysModule, factory, buffering);
+        Object stdoutBuffer = createBufferedIO(buffering, language, stdoutFileIO, posixSupport, posixLib);
+        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, stdoutBuffer, sysModule, language, buffering);
 
-        PFileIO stderr = factory.createFileIO(PythonBuiltinClassType.PFileIO);
+        PFileIO stderr = PFactory.createFileIO(language);
         FileIOBuiltins.FileIOInit.internalInit(stderr, toTruffleStringUncached("<stderr>"), 2, IOMode.WB);
-        Object stderrBuffer = createBufferedIO(buffering, factory, stderr, posixSupport, posixLib);
-        setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, stderrBuffer, sysModule, factory, buffering);
+        Object stderrBuffer = createBufferedIO(buffering, language, stderr, posixSupport, posixLib);
+        setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, stderrBuffer, sysModule, language, buffering);
     }
 
-    private static Object createBufferedIO(boolean buffering, PythonObjectFactory factory, PFileIO fileIo, Object posixSupport, PosixSupportLibrary posixLib) {
+    private static Object createBufferedIO(boolean buffering, PythonLanguage language, PFileIO fileIo, Object posixSupport, PosixSupportLibrary posixLib) {
         if (!buffering) {
             return fileIo;
         }
-        PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
-        BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport, posixLib);
+        PBuffered writer = PFactory.createBufferedWriter(language);
+        BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, fileIo, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
         return writer;
     }
 
     private static PTextIO setWrapper(TruffleString name, TruffleString specialName, TruffleString mode, TruffleString encoding, TruffleString error, Object buffer, PythonModule sysModule,
-                    PythonObjectFactory factory, boolean buffering) {
-        PTextIO textIOWrapper = factory.createTextIO(PythonBuiltinClassType.PTextIOWrapper);
+                    PythonLanguage language, boolean buffering) {
+        PTextIO textIOWrapper = PFactory.createTextIO(language);
         TextIOWrapperInitNodeGen.getUncached().execute(null, null, textIOWrapper, buffer, encoding, error, PNone.NONE,
                         /* line_buffering */ buffering, /* write_through */ !buffering);
 
@@ -850,15 +850,15 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             AbstractTruffleException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
-                return factory.createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
+                return PFactory.createTuple(language, new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, currentException);
                 Object traceback = getTracebackNode.execute(inliningTarget, exceptionObject);
-                return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exceptionObject), exceptionObject, traceback});
+                return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, exceptionObject), exceptionObject, traceback});
             }
         }
     }
@@ -925,13 +925,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached HashingStorageSetItem setHashingStorageItem,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             auditNode.audit(inliningTarget, "sys._current_frames");
             if (!getLanguage().singleThreadedAssumption.isValid()) {
                 warnNode.warn(frame, RuntimeWarning, ErrorMessages.WARN_CURRENT_FRAMES_MULTITHREADED);
             }
             PFrame currentFrame = readCallerFrameNode.executeWith(frame, 0);
-            PDict result = factory.createDict();
+            PDict result = PFactory.createDict(language);
             result.setDictStorage(setHashingStorageItem.execute(frame, inliningTarget, result.getDictStorage(), PThread.getThreadId(Thread.currentThread()), currentFrame));
             return result;
         }
@@ -1222,11 +1222,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static Object setAsyncgenHooks(
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // TODO: use asyncgen_hooks object
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             Object firstiter = threadState.getAsyncgenFirstIter();
-            return factory.createTuple(new Object[]{firstiter == null ? PNone.NONE : firstiter, PNone.NONE});
+            return PFactory.createTuple(language, new Object[]{firstiter == null ? PNone.NONE : firstiter, PNone.NONE});
         }
     }
 
@@ -2058,14 +2058,15 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static int PLATFORM = 2;
 
         @Specialization
-        PTuple getVersion(@Cached PythonObjectFactory factory) {
+        PTuple getVersion(
+                        @Bind PythonLanguage language) {
             if (CACHED_VERSION_INFO == null) {
                 cacheVersion();
             }
-            return factory.createStructSeq(WINDOWS_VER_DESC,
+            return PFactory.createStructSeq(language, WINDOWS_VER_DESC,
                             CACHED_VERSION_INFO[0], CACHED_VERSION_INFO[1], CACHED_VERSION_INFO[2],
                             PLATFORM, T_EMPTY_STRING, 0, 0, 0, 1,
-                            factory.createTuple(CACHED_VERSION_INFO));
+                            PFactory.createTuple(language, CACHED_VERSION_INFO));
         }
 
         @TruffleBoundary

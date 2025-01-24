@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -54,7 +55,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -168,9 +169,9 @@ public final class SliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndicesNode extends PythonBinaryBuiltinNode {
 
-        private static PTuple doPSlice(VirtualFrame frame, PSlice self, int length, ComputeIndices compute, PythonObjectFactory factory) {
+        private static PTuple doPSlice(VirtualFrame frame, PSlice self, int length, ComputeIndices compute, PythonLanguage language) {
             SliceInfo sliceInfo = compute.execute(frame, self, length);
-            return factory.createTuple(new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
+            return PFactory.createTuple(language, new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
         }
 
         protected static boolean isSafeIntSlice(PSlice self, Object length) {
@@ -179,31 +180,31 @@ public final class SliceBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple safeInt(VirtualFrame frame, PIntSlice self, int length,
-                        @Shared @Cached ComputeIndices compute,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doPSlice(frame, self, length, compute, factory);
+                        @Bind PythonLanguage language,
+                        @Shared @Cached ComputeIndices compute) {
+            return doPSlice(frame, self, length, compute, language);
         }
 
         @Specialization(guards = "!isPNone(length)", rewriteOn = PException.class)
         static PTuple doSliceObject(VirtualFrame frame, PSlice self, Object length,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached SliceExactCastToInt toInt,
-                        @Shared @Cached ComputeIndices compute,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doPSlice(frame, self, (int) toInt.execute(frame, inliningTarget, length), compute, factory);
+                        @Shared @Cached ComputeIndices compute) {
+            return doPSlice(frame, self, (int) toInt.execute(frame, inliningTarget, length), compute, language);
         }
 
         @Specialization(guards = "!isPNone(length)", replaces = {"doSliceObject"})
         static PTuple doSliceObjectWithSlowPath(VirtualFrame frame, PSlice self, Object length,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached SliceExactCastToInt toInt,
                         @Shared @Cached ComputeIndices compute,
                         @Cached IsBuiltinObjectProfile profileError,
                         @Cached SliceCastToToBigInt castLengthNode,
-                        @Cached CoerceToObjectSlice castNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Cached CoerceToObjectSlice castNode) {
             try {
-                return doPSlice(frame, self, (int) toInt.execute(frame, inliningTarget, length), compute, factory);
+                return doPSlice(frame, self, (int) toInt.execute(frame, inliningTarget, length), compute, language);
             } catch (PException pe) {
                 if (!profileError.profileException(inliningTarget, pe, PythonBuiltinClassType.OverflowError)) {
                     throw pe;
@@ -212,8 +213,8 @@ public final class SliceBuiltins extends PythonBuiltins {
             }
 
             Object lengthIn = castLengthNode.execute(inliningTarget, length);
-            PObjectSlice.SliceObjectInfo sliceInfo = PObjectSlice.computeIndicesSlowPath(castNode.execute(self), lengthIn, factory);
-            return factory.createTuple(new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
+            PObjectSlice.SliceObjectInfo sliceInfo = PObjectSlice.computeIndicesSlowPath(castNode.execute(self), lengthIn, true);
+            return PFactory.createTuple(language, new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
         }
 
         @Specialization(guards = {"isPNone(length)"})
@@ -240,10 +241,10 @@ public final class SliceBuiltins extends PythonBuiltins {
         @Specialization
         static Object reduce(PSlice self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
-            PTuple args = factory.createTuple(new Object[]{self.getStart(), self.getStop(), self.getStep()});
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
+                        @Bind PythonLanguage language,
+                        @Cached GetClassNode getClassNode) {
+            PTuple args = PFactory.createTuple(language, new Object[]{self.getStart(), self.getStop(), self.getStep()});
+            return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 }

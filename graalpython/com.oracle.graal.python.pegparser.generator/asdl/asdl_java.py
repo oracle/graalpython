@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -285,7 +285,7 @@ class Sst2ObjGenerator(Generator):
 
     def visit_concrete_class(self, c: model.ConcreteClass, emitter: java_file.Emitter):
         with emitter.define(f'public Object visit({c.full_name} node)', '@Override'):
-            emitter.println(f'PythonObject o = factory.createPythonObject(state.{c.name.cls_field});')
+            emitter.println(f'PythonObject o = createPythonObject(state.{c.name.cls_field});')
             for f in c.fields:
                 self.visit(f, emitter)
             if c.outer_has_attributes or c.attributes:

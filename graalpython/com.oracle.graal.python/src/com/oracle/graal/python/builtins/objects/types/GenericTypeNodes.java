@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -76,8 +77,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -264,6 +264,7 @@ public abstract class GenericTypeNodes {
     // Equivalent of _Py_subs_parameters
     @TruffleBoundary
     static Object[] subsParameters(Node node, Object self, PTuple args, PTuple parameters, Object item) {
+        PythonLanguage language = PythonLanguage.get(null);
         SequenceStorage paramsStorage = parameters.getSequenceStorage();
         int nparams = paramsStorage.length();
         if (nparams == 0) {
@@ -274,7 +275,7 @@ public abstract class GenericTypeNodes {
             Object param = getItemUncached(paramsStorage, i);
             Object prepare = PyObjectLookupAttr.executeUncached(param, T___TYPING_PREPARE_SUBST__);
             if (!(prepare instanceof PNone)) {
-                Object itemarg = item instanceof PTuple ? item : PythonContext.get(node).factory().createTuple(new Object[]{item});
+                Object itemarg = item instanceof PTuple ? item : PFactory.createTuple(language, new Object[]{item});
                 item = CallNode.executeUncached(prepare, self, itemarg);
             }
         }
@@ -298,7 +299,7 @@ public abstract class GenericTypeNodes {
                 assert iparam >= 0;
                 arg = CallNode.executeUncached(subst, argitems[iparam]);
             } else {
-                arg = subsTvars(node, arg, parameters, argitems);
+                arg = subsTvars(arg, parameters, argitems);
             }
             if (unpack && arg instanceof PTuple tuple /* CPython doesn't check the cast?! */) {
                 listExtend(newargs, tuple);
@@ -310,7 +311,7 @@ public abstract class GenericTypeNodes {
     }
 
     @TruffleBoundary
-    private static Object subsTvars(Node node, Object obj, PTuple parameters, Object[] argitems) {
+    private static Object subsTvars(Object obj, PTuple parameters, Object[] argitems) {
         Object subparams = PyObjectLookupAttr.executeUncached(obj, T___PARAMETERS__);
         if (subparams instanceof PTuple tuple && tuple.getSequenceStorage().length() > 0) {
             SequenceStorage subparamsStorage = tuple.getSequenceStorage();
@@ -331,7 +332,7 @@ public abstract class GenericTypeNodes {
                 }
                 subargs.add(arg);
             }
-            PTuple subargsTuple = PythonContext.get(node).factory().createTuple(subargs.toArray());
+            PTuple subargsTuple = PFactory.createTuple(PythonLanguage.get(null), subargs.toArray());
             obj = PyObjectGetItem.executeUncached(obj, subargsTuple);
         }
         return obj;
@@ -345,13 +346,13 @@ public abstract class GenericTypeNodes {
         static Object union(Object self, Object other,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyObjectTypeCheck typeCheck,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object[] args = dedupAndFlattenArgs(new Object[]{self, other});
             if (args.length == 1) {
                 return args[0];
             }
             assert args.length > 1;
-            return factory.createUnionType(args);
+            return PFactory.createUnionType(language, args);
         }
 
         @Fallback

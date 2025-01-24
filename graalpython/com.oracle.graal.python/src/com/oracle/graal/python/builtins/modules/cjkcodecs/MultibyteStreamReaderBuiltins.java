@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -76,7 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -106,7 +107,8 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode.Lazy raiseNode) { // "O|s:StreamReader"
 
             TruffleString errors = null;
@@ -114,7 +116,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteStreamReaderObject self = factory.createMultibyteStreamReaderObject(type);
+            MultibyteStreamReaderObject self = PFactory.createMultibyteStreamReaderObject(language, type, getInstanceShape.execute(type));
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);

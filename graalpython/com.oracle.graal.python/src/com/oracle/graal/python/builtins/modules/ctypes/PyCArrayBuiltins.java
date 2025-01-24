@@ -58,6 +58,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -94,7 +95,7 @@ import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -292,14 +293,14 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
         static Object doSlice(CDataObject self, PSlice slice,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached SliceUnpack sliceUnpack,
                         @Cached AdjustIndices adjustIndices,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(inliningTarget, self);
             assert stgdict != null : "Cannot be NULL for array object instances";
             Object proto = stgdict.proto;
@@ -313,17 +314,17 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (slicelen <= 0) {
-                    return factory.createEmptyBytes();
+                    return PFactory.createEmptyBytes(language);
                 }
-                if (sliceInfo.step == 1) {
-                    return factory.createBytes(ptr, sliceInfo.start, slicelen);
+                if (sliceInfo.start == 0 && sliceInfo.step == 1) {
+                    return PFactory.createBytes(language, ptr, slicelen);
                 }
                 byte[] dest = new byte[slicelen];
                 for (int cur = sliceInfo.start, i = 0; i < slicelen; cur += sliceInfo.step, i++) {
                     dest[i] = ptr[cur];
                 }
 
-                return factory.createBytes(dest);
+                return PFactory.createBytes(language, dest);
             }
             if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
@@ -349,7 +350,7 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
             for (int cur = sliceInfo.start, i = 0; i < slicelen; cur += sliceInfo.step, i++) {
                 np[i] = doInt(self, cur, inliningTarget, pyCDataGetNode, pyObjectStgDictNode);
             }
-            return factory.createList(np);
+            return PFactory.createList(language, np);
         }
 
         @Specialization(guards = "!isPSlice(item)", replaces = "doInt")
@@ -392,8 +393,8 @@ public final class PyCArrayBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,9 +44,10 @@ import java.security.MessageDigest;
 
 import javax.crypto.Mac;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
@@ -199,7 +200,7 @@ public abstract class DigestObject extends PythonBuiltinObject {
      */
     abstract void update(byte[] data, int length);
 
-    abstract DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException;
+    abstract DigestObject copy() throws CloneNotSupportedException;
 
     abstract int getDigestLength();
 
@@ -263,8 +264,8 @@ public abstract class DigestObject extends PythonBuiltinObject {
 
         @Override
         @TruffleBoundary
-        DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException {
-            return factory.createDigestObject(getType(), getAlgorithm(), digest.clone());
+        DigestObject copy() throws CloneNotSupportedException {
+            return PFactory.createDigestObject(PythonLanguage.get(null), getType(), getAlgorithm(), digest.clone());
         }
 
         @Override
@@ -302,8 +303,8 @@ public abstract class DigestObject extends PythonBuiltinObject {
 
         @Override
         @TruffleBoundary
-        DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException {
-            return factory.createDigestObject(getType(), getAlgorithm(), mac.clone());
+        DigestObject copy() throws CloneNotSupportedException {
+            return PFactory.createDigestObject(PythonLanguage.get(null), getType(), getAlgorithm(), mac.clone());
         }
 
         @Override

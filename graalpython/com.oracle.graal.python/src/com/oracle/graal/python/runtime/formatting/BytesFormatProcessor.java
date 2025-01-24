@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.BytesFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -115,7 +117,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
     @Override
     Object parseMappingKey(int start, int end) {
-        return core.factory().createBytes(Arrays.copyOfRange(formatBytes, start, end));
+        return PFactory.createBytes(PythonLanguage.get(null), Arrays.copyOfRange(formatBytes, start, end));
     }
 
     @Override

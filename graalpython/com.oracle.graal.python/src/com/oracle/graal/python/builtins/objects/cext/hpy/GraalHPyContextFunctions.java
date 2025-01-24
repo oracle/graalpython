@@ -302,6 +302,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StrGetItemNod
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
@@ -358,7 +359,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
@@ -382,6 +383,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -1380,9 +1382,9 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyDictNew extends HPyUnaryContextFunction {
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDict();
+        static Object doGeneric(GraalHPyContext hpyContext,
+                        @Bind("this") Node inliningTarget) {
+            return PFactory.createDict(hpyContext.getContext().getLanguage(inliningTarget));
         }
     }
 
@@ -1391,14 +1393,14 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyListNew extends HPyBinaryContextFunction {
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, long len,
-                        @Cached PythonObjectFactory factory,
+        static Object doGeneric(GraalHPyContext hpyContext, long len,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
                 Object[] data = new Object[PInt.intValueExact(len)];
                 // TODO(fa) maybe this should be NO_VALUE (representing native 'NULL')
                 Arrays.fill(data, PNone.NONE);
-                return factory.createList(data);
+                return PFactory.createList(hpyContext.getContext().getLanguage(inliningTarget), data);
             } catch (OverflowException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.MemoryError);
             }
@@ -1769,10 +1771,10 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeAsUTF8String extends HPyBinaryContextFunction {
 
         @Specialization
-        static PBytes doGeneric(@SuppressWarnings("unused") Object hpyContext, Object unicodeObject,
-                        @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, T_STRICT));
+        static PBytes doGeneric(GraalHPyContext hpyContext, Object unicodeObject,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode) {
+            return PFactory.createBytes(hpyContext.getContext().getLanguage(inliningTarget), encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, T_STRICT));
         }
     }
 
@@ -1781,10 +1783,10 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeAsLatin1String extends HPyBinaryContextFunction {
 
         @Specialization
-        static PBytes doGeneric(@SuppressWarnings("unused") Object hpyContext, Object unicodeObject,
-                        @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(encodeNativeStringNode.execute(StandardCharsets.ISO_8859_1, unicodeObject, T_STRICT));
+        static PBytes doGeneric(GraalHPyContext hpyContext, Object unicodeObject,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode) {
+            return PFactory.createBytes(hpyContext.getContext().getLanguage(inliningTarget), encodeNativeStringNode.execute(StandardCharsets.ISO_8859_1, unicodeObject, T_STRICT));
         }
     }
 
@@ -1793,10 +1795,10 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyUnicodeAsASCIIString extends HPyBinaryContextFunction {
 
         @Specialization
-        static PBytes doGeneric(@SuppressWarnings("unused") Object hpyContext, Object unicodeObject,
-                        @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(encodeNativeStringNode.execute(StandardCharsets.US_ASCII, unicodeObject, T_STRICT));
+        static PBytes doGeneric(GraalHPyContext hpyContext, Object unicodeObject,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode) {
+            return PFactory.createBytes(hpyContext.getContext().getLanguage(inliningTarget), encodeNativeStringNode.execute(StandardCharsets.US_ASCII, unicodeObject, T_STRICT));
         }
     }
 
@@ -1804,10 +1806,10 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyUnicodeEncodeFSDefault extends HPyBinaryContextFunction {
         @Specialization
-        static PBytes doGeneric(@SuppressWarnings("unused") Object hpyContext, Object unicodeObject,
-                        @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(encodeNativeStringNode.execute(getFSDefaultCharset(), unicodeObject, T_STRICT));
+        static PBytes doGeneric(GraalHPyContext hpyContext, Object unicodeObject,
+                        @Bind("this") Node inliningTarget,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode) {
+            return PFactory.createBytes(hpyContext.getContext().getLanguage(inliningTarget), encodeNativeStringNode.execute(getFSDefaultCharset(), unicodeObject, T_STRICT));
         }
 
         @TruffleBoundary
@@ -2037,8 +2039,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached(parameters = "hpyContext") HPyCallHelperFunctionNode callHelperNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadI8ArrayNode readI8ArrayNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PRaiseNode raiseNode) {
             int size;
             try {
                 size = castToJavaIntNode.execute(inliningTarget, callHelperNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_STRLEN, charPtr));
@@ -2046,7 +2047,7 @@ public abstract class GraalHPyContextFunctions {
                 throw raiseNode.raise(OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
             }
             byte[] bytes = readI8ArrayNode.execute(hpyContext, charPtr, 0, size);
-            return factory.createBytes(bytes);
+            return PFactory.createBytes(hpyContext.getContext().getLanguage(inliningTarget), bytes);
         }
     }
 
@@ -2056,21 +2057,22 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static PBytes doGeneric(GraalHPyContext hpyContext, Object charPtr, long lsize,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadI8ArrayNode readI8ArrayNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PRaiseNode raiseNode) {
             if (isNullNode.execute(hpyContext, charPtr)) {
                 throw raiseNode.raise(ValueError, ErrorMessages.NULL_CHAR_PASSED);
             }
             if (lsize < 0) {
                 throw raiseNode.raise(SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
+            PythonLanguage language = hpyContext.getContext().getLanguage(inliningTarget);
             if (lsize == 0) {
-                return factory.createEmptyBytes();
+                return PFactory.createEmptyBytes(language);
             }
             byte[] bytes = readI8ArrayNode.execute(hpyContext, charPtr, 0, lsize);
-            return factory.createBytes(bytes);
+            return PFactory.createBytes(language, bytes);
         }
     }
 
@@ -2300,7 +2302,7 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached PythonObjectFactory factory,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.AllocateNode allocateNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.WritePointerNode writePointerNode,
                         @Cached InlinedExactClassProfile classProfile) {
@@ -2335,7 +2337,8 @@ public abstract class GraalHPyContextFunctions {
             }
 
             int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject);
-            PythonObject pythonObject = createFromBuiltinShape(builtinShape, profiledTypeObject, dataPtr, factory);
+            PythonLanguage language = hpyContext.getContext().getLanguage(inliningTarget);
+            PythonObject pythonObject = createFromBuiltinShape(builtinShape, profiledTypeObject, dataPtr, language, getInstanceShape);
 
             if (destroyFunc != null) {
                 hpyContext.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
@@ -2347,15 +2350,16 @@ public abstract class GraalHPyContextFunctions {
             return pythonObject;
         }
 
-        static PythonObject createFromBuiltinShape(int builtinShape, Object type, Object dataPtr, PythonObjectFactory factory) {
+        static PythonObject createFromBuiltinShape(int builtinShape, Object type, Object dataPtr, PythonLanguage language, TypeNodes.GetInstanceShape getInstanceShape) {
+            Shape shape = getInstanceShape.execute(type);
             PythonObject result = switch (builtinShape) {
-                case HPyType_BUILTIN_SHAPE_LEGACY, HPyType_BUILTIN_SHAPE_OBJECT -> factory.createPythonHPyObject(type, dataPtr);
+                case HPyType_BUILTIN_SHAPE_LEGACY, HPyType_BUILTIN_SHAPE_OBJECT -> PFactory.createPythonHPyObject(language, type, shape, dataPtr);
                 case HPyType_BUILTIN_SHAPE_TYPE -> throw CompilerDirectives.shouldNotReachHere("built-in shape type not yet implemented");
-                case HPyType_BUILTIN_SHAPE_LONG -> factory.createInt(type, BigInteger.ZERO);
-                case HPyType_BUILTIN_SHAPE_FLOAT -> factory.createFloat(type, 0.0);
-                case HPyType_BUILTIN_SHAPE_UNICODE -> factory.createString(type, T_EMPTY_STRING);
-                case HPyType_BUILTIN_SHAPE_TUPLE -> factory.createEmptyTuple(type);
-                case HPyType_BUILTIN_SHAPE_LIST -> factory.createList(type);
+                case HPyType_BUILTIN_SHAPE_LONG -> PFactory.createInt(language, type, shape, BigInteger.ZERO);
+                case HPyType_BUILTIN_SHAPE_FLOAT -> PFactory.createFloat(language, type, shape, 0.0);
+                case HPyType_BUILTIN_SHAPE_UNICODE -> PFactory.createString(language, type, shape, T_EMPTY_STRING);
+                case HPyType_BUILTIN_SHAPE_TUPLE -> PFactory.createEmptyTuple(language, type, shape);
+                case HPyType_BUILTIN_SHAPE_LIST -> PFactory.createList(language, type, shape);
                 default -> throw CompilerDirectives.shouldNotReachHere(INVALID_BUILT_IN_SHAPE);
             };
             if (builtinShape != HPyType_BUILTIN_SHAPE_LEGACY && builtinShape != HPyType_BUILTIN_SHAPE_OBJECT) {
@@ -2395,7 +2399,7 @@ public abstract class GraalHPyContextFunctions {
         @SuppressWarnings("unused")
         static Object doGeneric(GraalHPyContext hpyContext, Object type, Object args, long nargs, Object kw,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.AllocateNode allocateNode,
                         @Cached InlinedExactClassProfile classProfile) {
 
@@ -2418,7 +2422,8 @@ public abstract class GraalHPyContextFunctions {
             }
 
             int builtinShape = GraalHPyDef.getBuiltinShapeFromHiddenAttribute(profiledTypeObject);
-            PythonObject pythonObject = GraalHPyNew.createFromBuiltinShape(builtinShape, type, dataPtr, factory);
+            PythonLanguage language = hpyContext.getContext().getLanguage(inliningTarget);
+            PythonObject pythonObject = GraalHPyNew.createFromBuiltinShape(builtinShape, type, dataPtr, language, getInstanceShape);
 
             if (destroyFunc != null) {
                 hpyContext.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
@@ -2607,8 +2612,7 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(GraalHPyContext hpyContext, Object arrayPtr, long nelements,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadHPyArrayNode readHPyArrayNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadHPyArrayNode readHPyArrayNode) {
             int n;
             try {
                 n = castToJavaIntExactNode.execute(inliningTarget, nelements);
@@ -2618,7 +2622,7 @@ public abstract class GraalHPyContextFunctions {
             }
 
             Object[] elements = readHPyArrayNode.execute(hpyContext, arrayPtr, 0, n);
-            return factory.createTuple(elements);
+            return PFactory.createTuple(hpyContext.getContext().getLanguage(inliningTarget), elements);
         }
     }
 
@@ -2677,10 +2681,9 @@ public abstract class GraalHPyContextFunctions {
         }
 
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object builderHandle,
+        Object doGeneric(GraalHPyContext hpyContext, Object builderHandle,
                         @Bind("this") Node inliningTarget,
-                        @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode) {
             ObjectSequenceStorage builder = cast(closeAndGetHandleNode.execute(inliningTarget, builderHandle));
             if (builder == null) {
                 /*
@@ -2689,7 +2692,8 @@ public abstract class GraalHPyContextFunctions {
                  */
                 throw CompilerDirectives.shouldNotReachHere("invalid builder object");
             }
-            return isTupleBuilder() ? factory.createTuple(builder) : factory.createList(builder);
+            PythonLanguage language = hpyContext.getContext().getLanguage(inliningTarget);
+            return isTupleBuilder() ? PFactory.createTuple(language, builder) : PFactory.createList(language, builder);
         }
 
         static ObjectSequenceStorage cast(Object object) {
@@ -3039,8 +3043,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached CallNode callTypeConstructorNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString doc;
             if (!isNullNode.execute(hpyContext, docPtr)) {
                 doc = fromCharPointerNode.execute(docPtr);
@@ -3049,7 +3052,7 @@ public abstract class GraalHPyContextFunctions {
             }
             return createNewExceptionWithDoc(inliningTarget, namePtr, base, dictObj, doc, fromCharPointerNode, indexOfCodepointNode, codepointLengthNode, substringNode,
                             getHashingStorageItem,
-                            setHashingStorageItem, callTypeConstructorNode, raiseNode, factory);
+                            setHashingStorageItem, callTypeConstructorNode, raiseNode);
         }
 
         static Object createNewExceptionWithDoc(Node inliningTarget, Object namePtr, Object base, Object dictObj, TruffleString doc,
@@ -3060,8 +3063,7 @@ public abstract class GraalHPyContextFunctions {
                         HashingStorageGetItem getHashingStorageItem,
                         HashingStorageSetItem setHashingStorageItem,
                         CallNode callTypeConstructorNode,
-                        PRaiseNode raiseNode,
-                        PythonObjectFactory factory) {
+                        PRaiseNode raiseNode) {
 
             TruffleString name = fromCharPointerNode.execute(namePtr);
             int len = codepointLengthNode.execute(name, TS_ENCODING);
@@ -3073,11 +3075,12 @@ public abstract class GraalHPyContextFunctions {
             if (base == PNone.NO_VALUE) {
                 base = PythonBuiltinClassType.Exception;
             }
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PDict dict;
             HashingStorage dictStorage;
             if (dictObj == PNone.NO_VALUE) {
                 dictStorage = new DynamicObjectStorage(PythonLanguage.get(inliningTarget));
-                dict = factory.createDict(dictStorage);
+                dict = PFactory.createDict(language, dictStorage);
             } else {
                 if (!(dictObj instanceof PDict)) {
                     /*
@@ -3102,7 +3105,7 @@ public abstract class GraalHPyContextFunctions {
             if (base instanceof PTuple) {
                 bases = (PTuple) base;
             } else {
-                bases = factory.createTuple(new Object[]{base});
+                bases = PFactory.createTuple(language, new Object[]{base});
             }
 
             return callTypeConstructorNode.executeWithoutFrame(PythonBuiltinClassType.PythonClass, substringNode.execute(name, dotIdx + 1, len - dotIdx - 1, TS_ENCODING, false), bases, dict);
@@ -3123,11 +3126,10 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached CallNode callTypeConstructorNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PRaiseNode raiseNode) {
             return GraalHPyNewExceptionWithDoc.createNewExceptionWithDoc(inliningTarget, namePtr, base, dictObj, null, fromCharPointerNode, indexOfCodepointNode,
                             codepointLengthNode,
-                            substringNode, getHashingStorageItem, setHashingStorageItem, callTypeConstructorNode, raiseNode, factory);
+                            substringNode, getHashingStorageItem, setHashingStorageItem, callTypeConstructorNode, raiseNode);
         }
     }
 
@@ -3343,13 +3345,12 @@ public abstract class GraalHPyContextFunctions {
     @GenerateUncached
     public abstract static class GraalHPyDictCopy extends HPyBinaryContextFunction {
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object dictObj,
+        static Object doGeneric(GraalHPyContext hpyContext, Object dictObj,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (dictObj instanceof PDict dict) {
-                return factory.createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
+                return PFactory.createDict(hpyContext.getContext().getLanguage(inliningTarget), copyNode.execute(inliningTarget, dict.getDictStorage()));
             }
             throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
         }
@@ -3369,9 +3370,9 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static PyCapsule doGeneric(GraalHPyContext hpyContext, Object pointer, Object namePtr, Object dtorPtr,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.ReadPointerNode readPointerNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             if (isNullNode.execute(hpyContext, pointer)) {
                 throw raiseNode.raise(ValueError, ErrorMessages.HPYCAPSULE_NEW_NULL_PTR_ERROR);
@@ -3384,7 +3385,7 @@ public abstract class GraalHPyContextFunctions {
                     throw raiseNode.raise(ValueError, ErrorMessages.INVALID_HPYCAPSULE_DESTRUCTOR);
                 }
             }
-            PyCapsule capsule = factory.createCapsuleNativeName(pointer, namePtr);
+            PyCapsule capsule = PFactory.createCapsuleNativeName(hpyContext.getContext().getLanguage(inliningTarget), pointer, namePtr);
             if (hpyDestructor != null) {
                 capsule.registerDestructor(hpyDestructor);
             }
@@ -3533,8 +3534,7 @@ public abstract class GraalHPyContextFunctions {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object var, Object val,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PRaiseNode raiseNode) {
             if (!(var instanceof PContextVar contextVar)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
@@ -3542,7 +3542,7 @@ public abstract class GraalHPyContextFunctions {
             PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             Object oldValue = contextVar.getValue(threadState);
             contextVar.setValue(threadState, val);
-            return factory.createContextVarsToken(contextVar, oldValue);
+            return PFactory.createContextVarsToken(hpyContext.getContext().getLanguage(inliningTarget), contextVar, oldValue);
         }
     }
 

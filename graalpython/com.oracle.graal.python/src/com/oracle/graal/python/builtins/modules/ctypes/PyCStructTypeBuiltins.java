@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,13 +91,12 @@ public final class PyCStructTypeBuiltins extends PythonBuiltins {
         void doStringKey(VirtualFrame frame, Object object, TruffleString key, Object value,
                         @Shared @Cached TypeBuiltins.SetattrNode typeSetAttr,
                         @Shared @Cached TruffleString.EqualNode equalNode,
-                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
             // CPython just delegates to "PyType_Type.tp_setattro" with the comment:
             /* XXX Should we disallow deleting _fields_? */
             typeSetAttr.executeSetAttr(frame, object, key, value);
             if (equalNode.execute(key, StructUnionTypeBuiltins.T__FIELDS_, TS_ENCODING)) {
-                updateStgDict.execute(frame, object, value, true, factory);
+                updateStgDict.execute(frame, object, value, true);
             }
         }
 
@@ -109,10 +107,9 @@ public final class PyCStructTypeBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringCheckedNode castKeyToStringNode,
                         @Shared @Cached TypeBuiltins.SetattrNode typeSetAttr,
                         @Shared @Cached TruffleString.EqualNode equalNode,
-                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
             TruffleString key = castKeyToStringNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING, keyObject);
-            doStringKey(frame, object, key, value, typeSetAttr, equalNode, updateStgDict, factory);
+            doStringKey(frame, object, key, value, typeSetAttr, equalNode, updateStgDict);
         }
     }
 }

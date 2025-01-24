@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -84,7 +85,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -244,8 +245,8 @@ public class PicklerBuiltins extends PythonBuiltins {
     public abstract static class PicklerMemoNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PPickler self, @SuppressWarnings("unused") PNone none,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createPicklerMemoProxy(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createPicklerMemoProxy(language, self);
         }
 
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})
@@ -291,13 +292,13 @@ public class PicklerBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PPickler self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             final Object persFunc = self.getPersFunc();
             if (persFunc == null) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, T_METHOD_PERSISTENT_ID);
             }
-            return PickleUtils.reconstructMethod(factory, persFunc, self.getPersFuncSelf());
+            return PickleUtils.reconstructMethod(language, persFunc, self.getPersFuncSelf());
         }
 
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})

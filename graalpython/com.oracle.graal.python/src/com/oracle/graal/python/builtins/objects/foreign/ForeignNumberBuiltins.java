@@ -42,6 +42,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -93,7 +94,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -170,13 +171,13 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "lib.fitsInBigInteger(obj)"})
         PInt doBigInt(Object obj,
+                        @Bind PythonLanguage language,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) GilNode gil) {
             assert !lib.isBoolean(obj);
             gil.release(true);
             try {
-                return factory.createInt(lib.asBigInteger(obj));
+                return PFactory.createInt(language, lib.asBigInteger(obj));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
@@ -667,10 +668,10 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         protected static Object doIt(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @Cached GilNode gil,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached GilNode gil) {
             assert !lib.isBoolean(object);
             gil.release(true);
             try {
@@ -693,7 +694,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                 if (lib.fitsInBigInteger(object)) {
                     try {
                         var big = lib.asBigInteger(object);
-                        return factory.createInt(big);
+                        return PFactory.createInt(PythonLanguage.get(inliningTarget), big);
                     } catch (UnsupportedMessageException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException("foreign value claims to be a big integer but isn't");

@@ -175,7 +175,7 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -307,13 +307,12 @@ public final class TypeBuiltins extends PythonBuiltins {
         static Object doit(Object klass,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.GetMroNode getMroNode,
-                        @Cached InlinedConditionProfile notInitialized,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached InlinedConditionProfile notInitialized) {
             if (notInitialized.profile(inliningTarget, klass instanceof PythonManagedClass && !((PythonManagedClass) klass).isMROInitialized())) {
                 return PNone.NONE;
             }
             PythonAbstractClass[] mro = getMroNode.execute(inliningTarget, klass);
-            return factory.createTuple(mro);
+            return PFactory.createTuple(PythonLanguage.get(inliningTarget), mro);
         }
     }
 
@@ -324,10 +323,9 @@ public final class TypeBuiltins extends PythonBuiltins {
         static Object doit(Object klass,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached GetMroNode getMroNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached GetMroNode getMroNode) {
             PythonAbstractClass[] mro = getMroNode.execute(inliningTarget, klass);
-            return factory.createList(Arrays.copyOf(mro, mro.length, Object[].class));
+            return PFactory.createList(PythonLanguage.get(inliningTarget), Arrays.copyOf(mro, mro.length, Object[].class));
         }
 
         @Fallback
@@ -771,8 +769,8 @@ public final class TypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object doIt(Object args, Object kwargs,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDict(new DynamicObjectStorage(PythonLanguage.get(this)));
+                        @Bind PythonLanguage language) {
+            return PFactory.createDict(language, new DynamicObjectStorage(language));
         }
     }
 
@@ -784,9 +782,9 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object getBases(Object self, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
-                        @Cached TypeNodes.GetBaseClassesNode getBaseClassesNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTuple(getBaseClassesNode.execute(inliningTarget, self));
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetBaseClassesNode getBaseClassesNode) {
+            return PFactory.createTuple(language, getBaseClassesNode.execute(inliningTarget, self));
         }
 
         @Specialization
@@ -886,21 +884,21 @@ public final class TypeBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doType(PythonBuiltinClassType self,
-                        @Shared @Cached GetDictIfExistsNode getDict,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doManaged(getContext().lookupType(self), getDict, factory);
+                        @Bind PythonLanguage language,
+                        @Shared @Cached GetDictIfExistsNode getDict) {
+            return doManaged(getContext().lookupType(self), language, getDict);
         }
 
         @Specialization
         static Object doManaged(PythonManagedClass self,
-                        @Shared @Cached GetDictIfExistsNode getDict,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Shared @Cached GetDictIfExistsNode getDict) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
-                dict = factory.createDictFixedStorage(self, self.getMethodResolutionOrder());
+                dict = PFactory.createDictFixedStorage(language, self, self.getMethodResolutionOrder());
                 // The mapping is unmodifiable, so we don't have to assign it back
             }
-            return factory.createMappingproxy(dict);
+            return PFactory.createMappingproxy(language, dict);
         }
 
         @Specialization
@@ -1037,13 +1035,12 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization
         static PList getSubclasses(Object cls,
                         @Bind("this") Node inliningTarget,
-                        @Cached(inline = true) GetSubclassesAsArrayNode getSubclassesNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached(inline = true) GetSubclassesAsArrayNode getSubclassesNode) {
             // TODO: missing: keep track of subclasses
             PythonAbstractClass[] array = getSubclassesNode.execute(inliningTarget, cls);
             Object[] classes = new Object[array.length];
             PythonUtils.arraycopy(array, 0, classes, 0, array.length);
-            return factory.createList(classes);
+            return PFactory.createList(PythonLanguage.get(inliningTarget), classes);
         }
     }
 
@@ -1114,16 +1111,16 @@ public final class TypeBuiltins extends PythonBuiltins {
 
             @Specialization
             static void set(PythonAbstractNativeObject type, TruffleString value,
+                            @Bind PythonLanguage language,
                             @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                             @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
                             @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
-                            @Cached(inline = false) TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                            @Cached(inline = false) PythonObjectFactory factory) {
+                            @Cached(inline = false) TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
                 value = switchEncodingNode.execute(value, TruffleString.Encoding.UTF_8);
                 byte[] bytes = copyToByteArrayNode.execute(value, TruffleString.Encoding.UTF_8);
-                PBytes bytesObject = factory.createBytes(bytes);
+                PBytes bytesObject = PFactory.createBytes(language, bytes);
                 writePointerNode.writeToObj(type, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(bytesObject));
-                PString pString = factory.createString(value);
+                PString pString = PFactory.createString(language, value);
                 pString.setUtf8Bytes(bytesObject);
                 writeObject.writeToObject(type, PyHeapTypeObject__ht_name, pString);
             }
@@ -1450,14 +1447,13 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode,
-                        @Cached PythonObjectFactory factory) {
-            return dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode, factory);
+                        @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode) {
+            return dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode);
         }
 
         private static PSet dir(VirtualFrame frame, Node inliningTarget, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode,
-                        GetFixedAttributeNode getBasesNode, ToArrayNode toArrayNode, PythonObjectFactory factory) {
-            PSet names = factory.createSet();
+                        GetFixedAttributeNode getBasesNode, ToArrayNode toArrayNode) {
+            PSet names = PFactory.createSet(PythonLanguage.get(inliningTarget));
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, klass, T___DICT__);
             if (ns != NO_VALUE) {
@@ -1469,7 +1465,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 for (Object cls : bases) {
                     // Note that since we are only interested in the keys, the order
                     // we merge classes is unimportant
-                    Object baseNames = dir(frame, inliningTarget, cls, lookupAttrNode, callNode, getBasesNode, toArrayNode, factory);
+                    Object baseNames = dir(frame, inliningTarget, cls, lookupAttrNode, callNode, getBasesNode, toArrayNode);
                     callNode.execute(frame, updateCallable, baseNames);
                 }
             }
@@ -1503,13 +1499,14 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static Object get(Object self, @SuppressWarnings("unused") Object value,
                         @Bind("this") Node inliningTarget,
+                        @Cached InlinedBranchProfile createDict,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
                         @Shared("write") @Cached WriteAttributeToObjectNode write,
-                        @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
             if (annotations == NO_VALUE) {
-                annotations = factory.get(inliningTarget).createDict();
+                createDict.enter(inliningTarget);
+                annotations = PFactory.createDict(PythonLanguage.get(inliningTarget));
                 try {
                     write.execute(self, T___ANNOTATIONS__, annotations);
                 } catch (PException e) {

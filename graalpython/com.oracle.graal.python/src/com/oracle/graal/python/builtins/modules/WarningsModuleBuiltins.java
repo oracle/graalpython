@@ -122,8 +122,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -176,9 +175,9 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         // we need to copy the attrs, since they must still be available even if the user `del`s the
         // attrs
         addBuiltinConstant("_defaultaction", T_DEFAULT);
-        PDict onceregistry = core.factory().createDict();
+        PDict onceregistry = PFactory.createDict(core.getLanguage());
         addBuiltinConstant("_onceregistry", onceregistry);
-        PList filters = initFilters(core.factory());
+        PList filters = initFilters(core.getLanguage());
         addBuiltinConstant("filters", filters);
         ModuleState moduleState = new ModuleState();
         moduleState.filtersVersion = 0L;
@@ -189,18 +188,18 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    private static PTuple createFilter(PythonObjectSlowPathFactory factory, PythonBuiltinClassType cat, TruffleString id, Object mod) {
-        return factory.createTuple(new Object[]{id, PNone.NONE, cat, mod, 0});
+    private static PTuple createFilter(PythonLanguage language, PythonBuiltinClassType cat, TruffleString id, Object mod) {
+        return PFactory.createTuple(language, new Object[]{id, PNone.NONE, cat, mod, 0});
     }
 
     // init_filters
-    private static PList initFilters(PythonObjectSlowPathFactory factory) {
-        return factory.createList(new Object[]{
-                        createFilter(factory, PythonBuiltinClassType.DeprecationWarning, T_DEFAULT, T___MAIN__),
-                        createFilter(factory, PythonBuiltinClassType.DeprecationWarning, T_IGNORE, PNone.NONE),
-                        createFilter(factory, PythonBuiltinClassType.PendingDeprecationWarning, T_IGNORE, PNone.NONE),
-                        createFilter(factory, PythonBuiltinClassType.ImportWarning, T_IGNORE, PNone.NONE),
-                        createFilter(factory, PythonBuiltinClassType.ResourceWarning, T_IGNORE, PNone.NONE)});
+    private static PList initFilters(PythonLanguage language) {
+        return PFactory.createList(language, new Object[]{
+                        createFilter(language, PythonBuiltinClassType.DeprecationWarning, T_DEFAULT, T___MAIN__),
+                        createFilter(language, PythonBuiltinClassType.DeprecationWarning, T_IGNORE, PNone.NONE),
+                        createFilter(language, PythonBuiltinClassType.PendingDeprecationWarning, T_IGNORE, PNone.NONE),
+                        createFilter(language, PythonBuiltinClassType.ImportWarning, T_IGNORE, PNone.NONE),
+                        createFilter(language, PythonBuiltinClassType.ResourceWarning, T_IGNORE, PNone.NONE)});
     }
 
     static final class WarningsModuleNode extends Node {
@@ -210,7 +209,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
         @Child PyObjectIsTrueNode isTrueNode;
-        @Child PythonObjectFactory factory;
         @Child IsSubClassNode isSubClassNode;
         @Child GetOrCreateDictNode getDictNode;
         @Child GetDictFromGlobalsNode getDictFromGlobalsNode;
@@ -385,15 +383,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 raiseNode = insert(PRaiseNode.create());
             }
             return raiseNode;
-        }
-
-        private PythonObjectFactory getFactory() {
-            if (factory == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                factory = insert(PythonObjectFactory.create());
-            }
-            return factory;
         }
 
         private IsSubClassNode getIsSubClass() {
@@ -675,12 +664,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static boolean updateRegistry(PythonObjectSlowPathFactory factory, PythonModule _warnings, PDict registry, Object text, Object category, boolean addZero) {
+        private static boolean updateRegistry(PythonLanguage language, PythonModule _warnings, PDict registry, Object text, Object category, boolean addZero) {
             PTuple altKey;
             if (addZero) {
-                altKey = factory.createTuple(new Object[]{text, category, 0});
+                altKey = PFactory.createTuple(language, new Object[]{text, category, 0});
             } else {
-                altKey = factory.createTuple(new Object[]{text, category});
+                altKey = PFactory.createTuple(language, new Object[]{text, category});
             }
             return alreadyWarnedShouldSet(_warnings, registry, altKey);
         }
@@ -794,7 +783,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 message = getCallNode().execute(frame, category, message);
             }
 
-            Object key = getFactory().createTuple(new Object[]{text, category, lineno});
+            Object key = PFactory.createTuple(PythonLanguage.get(this), new Object[]{text, category, lineno});
             if (registry != null) {
                 if (alreadyWarnedShouldNotSet(frame, warnings, registry, key)) {
                     return;
@@ -845,13 +834,13 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 if (action.equalsUncached(T_ONCE, TS_ENCODING)) {
                     if (registry == null) {
                         PDict currentRegistry = getOnceRegistry(node, context, warnings);
-                        alreadyWarned = updateRegistry(context.factory(), warnings, currentRegistry, text, category, false);
+                        alreadyWarned = updateRegistry(context.getLanguage(), warnings, currentRegistry, text, category, false);
                     } else {
-                        alreadyWarned = updateRegistry(context.factory(), warnings, registry, text, category, false);
+                        alreadyWarned = updateRegistry(context.getLanguage(), warnings, registry, text, category, false);
                     }
                 } else if (action.equalsUncached(T_MODULE, TS_ENCODING)) {
                     if (registry != null) {
-                        alreadyWarned = updateRegistry(context.factory(), warnings, registry, text, category, false);
+                        alreadyWarned = updateRegistry(context.getLanguage(), warnings, registry, text, category, false);
                     }
                 } else if (!action.equalsUncached(T_DEFAULT, TS_ENCODING)) {
                     throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNRECOGNIZED_ACTION_IN_WARNINGS, action,
@@ -898,7 +887,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
             registry[0] = getDictGetItemNode().executeCached(frame, globals, T___WARNINGREGISTRY__);
             if (registry[0] == null) {
-                registry[0] = getFactory().createDict();
+                registry[0] = PFactory.createDict(PythonLanguage.get(this));
                 getSetItemNode().executeCached(frame, globals, T___WARNINGREGISTRY__, registry[0]);
             }
             Object moduleObj = getDictGetItemNode().executeCached(frame, globals, SpecialAttributeNames.T___NAME__);

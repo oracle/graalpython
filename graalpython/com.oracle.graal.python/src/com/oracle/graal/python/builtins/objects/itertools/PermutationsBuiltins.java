@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -69,7 +70,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -117,7 +118,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile resultLoopProfile,
                         @Cached InlinedLoopConditionProfile mainLoopProfile,
                         @Cached InlinedLoopConditionProfile shiftIndicesProfile,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             int r = self.getR();
 
@@ -139,7 +140,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                     int tmp = indices[i];
                     indices[i] = indices[indices.length - j];
                     indices[indices.length - j] = tmp;
-                    return factory.createTuple(result);
+                    return PFactory.createTuple(language, result);
                 }
                 cycles[i] = indices.length - i;
                 int n1 = indices.length - 1;
@@ -159,7 +160,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
             } else {
                 self.setStarted(true);
             }
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
     }
 
@@ -170,29 +171,29 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         static Object reduce(PPermutations self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PList poolList = factory.createList(self.getPool());
-            PTuple tuple = factory.createTuple(new Object[]{poolList, self.getR()});
+            PList poolList = PFactory.createList(language, self.getPool());
+            PTuple tuple = PFactory.createTuple(language, new Object[]{poolList, self.getR()});
 
             // we must pickle the indices and use them for setstate
-            PTuple indicesTuple = factory.createTuple(self.getIndices());
-            PTuple cyclesTuple = factory.createTuple(self.getCycles());
-            PTuple tuple2 = factory.createTuple(new Object[]{indicesTuple, cyclesTuple, self.isStarted()});
+            PTuple indicesTuple = PFactory.createTuple(language, self.getIndices());
+            PTuple cyclesTuple = PFactory.createTuple(language, self.getCycles());
+            PTuple tuple2 = PFactory.createTuple(language, new Object[]{indicesTuple, cyclesTuple, self.isStarted()});
 
             Object[] result = new Object[]{type, tuple, tuple2};
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
 
         @Specialization(guards = "self.isRaisedStopIteration()")
         static Object reduceStopped(PPermutations self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory.createTuple(new Object[]{factory.createEmptyTuple(), self.getR()});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language), self.getR()});
             Object[] result = new Object[]{type, tuple};
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
     }
 

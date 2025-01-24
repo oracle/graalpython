@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -71,7 +72,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -83,6 +84,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -119,12 +121,12 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class GetClosureNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
         Object getClosure(PFunction self,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PCell[] closure = self.getClosure();
             if (closure == null) {
                 return PNone.NONE;
             }
-            return factory.createTuple(closure);
+            return PFactory.createTuple(language, closure);
         }
 
         @SuppressWarnings("unused")
@@ -221,10 +223,11 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readObject,
                         @Shared @Cached WriteAttributeToObjectNode writeObject,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached InlinedBranchProfile createAnnotations) {
             Object annotations = readObject.execute(self, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
-                annotations = factory.get(inliningTarget).createDict();
+                createAnnotations.enter(inliningTarget);
+                annotations = PFactory.createDict(PythonLanguage.get(inliningTarget));
                 writeObject.execute(self, T___ANNOTATIONS__, annotations);
             }
             return annotations;

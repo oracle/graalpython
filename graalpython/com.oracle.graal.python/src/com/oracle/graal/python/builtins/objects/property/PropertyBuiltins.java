@@ -50,6 +50,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMET
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -81,7 +82,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassP
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -256,7 +257,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
 
             // shortcut: create new property object directly
             if (IsBuiltinClassProfile.profileClassSlowPath(type, PythonBuiltinClassType.PProperty)) {
-                PProperty copy = PythonObjectFactory.getUncached().createProperty();
+                PProperty copy = PFactory.createProperty(PythonLanguage.get(null));
                 PropertyInitNode.doGeneric(copy, get, set, del, doc);
                 return copy;
             }

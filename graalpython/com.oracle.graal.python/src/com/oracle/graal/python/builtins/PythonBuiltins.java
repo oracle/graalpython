@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -116,6 +116,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -125,7 +126,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BiConsumer;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -173,7 +174,8 @@ public abstract class PythonBuiltins {
                 declaresExplicitSelf = true;
             }
             TruffleString tsName = toTruffleStringUncached(builtin.name());
-            RootCallTarget callTarget = core.getLanguage().initBuiltinCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
+            PythonLanguage language = core.getLanguage();
+            RootCallTarget callTarget = language.initBuiltinCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
                             builtin.name());
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : toTruffleStringUncached(builtin.doc());
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
@@ -181,8 +183,8 @@ public abstract class PythonBuiltins {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
                 // we explicitly do not make these "staticmethods" here, since CPython also doesn't
                 // for builtin types
-                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(T___NEW__, constructsClass, numDefaults(builtin), flags, callTarget);
-                PBuiltinMethod newMethod = core.factory().createBuiltinMethod(constructsClass, newFunc);
+                PBuiltinFunction newFunc = PFactory.createBuiltinFunction(language, T___NEW__, constructsClass, numDefaults(builtin), flags, callTarget);
+                PBuiltinMethod newMethod = PFactory.createBuiltinMethod(language, constructsClass, newFunc);
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
                 builtinClass.setAttributeUnsafe(T___NEW__, newMethod);
                 final Object currentBuiltinDoc = builtinClass.getAttribute(T___DOC__);
@@ -195,9 +197,9 @@ public abstract class PythonBuiltins {
                     // HACK: TODO: we should not see any slots here anymore once all are converted
                     // to slots, then we can make the slot field in PBuiltinFunction final, for now,
                     // we patch it in TpSlots#wrapBuiltinSlots
-                    function = core.factory().createWrapperDescriptor(tsName, null, numDefaults(builtin), flags, callTarget, null, null);
+                    function = PFactory.createWrapperDescriptor(language, tsName, null, numDefaults(builtin), flags, callTarget, null, null);
                 } else {
-                    function = core.factory().createBuiltinFunction(tsName, null, numDefaults(builtin), flags, callTarget);
+                    function = PFactory.createBuiltinFunction(language, tsName, null, numDefaults(builtin), flags, callTarget);
                 }
                 function.setAttribute(T___DOC__, builtinDoc);
                 BoundBuiltinCallable<?> callable = function;
@@ -205,12 +207,12 @@ public abstract class PythonBuiltins {
                     assert !builtin.isClassmethod() && !builtin.isStaticmethod();
                     PBuiltinFunction get = builtin.isGetter() ? function : null;
                     PBuiltinFunction set = builtin.isSetter() ? function : null;
-                    callable = core.factory().createGetSetDescriptor(get, set, tsName, null, builtin.allowsDelete());
+                    callable = PFactory.createGetSetDescriptor(language, get, set, tsName, null, builtin.allowsDelete());
                 } else if (builtin.isClassmethod()) {
                     assert !builtin.isStaticmethod();
-                    callable = core.factory().createBuiltinClassmethodFromCallableObj(function);
+                    callable = PFactory.createBuiltinClassmethodFromCallableObj(language, function);
                 } else if (builtin.isStaticmethod()) {
-                    callable = core.factory().createStaticmethodFromCallableObj(function);
+                    callable = PFactory.createStaticmethodFromCallableObj(language, function);
                 }
                 builtinFunctions.put(toTruffleStringUncached(builtin.name()), callable);
             }
@@ -294,18 +296,18 @@ public abstract class PythonBuiltins {
         }
     }
 
-    void addFunctionsToModuleObject(PythonObject obj, PythonObjectSlowPathFactory factory) {
-        addFunctionsToModuleObject(builtinFunctions, obj, factory);
+    void addFunctionsToModuleObject(PythonObject obj, PythonLanguage language) {
+        addFunctionsToModuleObject(builtinFunctions, obj, language);
     }
 
-    static void addFunctionsToModuleObject(Map<TruffleString, BoundBuiltinCallable<?>> builtinFunctions, PythonObject obj, PythonObjectSlowPathFactory factory) {
+    static void addFunctionsToModuleObject(Map<TruffleString, BoundBuiltinCallable<?>> builtinFunctions, PythonObject obj, PythonLanguage language) {
         for (Entry<TruffleString, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             Object value;
             assert obj instanceof PythonModule || obj instanceof PythonBuiltinClass : "unexpected object while adding builtins";
             if (obj instanceof PythonModule) {
-                value = factory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
+                value = PFactory.createBuiltinMethod(language, obj, (PBuiltinFunction) entry.getValue());
             } else {
-                value = entry.getValue().boundToObject(((PythonBuiltinClass) obj).getType(), factory);
+                value = entry.getValue().boundToObject(((PythonBuiltinClass) obj).getType(), language);
             }
             obj.setAttribute(entry.getKey(), value);
         }

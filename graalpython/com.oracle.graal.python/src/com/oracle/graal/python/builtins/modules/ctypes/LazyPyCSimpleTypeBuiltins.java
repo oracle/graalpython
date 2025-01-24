@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,15 +77,13 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -102,28 +100,28 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    protected static void addCVoidPFromParam(PythonObjectSlowPathFactory factory, PythonLanguage language, Object type) {
+    protected static void addCVoidPFromParam(PythonLanguage language, Object type) {
         NodeFactory<CVoidPFromParamNode> rawFactory = CVoidPFromParamNodeFactory.getInstance();
         Builtin rawNodeBuiltin = CVoidPFromParamNode.class.getAnnotation(Builtin.class);
-        addClassMethod(factory, language, type, rawFactory, rawNodeBuiltin);
+        addClassMethod(language, type, rawFactory, rawNodeBuiltin);
     }
 
     @TruffleBoundary
-    protected static void addCCharPFromParam(PythonObjectSlowPathFactory factory, PythonLanguage language, Object type) {
+    protected static void addCCharPFromParam(PythonLanguage language, Object type) {
         NodeFactory<CCharPFromParamNode> rawFactory = CCharPFromParamNodeFactory.getInstance();
         Builtin rawNodeBuiltin = CCharPFromParamNode.class.getAnnotation(Builtin.class);
-        addClassMethod(factory, language, type, rawFactory, rawNodeBuiltin);
+        addClassMethod(language, type, rawFactory, rawNodeBuiltin);
     }
 
     @TruffleBoundary
-    protected static void addCWCharPFromParam(PythonObjectSlowPathFactory factory, PythonLanguage language, Object type) {
+    protected static void addCWCharPFromParam(PythonLanguage language, Object type) {
         NodeFactory<CWCharPFromParamNode> rawFactory = CWCharPFromParamNodeFactory.getInstance();
         Builtin rawNodeBuiltin = CWCharPFromParamNode.class.getAnnotation(Builtin.class);
-        addClassMethod(factory, language, type, rawFactory, rawNodeBuiltin);
+        addClassMethod(language, type, rawFactory, rawNodeBuiltin);
     }
 
     @TruffleBoundary
-    private static void addClassMethod(PythonObjectSlowPathFactory objectFactory, PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory, Builtin builtin) {
+    private static void addClassMethod(PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory, Builtin builtin) {
         TruffleString name = toTruffleStringUncached(builtin.name());
         Object builtinDoc = PNone.NONE;
         RootCallTarget callTarget = language.createCachedCallTarget(
@@ -131,8 +129,8 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         nodeFactory.getNodeClass(),
                         builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = objectFactory.createBuiltinFunction(name, type, 1, flags, callTarget);
-        PDecoratedMethod classMethod = objectFactory.createClassmethodFromCallableObj(function);
+        PBuiltinFunction function = PFactory.createBuiltinFunction(language, name, type, 1, flags, callTarget);
+        PDecoratedMethod classMethod = PFactory.createClassmethodFromCallableObj(language, function);
         function.setAttribute(T___DOC__, builtinDoc);
         WriteAttributeToObjectNode.getUncached(true).execute(type, name, classMethod);
     }
@@ -159,10 +157,9 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CWCharPFromParamNode cwCharPFromParamNode,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (PGuards.isString(value)) {
-                PyCArgObject parg = factory.createCArgObject();
+                PyCArgObject parg = PFactory.createCArgObject(PythonLanguage.get(inliningTarget));
                 parg.pffi_type = ffi_type_pointer;
                 parg.tag = 'Z';
                 parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
@@ -220,9 +217,9 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Exclusive @Cached SetFuncNode setFuncNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             /* int, long */
-            PyCArgObject parg = factory.createCArgObject();
+            PyCArgObject parg = PFactory.createCArgObject(language);
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'P';
             parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
@@ -234,9 +231,9 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object bytes(@SuppressWarnings("unused") Object type, PBytes value,
                         @Exclusive @Cached SetFuncNode setFuncNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             /* bytes */
-            PyCArgObject parg = factory.createCArgObject();
+            PyCArgObject parg = PFactory.createCArgObject(language);
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'z';
             parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
@@ -248,9 +245,9 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object string(@SuppressWarnings("unused") Object type, TruffleString value,
                         @Exclusive @Cached SetFuncNode setFuncNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             /* unicode */
-            PyCArgObject parg = factory.createCArgObject();
+            PyCArgObject parg = PFactory.createCArgObject(language);
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'Z';
             parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);
@@ -269,7 +266,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached CVoidPFromParamNode cVoidPFromParamNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             /* c_void_p instance (or subclass) */
             boolean res = isInstanceNode.executeWith(frame, value, type);
@@ -292,7 +289,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             }
             /* function pointer */
             if (value instanceof PyCFuncPtrObject func && pyTypeCheck.isPyCFuncPtrObject(inliningTarget, value)) {
-                PyCArgObject parg = factory.createCArgObject();
+                PyCArgObject parg = PFactory.createCArgObject(language);
                 parg.pffi_type = ffi_type_pointer;
                 parg.tag = 'P';
                 parg.valuePointer = func.b_ptr;
@@ -305,7 +302,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 int code = codePointAtIndexNode.execute((TruffleString) stgd.proto, 0, TS_ENCODING);
                 /* c_char_p, c_wchar_p */
                 if (code == 'z' || code == 'Z') {
-                    PyCArgObject parg = factory.createCArgObject();
+                    PyCArgObject parg = PFactory.createCArgObject(language);
                     parg.pffi_type = ffi_type_pointer;
                     parg.tag = 'Z';
                     parg.obj = value;
@@ -338,8 +335,8 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object bytes(@SuppressWarnings("unused") Object type, PBytes value,
                         @Cached SetFuncNode setFuncNode,
-                        @Cached PythonObjectFactory factory) {
-            PyCArgObject parg = factory.createCArgObject();
+                        @Bind PythonLanguage language) {
+            PyCArgObject parg = PFactory.createCArgObject(language);
             parg.pffi_type = ffi_type_pointer;
             parg.tag = 'z';
             parg.valuePointer = Pointer.allocate(parg.pffi_type, parg.pffi_type.size);

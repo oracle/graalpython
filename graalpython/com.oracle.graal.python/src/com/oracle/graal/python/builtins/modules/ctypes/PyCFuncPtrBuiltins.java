@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,6 +84,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -134,7 +135,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -262,7 +263,7 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
         }
 
         static CThunkObject CThunkObjectNew(int nArgs) {
-            CThunkObject p = PythonObjectFactory.getUncached().createCThunkObject(PythonBuiltinClassType.CThunkObject, nArgs);
+            CThunkObject p = PFactory.createCThunkObject(PythonLanguage.get(null), nArgs);
 
             p.pcl_write = null;
             p.pcl_exec = null;
@@ -415,19 +416,19 @@ public final class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(value)", "self.argtypes != null"})
         static Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTuple(self.argtypes);
+                        @Bind PythonLanguage language) {
+            return PFactory.createTuple(language, self.argtypes);
         }
 
         @Specialization(guards = {"isNoValue(value)", "self.argtypes == null"})
         static Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
             assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             if (dict.argtypes != null) {
-                return factory.createTuple(dict.argtypes);
+                return PFactory.createTuple(language, dict.argtypes);
             } else {
                 return PNone.NONE;
             }

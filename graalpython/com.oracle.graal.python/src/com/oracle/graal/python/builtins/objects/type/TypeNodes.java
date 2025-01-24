@@ -207,7 +207,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -1840,6 +1840,10 @@ public abstract class TypeNodes {
 
         public abstract Shape execute(Object clazz);
 
+        public static Shape executeUncached(Object clazz) {
+            return TypeNodesFactory.GetInstanceShapeNodeGen.getUncached().execute(clazz);
+        }
+
         @Specialization(guards = "clazz == cachedClazz", limit = "1")
         @SuppressWarnings("unused")
         protected Shape doBuiltinClassTypeCached(PythonBuiltinClassType clazz,
@@ -1899,6 +1903,9 @@ public abstract class TypeNodes {
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }
 
+        public static GetInstanceShape getUncached() {
+            return TypeNodesFactory.GetInstanceShapeNodeGen.getUncached();
+        }
     }
 
     @ImportStatic({SpecialMethodNames.class, SpecialAttributeNames.class, SpecialMethodSlot.class})
@@ -1949,13 +1956,12 @@ public abstract class TypeNodes {
                         @Cached CallNode callInitSubclassNode,
                         @Cached("create(T___INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
                         @Cached GetMroStorageNode getMroStorageNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode raise,
                         @Cached AllocateTypeWithMetaclassNode typeMetaclass) {
             try {
                 assert SpecialMethodSlot.pushInitializedTypePlaceholder();
-                PDict namespace = factory.createDict();
-                PythonLanguage language = PythonLanguage.get(this);
+                PDict namespace = PFactory.createDict(language);
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
 
@@ -2032,7 +2038,7 @@ public abstract class TypeNodes {
                 }
 
                 // Call __init_subclass__ on the parent of a newly generated type
-                SuperObject superObject = factory.createSuperObject(PythonBuiltinClassType.Super);
+                SuperObject superObject = PFactory.createSuperObject(language);
                 superObject.init(newType, newType, newType);
                 callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
 
@@ -2104,7 +2110,7 @@ public abstract class TypeNodes {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raise,
                         @Cached GetObjectArrayNode getObjectArray,
-                        @Cached PythonObjectFactory factory,
+                        @Cached GetInstanceShape getInstanceShape,
                         @Cached CastToListNode castToListNode,
                         @Cached PyUnicodeCheckNode stringCheck,
                         @Cached TruffleString.IsValidNode isValidNode,
@@ -2150,13 +2156,13 @@ public abstract class TypeNodes {
 
             // 1.) create class, but avoid calling mro method - it might try to access __dict__ so
             // we have to copy dict slots first
-            PythonClass pythonClass = factory.createPythonClass(metaclass, name, false, base, basesArray);
+            PythonClass pythonClass = PFactory.createPythonClass(language, metaclass, getInstanceShape.execute(metaclass), name, false, base, basesArray);
             assert SpecialMethodSlot.replaceInitializedTypeTop(pythonClass);
 
             // 2.) copy the dictionary slots
-            copyDictSlots(frame, inliningTarget, ctx, pythonClass, namespace, setHashingStorageItem,
+            copyDictSlots(frame, inliningTarget, language, ctx, pythonClass, namespace, setHashingStorageItem,
                             getHashingStorageIterator, hashingStorageItNext, hashingStorageItKey, hashingStorageItKeyHash, hashingStorageItValue,
-                            constructAndRaiseNode, factory, raise, isValidNode, equalNode, codePointLengthNode, getOrCreateDictNode, stringCheck, castToStringNode);
+                            constructAndRaiseNode, raise, isValidNode, equalNode, codePointLengthNode, getOrCreateDictNode, stringCheck, castToStringNode);
             if (!ctx.qualnameSet) {
                 pythonClass.setQualName(name);
             }
@@ -2227,7 +2233,7 @@ public abstract class TypeNodes {
                             throw raise.raise(TypeError, ErrorMessages.DICT_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         ctx.addDict = true;
-                        addDictDescrAttribute(basesArray, pythonClass, factory);
+                        addDictDescrAttribute(basesArray, pythonClass, language);
                     } else if (equalNode.execute(slotName, T___WEAKREF__, TS_ENCODING)) {
                         if (!ctx.mayAddWeak || ctx.addWeak) {
                             throw raise.raise(TypeError, ErrorMessages.WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE);
@@ -2252,19 +2258,19 @@ public abstract class TypeNodes {
             int indexedSlotCount = getIndexedSlotsCountNode.execute(inliningTarget, base);
             if (ctx.copiedSlots != null) {
                 for (TruffleString slotName : ctx.copiedSlots) {
-                    IndexedSlotDescriptor slotDesc = factory.createIndexedSlotDescriptor(slotName, indexedSlotCount++, pythonClass);
+                    IndexedSlotDescriptor slotDesc = PFactory.createIndexedSlotDescriptor(language, slotName, indexedSlotCount++, pythonClass);
                     pythonClass.setAttribute(slotName, slotDesc);
                 }
             }
             pythonClass.setIndexedSlotCount(indexedSlotCount);
 
             if (ctx.addDict) {
-                addDictDescrAttribute(basesArray, pythonClass, factory);
+                addDictDescrAttribute(basesArray, pythonClass, language);
             } else if (ctx.mayAddDict) {
                 pythonClass.setHasSlotsButNoDictFlag();
             }
             if (ctx.addWeak) {
-                addWeakrefDescrAttribute(pythonClass, factory);
+                addWeakrefDescrAttribute(pythonClass, language);
             }
 
             if (pythonClass.needsNativeAllocation()) {
@@ -2296,31 +2302,31 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass, PythonObjectFactory factory) {
+        private static void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass, PythonLanguage language) {
             // Note: we need to avoid MRO lookup of __dict__ using slots because they are not
             // initialized yet
             if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
                 RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
                                 l -> new BuiltinFunctionRootNode(l, dictBuiltin, ObjectBuiltinsFactory.DictNodeFactory.getInstance(), true), ObjectBuiltins.DictNode.class);
-                setAttribute(T___DICT__, dictBuiltin, callTarget, pythonClass, factory);
+                setAttribute(T___DICT__, dictBuiltin, callTarget, pythonClass, language);
             }
         }
 
         @TruffleBoundary
-        private static void addWeakrefDescrAttribute(PythonClass pythonClass, PythonObjectFactory factory) {
+        private static void addWeakrefDescrAttribute(PythonClass pythonClass, PythonLanguage language) {
             if (LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___WEAKREF__) == PNone.NO_VALUE) {
                 Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
                 RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
                                 l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class);
-                setAttribute(T___WEAKREF__, builtin, callTarget, pythonClass, factory);
+                setAttribute(T___WEAKREF__, builtin, callTarget, pythonClass, language);
             }
         }
 
-        private static void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonObjectFactory factory) {
+        private static void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonLanguage language) {
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            PBuiltinFunction function = factory.createBuiltinFunction(name, pythonClass, 1, flags, callTarget);
-            GetSetDescriptor desc = factory.createGetSetDescriptor(function, function, name, pythonClass, true);
+            PBuiltinFunction function = PFactory.createBuiltinFunction(language, name, pythonClass, 1, flags, callTarget);
+            GetSetDescriptor desc = PFactory.createGetSetDescriptor(language, function, function, name, pythonClass, true);
             pythonClass.setAttribute(name, desc);
         }
 
@@ -2410,10 +2416,11 @@ public abstract class TypeNodes {
             return slotOffset;
         }
 
-        private static void copyDictSlots(VirtualFrame frame, Node inliningTarget, TypeNewContext ctx, PythonClass pythonClass, PDict namespace, HashingStorageSetItemWithHash setHashingStorageItem,
+        private static void copyDictSlots(VirtualFrame frame, Node inliningTarget, PythonLanguage language, TypeNewContext ctx, PythonClass pythonClass, PDict namespace,
+                        HashingStorageSetItemWithHash setHashingStorageItem,
                         HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageItNext, HashingStorageIteratorKey hashingStorageItKey,
                         HashingStorageIteratorKeyHash hashingStorageItKeyHash, HashingStorageIteratorValue hashingStorageItValue,
-                        PConstructAndRaiseNode.Lazy constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, IsValidNode isValidNode,
+                        PConstructAndRaiseNode.Lazy constructAndRaiseNode, PRaiseNode raise, IsValidNode isValidNode,
                         EqualNode equalNode, CodePointLengthNode codePointLengthNode, GetOrCreateDictNode getOrCreateDictNode, PyUnicodeCheckNode stringCheck,
                         CastToTruffleStringNode castToStringNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
@@ -2433,7 +2440,7 @@ public abstract class TypeNodes {
                     if (equalNode.execute(T___NEW__, key, TS_ENCODING)) {
                         // see CPython: if it's a plain function, make it a static function
                         if (value instanceof PFunction) {
-                            pythonClass.setAttribute(key, factory.createStaticmethodFromCallableObj(value));
+                            pythonClass.setAttribute(key, PFactory.createStaticmethodFromCallableObj(language, value));
                         } else {
                             pythonClass.setAttribute(key, value);
                         }
@@ -2444,7 +2451,7 @@ public abstract class TypeNodes {
                         // __class_getitem__: if they are plain functions, make them
                         // classmethods
                         if (value instanceof PFunction) {
-                            pythonClass.setAttribute(key, factory.createClassmethodFromCallableObj(value));
+                            pythonClass.setAttribute(key, PFactory.createClassmethodFromCallableObj(language, value));
                         } else {
                             pythonClass.setAttribute(key, value);
                         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.truffle.api.nodes.LoopNode.reportLoopCount;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -65,7 +66,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -100,7 +101,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
                                         "\n" + //
                                         "cache_info_type:    namedtuple class with the fields:\n" + //
                                         "                        hits misses currsize maxsize\n");
-        core.lookupBuiltinModule(T_FUNCTOOLS).setModuleState(core.factory().createPythonObject(PythonObject));
+        core.lookupBuiltinModule(T_FUNCTOOLS).setModuleState(PFactory.createPythonObject(core.getLanguage(), PythonObject, PythonObject.getInstanceShape(core.getLanguage())));
     }
 
     // functools.reduce(function, iterable[, initializer])
@@ -172,8 +173,8 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
     public abstract static class CmpToKeyNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doConvert(Object myCmp,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createKeyWrapper(myCmp);
+                        @Bind PythonLanguage language) {
+            return PFactory.createKeyWrapper(language, myCmp);
         }
     }
 

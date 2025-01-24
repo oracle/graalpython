@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -78,7 +79,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -205,24 +206,24 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isEOF()"})
         static PBytes doBytes(LZMADecompressor self, PBytesLike data, int maxLength,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Exclusive @Cached LZMANodes.DecompressNode decompress,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached LZMANodes.DecompressNode decompress) {
             byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
-            return factory.createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
+            return PFactory.createBytes(language, decompress.execute(inliningTarget, self, bytes, len, maxLength));
 
         }
 
         @Specialization(guards = {"!self.isEOF()"})
         static PBytes doObject(VirtualFrame frame, LZMADecompressor self, Object data, int maxLength,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Exclusive @Cached LZMANodes.DecompressNode decompress,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached LZMANodes.DecompressNode decompress) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
-            return factory.createBytes(decompress.execute(inliningTarget, self, bytes, len, maxLength));
+            return PFactory.createBytes(language, decompress.execute(inliningTarget, self, bytes, len, maxLength));
         }
 
         @SuppressWarnings("unused")
@@ -282,8 +283,8 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytes doUnusedData(LZMADecompressor self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(self.getUnusedData());
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, self.getUnusedData());
         }
 
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -140,7 +140,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.IDUtils;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -329,8 +329,8 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(double self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return IDUtils.getId(self, factory);
+                        @Bind PythonLanguage language) {
+            return IDUtils.getId(language, self);
         }
 
         @Specialization
@@ -342,8 +342,8 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(long self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return IDUtils.getId(self, factory);
+                        @Bind PythonLanguage language) {
+            return IDUtils.getId(language, self);
         }
 
         @Specialization
@@ -556,7 +556,6 @@ public abstract class ObjectNodes {
                         @Cached PyObjectLookupAttrO lookupAttr,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached CheckBasesizeForGetState checkBasesize,
-                        @Cached PythonObjectFactory.Lazy factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object state;
             Object type = getClassNode.execute(inliningTarget, obj);
@@ -592,8 +591,9 @@ public abstract class ObjectNodes {
                      * If we found some slot attributes, pack them in a tuple along the original
                      * attribute dictionary.
                      */
-                    PDict slotsState = factory.get(inliningTarget).createDict(slotsStorage);
-                    state = factory.get(inliningTarget).createTuple(new Object[]{state, slotsState});
+                    PythonLanguage language = PythonLanguage.get(inliningTarget);
+                    PDict slotsState = PFactory.createDict(language, slotsStorage);
+                    state = PFactory.createTuple(language, new Object[]{state, slotsState});
                 }
             }
 
@@ -675,7 +675,7 @@ public abstract class ObjectNodes {
                         @Cached PyObjectSizeNode sizeNode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter,
-                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object cls = getClassNode.execute(inliningTarget, obj);
             if (lookupNew.execute(cls) == PNone.NO_VALUE) {
@@ -703,10 +703,10 @@ public abstract class ObjectNodes {
                 } else {
                     newargsVals = new Object[]{cls};
                 }
-                newargs = factory.createTuple(newargsVals);
+                newargs = PFactory.createTuple(language, newargsVals);
             } else if (hasArgsProfile.profile(inliningTarget, hasargs)) {
                 newobj = lookupAttr.execute(frame, inliningTarget, copyReg, T___NEWOBJ_EX__);
-                newargs = factory.createTuple(new Object[]{cls, args, kwargs});
+                newargs = PFactory.createTuple(language, new Object[]{cls, args, kwargs});
             } else {
                 throw raiseNode.get(inliningTarget).raiseBadInternalCall();
             }
@@ -719,7 +719,7 @@ public abstract class ObjectNodes {
             Object listitems = objIsList ? getIter.execute(frame, inliningTarget, obj) : PNone.NONE;
             Object dictitems = objIsDict ? getIter.execute(frame, inliningTarget, callMethod.execute(frame, inliningTarget, obj, T_ITEMS)) : PNone.NONE;
 
-            return factory.createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
+            return PFactory.createTuple(language, new Object[]{newobj, newargs, state, listitems, dictitems});
         }
 
         @Specialization(guards = "proto < 2")

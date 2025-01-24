@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -97,7 +98,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -217,26 +218,26 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         static Object doGeneric(PythonNativeWrapper object, long size,
+                        @Bind PythonLanguage language,
                         @Cached NativeToPythonNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
             byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
             if (size >= 0 && size < ary.length) {
                 // cast to int is guaranteed because of 'size < ary.length'
-                return factory.createBytes(Arrays.copyOf(ary, (int) size));
+                return PFactory.createBytes(language, Arrays.copyOf(ary, (int) size));
             } else {
-                return factory.createBytes(ary);
+                return PFactory.createBytes(language, ary);
             }
         }
 
         @Specialization(guards = "!isNativeWrapper(nativePointer)")
         static Object doNativePointer(Object nativePointer, long size,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return factory.createBytes(getByteArrayNode.execute(inliningTarget, nativePointer, size));
+                return PFactory.createBytes(language, getByteArrayNode.execute(inliningTarget, nativePointer, size));
             } catch (InteropException e) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
@@ -250,26 +251,26 @@ public final class PythonCextBytesBuiltins {
     abstract static class PyTruffleByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(PythonNativeWrapper object, long size,
+                        @Bind PythonLanguage language,
                         @Cached NativeToPythonNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
             byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
             if (size >= 0 && size < ary.length) {
                 // cast to int is guaranteed because of 'size < ary.length'
-                return factory.createByteArray(Arrays.copyOf(ary, (int) size));
+                return PFactory.createByteArray(language, Arrays.copyOf(ary, (int) size));
             } else {
-                return factory.createByteArray(ary);
+                return PFactory.createByteArray(language, ary);
             }
         }
 
         @Specialization(guards = "!isNativeWrapper(nativePointer)")
         static Object doNativePointer(Object nativePointer, long size,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return factory.createByteArray(getByteArrayNode.execute(inliningTarget, nativePointer, size));
+                return PFactory.createByteArray(language, getByteArrayNode.execute(inliningTarget, nativePointer, size));
             } catch (InteropException e) {
                 return raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
@@ -312,23 +313,23 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         static PBytes doInt(int size,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createBytes(new byte[size]);
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, new byte[size]);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static PBytes doLong(long size,
-                        @Shared @Cached PythonObjectFactory factory) throws OverflowException {
-            return doInt(PInt.intValueExact(size), factory);
+                        @Bind PythonLanguage language) throws OverflowException {
+            return doInt(PInt.intValueExact(size), language);
         }
 
         @Specialization(replaces = "doLong")
         static PBytes doLongOvf(long size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doInt(PInt.intValueExact(size), factory);
+                return doInt(PInt.intValueExact(size), language);
             } catch (OverflowException e) {
                 throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
             }
@@ -336,17 +337,17 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization(rewriteOn = OverflowException.class)
         static PBytes doPInt(PInt size,
-                        @Shared @Cached PythonObjectFactory factory) throws OverflowException {
-            return doInt(size.intValueExact(), factory);
+                        @Bind PythonLanguage language) throws OverflowException {
+            return doInt(size.intValueExact(), language);
         }
 
         @Specialization(replaces = "doPInt")
         static PBytes doPIntOvf(PInt size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doInt(size.intValueExact(), factory);
+                return doInt(size.intValueExact(), language);
             } catch (OverflowException e) {
                 throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
             }
@@ -358,23 +359,23 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization
         static PByteArray doInt(int size,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createByteArray(new byte[size]);
+                        @Bind PythonLanguage language) {
+            return PFactory.createByteArray(language, new byte[size]);
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static PByteArray doLong(long size,
-                        @Shared @Cached PythonObjectFactory factory) throws OverflowException {
-            return doInt(PInt.intValueExact(size), factory);
+                        @Bind PythonLanguage language) throws OverflowException {
+            return doInt(PInt.intValueExact(size), language);
         }
 
         @Specialization(replaces = "doLong")
         static PByteArray doLongOvf(long size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doInt(PInt.intValueExact(size), factory);
+                return doInt(PInt.intValueExact(size), language);
             } catch (OverflowException e) {
                 throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
             }
@@ -382,17 +383,17 @@ public final class PythonCextBytesBuiltins {
 
         @Specialization(rewriteOn = OverflowException.class)
         static PByteArray doPInt(PInt size,
-                        @Shared @Cached PythonObjectFactory factory) throws OverflowException {
-            return doInt(size.intValueExact(), factory);
+                        @Bind PythonLanguage language) throws OverflowException {
+            return doInt(size.intValueExact(), language);
         }
 
         @Specialization(replaces = "doPInt")
         static PByteArray doPIntOvf(PInt size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
             try {
-                return doInt(size.intValueExact(), factory);
+                return doInt(size.intValueExact(), language);
             } catch (OverflowException e) {
                 throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
             }

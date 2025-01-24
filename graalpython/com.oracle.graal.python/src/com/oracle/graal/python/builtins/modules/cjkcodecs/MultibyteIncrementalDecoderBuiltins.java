@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,9 +54,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeError;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -67,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -79,7 +82,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -108,14 +111,15 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode.Lazy raiseNode) { // "|s:IncrementalDecoder"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteIncrementalDecoderObject self = factory.createMultibyteIncrementalDecoderObject(type);
+            MultibyteIncrementalDecoderObject self = PFactory.createMultibyteIncrementalDecoderObject(language, type, getInstanceShape.execute(type));
 
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
@@ -240,12 +244,12 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         @Specialization
         static Object getstate(MultibyteIncrementalDecoderObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @Cached PythonObjectFactory factory) {
-            PBytes buffer = factory.createBytes(Arrays.copyOf(self.pending, self.pendingsize));
-            PInt statelong = factory.createInt(0);
+                        @Bind PythonLanguage language,
+                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode) {
+            PBytes buffer = PFactory.createBytes(language, Arrays.copyOf(self.pending, self.pendingsize));
+            PInt statelong = PFactory.createInt(language, BigInteger.ZERO);
             writeHiddenAttrNode.execute(inliningTarget, statelong, HiddenAttr.DECODER_OBJECT, self.state);
-            return factory.createTuple(new Object[]{buffer, statelong});
+            return PFactory.createTuple(language, new Object[]{buffer, statelong});
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,7 +94,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
     public static final int IDX_PRINT_FILE_AND_LINE = 7;
     public static final int SYNTAX_ERR_NUM_ATTRS = IDX_PRINT_FILE_AND_LINE + 1;
 
-    public static final BaseExceptionAttrNode.StorageFactory SYNTAX_ERROR_ATTR_FACTORY = (args, factory) -> new Object[SYNTAX_ERR_NUM_ATTRS];
+    public static final BaseExceptionAttrNode.StorageFactory SYNTAX_ERROR_ATTR_FACTORY = (args) -> new Object[SYNTAX_ERR_NUM_ATTRS];
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

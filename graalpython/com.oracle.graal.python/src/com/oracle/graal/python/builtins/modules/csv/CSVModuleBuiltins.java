@@ -56,6 +56,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictGetItem;
@@ -91,7 +93,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -146,7 +148,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("QUOTE_ALL", QUOTE_ALL.ordinal());
         addBuiltinConstant("QUOTE_NONNUMERIC", QUOTE_NONNUMERIC.ordinal());
         addBuiltinConstant("QUOTE_NONE", QUOTE_NONE.ordinal());
-        addBuiltinConstant(T__DIALECTS, core.factory().createDict());
+        addBuiltinConstant(T__DIALECTS, PFactory.createDict(core.getLanguage()));
         super.initialize(core);
     }
 
@@ -262,10 +264,10 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object inputIter = getIter.execute(frame, inliningTarget, csvfile);
             CSVDialect dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
-            return factory.createCSVReader(PythonBuiltinClassType.CSVReader, inputIter, dialect);
+            return PFactory.createCSVReader(language, inputIter, dialect);
         }
     }
 
@@ -278,14 +280,14 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyCallableCheckNode checkCallable,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object write = lookupAttr.execute(frame, inliningTarget, outputFile, T_WRITE);
             if (write == PNone.NO_VALUE || !checkCallable.execute(inliningTarget, write)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_HAVE_WRITE_METHOD, "argument 1");
             }
             CSVDialect dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
-            return factory.createCSVWriter(PythonBuiltinClassType.CSVWriter, write, dialect);
+            return PFactory.createCSVWriter(language, write, dialect);
         }
     }
 
@@ -529,7 +531,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             int quoteCharCodePoint = TruffleString.EqualNode.getUncached().execute(quoteChar, T_NOT_SET, TS_ENCODING) ? NOT_SET_CODEPOINT
                             : TruffleString.CodePointAtIndexNode.getUncached().execute(quoteChar, 0, TS_ENCODING);
 
-            return PythonObjectFactory.getUncached().createCSVDialect(cls, delimiter, delimiterCodePoint, doubleQuote,
+            return PFactory.createCSVDialect(PythonLanguage.get(null), cls, TypeNodes.GetInstanceShape.executeUncached(cls), delimiter, delimiterCodePoint, doubleQuote,
                             escapeChar, escapeCharCodePoint, lineTerminator, quoteChar, quoteCharCodePoint, quoting,
                             skipInitialSpace, strict);
         }

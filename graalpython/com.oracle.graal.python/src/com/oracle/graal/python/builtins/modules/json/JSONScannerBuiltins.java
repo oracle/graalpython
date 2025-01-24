@@ -38,18 +38,15 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.JSONScanner)
@@ -78,11 +75,6 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         @Child private CallUnaryMethodNode callParseConstant = CallUnaryMethodNode.create();
         @Child private CallUnaryMethodNode callObjectHook = CallUnaryMethodNode.create();
         @Child private CallUnaryMethodNode callObjectPairsHook = CallUnaryMethodNode.create();
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-
-        @CompilationFinal private Shape tupleInstanceShape;
-        @CompilationFinal private Shape listInstanceShape;
-        @CompilationFinal private Shape dictInstanceShape;
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -92,21 +84,9 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         @Specialization
         protected PTuple call(PJSONScanner self, TruffleString string, int idx,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            if (tupleInstanceShape == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                tupleInstanceShape = PythonLanguage.get(this).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PTuple);
-            }
-            if (listInstanceShape == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                listInstanceShape = PythonLanguage.get(this).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PList);
-            }
-            if (dictInstanceShape == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                dictInstanceShape = PythonLanguage.get(this).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PDict);
-            }
             IntRef nextIdx = new IntRef();
             Object result = scanOnceUnicode(self, toJavaStringNode.execute(string), idx, nextIdx);
-            return factory.createTuple(new Object[]{result, nextIdx.value});
+            return PFactory.createTuple(PythonLanguage.get(this), new Object[]{result, nextIdx.value});
         }
 
         @TruffleBoundary
@@ -119,6 +99,8 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
              * Returns a new PyObject (usually a dict, but object_hook can change that)
              */
             boolean hasPairsHook = scanner.objectPairsHook != PNone.NONE;
+
+            PythonLanguage language = PythonLanguage.get(null);
 
             int idx = start;
             int length = string.length();
@@ -161,7 +143,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                     idx = nextIdx.value;
 
                     if (hasPairsHook) {
-                        listStorage.insertItem(listStorage.length(), factory.createTuple(PythonBuiltinClassType.PTuple, tupleInstanceShape, new Object[]{key, val}));
+                        listStorage.insertItem(listStorage.length(), PFactory.createTuple(language, new Object[]{key, val}));
                     } else {
                         HashingStorage newStorage = HashingStorageSetItem.executeUncached(mapStorage, key, val);
                         assert newStorage == mapStorage;
@@ -186,11 +168,11 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
             nextIdx.value = idx + 1;
 
             if (hasPairsHook) {
-                return callObjectPairsHook.executeObject(scanner.objectPairsHook, factory.createList(PythonBuiltinClassType.PList, listInstanceShape, listStorage));
+                return callObjectPairsHook.executeObject(scanner.objectPairsHook, PFactory.createList(language, listStorage));
             }
 
             /* if object_hook is not None: rval = object_hook(rval) */
-            PDict rval = factory.createDict(PythonBuiltinClassType.PDict, dictInstanceShape, mapStorage);
+            PDict rval = PFactory.createDict(language, mapStorage);
             if (scanner.objectHook != PNone.NONE) {
                 return callObjectHook.executeObject(scanner.objectHook, rval);
             }
@@ -242,7 +224,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                 throw decodeError(this, string, length - 1, ErrorMessages.EXPECTING_VALUE);
             }
             nextIdx.value = idx + 1;
-            return factory.createList(PythonBuiltinClassType.PList, listInstanceShape, storage);
+            return PFactory.createList(PythonLanguage.get(null), storage);
         }
 
         private static int skipWhitespace(String string, int start, int length) {

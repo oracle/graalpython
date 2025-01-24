@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -58,7 +59,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -101,12 +102,12 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         @Specialization
         static Object set(PContextVar self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Bind PythonContext context,
-                        @Cached PythonObjectFactory factory) {
-            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
+                        @Bind PythonContext context) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonContext.PythonThreadState threadState = context.getThreadState(language);
             Object oldValue = self.getValue(threadState);
             self.setValue(threadState, value);
-            return factory.createContextVarsToken(self, oldValue);
+            return PFactory.createContextVarsToken(language, self, oldValue);
         }
     }
 
@@ -150,8 +151,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

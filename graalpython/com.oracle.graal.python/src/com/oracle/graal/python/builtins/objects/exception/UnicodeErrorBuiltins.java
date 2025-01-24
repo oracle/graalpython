@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_REQUIRED;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -60,7 +61,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -84,7 +85,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     public static final int IDX_REASON = 4;
     public static final int UNICODE_ERR_NUM_ATTRS = IDX_REASON + 1;
 
-    public static final BaseExceptionAttrNode.StorageFactory UNICODE_ERROR_ATTR_FACTORY = (args, factory) -> new Object[UNICODE_ERR_NUM_ATTRS];
+    public static final BaseExceptionAttrNode.StorageFactory UNICODE_ERROR_ATTR_FACTORY = (args) -> new Object[UNICODE_ERR_NUM_ATTRS];
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -115,11 +116,11 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static PBytes doString(TruffleString value,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // TODO GR-37601: cbasca cPython works directly with bytes while we have Java strings
             // which are encoded, here we decode using the system encoding but this might not be the
             // correct / ideal case
-            return factory.createBytes(value.toJavaStringUncached().getBytes());
+            return PFactory.createBytes(language, value.toJavaStringUncached().getBytes());
         }
 
         @Specialization
@@ -131,11 +132,11 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         static PBytes doOther(VirtualFrame frame, Object value,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             try {
                 final byte[] buffer = bufferLib.getInternalOrCopiedByteArray(value);
                 final int bufferLength = bufferLib.getBufferLength(value);
-                return factory.createBytes(buffer, 0, bufferLength);
+                return PFactory.createBytes(language, buffer, bufferLength);
             } finally {
                 bufferLib.release(value, frame, indirectCallData);
             }

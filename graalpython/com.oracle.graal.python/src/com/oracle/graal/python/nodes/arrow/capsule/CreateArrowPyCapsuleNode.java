@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -62,8 +62,7 @@ public abstract class CreateArrowPyCapsuleNode extends PNodeWithContext {
 
     @Specialization
     static PTuple doArrowCArray(Node inliningTarget, ArrowArray arrowArray, ArrowSchema arrowSchema,
-                    @Cached PyCapsuleNewNode pyCapsuleNewNode,
-                    @Cached(inline = false) PythonObjectFactory pythonObjectFactory) {
+                    @Cached PyCapsuleNewNode pyCapsuleNewNode) {
         var ctx = getContext(inliningTarget);
         long arrayDestructor = ctx.arrowSupport.getArrowArrayDestructor();
         var arrayCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowArray.CAPSULE_NAME);
@@ -73,6 +72,6 @@ public abstract class CreateArrowPyCapsuleNode extends PNodeWithContext {
         var schemaCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME);
         PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchema.memoryAddr, schemaCapsuleName, schemaDestructor);
 
-        return pythonObjectFactory.createTuple(new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
+        return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
     }
 }

@@ -60,6 +60,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -97,7 +98,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -110,6 +111,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -192,11 +194,10 @@ public final class ModuleBuiltins extends PythonBuiltins {
         static Object doManaged(PythonModule self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetDictIfExistsNode getDict,
-                        @Cached SetDictNode setDict,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached SetDictNode setDict) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
-                dict = createDict(inliningTarget, self, setDict, factory);
+                dict = createDict(inliningTarget, self, setDict);
             }
             return dict;
         }
@@ -219,8 +220,8 @@ public final class ModuleBuiltins extends PythonBuiltins {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P, self);
         }
 
-        private static PDict createDict(Node inliningTarget, PythonModule self, SetDictNode setDict, PythonObjectFactory factory) {
-            PDict dict = factory.createDictFixedStorage(self);
+        private static PDict createDict(Node inliningTarget, PythonModule self, SetDictNode setDict) {
+            PDict dict = PFactory.createDictFixedStorage(PythonLanguage.get(inliningTarget), self);
             setDict.execute(inliningTarget, self, dict);
             return dict;
         }
@@ -314,10 +315,11 @@ public final class ModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("read") @Cached ReadAttributeFromObjectNode read,
                         @Shared("write") @Cached WriteAttributeToObjectNode write,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached InlinedBranchProfile createAnnotations) {
             Object annotations = read.execute(self, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
-                annotations = factory.get(inliningTarget).createDict();
+                createAnnotations.enter(inliningTarget);
+                annotations = PFactory.createDict(PythonLanguage.get(inliningTarget));
                 write.execute(self, T___ANNOTATIONS__, annotations);
             }
             return annotations;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -87,7 +88,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -158,10 +159,11 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         for (var digest : DIGEST_ALGORITHMS) {
             algos.putUncachedWithJavaEq(digest, PNone.NONE);
         }
-        addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(algos));
+        PythonLanguage language = core.getLanguage();
+        addBuiltinConstant("openssl_md_meth_names", PFactory.createFrozenSet(language, algos));
 
         EconomicMapStorage storage = EconomicMapStorage.create();
-        addBuiltinConstant(J_CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
+        addBuiltinConstant(J_CONSTRUCTORS, PFactory.createMappingproxy(language, PFactory.createDict(language, storage)));
         core.lookupBuiltinModule(T_HASHLIB).setModuleState(storage);
         super.initialize(core);
     }
@@ -283,14 +285,13 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             // cast guaranteed in our initialize
             EconomicMapStorage constructors = self.getModuleState(EconomicMapStorage.class);
             Object name = getItemNode.execute(frame, inliningTarget, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize
-                return hmacNew(self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, acquireLib, bufferLib, factory, raiseNode);
+                return hmacNew(self, key, msg, name, inliningTarget, castStr, castJStr, concatStr, acquireLib, bufferLib, raiseNode);
             } else {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.UnsupportedDigestmodError);
             }
@@ -304,7 +305,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared("concatStr") @Cached TruffleString.ConcatNode concatStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString digestmod = castStr.execute(inliningTarget, digestmodObj);
             Object key;
@@ -326,7 +326,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                     byte[] msgBytes = msg == null ? null : bufferLib.getInternalOrCopiedByteArray(msg);
                     int msgLen = msg == null ? 0 : bufferLib.getBufferLength(msg);
                     Mac mac = createMac(digestmod, bufferLib.getInternalOrCopiedByteArray(key), bufferLib.getBufferLength(key), msgBytes, msgLen);
-                    return factory.createDigestObject(PythonBuiltinClassType.HashlibHmac, castJStr.execute(concatStr.execute(HMAC_PREFIX, digestmod, TS_ENCODING, true)), mac);
+                    return PFactory.createDigestObject(PythonLanguage.get(inliningTarget), PythonBuiltinClassType.HashlibHmac,
+                                    castJStr.execute(concatStr.execute(HMAC_PREFIX, digestmod, TS_ENCODING, true)), mac);
                 } catch (InvalidKeyException | NoSuchAlgorithmException e) {
                     throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 } finally {
@@ -362,7 +363,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached(inline = false) PythonObjectFactory factory,
                         @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode.Lazy raise) {
@@ -383,7 +383,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 } catch (NoSuchAlgorithmException e) {
                     throw raise.get(inliningTarget).raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 }
-                return factory.createDigestObject(type, pythonName, digest);
+                return PFactory.createDigestObject(PythonLanguage.get(inliningTarget), type, pythonName, digest);
             } finally {
                 if (buffer != null) {
                     bufferLib.release(buffer, frame, indirectCallData);

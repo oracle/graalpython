@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -57,7 +58,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -84,7 +85,7 @@ public class PickleBufferBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyMemoryViewFromObject memoryViewFromObject,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             final Object view = self.getView();
             if (view == null) {
@@ -98,7 +99,7 @@ public class PickleBufferBuiltins extends PythonBuiltins {
                 }
                 int[] shape = new int[]{mv.getLength()};
                 int[] strides = new int[]{1};
-                return factory.createMemoryView(getContext(), mv.getLifecycleManager(), mv.getBuffer(), mv.getOwner(), mv.getLength(),
+                return PFactory.createMemoryView(language, getContext(), mv.getLifecycleManager(), mv.getBuffer(), mv.getOwner(), mv.getLength(),
                                 mv.isReadOnly(), 1, BufferFormat.UINT_8, BufferFormat.T_UINT_8_TYPE_CODE, 1,
                                 mv.getBufferPointer(), mv.getOffset(), shape, strides,
                                 null, PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);

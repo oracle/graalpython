@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.object;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GET_DICT_PTR;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -56,7 +57,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateUncached
 @SuppressWarnings("truffle-inlining")       // footprint reduction 36 -> 17
@@ -121,11 +123,12 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     @Specialization
     @InliningCutoff
     PDict doNativeObject(PythonAbstractNativeObject object,
+                    @Bind("this") Node inliningTarget,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached PythonToNativeNode toNative,
                     @Cached CStructAccess.ReadObjectNode readObjectNode,
                     @Cached CStructAccess.WriteObjectNewRefNode writeObjectNode,
-                    @Cached PythonObjectFactory factory,
+                    @Cached InlinedBranchProfile createDict,
                     @Cached CExtNodes.PCallCapiFunction callGetDictPtr) {
         Object dictPtr = callGetDictPtr.call(FUN_PY_OBJECT_GET_DICT_PTR, toNative.execute(object));
         if (lib.isNull(dictPtr)) {
@@ -133,7 +136,8 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         } else {
             Object dictObject = readObjectNode.readGeneric(dictPtr, 0);
             if (dictObject == PNone.NO_VALUE) {
-                PDict dict = factory.createDict();
+                createDict.enter(inliningTarget);
+                PDict dict = PFactory.createDict(PythonLanguage.get(inliningTarget));
                 writeObjectNode.write(dictPtr, dict);
                 return dict;
             } else if (dictObject instanceof PDict dict) {

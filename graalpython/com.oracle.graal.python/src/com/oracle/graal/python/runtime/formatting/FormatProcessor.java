@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -37,6 +38,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -180,7 +182,7 @@ abstract class FormatProcessor<T> {
             if (allowsFloat(specType)) {
                 // Fast path for simple double values, instead of __int__
                 BigDecimal decimal = new BigDecimal((Double) arg, MathContext.UNLIMITED);
-                return core.factory().createInt(decimal.toBigInteger());
+                return PFactory.createInt(PythonLanguage.get(null), decimal.toBigInteger());
             } else {
                 // non-integer result indicates to the caller that it could not be converted
                 return arg;

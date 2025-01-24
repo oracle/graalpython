@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -77,7 +78,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -127,9 +128,9 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
+            StgDictObject stgdict = PFactory.createStgDictObject(language);
 
             stgdict.paramfunc = CArgObjectBuiltins.PyCFuncPtrTypeParamFunc;
             /*
@@ -147,7 +148,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             /* replace the class dict by our updated storage dict */
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory.createDictFixedStorage((PythonObject) result);
+                resDict = PFactory.createDictFixedStorage(language, (PythonObject) result);
             }
             addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
             setDict.execute(inliningTarget, result, stgdict);

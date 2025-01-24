@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,31 +38,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.tools.profiler.CPUSampler;
 
-/**
- * Equivalent of CPython's {@code PyContext_CopyCurrent}.
- */
-@GenerateInline
-@GenerateCached(false)
-public abstract class PyContextCopyCurrent extends PNodeWithContext {
-    public abstract PContextVarsContext execute(Node inliningTarget);
+public class Profiler extends PythonBuiltinObject {
+    boolean subcalls;
+    boolean builtins;
+    double timeunit;
+    Object externalTimer;
+    double time;
+    final CPUSampler sampler;
 
-    @Specialization
-    static PContextVarsContext doIt(Node inliningTarget) {
-        PythonContext context = PythonContext.get(inliningTarget);
-        PythonLanguage language = context.getLanguage(inliningTarget);
-        PythonContext.PythonThreadState threadState = context.getThreadState(language);
-        return PFactory.copyContextVarsContext(language, threadState.getContextVarsContext());
+    public Profiler(Object cls, Shape instanceShape, CPUSampler sampler) {
+        super(cls, instanceShape);
+        this.sampler = sampler;
+        this.sampler.setFilter(SourceSectionFilter.newBuilder().includeInternal(true).build());
+        this.sampler.setPeriod(1);
     }
 }

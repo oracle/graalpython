@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,12 +45,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -84,14 +85,15 @@ public abstract class RangeNodes {
                         @Cached CastToJavaBigIntegerNode startToBI,
                         @Cached CastToJavaBigIntegerNode stopToBI,
                         @Cached CastToJavaBigIntegerNode stepToBI,
-                        @Cached PRaiseNode.Lazy raise,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached PRaiseNode.Lazy raise) {
             BigInteger stepBI = stepToBI.execute(inliningTarget, step);
             checkStepZero(inliningTarget, stepBI, raise);
             BigInteger startBI = startToBI.execute(inliningTarget, start);
             BigInteger stopBI = stopToBI.execute(inliningTarget, stop);
             BigInteger len = lenOfRangeNode.execute(inliningTarget, startBI, stopBI, stepBI);
-            return factory.createBigRange(factory.createInt(startBI), factory.createInt(stopBI), factory.createInt(stepBI), factory.createInt(len));
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            return PFactory.createBigRange(language, PFactory.createInt(language, startBI), PFactory.createInt(language, stopBI), PFactory.createInt(language, stepBI),
+                            PFactory.createInt(language, len));
         }
 
     }

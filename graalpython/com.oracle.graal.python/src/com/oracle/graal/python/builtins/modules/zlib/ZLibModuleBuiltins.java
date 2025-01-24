@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,6 @@
 
 package com.oracle.graal.python.builtins.modules.zlib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZlibCompress;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZlibDecompress;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -59,6 +57,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
@@ -92,9 +91,8 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -510,15 +508,15 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PBytes compress(VirtualFrame frame, Object buffer, int level, int wbits,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached CompressInnerNode innerNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached CompressInnerNode innerNode) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] resultArray = innerNode.execute(inliningTarget, bytes, len, level, wbits);
-                return factory.createBytes(resultArray);
+                return PFactory.createBytes(language, resultArray);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
@@ -574,10 +572,10 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PBytes decompress(VirtualFrame frame, Object buffer, int wbits, int bufsize,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached DecompressInnerNode innerNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 if (bufsize < 0) {
@@ -586,7 +584,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] resultArray = innerNode.execute(inliningTarget, bytes, len, wbits, bufsize);
-                return factory.createBytes(resultArray);
+                return PFactory.createBytes(language, resultArray);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
@@ -667,10 +665,10 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"method == DEFLATED", "useNative()"})
         static Object doNative(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction compressObjInit,
-                        @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             NFIZlibSupport zlibSupport = PythonContext.get(inliningTarget).getNFIZlibSupport();
             Object zst = zlibSupport.createCompObject(createCompObject);
 
@@ -684,7 +682,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
             }
-            return factory.createNativeZLibCompObject(ZlibCompress, zst, zlibSupport);
+            return PFactory.createNativeZLibCompObjectCompress(language, zst, zlibSupport);
         }
 
         /**
@@ -703,7 +701,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             if (zdict.length > 0) {
                 deflater.setDictionary(zdict);
             }
-            return PythonObjectFactory.getUncached().createJavaZLibCompObject(ZlibCompress, deflater, level, wbits, strategy, zdict);
+            return PFactory.createJavaZLibCompObjectCompress(PythonLanguage.get(null), deflater, level, wbits, strategy, zdict);
         }
 
         @SuppressWarnings("unused")
@@ -742,30 +740,30 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"useNative()"})
-        Object doNative(int wbits, byte[] zdict,
+        static Object doNative(int wbits, byte[] zdict,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObjInit,
-                        @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling,
-                        @Cached PythonObjectFactory factory) {
-            NFIZlibSupport zlibSupport = PythonContext.get(this).getNFIZlibSupport();
+                        @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
+            NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
             Object zst = zlibSupport.createCompObject(createCompObject);
 
             int err;
             if (zdict.length > 0) {
-                err = zlibSupport.decompressObjInitWithDict(zst, wbits, PythonContext.get(this).getEnv().asGuestValue(zdict), zdict.length, decompressObjInit);
+                err = zlibSupport.decompressObjInitWithDict(zst, wbits, context.getEnv().asGuestValue(zdict), zdict.length, decompressObjInit);
             } else {
                 err = zlibSupport.decompressObjInit(zst, wbits, decompressObjInit);
             }
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
             }
-            return factory.createNativeZLibCompObject(ZlibDecompress, zst, zlibSupport);
+            return PFactory.createNativeZLibCompObjectDecompress(context.getLanguage(inliningTarget), zst, zlibSupport);
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         @Specialization(guards = {"!useNative()", "isValidWBitRange(wbits)"})
-        Object doJava(int wbits, byte[] zdict) {
+        static Object doJava(int wbits, byte[] zdict) {
             // wbits < 0: generate a RAW stream, i.e., no wrapping
             // wbits 25..31: gzip container, i.e., no wrapping
             // Otherwise: wrap stream with zlib header and trailer
@@ -774,10 +772,10 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             if (isRAW && zdict.length > 0) {
                 inflater.setDictionary(zdict);
             }
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            ZLibCompObject obj = factory.createJavaZLibCompObject(ZlibDecompress, inflater, wbits, zdict);
-            obj.setUnusedData(factory.createEmptyBytes());
-            obj.setUnconsumedTail(factory.createEmptyBytes());
+            PythonLanguage language = PythonLanguage.get(null);
+            ZLibCompObject obj = PFactory.createJavaZLibCompObjectDecompress(language, inflater, wbits, zdict);
+            obj.setUnusedData(PFactory.createEmptyBytes(language));
+            obj.setUnconsumedTail(PFactory.createEmptyBytes(language));
             return obj;
         }
 

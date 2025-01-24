@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_DETACHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.RawTellIgnoreErrorNode;
@@ -66,8 +67,9 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -85,25 +87,26 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
     @GenerateCached(false)
     public abstract static class BufferedInitNode extends PNodeWithContext {
 
-        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize, PythonObjectFactory factory);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize);
 
         @Specialization(guards = "bufferSize > 0")
-        static void bufferedInit(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize, PythonObjectFactory factory,
-                        @Cached RawTellIgnoreErrorNode rawTellNode) {
-            init(self, bufferSize, factory);
+        static void bufferedInit(VirtualFrame frame, Node inliningTarget, PBuffered self, int bufferSize,
+                        @Cached RawTellIgnoreErrorNode rawTellNode,
+                        @Bind PythonLanguage language) {
+            init(self, bufferSize, language);
             rawTellNode.execute(frame, inliningTarget, self);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "bufferSize <= 0")
-        static void bufferSizeError(PBuffered self, int bufferSize, PythonObjectFactory factory,
+        static void bufferSizeError(PBuffered self, int bufferSize,
                         @Cached(inline = false) PRaiseNode raiseNode) {
             throw raiseNode.raise(ValueError, BUF_SIZE_POS);
         }
 
-        private static void init(PBuffered self, int bufferSize, PythonObjectFactory factory) {
+        private static void init(PBuffered self, int bufferSize, PythonLanguage language) {
             self.initBuffer(bufferSize);
-            self.setLock(factory.createLock());
+            self.setLock(PFactory.createLock(language));
             self.setOwner(0);
             int n;
             for (n = bufferSize - 1; (n & 1) != 0; n >>= 1) {
@@ -112,10 +115,10 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             self.setBufferMask(mask);
         }
 
-        public static void internalInit(PBuffered self, int bufferSize, PythonObjectFactory factory,
+        public static void internalInit(PBuffered self, int bufferSize, PythonLanguage language,
                         Object posixSupport,
                         PosixSupportLibrary posixLib) {
-            init(self, bufferSize, factory);
+            init(self, bufferSize, language);
             try {
                 FileIOBuiltins.TellNode.internalTell(self.getFileIORaw(), posixSupport, posixLib);
             } catch (PosixException e) {
@@ -216,13 +219,13 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @Specialization
         static PException raise(Node node, Object errno, TruffleString message, int written,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object[] args = new Object[]{
                             errno,
                             message,
                             written
             };
-            PBaseException exception = factory.createBaseException(BlockingIOError, factory.createTuple(args));
+            PBaseException exception = PFactory.createBaseException(language, BlockingIOError, PFactory.createTuple(language, args));
             final Object[] attrs = OS_ERROR_ATTR_FACTORY.create();
             attrs[OsErrorBuiltins.IDX_ERRNO] = errno;
             attrs[OsErrorBuiltins.IDX_STRERROR] = message;

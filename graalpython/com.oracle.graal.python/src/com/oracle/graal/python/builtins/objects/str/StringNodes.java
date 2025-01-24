@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
@@ -77,7 +78,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -483,9 +484,9 @@ public abstract class StringNodes {
 
         @Specialization
         static PString doString(Node inliningTarget, TruffleString string,
-                        @Shared @Cached HiddenAttr.WriteNode writeNode,
-                        @Cached(inline = false) PythonObjectFactory factory) {
-            final PString interned = factory.createString(string);
+                        @Bind PythonLanguage language,
+                        @Shared @Cached HiddenAttr.WriteNode writeNode) {
+            final PString interned = PFactory.createString(language, string);
             writeNode.execute(inliningTarget, interned, HiddenAttr.INTERNED, true);
             return interned;
         }

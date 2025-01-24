@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,8 +86,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -223,7 +222,7 @@ public final class PythonUtils {
 
     /**
      * Creates an array of {@link Object}'s. The intended use of this method is in slow-path in
-     * calls to methods like {@link PythonObjectFactory#createTuple(Object[])}.
+     * calls to methods like {@link PFactory#createTuple}.
      */
     public static Object[] convertToObjectArray(TruffleString[] src) {
         if (src == null) {
@@ -697,16 +696,15 @@ public final class PythonUtils {
         Class<? extends PythonBuiltinBaseNode> nodeClass = nodeFactory.getNodeClass();
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
         RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, nodeFactory, true), nodeClass);
-        return createMethod(PythonObjectFactory.getUncached(), klass, builtin, callTarget, type, numDefaults);
+        return createMethod(klass, builtin, callTarget, type, numDefaults);
     }
 
     @TruffleBoundary
-    public static PBuiltinFunction createMethod(PythonObjectFactory factory, Object klass, Builtin builtin, RootCallTarget callTarget, Object type,
-                    int numDefaults) {
+    public static PBuiltinFunction createMethod(Object klass, Builtin builtin, RootCallTarget callTarget, Object type, int numDefaults) {
         assert callTarget.getRootNode() instanceof BuiltinFunctionRootNode r && r.getBuiltin() == builtin;
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         TruffleString name = toTruffleStringUncached(builtin.name());
-        PBuiltinFunction function = factory.createBuiltinFunction(name, type, numDefaults, flags, callTarget);
+        PBuiltinFunction function = PFactory.createBuiltinFunction(PythonLanguage.get(null), name, type, numDefaults, flags, callTarget);
         if (klass != null) {
             WriteAttributeToObjectNode.getUncached(true).execute(klass, name, function);
         }
@@ -714,20 +712,14 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createConstructor(PythonObjectSlowPathFactory factory, Object klass, Builtin builtin, RootCallTarget callTarget) {
+    public static void createConstructor(Object klass, Builtin builtin, RootCallTarget callTarget) {
         assert J___NEW__.equals(builtin.name());
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = factory.createBuiltinFunction(toTruffleStringUncached(builtin.name()), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
-        PBuiltinMethod method = factory.createBuiltinMethod(PythonBuiltinClassType.PTuple, function);
+        PythonLanguage language = PythonLanguage.get(null);
+        PBuiltinFunction function = PFactory.createBuiltinFunction(language, toTruffleStringUncached(builtin.name()), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
+        PBuiltinMethod method = PFactory.createBuiltinMethod(language, PythonBuiltinClassType.PTuple, function);
         WriteAttributeToObjectNode.getUncached(true).execute(klass, T___NEW__, method);
-    }
-
-    private static Object[] createCalltargetKeys(Object[] callTargetCacheKeys, Class<?> nodeClass) {
-        Object[] keys = new Object[callTargetCacheKeys.length + 1];
-        keys[0] = nodeClass;
-        arraycopy(callTargetCacheKeys, 0, keys, 1, callTargetCacheKeys.length);
-        return keys;
     }
 
     public static Unsafe initUnsafe() {
@@ -842,7 +834,7 @@ public final class PythonUtils {
         }
     }
 
-    public static Object pythonObjectFromConstantValue(ConstantValue v, PythonObjectFactory factory) {
+    public static Object pythonObjectFromConstantValue(ConstantValue v) {
         switch (v.kind) {
             case BOOLEAN:
                 return v.getBoolean();
@@ -857,16 +849,16 @@ public final class PythonUtils {
                 return v.getDouble();
             case COMPLEX: {
                 double[] c = v.getComplex();
-                return factory.createComplex(c[0], c[1]);
+                return PFactory.createComplex(PythonLanguage.get(null), c[0], c[1]);
             }
             case NONE:
                 return PNone.NONE;
             case ELLIPSIS:
                 return PEllipsis.INSTANCE;
             case BIGINTEGER:
-                return factory.createInt(v.getBigInteger());
+                return PFactory.createInt(PythonLanguage.get(null), v.getBigInteger());
             case BYTES:
-                return factory.createBytes(v.getBytes());
+                return PFactory.createBytes(PythonLanguage.get(null), v.getBytes());
             case RAW:
                 return v.getRaw(TruffleString.class);
             case TUPLE:

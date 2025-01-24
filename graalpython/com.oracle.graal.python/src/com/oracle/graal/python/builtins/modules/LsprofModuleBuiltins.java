@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -57,24 +58,21 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.tools.profiler.CPUSampler;
 import com.oracle.truffle.tools.profiler.CPUSampler.Payload;
@@ -138,34 +136,18 @@ public final class LsprofModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Profiler doit(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            Env env = getContext().getEnv();
+            PythonContext context = getContext();
+            Env env = context.getEnv();
             Map<String, InstrumentInfo> instruments = env.getInstruments();
             InstrumentInfo instrumentInfo = instruments.get(CPUSamplerInstrument.ID);
             if (instrumentInfo != null) {
                 CPUSampler sampler = env.lookup(instrumentInfo, CPUSampler.class);
                 if (sampler != null) {
-                    PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                    return factory.trace(new Profiler(cls, factory.getShape(cls), sampler));
+                    return PFactory.createProfiler(context.getLanguage(), cls, TypeNodes.GetInstanceShape.executeUncached(cls), sampler);
                 }
             }
             throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
         }
-    }
-}
-
-class Profiler extends PythonBuiltinObject {
-    boolean subcalls;
-    boolean builtins;
-    double timeunit;
-    Object externalTimer;
-    double time;
-    final CPUSampler sampler;
-
-    public Profiler(Object cls, Shape instanceShape, CPUSampler sampler) {
-        super(cls, instanceShape);
-        this.sampler = sampler;
-        this.sampler.setFilter(SourceSectionFilter.newBuilder().includeInternal(true).build());
-        this.sampler.setPeriod(1);
     }
 }
 
@@ -291,23 +273,23 @@ class ProfilerBuiltins extends PythonBuiltins {
             }
 
             self.sampler.close();
-            return PythonObjectFactory.getUncached().createList(entries.toArray());
+            return PFactory.createList(PythonLanguage.get(null), entries.toArray());
         }
 
         private static void countNode(List<PTuple> entries, ProfilerNode<Payload> node, double avgSampleTime) {
-            PythonObjectSlowPathFactory factory = PythonContext.get(null).factory();
+            PythonLanguage language = PythonLanguage.get(null);
             Collection<ProfilerNode<Payload>> children = node.getChildren();
             Object[] profilerEntry = getProfilerEntry(node, avgSampleTime);
             Object[] calls = new Object[children.size()];
             int callIdx = 0;
             for (ProfilerNode<Payload> childNode : children) {
                 countNode(entries, childNode, avgSampleTime);
-                calls[callIdx++] = factory.createStructSeq(LsprofModuleBuiltins.PROFILER_SUBENTRY_DESC, getProfilerEntry(childNode, avgSampleTime));
+                calls[callIdx++] = PFactory.createStructSeq(language, LsprofModuleBuiltins.PROFILER_SUBENTRY_DESC, getProfilerEntry(childNode, avgSampleTime));
             }
             assert callIdx == calls.length;
             profilerEntry = Arrays.copyOf(profilerEntry, 6);
-            profilerEntry[profilerEntry.length - 1] = factory.createList(calls);
-            entries.add(factory.createStructSeq(LsprofModuleBuiltins.PROFILER_ENTRY_DESC, profilerEntry));
+            profilerEntry[profilerEntry.length - 1] = PFactory.createList(language, calls);
+            entries.add(PFactory.createStructSeq(language, LsprofModuleBuiltins.PROFILER_ENTRY_DESC, profilerEntry));
         }
 
         private static Object[] getProfilerEntry(ProfilerNode<Payload> node, double avgSampleTime) {

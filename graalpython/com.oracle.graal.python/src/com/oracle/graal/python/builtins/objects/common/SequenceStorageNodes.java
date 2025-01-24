@@ -43,6 +43,7 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.S
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -112,7 +113,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
@@ -193,7 +194,7 @@ public abstract class SequenceStorageNodes {
 
     @FunctionalInterface
     public interface StorageWrapperFactory {
-        Object create(PythonObjectFactory factory, SequenceStorage newStorage);
+        Object create(PythonLanguage language, SequenceStorage newStorage);
     }
 
     @GenerateInline
@@ -215,7 +216,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "!isPSlice(idx)")
         static Object doNonSlice(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, Object idx,
-                        TruffleString indexBoundsErrorMessage, StorageWrapperFactory wrapperFactory,
+                        TruffleString indexBoundsErrorMessage, @SuppressWarnings("unused") StorageWrapperFactory wrapperFactory,
                         @Cached PyNumberAsSizeNode numberAsSizeNode,
                         @Cached InlinedConditionProfile negativeIndexProfile,
                         @Cached PRaiseNode.Lazy raiseNode,
@@ -229,15 +230,15 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object doSlice(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, PSlice slice,
-                        @SuppressWarnings("unused") TruffleString indexBoundsErrorMessage, StorageWrapperFactory wrapperFactory,
-                        @Cached(inline = false) PythonObjectFactory factory,
+                        TruffleString indexBoundsErrorMessage, StorageWrapperFactory wrapperFactory,
+                        @Bind PythonLanguage language,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached(inline = false) ComputeIndices compute,
                         @Cached(inline = false) GetItemSliceNode getItemSliceNode,
                         @Cached LenOfRangeNode sliceLen) {
             SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, slice), storage.length());
             SequenceStorage newStorage = getItemSliceNode.execute(storage, info.start, info.stop, info.step, sliceLen.len(inliningTarget, info));
-            return wrapperFactory.create(factory, newStorage);
+            return wrapperFactory.create(language, newStorage);
         }
     }
 
@@ -404,9 +405,9 @@ public abstract class SequenceStorageNodes {
 
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
-        private final BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod;
+        private final BiFunction<SequenceStorage, PythonLanguage, Object> factoryMethod;
 
-        public GetItemNode(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
+        public GetItemNode(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonLanguage, Object> factoryMethod) {
             super(normalizeIndexNode);
             this.factoryMethod = factoryMethod;
         }
@@ -462,13 +463,12 @@ public abstract class SequenceStorageNodes {
         @SuppressWarnings("truffle-static-method")
         protected Object doSlice(VirtualFrame frame, SequenceStorage storage, PSlice slice,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {
             SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, slice), storage.length());
             if (factoryMethod != null) {
-                return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, sliceLen.len(inliningTarget, info)), factory);
+                return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, sliceLen.len(inliningTarget, info)), PythonLanguage.get(inliningTarget));
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
@@ -506,18 +506,18 @@ public abstract class SequenceStorageNodes {
         }
 
         @NeverDefault
-        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
+        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonLanguage, Object> factoryMethod) {
             return GetItemNodeGen.create(normalizeIndexNode, factoryMethod);
         }
 
         @NeverDefault
         public static SequenceStorageNodes.GetItemNode createForList() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, l) -> PFactory.createList(l, s));
         }
 
         @NeverDefault
         public static SequenceStorageNodes.GetItemNode createForTuple() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, l) -> PFactory.createTuple(l, s));
         }
     }
 

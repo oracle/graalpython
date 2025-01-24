@@ -1,12 +1,12 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.builtins.objects.struct;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_P_OBJECTS;
 import static com.oracle.graal.python.builtins.objects.struct.StructBuiltins.unpackInternal;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_P_OBJECTS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
@@ -14,6 +14,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -26,7 +27,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -91,7 +92,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             final PStruct struct = self.getStruct();
             final Object buffer = self.getBuffer();
@@ -117,7 +118,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
             }
 
             // TODO: GR-54860 handle buffers directly in unpack
-            Object result = factory.createTuple(unpackInternal(struct, unpackValueNode, bytes, offset));
+            Object result = PFactory.createTuple(language, unpackInternal(struct, unpackValueNode, bytes, offset));
             self.index += struct.getSize();
             return result;
         }

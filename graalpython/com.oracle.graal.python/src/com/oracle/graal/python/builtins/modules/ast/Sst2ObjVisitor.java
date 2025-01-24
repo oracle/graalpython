@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,7 +77,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ModTy.Module node) {
-        PythonObject o = factory.createPythonObject(state.clsModule);
+        PythonObject o = createPythonObject(state.clsModule);
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_TYPE_IGNORES, seq2List(node.typeIgnores));
         return o;
@@ -85,21 +85,21 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ModTy.Interactive node) {
-        PythonObject o = factory.createPythonObject(state.clsInteractive);
+        PythonObject o = createPythonObject(state.clsInteractive);
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         return o;
     }
 
     @Override
     public Object visit(ModTy.Expression node) {
-        PythonObject o = factory.createPythonObject(state.clsExpression);
+        PythonObject o = createPythonObject(state.clsExpression);
         o.setAttribute(AstState.T_F_BODY, visitNonNull(node.body));
         return o;
     }
 
     @Override
     public Object visit(ModTy.FunctionType node) {
-        PythonObject o = factory.createPythonObject(state.clsFunctionType);
+        PythonObject o = createPythonObject(state.clsFunctionType);
         o.setAttribute(AstState.T_F_ARGTYPES, seq2List(node.argTypes));
         o.setAttribute(AstState.T_F_RETURNS, visitNonNull(node.returns));
         return o;
@@ -107,7 +107,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.FunctionDef node) {
-        PythonObject o = factory.createPythonObject(state.clsFunctionDef);
+        PythonObject o = createPythonObject(state.clsFunctionDef);
         o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
         o.setAttribute(AstState.T_F_ARGS, visitNonNull(node.args));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
@@ -120,7 +120,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.AsyncFunctionDef node) {
-        PythonObject o = factory.createPythonObject(state.clsAsyncFunctionDef);
+        PythonObject o = createPythonObject(state.clsAsyncFunctionDef);
         o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
         o.setAttribute(AstState.T_F_ARGS, visitNonNull(node.args));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
@@ -133,7 +133,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.ClassDef node) {
-        PythonObject o = factory.createPythonObject(state.clsClassDef);
+        PythonObject o = createPythonObject(state.clsClassDef);
         o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
         o.setAttribute(AstState.T_F_BASES, seq2List(node.bases));
         o.setAttribute(AstState.T_F_KEYWORDS, seq2List(node.keywords));
@@ -145,7 +145,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Return node) {
-        PythonObject o = factory.createPythonObject(state.clsReturn);
+        PythonObject o = createPythonObject(state.clsReturn);
         o.setAttribute(AstState.T_F_VALUE, visitNullable(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -153,7 +153,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Delete node) {
-        PythonObject o = factory.createPythonObject(state.clsDelete);
+        PythonObject o = createPythonObject(state.clsDelete);
         o.setAttribute(AstState.T_F_TARGETS, seq2List(node.targets));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -161,7 +161,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Assign node) {
-        PythonObject o = factory.createPythonObject(state.clsAssign);
+        PythonObject o = createPythonObject(state.clsAssign);
         o.setAttribute(AstState.T_F_TARGETS, seq2List(node.targets));
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
@@ -171,7 +171,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.AugAssign node) {
-        PythonObject o = factory.createPythonObject(state.clsAugAssign);
+        PythonObject o = createPythonObject(state.clsAugAssign);
         o.setAttribute(AstState.T_F_TARGET, visitNonNull(node.target));
         o.setAttribute(AstState.T_F_OP, visitNonNull(node.op));
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
@@ -181,7 +181,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.AnnAssign node) {
-        PythonObject o = factory.createPythonObject(state.clsAnnAssign);
+        PythonObject o = createPythonObject(state.clsAnnAssign);
         o.setAttribute(AstState.T_F_TARGET, visitNonNull(node.target));
         o.setAttribute(AstState.T_F_ANNOTATION, visitNonNull(node.annotation));
         o.setAttribute(AstState.T_F_VALUE, visitNullable(node.value));
@@ -192,7 +192,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.For node) {
-        PythonObject o = factory.createPythonObject(state.clsFor);
+        PythonObject o = createPythonObject(state.clsFor);
         o.setAttribute(AstState.T_F_TARGET, visitNonNull(node.target));
         o.setAttribute(AstState.T_F_ITER, visitNonNull(node.iter));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
@@ -204,7 +204,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.AsyncFor node) {
-        PythonObject o = factory.createPythonObject(state.clsAsyncFor);
+        PythonObject o = createPythonObject(state.clsAsyncFor);
         o.setAttribute(AstState.T_F_TARGET, visitNonNull(node.target));
         o.setAttribute(AstState.T_F_ITER, visitNonNull(node.iter));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
@@ -216,7 +216,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.While node) {
-        PythonObject o = factory.createPythonObject(state.clsWhile);
+        PythonObject o = createPythonObject(state.clsWhile);
         o.setAttribute(AstState.T_F_TEST, visitNonNull(node.test));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_ORELSE, seq2List(node.orElse));
@@ -226,7 +226,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.If node) {
-        PythonObject o = factory.createPythonObject(state.clsIf);
+        PythonObject o = createPythonObject(state.clsIf);
         o.setAttribute(AstState.T_F_TEST, visitNonNull(node.test));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_ORELSE, seq2List(node.orElse));
@@ -236,7 +236,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.With node) {
-        PythonObject o = factory.createPythonObject(state.clsWith);
+        PythonObject o = createPythonObject(state.clsWith);
         o.setAttribute(AstState.T_F_ITEMS, seq2List(node.items));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
@@ -246,7 +246,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.AsyncWith node) {
-        PythonObject o = factory.createPythonObject(state.clsAsyncWith);
+        PythonObject o = createPythonObject(state.clsAsyncWith);
         o.setAttribute(AstState.T_F_ITEMS, seq2List(node.items));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
@@ -256,7 +256,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Match node) {
-        PythonObject o = factory.createPythonObject(state.clsMatch);
+        PythonObject o = createPythonObject(state.clsMatch);
         o.setAttribute(AstState.T_F_SUBJECT, visitNonNull(node.subject));
         o.setAttribute(AstState.T_F_CASES, seq2List(node.cases));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -265,7 +265,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Raise node) {
-        PythonObject o = factory.createPythonObject(state.clsRaise);
+        PythonObject o = createPythonObject(state.clsRaise);
         o.setAttribute(AstState.T_F_EXC, visitNullable(node.exc));
         o.setAttribute(AstState.T_F_CAUSE, visitNullable(node.cause));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -274,7 +274,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Try node) {
-        PythonObject o = factory.createPythonObject(state.clsTry);
+        PythonObject o = createPythonObject(state.clsTry);
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_HANDLERS, seq2List(node.handlers));
         o.setAttribute(AstState.T_F_ORELSE, seq2List(node.orElse));
@@ -285,7 +285,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.TryStar node) {
-        PythonObject o = factory.createPythonObject(state.clsTryStar);
+        PythonObject o = createPythonObject(state.clsTryStar);
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_HANDLERS, seq2List(node.handlers));
         o.setAttribute(AstState.T_F_ORELSE, seq2List(node.orElse));
@@ -296,7 +296,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Assert node) {
-        PythonObject o = factory.createPythonObject(state.clsAssert);
+        PythonObject o = createPythonObject(state.clsAssert);
         o.setAttribute(AstState.T_F_TEST, visitNonNull(node.test));
         o.setAttribute(AstState.T_F_MSG, visitNullable(node.msg));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -305,7 +305,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Import node) {
-        PythonObject o = factory.createPythonObject(state.clsImport);
+        PythonObject o = createPythonObject(state.clsImport);
         o.setAttribute(AstState.T_F_NAMES, seq2List(node.names));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -313,7 +313,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.ImportFrom node) {
-        PythonObject o = factory.createPythonObject(state.clsImportFrom);
+        PythonObject o = createPythonObject(state.clsImportFrom);
         o.setAttribute(AstState.T_F_MODULE, visitNullable(node.module));
         o.setAttribute(AstState.T_F_NAMES, seq2List(node.names));
         o.setAttribute(AstState.T_F_LEVEL, visitNullable(node.level));
@@ -323,7 +323,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Global node) {
-        PythonObject o = factory.createPythonObject(state.clsGlobal);
+        PythonObject o = createPythonObject(state.clsGlobal);
         o.setAttribute(AstState.T_F_NAMES, seq2List(node.names));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -331,7 +331,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Nonlocal node) {
-        PythonObject o = factory.createPythonObject(state.clsNonlocal);
+        PythonObject o = createPythonObject(state.clsNonlocal);
         o.setAttribute(AstState.T_F_NAMES, seq2List(node.names));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -339,7 +339,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Expr node) {
-        PythonObject o = factory.createPythonObject(state.clsExpr);
+        PythonObject o = createPythonObject(state.clsExpr);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -347,28 +347,28 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(StmtTy.Pass node) {
-        PythonObject o = factory.createPythonObject(state.clsPass);
+        PythonObject o = createPythonObject(state.clsPass);
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
 
     @Override
     public Object visit(StmtTy.Break node) {
-        PythonObject o = factory.createPythonObject(state.clsBreak);
+        PythonObject o = createPythonObject(state.clsBreak);
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
 
     @Override
     public Object visit(StmtTy.Continue node) {
-        PythonObject o = factory.createPythonObject(state.clsContinue);
+        PythonObject o = createPythonObject(state.clsContinue);
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
 
     @Override
     public Object visit(ExprTy.BoolOp node) {
-        PythonObject o = factory.createPythonObject(state.clsBoolOp);
+        PythonObject o = createPythonObject(state.clsBoolOp);
         o.setAttribute(AstState.T_F_OP, visitNonNull(node.op));
         o.setAttribute(AstState.T_F_VALUES, seq2List(node.values));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -377,7 +377,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.NamedExpr node) {
-        PythonObject o = factory.createPythonObject(state.clsNamedExpr);
+        PythonObject o = createPythonObject(state.clsNamedExpr);
         o.setAttribute(AstState.T_F_TARGET, visitNonNull(node.target));
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -386,7 +386,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.BinOp node) {
-        PythonObject o = factory.createPythonObject(state.clsBinOp);
+        PythonObject o = createPythonObject(state.clsBinOp);
         o.setAttribute(AstState.T_F_LEFT, visitNonNull(node.left));
         o.setAttribute(AstState.T_F_OP, visitNonNull(node.op));
         o.setAttribute(AstState.T_F_RIGHT, visitNonNull(node.right));
@@ -396,7 +396,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.UnaryOp node) {
-        PythonObject o = factory.createPythonObject(state.clsUnaryOp);
+        PythonObject o = createPythonObject(state.clsUnaryOp);
         o.setAttribute(AstState.T_F_OP, visitNonNull(node.op));
         o.setAttribute(AstState.T_F_OPERAND, visitNonNull(node.operand));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -405,7 +405,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Lambda node) {
-        PythonObject o = factory.createPythonObject(state.clsLambda);
+        PythonObject o = createPythonObject(state.clsLambda);
         o.setAttribute(AstState.T_F_ARGS, visitNonNull(node.args));
         o.setAttribute(AstState.T_F_BODY, visitNonNull(node.body));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -414,7 +414,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.IfExp node) {
-        PythonObject o = factory.createPythonObject(state.clsIfExp);
+        PythonObject o = createPythonObject(state.clsIfExp);
         o.setAttribute(AstState.T_F_TEST, visitNonNull(node.test));
         o.setAttribute(AstState.T_F_BODY, visitNonNull(node.body));
         o.setAttribute(AstState.T_F_ORELSE, visitNonNull(node.orElse));
@@ -424,7 +424,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Dict node) {
-        PythonObject o = factory.createPythonObject(state.clsDict);
+        PythonObject o = createPythonObject(state.clsDict);
         o.setAttribute(AstState.T_F_KEYS, seq2List(node.keys));
         o.setAttribute(AstState.T_F_VALUES, seq2List(node.values));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -433,7 +433,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Set node) {
-        PythonObject o = factory.createPythonObject(state.clsSet);
+        PythonObject o = createPythonObject(state.clsSet);
         o.setAttribute(AstState.T_F_ELTS, seq2List(node.elements));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -441,7 +441,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.ListComp node) {
-        PythonObject o = factory.createPythonObject(state.clsListComp);
+        PythonObject o = createPythonObject(state.clsListComp);
         o.setAttribute(AstState.T_F_ELT, visitNonNull(node.element));
         o.setAttribute(AstState.T_F_GENERATORS, seq2List(node.generators));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -450,7 +450,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.SetComp node) {
-        PythonObject o = factory.createPythonObject(state.clsSetComp);
+        PythonObject o = createPythonObject(state.clsSetComp);
         o.setAttribute(AstState.T_F_ELT, visitNonNull(node.element));
         o.setAttribute(AstState.T_F_GENERATORS, seq2List(node.generators));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -459,7 +459,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.DictComp node) {
-        PythonObject o = factory.createPythonObject(state.clsDictComp);
+        PythonObject o = createPythonObject(state.clsDictComp);
         o.setAttribute(AstState.T_F_KEY, visitNonNull(node.key));
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         o.setAttribute(AstState.T_F_GENERATORS, seq2List(node.generators));
@@ -469,7 +469,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.GeneratorExp node) {
-        PythonObject o = factory.createPythonObject(state.clsGeneratorExp);
+        PythonObject o = createPythonObject(state.clsGeneratorExp);
         o.setAttribute(AstState.T_F_ELT, visitNonNull(node.element));
         o.setAttribute(AstState.T_F_GENERATORS, seq2List(node.generators));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -478,7 +478,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Await node) {
-        PythonObject o = factory.createPythonObject(state.clsAwait);
+        PythonObject o = createPythonObject(state.clsAwait);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -486,7 +486,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Yield node) {
-        PythonObject o = factory.createPythonObject(state.clsYield);
+        PythonObject o = createPythonObject(state.clsYield);
         o.setAttribute(AstState.T_F_VALUE, visitNullable(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -494,7 +494,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.YieldFrom node) {
-        PythonObject o = factory.createPythonObject(state.clsYieldFrom);
+        PythonObject o = createPythonObject(state.clsYieldFrom);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -502,7 +502,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Compare node) {
-        PythonObject o = factory.createPythonObject(state.clsCompare);
+        PythonObject o = createPythonObject(state.clsCompare);
         o.setAttribute(AstState.T_F_LEFT, visitNonNull(node.left));
         o.setAttribute(AstState.T_F_OPS, seq2List(node.ops));
         o.setAttribute(AstState.T_F_COMPARATORS, seq2List(node.comparators));
@@ -512,7 +512,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Call node) {
-        PythonObject o = factory.createPythonObject(state.clsCall);
+        PythonObject o = createPythonObject(state.clsCall);
         o.setAttribute(AstState.T_F_FUNC, visitNonNull(node.func));
         o.setAttribute(AstState.T_F_ARGS, seq2List(node.args));
         o.setAttribute(AstState.T_F_KEYWORDS, seq2List(node.keywords));
@@ -522,7 +522,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.FormattedValue node) {
-        PythonObject o = factory.createPythonObject(state.clsFormattedValue);
+        PythonObject o = createPythonObject(state.clsFormattedValue);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         o.setAttribute(AstState.T_F_CONVERSION, visitNonNull(node.conversion));
         o.setAttribute(AstState.T_F_FORMAT_SPEC, visitNullable(node.formatSpec));
@@ -532,7 +532,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.JoinedStr node) {
-        PythonObject o = factory.createPythonObject(state.clsJoinedStr);
+        PythonObject o = createPythonObject(state.clsJoinedStr);
         o.setAttribute(AstState.T_F_VALUES, seq2List(node.values));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -540,7 +540,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Constant node) {
-        PythonObject o = factory.createPythonObject(state.clsConstant);
+        PythonObject o = createPythonObject(state.clsConstant);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         o.setAttribute(AstState.T_F_KIND, visitNullableStringOrByteArray(node.kind));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -549,7 +549,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Attribute node) {
-        PythonObject o = factory.createPythonObject(state.clsAttribute);
+        PythonObject o = createPythonObject(state.clsAttribute);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         o.setAttribute(AstState.T_F_ATTR, visitNonNull(node.attr));
         o.setAttribute(AstState.T_F_CTX, visitNonNull(node.context));
@@ -559,7 +559,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Subscript node) {
-        PythonObject o = factory.createPythonObject(state.clsSubscript);
+        PythonObject o = createPythonObject(state.clsSubscript);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         o.setAttribute(AstState.T_F_SLICE, visitNonNull(node.slice));
         o.setAttribute(AstState.T_F_CTX, visitNonNull(node.context));
@@ -569,7 +569,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Starred node) {
-        PythonObject o = factory.createPythonObject(state.clsStarred);
+        PythonObject o = createPythonObject(state.clsStarred);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         o.setAttribute(AstState.T_F_CTX, visitNonNull(node.context));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -578,7 +578,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Name node) {
-        PythonObject o = factory.createPythonObject(state.clsName);
+        PythonObject o = createPythonObject(state.clsName);
         o.setAttribute(AstState.T_F_ID, visitNonNull(node.id));
         o.setAttribute(AstState.T_F_CTX, visitNonNull(node.context));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -587,7 +587,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.List node) {
-        PythonObject o = factory.createPythonObject(state.clsList);
+        PythonObject o = createPythonObject(state.clsList);
         o.setAttribute(AstState.T_F_ELTS, seq2List(node.elements));
         o.setAttribute(AstState.T_F_CTX, visitNonNull(node.context));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -596,7 +596,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Tuple node) {
-        PythonObject o = factory.createPythonObject(state.clsTuple);
+        PythonObject o = createPythonObject(state.clsTuple);
         o.setAttribute(AstState.T_F_ELTS, seq2List(node.elements));
         o.setAttribute(AstState.T_F_CTX, visitNonNull(node.context));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -605,7 +605,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExprTy.Slice node) {
-        PythonObject o = factory.createPythonObject(state.clsSlice);
+        PythonObject o = createPythonObject(state.clsSlice);
         o.setAttribute(AstState.T_F_LOWER, visitNullable(node.lower));
         o.setAttribute(AstState.T_F_UPPER, visitNullable(node.upper));
         o.setAttribute(AstState.T_F_STEP, visitNullable(node.step));
@@ -715,7 +715,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ComprehensionTy node) {
-        PythonObject o = factory.createPythonObject(state.clsComprehensionTy);
+        PythonObject o = createPythonObject(state.clsComprehensionTy);
         o.setAttribute(AstState.T_F_TARGET, visitNonNull(node.target));
         o.setAttribute(AstState.T_F_ITER, visitNonNull(node.iter));
         o.setAttribute(AstState.T_F_IFS, seq2List(node.ifs));
@@ -725,7 +725,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ExceptHandlerTy.ExceptHandler node) {
-        PythonObject o = factory.createPythonObject(state.clsExceptHandler);
+        PythonObject o = createPythonObject(state.clsExceptHandler);
         o.setAttribute(AstState.T_F_TYPE, visitNullable(node.type));
         o.setAttribute(AstState.T_F_NAME, visitNullable(node.name));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
@@ -735,7 +735,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ArgumentsTy node) {
-        PythonObject o = factory.createPythonObject(state.clsArgumentsTy);
+        PythonObject o = createPythonObject(state.clsArgumentsTy);
         o.setAttribute(AstState.T_F_POSONLYARGS, seq2List(node.posOnlyArgs));
         o.setAttribute(AstState.T_F_ARGS, seq2List(node.args));
         o.setAttribute(AstState.T_F_VARARG, visitNullable(node.varArg));
@@ -748,7 +748,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(ArgTy node) {
-        PythonObject o = factory.createPythonObject(state.clsArgTy);
+        PythonObject o = createPythonObject(state.clsArgTy);
         o.setAttribute(AstState.T_F_ARG, visitNonNull(node.arg));
         o.setAttribute(AstState.T_F_ANNOTATION, visitNullable(node.annotation));
         o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
@@ -758,7 +758,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(KeywordTy node) {
-        PythonObject o = factory.createPythonObject(state.clsKeywordTy);
+        PythonObject o = createPythonObject(state.clsKeywordTy);
         o.setAttribute(AstState.T_F_ARG, visitNullable(node.arg));
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -767,7 +767,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(AliasTy node) {
-        PythonObject o = factory.createPythonObject(state.clsAliasTy);
+        PythonObject o = createPythonObject(state.clsAliasTy);
         o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
         o.setAttribute(AstState.T_F_ASNAME, visitNullable(node.asName));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -776,7 +776,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(WithItemTy node) {
-        PythonObject o = factory.createPythonObject(state.clsWithItemTy);
+        PythonObject o = createPythonObject(state.clsWithItemTy);
         o.setAttribute(AstState.T_F_CONTEXT_EXPR, visitNonNull(node.contextExpr));
         o.setAttribute(AstState.T_F_OPTIONAL_VARS, visitNullable(node.optionalVars));
         return o;
@@ -784,7 +784,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(MatchCaseTy node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchCaseTy);
+        PythonObject o = createPythonObject(state.clsMatchCaseTy);
         o.setAttribute(AstState.T_F_PATTERN, visitNonNull(node.pattern));
         o.setAttribute(AstState.T_F_GUARD, visitNullable(node.guard));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
@@ -793,7 +793,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(PatternTy.MatchValue node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchValue);
+        PythonObject o = createPythonObject(state.clsMatchValue);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -801,7 +801,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(PatternTy.MatchSingleton node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchSingleton);
+        PythonObject o = createPythonObject(state.clsMatchSingleton);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -809,7 +809,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(PatternTy.MatchSequence node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchSequence);
+        PythonObject o = createPythonObject(state.clsMatchSequence);
         o.setAttribute(AstState.T_F_PATTERNS, seq2List(node.patterns));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -817,7 +817,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(PatternTy.MatchMapping node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchMapping);
+        PythonObject o = createPythonObject(state.clsMatchMapping);
         o.setAttribute(AstState.T_F_KEYS, seq2List(node.keys));
         o.setAttribute(AstState.T_F_PATTERNS, seq2List(node.patterns));
         o.setAttribute(AstState.T_F_REST, visitNullable(node.rest));
@@ -827,7 +827,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(PatternTy.MatchClass node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchClass);
+        PythonObject o = createPythonObject(state.clsMatchClass);
         o.setAttribute(AstState.T_F_CLS, visitNonNull(node.cls));
         o.setAttribute(AstState.T_F_PATTERNS, seq2List(node.patterns));
         o.setAttribute(AstState.T_F_KWD_ATTRS, seq2List(node.kwdAttrs));
@@ -838,7 +838,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(PatternTy.MatchStar node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchStar);
+        PythonObject o = createPythonObject(state.clsMatchStar);
         o.setAttribute(AstState.T_F_NAME, visitNullable(node.name));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -846,7 +846,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(PatternTy.MatchAs node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchAs);
+        PythonObject o = createPythonObject(state.clsMatchAs);
         o.setAttribute(AstState.T_F_PATTERN, visitNullable(node.pattern));
         o.setAttribute(AstState.T_F_NAME, visitNullable(node.name));
         fillSourceRangeAttributes(o, node.getSourceRange());
@@ -855,7 +855,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(PatternTy.MatchOr node) {
-        PythonObject o = factory.createPythonObject(state.clsMatchOr);
+        PythonObject o = createPythonObject(state.clsMatchOr);
         o.setAttribute(AstState.T_F_PATTERNS, seq2List(node.patterns));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
@@ -863,7 +863,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
     @Override
     public Object visit(TypeIgnoreTy.TypeIgnore node) {
-        PythonObject o = factory.createPythonObject(state.clsTypeIgnore);
+        PythonObject o = createPythonObject(state.clsTypeIgnore);
         o.setAttribute(AstState.T_F_LINENO, visitNonNull(node.lineNo));
         o.setAttribute(AstState.T_F_TAG, visitNonNullStringOrByteArray(node.tag));
         return o;

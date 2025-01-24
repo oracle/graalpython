@@ -52,6 +52,7 @@ import java.util.TimeZone;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -92,7 +93,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleSafepoint;
@@ -185,9 +186,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         boolean hasDaylightSaving = !noDaylightSavingZone.equalsUncached(daylightSavingZone, TS_ENCODING);
         if (hasDaylightSaving) {
-            timeModule.setAttribute(T_TZNAME, core.factory().createTuple(new Object[]{noDaylightSavingZone, daylightSavingZone}));
+            timeModule.setAttribute(T_TZNAME, PFactory.createTuple(core.getLanguage(), new Object[]{noDaylightSavingZone, daylightSavingZone}));
         } else {
-            timeModule.setAttribute(T_TZNAME, core.factory().createTuple(new Object[]{noDaylightSavingZone}));
+            timeModule.setAttribute(T_TZNAME, PFactory.createTuple(core.getLanguage(), new Object[]{noDaylightSavingZone}));
         }
 
         timeModule.setAttribute(T_DAYLIGHT, PInt.intValue(hasDaylightSaving));
@@ -318,8 +319,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         static PTuple gmtime(VirtualFrame frame, Object seconds,
                         @Bind("this") Node inliningTarget,
                         @Cached ToLongTime toLongTime,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, inliningTarget, seconds)));
+                        @Bind PythonLanguage language) {
+            return PFactory.createStructSeq(language, STRUCT_TIME_DESC, getTimeStruct(GMT, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -354,9 +355,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         static PTuple localtime(VirtualFrame frame, PythonModule module, Object seconds,
                         @Bind("this") Node inliningTarget,
                         @Cached ToLongTime toLongTime,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ModuleState moduleState = module.getModuleState(ModuleState.class);
-            return factory.createStructSeq(STRUCT_TIME_DESC, getTimeStruct(moduleState.currentZoneId, toLongTime.execute(frame, inliningTarget, seconds)));
+            return PFactory.createStructSeq(language, STRUCT_TIME_DESC, getTimeStruct(moduleState.currentZoneId, toLongTime.execute(frame, inliningTarget, seconds)));
         }
     }
 
@@ -1113,7 +1114,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached WriteAttributeToPythonObjectNode writeAttrNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             final boolean adjustable;
             final boolean monotonic;
@@ -1129,7 +1130,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
             }
 
-            final PSimpleNamespace ns = factory.createSimpleNamespace();
+            final PSimpleNamespace ns = PFactory.createSimpleNamespace(language);
             writeAttrNode.execute(ns, T_ADJUSTABLE, adjustable);
             writeAttrNode.execute(ns, T_IMPLEMENTATION, name);
             writeAttrNode.execute(ns, T_MONOTONIC, monotonic);

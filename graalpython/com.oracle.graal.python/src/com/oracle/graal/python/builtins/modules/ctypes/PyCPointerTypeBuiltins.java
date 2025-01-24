@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -84,7 +85,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -128,13 +129,13 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * stgdict items size, align, length contain info about pointers itself, stgdict.proto
              * has info about the pointed to type!
              */
-            StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
+            StgDictObject stgdict = PFactory.createStgDictObject(language);
             stgdict.size = StgDictObject.VOID_PTR_SIZE;
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
@@ -168,7 +169,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
             /* replace the class dict by our updated spam dict */
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory.createDictFixedStorage((PythonObject) result);
+                resDict = PFactory.createDictFixedStorage(language, (PythonObject) result);
             }
             addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
             setDict.execute(inliningTarget, result, stgdict);
@@ -185,7 +186,6 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
         /* _byref consumes a refcount to its argument */
         static PyCArgObject byref(Node inliningTarget, Object obj,
                         PyTypeCheck pyTypeCheck,
-                        PythonObjectFactory factory,
                         PRaiseNode.Lazy raiseNode) {
             if (!pyTypeCheck.isCDataObject(inliningTarget, obj)) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, EXPECTED_CDATA_INSTANCE);
@@ -193,7 +193,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
 
             CDataObject cdata = (CDataObject) obj;
 
-            PyCArgObject parg = factory.createCArgObject();
+            PyCArgObject parg = PFactory.createCArgObject(PythonLanguage.get(inliningTarget));
             parg.tag = 'P';
             parg.pffi_type = ffi_type_pointer;
             parg.obj = cdata;
@@ -217,7 +217,6 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CDataTypeFromParamNode fromParamNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             StgDictObject typedict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             /*
@@ -225,7 +224,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
              * byref(<type>).
              */
             if (isInstanceNode.executeWith(frame, value, typedict.proto)) {
-                return byref(inliningTarget, value, pyTypeCheck, factory, raiseNode);
+                return byref(inliningTarget, value, pyTypeCheck, raiseNode);
             }
 
             if (pyTypeCheck.isPointerObject(inliningTarget, value) || pyTypeCheck.isArrayObject(inliningTarget, value)) {

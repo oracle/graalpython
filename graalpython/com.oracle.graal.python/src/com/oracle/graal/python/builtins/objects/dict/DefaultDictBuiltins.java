@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -75,7 +76,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -124,11 +125,11 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             final Object defaultFactory = self.getDefaultFactory();
-            PTuple args = (defaultFactory == PNone.NONE) ? factory.createEmptyTuple() : factory.createTuple(new Object[]{defaultFactory});
-            Object iter = getIter.execute(frame, inliningTarget, factory.createDictItemsView(self));
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args, PNone.NONE, PNone.NONE, iter});
+            PTuple args = (defaultFactory == PNone.NONE) ? PFactory.createEmptyTuple(language) : PFactory.createTuple(language, new Object[]{defaultFactory});
+            Object iter = getIter.execute(frame, inliningTarget, PFactory.createDictItemsView(language, self));
+            return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, self), args, PNone.NONE, PNone.NONE, iter});
         }
     }
 
@@ -140,8 +141,8 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         static PDefaultDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDefaultDict self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDefaultDict(self.getDefaultFactory(), copyNode.execute(inliningTarget, self.getDictStorage()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createDefaultDict(language, self.getDefaultFactory(), copyNode.execute(inliningTarget, self.getDictStorage()));
         }
     }
 

@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -58,8 +59,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -125,12 +127,12 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == UINT_64")
         static Object unpackUnsignedLong(Node inliningTarget, @SuppressWarnings("unused") BufferFormat format, Object buffer, int offset,
+                        @Bind PythonLanguage language,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached InlinedConditionProfile needsPIntProfile,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached InlinedConditionProfile needsPIntProfile) {
             long signedLong = bufferLib.readLong(buffer, offset);
             if (needsPIntProfile.profile(inliningTarget, signedLong < 0)) {
-                return factory.createInt(PInt.longToUnsignedBigInteger(signedLong));
+                return PFactory.createInt(language, PInt.longToUnsignedBigInteger(signedLong));
             } else {
                 return signedLong;
             }
@@ -156,9 +158,9 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == CHAR")
         static PBytes unpackChar(@SuppressWarnings("unused") BufferFormat format, Object buffer, int offset,
-                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createBytes(new byte[]{bufferLib.readByte(buffer, offset)});
+                        @Bind PythonLanguage language,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+            return PFactory.createBytes(language, new byte[]{bufferLib.readByte(buffer, offset)});
         }
 
         @Specialization(guards = "format == UNICODE")

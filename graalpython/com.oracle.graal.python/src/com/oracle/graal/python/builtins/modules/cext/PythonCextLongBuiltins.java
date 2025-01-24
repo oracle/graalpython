@@ -59,6 +59,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -84,7 +85,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -275,16 +276,16 @@ public final class PythonCextLongBuiltins {
         @Specialization(guards = "!isInteger(pointer)", limit = "2")
         static Object doPointer(Object pointer,
                         @CachedLibrary("pointer") InteropLibrary lib,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
             if (lib.isPointer(pointer)) {
                 try {
-                    return factory.createNativeVoidPtr(pointer, lib.asPointer(pointer));
+                    return PFactory.createNativeVoidPtr(language, pointer, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            return factory.createNativeVoidPtr(pointer);
+            return PFactory.createNativeVoidPtr(language, pointer);
         }
     }
 
@@ -308,23 +309,23 @@ public final class PythonCextLongBuiltins {
 
         @Specialization(guards = "n < 0")
         static Object doUnsignedLongNegative(long n,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(convertToBigInteger(n));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, convertToBigInteger(n));
         }
 
         @Specialization(guards = "!isInteger(pointer)", limit = "2")
         static Object doPointer(Object pointer,
                         @CachedLibrary("pointer") InteropLibrary lib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
             if (lib.isPointer(pointer)) {
                 try {
-                    return factory.createNativeVoidPtr(pointer, lib.asPointer(pointer));
+                    return PFactory.createNativeVoidPtr(language, pointer, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            return factory.createNativeVoidPtr(pointer);
+            return PFactory.createNativeVoidPtr(language, pointer);
         }
 
         @TruffleBoundary

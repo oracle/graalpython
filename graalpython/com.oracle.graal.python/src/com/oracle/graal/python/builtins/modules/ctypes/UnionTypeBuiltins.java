@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,7 +61,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -102,10 +101,9 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
                         @Shared @Cached WriteAttributeToObjectNode write,
                         @Shared @Cached TruffleString.EqualNode equalNode,
-                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-            updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict, factory);
+            updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict);
         }
 
         // @Exclusive to address warning
@@ -118,17 +116,16 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
                         @Shared @Cached WriteAttributeToObjectNode write,
                         @Shared @Cached TruffleString.EqualNode equalNode,
-                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
             TruffleString key = GenericSetAttrNode.castAttributeKey(inliningTarget, keyObject, castKeyNode, raiseNode);
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-            updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict, factory);
+            updateStgDictIfNecessary(frame, object, key, value, equalNode, updateStgDict);
         }
 
         private static void updateStgDictIfNecessary(VirtualFrame frame, Object object, TruffleString key, Object value,
-                        EqualNode equalNode, PyCStructUnionTypeUpdateStgDict updateStgDict, PythonObjectFactory factory) {
+                        EqualNode equalNode, PyCStructUnionTypeUpdateStgDict updateStgDict) {
             if (equalNode.execute(key, StructUnionTypeBuiltins.T__FIELDS_, TS_ENCODING)) {
-                updateStgDict.execute(frame, object, value, false, factory);
+                updateStgDict.execute(frame, object, value, false);
             }
         }
     }

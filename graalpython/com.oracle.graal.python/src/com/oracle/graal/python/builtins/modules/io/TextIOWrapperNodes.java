@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EncodingWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.T_INCREMENTALDECODER;
 import static com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.T_INCREMENTALENCODER;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
@@ -77,6 +76,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.MakeIncrementalcodecNode;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -100,7 +100,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -199,10 +199,10 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasPendingBytes()")
         static void writeflush(VirtualFrame frame, Node inliningTarget, PTextIO self,
-                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             byte[] pending = self.getAndClearPendingBytes();
-            PBytes b = factory.createBytes(pending);
+            PBytes b = PFactory.createBytes(language, pending);
             callMethod.execute(frame, inliningTarget, self.getBuffer(), T_WRITE, b);
             // TODO: check _PyIO_trap_eintr
         }
@@ -631,10 +631,10 @@ public abstract class TextIOWrapperNodes {
     @GenerateCached(false)
     protected abstract static class DecoderSetStateNode extends Node {
 
-        public abstract void execute(VirtualFrame frame, Node inliningTarget, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PTextIO self, PTextIO.CookieType cookie);
 
         @Specialization(guards = "!self.hasDecoder()")
-        static void nothing(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static void nothing(@SuppressWarnings("unused") PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie) {
             // nothing to do.
         }
 
@@ -650,15 +650,16 @@ public abstract class TextIOWrapperNodes {
         }
 
         @Specialization(guards = {"self.hasDecoder()", "isAtInit(cookie)"})
-        static void atInit(VirtualFrame frame, Node inliningTarget, PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory,
+        static void atInit(VirtualFrame frame, Node inliningTarget, PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReset) {
             callMethodReset.execute(frame, inliningTarget, self.getDecoder(), T_RESET);
         }
 
         @Specialization(guards = {"self.hasDecoder()", "!isAtInit(cookie)"})
-        static void decoderSetstate(VirtualFrame frame, Node inliningTarget, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory,
+        static void decoderSetstate(VirtualFrame frame, Node inliningTarget, PTextIO self, PTextIO.CookieType cookie,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodSetState) {
-            PTuple tuple = factory.createTuple(new Object[]{factory.createEmptyBytes(), cookie.decFlags});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{PFactory.createEmptyBytes(language), cookie.decFlags});
             callMethodSetState.execute(frame, inliningTarget, self.getDecoder(), T_SETSTATE, tuple);
 
         }
@@ -747,15 +748,14 @@ public abstract class TextIOWrapperNodes {
                         @Cached(inline = false) MakeIncrementalcodecNode makeIncrementalcodecNode,
                         @Cached InlinedConditionProfile isTrueProfile,
                         @Cached PyObjectCallMethodObjArgs callMethodReadable,
-                        @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object res = callMethodReadable.execute(frame, inliningTarget, self.getBuffer(), T_READABLE);
             if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
                 return;
             }
             Object decoder = makeIncrementalcodecNode.execute(frame, codecInfo, errors, T_INCREMENTALDECODER);
             if (self.isReadUniversal()) {
-                PNLDecoder incDecoder = factory.createNLDecoder(PIncrementalNewlineDecoder);
+                PNLDecoder incDecoder = PFactory.createNLDecoder(PythonLanguage.get(inliningTarget));
                 IncrementalNewlineDecoderBuiltins.InitNode.internalInit(incDecoder, decoder, self.isReadTranslate());
                 self.setDecoder(incDecoder);
             } else {

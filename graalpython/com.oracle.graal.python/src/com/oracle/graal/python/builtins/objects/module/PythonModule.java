@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -41,7 +41,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -109,9 +109,9 @@ public final class PythonModule extends PythonObject {
      */
     @TruffleBoundary
     public static PythonModule createInternal(TruffleString moduleName) {
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        PythonModule pythonModule = new PythonModule(PythonLanguage.get(null), moduleName);
-        PDict dict = factory.createDictFixedStorage(pythonModule);
+        PythonLanguage language = PythonLanguage.get(null);
+        PythonModule pythonModule = new PythonModule(language, moduleName);
+        PDict dict = PFactory.createDictFixedStorage(language, pythonModule);
         SetDictNode.executeUncached(pythonModule, dict);
         return pythonModule;
     }

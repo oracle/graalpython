@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
@@ -87,6 +86,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -117,7 +117,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -283,7 +283,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached IONodes.ToTruffleStringNode toTruffleStringNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             TruffleString newline;
 
@@ -317,7 +317,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
 
             if (self.isReadUniversal()) {
-                Object incDecoder = factory.createNLDecoder(PIncrementalNewlineDecoder);
+                Object incDecoder = PFactory.createNLDecoder(language);
                 initNode.execute(frame, incDecoder, self.getDecoder(), self.isReadTranslate(), PNone.NO_VALUE);
                 self.setDecoder(incDecoder);
             }
@@ -632,11 +632,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetValueNode getValueNode,
                         @Cached GetOrCreateDictNode getDict,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object initValue = getValueNode.execute(frame, self);
             Object readnl = self.getReadNewline() == null ? PNone.NONE : self.getReadNewline();
             Object[] state = new Object[]{initValue, readnl, self.getPos(), getDict.execute(inliningTarget, self)};
-            return factory.createTuple(state);
+            return PFactory.createTuple(language, state);
         }
     }
 

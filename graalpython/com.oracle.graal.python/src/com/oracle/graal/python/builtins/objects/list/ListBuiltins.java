@@ -55,6 +55,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -80,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
@@ -111,7 +113,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -313,7 +315,7 @@ public final class ListBuiltins extends PythonBuiltins {
             }
             var sequenceStorage = getStorageNode.execute(inliningTarget, self);
             return subscriptNode.execute(frame, inliningTarget, sequenceStorage, idx,
-                            ErrorMessages.LIST_INDEX_OUT_OF_RANGE, PythonObjectFactory::createList);
+                            ErrorMessages.LIST_INDEX_OUT_OF_RANGE, PFactory::createList);
         }
 
         @InliningCutoff
@@ -458,10 +460,11 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copy,
                         @Cached GetClassForNewListNode getClassForNewListNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, list);
             Object newClass = getClassForNewListNode.execute(inliningTarget, list);
-            return factory.createList(newClass, copy.execute(inliningTarget, sequenceStorage));
+            return PFactory.createList(language, newClass, getInstanceShape.execute(newClass), copy.execute(inliningTarget, sequenceStorage));
         }
 
     }
@@ -749,7 +752,8 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached GetListStorageNode getStorageNode,
                         @Cached GetClassForNewListNode getClassForNewListNode,
                         @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!isListNode.execute(inliningTarget, right)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "list", right, "list");
@@ -759,7 +763,7 @@ public final class ListBuiltins extends PythonBuiltins {
             var rightStorage = getStorageNode.execute(inliningTarget, right);
             SequenceStorage newStore = concatNode.execute(leftStorage, rightStorage);
             Object newClass = getClassForNewListNode.execute(inliningTarget, left);
-            return factory.createList(newClass, newStore);
+            return PFactory.createList(language, newClass, getInstanceShape.execute(newClass), newStore);
         }
 
         @NeverDefault
@@ -800,7 +804,7 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached PyListCheckNode isListNode,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!isListNode.execute(inliningTarget, left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -809,7 +813,7 @@ public final class ListBuiltins extends PythonBuiltins {
             var sequenceStorage = getStorageNode.execute(inliningTarget, left);
             try {
                 SequenceStorage repeated = repeatNode.execute(frame, sequenceStorage, right);
-                return factory.createList(repeated);
+                return PFactory.createList(language, repeated);
             } catch (ArithmeticException | OutOfMemoryError e) {
                 throw raiseNode.get(inliningTarget).raise(MemoryError);
             }
@@ -829,10 +833,6 @@ public final class ListBuiltins extends PythonBuiltins {
             SequenceStorage updated = repeatNode.execute(frame, store, right);
             updateStorageNode.execute(inliningTarget, list, store, updated);
             return list;
-        }
-
-        protected IMulNode createIMulNode() {
-            return ListBuiltinsFactory.IMulNodeFactory.create();
         }
     }
 
@@ -1040,26 +1040,26 @@ public final class ListBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isIntStorage(primary)"})
         static PIntegerSequenceIterator doPListInt(PList primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createIntegerSequenceIterator(language, (IntSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isLongStorage(primary)"})
         static PLongSequenceIterator doPListLong(PList primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createLongSequenceIterator(language, (LongSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isDoubleStorage(primary)"})
         static PDoubleSequenceIterator doPListDouble(PList primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createDoubleSequenceIterator(language, (DoubleSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Fallback
         static PSequenceIterator doOther(Object primary,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSequenceIterator(primary);
+                        @Bind PythonLanguage language) {
+            return PFactory.createSequenceIterator(language, primary);
         }
     }
 
@@ -1070,9 +1070,9 @@ public final class ListBuiltins extends PythonBuiltins {
         static Object reverse(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetListStorageNode getStorage,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             int len = getStorage.execute(inliningTarget, self).length();
-            return factory.createSequenceReverseIterator(PythonBuiltinClassType.PReverseIterator, self, len);
+            return PFactory.createSequenceReverseIterator(language, self, len);
         }
     }
 
@@ -1081,8 +1081,8 @@ public final class ListBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

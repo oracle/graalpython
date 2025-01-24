@@ -70,7 +70,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -253,9 +253,8 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void postInitialize(Python3Core core) {
-        PythonObjectSlowPathFactory factory = core.factory();
         PythonModule self = core.lookupBuiltinModule(T__ASYNCIO);
-        self.setAttribute(CURRENT_TASKS_ATTR, factory.createDict());
+        self.setAttribute(CURRENT_TASKS_ATTR, PFactory.createDict(core.getLanguage()));
         Object weakref = AbstractImportNode.importModule(WEAKREF);
         Object weakSetCls = PyObjectGetAttr.executeUncached(weakref, WEAKSET);
         Object weakSet = CallNode.executeUncached(weakSetCls);

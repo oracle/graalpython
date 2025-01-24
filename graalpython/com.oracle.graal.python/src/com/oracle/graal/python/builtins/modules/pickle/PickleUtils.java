@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.graalvm.collections.Pair;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
@@ -60,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -373,9 +374,9 @@ public final class PickleUtils {
         }
     }
 
-    public static Object reconstructMethod(PythonObjectFactory factory, Object func, Object self) {
+    public static Object reconstructMethod(PythonLanguage language, Object func, Object self) {
         if (self != null) {
-            return factory.createMethod(self, func);
+            return PFactory.createMethod(language, self, func);
         }
         return func;
     }

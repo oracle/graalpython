@@ -51,7 +51,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -127,7 +127,6 @@ public abstract class PyLongFromUnicodeObject extends Node {
                         @Cached InlinedBranchProfile invalidBase,
                         @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
                         @Cached InlinedBranchProfile invalidValueProfile,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode,
                         @Cached StringNodes.StringReprNode stringReprNode,
                         @Cached BytesNodes.BytesReprNode bytesReprNode) {
@@ -138,14 +137,14 @@ public abstract class PyLongFromUnicodeObject extends Node {
             }
             notSimpleDecimalLiteralProfile.enter(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
-            Object value = stringToIntInternal(number, base, context, factory);
+            Object value = stringToIntInternal(number, base, context);
             if (value == null) {
                 invalidValueProfile.enter(inliningTarget);
                 Object repr;
                 if (originalBytes == null) {
                     repr = stringReprNode.execute(numberTs);
                 } else {
-                    repr = bytesReprNode.execute(inliningTarget, factory.createBytes(originalBytes, originalBytesLen));
+                    repr = bytesReprNode.execute(inliningTarget, PFactory.createBytes(context.getLanguage(inliningTarget), originalBytes, originalBytesLen));
                 }
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, repr);
             }
@@ -153,14 +152,14 @@ public abstract class PyLongFromUnicodeObject extends Node {
         }
 
         @TruffleBoundary
-        private static Object stringToIntInternal(String num, int base, PythonContext context, PythonObjectFactory factory) {
+        private static Object stringToIntInternal(String num, int base, PythonContext context) {
             try {
                 BigInteger bi = asciiToBigInteger(num, base, context);
                 if (bi == null) {
                     return null;
                 }
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
-                    return factory.createInt(bi);
+                    return PFactory.createInt(context.getLanguage(), bi);
                 } else {
                     return bi.intValue();
                 }

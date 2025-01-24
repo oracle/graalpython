@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -46,7 +47,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -110,16 +111,16 @@ public final class SentinelIteratorBuiltins extends PythonBuiltins {
         static Object reduce(VirtualFrame frame, PSentinelIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
             Object iter = getAttr.execute(frame, inliningTarget, builtins, T_ITER);
             Object[] args;
             if (self.sentinelReached()) {
-                args = new Object[]{factory.createEmptyTuple()};
+                args = new Object[]{PFactory.createEmptyTuple(language)};
             } else {
                 args = new Object[]{self.getCallable(), self.getSentinel()};
             }
-            return factory.createTuple(new Object[]{iter, factory.createTuple(args)});
+            return PFactory.createTuple(language, new Object[]{iter, PFactory.createTuple(language, args)});
         }
     }
 }

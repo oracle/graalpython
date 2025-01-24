@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,7 +71,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.NFIBz2Support;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -134,24 +134,25 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
     abstract static class CompressNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
+        static PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
-            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+            return PFactory.createBytes(context.getLanguage(inliningTarget), compress.compress(self, context, bytes, len));
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Compressor self, Object data,
+        static PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Compressor self, Object data,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
-            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+            return PFactory.createBytes(context.getLanguage(inliningTarget), compress.compress(self, context, bytes, len));
         }
 
         @SuppressWarnings("unused")
@@ -167,11 +168,12 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doit(BZ2Object.BZ2Compressor self,
-                        @Cached Bz2Nodes.Bz2NativeCompress compress,
-                        @Cached PythonObjectFactory factory) {
+        static PBytes doit(BZ2Object.BZ2Compressor self,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached Bz2Nodes.Bz2NativeCompress compress) {
             self.setFlushed();
-            return factory.createBytes(compress.flush(self, PythonContext.get(this)));
+            return PFactory.createBytes(context.getLanguage(inliningTarget), compress.flush(self, context));
         }
 
         @SuppressWarnings("unused")

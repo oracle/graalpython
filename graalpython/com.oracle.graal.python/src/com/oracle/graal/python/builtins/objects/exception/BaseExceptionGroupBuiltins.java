@@ -88,8 +88,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -116,12 +115,12 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
 
     private static void createExceptionGroupType(Python3Core core) {
         PythonModule builtins = core.getBuiltins();
+        PythonLanguage language = core.getLanguage();
         Object typeBuiltin = builtins.getAttribute(T_TYPE);
-        PythonObjectSlowPathFactory factory = core.factory();
-        PTuple bases = factory.createTuple(new Object[]{PythonBuiltinClassType.PBaseExceptionGroup, PythonBuiltinClassType.Exception});
+        PTuple bases = PFactory.createTuple(language, new Object[]{PythonBuiltinClassType.PBaseExceptionGroup, PythonBuiltinClassType.Exception});
         EconomicMapStorage dictStorage = EconomicMapStorage.create(1);
         dictStorage.putUncachedWithJavaEq(T___MODULE__, T_BUILTINS);
-        PDict dict = factory.createDict(dictStorage);
+        PDict dict = PFactory.createDict(language, dictStorage);
         Object exceptionGroupType = CallNode.executeUncached(typeBuiltin, T_EXCEPTION_GROUP, bases, dict);
         builtins.setAttribute(T_EXCEPTION_GROUP, exceptionGroupType);
     }
@@ -166,8 +165,8 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
     abstract static class ExceptionsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object exceptions(PBaseExceptionGroup self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTuple(self.getExceptions());
+                        @Bind PythonLanguage language) {
+            return PFactory.createTuple(language, self.getExceptions());
         }
     }
 
@@ -188,8 +187,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         if (exceptions.length == 0) {
             return null;
         }
-        PythonObjectSlowPathFactory factory = PythonContext.get(inliningTarget).factory();
-        Object egObj = PyObjectCallMethodObjArgs.executeUncached(orig, T_DERIVE, factory.createTuple(exceptions));
+        Object egObj = PyObjectCallMethodObjArgs.executeUncached(orig, T_DERIVE, PFactory.createTuple(PythonLanguage.get(null), exceptions));
         if (!(egObj instanceof PBaseExceptionGroup eg)) {
             throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.DERIVE_MUST_RETURN_AN_INSTANCE_OF_BASE_EXCEPTION_GROUP);
         }
@@ -257,7 +255,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
 
     private record SplitResult(Object match, Object rest) {
         static final SplitResult EMPTY = new SplitResult(null, null);
-    };
+    }
 
     @TruffleBoundary
     private static SplitResult splitRecursive(Node inliningTarget, Object exception, MatcherType matcherType, Object matcherValue, boolean constructRest) {
@@ -310,8 +308,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         @Specialization
         static Object split(VirtualFrame frame, PBaseExceptionGroup self, Object matcherValue,
                         @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
@@ -327,7 +324,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
             }
             Object match = result.match != null ? result.match : PNone.NONE;
             Object rest = result.rest != null ? result.rest : PNone.NONE;
-            return factory.createTuple(new Object[]{match, rest});
+            return PFactory.createTuple(language, new Object[]{match, rest});
         }
     }
 
@@ -360,8 +357,8 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
     abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

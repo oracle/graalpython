@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,13 +44,13 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -63,10 +63,10 @@ public final class PythonCextClassBuiltins {
         @Specialization
         static Object staticmethod(Object func,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             checkNonNullArg(inliningTarget, func, raiseNode);
-            PDecoratedMethod res = factory.createInstancemethod(PythonBuiltinClassType.PInstancemethod);
+            PDecoratedMethod res = PFactory.createInstancemethod(language);
             res.setCallable(func);
             return res;
         }
@@ -77,12 +77,12 @@ public final class PythonCextClassBuiltins {
         @Specialization
         static Object methodNew(Object func, Object self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             checkNonNullArg(inliningTarget, func, self, raiseNode);
             // Note: CPython also constructs the object directly, without running the constructor or
             // checking the inputs
-            return factory.createMethod(self, func);
+            return PFactory.createMethod(language, self, func);
         }
     }
 }

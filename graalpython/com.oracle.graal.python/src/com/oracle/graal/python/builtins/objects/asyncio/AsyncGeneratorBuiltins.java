@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -58,7 +59,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -93,9 +94,8 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
         @Specialization
         static Object getCode(PAsyncGen self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasCodeProfile,
-                        @Cached PythonObjectFactory.Lazy factory) {
-            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory);
+                        @Cached InlinedConditionProfile hasCodeProfile) {
+            return self.getOrCreateCode(inliningTarget, hasCodeProfile);
         }
     }
 
@@ -136,9 +136,9 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             callHooks(frame, self, context.getThreadState(context.getLanguage(inliningTarget)), callFirstIter);
-            return factory.createAsyncGeneratorASend(self, sent);
+            return PFactory.createAsyncGeneratorASend(language, self, sent);
         }
     }
 
@@ -152,9 +152,9 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             callHooks(frame, self, context.getThreadState(context.getLanguage(inliningTarget)), callFirstIter);
-            return factory.createAsyncGeneratorAThrow(self, arg1, arg2, arg3);
+            return PFactory.createAsyncGeneratorAThrow(language, self, arg1, arg2, arg3);
         }
     }
 
@@ -175,9 +175,9 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             callHooks(frame, self, context.getThreadState(context.getLanguage(inliningTarget)), callFirstIter);
-            return factory.createAsyncGeneratorASend(self, PNone.NONE);
+            return PFactory.createAsyncGeneratorASend(language, self, PNone.NONE);
         }
     }
 
@@ -189,9 +189,9 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             callHooks(frame, self, context.getThreadState(context.getLanguage(inliningTarget)), callFirstIter);
-            return factory.createAsyncGeneratorAThrow(self, null, PNone.NO_VALUE, PNone.NO_VALUE);
+            return PFactory.createAsyncGeneratorAThrow(language, self, null, PNone.NO_VALUE, PNone.NO_VALUE);
         }
     }
 
@@ -200,8 +200,8 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

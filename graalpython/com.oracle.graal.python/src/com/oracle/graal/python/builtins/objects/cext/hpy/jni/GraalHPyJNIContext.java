@@ -172,6 +172,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
@@ -197,7 +198,7 @@ import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -243,7 +244,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     private static boolean jniBackendLoaded = false;
 
-    private final PythonObjectSlowPathFactory slowPathFactory;
     private final int[] counts;
 
     private final int[] ctypeSizes;
@@ -271,7 +271,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     public GraalHPyJNIContext(GraalHPyContext context, boolean traceUpcalls) {
         super(context, traceUpcalls);
         assert !PythonImageBuildOptions.WITHOUT_JNI;
-        this.slowPathFactory = context.getContext().factory();
         this.counts = traceUpcalls ? new int[HPyJNIUpcall.VALUES.length] : null;
         this.ctypeSizes = new int[HPyContextSignatureType.values().length];
         this.cfieldOffsets = new int[GraalHPyCField.values().length];
@@ -1245,6 +1244,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     private long createHPyObject(long typeHandle, long dataOutVar) {
+        PythonLanguage language = context.getContext().getLanguage();
         Object type = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle));
         PythonObject pythonObject;
 
@@ -1257,7 +1257,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             long basicSize = clazz.getBasicSize();
             if (basicSize == -1) {
                 // create the managed Python object
-                pythonObject = slowPathFactory.createPythonObject(clazz, clazz.getInstanceShape());
+                pythonObject = PFactory.createPythonObject(language, clazz, clazz.getInstanceShape());
             } else {
                 /*
                  * Since this is a JNI upcall method, we know that (1) we are not running in some
@@ -1269,7 +1269,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 if (dataOutVar != 0) {
                     UNSAFE.putAddress(dataOutVar, dataPtr);
                 }
-                pythonObject = slowPathFactory.createPythonHPyObject(clazz, dataPtr);
+                pythonObject = PFactory.createPythonHPyObject(language, clazz, clazz.getInstanceShape(), dataPtr);
                 Object destroyFunc = clazz.getHPyDestroyFunc();
                 context.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
             }
@@ -1283,7 +1283,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, PythonBuiltinClassType.TypeError, ErrorMessages.HPY_NEW_ARG_1_MUST_BE_A_TYPE);
             }
             // TODO(fa): this should actually call __new__
-            pythonObject = slowPathFactory.createPythonObject(type);
+            pythonObject = PFactory.createPythonObject(language, type, TypeNodes.GetInstanceShape.executeUncached(type));
         }
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(pythonObject));
     }
@@ -1363,7 +1363,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
 
     public long ctxDictNew() {
         increment(HPyJNIUpcall.HPyDictNew);
-        PDict dict = slowPathFactory.createDict();
+        PDict dict = PFactory.createDict(context.getContext().getLanguage());
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(dict));
     }
 
@@ -1373,7 +1373,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             int len = CastToJavaIntExactNode.executeUncached(llen);
             Object[] data = new Object[len];
             Arrays.fill(data, PNone.NONE);
-            PList list = slowPathFactory.createList(data);
+            PList list = PFactory.createList(context.getContext().getLanguage(), data);
             return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(list));
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
@@ -1399,10 +1399,11 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             }
         }
         Object result;
+        PythonLanguage language = context.getContext().getLanguage();
         if (create_list) {
-            result = slowPathFactory.createList(objects);
+            result = PFactory.createList(language, objects);
         } else {
-            result = slowPathFactory.createTuple(objects);
+            result = PFactory.createTuple(language, objects);
         }
         return GraalHPyBoxing.boxHandle(context.getHPyHandleForObject(result));
     }
@@ -1521,7 +1522,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         } else {
             hpyDestructor = 0;
         }
-        PyCapsule result = slowPathFactory.createCapsuleNativeName(pointer, new NativePointer(name));
+        PyCapsule result = PFactory.createCapsuleNativeName(context.getContext().getLanguage(), pointer, new NativePointer(name));
         if (hpyDestructor != 0) {
             result.registerDestructor(hpyDestructor);
         }

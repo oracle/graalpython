@@ -64,6 +64,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.PrintWriter;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
@@ -135,7 +136,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -538,12 +539,12 @@ public abstract class PythonCextObjectBuiltins {
 
         @Specialization(guards = "isNoValue(obj)")
         static Object bytesNoValue(@SuppressWarnings("unused") Object obj,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             /*
              * Note: CPython calls PyBytes_FromString("<NULL>") but we do not directly have it.
              * Therefore, we directly create the bytes object with string "<NULL>" here.
              */
-            return factory.createBytes(BytesUtils.NULL_STRING);
+            return PFactory.createBytes(language, BytesUtils.NULL_STRING);
         }
 
         protected static boolean hasBytes(Node inliningTarget, Object obj, PyObjectLookupAttr lookupAttrNode) {

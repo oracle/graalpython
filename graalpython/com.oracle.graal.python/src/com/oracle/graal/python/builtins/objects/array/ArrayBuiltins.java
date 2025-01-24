@@ -63,6 +63,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -125,7 +126,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -178,11 +179,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "left.getFormat() == right.getFormat()")
         Object concat(PArray left, PArray right,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             try {
                 int newLength = PythonUtils.addExact(left.getLength(), right.getLength());
                 int itemShift = left.getItemSizeShift();
-                PArray newArray = factory.createArray(left.getFormatString(), left.getFormat(), newLength);
+                PArray newArray = PFactory.createArray(language, left.getFormatString(), left.getFormat(), newLength);
                 bufferLib.readIntoBuffer(left.getBuffer(), 0, newArray.getBuffer(), 0, left.getLength() << itemShift, bufferLib);
                 bufferLib.readIntoBuffer(right.getBuffer(), 0, newArray.getBuffer(), left.getLength() << itemShift, right.getLength() << itemShift, bufferLib);
                 return newArray;
@@ -232,7 +233,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedBranchProfile negativeSize,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             int value = valueIn;
             if (value < 0) {
                 negativeSize.enter(inliningTarget);
@@ -240,7 +241,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             }
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
-                PArray newArray = factory.createArray(self.getFormatString(), self.getFormat(), newLength);
+                PArray newArray = PFactory.createArray(language, self.getFormatString(), self.getFormat(), newLength);
                 int segmentLength = self.getBytesLength();
                 loopProfile.profileCounted(inliningTarget, value);
                 for (int i = 0; loopProfile.inject(inliningTarget, i < value); i++) {
@@ -601,13 +602,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Exclusive @Cached InlinedConditionProfile simpleStepProfile,
                         @Cached SliceNodes.SliceUnpack sliceUnpack,
                         @Cached SliceNodes.AdjustIndices adjustIndices,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(inliningTarget, self.getLength(), sliceUnpack.execute(inliningTarget, slice));
             int itemShift = itemShiftProfile.profile(inliningTarget, (byte) self.getItemSizeShift());
             int itemsize = self.getItemSize();
             PArray newArray;
             try {
-                newArray = factory.createArray(self.getFormatString(), self.getFormat(), sliceInfo.sliceLength);
+                newArray = PFactory.createArray(language, self.getFormatString(), self.getFormat(), sliceInfo.sliceLength);
             } catch (OverflowException e) {
                 // It's a slice of existing array, the length cannot overflow
                 throw CompilerDirectives.shouldNotReachHere();
@@ -782,8 +783,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getitem(PArray self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createArrayIterator(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createArrayIterator(language, self);
         }
     }
 
@@ -814,14 +815,14 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached @Exclusive GetClassNode getClassNode,
                         @Cached @Exclusive PyObjectLookupAttr lookupDict,
                         @Cached ToListNode toListNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object cls = getClassNode.execute(inliningTarget, self);
             Object dict = lookupDict.execute(frame, inliningTarget, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            PTuple args = factory.createTuple(new Object[]{self.getFormatString(), toListNode.execute(frame, self)});
-            return factory.createTuple(new Object[]{cls, args, dict});
+            PTuple args = PFactory.createTuple(language, new Object[]{self.getFormatString(), toListNode.execute(frame, self)});
+            return PFactory.createTuple(language, new Object[]{cls, args, dict});
         }
 
         @Specialization(guards = "protocol >= 3")
@@ -831,7 +832,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached @Exclusive PyObjectLookupAttr lookupDict,
                         @Cached PyObjectGetAttr getReconstructor,
                         @Cached ToBytesNode toBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PythonModule arrayModule = PythonContext.get(inliningTarget).lookupBuiltinModule(T_ARRAY);
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
@@ -841,8 +842,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 dict = PNone.NONE;
             }
             Object reconstructor = getReconstructor.execute(frame, inliningTarget, arrayModule, T_ARRAY_RECONSTRUCTOR);
-            PTuple args = factory.createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.execute(frame, self)});
-            return factory.createTuple(new Object[]{reconstructor, args, dict});
+            PTuple args = PFactory.createTuple(language, new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.execute(frame, self)});
+            return PFactory.createTuple(language, new Object[]{reconstructor, args, dict});
         }
     }
 
@@ -873,8 +874,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static Object bufferinfo(PArray self,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached ArrayNodes.EnsureNativeStorageNode ensureNativeStorageNode,
-                        @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             Object nativePointer = ensureNativeStorageNode.execute(inliningTarget, self).getPtr();
             if (!(nativePointer instanceof Long)) {
@@ -885,7 +886,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                     throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError);
                 }
             }
-            return factory.createTuple(new Object[]{nativePointer, self.getLength()});
+            return PFactory.createTuple(language, new Object[]{nativePointer, self.getLength()});
         }
     }
 
@@ -1274,10 +1275,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         Object tobytes(PArray self,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             byte[] bytes = new byte[self.getBytesLength()];
             bufferLib.readIntoByteArray(self.getBuffer(), 0, bytes, 0, bytes.length);
-            return factory.createBytes(bytes);
+            return PFactory.createBytes(language, bytes);
         }
     }
 
@@ -1320,9 +1321,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static Object tofile(VirtualFrame frame, PArray self, Object file,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             if (self.getLength() > 0) {
                 int remaining = self.getBytesLength();
                 int blocksize = 64 * 1024;
@@ -1335,7 +1336,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         buffer = new byte[blocksize];
                     }
                     bufferLib.readIntoByteArray(self.getBuffer(), i * blocksize, buffer, 0, buffer.length);
-                    callMethod.execute(frame, inliningTarget, file, T_WRITE, factory.createBytes(buffer));
+                    callMethod.execute(frame, inliningTarget, file, T_WRITE, PFactory.createBytes(language, buffer));
                     remaining -= blocksize;
                 }
             }

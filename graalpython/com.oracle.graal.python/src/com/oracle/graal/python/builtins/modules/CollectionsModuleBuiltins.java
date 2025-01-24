@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
 import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -69,8 +71,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -92,19 +93,12 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DequeNode extends PythonVarargsBuiltinNode {
 
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (arguments.length >= 1) {
-                return doGeneric(arguments[0], null, null);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
-        }
-
         @Specialization
         @SuppressWarnings("unused")
-        PDeque doGeneric(Object cls, Object[] args, PKeyword[] kwargs) {
-            return factory().createDeque(cls);
+        PDeque doGeneric(Object cls, Object[] args, PKeyword[] kwargs,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createDeque(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -122,12 +116,12 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
                         @Cached PyNumberIndexNode toIndexNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached DequeIterNextNode getNextNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!dequeProfile.profile(inliningTarget, deque instanceof PDeque)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
             }
-            PDequeIter dequeIter = factory.createDequeIter((PDeque) deque);
+            PDequeIter dequeIter = PFactory.createDequeIter(language, (PDeque) deque);
             if (indexNoneProfile.profile(inliningTarget, indexObj != PNone.NO_VALUE)) {
                 int index = castToJavaIntExactNode.execute(inliningTarget, toIndexNode.execute(frame, inliningTarget, indexObj));
                 for (int i = 0; i < index; i++) {
@@ -151,12 +145,12 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
                         @Cached PyNumberIndexNode toIndexNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached DequeIterNextNode getNextNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!dequeProfile.profile(inliningTarget, deque instanceof PDeque)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
             }
-            PDequeIter dequeIter = factory.createDequeRevIter((PDeque) deque);
+            PDequeIter dequeIter = PFactory.createDequeRevIter(language, (PDeque) deque);
             if (indexNoneProfile.profile(inliningTarget, indexObj != PNone.NO_VALUE)) {
                 int index = castToJavaIntExactNode.execute(inliningTarget, toIndexNode.execute(frame, inliningTarget, indexObj));
                 for (int i = 0; i < index; i++) {
@@ -174,8 +168,9 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PDefaultDict doGeneric(Object cls, Object[] args, PKeyword[] kwargs,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDefaultDict(cls);
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createDefaultDict(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -190,9 +185,9 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object construct(Object cls, int index, Object doc,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTupleGetter(cls, index, doc);
+        Object construct(@SuppressWarnings("unused") Object cls, int index, Object doc,
+                        @Bind PythonLanguage language) {
+            return PFactory.createTupleGetter(language, index, doc);
         }
     }
 }

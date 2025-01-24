@@ -1322,7 +1322,6 @@ public record TpSlots(TpSlot nb_bool, //
         assert GetDictIfExistsNode.getUncached().execute(type) == null;
 
         PythonContext context = PythonContext.get(null);
-        var factory = context.factory();
         PythonLanguage language = context.getLanguage();
         for (Entry<TpSlotMeta, TpSlotDef[]> slotDefEntry : SLOTDEFS.entrySet()) {
             TpSlotMeta tpSlotMeta = slotDefEntry.getKey();
@@ -1348,10 +1347,9 @@ public record TpSlots(TpSlot nb_bool, //
                 } else if (value instanceof TpSlotNative nativeSlot) {
                     if (nativeSlot instanceof TpSlotHPyNative hpySlot) {
                         wrapperDescriptor = HPyExternalFunctionNodes.createWrapperFunction(language, context.getHPyContext(), tpSlotDef.hpyWrapper, hpySlot, tpSlotDef.wrapper, tpSlotDef.name,
-                                        nativeSlot.getCallable(), type,
-                                        factory);
+                                        nativeSlot.getCallable(), type);
                     } else {
-                        wrapperDescriptor = PExternalFunctionWrapper.createWrapperFunction(tpSlotDef.name, (TpSlotCExtNative) nativeSlot, type, tpSlotDef.wrapper, language, factory);
+                        wrapperDescriptor = PExternalFunctionWrapper.createWrapperFunction(tpSlotDef.name, (TpSlotCExtNative) nativeSlot, type, tpSlotDef.wrapper, language);
                     }
                 }
                 assert wrapperDescriptor != null;

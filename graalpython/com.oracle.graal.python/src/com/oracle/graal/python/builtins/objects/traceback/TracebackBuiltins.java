@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -53,7 +54,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
@@ -85,8 +86,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
         static Object dir(@SuppressWarnings("unused") PTraceback self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createList(PTraceback.getTbFieldNames());
+                        @Bind PythonLanguage language) {
+            return PFactory.createList(language, PTraceback.getTbFieldNames());
         }
     }
 
@@ -109,8 +110,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         @Specialization(guards = "!tb.isMaterialized()")
         static void doMaterialize(Node inliningTarget, PTraceback tb,
                         @Cached(inline = false) MaterializeFrameNode materializeFrameNode,
-                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             /*
              * Truffle stacktrace consists of the frames captured during the unwinding and the
              * frames that are now on the Java stack. We don't want the frames from the stack to
@@ -136,7 +136,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     TruffleStackTraceElement element = stackTrace.get(truffleIndex);
                     if (LazyTraceback.elementWantedForTraceback(element)) {
                         PFrame pFrame = materializeFrame(element, materializeFrameNode);
-                        next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                        next = PFactory.createTraceback(PythonLanguage.get(null), pFrame, pFrame.getLine(), next);
                         next.setBci(pFrame.getBci());
                         pyIndex++;
                     }

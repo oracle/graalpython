@@ -56,6 +56,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FU
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -81,14 +82,12 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -106,14 +105,14 @@ public final class PythonCextListBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "size == 0")
         static Object newEmptyList(long size,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createList(PythonUtils.EMPTY_OBJECT_ARRAY);
+                        @Bind PythonLanguage language) {
+            return PFactory.createList(language);
         }
 
         @Specialization(guards = "size > 0")
         static Object newList(long size,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createList(array(size));
+                        @Bind PythonLanguage language) {
+            return PFactory.createList(language, array(size));
         }
 
         private static Object[] array(long size) {

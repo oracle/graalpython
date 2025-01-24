@@ -129,6 +129,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -166,7 +167,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -678,7 +679,6 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             checkClosedNode.execute(frame, self);
             if (!self.isSeekable()) {
@@ -758,7 +758,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             self.clearSnapshot();
 
             /* Restore the decoder to its state from the safe start point. */
-            decoderSetStateNode.execute(frame, inliningTarget, self, cookie, factory);
+            decoderSetStateNode.execute(frame, inliningTarget, self, cookie);
 
             if (cookie.charsToSkip != 0) {
                 /* Just like _read_chunk, feed the decoder and save a snapshot. */
@@ -892,6 +892,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
         })
         static Object tell(VirtualFrame frame, PTextIO self,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
@@ -906,7 +907,6 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "2") InteropLibrary isString,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
             byte[] snapshotNextInput = self.getSnapshotNextInput();
@@ -921,8 +921,8 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             assert (skipBack <= nextInputLength);
             while (skipBytes > 0) {
                 /* Decode up to temptative start point */
-                decoderSetStateNode.execute(frame, inliningTarget, self, cookie, factory);
-                PBytes in = factory.createBytes(snapshotNextInput, skipBytes);
+                decoderSetStateNode.execute(frame, inliningTarget, self, cookie);
+                PBytes in = PFactory.createBytes(language, snapshotNextInput, skipBytes);
                 int charsDecoded = decoderDecode(frame, inliningTarget, self, in, callMethodDecode, toString, codePointLengthNode);
                 if (charsDecoded <= decodedCharsUsed) {
                     Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState, raiseNode);
@@ -945,7 +945,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             }
             if (skipBytes <= 0) {
                 skipBytes = 0;
-                decoderSetStateNode.execute(frame, inliningTarget, self, cookie, factory);
+                decoderSetStateNode.execute(frame, inliningTarget, self, cookie);
             }
 
             /* Note our initial start point. */
@@ -962,7 +962,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             int charsDecoded = 0;
             byte[] input = PythonUtils.arrayCopyOfRange(snapshotNextInput, skipBytes, nextInputLength);
             while (input.length > 0) {
-                PBytes start = factory.createBytes(input, 1);
+                PBytes start = PFactory.createBytes(language, input, 1);
                 int n = decoderDecode(frame, inliningTarget, self, start, callMethodDecode, toString, codePointLengthNode);
                 /* We got n chars for 1 byte */
                 charsDecoded += n;

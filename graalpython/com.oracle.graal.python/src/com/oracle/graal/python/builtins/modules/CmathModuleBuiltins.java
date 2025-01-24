@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,6 +10,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -29,7 +30,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -78,14 +79,14 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("tau", 2 * Math.PI);
         addBuiltinConstant("inf", Double.POSITIVE_INFINITY);
         addBuiltinConstant("nan", Double.NaN);
-        addBuiltinConstant("infj", core.factory().createComplex(0, Double.POSITIVE_INFINITY));
-        addBuiltinConstant("nanj", core.factory().createComplex(0, Double.NaN));
+        addBuiltinConstant("infj", PFactory.createComplex(core.getLanguage(), 0, Double.POSITIVE_INFINITY));
+        addBuiltinConstant("nanj", PFactory.createComplex(core.getLanguage(), 0, Double.NaN));
         super.initialize(core);
     }
 
-    static PComplex specialValue(PythonObjectFactory factory, ComplexValue[][] table, double real, double imag) {
+    static PComplex specialValue(PythonLanguage language, ComplexValue[][] table, double real, double imag) {
         ComplexValue v = specialValue(table, real, imag);
-        return v == null ? null : v.toPComplex(factory);
+        return v == null ? null : v.toPComplex(language);
     }
 
     static ComplexValue specialValue(ComplexValue[][] table, double real, double imag) {
@@ -122,8 +123,8 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             this.imag = imag;
         }
 
-        PComplex toPComplex(PythonObjectFactory factory) {
-            return factory.createComplex(real, imag);
+        PComplex toPComplex(PythonLanguage language) {
+            return PFactory.createComplex(language, real, imag);
         }
     }
 
@@ -179,31 +180,31 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PComplex doL(Node inliningTarget, long value, Op op,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return op.compute(inliningTarget, value, 0, raiseNode).toPComplex(factory);
+            return op.compute(inliningTarget, value, 0, raiseNode).toPComplex(language);
         }
 
         @Specialization
         static PComplex doD(Node inliningTarget, double value, Op op,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return op.compute(inliningTarget, value, 0, raiseNode).toPComplex(factory);
+            return op.compute(inliningTarget, value, 0, raiseNode).toPComplex(language);
         }
 
         @Specialization
         static PComplex doC(Node inliningTarget, PComplex value, Op op,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return op.compute(inliningTarget, value.getReal(), value.getImag(), raiseNode).toPComplex(factory);
+            return op.compute(inliningTarget, value.getReal(), value.getImag(), raiseNode).toPComplex(language);
         }
 
         @Specialization
         static PComplex doGeneral(VirtualFrame frame, Node inliningTarget, Object value, Op op,
                         @Cached CoerceToComplexNode coerceToComplex,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            return doC(inliningTarget, coerceToComplex.execute(frame, inliningTarget, value), op, factory, raiseNode);
+            return doC(inliningTarget, coerceToComplex.execute(frame, inliningTarget, value), op, language, raiseNode);
         }
     }
 
@@ -312,21 +313,21 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple doL(long value,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doD(value, factory);
+                        @Bind PythonLanguage language) {
+            return doD(value, language);
         }
 
         @Specialization
         static PTuple doD(double value,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[]{Math.abs(value), value < 0 ? Math.PI : 0});
+                        @Bind PythonLanguage language) {
+            return PFactory.createTuple(language, new Object[]{Math.abs(value), value < 0 ? Math.PI : 0});
         }
 
         @Specialization
         static PTuple doC(PComplex value,
                         @Shared @Cached ComplexBuiltins.AbsNode absNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return toPolar(value, absNode, factory);
+                        @Bind PythonLanguage language) {
+            return toPolar(value, absNode, language);
         }
 
         @Specialization
@@ -334,13 +335,13 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceToComplex,
                         @Shared @Cached ComplexBuiltins.AbsNode absNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return toPolar(coerceToComplex.execute(frame, inliningTarget, value), absNode, factory);
+                        @Bind PythonLanguage language) {
+            return toPolar(coerceToComplex.execute(frame, inliningTarget, value), absNode, language);
         }
 
-        private static PTuple toPolar(PComplex value, ComplexBuiltins.AbsNode absNode, PythonObjectFactory factory) {
+        private static PTuple toPolar(PComplex value, ComplexBuiltins.AbsNode absNode, PythonLanguage language) {
             double r = absNode.executeDouble(value);
-            return factory.createTuple(new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
+            return PFactory.createTuple(language, new Object[]{r, Math.atan2(value.getImag(), value.getReal())});
         }
     }
 
@@ -393,7 +394,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static PComplex rect(Node raisingNode, double r, double phi) {
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PythonLanguage language = PythonLanguage.get(null);
             // deal with special values
             if (!Double.isFinite(r) || !Double.isFinite(phi)) {
                 // need to raise an exception if r is a nonzero number and phi is infinite
@@ -408,14 +409,14 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                     double real = Math.copySign(Double.POSITIVE_INFINITY, Math.cos(phi));
                     double imag = Math.copySign(Double.POSITIVE_INFINITY, Math.sin(phi));
                     if (r > 0) {
-                        return factory.createComplex(real, imag);
+                        return PFactory.createComplex(language, real, imag);
                     } else {
-                        return factory.createComplex(-real, -imag);
+                        return PFactory.createComplex(language, -real, -imag);
                     }
                 }
-                return specialValue(factory, SPECIAL_VALUES, r, phi);
+                return specialValue(language, SPECIAL_VALUES, r, phi);
             }
-            return factory.createComplex(r * Math.cos(phi), r * Math.sin(phi));
+            return PFactory.createComplex(language, r * Math.cos(phi), r * Math.sin(phi));
         }
     }
 
@@ -446,15 +447,15 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(y)")
         PComplex doComplexNone(PComplex x, @SuppressWarnings("unused") PNone y,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return log(x, factory);
+                        @Bind PythonLanguage language) {
+            return log(x, language);
         }
 
         @Specialization
         PComplex doComplexComplex(VirtualFrame frame, PComplex x, PComplex y,
                         @Shared @Cached ComplexBuiltins.DivNode divNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return divNode.executeComplex(frame, log(x, factory), log(y, factory));
+                        @Bind PythonLanguage language) {
+            return divNode.executeComplex(frame, log(x, language), log(y, language));
         }
 
         @Specialization(guards = "isNoValue(yObj)")
@@ -462,9 +463,9 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached CoerceToComplexNode coerceXToComplex,
                         // unused node to avoid mixing shared and non-shared inlined nodes
-                        @SuppressWarnings("unsued") @Shared @Cached CoerceToComplexNode coerceYToComplex,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return log(coerceXToComplex.execute(frame, inliningTarget, xObj), factory);
+                        @SuppressWarnings("unused") @Shared @Cached CoerceToComplexNode coerceYToComplex,
+                        @Bind PythonLanguage language) {
+            return log(coerceXToComplex.execute(frame, inliningTarget, xObj), language);
         }
 
         @Specialization(guards = "!isNoValue(yObj)")
@@ -473,20 +474,20 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached CoerceToComplexNode coerceXToComplex,
                         @Shared @Cached CoerceToComplexNode coerceYToComplex,
                         @Shared @Cached ComplexBuiltins.DivNode divNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PComplex x = log(coerceXToComplex.execute(frame, inliningTarget, xObj), factory);
-            PComplex y = log(coerceYToComplex.execute(frame, inliningTarget, yObj), factory);
+                        @Bind PythonLanguage language) {
+            PComplex x = log(coerceXToComplex.execute(frame, inliningTarget, xObj), language);
+            PComplex y = log(coerceYToComplex.execute(frame, inliningTarget, yObj), language);
             return divNode.executeComplex(frame, x, y);
         }
 
-        private PComplex log(PComplex z, PythonObjectFactory factory) {
-            PComplex r = specialValue(factory, SPECIAL_VALUES, z.getReal(), z.getImag());
+        private PComplex log(PComplex z, PythonLanguage language) {
+            PComplex r = specialValue(language, SPECIAL_VALUES, z.getReal(), z.getImag());
             if (r != null) {
                 return r;
             }
             double real = computeRealPart(z.getReal(), z.getImag());
             double imag = Math.atan2(z.getImag(), z.getReal());
-            return factory.createComplex(real, imag);
+            return PFactory.createComplex(language, real, imag);
         }
 
         @TruffleBoundary
@@ -523,17 +524,17 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doComplex(VirtualFrame frame, PComplex z,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PComplex r = logNode.executeComplex(frame, z, PNone.NO_VALUE);
-            return factory.createComplex(r.getReal() / LN_10, r.getImag() / LN_10);
+            return PFactory.createComplex(language, r.getReal() / LN_10, r.getImag() / LN_10);
         }
 
         @Specialization
         PComplex doGeneral(VirtualFrame frame, Object zObj,
                         @Bind("this") Node inliningTarget,
                         @Cached CoerceToComplexNode coerceXToComplex,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return doComplex(frame, coerceXToComplex.execute(frame, inliningTarget, zObj), factory);
+                        @Bind PythonLanguage language) {
+            return doComplex(frame, coerceXToComplex.execute(frame, inliningTarget, zObj), language);
         }
     }
 
@@ -1103,20 +1104,18 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Specialization
         static boolean doCCDD(PComplex a, PComplex b, double relTolObj, double absTolObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached AbsNode absNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return isClose(inliningTarget, a, b, relTolObj, absTolObj, factory, absNode, raiseNode);
+            return isClose(inliningTarget, a, b, relTolObj, absTolObj, absNode, raiseNode);
         }
 
         @Specialization
         @SuppressWarnings("unused")
         static boolean doCCNN(PComplex a, PComplex b, PNone relTolObj, PNone absTolObj,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached AbsNode absNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return isClose(inliningTarget, a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL, factory, absNode, raiseNode);
+            return isClose(inliningTarget, a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL, absNode, raiseNode);
         }
 
         @Specialization
@@ -1126,17 +1125,16 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                         @Cached CoerceToComplexNode coerceBToComplex,
                         @Cached PyFloatAsDoubleNode relAsDoubleNode,
                         @Cached PyFloatAsDoubleNode absAsDoubleNode,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached AbsNode absNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             PComplex a = coerceAToComplex.execute(frame, inliningTarget, aObj);
             PComplex b = coerceBToComplex.execute(frame, inliningTarget, bObj);
             double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relAsDoubleNode.execute(frame, inliningTarget, relTolObj);
             double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absAsDoubleNode.execute(frame, inliningTarget, absTolObj);
-            return isClose(inliningTarget, a, b, relTol, absTol, factory, absNode, raiseNode);
+            return isClose(inliningTarget, a, b, relTol, absTol, absNode, raiseNode);
         }
 
-        private static boolean isClose(Node inliningTarget, PComplex a, PComplex b, double relTol, double absTol, PythonObjectFactory factory, AbsNode absNode, PRaiseNode.Lazy raiseNode) {
+        private static boolean isClose(Node inliningTarget, PComplex a, PComplex b, double relTol, double absTol, AbsNode absNode, PRaiseNode.Lazy raiseNode) {
             if (relTol < 0.0 || absTol < 0.0) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
             }
@@ -1147,7 +1145,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                             Double.isInfinite(b.getReal()) || Double.isInfinite(b.getImag())) {
                 return false;
             }
-            PComplex diff = factory.createComplex(a.getReal() - b.getReal(), a.getImag() - b.getImag());
+            PComplex diff = PFactory.createComplex(PythonLanguage.get(inliningTarget), a.getReal() - b.getReal(), a.getImag() - b.getImag());
             double len = absNode.executeDouble(diff);
             return len <= absTol || len <= relTol * absNode.executeDouble(b) || len <= relTol * absNode.executeDouble(a);
         }

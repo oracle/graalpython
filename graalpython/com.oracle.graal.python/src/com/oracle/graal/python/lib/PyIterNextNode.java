@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
@@ -52,7 +53,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -81,10 +82,10 @@ public abstract class PyIterNextNode extends PNodeWithContext {
     }
 
     @Specialization
-    Object doBigIntRange(PBigRangeIterator iterator,
-                    @Cached PythonObjectFactory factory) {
+    static Object doBigIntRange(PBigRangeIterator iterator,
+                    @Bind("this") Node inliningTarget) {
         if (iterator.hasNextBigInt()) {
-            return factory.createInt(iterator.nextBigInt());
+            return PFactory.createInt(PythonLanguage.get(inliningTarget), iterator.nextBigInt());
         }
         iterator.setExhausted();
         return null;

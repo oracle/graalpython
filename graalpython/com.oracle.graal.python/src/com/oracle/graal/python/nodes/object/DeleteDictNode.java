@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.object;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
@@ -48,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -66,8 +67,7 @@ public abstract class DeleteDictNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                     @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                    @Cached HashingStorageCopy copyNode,
-                    @Cached PythonObjectFactory factory) {
+                    @Cached HashingStorageCopy copyNode) {
         /* There is no special handling for class MROs because type.__dict__ cannot be deleted. */
         assert !PGuards.isPythonClass(object);
         PDict oldDict = (PDict) readHiddenAttrNode.execute(inliningTarget, object, HiddenAttr.DICT, null);
@@ -86,7 +86,7 @@ public abstract class DeleteDictNode extends PNodeWithContext {
          * empty dict dissociated from this object seems like the cleanest option. The disadvantage
          * is that the current values won't get garbage collected.
          */
-        PDict newDict = factory.createDict();
+        PDict newDict = PFactory.createDict(PythonLanguage.get(inliningTarget));
         object.setDict(inliningTarget, writeHiddenAttrNode, newDict);
     }
 

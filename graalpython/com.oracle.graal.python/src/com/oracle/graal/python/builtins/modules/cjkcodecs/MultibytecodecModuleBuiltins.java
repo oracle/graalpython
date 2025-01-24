@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,10 +50,10 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -99,7 +99,7 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
 
     protected static void registerCodec(String name, int cidx, CodecType ct, int midx, MappingType mt,
                     DBCSMap[] maps, MultibyteCodec[] codecs,
-                    PythonModule codec, PythonObjectFactory factory) {
+                    PythonModule codec, PythonLanguage language) {
         TruffleString tsName = toTruffleStringUncached(name);
         TruffleString normalizedEncoding = CharsetMapping.normalizeUncached(tsName);
         Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
@@ -110,7 +110,7 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
             if (midx != -1) {
                 DBCSMap h = maps[midx] = new DBCSMap(name, tsName, charset, mt);
                 codec.setAttribute(toTruffleStringUncached(h.charsetMapName),
-                                factory.createCapsuleJavaName(h, PyMultibyteCodec_CAPSULE_NAME));
+                                PFactory.createCapsuleJavaName(language, h, PyMultibyteCodec_CAPSULE_NAME));
             }
         }
     }
@@ -127,13 +127,11 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object createCodec(PyCapsule arg,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            return createCodec(inliningTarget, arg, factory, raiseNode);
+            return createCodec(inliningTarget, arg, raiseNode);
         }
 
         static Object createCodec(Node inliningTarget, PyCapsule arg,
-                        PythonObjectFactory factory,
                         PRaiseNode.Lazy raiseNode) {
             if (!PyCapsule.capsuleJavaNameIs(arg, PyMultibyteCodec_CAPSULE_NAME)) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ARGUMENT_TYPE_INVALID);
@@ -141,7 +139,7 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
             MultibyteCodec codec;
             codec = (MultibyteCodec) arg.getPointer();
             codec.codecinit();
-            return factory.createMultibyteCodecObject(PythonBuiltinClassType.MultibyteCodec, codec);
+            return PFactory.createMultibyteCodecObject(PythonLanguage.get(inliningTarget), codec);
         }
 
         @Fallback

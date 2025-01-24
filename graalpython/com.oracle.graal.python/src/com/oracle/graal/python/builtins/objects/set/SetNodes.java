@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,8 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
@@ -55,7 +54,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -66,53 +65,29 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class SetNodes {
 
     @GenerateUncached
     @SuppressWarnings("truffle-inlining")       // footprint reduction 116 -> 98
     public abstract static class ConstructSetNode extends PNodeWithContext {
-        public abstract PSet execute(Frame frame, Object cls, Object value);
+        public abstract PSet execute(Frame frame, Object value);
 
-        public final PSet executeWith(Frame frame, Object value) {
-            return this.execute(frame, PythonBuiltinClassType.PSet, value);
-        }
-
-        @Specialization
-        static PSet setString(VirtualFrame frame, Object cls, TruffleString arg,
-                        @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached HashingCollectionNodes.SetItemNode setItemNode,
-                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
-                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            PSet set = factory.createSet(cls);
-            TruffleStringIterator it = createCodePointIteratorNode.execute(arg, TS_ENCODING);
-            while (it.hasNext()) {
-                int cp = nextNode.execute(it);
-                TruffleString s = fromCodePointNode.execute(cp, TS_ENCODING, true);
-                setItemNode.execute(frame, inliningTarget, set, s, PNone.NONE);
-            }
-            return set;
-        }
-
-        @Specialization(guards = "emptyArguments(none)")
-        static PSet set(Object cls, @SuppressWarnings("unused") PNone none,
-                        @Exclusive @Cached PythonObjectFactory factory) {
-            return factory.createSet(cls);
+        @Specialization(guards = "isNoValue(none)")
+        static PSet set(@SuppressWarnings("unused") PNone none,
+                        @Bind PythonLanguage language) {
+            return PFactory.createSet(language);
         }
 
         @Specialization(guards = "!isNoValue(iterable)")
-        static PSet setIterable(VirtualFrame frame, Object cls, Object iterable,
+        static PSet setIterable(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile) {
-            PSet set = factory.createSet(cls);
+            PSet set = PFactory.createSet(language);
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
                 try {
@@ -125,7 +100,7 @@ public abstract class SetNodes {
         }
 
         @Fallback
-        static PSet setObject(@SuppressWarnings("unused") Object cls, Object value,
+        static PSet setObject(Object value,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, value);
         }

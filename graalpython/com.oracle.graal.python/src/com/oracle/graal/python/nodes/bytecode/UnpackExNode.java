@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -54,14 +55,13 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -82,7 +82,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         CompilerAsserts.partialEvaluationConstant(countBefore);
         CompilerAsserts.partialEvaluationConstant(countAfter);
@@ -95,7 +95,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
             throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
         }
         stackTop = moveItemsToStack(frame, inliningTarget, storage, stackTop, 0, countBefore, getItemNode);
-        PList starList = factory.createList(getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
+        PList starList = PFactory.createList(language, getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
         frame.setObject(stackTop--, starList);
         moveItemsToStack(frame, inliningTarget, storage, stackTop, len - countAfter, countAfter, getItemNode);
         return resultStackTop;
@@ -111,7 +111,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Cached ListNodes.ConstructListNode constructListNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
         CompilerAsserts.partialEvaluationConstant(countBefore);
         CompilerAsserts.partialEvaluationConstant(countAfter);
@@ -135,7 +135,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
             frame.setObject(stackTop, starAndAfter);
         } else {
             int starLen = lenAfter - countAfter;
-            PList starList = factory.createList(getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
+            PList starList = PFactory.createList(language, getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
             frame.setObject(stackTop--, starList);
             moveItemsToStack(frame, inliningTarget, storage, stackTop, starLen, countAfter, getItemNode);
         }

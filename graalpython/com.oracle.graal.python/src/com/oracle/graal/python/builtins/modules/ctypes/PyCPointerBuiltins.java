@@ -61,6 +61,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -94,7 +95,7 @@ import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -132,13 +133,13 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization
         static void set(VirtualFrame frame, Node inliningTarget, CDataObject self, Object value,
+                        @Bind PythonLanguage language,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PRaiseNode.Lazy raiseNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached(inline = false) IsInstanceNode isInstanceNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached PointerNodes.WritePointerNode writePointerNode) {
             if (value == null) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
@@ -162,7 +163,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
              */
             keepRefNode.execute(frame, inliningTarget, self, 1, value);
 
-            Object keep = GetKeepedObjects(dst, factory);
+            Object keep = GetKeepedObjects(dst, language);
             keepRefNode.execute(frame, inliningTarget, self, 0, keep);
         }
     }
@@ -332,6 +333,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         static Object doSubscript(VirtualFrame frame, CDataObject self, PSlice slice,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PyCDataGetNode pyCDataGetNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -340,7 +342,6 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * Since pointers have no length, and we want to apply different semantics to negative
@@ -387,16 +388,16 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (len <= 0) {
-                    return factory.createEmptyBytes();
+                    return PFactory.createEmptyBytes(language);
                 }
-                if (step == 1) {
-                    return factory.createBytes(ptr, start, len);
+                if (start == 0 && step == 1) {
+                    return PFactory.createBytes(language, ptr, len);
                 }
                 byte[] dest = new byte[len];
                 for (int cur = start, i = 0; i < len; cur += step, i++) {
                     dest[i] = ptr[cur];
                 }
-                return factory.createBytes(dest);
+                return PFactory.createBytes(language, dest);
             }
             if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
                 byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
@@ -419,7 +420,7 @@ public final class PyCPointerBuiltins extends PythonBuiltins {
             for (int cur = start, i = 0; i < len; cur += step, i++) {
                 np[i] = PointerGetItemNode.Pointer_item(self, cur, inliningTarget, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode, readPointerNode, raiseNode);
             }
-            return factory.createList(np);
+            return PFactory.createList(language, np);
         }
 
         @Specialization(guards = "!isPSlice(item)", replaces = "doInt")

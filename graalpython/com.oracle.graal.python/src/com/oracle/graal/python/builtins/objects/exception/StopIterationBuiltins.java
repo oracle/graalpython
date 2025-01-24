@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StopIteration)
 public final class StopIterationBuiltins extends PythonBuiltins {
 
-    public static final BaseExceptionAttrNode.StorageFactory STOP_ITERATION_ATTR_FACTORY = (args, factory) -> new Object[]{(args != null && args.length > 0) ? args[0] : PNone.NONE};
+    public static final BaseExceptionAttrNode.StorageFactory STOP_ITERATION_ATTR_FACTORY = (args) -> new Object[]{(args != null && args.length > 0) ? args[0] : PNone.NONE};
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -94,7 +94,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
         static Object init(PBaseException self, Object[] args,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            self.setExceptionAttributes(STOP_ITERATION_ATTR_FACTORY.create(args, null));
+            self.setExceptionAttributes(STOP_ITERATION_ATTR_FACTORY.create(args));
             return PNone.NONE;
         }
     }

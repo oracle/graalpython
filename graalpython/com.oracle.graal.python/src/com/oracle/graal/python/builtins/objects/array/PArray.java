@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -86,11 +86,11 @@ public final class PArray extends PythonBuiltinObject {
         this.storage = new ByteSequenceStorage(EMPTY_BYTE_ARRAY);
     }
 
-    public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format, int length) throws OverflowException {
+    public PArray(Object clazz, Shape instanceShape, TruffleString formatString, BufferFormat format, int byteSize) {
         super(clazz, instanceShape);
         this.formatString = formatString;
         this.format = format;
-        this.storage = new ByteSequenceStorage(new byte[PythonUtils.multiplyExact(length, format.bytesize)]);
+        this.storage = new ByteSequenceStorage(new byte[byteSize]);
     }
 
     public BufferFormat getFormat() {

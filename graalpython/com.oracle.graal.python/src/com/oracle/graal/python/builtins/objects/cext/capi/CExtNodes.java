@@ -185,7 +185,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.graal.python.util.Function;
@@ -405,8 +405,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isInt()"})
         static PInt doIntNativeWrapper(PrimitiveNativeWrapper object,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            PInt materializedInt = factory.createInt(object.getInt());
+                        @Bind PythonLanguage language) {
+            PInt materializedInt = PFactory.createInt(language, object.getInt());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
@@ -414,8 +414,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isLong()"})
         static PInt doLongNativeWrapper(PrimitiveNativeWrapper object,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            PInt materializedInt = factory.createInt(object.getLong());
+                        @Bind PythonLanguage language) {
+            PInt materializedInt = PFactory.createInt(language, object.getLong());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
             return materializedInt;
@@ -423,8 +423,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object)", "object.isDouble()", "!isNaN(object)"})
         static PFloat doDoubleNativeWrapper(PrimitiveNativeWrapper object,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            PFloat materializedInt = factory.createFloat(object.getDouble());
+                        @Bind PythonLanguage language) {
+            PFloat materializedInt = PFactory.createFloat(language, object.getDouble());
             materializedInt.setNativeWrapper(object);
             object.setMaterializedObject(materializedInt);
             return materializedInt;
@@ -690,45 +690,45 @@ public abstract class CExtNodes {
 
         @Specialization
         static PComplex doBoolean(boolean value,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createComplex(value ? 1.0 : 0.0, 0.0);
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, value ? 1.0 : 0.0, 0.0);
         }
 
         @Specialization
         static PComplex doInt(int value,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createComplex(value, 0.0);
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, value, 0.0);
         }
 
         @Specialization
         static PComplex doLong(long value,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createComplex(value, 0.0);
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, value, 0.0);
         }
 
         @Specialization
         PComplex doDouble(double value,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createComplex(value, 0.0);
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, value, 0.0);
         }
 
         @Specialization
         static PComplex doPInt(PInt value,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createComplex(value.doubleValue(), 0.0);
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, value.doubleValue(), 0.0);
         }
 
         @Specialization
         static PComplex doPFloat(PFloat value,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createComplex(value.getValue(), 0.0);
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, value.getValue(), 0.0);
         }
 
         @Specialization(replaces = {"doPComplex", "doBoolean", "doInt", "doLong", "doDouble", "doPInt", "doPFloat"})
         static PComplex runGeneric(Node inliningTarget, Object value,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached(inline = false) LookupAndCallUnaryDynamicNode callComplex,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object result = callComplex.executeObject(value, T___COMPLEX__);
             // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
@@ -740,7 +740,7 @@ public abstract class CExtNodes {
                     throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
                 }
             } else {
-                return factory.createComplex(asDoubleNode.execute(null, inliningTarget, value), 0.0);
+                return PFactory.createComplex(language, asDoubleNode.execute(null, inliningTarget, value), 0.0);
             }
         }
     }
@@ -1714,7 +1714,7 @@ public abstract class CExtNodes {
         @TruffleBoundary
         static Object doGeneric(CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDefWrapper, Object library,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached CStructAccess.ReadPointerNode readPointer,
                         @Cached CStructAccess.ReadI64Node readI64,
                         @CachedLibrary(limit = "3") InteropLibrary interopLib,
@@ -1815,7 +1815,7 @@ public abstract class CExtNodes {
                     ((PythonModule) module).setNativeModuleDef(moduleDef);
                 }
             } else {
-                PythonModule pythonModule = factory.createPythonModule(mName);
+                PythonModule pythonModule = PFactory.createPythonModule(language, mName);
                 pythonModule.setNativeModuleDef(moduleDef);
                 module = pythonModule;
             }
@@ -1827,7 +1827,7 @@ public abstract class CExtNodes {
                     if (fun == null) {
                         break;
                     }
-                    PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                    PBuiltinMethod method = PFactory.createBuiltinMethod(language, module, fun);
                     writeAttrToMethodNode.execute(method, SpecialAttributeNames.T___MODULE__, mName);
                     writeAttrNode.execute(module, fun.getName(), method);
                 }
@@ -1954,7 +1954,7 @@ public abstract class CExtNodes {
                         @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
                         @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) FromCharPointerNode fromCharPointerNode,
-                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached EnsureExecutableNode ensureCallableNode,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttributeToPythonObjectNode) {
@@ -1978,7 +1978,7 @@ public abstract class CExtNodes {
             RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, PythonLanguage.get(inliningTarget), methodName, true, CExtContext.isMethStatic(flags));
             mlMethObj = ensureCallableNode.execute(inliningTarget, mlMethObj, sig);
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
-            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
+            PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
             writeHiddenAttrNode.execute(inliningTarget, function, METHOD_DEF_PTR, methodDef);
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
@@ -2107,7 +2107,7 @@ public abstract class CExtNodes {
                 }
                 doArgAndResultConversion = true;
             }
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, language, context.factory(), doArgAndResultConversion);
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags, signature, language, doArgAndResultConversion);
             return function != null ? function : castToPythonObject(managedCallable);
         }
 
@@ -2118,7 +2118,7 @@ public abstract class CExtNodes {
             assert !(delegate instanceof PythonAbstractObject);
             PythonContext context = PythonContext.get(null);
             PythonLanguage language = context.getLanguage();
-            return PExternalFunctionWrapper.createWrapperFunction(name, delegate, type, flags, signature, language, context.factory(), false);
+            return PExternalFunctionWrapper.createWrapperFunction(name, delegate, type, flags, signature, language, false);
         }
 
         @Specialization(guards = {"!isNativeWrapper(callable)"})
@@ -2167,7 +2167,7 @@ public abstract class CExtNodes {
                 resolvedCallable = callable;
             }
             PythonLanguage language = context.getLanguage();
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, language, context.factory(), doArgAndResultConversion);
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, resolvedCallable, type, flags, signature, language, doArgAndResultConversion);
             return function != null ? function : castToPythonObject(resolvedCallable);
         }
 

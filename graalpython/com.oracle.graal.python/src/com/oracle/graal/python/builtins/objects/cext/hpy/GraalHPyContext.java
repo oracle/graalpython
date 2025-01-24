@@ -95,6 +95,7 @@ import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -532,7 +533,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             PythonLanguage language = pythonContext.getLanguage();
             GraalHPyContext hPyContext = pythonContext.getHPyContext();
             RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
-            PDict dummyGlobals = pythonContext.factory().createDict();
+            PDict dummyGlobals = PFactory.createDict(language);
             boolean isLoggable = LOGGER.isLoggable(Level.FINE);
             /*
              * Intentionally retrieve the thread state every time since this will kill the thread if

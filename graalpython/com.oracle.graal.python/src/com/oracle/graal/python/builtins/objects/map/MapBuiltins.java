@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -57,7 +58,8 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -111,12 +113,12 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         static PTuple doit(PMap self, @SuppressWarnings("unused") Object ignored,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object[] iterators = self.getIterators();
             Object[] args = new Object[iterators.length + 1];
             args[0] = self.getFunction();
             System.arraycopy(iterators, 0, args, 1, iterators.length);
-            return factory.createTuple(new Object[]{PythonBuiltinClassType.PMap, factory.createTuple(args)});
+            return PFactory.createTuple(language, new Object[]{PythonBuiltinClassType.PMap, PFactory.createTuple(language, args)});
         }
     }
 }

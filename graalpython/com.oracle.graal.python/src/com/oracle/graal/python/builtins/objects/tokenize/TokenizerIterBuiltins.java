@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -57,7 +58,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -92,7 +93,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
         static PTuple next(PTokenizerIter self,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Token token = self.getNextToken();
             if (token.type == Kind.ERRORTOKEN || token.type == Kind.ENDMARKER) {
@@ -110,7 +111,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
             if (token.type == Kind.NEWLINE) {
                 endColumn--;
             }
-            return factory.createTuple(new Object[]{
+            return PFactory.createTuple(language, new Object[]{
                             fromJavaStringNode.execute(self.getTokenString(token), TS_ENCODING),
                             token.type,
                             token.sourceRange.startLine,

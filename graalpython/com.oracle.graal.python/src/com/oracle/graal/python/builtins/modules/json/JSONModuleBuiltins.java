@@ -12,6 +12,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -25,6 +26,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -36,7 +38,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -94,11 +96,11 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
         Object call(Object string, int end, boolean strict,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringCheckedNode castString,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             IntRef nextIdx = new IntRef();
             TruffleString result = JSONScannerBuiltins.scanStringUnicode(castString.cast(inliningTarget, string, ErrorMessages.FIRST_ARG_MUST_BE_STRING_NOT_P, string), end, strict, nextIdx,
                             this);
-            return factory.createTuple(new Object[]{result, nextIdx.value});
+            return PFactory.createTuple(language, new Object[]{result, nextIdx.value});
         }
     }
 
@@ -189,7 +191,8 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
                         @Cached PyObjectIsTrueNode castStrict,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
 
             boolean strict = castStrict.execute(frame, getStrict.execute(frame, context));
             Object objectHook = getObjectHook.execute(frame, context);
@@ -197,7 +200,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
             Object parseFloat = getParseFloat.execute(frame, context);
             Object parseInt = getParseInt.execute(frame, context);
             Object parseConstant = getParseConstant.execute(frame, context);
-            return factory.createJSONScanner(cls, strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
+            return PFactory.createJSONScanner(language, cls, getInstanceShape.execute(cls), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
         }
     }
 
@@ -241,7 +244,8 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            return getContext().factory().createJSONEncoder(cls, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
+            return PFactory.createJSONEncoder(PythonLanguage.get(null), cls, TypeNodes.GetInstanceShape.executeUncached(cls),
+                            markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
         }
     }
 }

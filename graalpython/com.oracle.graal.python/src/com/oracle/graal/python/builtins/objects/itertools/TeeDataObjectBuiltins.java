@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,10 +48,10 @@ import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULDNT_H
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -64,13 +64,12 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -159,10 +158,6 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);
         }
-
-        protected LookupAndCallUnaryNode createCopyNode() {
-            return LookupAndCallUnaryNode.create(T___COPY__);
-        }
     }
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
@@ -174,14 +169,14 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         static Object reduce(PTeeDataObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClass,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             int numread = self.getNumread();
             Object[] values = new Object[numread];
             PythonUtils.arraycopy(self.getValues(), 0, values, 0, numread);
             Object type = getClass.execute(inliningTarget, self);
             Object nextlink = self.getNextlink();
-            PTuple tuple = factory.createTuple(new Object[]{self.getIt(), factory.createList(values), nextlink == null ? PNone.NONE : nextlink});
-            return factory.createTuple(new Object[]{type, tuple});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{self.getIt(), PFactory.createList(language, values), nextlink == null ? PNone.NONE : nextlink});
+            return PFactory.createTuple(language, new Object[]{type, tuple});
         }
     }
 }

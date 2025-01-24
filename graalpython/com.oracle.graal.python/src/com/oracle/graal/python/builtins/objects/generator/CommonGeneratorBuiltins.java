@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,7 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.RootCallTarget;
@@ -288,7 +288,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
                         @Cached ExceptionNodes.SetContextNode setContextNode,
-                        @Cached PythonObjectFactory.Lazy factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             boolean hasTb = hasTbProfile.profile(inliningTarget, !(tb instanceof PNone));
             if (hasTb && !(tb instanceof PTraceback)) {
@@ -321,11 +320,11 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 self.markAsFinished();
                 Node location = self.getCurrentCallTarget().getRootNode();
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
-                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory.get(inliningTarget));
+                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getRootNode().getFirstLineno());
                 Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);
-                PTraceback newTraceback = factory.get(inliningTarget).createTraceback(pFrame, pFrame.getLine(),
+                PTraceback newTraceback = PFactory.createTraceback(language, pFrame, pFrame.getLine(),
                                 (existingTracebackObj instanceof PTraceback existingTraceback) ? existingTraceback : null);
                 setTracebackNode.execute(inliningTarget, instance, newTraceback);
                 throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(language));
@@ -343,13 +342,12 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Cached InlinedConditionProfile isStartedPorfile,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (self.isRunning()) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             if (isStartedPorfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
-                PBaseException pythonException = factory.createBaseException(GeneratorExit);
+                PBaseException pythonException = PFactory.createBaseException(PythonLanguage.get(inliningTarget), GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(inliningTarget));

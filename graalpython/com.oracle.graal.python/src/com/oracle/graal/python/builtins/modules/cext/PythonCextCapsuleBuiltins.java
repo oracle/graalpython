@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CALLED_WITH_NULL_POINT
 import static com.oracle.graal.python.nodes.ErrorMessages.PY_CAPSULE_IMPORT_S_IS_NOT_VALID;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -100,12 +101,12 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         static PyCapsule doGeneric(Node inliningTarget, Object pointer, Object namePtr, Object destructor,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (interopLibrary.isNull(pointer)) {
                 throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT);
             }
-            PyCapsule capsule = factory.createCapsuleNativeName(pointer, interopLibrary.isNull(namePtr) ? null : namePtr);
+            PyCapsule capsule = PFactory.createCapsuleNativeName(language, pointer, interopLibrary.isNull(namePtr) ? null : namePtr);
             if (!interopLibrary.isNull(destructor)) {
                 capsule.registerDestructor(destructor);
             }

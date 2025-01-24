@@ -87,6 +87,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -118,7 +119,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
@@ -480,13 +481,13 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         static PBytes readline(VirtualFrame frame, Object self, int limit,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PyObjectLookupAttr lookupPeek,
                         @Cached CallNode callPeek,
                         @Cached PyObjectCallMethodObjArgs callRead,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile hasPeek,
                         @Cached InlinedConditionProfile isBytes,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             /* For backwards compatibility, a (slowish) readline(). */
             Object peek = lookupPeek.execute(frame, inliningTarget, self, T_PEEK);
@@ -528,7 +529,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                 }
             }
 
-            return factory.createBytes(toByteArray(buffer));
+            return PFactory.createBytes(language, toByteArray(buffer));
         }
     }
 
@@ -544,12 +545,12 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         static Object withHint(VirtualFrame frame, Object self, int hintIn,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached GetNextNode next,
                         @Cached InlinedConditionProfile isNegativeHintProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PyObjectSizeNode sizeNode) {
             int hint = isNegativeHintProfile.profile(inliningTarget, hintIn <= 0) ? Integer.MAX_VALUE : hintIn;
             int length = 0;
             Object iterator = getIter.execute(frame, inliningTarget, self);
@@ -568,7 +569,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     break;
                 }
             }
-            return factory.createList(list.toArray(new Object[0]));
+            return PFactory.createList(language, list.toArray(new Object[0]));
         }
     }
 

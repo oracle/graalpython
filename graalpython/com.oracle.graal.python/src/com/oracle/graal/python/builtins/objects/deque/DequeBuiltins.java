@@ -77,6 +77,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.util.Iterator;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProvide
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
@@ -124,7 +126,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -290,9 +292,11 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         static PDeque doGeneric(PDeque self,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
-            PDeque copy = factory.createDeque(getClassNode.execute(inliningTarget, self));
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            Object cls = getClassNode.execute(inliningTarget, self);
+            PDeque copy = PFactory.createDeque(language, cls, getInstanceShape.execute(cls));
             copy.setMaxLength(self.getMaxLength());
             copy.addAll(self);
             return copy;
@@ -720,7 +724,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static PDeque doDeque(PDeque self, PDeque other) {
-            PDeque newDeque = PythonObjectFactory.getUncached().createDeque();
+            PDeque newDeque = PFactory.createDeque(PythonLanguage.get(null));
             newDeque.setMaxLength(self.getMaxLength());
             newDeque.addAll(self);
             newDeque.addAll(other);
@@ -790,7 +794,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PDeque doGeneric(PDeque self, int n) {
-            PDeque newDeque = PythonObjectFactory.getUncached().createDeque();
+            PDeque newDeque = PFactory.createDeque(PythonLanguage.get(null));
             newDeque.setMaxLength(self.getMaxLength());
             newDeque.addAll(self);
             return DequeInplaceMulNode.doGeneric(this, newDeque, n);
@@ -858,8 +862,8 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDequeIter doGeneric(PDeque self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDequeIter(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createDequeIter(language, self);
         }
     }
 
@@ -870,8 +874,8 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static PDequeIter doGeneric(PDeque self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDequeRevIter(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createDequeRevIter(language, self);
         }
     }
 
@@ -890,7 +894,7 @@ public final class DequeBuiltins extends PythonBuiltins {
             Node outerNode = ref.set(this);
             try {
                 Object[] items = self.data.toArray();
-                PList asList = PythonObjectFactory.getUncached().createList(items);
+                PList asList = PFactory.createList(PythonLanguage.get(null), items);
                 int maxLength = self.getMaxLength();
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
                 sb.appendStringUncached(GetNameNode.executeUncached(GetPythonObjectClassNode.executeUncached(self)));
@@ -919,16 +923,16 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @Cached PyObjectGetStateNode getStateNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object state = getStateNode.execute(frame, inliningTarget, self);
             Object it = getIter.execute(frame, inliningTarget, self);
-            PTuple emptyTuple = factory.createEmptyTuple();
+            PTuple emptyTuple = PFactory.createEmptyTuple(language);
             int maxLength = self.getMaxLength();
             if (maxLength != -1) {
-                return factory.createTuple(new Object[]{clazz, factory.createTuple(new Object[]{emptyTuple, maxLength}), state, it});
+                return PFactory.createTuple(language, new Object[]{clazz, PFactory.createTuple(language, new Object[]{emptyTuple, maxLength}), state, it});
             }
-            return factory.createTuple(new Object[]{clazz, emptyTuple, state, it});
+            return PFactory.createTuple(language, new Object[]{clazz, emptyTuple, state, it});
 
         }
     }
@@ -1069,8 +1073,8 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

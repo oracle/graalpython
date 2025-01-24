@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -107,7 +107,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -326,7 +326,7 @@ public class GraalHPyMemberAccessNodes {
                             l -> new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<>(HPyReadMemberNodeGen.create(offset, type, asPythonObjectNode)), true),
                             HPyReadMemberNode.class, builtin.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, callTarget);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, callTarget);
         }
     }
 
@@ -351,7 +351,7 @@ public class GraalHPyMemberAccessNodes {
             RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<>(HPyReadOnlyMemberNodeGen.create(propertyName)), true),
                             HPyReadOnlyMemberNode.class, builtin.name());
             int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, builtinCt);
         }
     }
 
@@ -374,7 +374,7 @@ public class GraalHPyMemberAccessNodes {
             RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true),
                             HPyBadMemberDescrNode.class, builtin.name());
             int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, builtinCt);
         }
     }
 
@@ -641,7 +641,7 @@ public class GraalHPyMemberAccessNodes {
                             l -> new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<>(HPyWriteMemberNodeGen.create(type, offset)), true),
                             HPyWriteMemberNode.class, builtin.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, callTarget);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, callTarget);
         }
     }
 

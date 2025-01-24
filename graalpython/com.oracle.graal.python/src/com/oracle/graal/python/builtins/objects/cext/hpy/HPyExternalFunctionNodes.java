@@ -101,7 +101,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -160,14 +160,10 @@ public abstract class HPyExternalFunctionNodes {
      * @param name The name of the method.
      * @param callable The native function pointer.
      * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
-     * @param factory Just an instance of {@link PythonObjectFactory} to create the function object.
-     *            We could also use the uncached version but this way, the allocations are reported
-     *            for the caller.
      * @return A {@link PBuiltinFunction} that accepts the given signature.
      */
     @TruffleBoundary
-    static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPyFuncSignature signature, TruffleString name, Object callable, Object enclosingType,
-                    PythonObjectFactory factory) {
+    static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPyFuncSignature signature, TruffleString name, Object callable, Object enclosingType) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         RootCallTarget callTarget = language.createCachedCallTarget(l -> createRootNode(l, signature, name), signature, name, true);
 
@@ -180,7 +176,7 @@ public abstract class HPyExternalFunctionNodes {
             defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
         int flags = HPyFuncSignature.getFlags(signature);
-        return factory.createBuiltinFunction(name, enclosingType, defaults, createKwDefaults(callable, context), flags, callTarget);
+        return PFactory.createBuiltinFunction(language, name, enclosingType, defaults, createKwDefaults(callable, context), flags, callTarget);
     }
 
     private static PRootNode createRootNode(PythonLanguage language, HPyFuncSignature signature, TruffleString name) {
@@ -230,13 +226,11 @@ public abstract class HPyExternalFunctionNodes {
      * @param name The name of the method.
      * @param callable The native function pointer.
      * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
-     * @param factory Just an instance of {@link PythonObjectFactory} to create the function object.
      * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot wrapper.
      */
     @TruffleBoundary
     public static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPySlotWrapper wrapper, TpSlotHPyNative slot, PExternalFunctionWrapper legacySlotWrapper,
-                    TruffleString name, Object callable, Object enclosingType,
-                    PythonObjectFactory factory) {
+                    TruffleString name, Object callable, Object enclosingType) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         RootCallTarget callTarget = language.createCachedCallTarget(l -> createSlotRootNode(l, wrapper, name), wrapper, name);
         Object[] defaults;
@@ -257,7 +251,7 @@ public abstract class HPyExternalFunctionNodes {
             kwDefaults = createKwDefaults(callable, context);
 
         }
-        return factory.createWrapperDescriptor(name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, legacySlotWrapper);
+        return PFactory.createWrapperDescriptor(language, name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, legacySlotWrapper);
     }
 
     private static PRootNode createSlotRootNode(PythonLanguage language, HPySlotWrapper wrapper, TruffleString name) {
@@ -625,7 +619,6 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private PythonObjectFactory factory;
 
         @TruffleBoundary
         public HPyMethKeywordsRoot(PythonLanguage language, TruffleString name) {
@@ -685,11 +678,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         private PTuple getKwnamesTuple(TruffleString[] kwnames) {
-            if (factory == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                factory = insert(PythonObjectFactory.create());
-            }
-            return factory.createTuple(kwnames);
+            return PFactory.createTuple(PythonLanguage.get(this), kwnames);
         }
 
         @Override
@@ -1352,8 +1341,7 @@ public abstract class HPyExternalFunctionNodes {
             PythonContext pythonContext = hpyContext.getContext();
             PythonLanguage lang = pythonContext.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorGetterRootNode(l, propertyName), HPyGetSetDescriptorGetterRootNode.class, propertyName);
-            PythonObjectFactory factory = pythonContext.getCore().factory();
-            return factory.createBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
+            return PFactory.createBuiltinFunction(lang, propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
         }
     }
 
@@ -1391,16 +1379,14 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createLegacyFunction(GraalHPyContext context, PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
-            PythonContext pythonContext = context.getContext();
-            PythonObjectFactory factory = pythonContext.factory();
+        public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
             RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorGetterRoot(l, propertyName, PExternalFunctionWrapper.GETTER),
                             HPyLegacyGetSetDescriptorGetterRoot.class, propertyName);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
             target = EnsureExecutableNode.executeUncached(target, PExternalFunctionWrapper.GETTER);
-            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
+            return PFactory.createBuiltinFunction(lang, propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
 
@@ -1440,8 +1426,7 @@ public abstract class HPyExternalFunctionNodes {
             PythonContext pythonContext = hpyContext.getContext();
             PythonLanguage lang = pythonContext.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorSetterRootNode(l, propertyName), HPyGetSetDescriptorSetterRootNode.class, propertyName);
-            PythonObjectFactory factory = pythonContext.factory();
-            return factory.createBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
+            return PFactory.createBuiltinFunction(lang, propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
         }
 
     }
@@ -1476,16 +1461,14 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createLegacyFunction(GraalHPyContext context, PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
-            PythonContext pythonContext = context.getContext();
-            PythonObjectFactory factory = pythonContext.factory();
+        public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
             RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorSetterRoot(l, propertyName, PExternalFunctionWrapper.SETTER),
                             HPyLegacyGetSetDescriptorSetterRoot.class, propertyName);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
             target = EnsureExecutableNode.executeUncached(target, PExternalFunctionWrapper.SETTER);
-            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
+            return PFactory.createBuiltinFunction(lang, propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
 
@@ -1776,7 +1759,6 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private PythonObjectFactory factory;
 
         @TruffleBoundary
         public HPyMethCallRoot(PythonLanguage language, TruffleString name) {
@@ -1860,11 +1842,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         private PTuple getKwnamesTuple(TruffleString[] kwnames) {
-            if (factory == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                factory = insert(PythonObjectFactory.create());
-            }
-            return factory.createTuple(kwnames);
+            return PFactory.createTuple(PythonLanguage.get(this), kwnames);
         }
 
         @Override

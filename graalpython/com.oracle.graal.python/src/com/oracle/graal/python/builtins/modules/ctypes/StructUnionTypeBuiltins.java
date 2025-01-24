@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,6 +66,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -104,7 +105,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -148,6 +149,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
         @Specialization
         protected Object StructUnionTypeNew(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached HashingStorageGetItem getItemResDict,
                         @Cached HashingStorageGetItem getItemStgDict,
@@ -156,8 +158,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached PyObjectSetAttr setFieldsAttributeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PyObjectSetAttr setFieldsAttributeNode) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
              */
@@ -165,13 +166,13 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
 
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory.createDictFixedStorage((PythonObject) result);
+                resDict = PFactory.createDictFixedStorage(language, (PythonObject) result);
             }
             if (getItemResDict.hasKey(inliningTarget, resDict.getDictStorage(), T__ABSTRACT_)) {
                 return result;
             }
 
-            StgDictObject dict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
+            StgDictObject dict = PFactory.createStgDictObject(language);
             if (!isStruct()) {
                 dict.flags |= TYPEFLAG_HASUNION;
             }
@@ -205,7 +206,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
     @ImportStatic(StructUnionTypeBuiltins.class)
     @SuppressWarnings("truffle-inlining")       // footprint reduction 292 -> 275
     protected abstract static class PyCStructUnionTypeUpdateStgDict extends Node {
-        abstract void execute(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory);
+        abstract void execute(VirtualFrame frame, Object type, Object fields, boolean isStruct);
 
         /*
          * Retrieve the (optional) _pack_ attribute from a type, the _fields_ attribute, and create
@@ -213,7 +214,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("fallthrough")
         @Specialization
-        static void PyCStructUnionType_update_stgdict(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory,
+        static void PyCStructUnionType_update_stgdict(VirtualFrame frame, Object type, Object fields, boolean isStruct,
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached GetInternalObjectArrayNode getArray,
@@ -321,7 +322,6 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                 for (int idx = 0; idx < len + 1; idx++) {
                     stgdict.ffi_type_pointer.elements[idx] = new FFIType();
                 }
-
                  */
                 ffi_ofs = 0;
             }
@@ -412,7 +412,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                 CFieldObject prop;
                 if (isStruct) {
                     int[] props = new int[]{field_size, bitofs, size, offset, align};
-                    prop = cFieldFromDesc.execute(inliningTarget, desc, i, bitsize, pack, big_endian, props, factory);
+                    prop = cFieldFromDesc.execute(inliningTarget, desc, i, bitsize, pack, big_endian, props);
                     field_size = props[0];
                     bitofs = props[1];
                     size = props[2];
@@ -426,7 +426,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                     offset = 0;
                     align = 0;
                     int[] props = new int[]{field_size, bitofs, size, offset, align};
-                    prop = cFieldFromDesc.execute(inliningTarget, desc, i, bitsize, pack, big_endian, props, factory);
+                    prop = cFieldFromDesc.execute(inliningTarget, desc, i, bitsize, pack, big_endian, props);
                     field_size = props[0];
                     bitofs = props[1];
                     size = props[2];
@@ -516,7 +516,6 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
                         fieldsError();
                     }
                     Object desc = tuple[1];
-
                     StgDictObject dict = pyTypeStgDictNode.execute(desc);
                     if (dict == null) {
                         throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
@@ -612,7 +611,7 @@ public final class StructUnionTypeBuiltins extends PythonBuiltins {
             }
             stgdict.flags |= DICTFLAG_FINAL;
 
-            makeAnonFieldsNode.execute(frame, type, factory);
+            makeAnonFieldsNode.execute(frame, type);
         }
 
         static void fieldsError(PRaiseNode raiseNode) {

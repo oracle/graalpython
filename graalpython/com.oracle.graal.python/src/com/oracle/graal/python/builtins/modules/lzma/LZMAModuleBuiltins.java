@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -80,6 +80,7 @@ import org.graalvm.shadowed.org.tukaani.xz.LZMA2Options;
 import org.graalvm.shadowed.org.tukaani.xz.XZ;
 import org.graalvm.shadowed.org.tukaani.xz.XZOutputStream;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -97,7 +99,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -262,27 +265,27 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "LZMACompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMACompressor)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LZMACompressorNode extends PythonBuiltinNode {
 
         @Specialization
         LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see LZMACompressorBuiltins.InitNode
-            return factory.createLZMACompressor(cls, getContext().getNFILZMASupport().isAvailable());
+            PythonContext context = getContext();
+            return PFactory.createLZMACompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
         }
     }
 
     @Builtin(name = "LZMADecompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMADecompressor)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LZMADecompressorNode extends PythonBuiltinNode {
 
         @Specialization
         LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see LZMADecompressorBuiltins.InitNode
-            return factory.createLZMADecompressor(cls, getContext().getNFILZMASupport().isAvailable());
+            PythonContext context = getContext();
+            return PFactory.createLZMADecompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
         }
     }
 
@@ -308,8 +311,8 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PBytes encode(VirtualFrame frame, Object filter,
                         @Cached LZMANodes.EncodeFilterProperties encodeFilterProperties,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(encodeFilterProperties.execute(frame, filter));
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, encodeFilterProperties.execute(frame, filter));
         }
     }
 
@@ -321,12 +324,12 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PDict encode(VirtualFrame frame, Object id, Object encodedProps,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached LZMANodes.DecodeFilterProperties decodeFilterProperties,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached LZMANodes.DecodeFilterProperties decodeFilterProperties) {
             byte[] bytes = toBytes.execute(frame, encodedProps);
-            PDict dict = factory.createDict();
+            PDict dict = PFactory.createDict(language);
             decodeFilterProperties.execute(frame, toLong.execute(inliningTarget, id), bytes, dict);
             return dict;
         }

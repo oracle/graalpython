@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -111,7 +112,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
         static Object nextNoResult(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached @Exclusive InlinedLoopConditionProfile loopConditionProfile) {
             // On the first pass, initialize result tuple using the indices
             Object[] result = new Object[self.getR()];
@@ -121,30 +122,28 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 result[i] = self.getPool()[idx];
             }
             self.setLastResult(result);
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         static Object next(PCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
                         @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile, raiseNode);
+            return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         static Object next(PCombinationsWithReplacement self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
                         @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile, raiseNode);
+            return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
-        private static Object nextInternal(Node inliningTarget, PAbstractCombinations self, PythonObjectFactory factory, InlinedLoopConditionProfile indexLoopProfile,
+        private static Object nextInternal(Node inliningTarget, PAbstractCombinations self, InlinedLoopConditionProfile indexLoopProfile,
                         InlinedLoopConditionProfile resultLoopProfile, PRaiseNode.Lazy raiseNode) throws PException {
 
             CompilerAsserts.partialEvaluationConstant(self.getClass());
@@ -182,7 +181,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 result[j] = elem;
             }
             self.setLastResult(result);
-            return factory.createTuple(result);
+            return PFactory.createTuple(PythonLanguage.get(inliningTarget), result);
         }
 
         protected boolean isLastResultNull(PAbstractCombinations self) {
@@ -200,18 +199,18 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasNoLastResultProfile,
                         @Cached InlinedConditionProfile stoppedProfile,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
             if (hasNoLastResultProfile.profile(inliningTarget, self.getLastResult() == null)) {
-                PTuple args = factory.createTuple(new Object[]{factory.createTuple(self.getPool()), self.getR()});
-                return factory.createTuple(new Object[]{type, args});
+                PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createTuple(language, self.getPool()), self.getR()});
+                return PFactory.createTuple(language, new Object[]{type, args});
             } else if (stoppedProfile.profile(inliningTarget, self.isStopped())) {
-                PTuple args = factory.createTuple(new Object[]{factory.createEmptyTuple(), self.getR()});
-                return factory.createTuple(new Object[]{type, args});
+                PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language), self.getR()});
+                return PFactory.createTuple(language, new Object[]{type, args});
             }
-            PTuple indices = factory.createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getR()));
-            PTuple args = factory.createTuple(new Object[]{factory.createTuple(self.getPool()), self.getR()});
-            return factory.createTuple(new Object[]{type, args, indices});
+            PTuple indices = PFactory.createTuple(language, PythonUtils.arrayCopyOf(self.getIndices(), self.getR()));
+            PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createTuple(language, self.getPool()), self.getR()});
+            return PFactory.createTuple(language, new Object[]{type, args, indices});
         }
     }
 

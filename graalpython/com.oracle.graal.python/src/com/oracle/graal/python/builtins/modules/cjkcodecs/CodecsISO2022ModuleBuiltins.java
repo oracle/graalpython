@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -65,7 +66,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -99,16 +100,16 @@ public final class CodecsISO2022ModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonObjectFactory factory = core.factory();
+        PythonLanguage language = core.getLanguage();
         PythonModule codec = core.lookupBuiltinModule(T__CODECS_ISO2022);
         int i = 0;
-        registerCodec("iso2022_kr", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
-        registerCodec("iso2022_jp", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
-        registerCodec("iso2022_jp_1", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
-        registerCodec("iso2022_jp_2", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
-        registerCodec("iso2022_jp_2004", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
-        registerCodec("iso2022_jp_3", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
-        registerCodec("iso2022_jp_ext", i, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("iso2022_kr", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, language);
+        registerCodec("iso2022_jp", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, language);
+        registerCodec("iso2022_jp_1", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, language);
+        registerCodec("iso2022_jp_2", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, language);
+        registerCodec("iso2022_jp_2004", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, language);
+        registerCodec("iso2022_jp_3", i++, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, language);
+        registerCodec("iso2022_jp_ext", i, CodecType.ISO2022, -1, null, null, CODEC_LIST, codec, language);
     }
 
     @Override
@@ -126,7 +127,7 @@ public final class CodecsISO2022ModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
 
             if (!unicodeCheckNode.execute(inliningTarget, encoding)) {
@@ -138,8 +139,8 @@ public final class CodecsISO2022ModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
-            PyCapsule codecobj = factory.createCapsuleJavaName(codec, PyMultibyteCodec_CAPSULE_NAME);
-            return createCodec(inliningTarget, codecobj, factory, raiseNode);
+            PyCapsule codecobj = PFactory.createCapsuleJavaName(language, codec, PyMultibyteCodec_CAPSULE_NAME);
+            return createCodec(inliningTarget, codecobj, raiseNode);
         }
     }
 

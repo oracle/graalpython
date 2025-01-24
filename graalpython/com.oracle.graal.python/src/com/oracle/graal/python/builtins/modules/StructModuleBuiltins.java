@@ -1,13 +1,10 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_STR_OR_BYTES;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_CHR_IN_STRUCT_FMT;
-import static com.oracle.graal.python.nodes.ErrorMessages.REPEAT_COUNT_WITHOUT_FMT;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_BOOL;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_CHAR;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_DOUBLE;
@@ -52,7 +49,10 @@ import static com.oracle.graal.python.builtins.objects.struct.FormatCode.T_LBL_U
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.T_LBL_VOID_PTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__STRUCT;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_STR_OR_BYTES;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_CHR_IN_STRUCT_FMT;
 import static com.oracle.graal.python.nodes.ErrorMessages.EMBEDDED_NULL_CHARACTER;
+import static com.oracle.graal.python.nodes.ErrorMessages.REPEAT_COUNT_WITHOUT_FMT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StructError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -63,6 +63,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -80,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.struct.FormatCode;
 import com.oracle.graal.python.builtins.objects.struct.FormatDef;
 import com.oracle.graal.python.builtins.objects.struct.PStruct;
 import com.oracle.graal.python.builtins.objects.struct.StructBuiltins;
-import com.oracle.graal.python.util.LRUCache;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -93,7 +93,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.LRUCache;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -235,10 +236,9 @@ public class StructModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @SuppressWarnings("unused") @Shared @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @SuppressWarnings("unused") @Shared @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
             byte[] fmt = PythonUtils.getAsciiBytes(format, copyToByteArrayNode, switchEncodingNode);
-            return factory.createStruct(createStructInternal(inliningTarget, fmt));
+            return PFactory.createStruct(PythonLanguage.get(inliningTarget), createStructInternal(inliningTarget, fmt));
         }
 
         @Specialization
@@ -247,18 +247,16 @@ public class StructModuleBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Shared @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @SuppressWarnings("unused") @Shared @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return struct(cls, castToTruffleStringNode.execute(inliningTarget, format), inliningTarget, copyToByteArrayNode, switchEncodingNode, getCodeRangeNode, factory);
+                        @SuppressWarnings("unused") @Shared @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
+            return struct(cls, castToTruffleStringNode.execute(inliningTarget, format), inliningTarget, copyToByteArrayNode, switchEncodingNode, getCodeRangeNode);
         }
 
         @Specialization(limit = "1")
         static PStruct struct(@SuppressWarnings("unused") Object cls, PBytes format,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary("format") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @CachedLibrary("format") PythonBufferAccessLibrary bufferLib) {
             byte[] fmt = bufferLib.getCopiedByteArray(format);
-            return factory.createStruct(createStructInternal(inliningTarget, fmt));
+            return PFactory.createStruct(PythonLanguage.get(inliningTarget), createStructInternal(inliningTarget, fmt));
         }
 
         @Specialization(guards = {"!isPBytes(format)", "!isPString(format)", "!isAsciiTruffleString(format, getCodeRangeNode)"})

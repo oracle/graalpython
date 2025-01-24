@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,23 +43,23 @@ package com.oracle.graal.python.nodes.builtins;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTupleObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -75,38 +75,36 @@ public abstract class TupleNodes {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 40 -> 21
     public abstract static class ConstructTupleNode extends PNodeWithContext {
-        public final PTuple execute(VirtualFrame frame, Object value) {
-            return execute(frame, PythonBuiltinClassType.PTuple, value);
-        }
-
-        public abstract PTuple execute(Frame frame, Object cls, Object value);
+        public abstract PTuple execute(Frame frame, Object value);
 
         @Specialization(guards = "isNoValue(none)")
-        static PTuple tuple(Object cls, @SuppressWarnings("unused") PNone none,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createEmptyTuple(cls);
+        static PTuple tuple(@SuppressWarnings("unused") PNone none,
+                        @Bind PythonLanguage language) {
+            return PFactory.createEmptyTuple(language);
         }
 
-        @Specialization(guards = {"isBuiltinTupleType(inliningTarget, cls, isSameTypeNode)", "isBuiltinTuple(iterable)"}, limit = "1")
-        static PTuple tuple(@SuppressWarnings("unused") Object cls, PTuple iterable,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached TypeNodes.IsSameTypeNode isSameTypeNode) {
+        @Specialization(guards = "isBuiltinTuple(iterable)")
+        static PTuple tuple(PTuple iterable) {
             return iterable;
+        }
+
+        @Specialization(guards = "isBuiltinList(iterable)")
+        static PTuple list(PList iterable,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached SequenceStorageNodes.CopyNode copyNode) {
+            return PFactory.createTuple(language, copyNode.execute(inliningTarget, iterable.getSequenceStorage()));
         }
 
         @Fallback
         @InliningCutoff
-        static PTuple tuple(VirtualFrame frame, Object cls, Object iterable,
+        static PTuple generic(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached CreateStorageFromIteratorNode storageNode,
                         @Cached PyObjectGetIter getIter) {
             Object iterObj = getIter.execute(frame, inliningTarget, iterable);
-            return factory.createTuple(cls, storageNode.execute(frame, iterObj));
-        }
-
-        protected static boolean isBuiltinTupleType(Node inliningTarget, Object cls, TypeNodes.IsSameTypeNode isSameTypeNode) {
-            return isSameTypeNode.execute(inliningTarget, cls, PythonBuiltinClassType.PTuple);
+            return PFactory.createTuple(language, storageNode.execute(frame, iterObj));
         }
 
         @NeverDefault

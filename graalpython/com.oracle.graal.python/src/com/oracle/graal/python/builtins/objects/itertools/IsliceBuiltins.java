@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,11 +67,10 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -158,22 +158,22 @@ public final class IsliceBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // return type(self), (iter([]), 0), 0
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory.createTuple(new Object[]{getIter.execute(frame, inliningTarget, factory.createList()), 0});
-            return factory.createTuple(new Object[]{type, tuple, 0});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{getIter.execute(frame, inliningTarget, PFactory.createList(language)), 0});
+            return PFactory.createTuple(language, new Object[]{type, tuple, 0});
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
         static Object reduce(PIslice self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
             Object stop = (self.getStop() == -1) ? PNone.NONE : self.getStop();
-            PTuple tuple = factory.createTuple(new Object[]{self.getIterable(), self.getNext(), stop, self.getStep()});
-            return factory.createTuple(new Object[]{type, tuple, self.getCnt()});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{self.getIterable(), self.getNext(), stop, self.getStep()});
+            return PFactory.createTuple(language, new Object[]{type, tuple, self.getCnt()});
         }
     }
 

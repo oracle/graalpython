@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,7 +60,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
@@ -110,8 +111,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PFrame self);
 
         @Specialization
-        Object get(VirtualFrame curFrame, PFrame self,
-                        @Cached PythonObjectFactory factory) {
+        Object get(VirtualFrame curFrame, PFrame self) {
             PythonObject globals = self.getGlobals();
             if (globals instanceof PythonModule) {
                 if (getDictNode == null) {
@@ -120,7 +120,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 }
                 return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
             } else {
-                return globals != null ? globals : factory.createDict();
+                return globals != null ? globals : PFactory.createDict(PythonLanguage.get(this));
             }
         }
 
@@ -274,10 +274,10 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         static PCode get(PFrame self,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             RootCallTarget ct = self.getTarget();
             assert ct != null;
-            return factory.createCode(ct);
+            return PFactory.createCode(language, ct);
         }
 
         @NeverDefault

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import java.math.BigInteger;
 import java.util.Objects;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -37,7 +38,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -616,9 +617,9 @@ public final class PInt extends PythonBuiltinObject {
         return Math.abs(v);
     }
 
-    public static Object abs(Node inliningTarget, long v, PythonObjectFactory.Lazy factory) {
+    public static Object abs(Node inliningTarget, long v) {
         if (v == Long.MIN_VALUE) {
-            return factory.get(inliningTarget).createInt(abs(PInt.longToBigInteger(v)));
+            return PFactory.createInt(PythonLanguage.get(inliningTarget), abs(PInt.longToBigInteger(v)));
         }
         return Math.abs(v);
     }
@@ -695,8 +696,8 @@ public final class PInt extends PythonBuiltinObject {
      * @return either {@code Long} or {@code PInt} containing an unsigned value with bit pattern
      *         matching that of {@code value}
      */
-    public static Object createPythonIntFromUnsignedLong(Node inliningTarget, PythonObjectFactory factory, InlinedConditionProfile profile, long value) {
-        return profile.profile(inliningTarget, value >= 0) ? value : factory.createInt(longToUnsignedBigInt(value));
+    public static Object createPythonIntFromUnsignedLong(Node inliningTarget, PythonLanguage language, InlinedConditionProfile profile, long value) {
+        return profile.profile(inliningTarget, value >= 0) ? value : PFactory.createInt(language, longToUnsignedBigInt(value));
     }
 
     @TruffleBoundary

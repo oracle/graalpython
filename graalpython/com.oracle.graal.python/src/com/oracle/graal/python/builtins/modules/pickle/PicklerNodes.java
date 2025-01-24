@@ -57,10 +57,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
-import com.oracle.graal.python.lib.PyObjectSetItem;
 import org.graalvm.collections.Pair;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
@@ -83,10 +82,12 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -103,7 +104,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -126,7 +127,6 @@ public final class PicklerNodes {
         @SuppressWarnings("FieldMayBeFinal") @Child private PyIterNextNode getNextNode = PyIterNextNode.create();
         @Child CastToTruffleStringNode toStringNode = CastToTruffleStringNode.create();
 
-        @Child private PythonObjectFactory objectFactory;
         @Child private HiddenAttr.ReadNode readHiddenAttributeNode;
         @Child private IsBuiltinObjectProfile errProfile;
         @Child private InlineIsBuiltinClassProfile isBuiltinClassProfile;
@@ -318,14 +318,6 @@ public final class PicklerNodes {
             return hashingStorageItValue;
         }
 
-        protected final PythonObjectFactory factory() {
-            if (objectFactory == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                objectFactory = insert(PythonObjectFactory.create());
-            }
-            return objectFactory;
-        }
-
         protected int length(VirtualFrame frame, Object object) {
             if (sizeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -367,15 +359,15 @@ public final class PicklerNodes {
         }
 
         protected Object unicodeRawDecodeEscape(VirtualFrame frame, byte[] bytes, int len) {
-            return decode(frame, factory().createBytes(bytes, 0, len), T_CODEC_RAW_UNICODE_ESCAPE);
+            return decode(frame, PFactory.createBytes(PythonLanguage.get(this), bytes, len), T_CODEC_RAW_UNICODE_ESCAPE);
         }
 
         protected Object decodeASCII(VirtualFrame frame, byte[] bytes, int len, TruffleString errors) {
-            return decode(frame, factory().createBytes(bytes, 0, len), T_CODEC_ASCII, errors);
+            return decode(frame, PFactory.createBytes(PythonLanguage.get(this), bytes, len), T_CODEC_ASCII, errors);
         }
 
         protected Object decodeUTF8(VirtualFrame frame, ByteArrayView bytes, int len, TruffleString errors) {
-            return decode(frame, factory().createBytes(bytes.getBytes(len), 0, len), T_UTF8, errors);
+            return decode(frame, PFactory.createBytes(PythonLanguage.get(this), bytes.getBytes(len), len), T_UTF8, errors);
         }
 
         protected Object decode(VirtualFrame frame, Object value, TruffleString encoding) {
@@ -384,13 +376,6 @@ public final class PicklerNodes {
 
         protected Object decode(VirtualFrame frame, Object value, TruffleString encoding, TruffleString errors) {
             return getItem(frame, ensureCodecsDecodeNode().call(frame, value, encoding, errors, false), 0);
-        }
-
-        protected Object escapeDecode(VirtualFrame frame, PythonObjectFactory factory, byte[] data, int offset, int len) {
-            if (len == 0) {
-                return factory.createEmptyBytes();
-            }
-            return escapeDecode(frame, PythonUtils.arrayCopyOfRange(data, offset, offset + len));
         }
 
         protected Object escapeDecode(VirtualFrame frame, byte[] data) {
@@ -683,7 +668,7 @@ public final class PicklerNodes {
 
         private Pair<TruffleString, TruffleString> getMapping(VirtualFrame frame, PDict nameMapping, PDict importMapping,
                         TruffleString nameMappingLabel, TruffleString importMappingLabel, TruffleString moduleName, TruffleString globalName) {
-            Object key = factory().createTuple(new Object[]{moduleName, globalName});
+            Object key = PFactory.createTuple(PythonLanguage.get(this), new Object[]{moduleName, globalName});
             Object item = getDictItem(frame, nameMapping, key);
             if (item != null) {
                 if (!(item instanceof PTuple) || length(frame, item) != 2) {

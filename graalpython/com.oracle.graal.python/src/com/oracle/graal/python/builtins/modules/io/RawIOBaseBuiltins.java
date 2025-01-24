@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -76,7 +77,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -121,24 +122,24 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
         @Specialization(guards = "size >= 0")
         static Object read(VirtualFrame frame, Object self, int size,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethodReadInto,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PythonObjectFactory factory) {
-            PByteArray b = factory.createByteArray(new byte[size]);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            PByteArray b = PFactory.createByteArray(language, new byte[size]);
             Object res = callMethodReadInto.execute(frame, inliningTarget, self, T_READINTO, b);
             if (res == PNone.NONE) {
                 return res;
             }
             int n = asSizeNode.executeExact(frame, inliningTarget, res, ValueError);
             if (n == 0) {
-                return factory.createEmptyBytes();
+                return PFactory.createEmptyBytes(language);
             }
             byte[] bytes = toBytes.execute(b);
             if (n < size) {
-                return factory.createBytes(PythonUtils.arrayCopyOf(bytes, n));
+                return PFactory.createBytes(language, PythonUtils.arrayCopyOf(bytes, n));
             }
-            return factory.createBytes(bytes);
+            return PFactory.createBytes(language, bytes);
         }
     }
 
@@ -157,7 +158,6 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile chunksSize0Profile,
                         @Cached InlinedCountingConditionProfile bytesLen0Profile,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
@@ -180,7 +180,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                 append(chunks, bytes, bytesLen);
             }
 
-            return factory.createBytes(toByteArray(chunks));
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), toByteArray(chunks));
         }
     }
 

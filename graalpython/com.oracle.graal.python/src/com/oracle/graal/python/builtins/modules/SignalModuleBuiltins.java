@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -90,7 +91,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -241,7 +242,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     abstract static class ValidSignalsNode extends PythonBuiltinNode {
         @Specialization
         static Object validSignals(
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             int signalCount = 0;
             for (int i = 0; i < Signals.SIGNAL_NAMES.length; i++) {
                 if (Signals.SIGNAL_NAMES[i] != null) {
@@ -256,7 +257,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            return factory.createTuple(validSignals);
+            return PFactory.createTuple(language, validSignals);
         }
     }
 
@@ -464,14 +465,14 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ModuleData moduleData = self.getModuleState(ModuleData.class);
             long usDelay = toMicroseconds(frame, inliningTarget, seconds, timeFromObjectNode);
             long usInterval = toMicroseconds(frame, inliningTarget, interval, timeFromObjectNode);
             if (which != ITIMER_REAL) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
-            PTuple resultTuple = GetitimerNode.createResultTuple(factory, moduleData);
+            PTuple resultTuple = GetitimerNode.createResultTuple(language, moduleData);
             setitimer(moduleData, usDelay, usInterval);
             return resultTuple;
         }
@@ -532,18 +533,18 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         static Object doIt(VirtualFrame frame, PythonModule self, int which,
                         @Bind("this") Node inliningTarget,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             ModuleData moduleData = self.getModuleState(ModuleData.class);
             if (which != ITIMER_REAL) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
             }
-            return createResultTuple(factory, moduleData);
+            return createResultTuple(language, moduleData);
         }
 
-        static PTuple createResultTuple(PythonObjectFactory factory, ModuleData moduleData) {
+        static PTuple createResultTuple(PythonLanguage language, ModuleData moduleData) {
             long oldInterval = moduleData.itimerInterval;
             long oldDelay = getOldDelay(moduleData);
-            return factory.createTuple(new Object[]{oldDelay / (double) SEC_TO_US, oldInterval / (double) SEC_TO_US});
+            return PFactory.createTuple(language, new Object[]{oldDelay / (double) SEC_TO_US, oldInterval / (double) SEC_TO_US});
         }
 
         @TruffleBoundary

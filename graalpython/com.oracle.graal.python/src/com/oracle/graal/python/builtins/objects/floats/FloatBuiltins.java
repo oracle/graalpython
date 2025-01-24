@@ -54,6 +54,7 @@ import java.math.RoundingMode;
 import java.nio.ByteOrder;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
@@ -95,7 +96,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -403,8 +404,8 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Negative numbers raised to fractional powers become complex.
-                PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                throw new UnexpectedResultException(powerNode.execute(frame, inliningTarget, factory.createComplex(left, 0), factory.createComplex(right, 0), none));
+                PythonLanguage language = PythonLanguage.get(inliningTarget);
+                throw new UnexpectedResultException(powerNode.execute(frame, inliningTarget, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none));
             }
             return Math.pow(left, right);
         }
@@ -414,15 +415,14 @@ public final class FloatBuiltins extends PythonBuiltins {
         static Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberPowerNode powerNode,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 // Negative numbers raised to fractional powers become complex.
-                PythonObjectFactory pof = factory.get(inliningTarget);
-                return powerNode.execute(frame, inliningTarget, pof.createComplex(left, 0), pof.createComplex(right, 0), none);
+                PythonLanguage language = PythonLanguage.get(inliningTarget);
+                return powerNode.execute(frame, inliningTarget, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none);
             }
             return Math.pow(left, right);
         }
@@ -433,7 +433,6 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Shared @Cached PyNumberPowerNode powerNode,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (!(mod instanceof PNone)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
@@ -446,7 +445,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, powerNode, factory, raiseNode);
+            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, powerNode, raiseNode);
         }
 
         public static PowNode create() {
@@ -467,12 +466,12 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.nb_divmod, isComplex = true)
     @GenerateNodeFactory
     abstract static class DivModNode extends AbstractNumericBinaryBuiltin {
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
         @Override
         protected PTuple op(double left, double right) {
             raiseDivisionByZero(right == 0);
-            return factory.createTuple(new Object[]{Math.floor(left / right), ModNode.mod(left, right)});
+            PythonLanguage language = PythonLanguage.get(this);
+            return PFactory.createTuple(language, new Object[]{Math.floor(left / right), ModNode.mod(left, right)});
         }
     }
 
@@ -700,11 +699,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         static Object round(Object xObj, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
                         @Cached InlinedConditionProfile isLongProfile,
-                        @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             double x = castToDoubleChecked(inliningTarget, xObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(x))) {
@@ -715,7 +714,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
             double result = round(x, 0, inliningTarget, raiseNode);
             if (isLongProfile.profile(inliningTarget, result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
-                return factory.get(inliningTarget).createInt(toBigInteger(result));
+                return PFactory.createInt(language, toBigInteger(result));
             } else {
                 return (long) result;
             }
@@ -963,10 +962,10 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         static PTuple get(Object selfObj,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             double self = castToDoubleChecked(inliningTarget, selfObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(self))) {
@@ -1007,11 +1006,11 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
 
             // count the ratio
-            return factory.createTuple(countIt(mantissa, exponent));
+            return PFactory.createTuple(language, countIt(language, mantissa, exponent));
         }
 
         @TruffleBoundary
-        private static Object[] countIt(double mantissa, int exponent) {
+        private static Object[] countIt(PythonLanguage language, double mantissa, int exponent) {
             double m = mantissa;
             int e = exponent;
             for (int i = 0; i < 300 && Double.compare(m, Math.floor(m)) != 0; i++) {
@@ -1030,8 +1029,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (numerator.bitLength() < Long.SIZE && denominator.bitLength() < Long.SIZE) {
                 return new Object[]{numerator.longValue(), denominator.longValue()};
             }
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return new Object[]{factory.createInt(numerator), factory.createInt(denominator)};
+            return new Object[]{PFactory.createInt(language, numerator), PFactory.createInt(language, denominator)};
         }
     }
 
@@ -1097,11 +1095,10 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetNewArgsNode extends AbstractNumericUnaryBuiltin {
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-
         @Override
         protected Object op(double self) {
-            return factory.createTuple(new Object[]{factory.createFloat(self)});
+            PythonLanguage language = PythonLanguage.get(this);
+            return PFactory.createTuple(language, new Object[]{PFactory.createFloat(language, self)});
         }
     }
 }

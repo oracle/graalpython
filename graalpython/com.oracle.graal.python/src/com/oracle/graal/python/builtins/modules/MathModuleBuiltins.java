@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -37,6 +37,7 @@ import java.math.MathContext;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -82,7 +83,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -362,8 +363,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value >= SMALL_FACTORIALS.length"})
         static PInt factorialInt(int value,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(factorialPart(1, value));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, factorialPart(1, value));
         }
 
         @Specialization(guards = {"value < 0"})
@@ -379,8 +380,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value >= SMALL_FACTORIALS.length"})
         static PInt factorialLong(long value,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(factorialPart(1, value));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, factorialPart(1, value));
         }
 
         @Fallback
@@ -439,26 +440,26 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt comb(long n, long k,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(calculateComb(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, calculateComb(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
         }
 
         @Specialization
         PInt comb(long n, PInt k,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(calculateComb(PInt.longToBigInteger(n), k.getValue()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, calculateComb(PInt.longToBigInteger(n), k.getValue()));
         }
 
         @Specialization
         PInt comb(PInt n, long k,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(calculateComb(n.getValue(), PInt.longToBigInteger(k)));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, calculateComb(n.getValue(), PInt.longToBigInteger(k)));
         }
 
         @Specialization
         PInt comb(PInt n, PInt k,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(calculateComb(n.getValue(), k.getValue()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, calculateComb(n.getValue(), k.getValue()));
         }
 
         @Specialization
@@ -510,26 +511,26 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt perm(long n, long k,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(calculatePerm(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, calculatePerm(PInt.longToBigInteger(n), PInt.longToBigInteger(k)));
         }
 
         @Specialization
         PInt perm(long n, PInt k,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(calculatePerm(PInt.longToBigInteger(n), k.getValue()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, calculatePerm(PInt.longToBigInteger(n), k.getValue()));
         }
 
         @Specialization
         PInt perm(PInt n, long k,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(calculatePerm(n.getValue(), PInt.longToBigInteger(k)));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, calculatePerm(n.getValue(), PInt.longToBigInteger(k)));
         }
 
         @Specialization
         PInt perm(PInt n, PInt k,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createInt(calculatePerm(n.getValue(), k.getValue()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, calculatePerm(n.getValue(), k.getValue()));
         }
 
         @Specialization
@@ -701,12 +702,12 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple frexpD(double value,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object[] content = new Object[2];
             double[] primContent = frexp(value);
             content[0] = primContent[0];
             content[1] = (int) primContent[1];
-            return factory.createTuple(content);
+            return PFactory.createTuple(language, content);
         }
 
         @Override
@@ -839,17 +840,17 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class ModfNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         static PTuple modfD(double value,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             if (!Double.isFinite(value)) {
                 if (Double.isInfinite(value)) {
-                    return factory.createTuple(new Object[]{Math.copySign(0., value), value});
+                    return PFactory.createTuple(language, new Object[]{Math.copySign(0., value), value});
                 } else if (Double.isNaN(value)) {
-                    return factory.createTuple(new Object[]{value, value});
+                    return PFactory.createTuple(language, new Object[]{value, value});
                 }
             }
             double fraction = value % 1;
             double integral = value - fraction;
-            return factory.createTuple(new Object[]{fraction, integral});
+            return PFactory.createTuple(language, new Object[]{fraction, integral});
         }
 
         @Override
@@ -1058,14 +1059,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PInt gcd(long x, PInt y,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createInt(op(PInt.longToBigInteger(x), y.getValue()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, op(PInt.longToBigInteger(x), y.getValue()));
         }
 
         @Specialization
         static PInt gcd(PInt x, long y,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createInt(op(x.getValue(), PInt.longToBigInteger(y)));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, op(x.getValue(), PInt.longToBigInteger(y)));
         }
 
         @TruffleBoundary
@@ -1075,8 +1076,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt gcd(PInt x, PInt y,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createInt(op(x.getValue(), y.getValue()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, op(x.getValue(), y.getValue()));
         }
 
         @Specialization

@@ -130,6 +130,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import org.graalvm.collections.Pair;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
@@ -168,6 +169,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -442,7 +444,7 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         public Object createMemoryViewFromBytes(VirtualFrame frame, byte[] bytes, int n) {
-            return ensureMemoryViewNode().execute(frame, factory().createByteArray(bytes, n));
+            return ensureMemoryViewNode().execute(frame, PFactory.createByteArray(PythonLanguage.get(this), bytes, n));
         }
 
         public Object createMemoryView(VirtualFrame frame, Object obj) {
@@ -946,7 +948,7 @@ public class PUnpickler extends PythonBuiltinObject {
             byte[] buffer = new byte[size];
             readInto(frame, self, buffer);
 
-            Object bytes = factory().createBytes(buffer);
+            Object bytes = PFactory.createBytes(PythonLanguage.get(this), buffer);
             pDataPush(self, bytes);
         }
 
@@ -960,7 +962,7 @@ public class PUnpickler extends PythonBuiltinObject {
             byte[] buffer = new byte[size];
             readInto(frame, self, buffer);
 
-            Object bytearray = factory().createByteArray(buffer);
+            Object bytearray = PFactory.createByteArray(PythonLanguage.get(this), buffer);
             pDataPush(self, bytearray);
         }
 
@@ -1008,7 +1010,7 @@ public class PUnpickler extends PythonBuiltinObject {
 
             // Convert Python 2.x strings to bytes if the *encoding* given to the Unpickler was
             // 'bytes'. Otherwise, convert them to unicode.
-            final PBytes bytes = factory().createBytes(s.getBytes(size), size);
+            final PBytes bytes = PFactory.createBytes(PythonLanguage.get(this), s.getBytes(size), size);
             if (ensureTsEqualNode().execute(self.encoding, T_CODEC_BYTES, TS_ENCODING)) {
                 obj = bytes;
             } else {
@@ -1037,7 +1039,11 @@ public class PUnpickler extends PythonBuiltinObject {
 
             // Use the PyBytes API to decode the string, since that is what is used to encode, and
             // then coerce the result to Unicode.
-            bytes = escapeDecode(frame, factory(), s, pStart, len);
+            if (len == 0) {
+                bytes = PFactory.createEmptyBytes(PythonLanguage.get(this));
+            } else {
+                bytes = escapeDecode(frame, PythonUtils.arrayCopyOfRange(s, pStart, pStart + len));
+            }
 
             // Leave the Python 2.x strings as bytes if the *encoding* given to the Unpickler was
             // 'bytes'. Otherwise, convert them to unicode.
@@ -1093,7 +1099,7 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadEmptyList(PUnpickler self) {
-            pDataPush(self, factory().createList());
+            pDataPush(self, PFactory.createList(PythonLanguage.get(this)));
         }
 
         private void loadList(PUnpickler self) {
@@ -1103,7 +1109,7 @@ public class PUnpickler extends PythonBuiltinObject {
         }
 
         private void loadEmptyDict(PUnpickler self) {
-            pDataPush(self, factory().createDict());
+            pDataPush(self, PFactory.createDict(PythonLanguage.get(this)));
         }
 
         private void loadDict(VirtualFrame frame, PUnpickler self) {
@@ -1125,11 +1131,11 @@ public class PUnpickler extends PythonBuiltinObject {
             }
 
             self.stack.clear(i);
-            pDataPush(self, factory().createDict(storage));
+            pDataPush(self, PFactory.createDict(PythonLanguage.get(this), storage));
         }
 
         private void loadEmptySet(PUnpickler self) {
-            pDataPush(self, factory().createSet());
+            pDataPush(self, PFactory.createSet(PythonLanguage.get(this)));
         }
 
         private void loadAddItems(VirtualFrame frame, PUnpickler self) {
@@ -1168,7 +1174,7 @@ public class PUnpickler extends PythonBuiltinObject {
         private void loadFrozenSet(VirtualFrame frame, PUnpickler self) {
             int i = marker(self);
             Object items = pDataPopTuple(self, i);
-            Object frozenset = factory().createFrozenSet(getClonedHashingStorage(frame, items));
+            Object frozenset = PFactory.createFrozenSet(PythonLanguage.get(this), getClonedHashingStorage(frame, items));
             pDataPush(self, frozenset);
         }
 

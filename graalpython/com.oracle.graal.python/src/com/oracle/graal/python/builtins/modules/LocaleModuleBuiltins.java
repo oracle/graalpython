@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -72,7 +73,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.locale.LocaleUtils;
 import com.oracle.graal.python.runtime.locale.PythonLocale;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -117,7 +118,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static PDict localeconv() {
             PythonContext ctx = PythonContext.get(null);
-            PythonObjectFactory factory = ctx.factory();
+            PythonLanguage language = ctx.getLanguage();
             LinkedHashMap<String, Object> dict = new LinkedHashMap<>(20);
             final PythonLocale currentPythonLocale = ctx.getCurrentLocale();
 
@@ -128,7 +129,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
 
             dict.put("decimal_point", TruffleString.fromCodePointUncached(decimalFormatSymbols.getDecimalSeparator(), TS_ENCODING));
             dict.put("thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
-            dict.put("grouping", getDecimalFormatGrouping(factory, numericLocaleNumFormat));
+            dict.put("grouping", getDecimalFormatGrouping(language, numericLocaleNumFormat));
 
             // LC_MONETARY
             Locale monetaryLocale = currentPythonLocale.category(LC_MONETARY);
@@ -140,7 +141,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             dict.put("currency_symbol", toTruffleStringUncached(decimalFormatSymbols.getCurrencySymbol()));
             dict.put("mon_decimal_point", TruffleString.fromCodePointUncached(decimalFormatSymbols.getMonetaryDecimalSeparator(), TS_ENCODING));
             dict.put("mon_thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
-            dict.put("mon_grouping", getDecimalFormatGrouping(factory, monetaryNumFormat));
+            dict.put("mon_grouping", getDecimalFormatGrouping(language, monetaryNumFormat));
             // TODO: reasonable default, but not the current locale setting
             dict.put("positive_sign", "");
             dict.put("negative_sign", TruffleString.fromCodePointUncached(decimalFormatSymbols.getMinusSign(), TS_ENCODING));
@@ -153,21 +154,21 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             dict.put("p_sign_posn", PNone.NONE);
             dict.put("n_sign_posn", PNone.NONE);
 
-            return factory.createDictFromMap(dict);
+            return PFactory.createDictFromMap(language, dict);
         }
 
         private static DecimalFormatSymbols getDecimalFormatSymbols(Locale locale, NumberFormat numberFormat) {
             return numberFormat instanceof DecimalFormat decimalFormat ? decimalFormat.getDecimalFormatSymbols() : new DecimalFormatSymbols(locale);
         }
 
-        private static PList getDecimalFormatGrouping(PythonObjectFactory factory, NumberFormat numberFormat) {
+        private static PList getDecimalFormatGrouping(PythonLanguage language, NumberFormat numberFormat) {
             if (numberFormat instanceof DecimalFormat decimalFormat) {
                 // TODO: this does not support groupings with variable size groups like in India
                 // Possible approach: decimalFormat.toPattern() gives a generic pattern (e.g.,
                 // #,#00.0#) that would have to be parsed to extract the group sizes from it
-                return factory.createList(new Object[]{decimalFormat.getGroupingSize(), 0});
+                return PFactory.createList(language, new Object[]{decimalFormat.getGroupingSize(), 0});
             } else {
-                return factory.createList();
+                return PFactory.createList(language);
             }
         }
     }

@@ -68,7 +68,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -89,6 +89,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /*
@@ -276,8 +277,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
-                        @Cached PythonObjectFactory.Lazy factory) {
-            if (lib.hasMembers(object)) {
+                        @Cached InlinedConditionProfile profile) {
+            if (profile.profile(inliningTarget, lib.hasMembers(object))) {
                 gil.release(true);
                 try {
                     return lib.getMembers(object);
@@ -288,7 +289,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } else {
-                return factory.get(inliningTarget).createList();
+                return PFactory.createList(PythonLanguage.get(inliningTarget));
             }
         }
     }

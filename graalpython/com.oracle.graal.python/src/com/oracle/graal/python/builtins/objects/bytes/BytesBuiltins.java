@@ -40,6 +40,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -54,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.Sequ
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageSqItemNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
@@ -70,7 +70,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ComparisonOp;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -123,9 +123,7 @@ public class BytesBuiltins extends PythonBuiltins {
         static Object doInt(Object self, int key,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.GetBytesStorage getBytesStorage,
-                        @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached SequenceStorageSqItemNode sqItemNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                        @Cached SequenceStorageSqItemNode sqItemNode) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             return sqItemNode.execute(inliningTarget, storage, key, ErrorMessages.BYTES_OUT_OF_BOUNDS);
         }
@@ -146,7 +144,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 throw raiseNonIntIndex(inliningTarget, raiseNode, idx);
             }
             return subscriptNode.execute(frame, inliningTarget, getBytesStorage.execute(inliningTarget, self), idx,
-                            ErrorMessages.LIST_INDEX_OUT_OF_RANGE, PythonObjectFactory::createBytes);
+                            ErrorMessages.LIST_INDEX_OUT_OF_RANGE, PFactory::createBytes);
         }
 
         @InliningCutoff
@@ -174,11 +172,11 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         static Object translate(VirtualFrame frame, Object self, Object table, Object delete,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile isLenTable256Profile,
                         @Cached InlinedBranchProfile hasTable,
                         @Cached InlinedBranchProfile hasDelete,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached PyBytesCheckExactNode checkExactNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             byte[] bTable = null;
@@ -202,12 +200,12 @@ public class BytesBuiltins extends PythonBuiltins {
             } else if (bDelete != null) {
                 result = delete(bSelf, bDelete);
             } else if (!checkExactNode.execute(inliningTarget, self)) {
-                return factory.createBytes(bSelf);
+                return PFactory.createBytes(language, bSelf);
             } else {
                 return self;
             }
             if (result.changed || !checkExactNode.execute(inliningTarget, self)) {
-                return factory.createBytes(result.array);
+                return PFactory.createBytes(language, result.array);
             }
             return self;
         }
@@ -219,28 +217,24 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FromHexNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = "isBuiltinBytesType(inliningTarget, cls, isSameType)")
-        static PBytes doBytes(Object cls, TruffleString str,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("isSameType") @Cached TypeNodes.IsSameTypeNode isSameType,
+        @Specialization(guards = "isBuiltinBytesType(cls)")
+        static PBytes doBytes(@SuppressWarnings("unused") Object cls, TruffleString str,
                         @Shared("hexToBytes") @Cached BytesNodes.HexStringToBytesNode hexStringToBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createBytes(cls, hexStringToBytesNode.execute(str));
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, hexStringToBytesNode.execute(str));
         }
 
-        @Specialization(guards = "!isBuiltinBytesType(inliningTarget, cls, isSameType)")
+        @Specialization(guards = "!isBuiltinBytesType(cls)")
         static Object doGeneric(VirtualFrame frame, Object cls, TruffleString str,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("isSameType") @Cached TypeNodes.IsSameTypeNode isSameType,
                         @Cached CallNode callNode,
                         @Shared("hexToBytes") @Cached BytesNodes.HexStringToBytesNode hexStringToBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            PBytes bytes = factory.createBytes(hexStringToBytesNode.execute(str));
+                        @Bind PythonLanguage language) {
+            PBytes bytes = PFactory.createBytes(language, hexStringToBytesNode.execute(str));
             return callNode.execute(frame, cls, bytes);
         }
 
-        protected static boolean isBuiltinBytesType(Node inliningTarget, Object cls, TypeNodes.IsSameTypeNode isSameTypeNode) {
-            return isSameTypeNode.execute(inliningTarget, PythonBuiltinClassType.PBytes, cls);
+        protected static boolean isBuiltinBytesType(Object cls) {
+            return cls == PythonBuiltinClassType.PBytes;
         }
 
         @Override
@@ -362,13 +356,13 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         static Object bytes(Object self,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PyBytesCheckExactNode check,
-                        @Cached BytesNodes.GetBytesStorage getBytesStorage,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached BytesNodes.GetBytesStorage getBytesStorage) {
             if (check.execute(inliningTarget, self)) {
                 return self;
             } else {
-                return factory.get(inliningTarget).createBytes(getBytesStorage.execute(inliningTarget, self));
+                return PFactory.createBytes(language, getBytesStorage.execute(inliningTarget, self));
             }
         }
     }

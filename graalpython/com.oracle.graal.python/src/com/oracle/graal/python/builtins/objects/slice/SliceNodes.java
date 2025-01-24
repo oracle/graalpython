@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes.PyLongSign;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -57,7 +58,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -84,34 +85,34 @@ public abstract class SliceNodes {
 
         @SuppressWarnings("unused")
         static PSlice doInt(int start, int stop, PNone step,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createIntSlice(start, stop, 1, false, true);
+                        @Bind PythonLanguage language) {
+            return PFactory.createIntSlice(language, start, stop, 1, false, true);
         }
 
         @Specialization
         static PSlice doInt(int start, int stop, int step,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createIntSlice(start, stop, step);
+                        @Bind PythonLanguage language) {
+            return PFactory.createIntSlice(language, start, stop, step);
         }
 
         @Specialization
         @SuppressWarnings("unused")
         static PSlice doInt(PNone start, int stop, PNone step,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createIntSlice(0, stop, 1, true, true);
+                        @Bind PythonLanguage language) {
+            return PFactory.createIntSlice(language, 0, stop, 1, true, true);
         }
 
         @Specialization
         @SuppressWarnings("unused")
         static PSlice doInt(PNone start, int stop, int step,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createIntSlice(0, stop, step, true, false);
+                        @Bind PythonLanguage language) {
+            return PFactory.createIntSlice(language, 0, stop, step, true, false);
         }
 
         @Fallback
         static PSlice doGeneric(Object start, Object stop, Object step,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createObjectSlice(start, stop, step);
+                        @Bind PythonLanguage language) {
+            return PFactory.createObjectSlice(language, start, stop, step);
         }
 
         @NeverDefault
@@ -226,8 +227,8 @@ public abstract class SliceNodes {
                         @Shared @Cached SliceCastToToBigInt start,
                         @Shared @Cached SliceCastToToBigInt stop,
                         @Shared @Cached SliceCastToToBigInt step,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createObjectSlice(start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createObjectSlice(language, start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
         }
 
         protected static boolean isBigInt(PObjectSlice slice) {
@@ -245,8 +246,8 @@ public abstract class SliceNodes {
                         @Shared @Cached SliceCastToToBigInt start,
                         @Shared @Cached SliceCastToToBigInt stop,
                         @Shared @Cached SliceCastToToBigInt step,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createObjectSlice(start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createObjectSlice(language, start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
         }
 
     }
@@ -271,8 +272,8 @@ public abstract class SliceNodes {
                         @Cached SliceLossyCastToInt start,
                         @Cached SliceLossyCastToInt stop,
                         @Cached SliceLossyCastToInt step,
-                        @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createObjectSlice(start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createObjectSlice(language, start.execute(inliningTarget, slice.getStart()), stop.execute(inliningTarget, slice.getStop()), step.execute(inliningTarget, slice.getStep()));
         }
     }
 

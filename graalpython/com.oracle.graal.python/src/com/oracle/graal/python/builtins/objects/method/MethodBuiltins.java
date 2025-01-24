@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -69,7 +70,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -190,11 +191,10 @@ public final class MethodBuiltins extends PythonBuiltins {
         @Specialization
         static Object defaults(PMethod self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetDefaultsNode getDefaultsNode,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached GetDefaultsNode getDefaultsNode) {
             Object[] argDefaults = getDefaultsNode.execute(inliningTarget, self);
             assert argDefaults != null;
-            return (argDefaults.length == 0) ? PNone.NONE : factory.get(inliningTarget).createTuple(argDefaults);
+            return (argDefaults.length == 0) ? PNone.NONE : PFactory.createTuple(PythonLanguage.get(inliningTarget), argDefaults);
         }
     }
 
@@ -204,10 +204,9 @@ public final class MethodBuiltins extends PythonBuiltins {
         @Specialization
         static Object kwDefaults(PMethod self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetKeywordDefaultsNode getKeywordDefaultsNode,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached GetKeywordDefaultsNode getKeywordDefaultsNode) {
             PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(inliningTarget, self);
-            return (kwdefaults.length > 0) ? factory.get(inliningTarget).createDict(kwdefaults) : PNone.NONE;
+            return (kwdefaults.length > 0) ? PFactory.createDict(PythonLanguage.get(inliningTarget), kwdefaults) : PNone.NONE;
         }
     }
 

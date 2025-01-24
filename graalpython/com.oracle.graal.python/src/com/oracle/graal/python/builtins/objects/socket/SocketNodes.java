@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -97,7 +98,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -394,7 +395,6 @@ public abstract class SocketNodes {
         static Object makeSockAddr(VirtualFrame frame, Node inliningTarget, UniversalSockAddr addr,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
-                        @Cached(inline = false) PythonObjectFactory factory,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
@@ -402,23 +402,24 @@ public abstract class SocketNodes {
                         @Cached PRaiseNode.Lazy raiseNode) {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
+                PythonLanguage language = context.getLanguage(inliningTarget);
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
                     Object posixSupport = context.getPosixSupport();
                     TruffleString addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
-                    return factory.createTuple(new Object[]{addressString, inet4SockAddr.getPort()});
+                    return PFactory.createTuple(language, new Object[]{addressString, inet4SockAddr.getPort()});
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
                     Object posixSupport = context.getPosixSupport();
                     TruffleString addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
-                    return factory.createTuple(new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
+                    return PFactory.createTuple(language, new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
                 } else if (family == AF_UNIX.value) {
                     UnixSockAddr unixSockAddr = addrLib.asUnixSockAddr(addr);
                     byte[] path = unixSockAddr.getPath();
                     if (PosixConstants.IS_LINUX && path.length > 0 && path[0] == 0) {
                         // linux-specific "abstract" address
-                        return factory.createBytes(arrayCopyOf(path, path.length));
+                        return PFactory.createBytes(language, arrayCopyOf(path, path.length));
                     }
                     return bytesToString(path, fromByteArrayNode, switchEncodingNode);
                 } else if (family == AF_UNSPEC.value) {

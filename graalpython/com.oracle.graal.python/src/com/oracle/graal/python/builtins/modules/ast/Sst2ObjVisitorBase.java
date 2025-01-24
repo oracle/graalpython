@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,15 +46,17 @@ import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_END_LINE
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_LINENO;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -63,10 +65,10 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
 
-    final PythonObjectFactory factory;
+    final PythonLanguage language;
 
     Sst2ObjVisitorBase() {
-        factory = PythonObjectFactory.getUncached();
+        language = PythonLanguage.get(null);
     }
 
     static int visitNullable(int i) {
@@ -106,11 +108,11 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
             return toTruffleStringUncached((String) o);
         }
         assert o instanceof byte[];
-        return factory.createBytes((byte[]) o);
+        return PFactory.createBytes(language, (byte[]) o);
     }
 
     final Object visitNonNull(ConstantValue v) {
-        return PythonUtils.pythonObjectFromConstantValue(v, factory);
+        return PythonUtils.pythonObjectFromConstantValue(v);
     }
 
     abstract Object visitNonNull(CmpOpTy op);
@@ -121,41 +123,45 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
 
     final PList seq2List(String[] seq) {
         if (seq == null || seq.length == 0) {
-            return factory.createList();
+            return PFactory.createList(language);
         }
         Object[] objs = new Object[seq.length];
         for (int i = 0; i < objs.length; ++i) {
             objs[i] = visitNullable(seq[i]);
         }
-        return factory.createList(objs);
+        return PFactory.createList(language, objs);
     }
 
     final PList seq2List(CmpOpTy[] seq) {
         if (seq == null || seq.length == 0) {
-            return factory.createList();
+            return PFactory.createList(language);
         }
         Object[] objs = new Object[seq.length];
         for (int i = 0; i < objs.length; ++i) {
             objs[i] = visitNullable(seq[i]);
         }
-        return factory.createList(objs);
+        return PFactory.createList(language, objs);
     }
 
     final PList seq2List(SSTNode[] seq) {
         if (seq == null || seq.length == 0) {
-            return factory.createList();
+            return PFactory.createList(language);
         }
         Object[] objs = new Object[seq.length];
         for (int i = 0; i < objs.length; ++i) {
             objs[i] = visitNullable(seq[i]);
         }
-        return factory.createList(objs);
+        return PFactory.createList(language, objs);
     }
 
-    static final void fillSourceRangeAttributes(PythonObject o, SourceRange sourceRange) {
+    static void fillSourceRangeAttributes(PythonObject o, SourceRange sourceRange) {
         o.setAttribute(T_F_LINENO, sourceRange.startLine);
         o.setAttribute(T_F_COL_OFFSET, sourceRange.startColumn);
         o.setAttribute(T_F_END_LINENO, sourceRange.endLine);
         o.setAttribute(T_F_END_COL_OFFSET, sourceRange.endColumn);
+    }
+
+    protected PythonObject createPythonObject(PythonClass cls) {
+        return PFactory.createPythonObject(language, cls, cls.getInstanceShape());
     }
 }

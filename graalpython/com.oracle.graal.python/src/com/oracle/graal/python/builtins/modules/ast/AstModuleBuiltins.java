@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,35 +45,36 @@ import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileN
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_TYPE_COMMENTS;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NODE_GOT_P;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS__;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = AstModuleBuiltins.J__AST, isEager = true)
@@ -98,7 +99,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("PyCF_ALLOW_TOP_LEVEL_AWAIT", PyCF_ALLOW_TOP_LEVEL_AWAIT);
 
         PythonBuiltinClass clsAst = core.lookupType(PythonBuiltinClassType.AST);
-        PTuple emptyTuple = core.factory().createTuple(EMPTY_OBJECT_ARRAY);
+        PTuple emptyTuple = PFactory.createEmptyTuple(core.getLanguage());
         clsAst.setAttribute(T__FIELDS, emptyTuple);
         clsAst.setAttribute(T__ATTRIBUTES, emptyTuple);
         clsAst.setAttribute(T___MATCH_ARGS__, emptyTuple);
@@ -108,7 +109,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule astModule = core.lookupBuiltinModule(T__AST);
-        AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), core.factory(), astModule);
+        AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
         astModule.setModuleState(state);
     }
@@ -116,18 +117,12 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.AST)
     @GenerateNodeFactory
     public abstract static class AstNode extends PythonVarargsBuiltinNode {
-        @Override
-        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (self == PNone.NO_VALUE && arguments.length > 0) {
-                return factory().createPythonObject(arguments[0]);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw VarargsBuiltinDirectInvocationNotSupported.INSTANCE;
-        }
 
         @Specialization
-        PythonObject generic(Object cls, @SuppressWarnings("unused") Object[] varargs, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            return factory().createPythonObject(cls);
+        static PythonObject generic(Object cls, @SuppressWarnings("unused") Object[] varargs, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createPythonObject(language, cls, getInstanceShape.execute(cls));
         }
     }
 

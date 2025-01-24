@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -75,7 +76,7 @@ public final class ErrnoModuleBuiltins extends PythonBuiltins {
         }
 
         // publish the dictionary with mapping code -> string name
-        PDict errorCode = core.factory().createDict(storage);
+        PDict errorCode = PFactory.createDict(core.getLanguage(), storage);
         addBuiltinConstant("errorcode", errorCode);
     }
 

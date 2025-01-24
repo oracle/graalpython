@@ -105,7 +105,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -610,9 +610,10 @@ public abstract class CExtCommonNodes {
 
         @TruffleBoundary
         private static PException raiseResultWithError(Node node, TruffleString name, AbstractTruffleException currentException, TruffleString resultWithErrorMessage) {
-            PBaseException sysExc = PythonObjectFactory.getUncached().createBaseException(SystemError, resultWithErrorMessage, new Object[]{name});
+            PythonLanguage language = PythonLanguage.get(null);
+            PBaseException sysExc = PFactory.createBaseException(language, SystemError, resultWithErrorMessage, new Object[]{name});
             sysExc.setCause(GetEscapedExceptionNode.executeUncached(currentException));
-            throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
+            throw PRaiseNode.raiseExceptionObject(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
     }
 
@@ -1125,29 +1126,8 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = "n < 0")
         static Object doUnsignedLongNegative(long n,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createInt(PInt.longToUnsignedBigInteger(n));
-        }
-
-        @Specialization(replaces = {"doUnsignedIntPositive", "doUnsignedInt", "doUnsignedLongPositive", "doUnsignedLongNegative"})
-        static Object doGeneric(Object n,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            if (n instanceof Integer) {
-                int i = (int) n;
-                if (i >= 0) {
-                    return i;
-                } else {
-                    return doUnsignedInt(i);
-                }
-            } else if (n instanceof Long) {
-                long l = (long) n;
-                if (l >= 0) {
-                    return l;
-                } else {
-                    return doUnsignedLongNegative(l, factory);
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, PInt.longToUnsignedBigInteger(n));
         }
     }
 

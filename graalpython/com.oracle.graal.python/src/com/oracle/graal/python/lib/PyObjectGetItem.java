@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
@@ -62,7 +63,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -155,7 +156,6 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupClassGetItem,
                         @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
-                        @Cached(inline = false) PythonObjectFactory factory,
                         @Cached(inline = false) CallNode callClassGetItem,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (isTypeNode.execute(inliningTarget, maybeType)) {
@@ -165,7 +165,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                 }
                 if (isBuiltinClassProfile.profileClass(inliningTarget, maybeType, PythonBuiltinClassType.PythonClass)) {
                     // Special case type[int], but disallow other types so str[int] fails
-                    return factory.createGenericAlias(maybeType, key);
+                    return PFactory.createGenericAlias(PythonLanguage.get(inliningTarget), maybeType, key);
                 }
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_NOT_SUBSCRIPTABLE, maybeType);
             }

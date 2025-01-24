@@ -55,6 +55,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -94,7 +95,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -237,14 +238,15 @@ public final class CFieldBuiltins extends PythonBuiltins {
     @SuppressWarnings("fallthrough")
     abstract static class PyCFieldFromDesc extends Node {
 
-        abstract CFieldObject execute(Node inliningTarget, Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory);
+        abstract CFieldObject execute(Node inliningTarget, Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props);
 
         @Specialization
-        static CFieldObject PyCField_FromDesc(Node inliningTarget, Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory,
+        static CFieldObject PyCField_FromDesc(Node inliningTarget, Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props,
+                        @Bind PythonLanguage language,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            CFieldObject self = factory.createCFieldObject(PythonBuiltinClassType.CField);
+            CFieldObject self = PFactory.createCFieldObject(language);
             StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, desc);
             if (dict == null) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, HAS_NO_STGINFO);
@@ -559,8 +561,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static Object O_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode) {
             writePointerNode.execute(inliningTarget, ptr, Pointer.pythonObject(value));
             return PNone.NONE;
         }
@@ -692,14 +693,14 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "setfunc == Z_set")
         static Object Z_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Exclusive @Cached CastToTruffleStringNode toString,
                         @Exclusive @Cached PyLongCheckNode longCheckNode,
                         @Exclusive @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Exclusive @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                        @Shared @Cached PythonObjectFactory factory) { // CTYPES_UNICODE
+                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) { // CTYPES_UNICODE
             if (value == PNone.NONE) {
                 writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                 return PNone.NONE;
@@ -719,7 +720,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
             /* ptr is a char**, we need to add the indirection */
             Pointer valuePtr = Pointer.bytes(bytes);
             writePointerNode.execute(inliningTarget, ptr, valuePtr);
-            return createPyMemCapsule(valuePtr, factory);
+            return createPyMemCapsule(valuePtr, context, inliningTarget);
         }
 
         @Specialization(guards = "setfunc == P_set")
@@ -751,9 +752,9 @@ public final class CFieldBuiltins extends PythonBuiltins {
 
         private static final byte[] CTYPES_CFIELD_CAPSULE_NAME_PYMEM = PyCapsule.capsuleName("_ctypes/cfield.c pymem");
 
-        private static PyCapsule createPyMemCapsule(Pointer pointer, PythonObjectFactory factory) {
-            PyCapsule capsule = factory.createCapsuleJavaName(pointer, CTYPES_CFIELD_CAPSULE_NAME_PYMEM);
-            new PointerReference(capsule, pointer, PythonContext.get(factory).getSharedFinalizer());
+        private static PyCapsule createPyMemCapsule(Pointer pointer, PythonContext context, Node inliningTarget) {
+            PyCapsule capsule = PFactory.createCapsuleJavaName(context.getLanguage(inliningTarget), pointer, CTYPES_CFIELD_CAPSULE_NAME_PYMEM);
+            new PointerReference(capsule, pointer, context.getSharedFinalizer());
             return capsule;
         }
     }
@@ -879,21 +880,21 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "getfunc == L_get")
         static Object L_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PointerNodes.ReadLongNode readLongNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
             long val = readLongNode.execute(inliningTarget, ptr);
             // GET_BITFIELD(val, size);
-            return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
+            return val < 0 ? PFactory.createInt(language, PInt.longToUnsignedBigInteger(val)) : val;
         }
 
         @Specialization(guards = "getfunc == L_get_sw")
         static Object L_get_sw(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PointerNodes.ReadLongNode readLongNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Shared @Cached PointerNodes.ReadLongNode readLongNode) {
             long val = SWAP_8(readLongNode.execute(inliningTarget, ptr));
             // GET_BITFIELD(val, size);
-            return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
+            return val < 0 ? PFactory.createInt(language, PInt.longToUnsignedBigInteger(val)) : val;
         }
 
         @Specialization(guards = "getfunc == d_get")
@@ -942,9 +943,9 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "getfunc == c_get")
         static Object c_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PointerNodes.ReadByteNode readByteNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createBytes(new byte[]{readByteNode.execute(inliningTarget, ptr)});
+                        @Bind PythonLanguage language,
+                        @Shared @Cached PointerNodes.ReadByteNode readByteNode) {
+            return PFactory.createBytes(language, new byte[]{readByteNode.execute(inliningTarget, ptr)});
         }
 
         @Specialization(guards = "getfunc == u_get")
@@ -973,17 +974,17 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "getfunc == s_get")
         static Object s_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, int size,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Shared @Cached PointerNodes.StrLenNode strLenNode,
-                        @Shared @Cached PointerNodes.ReadBytesNode readBytesNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createBytes(readBytesNode.execute(inliningTarget, ptr, strLenNode.execute(inliningTarget, ptr, size)));
+                        @Shared @Cached PointerNodes.ReadBytesNode readBytesNode) {
+            return PFactory.createBytes(language, readBytesNode.execute(inliningTarget, ptr, strLenNode.execute(inliningTarget, ptr, size)));
         }
 
         @Specialization(guards = "getfunc == z_get")
         static Object z_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Shared @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached PointerNodes.StrLenNode strLenNode,
                         @Shared @Cached PointerNodes.ReadBytesNode readBytesNode) {
             // ptr is a char**, we need to deref it to get char*
@@ -992,7 +993,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             byte[] bytes = readBytesNode.execute(inliningTarget, valuePtr, strLenNode.execute(inliningTarget, valuePtr));
-            return factory.createBytes(bytes);
+            return PFactory.createBytes(language, bytes);
         }
 
         @Specialization(guards = "getfunc == Z_get")
@@ -1015,9 +1016,9 @@ public final class CFieldBuiltins extends PythonBuiltins {
         @Specialization(guards = "getfunc == P_get")
         static Object P_get(@SuppressWarnings("unused") FieldGet getfunc, Pointer ptr, @SuppressWarnings("unused") int size,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached PointerNodes.ReadPointerNode readPointerNode,
-                        @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValueAsObjectNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Cached PointerNodes.GetPointerValueAsObjectNode getPointerValueAsObjectNode) {
             Pointer valuePtr = readPointerNode.execute(inliningTarget, ptr);
             if (valuePtr.isNull()) {
                 return 0L;
@@ -1025,9 +1026,9 @@ public final class CFieldBuiltins extends PythonBuiltins {
             Object p = getPointerValueAsObjectNode.execute(inliningTarget, valuePtr);
             if (p instanceof Long) {
                 long val = (long) p;
-                return val < 0 ? factory.createInt(PInt.longToUnsignedBigInteger(val)) : val;
+                return val < 0 ? PFactory.createInt(language, PInt.longToUnsignedBigInteger(val)) : val;
             }
-            return factory.createNativeVoidPtr(p);
+            return PFactory.createNativeVoidPtr(language, p);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
@@ -71,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -93,7 +95,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -147,7 +149,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached PyIndexCheckNode indexCheck,
                         @Cached PyNumberAsSizeNode numberAsSize,
-                        @Cached PythonObjectFactory factory,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode.Lazy raiseNode) {
 
             if (!callableCheck.execute(inliningTarget, func)) {
@@ -175,7 +177,8 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(TypeError, MAXSIZE_SHOULD_BE_INTEGER_OR_NONE);
             }
 
-            LruCacheObject obj = factory.createLruCacheObject(type);
+            PythonContext context = PythonContext.get(inliningTarget);
+            LruCacheObject obj = PFactory.createLruCacheObject(context.getLanguage(inliningTarget), type, getInstanceShape.execute(type));
 
             obj.root.prev = obj.root;
             obj.root.next = obj.root;
@@ -187,7 +190,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
             obj.misses = obj.hits = 0;
             obj.maxsize = maxsize;
 
-            obj.kwdMark = PythonContext.get(inliningTarget).lookupBuiltinModule(T_FUNCTOOLS).getModuleState(Object.class);
+            obj.kwdMark = context.lookupBuiltinModule(T_FUNCTOOLS).getModuleState(Object.class);
 
             obj.cacheInfoType = cache_info_type;
             // obj.dict = null;
@@ -288,8 +291,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                         Node inliningTarget,
                         GetClassNode getClassNode,
                         PyUnicodeCheckExactNode unicodeCheckExact,
-                        PyLongCheckExactNode longCheckExact,
-                        PythonObjectFactory factory) {
+                        PyLongCheckExactNode longCheckExact) {
             int kwdsSize = kwds.length;
             /* short path, key will match args anyway, which is a tuple */
             if (typed == 0 && kwdsSize == 0) {
@@ -303,7 +305,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                     }
                 }
 
-                return factory.createTuple(args);
+                return PFactory.createTuple(PythonLanguage.get(inliningTarget), args);
             }
             int argsLen = args.length;
             int keySize = args.length;
@@ -338,7 +340,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                 }
             }
             assert (keyPos == keySize);
-            return factory.createTuple(keyArray);
+            return PFactory.createTuple(PythonLanguage.get(inliningTarget), keyArray);
         }
 
         // infinite_lru_cache_wrapper
@@ -531,10 +533,9 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                         @Cached PyUnicodeCheckExactNode unicodeCheckExact,
                         @Cached PyLongCheckExactNode longCheckExact,
                         @Cached ObjectHashMap.RemoveNode popItem,
-                        @Cached InlinedConditionProfile profile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached InlinedConditionProfile profile) {
             Object key = lruCacheMakeKey(self.kwdMark, args, kwds, self.typed,
-                            inliningTarget, getClassNode, unicodeCheckExact, longCheckExact, factory);
+                            inliningTarget, getClassNode, unicodeCheckExact, longCheckExact);
             long hash = hashNode.execute(frame, inliningTarget, key);
             Object cached = getItem.execute(frame, inliningTarget, self.cache, key, hash);
             if (profile.profile(inliningTarget, self.isInfinite())) {
@@ -582,12 +583,11 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
         @Specialization
         static Object getmethod(LruCacheObject self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile objIsNoneProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached InlinedConditionProfile objIsNoneProfile) {
             if (objIsNoneProfile.profile(inliningTarget, obj instanceof PNone)) {
                 return self;
             }
-            return factory.createMethod(obj, self);
+            return PFactory.createMethod(PythonLanguage.get(inliningTarget), obj, self);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -62,7 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -109,14 +110,13 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noActiveProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedConditionProfile isNullFillProfile,
-                        @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object fillValue = isNullFillProfile.profile(inliningTarget, isNullFillValue(self)) ? PNone.NONE : self.getFillValue();
-            return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile, factory, raiseNode);
+            return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile, raiseNode);
         }
 
         private static Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
-                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile, PythonObjectFactory factory, PRaiseNode.Lazy raiseNode) {
+                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile, PRaiseNode.Lazy raiseNode) {
             Object[] result = new Object[self.getItTuple().length];
             loopProfile.profileCounted(inliningTarget, result.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < result.length); i++) {
@@ -144,7 +144,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                 }
                 result[i] = item;
             }
-            return factory.createTuple(result);
+            return PFactory.createTuple(PythonLanguage.get(inliningTarget), result);
         }
 
         protected static boolean isNullFillValue(PZipLongest self) {
@@ -166,7 +166,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noFillValueProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedConditionProfile noItProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object fillValue = self.getFillValue();
             if (noFillValueProfile.profile(inliningTarget, fillValue == null)) {
                 fillValue = PNone.NONE;
@@ -177,13 +177,13 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
             for (int i = 0; loopProfile.profile(inliningTarget, i < its.length); i++) {
                 Object it = self.getItTuple()[i];
                 if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
-                    its[i] = factory.createEmptyTuple();
+                    its[i] = PFactory.createEmptyTuple(language);
                 } else {
                     its[i] = it;
                 }
             }
-            PTuple tuple = factory.createTuple(its);
-            return factory.createTuple(new Object[]{type, tuple, fillValue});
+            PTuple tuple = PFactory.createTuple(language, its);
+            return PFactory.createTuple(language, new Object[]{type, tuple, fillValue});
         }
     }
 

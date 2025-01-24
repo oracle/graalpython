@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,8 +79,9 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -198,7 +199,8 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object ioctl(VirtualFrame frame, int fd, long request, Object arg, boolean mutateArg,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -209,7 +211,6 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gilNode,
                         @Cached PRaiseNode.Lazy raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit(inliningTarget, "fcnt.ioctl", fd, request, arg);
 
@@ -260,7 +261,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                                     if (writable && mutateArg) {
                                         return ret;
                                     } else {
-                                        return factory.createBytes(ioctlArg, len);
+                                        return PFactory.createBytes(context.getLanguage(inliningTarget), ioctlArg, len);
                                     }
                                 } finally {
                                     if (writeBack) {
@@ -289,7 +290,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         byte[] ioctlArg = new byte[len + 1];
                         copyToByteArrayNode.execute(stringArg, 0, ioctlArg, 0, len, utf8);
                         callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, true, posixLib, gilNode, constructAndRaiseNode);
-                        return factory.createBytes(ioctlArg, len);
+                        return PFactory.createBytes(context.getLanguage(inliningTarget), ioctlArg, len);
                     }
 
                     // int arg

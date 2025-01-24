@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.functools;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -47,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
@@ -76,9 +77,9 @@ public final class PPartial extends PythonBuiltinObject {
         return args;
     }
 
-    public PTuple getArgsTuple(PythonObjectFactory factory) {
+    public PTuple getArgsTuple(PythonLanguage language) {
         if (argsTuple == null) {
-            this.argsTuple = factory.createTuple(args);
+            this.argsTuple = PFactory.createTuple(language, args);
         }
         return argsTuple;
     }
@@ -92,16 +93,16 @@ public final class PPartial extends PythonBuiltinObject {
         return kw;
     }
 
-    public PDict getOrCreateKw(PythonObjectFactory factory) {
+    public PDict getOrCreateKw(PythonLanguage language) {
         if (kw == null) {
-            kw = factory.createDict();
+            kw = PFactory.createDict(language);
         }
         return kw;
     }
 
-    public PDict getKwCopy(Node inliningTarget, PythonObjectFactory factory, HashingStorageCopy copyNode) {
+    public PDict getKwCopy(Node inliningTarget, PythonLanguage language, HashingStorageCopy copyNode) {
         assert kw != null;
-        return factory.createDict(copyNode.execute(inliningTarget, kw.getDictStorage()));
+        return PFactory.createDict(language, copyNode.execute(inliningTarget, kw.getDictStorage()));
     }
 
     public boolean hasKw(Node inliningTarget, HashingStorageLen lenNode) {

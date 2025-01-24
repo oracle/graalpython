@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,7 +60,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -95,11 +96,11 @@ public final class TakewhileBuiltins extends PythonBuiltins {
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode isTrue,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object value = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
             if (!isTrue.execute(frame, callNode.execute(frame, self.getPredicate(), value))) {
-                self.setIterable(factory.createSequenceIterator(factory.createList(PythonUtils.EMPTY_OBJECT_ARRAY)));
+                self.setIterable(PFactory.createSequenceIterator(language, PFactory.createList(language, PythonUtils.EMPTY_OBJECT_ARRAY)));
                 throw raiseNode.get(inliningTarget).raiseStopIteration();
             }
             return value;
@@ -113,10 +114,10 @@ public final class TakewhileBuiltins extends PythonBuiltins {
         static Object reduce(PTakewhile self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory.createTuple(new Object[]{self.getPredicate(), self.getIterable()});
-            return factory.createTuple(new Object[]{type, tuple});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{self.getPredicate(), self.getIterable()});
+            return PFactory.createTuple(language, new Object[]{type, tuple});
         }
     }
 }

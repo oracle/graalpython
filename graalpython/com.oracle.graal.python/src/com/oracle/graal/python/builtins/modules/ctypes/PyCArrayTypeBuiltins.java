@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,7 +82,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -120,7 +120,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached SetDictNode setDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode.Lazy raiseNode) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
@@ -151,7 +151,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                 throw raiseNode.get(inliningTarget).raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
 
-            StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
+            StgDictObject stgdict = PFactory.createStgDictObject(language);
 
             StgDictObject itemdict = pyTypeStgDictNode.execute(inliningTarget, type_attr);
             if (itemdict == null) {
@@ -193,7 +193,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
             /* replace the class dict by our updated spam dict */
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory.createDictFixedStorage((PythonObject) result);
+                resDict = PFactory.createDictFixedStorage(language, (PythonObject) result);
             }
             addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
             setDict.execute(inliningTarget, (PythonObject) result, stgdict);

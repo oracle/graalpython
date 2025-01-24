@@ -119,7 +119,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -632,15 +632,15 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         PList get(PythonAbstractObject klass,
                         @Bind("this") Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode,
                         @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
             if (isTypeNode.execute(inliningTarget, klass)) {
                 Object value = readHiddenAttrNode.execute(inliningTarget, klass, HiddenAttr.HOST_INTEROP_BEHAVIOR, null);
                 if (value instanceof InteropBehavior behavior) {
-                    return factory.createList(behavior.getDefinedMethods());
+                    return PFactory.createList(language, behavior.getDefinedMethods());
                 }
-                return factory.createList();
+                return PFactory.createList(language);
             }
             throw raiseNode.raise(ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a type", klass);
         }

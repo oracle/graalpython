@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,17 +50,16 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.test.PythonTests;
 
 public class CastToJavaUnsignedLongNodeTests {
-    private static PythonObjectFactory factory = PythonObjectFactory.getUncached();
-
     @Before
     public void setUp() {
         PythonTests.enterContext();
@@ -127,11 +126,11 @@ public class CastToJavaUnsignedLongNodeTests {
     }
 
     private static PInt makePInt(long l) {
-        return factory.createInt(BigInteger.valueOf(l));
+        return PFactory.createInt(PythonLanguage.get(null), BigInteger.valueOf(l));
     }
 
     private static PInt makePInt(String hexString) {
-        return factory.createInt(new BigInteger(hexString, 16));
+        return PFactory.createInt(PythonLanguage.get(null), new BigInteger(hexString, 16));
     }
 
     private static void expect(PythonBuiltinClassType errorType, Runnable test) {

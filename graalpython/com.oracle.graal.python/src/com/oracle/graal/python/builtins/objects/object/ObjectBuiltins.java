@@ -64,6 +64,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
@@ -142,7 +143,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -815,8 +816,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode dirNode,
-                        @Cached PythonObjectFactory factory) {
-            PSet names = factory.createSet();
+                        @Bind PythonLanguage language) {
+            PSet names = PFactory.createSet(language);
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, obj, T___DICT__);
             if (isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,6 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRWPair;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_FLUSH;
@@ -75,6 +73,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -91,7 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -128,13 +127,13 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
                         @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkWritableNode,
                         @Cached BufferedReaderBuiltins.BufferedReaderInit initReaderNode,
                         @Cached BufferedWriterBuiltins.BufferedWriterInit initWriterNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             checkReadableNode.checkReadable(frame, inliningTarget, reader);
             checkWritableNode.checkWriteable(frame, inliningTarget, writer);
-            self.setReader(factory.createBufferedReader(PBufferedReader));
-            initReaderNode.execute(frame, inliningTarget, self.getReader(), reader, bufferSize, factory);
-            self.setWriter(factory.createBufferedWriter(PBufferedWriter));
-            initWriterNode.execute(frame, inliningTarget, self.getWriter(), writer, bufferSize, factory);
+            self.setReader(PFactory.createBufferedReader(language));
+            initReaderNode.execute(frame, inliningTarget, self.getReader(), reader, bufferSize);
+            self.setWriter(PFactory.createBufferedWriter(language));
+            initWriterNode.execute(frame, inliningTarget, self.getWriter(), writer, bufferSize);
             return PNone.NONE;
         }
     }
