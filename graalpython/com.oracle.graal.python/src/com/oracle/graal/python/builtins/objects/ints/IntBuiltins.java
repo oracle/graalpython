@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
@@ -49,12 +48,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
@@ -1406,7 +1402,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_absolute, isComplex = true)
     @GenerateNodeFactory
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -1475,17 +1471,16 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_positive, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static int pos(int arg) {
+        static Integer pos(Integer arg) {
             return arg;
         }
 
         @Specialization
-        static long pos(long arg) {
+        static Long pos(Long arg) {
             return arg;
         }
 
@@ -1494,11 +1489,15 @@ public final class IntBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             return factory.createInt(arg.getValue());
         }
+
+        @Specialization
+        static int pos(boolean arg) {
+            return PInt.intValue(arg);
+        }
     }
 
-    @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_negative, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class NegNode extends PythonUnaryBuiltinNode {
         public abstract Object execute(int value);
 
@@ -1530,6 +1529,11 @@ public final class IntBuiltins extends PythonBuiltins {
             return factory.createInt(negate(operand.getValue()));
         }
 
+        @Specialization
+        static int doBoolean(boolean arg) {
+            return -PInt.intValue(arg);
+        }
+
         @TruffleBoundary
         static BigInteger negate(BigInteger value) {
             return value.negate();
@@ -1541,9 +1545,8 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___INVERT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_invert, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int neg(boolean arg) {

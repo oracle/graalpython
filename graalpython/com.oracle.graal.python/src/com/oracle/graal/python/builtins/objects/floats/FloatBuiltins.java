@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.floats;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FLOAT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
@@ -40,9 +39,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
@@ -262,7 +259,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_absolute, isComplex = true)
     @GenerateNodeFactory
     abstract static class AbsNode extends AbstractNumericUnaryBuiltin {
 
@@ -906,12 +903,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_positive, isComplex = true)
     @GenerateNodeFactory
     abstract static class PosNode extends FloatNode {
     }
 
-    @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_negative, isComplex = true)
     @GenerateNodeFactory
     abstract static class NegNode extends AbstractNumericUnaryBuiltin {
         @Override

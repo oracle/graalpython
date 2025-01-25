@@ -27,17 +27,13 @@
 package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
@@ -65,13 +61,17 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
+import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInvertNode;
 import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberNegativeNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
+import com.oracle.graal.python.lib.PyNumberPositiveNode;
 import com.oracle.graal.python.lib.PyNumberRemainderNode;
 import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
@@ -354,35 +354,35 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_positive, isComplex = true)
     @GenerateNodeFactory
     abstract static class PosNode extends ForeignUnaryNode {
         PosNode() {
-            super(UnaryArithmetic.PosNode.create());
+            super(PyNumberPositiveNode.create());
         }
     }
 
-    @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_negative, isComplex = true)
     @GenerateNodeFactory
     abstract static class NegNode extends ForeignUnaryNode {
         NegNode() {
-            super(UnaryArithmetic.NegNode.create());
+            super(PyNumberNegativeNode.create());
         }
     }
 
-    @Builtin(name = J___INVERT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_invert, isComplex = true)
     @GenerateNodeFactory
     abstract static class InvertNode extends ForeignUnaryNode {
         InvertNode() {
-            super(UnaryArithmetic.InvertNode.create());
+            super(PyNumberInvertNode.create());
         }
     }
 
-    @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_absolute, isComplex = true)
     @GenerateNodeFactory
     abstract static class AbsNode extends ForeignUnaryNode {
         AbsNode() {
-            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___ABS__));
+            super(PyNumberAbsoluteNode.create());
         }
     }
 
