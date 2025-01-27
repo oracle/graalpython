@@ -1040,7 +1040,9 @@ class InteropTests(unittest.TestCase):
         h.__init__(a=1, b=2)
         assert h == {'a': 1, 'b': 2}
 
-        with self.assertRaisesRegex(TypeError, 'invalid instantiation of foreign object'):
+        # Because it tries to call ForeignDict.__call__, but ForeignDict is not executable/instantiable,
+        # so it resolves to type.__call__, which cannot create a ForeignDict
+        with self.assertRaisesRegex(TypeError, "descriptor requires a 'dict' object but received a 'ForeignDict'"):
             type(h).fromkeys(['a', 'b'], 42)
 
     def test_java_iterator(self):

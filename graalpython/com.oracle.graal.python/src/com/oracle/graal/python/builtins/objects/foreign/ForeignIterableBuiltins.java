@@ -26,16 +26,18 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -45,46 +47,33 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-import java.util.List;
-
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
-
 /*
  * NOTE: We are not using IndirectCallContext here in this file
  * because it seems unlikely that these interop messages would call back to Python
  * and that we would also need precise frame info for that case.
  * Adding it shouldn't hurt peak, but might be a non-trivial overhead in interpreter.
  */
-@CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignAbstractClass)
-public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignIterable)
+public final class ForeignIterableBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return ForeignAbstractClassBuiltinsFactory.getFactories();
+        return ForeignIterableBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class BasesNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object getBases(Object self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
-        }
-    }
+    public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
-    @Builtin(name = J___INSTANCECHECK__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        static Object check(Object self, Object instance,
-                        @CachedLibrary("self") InteropLibrary lib,
+        static Object doGeneric(Object object,
+                        @CachedLibrary("object") InteropLibrary lib,
+                        @Cached PForeignToPTypeNode convertNode,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
-                return lib.isMetaInstance(self, instance);
+                return convertNode.executeConvert(lib.getIterator(object));
             } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
                 gil.acquire();
             }
