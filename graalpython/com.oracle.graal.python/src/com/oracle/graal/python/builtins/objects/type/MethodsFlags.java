@@ -209,4 +209,7 @@ public abstract class MethodsFlags {
 
     public static final long FOREIGNNUMBER_M_FLAGS = INT_M_FLAGS | FLOAT_M_FLAGS;
 
+    public static final long TYPEVAR_TYPE_M_FLAGS = NB_OR;
+    public static final long PARAMSPEC_TYPE_M_FLAGS = NB_OR;
+    public static final long TYPEALIAS_TYPE_M_FLAGS = NB_OR | MP_SUBSCRIPT;
 }

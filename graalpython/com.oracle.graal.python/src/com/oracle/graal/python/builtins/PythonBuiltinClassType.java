@@ -53,6 +53,7 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MAPPING
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MEMORYVIEW_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.MMAP_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NONE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PARAMSPEC_TYPE_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCARRAYTYPE_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCARRAY_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.PYCFUNCPTRTYPE_M_FLAGS;
@@ -66,6 +67,8 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SET_M_F
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SIMPLECDATA_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.STRING_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.TUPLE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.TYPEALIAS_TYPE_M_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.TYPEVAR_TYPE_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.TYPE_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.UNIONTYPE_M_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.UNION_TYPE_M_FLAGS;
@@ -565,12 +568,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PTokenizerIter("TokenizerIter", "_tokenize"),
 
-    PTypeVar(J_TYPE_VAR, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
+    PTypeVar(J_TYPE_VAR, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEVAR_TYPE_M_FLAGS, TpSlots.createEmpty()),
     PTypeVarTuple(J_TYPE_VAR_TUPLE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
-    PParamSpec(J_PARAM_SPEC, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
+    PParamSpec(J_PARAM_SPEC, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, PARAMSPEC_TYPE_M_FLAGS, TpSlots.createEmpty()),
     PParamSpecArgs(J_PARAM_SPEC_ARGS, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
     PParamSpecKwargs(J_PARAM_SPEC_KWARGS, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
-    PTypeAliasType(J_TYPE_ALIAS_TYPE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TypeAliasTypeBuiltins.SLOTS),
+    PTypeAliasType(J_TYPE_ALIAS_TYPE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEALIAS_TYPE_M_FLAGS, TypeAliasTypeBuiltins.SLOTS),
     PGeneric(J_GENERIC, J__TYPING, J_TYPING, Flags.PUBLIC_BASE_WDICT),
 
     // A marker for @Builtin that is not a class. Must always come last.

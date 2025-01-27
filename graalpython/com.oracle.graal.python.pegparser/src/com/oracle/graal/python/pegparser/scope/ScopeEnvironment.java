@@ -480,7 +480,7 @@ public class ScopeEnvironment {
             }
         }
 
-        private boolean hasKwOnlyDefaults(ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults) {
+        private static boolean hasKwOnlyDefaults(ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults) {
             for (int i = 0; i < kwOnlyArgs.length; i++) {
                 if (kwDefaults[i] != null) {
                     return true;
