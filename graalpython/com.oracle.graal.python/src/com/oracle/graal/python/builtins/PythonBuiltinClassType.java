@@ -302,9 +302,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // Foreign
     ForeignObject("ForeignObject", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, ForeignObjectBuiltins.SLOTS),
-    ForeignNumber("ForeignNumber", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
-    ForeignBoolean("ForeignBoolean", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignBooleanBuiltins.SLOTS),
-    ForeignAbstractClass("ForeignAbstractClass", J_POLYGLOT, Flags.PUBLIC_BASE_WDICT),
+    ForeignNumber("ForeignNumber", J_POLYGLOT, ForeignObject, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignNumberBuiltins.SLOTS),
+    ForeignBoolean("ForeignBoolean", J_POLYGLOT, ForeignNumber, Flags.PUBLIC_BASE_WDICT, FOREIGNNUMBER_M_FLAGS, ForeignBooleanBuiltins.SLOTS),
+    ForeignAbstractClass("ForeignAbstractClass", J_POLYGLOT, ForeignObject, Flags.PUBLIC_BASE_WDICT),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
@@ -628,6 +628,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this(name, module, module, flags);
     }
 
+    PythonBuiltinClassType(String name, String module, PythonBuiltinClassType base, Flags flags) {
+        this(name, module, module, flags);
+        this.base = base;
+    }
+
     PythonBuiltinClassType(String name, String module, Flags flags, TpSlots slots) {
         this(name, module, module, flags, DEFAULT_M_FLAGS, slots);
     }
@@ -638,6 +643,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PythonBuiltinClassType(String name, String module, Flags flags, long methodsFlags, TpSlots slots) {
         this(name, module, module, flags, methodsFlags, slots);
+    }
+
+    PythonBuiltinClassType(String name, String module, PythonBuiltinClassType base, Flags flags, long methodsFlags, TpSlots slots) {
+        this(name, module, module, flags, methodsFlags, slots);
+        this.base = base;
     }
 
     PythonBuiltinClassType(String name, String publishInModule, String moduleName, Flags flags) {
@@ -837,10 +847,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PBuiltinMethod.base = PBuiltinFunctionOrMethod;
 
         Boolean.base = PInt;
-
-        ForeignNumber.base = ForeignObject;
-        ForeignBoolean.base = ForeignNumber;
-        ForeignAbstractClass.base = ForeignObject;
 
         PBaseExceptionGroup.base = PBaseException;
         SystemExit.base = PBaseException;
