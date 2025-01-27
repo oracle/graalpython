@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 25.0.0
+* `dir(foreign_object)` now returns both foreign methods and Python methods (it used to return only foreign methods).
+
 ## Version 24.2.0
 * Updated developer metadata of Maven artifacts.
 * Added gradle plugin for polyglot embedding of Python packages into Java.
