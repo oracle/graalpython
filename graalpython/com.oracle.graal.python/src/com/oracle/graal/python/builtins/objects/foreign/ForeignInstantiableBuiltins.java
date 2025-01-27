@@ -36,13 +36,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -51,7 +49,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -70,46 +67,14 @@ public final class ForeignInstantiableBuiltins extends PythonBuiltins {
         return ForeignInstantiableBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    abstract static class NewNode extends PythonBuiltinNode {
-        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
-        static Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            gil.release(true);
-            try {
-                Object res = lib.instantiate(callee, arguments);
-                return toPTypeNode.executeConvert(res);
-            } catch (ArityException | UnsupportedTypeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static Object doGeneric(Object callee, Object arguments, Object keywords,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
-        }
-    }
-
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
-        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
-        static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        @Specialization
+        static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode gil,
@@ -130,13 +95,6 @@ public final class ForeignInstantiableBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static Object doGeneric(Object callee, Object arguments, Object keywords,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
     }
 
