@@ -29,11 +29,8 @@ package com.oracle.graal.python.builtins.objects.foreign;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.simpleTruffleStringFormatUncached;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -49,7 +46,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -61,17 +57,13 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -82,12 +74,10 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -102,7 +92,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /*
- * NOTE: We are not using IndirectCallContext here in this file (except for CallNode)
+ * NOTE: We are not using IndirectCallContext here in this file
  * because it seems unlikely that these interop messages would call back to Python
  * and that we would also need precise frame info for that case.
  * Adding it shouldn't hurt peak, but might be a non-trivial overhead in interpreter.
@@ -135,111 +125,6 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static int hashCodeBoundary(Object self) {
             return self.hashCode();
-        }
-    }
-
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class IterNode extends PythonUnaryBuiltinNode {
-
-        @Specialization(limit = "3")
-        static Object doGeneric(Object object,
-                        @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("object") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode convertNode,
-                        @Cached GilNode gil) {
-            gil.release(true);
-            try {
-                if (lib.hasIterator(object)) {
-                    return convertNode.executeConvert(lib.getIterator(object));
-                }
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            } finally {
-                gil.acquire();
-            }
-            throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
-        }
-    }
-
-    @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    abstract static class NewNode extends PythonBuiltinNode {
-        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
-        static Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            gil.release(true);
-            try {
-                Object res = lib.instantiate(callee, arguments);
-                return toPTypeNode.executeConvert(res);
-            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
-            } finally {
-                gil.acquire();
-            }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static Object doGeneric(Object callee, Object arguments, Object keywords,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
-        }
-    }
-
-    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    public abstract static class CallNode extends PythonBuiltinNode {
-        public final Object executeWithArgs(VirtualFrame frame, Object callee, Object[] arguments) {
-            return execute(frame, callee, arguments, PKeyword.EMPTY_KEYWORDS);
-        }
-
-        public abstract Object execute(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
-
-        @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
-        static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary(limit = "4") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
-            PythonContext context = PythonContext.get(inliningTarget);
-            try {
-                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
-                gil.release(true);
-                try {
-                    if (lib.isExecutable(callee)) {
-                        return toPTypeNode.executeConvert(lib.execute(callee, arguments));
-                    } else {
-                        return toPTypeNode.executeConvert(lib.instantiate(callee, arguments));
-                    }
-                } finally {
-                    gil.acquire();
-                    IndirectCallContext.exit(frame, language, context, state);
-                }
-            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
-            }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static Object doGeneric(Object callee, Object arguments, Object keywords,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
-        }
-
-        @NeverDefault
-        public static CallNode create() {
-            return ForeignObjectBuiltinsFactory.CallNodeFactory.create(null);
         }
     }
 

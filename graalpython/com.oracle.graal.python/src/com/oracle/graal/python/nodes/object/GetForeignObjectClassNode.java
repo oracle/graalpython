@@ -96,8 +96,8 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         META_OBJECT("AbstractClass", PythonBuiltinClassType.ForeignAbstractClass),
 
         // Interop traits
-        EXECUTABLE("Executable"),
-        INSTANTIABLE("Instantiable"),
+        EXECUTABLE("Executable", PythonBuiltinClassType.ForeignExecutable),
+        INSTANTIABLE("Instantiable", PythonBuiltinClassType.ForeignInstantiable),
 
         // Container traits/types must be last, see comment above
         // Hash before Array so that foreign dict+list prefers dict.[]
@@ -106,7 +106,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         ARRAY("List", PythonBuiltinClassType.PList),
         // Iterator before Iterable so that foreign iterator+iterable prefers iterator.__iter__
         ITERATOR("Iterator", PythonBuiltinClassType.PIterator),
-        ITERABLE("Iterable");
+        ITERABLE("Iterable", PythonBuiltinClassType.ForeignIterable);
         // Last in MRO
 
         public static final Trait[] VALUES = Trait.values();
@@ -115,10 +115,6 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         final String name;
         final int bit;
         final PythonBuiltinClassType type;
-
-        Trait(String name) {
-            this(name, null);
-        }
 
         Trait(String name, PythonBuiltinClassType type) {
             this.name = name;
