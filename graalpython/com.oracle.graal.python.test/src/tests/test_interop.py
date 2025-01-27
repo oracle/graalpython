@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -471,10 +471,19 @@ class InteropTests(unittest.TestCase):
                 os.unlink(tempname)
 
     def test_java_class(self):
-        from java.lang import Integer, Number, NumberFormatException
-        self.assertEqual(type(Integer).mro(), [polyglot.ForeignClass, polyglot.ForeignAbstractClass, polyglot.ForeignInstantiable, polyglot.ForeignObject, object])
+        from java.lang import Number, NumberFormatException
+        from java.util import ArrayList
+        self.assertEqual(type(ArrayList).mro(), [polyglot.ForeignClass, polyglot.ForeignAbstractClass, polyglot.ForeignInstantiable, polyglot.ForeignObject, object])
         self.assertEqual(type(Number).mro(), [polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
         self.assertEqual(type(NumberFormatException).mro(), [polyglot.ForeignClass, polyglot.ForeignAbstractClass, polyglot.ForeignInstantiable, polyglot.ForeignObject, object])
+
+        from java.util import ArrayList
+        l = ArrayList()
+        assert isinstance(l, ArrayList)
+        self.assertEqual(getattr(ArrayList, 'class'), l.getClass())
+
+        with self.assertRaisesRegex(TypeError, "ForeignInstantiable.__call__\(\) got an unexpected keyword argument 'kwarg'"):
+            ArrayList(kwarg=42)
 
     def test_java_exceptions(self):
         # TODO: more tests
