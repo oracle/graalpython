@@ -88,6 +88,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Simple copy of VirtualFileSystemTest to test also the deprecated
@@ -132,23 +133,23 @@ public class VirtualFileSystemUtilsTest {
     @Before
     public void initFS() throws Exception {
         rwHostIOVFS = getDelegatingFS(VirtualFileSystem.newBuilder().//
-                        allowHostIO(READ_WRITE).//
+                        allowHostIO(VirtualFileSystem.HostIO.READ_WRITE).//
                         unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith("extractme")).//
-                        resourceLoadingClass(VirtualFileSystemUtilsTest.class).build());
+                        resourceLoadingClass(VirtualFileSystemTest.class).build());
         rHostIOVFS = getDelegatingFS(VirtualFileSystem.newBuilder().//
-                        allowHostIO(READ).//
+                        allowHostIO(VirtualFileSystem.HostIO.READ).//
                         unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith("extractme")).//
-                        resourceLoadingClass(VirtualFileSystemUtilsTest.class).build());
+                        resourceLoadingClass(VirtualFileSystemTest.class).build());
         noHostIOVFS = getDelegatingFS(VirtualFileSystem.newBuilder().//
-                        allowHostIO(NONE).//
+                        allowHostIO(VirtualFileSystem.HostIO.NONE).//
                         unixMountPoint(VFS_UNIX_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith("extractme")).//
-                        resourceLoadingClass(VirtualFileSystemUtilsTest.class).build());
+                        resourceLoadingClass(VirtualFileSystemTest.class).build());
     }
 
     @After
@@ -176,7 +177,9 @@ public class VirtualFileSystemUtilsTest {
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
             assertTrue(Files.isSameFile(realFSPath, fs.toRealPath(realFSPath)));
             withCWD(fs, realFSDir, (fst) -> assertTrue(Files.isSameFile(realFSPath, fst.toRealPath(Path.of("..", realFSPath.getParent().getFileName().toString(), "extractme")))));
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> assertTrue(Files.isSameFile(realFSPath, fst.toRealPath(Path.of("..", realFSPath.toString())))));
+            if (!IS_WINDOWS) {
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> assertTrue(Files.isSameFile(realFSPath, fst.toRealPath(Path.of("..", realFSPath.toString())))));
+            }
         }
         checkException(SecurityException.class, () -> noHostIOVFS.toRealPath(realFSPath), "expected error for no host io fs");
     }
@@ -232,8 +235,10 @@ public class VirtualFileSystemUtilsTest {
 
             // absolute path starting with VFS, pointing to real FS
             // /VFS_ROOT/../real/fs/path/
-            p = Path.of(VFS_MOUNT_POINT, "..", realFSPath.toString());
-            assertEquals(p, fs.toAbsolutePath(p));
+            if (!IS_WINDOWS) {
+                p = Path.of(VFS_MOUNT_POINT, "..", realFSPath.toString());
+                assertEquals(p, fs.toAbsolutePath(p));
+            }
 
             // absolute path starting with real FS, pointing to VFS
             // /real/fs/path/../../../VFS_MOUNT_POINT
@@ -247,22 +252,41 @@ public class VirtualFileSystemUtilsTest {
             // no CWD set, so relative path starting in real FS, pointing to VFS
             // ../../../VFS_ROOT
             Path cwd = Path.of(".").toAbsolutePath();
-            p = fs.toAbsolutePath(Path.of(dotdot(cwd.getNameCount()).toString(), MOUNT_POINT_NAME));
-            assertTrue(p.isAbsolute());
-            assertEquals(VFS_ROOT_PATH, p.normalize());
+            if (!IS_WINDOWS) {
+                p = fs.toAbsolutePath(Path.of(dotdot(cwd.getNameCount()).toString(), MOUNT_POINT_NAME));
+                assertTrue(p.isAbsolute());
+                assertEquals(VFS_ROOT_PATH, p.normalize());
 
-            // ../../../VFS_ROOT/../real/fs/path
-            p = fs.toAbsolutePath(Path.of(dotdot(cwd.getNameCount()).toString(), MOUNT_POINT_NAME, "..", realFSPath.toString()));
-            assertTrue(p.isAbsolute());
-            assertEquals(realFSPath, p.normalize());
+                // ../../../VFS_ROOT/../real/fs/path
+                p = fs.toAbsolutePath(Path.of(dotdot(cwd.getNameCount()).toString(), MOUNT_POINT_NAME, "..", realFSPath.toString()));
+                assertTrue(p.isAbsolute());
+                assertEquals(realFSPath, p.normalize());
 
-            // CWD is VFS_ROOT, relative path pointing to real FS
-            // ../real/fs/path
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> {
-                Path pp = fst.toAbsolutePath(Path.of("..", realFSPath.toString()));
-                assertTrue(pp.isAbsolute());
-                assertEquals(realFSPath, pp.normalize());
-            });
+                // CWD is VFS_ROOT, relative path pointing to real FS
+                // ../real/fs/path
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> {
+                    Path pp = fst.toAbsolutePath(Path.of("..", realFSPath.toString()));
+                    assertTrue(pp.isAbsolute());
+                    assertEquals(realFSPath, pp.normalize());
+                });
+
+                // CWD is real FS, relative path pointing to VFS
+                // real/fs/path/../../
+                withCWD(fs, realFSPath.getParent(), (fst) -> {
+                    Path pp = fst.toAbsolutePath(Path.of("dir", dotdot(realFSDirDir.getNameCount()), MOUNT_POINT_NAME));
+                    assertTrue(pp.isAbsolute());
+                    assertEquals(VFS_ROOT_PATH, pp.normalize());
+                });
+
+                // CWD is real FS, relative path pointing through VFS to real FS
+                // real/fs/path/../../../VFS
+                withCWD(fs, realFSPath.getParent(),
+                                (fst) -> {
+                                    Path pp = fst.toAbsolutePath(Path.of("dir", dotdot(realFSDirDir.getNameCount()), MOUNT_POINT_NAME, "..", realFSPath.toString()));
+                                    assertTrue(pp.isAbsolute());
+                                    assertEquals(realFSPath, pp.normalize());
+                                });
+            }
 
             // CWD is VFS_ROOT, relative path pointing through real FS back to VFS
             // ../some/path/../../VFS_ROOT_PATH
@@ -271,23 +295,6 @@ public class VirtualFileSystemUtilsTest {
                 assertTrue(pp.isAbsolute());
                 assertEquals(VFS_ROOT_PATH, pp.normalize());
             });
-
-            // CWD is real FS, relative path pointing to VFS
-            // real/fs/path/../../
-            withCWD(fs, realFSPath.getParent(), (fst) -> {
-                Path pp = fst.toAbsolutePath(Path.of("dir", dotdot(realFSDirDir.getNameCount()), MOUNT_POINT_NAME));
-                assertTrue(pp.isAbsolute());
-                assertEquals(VFS_ROOT_PATH, pp.normalize());
-            });
-
-            // CWD is real FS, relative path pointing through VFS to real FS
-            // real/fs/path/../../../VFS
-            withCWD(fs, realFSPath.getParent(),
-                            (fst) -> {
-                                Path pp = fst.toAbsolutePath(Path.of("dir", dotdot(realFSDirDir.getNameCount()), MOUNT_POINT_NAME, "..", realFSPath.toString()));
-                                assertTrue(pp.isAbsolute());
-                                assertEquals(realFSPath, pp.normalize());
-                            });
 
             assertEquals(Path.of("extractme").toAbsolutePath(), fs.toAbsolutePath(Path.of("extractme")));
 
@@ -384,7 +391,9 @@ public class VirtualFileSystemUtilsTest {
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
             fs.checkAccess(realFSPath, Set.of(AccessMode.READ));
             withCWD(fs, realFSPath.getParent(), (fst) -> fst.checkAccess(realFSPath.getFileName(), Set.of(AccessMode.READ)));
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> fst.checkAccess(Path.of("..", realFSPath.toString()), Set.of(AccessMode.READ)));
+            if (!IS_WINDOWS) {
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> fst.checkAccess(Path.of("..", realFSPath.toString()), Set.of(AccessMode.READ)));
+            }
         }
         checkException(SecurityException.class, () -> noHostIOVFS.checkAccess(realFSPath, Set.of(AccessMode.READ)), "expected error for no host io fs");
     }
@@ -445,12 +454,14 @@ public class VirtualFileSystemUtilsTest {
             fs.createDirectory(newDir2.getFileName());
             assertTrue(Files.exists(newDir2));
         });
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> {
-            Path newDir3 = newDir.getParent().resolve("newdir3");
-            assertFalse(Files.exists(newDir3));
-            fs.createDirectory(Path.of("..", newDir3.toString()));
-            assertTrue(Files.exists(newDir3));
-        });
+        if (!IS_WINDOWS) {
+            withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> {
+                Path newDir3 = newDir.getParent().resolve("newdir3");
+                assertFalse(Files.exists(newDir3));
+                fs.createDirectory(Path.of("..", newDir3.toString()));
+                assertTrue(Files.exists(newDir3));
+            });
+        }
     }
 
     @Test
@@ -484,10 +495,12 @@ public class VirtualFileSystemUtilsTest {
         withCWD(rwHostIOVFS, realFSPath.getParent(), (fs) -> rwHostIOVFS.delete(realFSPath.getFileName()));
         assertFalse(Files.exists(realFSPath));
 
-        Files.createFile(realFSPath);
-        assertTrue(Files.exists(realFSPath));
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> rwHostIOVFS.delete(Path.of("..", realFSPath.toString())));
-        assertFalse(Files.exists(realFSPath));
+        if (!IS_WINDOWS) {
+            Files.createFile(realFSPath);
+            assertTrue(Files.exists(realFSPath));
+            withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> rwHostIOVFS.delete(Path.of("..", realFSPath.toString())));
+            assertFalse(Files.exists(realFSPath));
+        }
     }
 
     private static void deleteVFS(FileSystem fs, String pathPrefix) {
@@ -520,13 +533,17 @@ public class VirtualFileSystemUtilsTest {
         Path realFSPath = Files.createTempDirectory("graalpy.vfs.test").resolve("extractme");
         Files.createFile(realFSPath);
         checkException(SecurityException.class, () -> rHostIOVFS.newByteChannel(realFSPath, Set.of(StandardOpenOption.WRITE)), "cant write into a read-only host FS");
-        rwHostIOVFS.newByteChannel(realFSPath, Set.of(StandardOpenOption.WRITE)).write(ByteBuffer.wrap("text".getBytes()));
+        try (SeekableByteChannel ch = rwHostIOVFS.newByteChannel(realFSPath, Set.of(StandardOpenOption.WRITE))) {
+            ch.write(ByteBuffer.wrap("text".getBytes()));
+        }
         assertTrue(Files.exists(realFSPath));
 
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
             newByteChannelRealFS(fs, realFSPath, "text");
             withCWD(fs, realFSPath.getParent(), (fst) -> newByteChannelRealFS(fs, realFSPath.getFileName(), "text"));
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> newByteChannelRealFS(fs, Path.of("..", realFSPath.toString()), "text"));
+            if (!IS_WINDOWS) {
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> newByteChannelRealFS(fs, Path.of("..", realFSPath.toString()), "text"));
+            }
         }
     }
 
@@ -549,26 +566,28 @@ public class VirtualFileSystemUtilsTest {
     }
 
     private static void newByteChannelVFS(FileSystem fs, Path path, Set<OpenOption> options) throws IOException {
-        SeekableByteChannel bch = fs.newByteChannel(path, options);
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
-        bch.read(buffer);
-        String s = new String(buffer.array());
-        String[] ss = s.split(System.lineSeparator());
-        assertTrue(ss.length >= 2);
-        assertEquals("text1", ss[0]);
-        assertEquals("text2", ss[1]);
-        checkException(NonWritableChannelException.class, () -> bch.write(buffer), "should not be able to write to VFS");
-        checkException(NonWritableChannelException.class, () -> bch.truncate(0), "should not be able to write to VFS");
+        try (SeekableByteChannel bch = fs.newByteChannel(path, options)) {
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
+            bch.read(buffer);
+            String s = new String(buffer.array());
+            String[] ss = s.split(System.lineSeparator());
+            assertTrue(ss.length >= 2);
+            assertEquals("text1", ss[0]);
+            assertEquals("text2", ss[1]);
+            checkException(NonWritableChannelException.class, () -> bch.write(buffer), "should not be able to write to VFS");
+            checkException(NonWritableChannelException.class, () -> bch.truncate(0), "should not be able to write to VFS");
+        }
     }
 
     private static void newByteChannelRealFS(FileSystem fs, Path path, String expectedText) throws IOException {
-        SeekableByteChannel bch = fs.newByteChannel(path, Set.of(StandardOpenOption.READ));
-        ByteBuffer buffer = ByteBuffer.allocate(expectedText.length());
-        bch.read(buffer);
-        String s = new String(buffer.array());
-        String[] ss = s.split(System.lineSeparator());
-        assertTrue(ss.length >= 1);
-        assertEquals(expectedText, ss[0]);
+        try (SeekableByteChannel bch = fs.newByteChannel(path, Set.of(StandardOpenOption.READ))) {
+            ByteBuffer buffer = ByteBuffer.allocate(expectedText.length());
+            bch.read(buffer);
+            String s = new String(buffer.array());
+            String[] ss = s.split(System.lineSeparator());
+            assertTrue(ss.length >= 1);
+            assertEquals(expectedText, ss[0]);
+        }
     }
 
     private static void checkCanOnlyRead(FileSystem fs, Path path, StandardOpenOption... options) {
@@ -595,11 +614,13 @@ public class VirtualFileSystemUtilsTest {
             checkException(NotDirectoryException.class, () -> fs.newDirectoryStream(realFSFile, (p) -> true));
             newDirectoryStreamRealFS(fs, realFSDir, realFSFile);
             withCWD(fs, realFSDir.getParent(), (fst) -> newDirectoryStreamRealFS(fs, realFSDir.getFileName(), realFSFile));
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> newDirectoryStreamRealFS(fs, Path.of("..", realFSDir.toString()), realFSFile));
-            // from real fs to VFS
-            withCWD(fs, realFSDir, (fst) -> newDirectoryStreamVFS(fs, Path.of(dotdot(realFSDir.getNameCount()), VFS_MOUNT_POINT).toString()));
-            // from VFS to real FS
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> newDirectoryStreamRealFS(fs, Path.of("..", realFSDir.toString()), realFSFile));
+            if (!IS_WINDOWS) {
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> newDirectoryStreamRealFS(fs, Path.of("..", realFSDir.toString()), realFSFile));
+                // from real fs to VFS
+                withCWD(fs, realFSDir, (fst) -> newDirectoryStreamVFS(fs, Path.of(dotdot(realFSDir.getNameCount()), VFS_MOUNT_POINT).toString()));
+                // from VFS to real FS
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> newDirectoryStreamRealFS(fs, Path.of("..", realFSDir.toString()), realFSFile));
+            }
         }
         checkException(SecurityException.class, () -> noHostIOVFS.newDirectoryStream(realFSDir, null), "expected error for no host io fs");
     }
@@ -650,7 +671,9 @@ public class VirtualFileSystemUtilsTest {
         for (FileSystem fs : new FileSystem[]{rHostIOVFS, rwHostIOVFS}) {
             assertTrue(((FileTime) fs.readAttributes(realFSPath, "creationTime").get("creationTime")).toMillis() > 0);
             withCWD(fs, realFSPath.getParent(), (fst) -> assertTrue(((FileTime) fs.readAttributes(realFSPath.getFileName(), "creationTime").get("creationTime")).toMillis() > 0));
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> assertTrue(((FileTime) fs.readAttributes(Path.of("..", realFSPath.toString()), "creationTime").get("creationTime")).toMillis() > 0));
+            if (!IS_WINDOWS) {
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> assertTrue(((FileTime) fs.readAttributes(Path.of("..", realFSPath.toString()), "creationTime").get("creationTime")).toMillis() > 0));
+            }
 
         }
         checkException(SecurityException.class, () -> noHostIOVFS.readAttributes(realFSPath, "creationTime"), "expected error for no host io fs");
@@ -683,7 +706,7 @@ public class VirtualFileSystemUtilsTest {
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(p -> p.getFileName().toString().endsWith(".tso")).//
-                        resourceLoadingClass(VirtualFileSystemUtilsTest.class).build()) {
+                        resourceLoadingClass(VirtualFileSystemTest.class).build()) {
             FileSystem fs = getDelegatingFS(vfs);
             Path p = fs.toRealPath(VFS_ROOT_PATH.resolve("site-packages/testpkg/file.tso"));
             checkExtractedFile(p, null);
@@ -721,7 +744,7 @@ public class VirtualFileSystemUtilsTest {
                         unixMountPoint(VFS_MOUNT_POINT).//
                         windowsMountPoint(VFS_WIN_MOUNT_POINT).//
                         extractFilter(null).//
-                        resourceLoadingClass(VirtualFileSystemUtilsTest.class).build()) {
+                        resourceLoadingClass(VirtualFileSystemTest.class).build()) {
             FileSystem fs = getDelegatingFS(vfs);
             assertEquals(23, checkNotExtracted(fs, VFS_ROOT_PATH));
         }
@@ -827,8 +850,10 @@ public class VirtualFileSystemUtilsTest {
             checkException(NullPointerException.class, () -> fs.getMimeType(null));
             Assert.assertNull(fs.getMimeType(VFS_ROOT_PATH));
             fs.getMimeType(realFSPath);
-            // whatever the return value, just check it does not fail
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> fst.getMimeType(Path.of("..", realFSPath.toString())));
+            if (!IS_WINDOWS) {
+                // whatever the return value, just check it does not fail
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> fst.getMimeType(Path.of("..", realFSPath.toString())));
+            }
         }
     }
 
@@ -840,8 +865,10 @@ public class VirtualFileSystemUtilsTest {
             checkException(NullPointerException.class, () -> fs.getEncoding(null));
             Assert.assertNull(fs.getEncoding(VFS_ROOT_PATH));
             fs.getEncoding(realFSPath);
-            // whatever the return value, just check it does not fail
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> fst.getEncoding(Path.of("..", realFSPath.toString())));
+            if (!IS_WINDOWS) {
+                // whatever the return value, just check it does not fail
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> fst.getEncoding(Path.of("..", realFSPath.toString())));
+            }
         }
     }
 
@@ -858,7 +885,9 @@ public class VirtualFileSystemUtilsTest {
 
         // just check it does not fail for real FS paths
         rwHostIOVFS.setAttribute(realFSPath, "creationTime", FileTime.fromMillis(42));
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fst) -> fst.setAttribute(Path.of("..", realFSPath.toString()), "creationTime", FileTime.fromMillis(43)));
+        if (!IS_WINDOWS) {
+            withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fst) -> fst.setAttribute(Path.of("..", realFSPath.toString()), "creationTime", FileTime.fromMillis(43)));
+        }
     }
 
     @Test
@@ -876,9 +905,13 @@ public class VirtualFileSystemUtilsTest {
             assertFalse(fs.isSameFile(realFSDir, VFS_ROOT_PATH));
             assertFalse(fs.isSameFile(VFS_ROOT_PATH, realFSDir));
             if (fs == noHostIOVFS) {
-                withCWD(fs, VFS_ROOT_PATH, (fst) -> checkException(SecurityException.class, () -> fst.isSameFile(realFSDir, Path.of("..", realFSDir.toString()))));
+                if (!IS_WINDOWS) {
+                    withCWD(fs, VFS_ROOT_PATH, (fst) -> checkException(SecurityException.class, () -> fst.isSameFile(realFSDir, Path.of("..", realFSDir.toString()))));
+                }
             } else {
-                withCWD(fs, VFS_ROOT_PATH, (fst) -> assertTrue(fst.isSameFile(realFSDir, Path.of("..", realFSDir.toString()))));
+                if (!IS_WINDOWS) {
+                    withCWD(fs, VFS_ROOT_PATH, (fst) -> assertTrue(fst.isSameFile(realFSDir, Path.of("..", realFSDir.toString()))));
+                }
                 withCWD(fs, realFSDir, (fst) -> assertTrue(fs.isSameFile(realFSFile1.getFileName(), realFSFile1.getFileName())));
                 withCWD(fs, realFSDir, (fst) -> assertFalse(fs.isSameFile(realFSFile1.getFileName(), realFSFile2.getFileName())));
             }
@@ -906,8 +939,10 @@ public class VirtualFileSystemUtilsTest {
         assertTrue(Files.exists(link));
         Path link2 = realFSDir.resolve("link2");
         assertFalse(Files.exists(link2));
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> rwHostIOVFS.createLink(Path.of("..", link2.toString()), Path.of("..", realFSFile.toString())));
-        assertTrue(Files.exists(link2));
+        if (!IS_WINDOWS) {
+            withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> rwHostIOVFS.createLink(Path.of("..", link2.toString()), Path.of("..", realFSFile.toString())));
+            assertTrue(Files.exists(link2));
+        }
 
         checkException(SecurityException.class, () -> rHostIOVFS.createLink(realFSDir.resolve("link3"), realFSFile));
         checkException(SecurityException.class, () -> noHostIOVFS.createLink(realFSDir.resolve("link4"), realFSFile));
@@ -936,10 +971,12 @@ public class VirtualFileSystemUtilsTest {
         rwHostIOVFS.createSymbolicLink(symlink, realFSLinkTarget);
         checkSymlink(realFSDir, realFSLinkTarget, symlink);
 
-        Files.delete(symlink);
-        assertFalse(Files.exists(symlink));
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fst) -> fst.createSymbolicLink(Path.of("..", symlink.toString()), realFSLinkTarget));
-        checkSymlink(realFSDir, realFSLinkTarget, symlink);
+        if (!IS_WINDOWS) {
+            Files.delete(symlink);
+            assertFalse(Files.exists(symlink));
+            withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fst) -> fst.createSymbolicLink(Path.of("..", symlink.toString()), realFSLinkTarget));
+            checkSymlink(realFSDir, realFSLinkTarget, symlink);
+        }
     }
 
     private void checkSymlink(Path dir, Path target, Path symlink) throws Exception {
@@ -947,8 +984,10 @@ public class VirtualFileSystemUtilsTest {
         checkException(SecurityException.class, () -> noHostIOVFS.readSymbolicLink(symlink));
         for (FileSystem fs : new FileSystem[]{rwHostIOVFS, rHostIOVFS}) {
             assertEquals(target, fs.readSymbolicLink(symlink));
-            withCWD(fs, VFS_ROOT_PATH, (fst) -> assertEquals(target, fst.readSymbolicLink(Path.of("..", symlink.toString()))));
-            withCWD(fs, dir, (fst) -> assertEquals(target, fst.readSymbolicLink(Path.of(dotdot(dir.getNameCount()), "..", VFS_MOUNT_POINT, "..", symlink.toString()))));
+            if (!IS_WINDOWS) {
+                withCWD(fs, VFS_ROOT_PATH, (fst) -> assertEquals(target, fst.readSymbolicLink(Path.of("..", symlink.toString()))));
+                withCWD(fs, dir, (fst) -> assertEquals(target, fst.readSymbolicLink(Path.of(dotdot(dir.getNameCount()), "..", VFS_MOUNT_POINT, "..", symlink.toString()))));
+            }
         }
     }
 
@@ -991,7 +1030,9 @@ public class VirtualFileSystemUtilsTest {
             checkException(SecurityException.class, () -> fs.move(VFS_ROOT_PATH.resolve("file1"), VFS_ROOT_PATH.resolve("file2")));
         }
 
-        rwHostIOVFS.newByteChannel(realFSSource, Set.of(StandardOpenOption.WRITE)).write(ByteBuffer.wrap("moved text".getBytes()));
+        try (SeekableByteChannel ch = rwHostIOVFS.newByteChannel(realFSSource, Set.of(StandardOpenOption.WRITE))) {
+            ch.write(ByteBuffer.wrap("moved text".getBytes()));
+        }
         assertTrue(Files.exists(realFSSource));
         assertFalse(Files.exists(realFSTarget));
         rwHostIOVFS.move(realFSSource, realFSTarget);
@@ -1004,12 +1045,15 @@ public class VirtualFileSystemUtilsTest {
         assertTrue(Files.exists(realFSSource2));
         assertFalse(Files.exists(realFSTarget2));
 
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> fs.move(Path.of("..", realFSSource2.toString()), Path.of("..", realFSTarget2.toString())));
-        assertFalse(Files.exists(realFSSource2));
-        assertTrue(Files.exists(realFSTarget2));
-        newByteChannelRealFS(rwHostIOVFS, realFSSource, "moved text");
+        if (!IS_WINDOWS) {
+            withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> fs.move(Path.of("..", realFSSource2.toString()), Path.of("..", realFSTarget2.toString())));
+            assertFalse(Files.exists(realFSSource2));
+            assertTrue(Files.exists(realFSTarget2));
+            newByteChannelRealFS(rwHostIOVFS, realFSSource, "moved text");
+        }
 
-        checkException(IOException.class, () -> rHostIOVFS.move(realFSSource2, realFSTarget2));
+        Class<?> exCls = IS_WINDOWS ? SecurityException.class : IOException.class;
+        checkException(exCls, () -> rHostIOVFS.move(realFSSource2, realFSTarget2));
         checkException(SecurityException.class, () -> noHostIOVFS.move(realFSSource2, realFSTarget2));
     }
 
@@ -1033,7 +1077,9 @@ public class VirtualFileSystemUtilsTest {
         checkException(SecurityException.class, () -> noHostIOVFS.copy(realFSSource, realFSTarget));
 
         Files.createFile(realFSSource);
-        rwHostIOVFS.newByteChannel(realFSSource, Set.of(StandardOpenOption.WRITE)).write(ByteBuffer.wrap("copied text".getBytes()));
+        try (SeekableByteChannel ch = rwHostIOVFS.newByteChannel(realFSSource, Set.of(StandardOpenOption.WRITE))) {
+            ch.write(ByteBuffer.wrap("copied text".getBytes()));
+        }
         assertTrue(Files.exists(realFSSource));
 
         rwHostIOVFS.copy(realFSSource, realFSTarget);
@@ -1041,11 +1087,13 @@ public class VirtualFileSystemUtilsTest {
         assertTrue(Files.exists(realFSTarget));
         newByteChannelRealFS(rwHostIOVFS, realFSTarget, "copied text");
 
-        Files.delete(realFSTarget);
-        assertFalse(Files.exists(realFSTarget));
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> fs.copy(Path.of("..", realFSSource.toString()), Path.of("..", realFSTarget.toString())));
-        assertTrue(Files.exists(realFSTarget));
-        newByteChannelRealFS(rwHostIOVFS, realFSTarget, "copied text");
+        if (!IS_WINDOWS) {
+            Files.delete(realFSTarget);
+            assertFalse(Files.exists(realFSTarget));
+            withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> fs.copy(Path.of("..", realFSSource.toString()), Path.of("..", realFSTarget.toString())));
+            assertTrue(Files.exists(realFSTarget));
+            newByteChannelRealFS(rwHostIOVFS, realFSTarget, "copied text");
+        }
 
         Files.delete(realFSTarget);
         assertFalse(Files.exists(realFSTarget));
@@ -1059,11 +1107,13 @@ public class VirtualFileSystemUtilsTest {
         assertTrue(Files.exists(realFSTarget));
         newByteChannelRealFS(rwHostIOVFS, realFSTarget, "text1");
 
-        Files.delete(realFSTarget);
-        assertFalse(Files.exists(realFSTarget));
-        withCWD(rwHostIOVFS, realFSDir, (fs) -> fs.copy(Path.of(dotdot(realFSDir.getNameCount()), VFS_MOUNT_POINT, "file1"), realFSTarget));
-        assertTrue(Files.exists(realFSTarget));
-        newByteChannelRealFS(rwHostIOVFS, realFSTarget, "text1");
+        if (!IS_WINDOWS) {
+            Files.delete(realFSTarget);
+            assertFalse(Files.exists(realFSTarget));
+            withCWD(rwHostIOVFS, realFSDir, (fs) -> fs.copy(Path.of(dotdot(realFSDir.getNameCount()), VFS_MOUNT_POINT, "file1"), realFSTarget));
+            assertTrue(Files.exists(realFSTarget));
+            newByteChannelRealFS(rwHostIOVFS, realFSTarget, "text1");
+        }
 
         Files.delete(realFSTarget);
         assertFalse(Files.exists(realFSTarget));
@@ -1078,10 +1128,11 @@ public class VirtualFileSystemUtilsTest {
         assertFalse(Files.exists(realFSTarget));
 
         // no host IO
-
-        withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> fs.copy(Path.of("file1"), Path.of("..", realFSTarget.toString())));
-        assertTrue(Files.exists(realFSTarget));
-        newByteChannelRealFS(rwHostIOVFS, realFSTarget, "text1");
+        if (!IS_WINDOWS) {
+            withCWD(rwHostIOVFS, VFS_ROOT_PATH, (fs) -> fs.copy(Path.of("file1"), Path.of("..", realFSTarget.toString())));
+            assertTrue(Files.exists(realFSTarget));
+            newByteChannelRealFS(rwHostIOVFS, realFSTarget, "text1");
+        }
 
     }
 

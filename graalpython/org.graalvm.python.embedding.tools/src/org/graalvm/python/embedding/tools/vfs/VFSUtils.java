@@ -488,7 +488,7 @@ public final class VFSUtils {
         throw new IOException("invalid package format: " + pkgs);
     }
 
-    private static void checkPackagesConsistent(List<String> packages, Path requirementsFile, List<String> requiredPackages, String inconsistentPackagesError,
+    private static void checkPackagesConsistent(List<String> packages, List<String> requiredPackages, String inconsistentPackagesError,
                     String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
         if (packages.isEmpty()) {
             return;

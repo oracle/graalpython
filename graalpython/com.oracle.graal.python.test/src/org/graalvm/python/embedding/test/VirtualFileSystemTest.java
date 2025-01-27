@@ -250,21 +250,36 @@ public class VirtualFileSystemTest {
                 p = fs.toAbsolutePath(Path.of(dotdot(cwd.getNameCount()).toString(), MOUNT_POINT_NAME));
                 assertTrue(p.isAbsolute());
                 assertEquals(VFS_ROOT_PATH, p.normalize());
-            }
 
-            // ../../../VFS_ROOT/../real/fs/path
-            p = fs.toAbsolutePath(Path.of(dotdot(cwd.getNameCount()).toString(), MOUNT_POINT_NAME, "..", realFSPath.toString()));
-            assertTrue(p.isAbsolute());
-            assertEquals(realFSPath, p.normalize());
+                // ../../../VFS_ROOT/../real/fs/path
+                p = fs.toAbsolutePath(Path.of(dotdot(cwd.getNameCount()).toString(), MOUNT_POINT_NAME, "..", realFSPath.toString()));
+                assertTrue(p.isAbsolute());
+                assertEquals(realFSPath, p.normalize());
 
-            // CWD is VFS_ROOT, relative path pointing to real FS
-            // ../real/fs/path
-            if (!IS_WINDOWS) {
+                // CWD is VFS_ROOT, relative path pointing to real FS
+                // ../real/fs/path
                 withCWD(fs, VFS_ROOT_PATH, (fst) -> {
                     Path pp = fst.toAbsolutePath(Path.of("..", realFSPath.toString()));
                     assertTrue(pp.isAbsolute());
                     assertEquals(realFSPath, pp.normalize());
                 });
+
+                // CWD is real FS, relative path pointing to VFS
+                // real/fs/path/../../
+                withCWD(fs, realFSPath.getParent(), (fst) -> {
+                    Path pp = fst.toAbsolutePath(Path.of("dir", dotdot(realFSDirDir.getNameCount()), MOUNT_POINT_NAME));
+                    assertTrue(pp.isAbsolute());
+                    assertEquals(VFS_ROOT_PATH, pp.normalize());
+                });
+
+                // CWD is real FS, relative path pointing through VFS to real FS
+                // real/fs/path/../../../VFS
+                withCWD(fs, realFSPath.getParent(),
+                                (fst) -> {
+                                    Path pp = fst.toAbsolutePath(Path.of("dir", dotdot(realFSDirDir.getNameCount()), MOUNT_POINT_NAME, "..", realFSPath.toString()));
+                                    assertTrue(pp.isAbsolute());
+                                    assertEquals(realFSPath, pp.normalize());
+                                });
             }
 
             // CWD is VFS_ROOT, relative path pointing through real FS back to VFS
@@ -274,23 +289,6 @@ public class VirtualFileSystemTest {
                 assertTrue(pp.isAbsolute());
                 assertEquals(VFS_ROOT_PATH, pp.normalize());
             });
-
-            // CWD is real FS, relative path pointing to VFS
-            // real/fs/path/../../
-            withCWD(fs, realFSPath.getParent(), (fst) -> {
-                Path pp = fst.toAbsolutePath(Path.of("dir", dotdot(realFSDirDir.getNameCount()), MOUNT_POINT_NAME));
-                assertTrue(pp.isAbsolute());
-                assertEquals(VFS_ROOT_PATH, pp.normalize());
-            });
-
-            // CWD is real FS, relative path pointing through VFS to real FS
-            // real/fs/path/../../../VFS
-            withCWD(fs, realFSPath.getParent(),
-                            (fst) -> {
-                                Path pp = fst.toAbsolutePath(Path.of("dir", dotdot(realFSDirDir.getNameCount()), MOUNT_POINT_NAME, "..", realFSPath.toString()));
-                                assertTrue(pp.isAbsolute());
-                                assertEquals(realFSPath, pp.normalize());
-                            });
 
             assertEquals(Path.of("extractme").toAbsolutePath(), fs.toAbsolutePath(Path.of("extractme")));
 

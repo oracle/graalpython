@@ -510,54 +510,54 @@ public class VFSUtilsTest {
         Path requirements = tmpDir.resolve("requirements.txt");
         Files.createFile(requirements);
 
-        callPackageConsistencyCheck(requirements, log, Collections.EMPTY_LIST);
+        callPackageConsistencyCheck(log, Collections.EMPTY_LIST);
         assertFalse(log.output.toString().contains("inconsistent package"));
 
-        checkException(IOException.class, () -> callPackageConsistencyCheck(requirements, log, Collections.EMPTY_LIST, "pkg1"));
+        checkException(IOException.class, () -> callPackageConsistencyCheck(log, Collections.EMPTY_LIST, "pkg1"));
         assertTrue(log.output.toString().contains(String.format(WRONG_PKG_VERSION_ERROR, "'pkg1'")));
         log.clearOutput();
 
-        checkException(IOException.class, () -> callPackageConsistencyCheck(requirements, log, Collections.EMPTY_LIST, "pkg1==1"));
+        checkException(IOException.class, () -> callPackageConsistencyCheck(log, Collections.EMPTY_LIST, "pkg1==1"));
         assertTrue(log.output.toString().contains(String.format(INCONSISTENT_PKGS_ERROR, "'pkg1==1'", requirements)));
         log.clearOutput();
 
         final List<String> requirementsList = Arrays.asList("pkg1==1.0.0");
         Files.write(requirements, requirementsList, StandardOpenOption.TRUNCATE_EXISTING);
 
-        checkException(IOException.class, () -> callPackageConsistencyCheck(requirements, log, requirementsList, "pkg1"));
+        checkException(IOException.class, () -> callPackageConsistencyCheck(log, requirementsList, "pkg1"));
         assertTrue(log.output.toString().contains(String.format(WRONG_PKG_VERSION_ERROR, "'pkg1'")));
         log.clearOutput();
-        checkException(IOException.class, () -> callPackageConsistencyCheck(requirements, log, requirementsList, "pkg2"));
+        checkException(IOException.class, () -> callPackageConsistencyCheck(log, requirementsList, "pkg2"));
         assertTrue(log.output.toString().contains(String.format(WRONG_PKG_VERSION_ERROR, "'pkg2'")));
         log.clearOutput();
-        checkException(IOException.class, () -> callPackageConsistencyCheck(requirements, log, requirementsList, "pkg2==1"));
+        checkException(IOException.class, () -> callPackageConsistencyCheck(log, requirementsList, "pkg2==1"));
         assertTrue(log.output.toString().contains(String.format(INCONSISTENT_PKGS_ERROR, "'pkg2==1'", requirements)));
         log.clearOutput();
-        callPackageConsistencyCheck(requirements, log, requirementsList, "pkg1==1.0");
+        callPackageConsistencyCheck(log, requirementsList, "pkg1==1.0");
         log.clearOutput();
-        callPackageConsistencyCheck(requirements, log, requirementsList, "pkg1==1.0.0");
+        callPackageConsistencyCheck(log, requirementsList, "pkg1==1.0.0");
         log.clearOutput();
 
         final List<String> requirementsList2 = Arrays.asList("pkg1==1.0.0", "pkg2==1.0.0");
         Files.write(requirements, requirementsList, StandardOpenOption.TRUNCATE_EXISTING);
 
-        checkException(IOException.class, () -> callPackageConsistencyCheck(requirements, log, requirementsList2, "pkg2"));
+        checkException(IOException.class, () -> callPackageConsistencyCheck(log, requirementsList2, "pkg2"));
         assertTrue(log.output.toString().contains(String.format(WRONG_PKG_VERSION_ERROR, "'pkg2'")));
         log.clearOutput();
-        checkException(IOException.class, () -> callPackageConsistencyCheck(requirements, log, requirementsList2, "pkg2==2"));
+        checkException(IOException.class, () -> callPackageConsistencyCheck(log, requirementsList2, "pkg2==2"));
         assertTrue(log.output.toString().contains(String.format(INCONSISTENT_PKGS_ERROR, "'pkg2==2'", requirements)));
         log.clearOutput();
-        callPackageConsistencyCheck(requirements, log, requirementsList2, "pkg1==1.0");
+        callPackageConsistencyCheck(log, requirementsList2, "pkg1==1.0");
         log.clearOutput();
-        callPackageConsistencyCheck(requirements, log, requirementsList2, "pkg1==1.0", "pkg2==1.0.0");
+        callPackageConsistencyCheck(log, requirementsList2, "pkg1==1.0", "pkg2==1.0.0");
         log.clearOutput();
     }
 
-    private static void callPackageConsistencyCheck(Path requirements, TestLog log, List<String> requirementsList, String... packages)
+    private static void callPackageConsistencyCheck(TestLog log, List<String> requirementsList, String... packages)
                     throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method m = VFSUtils.class.getDeclaredMethod("checkPackagesConsistent", List.class, Path.class, List.class, String.class, String.class, BuildToolLog.class);
+        Method m = VFSUtils.class.getDeclaredMethod("checkPackagesConsistent", List.class, List.class, String.class, String.class, BuildToolLog.class);
         m.setAccessible(true);
-        m.invoke(VFSUtils.class, Arrays.asList(packages), requirements, requirementsList, INCONSISTENT_PKGS_ERROR, WRONG_PKG_VERSION_ERROR, log);
+        m.invoke(VFSUtils.class, Arrays.asList(packages), requirementsList, INCONSISTENT_PKGS_ERROR, WRONG_PKG_VERSION_ERROR, log);
     }
 
     private interface ExceptionCall {
