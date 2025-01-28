@@ -40,7 +40,6 @@
  */
 package org.graalvm.python.tasks;
 
-import org.graalvm.python.GraalPyGradlePlugin;
 import org.graalvm.python.GradleLogger;
 import org.graalvm.python.dsl.GraalPyExtension;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
@@ -74,12 +73,21 @@ import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 
 /**
- * This task is responsible for setting up the Python launcher and installing the dependencies which
- * were requested by the user. This is either done in generated resources folder or in external
- * directory provided by the user in {@link GraalPyExtension#getExternalDirectory()}.
+ * This task is responsible installing the dependencies which were requested by the user.
+ * This is either done in generated resources folder or in external directory provided by the user
+ * in {@link GraalPyExtension#getExternalDirectory()}.
+ *
+ * <p/>
+ * In scope of this task:
+ * <ol>
+ *     <li>The GraalPy launcher is set up.</li>
+ *     <li>A python venv is created.</li>
+ *     <li>Python packages are installed into the venv.</li>
+ * </ol>
+ *
  */
 @CacheableTask
-public abstract class ResourcesTask extends DefaultTask {
+public abstract class InstallPackagesTask extends DefaultTask {
 
     /** @see #getOutput() */
     @Input

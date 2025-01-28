@@ -42,7 +42,7 @@ package org.graalvm.python;
 
 import org.graalvm.python.dsl.GraalPyExtension;
 import org.graalvm.python.tasks.MetaInfTask;
-import org.graalvm.python.tasks.ResourcesTask;
+import org.graalvm.python.tasks.InstallPackagesTask;
 import org.graalvm.python.tasks.VFSFilesListTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
@@ -84,7 +84,7 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String DEFAULT_RESOURCES_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "resources";
     private static final String DEFAULT_FILESLIST_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "fileslist";
     private static final String GRAALPY_META_INF_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "META-INF";
-    private static final String GRAALPY_RESOURCES_TASK = "graalPyResources";
+    private static final String GRAALPY_INSTALL_PACKAGES_TASK = "graalPyInstallPackages";
     private static final String GRAALPY_META_INF_TASK_TASK = "graalPyMetaInf";
     private static final String GRAALPY_VFS_FILESLIST_TASK = "graalPyVFSFilesList";
 
@@ -102,12 +102,12 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
 
         var launcherClasspath = createLauncherClasspath();
         var javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-        var resourcesTask = registerResourcesTask(project, launcherClasspath, extension);
+        TaskProvider<InstallPackagesTask> installPackagesTask = registerInstallPackagesTask(project, launcherClasspath, extension);
         registerMetaInfTask(extension);
 
-        var vfsFilesListTask = registerCreateVfsFilesListTask(resourcesTask, javaPluginExtension, extension);
+        var vfsFilesListTask = registerCreateVfsFilesListTask(installPackagesTask, javaPluginExtension, extension);
         var mainSourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-        mainSourceSet.getResources().srcDir(resourcesTask);
+        mainSourceSet.getResources().srcDir(installPackagesTask);
         addDependencies();
 
         project.afterEvaluate(proj -> {
@@ -153,12 +153,12 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
      * @param resourcesTask the resources task
      * @return the task provider
      */
-    private TaskProvider<VFSFilesListTask> registerCreateVfsFilesListTask(TaskProvider<ResourcesTask> resourcesTask, JavaPluginExtension javaPluginExtension, GraalPyExtension extension) {
+    private TaskProvider<VFSFilesListTask> registerCreateVfsFilesListTask(TaskProvider<InstallPackagesTask> installPackagesTask, JavaPluginExtension javaPluginExtension, GraalPyExtension extension) {
         var srcDirs = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
         return project.getTasks().register(GRAALPY_VFS_FILESLIST_TASK, VFSFilesListTask.class, t -> {
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
             t.getResourceDirectory().set(extension.getResourceDirectory());
-            t.getVfsDirectories().from(resourcesTask.flatMap(ResourcesTask::getOutput));
+            t.getVfsDirectories().from(installPackagesTask.flatMap(InstallPackagesTask::getOutput));
             srcDirs.forEach(t.getVfsDirectories()::from);
             t.getVfsFilesListOutputDir().convention(project.getLayout().getBuildDirectory().dir(DEFAULT_FILESLIST_DIRECTORY));
         });
@@ -182,8 +182,8 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
      * @param launcherClasspath the classpath of the Python launcher
      * @return the resources task provider
      */
-    private TaskProvider<ResourcesTask> registerResourcesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
-        return project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class, t -> {
+    private TaskProvider<InstallPackagesTask> registerInstallPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
+        return project.getTasks().register(GRAALPY_INSTALL_PACKAGES_TASK, InstallPackagesTask.class, t -> {
             t.getLauncherClasspath().from(launcherClasspath);
             t.getLauncherDirectory().convention(project.getLayout().getBuildDirectory().dir("python-launcher"));
             t.getPolyglotVersion().convention(extension.getPolyglotVersion().orElse(determineGraalPyDefaultVersion()));

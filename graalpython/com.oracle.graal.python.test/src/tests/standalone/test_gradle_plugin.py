@@ -236,43 +236,6 @@ class GradlePluginTestBase(util.BuildToolTestBase):
     def check_gradle_fail_with_mismatching_graalpy_dep(self):
         pass # TODO: once the CI job builds enterprise
 
-    def check_gradle_gen_launcher_and_venv(self, community):
-        with TemporaryTestDirectory() as tmpdir:
-            target_dir = os.path.join(str(tmpdir), "gradle_gen_launcher_and_venv" + self.target_dir_name_sufix())
-            self.generate_app(target_dir)
-
-            build_file = os.path.join(target_dir, self.build_file_name)
-
-            gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-
-            append(build_file, self.packages_termcolor_ujson(community))
-
-            cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out)
-            util.check_ouput("-m ensurepip",out)
-            util.check_ouput("ujson", out)
-            util.check_ouput("termcolor", out)
-
-            # run again and assert that we do not regenerate the venv
-            cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out, False)
-            util.check_ouput("-m ensurepip", out, False)
-            util.check_ouput("ujson", out, False)
-            util.check_ouput("termcolor", out, False)
-
-            # remove ujson pkg from plugin config and check if unistalled
-            self.copy_build_files(target_dir)
-            append(build_file, self.packages_termcolor(community))
-
-            cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out, False)
-            util.check_ouput("-m ensurepip", out, False)
-            util.check_ouput("Uninstalling ujson", out)
-            util.check_ouput("termcolor", out, False)
-
     def check_tagfile(self, home, expected, log=''):
         with open(os.path.join(home, "tagfile")) as f:
             lines = f.readlines()
@@ -286,7 +249,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             build_file = os.path.join(target_dir, self.build_file_name)
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-            process_resources_cmd = gradle_cmd + ["--stacktrace", "graalPyResources"]
+            process_resources_cmd = gradle_cmd + ["--stacktrace", "graalPyInstallPackages"]
 
             # 1. process-resources with no pythonHome config - no warning printed
             log = Logger()
@@ -364,7 +327,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             append(build_file, self.empty_packages())
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-            cmd = gradle_cmd + ["graalPyResources"]
+            cmd = gradle_cmd + ["graalPyInstallPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
             assert return_code == 0, out
@@ -388,7 +351,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             ''')
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-            cmd = gradle_cmd + ["graalPyResources"]
+            cmd = gradle_cmd + ["graalPyInstallPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("Property 'pythonResourcesDirectory' is deprecated and will be removed. Use property 'externalDirectory' instead.", out)
             assert return_code == 0, out
@@ -413,7 +376,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             ''')
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-            cmd = gradle_cmd + ["graalPyResources"]
+            cmd = gradle_cmd + ["graalPyInstallPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("Cannot set both 'externalDirectory' and 'resourceDirectory' at the same time", out)
             assert return_code != 0, out
@@ -514,10 +477,6 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
         self.check_gradle_generated_app_external_resources()
-
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_gen_launcher_and_venv(self):
-        self.check_gradle_gen_launcher_and_venv(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_check_home_warning(self):
@@ -688,10 +647,6 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
     @unittest.skipUnless(util.is_gradle_plugin_long_running_test_enabled, "ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
         self.check_gradle_generated_app_external_resources()
-
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_gen_launcher_and_venv(self):
-        self.check_gradle_gen_launcher_and_venv(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_check_home_warning(self):
