@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,29 @@
  */
 package com.oracle.graal.python.test.integration;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.Locale;
 
 public class Utils {
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
+
+    public static String getThreadDump() {
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        ThreadInfo[] threads = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
+        final String line = "=====================================\n";
+        StringBuilder sb = new StringBuilder(line);
+        for (ThreadInfo thread : threads) {
+            if (thread != null) {
+                sb.append("-------\n");
+                sb.append(thread.getThreadName()).append('\n');
+                sb.append("Thread state:").append(thread.getThreadState()).append('\n');
+                for (StackTraceElement element : thread.getStackTrace()) {
+                    sb.append("    ").append(element).append('\n');
+                }
+            }
+        }
+        return sb.append(line).toString();
+    }
 }
