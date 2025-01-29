@@ -334,7 +334,6 @@ public abstract class ErrorMessages {
     public static final TruffleString FAILED_TO_CONVERT_SEQ = tsLiteral("failed to convert sequence");
     public static final TruffleString FLOAT_ARG_REQUIRED = tsLiteral("float argument required, not %p");
     public static final TruffleString FOREIGN_OBJ_HAS_NO_ATTR_S = tsLiteral("foreign object has no attribute '%s'");
-    public static final TruffleString FOREIGN_OBJ_ISNT_ITERABLE = tsLiteral("foreign object is not iterable");
     public static final TruffleString FOREIGN_OBJ_ISNT_REVERSE_ITERABLE = tsLiteral("foreign object cannot be iterated in reverse");
     public static final TruffleString FORMAT_REQUIRES_MAPPING = tsLiteral("format requires a mapping");
     public static final TruffleString FORMAT_STR_CONTAINS_POS_FIELDS = tsLiteral("Format string contains positional fields");

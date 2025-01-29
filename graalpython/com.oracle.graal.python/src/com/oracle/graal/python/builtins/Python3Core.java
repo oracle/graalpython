@@ -59,6 +59,9 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.foreign.ForeignExecutableBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -259,6 +262,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignAbstractClassBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
@@ -487,6 +491,10 @@ public abstract class Python3Core {
                         new ForeignObjectBuiltins(),
                         new ForeignNumberBuiltins(),
                         new ForeignBooleanBuiltins(),
+                        new ForeignAbstractClassBuiltins(),
+                        new ForeignExecutableBuiltins(),
+                        new ForeignInstantiableBuiltins(),
+                        new ForeignIterableBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),
