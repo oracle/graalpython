@@ -109,7 +109,7 @@ public class GraalPyRunner {
         var cmd = new ArrayList<String>();
         cmd.add(venvDirectory.resolve(BIN_DIR).resolve(command + EXE_SUFFIX).toString());
         cmd.addAll(args);
-        log.info("executing: " + String.join(" ", cmd));
+        log.info("Executing: " + String.join(" ", cmd));
         var pb = new ProcessBuilder(cmd);
         runProcess(pb, log);
     }
