@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,14 +43,10 @@ package com.oracle.graal.python.nodes.builtins;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__allocated;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_LIST;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
-import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -58,23 +54,17 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
-import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -86,7 +76,6 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStor
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -95,11 +84,9 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -308,111 +295,6 @@ public abstract class ListNodes {
             return constructListNode.execute(frame, PythonBuiltinClassType.PList, value);
         }
 
-    }
-
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class IndexNode extends PNodeWithContext {
-        @Child private PRaiseNode raise;
-        private static final TruffleString DEFAULT_ERROR_MSG = cat(T_LIST, T_SPACE, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
-        @Child LookupAndCallUnaryNode getIndexNode;
-        private final CheckType checkType;
-        private final TruffleString errorMessage;
-
-        protected static enum CheckType {
-            SUBSCRIPT,
-            INTEGER,
-            NUMBER;
-        }
-
-        protected IndexNode(TruffleString message, CheckType type) {
-            checkType = type;
-            getIndexNode = LookupAndCallUnaryNode.create(SpecialMethodSlot.Index);
-            errorMessage = message;
-        }
-
-        @NeverDefault
-        public static IndexNode create(TruffleString message) {
-            return IndexNodeGen.create(message, CheckType.SUBSCRIPT);
-        }
-
-        @NeverDefault
-        public static IndexNode create() {
-            return IndexNodeGen.create(DEFAULT_ERROR_MSG, CheckType.SUBSCRIPT);
-        }
-
-        @NeverDefault
-        public static IndexNode createInteger(TruffleString msg) {
-            return IndexNodeGen.create(msg, CheckType.INTEGER);
-        }
-
-        @NeverDefault
-        public static IndexNode createNumber(TruffleString msg) {
-            return IndexNodeGen.create(msg, CheckType.NUMBER);
-        }
-
-        public abstract Object execute(VirtualFrame frame, Object object);
-
-        @Idempotent
-        protected boolean isSubscript() {
-            return checkType == CheckType.SUBSCRIPT;
-        }
-
-        @Idempotent
-        protected boolean isNumber() {
-            return checkType == CheckType.NUMBER;
-        }
-
-        @Specialization
-        long doLong(long slice) {
-            return slice;
-        }
-
-        @Specialization
-        PInt doPInt(PInt slice) {
-            return slice;
-        }
-
-        @Specialization(guards = "isSubscript()")
-        PSlice doSlice(PSlice slice) {
-            return slice;
-        }
-
-        @Specialization(guards = "isNumber()")
-        float doFloat(float slice) {
-            return slice;
-        }
-
-        @Specialization(guards = "isNumber()")
-        double doDouble(double slice) {
-            return slice;
-        }
-
-        @Fallback
-        @InliningCutoff
-        Object doGeneric(VirtualFrame frame, Object object) {
-            Object idx = getIndexNode.executeObject(frame, object);
-            boolean valid = false;
-            switch (checkType) {
-                case SUBSCRIPT:
-                    valid = MathGuards.isInteger(idx) || idx instanceof PSlice;
-                    break;
-                case NUMBER:
-                    valid = MathGuards.isNumber(idx);
-                    break;
-                case INTEGER:
-                    valid = MathGuards.isInteger(idx);
-                    break;
-            }
-            if (valid) {
-                return idx;
-            } else {
-                if (raise == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    raise = insert(PRaiseNode.create());
-                }
-                throw raise.raise(TypeError, errorMessage, idx);
-            }
-        }
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,9 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -56,7 +52,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -114,15 +109,7 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     @InliningCutoff
     @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached IsForeignObjectNode isForeignObjectNode,
-                    @Cached LazyInteropLibrary lazyInteropLibrary,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Index", inline = false) LookupCallableSlotInMRONode lookupIndex) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        if (isForeignObjectNode.execute(inliningTarget, object)) {
-            InteropLibrary interop = lazyInteropLibrary.get(inliningTarget);
-            return interop.fitsInLong(object) || interop.isBoolean(object);
-        }
-        return lookupIndex.execute(type) != PNone.NO_VALUE;
+                    @Cached GetObjectSlotsNode getSlots) {
+        return getSlots.execute(inliningTarget, object).nb_index() != null;
     }
 }

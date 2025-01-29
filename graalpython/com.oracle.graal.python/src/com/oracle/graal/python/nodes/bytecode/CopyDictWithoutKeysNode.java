@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -54,6 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false) // used in BCI root node
 public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
@@ -61,33 +63,35 @@ public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
 
     @Specialization(guards = {"keys.length == keysLength", "keysLength <= 32"}, limit = "1")
     static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keys,
+                    @Bind("this") Node inliningTarget,
                     @Cached("keys.length") int keysLength,
                     @Shared @Cached PythonObjectFactory factory,
                     @Shared @Cached DictNodes.UpdateNode updateNode,
-                    @Shared @Cached DictBuiltins.DelItemNode delItemNode) {
+                    @Shared @Cached PyDictDelItem delItem) {
         PDict rest = factory.createDict();
         updateNode.execute(frame, rest, subject);
-        deleteKeys(frame, keys, keysLength, delItemNode, rest);
+        deleteKeys(frame, inliningTarget, keys, keysLength, delItem, rest);
         return rest;
     }
 
     @ExplodeLoop
-    private static void deleteKeys(VirtualFrame frame, Object[] keys, int keysLen, DictBuiltins.DelItemNode delItemNode, PDict rest) {
+    private static void deleteKeys(VirtualFrame frame, Node inliningTarget, Object[] keys, int keysLen, PyDictDelItem delItem, PDict rest) {
         CompilerAsserts.partialEvaluationConstant(keysLen);
         for (int i = 0; i < keysLen; i++) {
-            delItemNode.execute(frame, rest, keys[i]);
+            delItem.execute(frame, inliningTarget, rest, keys[i]);
         }
     }
 
     @Specialization(guards = "keys.length > 32")
     static PDict copy(VirtualFrame frame, Object subject, Object[] keys,
+                    @Bind("this") Node inliningTarget,
                     @Shared @Cached PythonObjectFactory factory,
                     @Shared @Cached DictNodes.UpdateNode updateNode,
-                    @Shared @Cached DictBuiltins.DelItemNode delItemNode) {
+                    @Shared @Cached PyDictDelItem delItem) {
         PDict rest = factory.createDict();
         updateNode.execute(frame, rest, subject);
         for (int i = 0; i < keys.length; i++) {
-            delItemNode.execute(frame, rest, keys[i]);
+            delItem.execute(frame, inliningTarget, rest, keys[i]);
         }
         return rest;
     }

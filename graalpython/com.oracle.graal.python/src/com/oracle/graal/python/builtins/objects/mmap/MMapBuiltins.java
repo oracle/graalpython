@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,13 +44,21 @@ import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBo
 import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_COPY;
 import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_READ;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_READLINE;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_ASSIGNMENT_MUST_BE_LENGTH_1_BYTES;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_CANNOT_MODIFY_READONLY_MEMORY;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_CHANGED_LENGTH;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_CLOSED_OR_INVALID;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_INDEX_OUT_OF_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_INDICES_MUST_BE_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_ITEM_VALUE_MUST_BE_AN_INT;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_ITEM_VALUE_MUST_BE_IN_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION;
+import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.READ_BYTE_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -68,11 +76,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FindNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FlushNodeClinicProviderGen;
@@ -81,12 +88,16 @@ import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -99,13 +110,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverterNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
@@ -121,9 +130,9 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -228,67 +237,142 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___SETITEM__, minNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.sq_ass_item, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(guards = "!isPSlice(idxObj)")
-        static PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,
-                        @Bind("this") Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
-                        @Cached PyLongAsLongNode asLongNode,
-                        @Cached("createCoerce()") CastToByteNode castToByteNode,
-                        @Exclusive @Cached InlinedConditionProfile outOfRangeProfile,
-                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            long i = asLongNode.execute(frame, inliningTarget, idxObj);
-            long len = self.getLength();
-            long idx = i < 0 ? i + len : i;
-            if (outOfRangeProfile.profile(inliningTarget, idx < 0 || idx >= len)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
-            }
-            byte[] bytes = {castToByteNode.execute(frame, val)};
-            writeBuffer(frame, inliningTarget, posixSupportLib, self, idx, bytes, 1, constructAndRaiseNode);
-            return PNone.NONE;
-        }
+    public abstract static class SetItemNode extends SqAssItemBuiltinNode {
 
         @Specialization
-        static PNone doSlice(VirtualFrame frame, PMMap self, PSlice idx, PBytesLike val,
+        static void doSingle(VirtualFrame frame, PMMap self, int index, Object val,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
-                        @Cached ToByteArrayNode toByteArrayNode,
-                        @Exclusive @Cached InlinedConditionProfile invalidStepProfile,
-                        @Cached CoerceToIntSlice sliceCast,
-                        @Cached ComputeIndices compute,
-                        @Cached LenOfRangeNode sliceLen,
-                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PyBytesCheckNode checkNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            // NB: sq_ass_item and mp_ass_subscript implementations behave differently even with
+            // integer indices
+            if (self.isClosed()) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
+            }
+            long len = self.getLength();
+            long idx = index < 0 ? index + len : index;
+            if (idx < 0 || idx >= len) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
+            }
+            if (val == PNone.NO_VALUE) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION);
+            }
+            if (!(checkNode.execute(inliningTarget, val) && bufferLib.getBufferLength(val) == 1)) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_ASSIGNMENT_MUST_BE_LENGTH_1_BYTES);
+            }
+            if (self.isReadonly()) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+            }
+            byte b = bufferLib.readByte(val, 0);
             try {
-                long len = self.getLength();
-                SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, idx), PInt.intValueExact(len));
-                if (invalidStepProfile.profile(inliningTarget, info.step != 1)) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.STEP_1_NOT_SUPPORTED);
-                }
-                byte[] bytes = toByteArrayNode.execute(inliningTarget, val.getSequenceStorage());
-                writeBuffer(frame, inliningTarget, posixSupportLib, self, info.start, bytes, sliceLen.len(inliningTarget, info), constructAndRaiseNode);
-                return PNone.NONE;
-            } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, e);
+                posixSupportLib.mmapWriteByte(PosixSupport.get(inliningTarget), self.getPosixSupportHandle(), idx, b);
+            } catch (PosixException ex) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);
             }
         }
+    }
 
-        private static void writeBuffer(VirtualFrame frame, Node inliningTarget, PosixSupportLibrary posixSupportLib, PMMap mmap, long idx, byte[] bytes, int len,
-                        PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+    @Slot(value = SlotKind.mp_ass_subscript, isComplex = true)
+    @GenerateNodeFactory
+    public abstract static class SetSubscriptNode extends MpAssSubscriptBuiltinNode {
+
+        @Specialization(guards = "!isPSlice(idxObj)")
+        static void doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object valueObj,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
+                        @Cached PyIndexCheckNode checkNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            // NB: sq_ass_item and mp_ass_subscript implementations behave differently even with
+            // integer indices
+            if (self.isClosed()) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
+            }
+            if (self.isReadonly()) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+            }
+            if (!checkNode.execute(inliningTarget, idxObj)) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_INDICES_MUST_BE_INTEGER);
+            }
+            long idx = asSizeNode.executeExact(frame, inliningTarget, idxObj, PythonBuiltinClassType.IndexError);
+            long len = self.getLength();
+            idx = idx < 0 ? idx + len : idx;
+            if (idx < 0 || idx >= len) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
+            }
+            if (valueObj == PNone.NO_VALUE) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION);
+            }
+            if (!checkNode.execute(inliningTarget, valueObj)) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_ITEM_VALUE_MUST_BE_AN_INT);
+            }
+            int value = asSizeNode.executeExact(frame, inliningTarget, valueObj, PythonBuiltinClassType.TypeError);
+            if (value < 0 || value > 255) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, MMAP_ITEM_VALUE_MUST_BE_IN_RANGE);
+            }
             try {
-                posixSupportLib.mmapWriteBytes(PosixSupport.get(inliningTarget), mmap.getPosixSupportHandle(), idx, bytes, len);
+                posixSupportLib.mmapWriteByte(PosixSupport.get(inliningTarget), self.getPosixSupportHandle(), idx, (byte) value);
             } catch (PosixException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);
             }
         }
 
-        @NeverDefault
-        protected static CastToByteNode createCoerce() {
-            return CastToByteNode.create(true);
+        @Specialization
+        static void doSlice(VirtualFrame frame, PMMap self, PSlice slice, Object valueObj,
+                        @Bind("this") Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached SliceNodes.SliceUnpack sliceUnpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices,
+                        @Cached InlinedConditionProfile step1Profile,
+                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+            if (self.isClosed()) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
+            }
+            if (self.isReadonly()) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+            }
+            int len;
+            try {
+                len = PInt.intValueExact(self.getLength());
+            } catch (OverflowException e) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError);
+            }
+            SliceInfo info = adjustIndices.execute(inliningTarget, len, sliceUnpack.execute(inliningTarget, slice));
+            if (valueObj == PNone.NO_VALUE) {
+                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION);
+            }
+            Object buffer = acquireLib.acquireReadonly(valueObj);
+            try {
+                int bufferLen = bufferLib.getBufferLength(buffer);
+                if (info.sliceLength != bufferLen) {
+                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE);
+                }
+                if (info.sliceLength > 0) {
+                    try {
+                        if (step1Profile.profile(inliningTarget, info.step == 1)) {
+                            posixSupportLib.mmapWriteBytes(PosixSupport.get(inliningTarget), self.getPosixSupportHandle(),
+                                            info.start, bufferLib.getInternalOrCopiedByteArray(buffer), bufferLen);
+                        } else {
+                            for (int cur = info.start, i = 0; i < info.sliceLength; cur += info.step, i++) {
+                                posixSupportLib.mmapWriteByte(PosixSupport.get(inliningTarget), self.getPosixSupportHandle(), cur, bufferLib.readByte(buffer, i));
+                            }
+                        }
+                    } catch (PosixException ex) {
+                        throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);
+                    }
+                }
+            } finally {
+                bufferLib.release(buffer);
+            }
         }
     }
 

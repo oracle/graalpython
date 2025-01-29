@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -113,6 +113,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -295,6 +296,10 @@ public abstract class PGuards {
 
     public static boolean isForeignSequenceStorage(SequenceStorage sequenceStorage) {
         return sequenceStorage instanceof ForeignSequenceStorage;
+    }
+
+    public static boolean isNativeObjectStorage(SequenceStorage sequenceStorage) {
+        return sequenceStorage instanceof NativeObjectSequenceStorage;
     }
 
     public static boolean isList(Object o) {
@@ -545,10 +550,6 @@ public abstract class PGuards {
 
     public static boolean isPFrozenSet(Object o) {
         return o instanceof PFrozenSet;
-    }
-
-    public static boolean canDoSetBinOp(Object o) {
-        return isAnySet(o) || isDictView(o);
     }
 
     public static boolean isPSlice(Object obj) {

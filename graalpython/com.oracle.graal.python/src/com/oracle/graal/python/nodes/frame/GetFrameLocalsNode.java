@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,13 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictGetItem;
-import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -118,8 +119,8 @@ public abstract class GetFrameLocalsNode extends Node {
                         @SuppressWarnings("unused") @Cached("locals.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Bind("getInfo(cachedFd)") FrameInfo info,
                         @Bind("info.getVariableCount()") int count,
-                        @Shared("setItem") @Cached PyDictSetItem setItem,
-                        @Shared("delItem") @Cached PyDictDelItem delItem) {
+                        @Shared("setItem") @Cached HashingStorageSetItem setItem,
+                        @Shared("delItem") @Cached HashingStorageDelItem delItem) {
             CodeUnit co = info.getRootNode().getCodeUnit();
             int regularVarCount = co.varnames.length;
             for (int i = 0; i < count; i++) {
@@ -130,8 +131,8 @@ public abstract class GetFrameLocalsNode extends Node {
         @Specialization(replaces = "doCachedFd")
         void doGeneric(MaterializedFrame locals, PDict dict,
                         @Bind("this") Node inliningTarget,
-                        @Shared("setItem") @Cached PyDictSetItem setItem,
-                        @Shared("delItem") @Cached PyDictDelItem delItem) {
+                        @Shared("setItem") @Cached HashingStorageSetItem setItem,
+                        @Shared("delItem") @Cached HashingStorageDelItem delItem) {
             FrameInfo info = getInfo(locals.getFrameDescriptor());
             int count = info.getVariableCount();
             CodeUnit co = info.getRootNode().getCodeUnit();
@@ -141,16 +142,17 @@ public abstract class GetFrameLocalsNode extends Node {
             }
         }
 
-        private static void copyItem(Node inliningTarget, MaterializedFrame locals, FrameInfo info, PDict dict, PyDictSetItem setItem, PyDictDelItem delItem, int i, boolean deref) {
+        private static void copyItem(Node inliningTarget, MaterializedFrame locals, FrameInfo info, PDict dict, HashingStorageSetItem setItem, HashingStorageDelItem delItem, int i, boolean deref) {
             TruffleString name = info.getVariableName(i);
             Object value = locals.getValue(i);
             if (deref && value != null) {
                 value = ((PCell) value).getRef();
             }
             if (value == null) {
-                delItem.execute(inliningTarget, dict, name);
+                delItem.execute(inliningTarget, dict.getDictStorage(), name, dict);
             } else {
-                setItem.execute(inliningTarget, dict, name, value);
+                HashingStorage storage = setItem.execute(inliningTarget, dict.getDictStorage(), name, value);
+                dict.setDictStorage(storage);
             }
         }
 

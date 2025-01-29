@@ -12,7 +12,7 @@
   <properties>
     <graalpy.version>25.0.0</graalpy.version>
     <graalpy.edition>python-community</graalpy.edition>
-    <native-maven-plugin.version>0.9.28</native-maven-plugin.version>
+    <native-maven-plugin.version>0.10.4</native-maven-plugin.version>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,29 +46,23 @@
         <version>${symbol_dollar}{graalpy.version}</version>
         <executions>
           <execution>
-            <configuration>
-              <!-- specify python packages and their versions as if used with pip -->
-              <packages>
-                <package>termcolor==2.2</package>
-              </packages>
-              <pythonHome>
-                <includes>
-                  <!-- java-like regular expression what file paths should be included;
-                       if empty than default is all -->
-                  <include>.*</include>
-                </includes>                
-                <excludes>
-                <!-- java-like regular expression what file paths should be excluded;
-                     default is none -->
-                  <!-- <exclude></exclude> -->
-                </excludes>
-              </pythonHome>
-            </configuration>
             <goals>
               <goal>process-graalpy-resources</goal>
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <!-- specify the Java resource directory for the virtual filesystem -->
+          <!-- put your custom scripts, datasets and other data into this directory
+               to make them available in Python. Subdirectory "src" will be also
+               added to PYTHONPATH, i.e., Python scripts from that directory can
+               be imported as modules in Python -->
+          <resourceDirectory>GRAALPY-VFS/${symbol_dollar}{project.groupId}/${symbol_dollar}{project.artifactId}</resourceDirectory>
+          <!-- specify python packages and their versions as if used with pip -->
+          <packages>
+            <package>termcolor==2.2</package>
+          </packages>
+        </configuration>
       </plugin>
     </plugins>
   </build>

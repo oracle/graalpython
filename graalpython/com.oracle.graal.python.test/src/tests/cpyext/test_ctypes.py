@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,8 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import ctypes
+import os.path
 import struct
-import sys
 
 from tests.cpyext import CPyExtTestCase, CPyExtType
 
@@ -126,3 +126,102 @@ class TestCDataBuffer(CPyExtTestCase):
             assert buffer.format.startswith(b'>')
             assert struct.Struct(buffer.format).size == int_format.size
             assert buffer.shape == (2, 2)
+
+# TODO: GR-60735, we cannot support this without NFI struct by value support
+def ignore_test_custom_libs():
+    # 16B: returned in registers on System V AMD64 ABI
+    class MySmallStruct1(ctypes.Structure):
+        _fields_ = [("num", ctypes.c_int64), ("str", ctypes.c_char_p)]
+
+    # 16B incl. 3B padding: not returned in registers on System V AMD64 ABI because of multiple fields
+    class MySmallStruct2(ctypes.Structure):
+        _fields_ = [("num", ctypes.c_int32), ("str", ctypes.c_char_p), ("end", ctypes.c_int8)]
+
+    class MyLargeStruct(ctypes.Structure):
+        _fields_ = [("str", ctypes.c_char_p),
+                    ("num1", ctypes.c_int32),
+                    ("num2", ctypes.c_int64),
+                    ("num3", ctypes.c_double),
+                    ("num4", ctypes.c_int16),
+                    ("num5", ctypes.c_int8),
+                    ("num6", ctypes.c_int32),
+                    ("num7", ctypes.c_int32)]
+
+    from distutils.ccompiler import new_compiler
+    import tempfile
+
+    cc = new_compiler()
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_dir)
+            print(tmp_dir)
+            with open('src.c', 'x') as f:
+                f.write("""
+                    #include <stdint.h>
+
+                    typedef struct {
+                        int32_t num;
+                        const char *data;
+                    } MySmallStruct1;
+
+                    MySmallStruct1 get_small_struct1() {
+                        MySmallStruct1 s = {42, "hello world"};
+                        return s;
+                    }
+
+                    typedef struct {
+                        int32_t num;
+                        const char *data;
+                        int8_t end;
+                    } MySmallStruct2;
+
+                    MySmallStruct2 get_small_struct2() {
+                        MySmallStruct2 s = {42, "hello world", 42};
+                        return s;
+                    }
+
+                    typedef struct {
+                        const char *data;
+                        int32_t num1;
+                        int64_t num2;
+                        double num3;
+                        int16_t num4;
+                        int8_t num5;
+                        int32_t num6;
+                        int32_t num7;
+                    } MyLargeStruct;
+
+                    MyLargeStruct get_large_struct() {
+                        MyLargeStruct s = {"hello world", 42, 42, 42, 42, 42, 42, 42};
+                        return s;
+                    }
+                    """)
+            cc.compile(['src.c'])
+            cc.link_shared_lib(['src.o'], 'myshlib')
+
+            ctypes_lib = ctypes.CDLL(os.path.join(tmp_dir, 'libmyshlib.so'))
+
+            ctypes_lib.get_small_struct1.argtypes = []
+            ctypes_lib.get_small_struct1.restype = MySmallStruct1
+            result = ctypes_lib.get_small_struct1()
+            assert result.num == 42, result.num
+
+            ctypes_lib.get_small_struct2.argtypes = []
+            ctypes_lib.get_small_struct2.restype = MySmallStruct2
+            result = ctypes_lib.get_small_struct2()
+            assert result.num == 42, result.num
+            assert result.end == 42, result.end
+
+            ctypes_lib.get_large_struct.argtypes = []
+            ctypes_lib.get_large_struct.restype = MyLargeStruct
+            result = ctypes_lib.get_large_struct()
+            assert result.num1 == 42
+            assert result.num2 == 42
+            assert result.num3 == 42
+            assert result.num4 == 42
+            assert result.num5 == 42
+            assert result.num6 == 42
+            assert result.num7 == 42
+        finally:
+            os.chdir(original_cwd)

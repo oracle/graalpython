@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,10 +37,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_COPY;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
@@ -61,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -265,10 +264,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
-    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Slot(value = SlotKind.nb_or, isComplex = true)
     @GenerateNodeFactory
-    abstract static class OrNode extends PythonBinaryBuiltinNode {
+    abstract static class OrNode extends BinaryOpBuiltinNode {
         @Child BinaryOpNode orNode = BinaryArithmetic.Or.create();
 
         @Specialization

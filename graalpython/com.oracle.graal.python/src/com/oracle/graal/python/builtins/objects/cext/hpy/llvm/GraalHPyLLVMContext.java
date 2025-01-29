@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -777,7 +777,7 @@ public final class GraalHPyLLVMContext extends GraalHPyNativeContext {
     private Object[] createMembers(TruffleString name) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
 
-        members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
+        members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name.switchEncodingUncached(TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
         // TODO(fa): we should use the value of macro HPY_ABI_VERSION here
         members[HPyContextMember.ABI_VERSION.ordinal()] = 0;
 

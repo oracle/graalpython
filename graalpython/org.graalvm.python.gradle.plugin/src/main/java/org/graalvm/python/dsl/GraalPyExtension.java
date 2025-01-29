@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package org.graalvm.python.dsl;
 
 import org.gradle.api.Action;
+import org.gradle.api.Incubating;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
@@ -55,10 +56,32 @@ public interface GraalPyExtension {
     Property<Boolean> getCommunity();
 
     /**
-     * External directory supposed to be populated with python resources, namely graalpy stdlib and
-     * venv. It is either present or not.
+     * Deprecated: use {@link #getExternalDirectory()}.
      */
     DirectoryProperty getPythonResourcesDirectory();
+
+    /**
+     * Optional external directory supposed to be populated with python resources, namely the
+     * virtual environment in the "venv" subdirectory.  Existing files and directories other
+     * than the "venv" subdirectory will not be touched by the plugin and can be maintained manually.
+     * Mutually exclusive with {@link #getResourceDirectory()}.
+     */
+    DirectoryProperty getExternalDirectory();
+
+    /**
+     * Directory within Java resources that should be used for the virtual filesystem.
+     * The virtual environment will be deployed into "venv" subdirectory.
+     * Mutually exclusive with {@link #getExternalDirectory()}.
+     */
+    Property<String> getResourceDirectory();
+
+    /**
+     * Experimental property. Allows overriding the default Polyglot and GraalPy version.
+     * This is intended only for testing of new unreleased versions. It is recommended
+     * to use corresponding versions of GraalPy Gradle plugin and the polyglot runtime.
+     */
+    @Incubating
+    Property<String> getPolyglotVersion();
 
     /**
      * Determines third party python packages to be installed for graalpy usage.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -859,6 +859,25 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, currentException);
                 Object traceback = getTracebackNode.execute(inliningTarget, exceptionObject);
                 return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exceptionObject), exceptionObject, traceback});
+            }
+        }
+    }
+
+    @Builtin(name = "exception", needsFrame = true)
+    @GenerateNodeFactory
+    abstract static class ExceptionNode extends PythonBuiltinNode {
+
+        @Specialization
+        static Object run(VirtualFrame frame,
+                        @Bind("this") Node inliningTarget,
+                        @Cached GetEscapedExceptionNode getEscapedExceptionNode,
+                        @Cached GetCaughtExceptionNode getCaughtExceptionNode) {
+            AbstractTruffleException currentException = getCaughtExceptionNode.execute(frame);
+            assert currentException != PException.NO_EXCEPTION;
+            if (currentException == null) {
+                return PNone.NONE;
+            } else {
+                return getEscapedExceptionNode.execute(inliningTarget, currentException);
             }
         }
     }

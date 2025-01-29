@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -146,7 +146,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -665,7 +665,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile overflow,
                         @Cached CastToJavaLongLossyNode toLong,
-                        @Cached PyNumberIndexNode indexNode,
+                        @Cached PyNumberLongNode longNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
                         @Cached TextIOWrapperNodes.EncoderResetNode encoderResetNode,
@@ -729,7 +729,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_D_D_OR_D, whence, SEEK_SET, SEEK_CUR, SEEK_END);
             }
 
-            Object cookieLong = indexNode.execute(frame, inliningTarget, cookieObj);
+            Object cookieLong = longNode.execute(frame, inliningTarget, cookieObj);
             PTextIO.CookieType cookie;
             if (cookieLong instanceof PInt) {
                 if (((PInt) cookieLong).isNegative()) {

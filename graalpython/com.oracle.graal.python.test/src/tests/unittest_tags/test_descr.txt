@@ -93,6 +93,7 @@ test.test_descr.ClassPropertiesAndMethods.test_str_of_str_subclass @ darwin-arm6
 test.test_descr.ClassPropertiesAndMethods.test_str_operations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_str_subclass_as_dict_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_subclass_propagation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_descr.ClassPropertiesAndMethods.test_subclass_right_op @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_subclassing_does_not_duplicate_dict_descriptors @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_supers @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_type___getattribute__ @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

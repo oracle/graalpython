@@ -1104,7 +1104,7 @@ public final class CApiContext extends CExtContext {
                     // file does not exist and it is from VirtualFileSystem
                     // => we probably failed to extract it due to unconventional libs location
                     getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
-                                    "!!! Please try to run with java system property graalpy.vfs.extractOnStartup=true !!!\n", spec.path, realPath));
+                                    "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n", spec.path, realPath));
 
                 }
 

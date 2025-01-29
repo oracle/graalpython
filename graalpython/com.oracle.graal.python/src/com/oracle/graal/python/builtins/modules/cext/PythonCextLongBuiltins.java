@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,12 +44,12 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
@@ -60,8 +60,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -77,15 +75,14 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
-import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.NegNode;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
+import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -98,7 +95,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -106,7 +102,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextLongBuiltins {
 
@@ -212,21 +207,14 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, Int, Int}, call = Ignored)
-    @TypeSystemReference(PythonTypes.class)
-    abstract static class PyTruffleLong_FromString extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CharPtrAsTruffleString, Int}, call = Ignored)
+    abstract static class PyTruffleLong_FromString extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = "negative == 0")
-        Object fromString(Object s, int base, @SuppressWarnings("unused") int negative,
-                        @Shared @Cached BuiltinConstructors.IntNode intNode) {
-            return intNode.executeWith(null, s, base);
-        }
-
-        @Specialization(guards = "negative != 0")
-        Object fromString(Object s, int base, @SuppressWarnings("unused") int negative,
-                        @Shared @Cached BuiltinConstructors.IntNode intNode,
-                        @Cached NegNode negNode) {
-            return negNode.execute(null, intNode.executeWith(null, s, base));
+        @Specialization
+        Object fromString(Object s, int base,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyLongFromUnicodeObject fromUnicodeObject) {
+            return fromUnicodeObject.execute(inliningTarget, s, base);
         }
     }
 
@@ -459,12 +447,13 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Direct)
     abstract static class PyLong_FromUnicodeObject extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object convert(TruffleString s, int base,
-                        @Cached IntNode intNode) {
-            return intNode.executeWith(null, s, base);
+        static Object convert(Object s, int base,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyLongFromUnicodeObject pyLongFromUnicodeObject) {
+            return pyLongFromUnicodeObject.execute(inliningTarget, s, base);
         }
     }
 
