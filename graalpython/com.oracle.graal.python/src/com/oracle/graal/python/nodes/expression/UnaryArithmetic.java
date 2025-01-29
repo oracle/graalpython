@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.lib.PyNumberInvertNode;
+import com.oracle.graal.python.lib.PyNumberNegativeNode;
+import com.oracle.graal.python.lib.PyNumberPositiveNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -55,7 +58,6 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -65,9 +67,9 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum UnaryArithmetic {
-    Pos(UnaryArithmeticFactory.PosNodeGen::create),
-    Neg(UnaryArithmeticFactory.NegNodeGen::create),
-    Invert(UnaryArithmeticFactory.InvertNodeGen::create);
+    Pos(PyNumberPositiveNode::create),
+    Neg(PyNumberNegativeNode::create),
+    Invert(PyNumberInvertNode::create);
 
     interface CreateUnaryOp {
         UnaryOpNode create();
@@ -142,117 +144,6 @@ public enum UnaryArithmetic {
         @NeverDefault
         public static LookupAndCallUnaryNode createCallNode(TruffleString name, Supplier<NoAttributeHandler> handler) {
             return LookupAndCallUnaryNode.create(name, handler);
-        }
-    }
-
-    /*
-     *
-     * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins and FloatBuiltins.
-     *
-     */
-
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
-    public abstract static class PosNode extends UnaryArithmeticNode {
-
-        public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("+");
-
-        @Specialization
-        public static int pos(int arg) {
-            return arg;
-        }
-
-        @Specialization
-        public static long pos(long arg) {
-            return arg;
-        }
-
-        @Specialization
-        public static double pos(double arg) {
-            return arg;
-        }
-
-        @Specialization
-        public static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached(value = "createCallNode(T___POS__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
-            return callNode.executeObject(frame, arg);
-        }
-
-        @NeverDefault
-        public static PosNode create() {
-            return UnaryArithmeticFactory.PosNodeGen.create();
-        }
-    }
-
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
-    public abstract static class NegNode extends UnaryArithmeticNode {
-
-        public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("-");
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public static int neg(int arg) {
-            return Math.negateExact(arg);
-        }
-
-        @Specialization
-        public static long negOvf(int arg) {
-            return -((long) arg);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public static long neg(long arg) {
-            return Math.negateExact(arg);
-        }
-
-        @Specialization
-        public static double neg(double arg) {
-            return -arg;
-        }
-
-        @Specialization
-        public static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached(value = "createCallNode(T___NEG__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
-            return callNode.executeObject(frame, arg);
-        }
-
-        @NeverDefault
-        public static NegNode create() {
-            return UnaryArithmeticFactory.NegNodeGen.create();
-        }
-    }
-
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
-    public abstract static class InvertNode extends UnaryArithmeticNode {
-
-        public static final Supplier<NoAttributeHandler> NOT_IMPLEMENTED = createHandler("~");
-
-        @Specialization
-        public static int invert(boolean arg) {
-            return ~(arg ? 1 : 0);
-        }
-
-        @Specialization
-        public static int invert(int arg) {
-            return ~arg;
-        }
-
-        @Specialization
-        public static long invert(long arg) {
-            return ~arg;
-        }
-
-        @Specialization
-        public static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached(value = "createCallNode(T___INVERT__, NOT_IMPLEMENTED)", inline = false) LookupAndCallUnaryNode callNode) {
-            return callNode.executeObject(frame, arg);
-        }
-
-        @NeverDefault
-        public static InvertNode create() {
-            return UnaryArithmeticFactory.InvertNodeGen.create();
         }
     }
 

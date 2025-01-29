@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -867,7 +867,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 }
             } catch (TruffleString.NumberFormatException nfe) {
                 // Hm, maybe we've got something long. Let's try reading it as a Python int object.
-                value = parseInt(frame, getValidIntString(s));
+                value = parseInt(getValidIntString(s));
             }
             pDataPush(self, value);
         }
@@ -888,7 +888,7 @@ public class PUnpickler extends PythonBuiltinObject {
             try {
                 value = PickleUtils.asciiBytesToLong(s, ensureTsParseLongNode(), ensureTsFromByteArray());
             } catch (TruffleString.NumberFormatException nfe) {
-                value = parseInt(frame, s);
+                value = parseInt(s);
             }
             pDataPush(self, value);
         }

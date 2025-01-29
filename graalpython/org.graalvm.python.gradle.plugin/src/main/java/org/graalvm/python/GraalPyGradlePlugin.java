@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,12 +61,14 @@ import org.gradle.jvm.tasks.Jar;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.BiFunction;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
+import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 
 public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String LAUNCHER_CONFIGURATION_NAME = "pythonLauncherClasspath";
@@ -101,16 +103,45 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         var launcherClasspath = createLauncherClasspath();
         var javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
         var resourcesTask = registerResourcesTask(project, launcherClasspath, extension);
-        registerMetaInfTask();
+        registerMetaInfTask(extension);
 
-        var vfsFilesListTask = registerCreateVfsFilesListTask(resourcesTask, javaPluginExtension);
+        var vfsFilesListTask = registerCreateVfsFilesListTask(resourcesTask, javaPluginExtension, extension);
         var mainSourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         mainSourceSet.getResources().srcDir(resourcesTask);
         addDependencies();
 
         project.afterEvaluate(proj -> {
-            // Run the vfsFilesListTask conditionally only if 'gythonResourcesDirectory' is not set
-            if (!extension.getPythonResourcesDirectory().isPresent()) {
+            if (extension.getPolyglotVersion().isPresent()) {
+                proj.getLogger().warn("WARNING: Property 'polyglotVersion' is experimental and should be used only for testing pre-release versions.");
+            }
+
+            if (extension.getPythonResourcesDirectory().isPresent() && extension.getExternalDirectory().isPresent()) {
+                throw new GradleException(
+                        "Cannot set both 'externalDirectory' and 'resourcesDirectory' at the same time. " +
+                                "New property 'externalDirectory' is a replacement for deprecated 'pythonResourcesDirectory'. " +
+                                "If you want to deploy the virtual environment into physical filesystem, use 'externalDirectory'. " +
+                                "The deployment of the external directory alongside the application is not handled by the GraalPy Maven plugin in such case." +
+                                "If you wish to bundle the virtual filesystem in Java resources, use 'resourcesDirectory'. " +
+                                "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ");
+            }
+
+            if (extension.getPythonResourcesDirectory().isPresent()) {
+                proj.getLogger().warn("WARNING: Property 'pythonResourcesDirectory' is deprecated and will be removed. Use property 'externalDirectory' instead.");
+            }
+
+            // Run the vfsFilesListTask conditionally only if 'externalDirectory' is not set
+            if (!extension.getPythonResourcesDirectory().isPresent() && !extension.getExternalDirectory().isPresent()) {
+                if (!extension.getResourceDirectory().isPresent()) {
+                    proj.getLogger().info(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
+                                    "This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem. " +
+                                    "Consider adding `resourcesDirectory = \"GRAALPY-VFS/${groupId}/${artifactId}\"` to your build.gradle script " +
+                                    "(replace the placeholders with values specific to your project), " +
+                                    "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory." +
+                                    "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ",
+                            VFS_ROOT,
+                            Path.of(VFS_ROOT, "src"),
+                            Path.of("GRAALPY-VFS", "${groupId}", "${artifactId}")));
+                }
                 mainSourceSet.getResources().srcDir(vfsFilesListTask);
             }
         });
@@ -122,10 +153,11 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
      * @param resourcesTask the resources task
      * @return the task provider
      */
-    private TaskProvider<VFSFilesListTask> registerCreateVfsFilesListTask(TaskProvider<ResourcesTask> resourcesTask, JavaPluginExtension javaPluginExtension) {
+    private TaskProvider<VFSFilesListTask> registerCreateVfsFilesListTask(TaskProvider<ResourcesTask> resourcesTask, JavaPluginExtension javaPluginExtension, GraalPyExtension extension) {
         var srcDirs = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
         return project.getTasks().register(GRAALPY_VFS_FILESLIST_TASK, VFSFilesListTask.class, t -> {
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
+            t.getResourceDirectory().set(extension.getResourceDirectory());
             t.getVfsDirectories().from(resourcesTask.flatMap(ResourcesTask::getOutput));
             srcDirs.forEach(t.getVfsDirectories()::from);
             t.getVfsFilesListOutputDir().convention(project.getLayout().getBuildDirectory().dir(DEFAULT_FILESLIST_DIRECTORY));
@@ -135,8 +167,9 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     /**
      * Registers the task which generates META-INF metadata.
      */
-    private void registerMetaInfTask() {
+    private void registerMetaInfTask(GraalPyExtension extension) {
         var metaInfTask = project.getTasks().register(GRAALPY_META_INF_TASK_TASK, MetaInfTask.class, t -> {
+            t.getResourceDirectory().set(extension.getResourceDirectory());
             t.getManifestOutputDir().convention(project.getLayout().getBuildDirectory().dir(GRAALPY_META_INF_DIRECTORY));
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
@@ -153,20 +186,33 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         return project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class, t -> {
             t.getLauncherClasspath().from(launcherClasspath);
             t.getLauncherDirectory().convention(project.getLayout().getBuildDirectory().dir("python-launcher"));
-            if (extension.getPythonHome().getIncludes().get().isEmpty()) {
-                t.getIncludes().set(List.of(".*"));
-            } else {
-                t.getIncludes().set(extension.getPythonHome().getIncludes());
-            }
+            t.getPolyglotVersion().convention(extension.getPolyglotVersion().orElse(determineGraalPyDefaultVersion()));
 
-            t.getExcludes().set(extension.getPythonHome().getExcludes());
+            if(userPythonHome()) {
+                t.getLogger().warn("The GraalPy plugin pythonHome configuration setting was deprecated and has no effect anymore.\n" +
+                        "For execution in jvm mode, the python language home is always available.\n" +
+                        "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
+                        "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources documentation.");
+            }
             t.getPackages().set(extension.getPackages());
 
-            t.getOutput().convention(extension.getPythonResourcesDirectory().orElse(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY)));
-            t.getIncludeVfsRoot().convention(extension.getPythonResourcesDirectory().map(d -> false).orElse(true));
+            t.getOutput().convention(
+                    extension.getExternalDirectory().orElse(
+                        extension.getPythonResourcesDirectory()
+                                .orElse(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY))));
+            t.getIncludeVfsRoot().convention(extension.getExternalDirectory().map(d -> false)
+                    .orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
+            t.getResourceDirectory().set(extension.getResourceDirectory());
 
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
         });
+    }
+
+    private boolean userPythonHome() {
+        return !(extension.getPythonHome().getIncludes().get().size() == 1 &&
+                extension.getPythonHome().getExcludes().get().size() == 1 &&
+                extension.getPythonHome().getIncludes().get().iterator().next().equals(EMPTY_LIST.get(0)) &&
+                extension.getPythonHome().getExcludes().get().iterator().next().equals(EMPTY_LIST.get(0)));
     }
 
     /**
@@ -181,13 +227,15 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         });
     }
 
+    private static final List<String> EMPTY_LIST = List.of("--empty--");
+
     /**
      * Creates the GraalPy extension on the project
      */
     private void createExtension() {
         this.extension = project.getExtensions().create("graalPy", GraalPyExtension.class);
-        extension.getPythonHome().getIncludes().convention(List.of(".*"));
-        extension.getPythonHome().getExcludes().convention(Collections.emptyList());
+        extension.getPythonHome().getIncludes().convention(EMPTY_LIST);
+        extension.getPythonHome().getExcludes().convention(EMPTY_LIST);
         extension.getPackages().convention(Collections.emptyList());
         extension.getCommunity().convention(false);
     }
@@ -240,14 +288,14 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
 
     private Provider<? extends Iterable<Dependency>> dependencyList(Project project, GraalPyExtension extension, BiFunction<String, Boolean, List<String>> generator) {
         var dependencies = project.getDependencies();
-        var version = determineGraalPyVersion();
         return project.getProviders().provider(() -> {
             boolean community = extension.getCommunity().convention(false).get();
+            String version = extension.getPolyglotVersion().convention(determineGraalPyDefaultVersion()).get();
             return generator.apply(version, community).stream().map(dependencies::create).toList();
         });
     }
 
-    public static String determineGraalPyVersion() {
+    public static String determineGraalPyDefaultVersion() {
         String version = graalPyVersion;
         if (version == null) {
             try {

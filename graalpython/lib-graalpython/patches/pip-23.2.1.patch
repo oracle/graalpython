@@ -126,7 +126,7 @@ index a8cd133..20dd1e6 100644
          # We de-duplicate installation paths, since there can be overlap (e.g.
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/resolution/resolvelib/candidates.py b/pip/_internal/resolution/resolvelib/candidates.py
-index de04e1d..d5bd355 100644
+index de04e1d..888ba75 100644
 --- a/pip/_internal/resolution/resolvelib/candidates.py
 +++ b/pip/_internal/resolution/resolvelib/candidates.py
 @@ -20,6 +20,7 @@ from pip._internal.req.constructors import (
@@ -142,13 +142,13 @@ index de04e1d..d5bd355 100644
              yield self._factory.make_requirement_from_spec(str(r), self._ireq)
          yield self._factory.make_requires_python_requirement(self.dist.requires_python)
 +        if self.name == 'virtualenv' and not graalpy.DISABLE_PATCHING:
-+            yield self._factory.make_requirement_from_spec('graalpy-virtualenv', self._ireq)
++            yield self._factory.make_requirement_from_spec('graalpy-virtualenv-seeder', self._ireq)
  
      def get_install_requirement(self) -> Optional[InstallRequirement]:
          return self._ireq
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..53dbe96
+index 0000000..a976ab5
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
 @@ -0,0 +1,334 @@
@@ -462,8 +462,8 @@ index 0000000..53dbe96
 +        # We need to force the filename to match the usual convention, otherwise we won't find a patch
 +        link = AddedSourceLink(url, f'{name}-{version}.{suffix}')
 +        candidates.append(InstallationCandidate(name=name, version=version, link=link))
-+    if name == 'graalpy-virtualenv':
-+        link = Link(path_to_url(os.path.join(sys.base_prefix, 'graalpy_virtualenv')))
++    if name == 'graalpy-virtualenv-seeder':
++        link = Link(path_to_url(os.path.join(sys.base_prefix, 'graalpy_virtualenv_seeder')))
 +        candidates.append(InstallationCandidate(name=name, version='0.0.1', link=link))
 +    return candidates
 +

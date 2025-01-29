@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,8 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
@@ -72,6 +74,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameInstance;
@@ -281,5 +284,22 @@ public final class ExceptionUtils {
             return ExceptionUtils.wrapJavaException(e, location, factory.createBaseException(MemoryError));
         }
         return null;
+    }
+
+    @TruffleBoundary
+    public static String getExceptionMessage(Object exception) {
+        final Object type = GetClassNode.executeUncached(exception);
+        String typeName = TypeNodes.GetNameNode.doSlowPath(type).toJavaStringUncached();
+        String str;
+        try {
+            str = PyObjectStrAsTruffleStringNode.executeUncached(exception).toJavaStringUncached();
+        } catch (AbstractTruffleException e) {
+            str = "<exception str() failed>";
+        }
+        if (str.isEmpty()) {
+            return typeName;
+        } else {
+            return typeName + ": " + str;
+        }
     }
 }

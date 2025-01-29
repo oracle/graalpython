@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,8 +63,11 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSl
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallManagedSlotGetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallManagedSlotSetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -308,8 +311,52 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
             return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_ADD);
         }
 
+        public static BinaryOpSlotFuncWrapper createSubtract(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_SUBTRACT);
+        }
+
         public static BinaryOpSlotFuncWrapper createMultiply(TpSlotManaged delegate) {
             return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_MULTIPLY);
+        }
+
+        public static BinaryOpSlotFuncWrapper createRemainder(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_REMAINDER);
+        }
+
+        public static BinaryOpSlotFuncWrapper createLShift(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_LSHIFT);
+        }
+
+        public static BinaryOpSlotFuncWrapper createRShift(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_RSHIFT);
+        }
+
+        public static BinaryOpSlotFuncWrapper createAnd(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_AND);
+        }
+
+        public static BinaryOpSlotFuncWrapper createXor(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_XOR);
+        }
+
+        public static BinaryOpSlotFuncWrapper createOr(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_OR);
+        }
+
+        public static BinaryOpSlotFuncWrapper createFloorDivide(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_FLOOR_DIVIDE);
+        }
+
+        public static BinaryOpSlotFuncWrapper createTrueDivide(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_TRUE_DIVIDE);
+        }
+
+        public static BinaryOpSlotFuncWrapper createDivMod(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_DIVMOD);
+        }
+
+        public static BinaryOpSlotFuncWrapper createMatrixMultiply(TpSlotManaged delegate) {
+            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_MATRIX_MULTIPLY);
         }
 
         @ExportMessage
@@ -364,9 +411,9 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class UnaryFuncWrapper extends PyProcsWrapper {
+    public static final class UnaryFuncLegacyWrapper extends PyProcsWrapper {
 
-        public UnaryFuncWrapper(Object delegate) {
+        public UnaryFuncLegacyWrapper(Object delegate) {
             super(delegate);
         }
 
@@ -391,6 +438,50 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 }
                 try {
                     return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0])));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(gil).getNativeNull();
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER):POINTER";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class UnaryFuncWrapper extends TpSlotWrapper {
+
+        public UnaryFuncWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new UnaryFuncWrapper(slot);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached CallSlotUnaryNode callNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                try {
+                    Object result = callNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]));
+                    return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getDelegate());
                 }
@@ -455,16 +546,21 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class ObjobjargWrapper extends PyProcsWrapper {
+    public static final class ObjobjargWrapper extends TpSlotWrapper {
 
-        public ObjobjargWrapper(Object delegate) {
+        public ObjobjargWrapper(TpSlotManaged delegate) {
             super(delegate);
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new ObjobjargWrapper(slot);
         }
 
         @ExportMessage
         int execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
-                        @Cached CallTernaryMethodNode callTernaryMethodNode,
+                        @Cached CallSlotMpAssSubscriptNode callNode,
                         @Cached NativeToPythonNode toJavaNode,
                         @Cached InlinedConditionProfile arityProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -477,7 +573,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     throw ArityException.create(3, 3, arguments.length);
                 }
                 try {
-                    callTernaryMethodNode.execute(null, getDelegate(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
+                    callNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
                     return 0;
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "ObjobjargWrapper", getDelegate());
@@ -883,17 +979,23 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class SsizeobjargfuncWrapper extends PyProcsWrapper {
+    public static final class SsizeobjargprocWrapper extends TpSlotWrapper {
 
-        public SsizeobjargfuncWrapper(Object delegate) {
-            super(delegate);
+        public SsizeobjargprocWrapper(TpSlotManaged slot) {
+            super(slot);
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new SsizeobjargprocWrapper(slot);
         }
 
         @ExportMessage
         int execute(Object[] arguments,
                         @Bind("$node") Node inliningTarget,
-                        @Cached CallTernaryMethodNode executeNode,
+                        @Cached CallSlotSqAssItemNode executeNode,
                         @Cached NativeToPythonNode toJavaNode,
+                        @Cached SsizeAsIntNode asIntNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -905,10 +1007,13 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 }
                 assert arguments[1] instanceof Number;
                 try {
-                    executeNode.execute(null, getDelegate(), toJavaNode.execute(arguments[0]), arguments[1], toJavaNode.execute(arguments[2]));
+                    Object self = toJavaNode.execute(arguments[0]);
+                    int key = asIntNode.execute(inliningTarget, arguments[1]);
+                    Object value = toJavaNode.execute(arguments[2]);
+                    executeNode.execute(null, inliningTarget, getSlot(), self, key, value);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SsizeobjargfuncWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "SsizeobjargprocWrapper", getDelegate());
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);

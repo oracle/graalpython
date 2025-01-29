@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -367,3 +367,21 @@ def test_graalpy_version():
         expected_num <<= 8
         expected_num |= parts[i]
     assert tester.get_version_num() == expected_num
+
+
+def test_unicode_docstring():
+    class ClassWithDoc:
+        """This class has a doc 🙂"""
+
+    tester = CPyExtType(
+        "DocstringTester",
+        code='''
+        static PyObject* get_doc(PyObject* unused, PyObject* type) {
+            return PyUnicode_FromString(((PyTypeObject*)type)->tp_doc);
+        }
+        ''',
+        tp_methods='''
+        {"get_doc", (PyCFunction)get_doc, METH_O | METH_STATIC, ""}
+        ''',
+    )
+    assert tester.get_doc(ClassWithDoc)

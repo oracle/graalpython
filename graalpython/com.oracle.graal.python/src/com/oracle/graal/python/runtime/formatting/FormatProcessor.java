@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -23,6 +23,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -192,7 +193,7 @@ abstract class FormatProcessor<T> {
                 if (useIndexMagicMethod(specType)) {
                     return PyNumberIndexNode.executeUncached(arg);
                 } else {
-                    return CallNode.executeUncached(PythonBuiltinClassType.PInt, arg);
+                    return PyNumberLongNode.executeUncached(arg);
                 }
             } catch (PException e) {
                 e.expectUncached(TypeError);

@@ -109,6 +109,7 @@ This enables you, for example, to use a Pandas frame as `double[][]` or NumPy ar
 ### Special Jython Module: `jarray`
 
 GraalPy implements the `jarray` module (to create primitive Java arrays) for compatibility.
+This module is always available, since we have not found its presence to have a negative impact.
 For example:
 
 ```python
@@ -142,10 +143,7 @@ However, implicitly, this may produce a copy of the array data, which can be dec
 
 ### Exceptions from Java
 
-To catch Java exceptions, use the `--python.EmulateJython` option.
-
-> Note: Catching a Java exception incurs a performance penalty.
-
+You can catch Java exceptions as you would expect.
 For example:
 
 ```python
@@ -161,8 +159,8 @@ For example:
 
 ### Java Collections
 
-* Java arrays and collections that implement the `java.util.Collection` interface can be accessed using the `[]` syntax. 
-An empty collection is considered `false` in boolean conversions. 
+* Java arrays and collections that implement the `java.util.Collection` interface can be accessed using the `[]` syntax.
+An empty collection is considered `false` in boolean conversions.
 The length of a collection is exposed by the `len` built-in function.
 For example:
 
@@ -186,7 +184,7 @@ For example:
     False
     ```
 
-* Java iterables that implement the `java.lang.Iterable` interface can be iterated over using a `for` loop or the `iter` built-in function and are accepted by all built-ins that expect an iterable. 
+* Java iterables that implement the `java.lang.Iterable` interface can be iterated over using a `for` loop or the `iter` built-in function and are accepted by all built-ins that expect an iterable.
 For example:
 
     ```python
@@ -242,12 +240,24 @@ For example:
 
 ### Inheritance from Java
 
-Inheriting from a Java class (or implementing a Java interface) is supported with some syntactical differences from Jython. 
-To create a class that inherits from a Java class (or implements a Java interface), use the conventional Python `class` statement: declared methods
-override (implement) superclass (interface) methods when their names match. 
-To call the a superclass method, use the special attribute `self.__super__`. 
+Inheriting from a Java class (or implementing a Java interface) is supported with some syntactical and significant behavioral differences from Jython.
+To create a class that inherits from a Java class (or implements a Java interface), use the conventional Python `class` statement.
+Declared methods override (implement) superclass (interface) methods when their names match.
+
+It is important to understand that there is actually delegation happening here - when inheriting from Java, two classes are created, one in Java and one in Python.
+These reference each other and any methods that are declared in Python that override or implement a Java method on the superclass are declared on the Java side as delegating to Python.
 The created object does not behave like a Python object but instead in the same way as a foreign Java object.
-Its Python-level members can be accessed using its `this` attribute. For example:
+The reason for this is that when you create an instance of your new class, you get a reference to the *Java* object.
+
+To call Python methods that do *not* override or implement methods that already existed on the superclass, you need to use the special `this` attribute.
+Once you are in a Python method, your `self` refers to the Python object, and to get back from a Python method to Java, use the special attribute `__super__`.
+And since we do not expose static members on the instance side, if you need to call a static method from an instance on the Java side, use `getClass().static` to get to the meta-object holding the static members.
+
+One important consequence of the two-object-schema here is that the `__init__` method on the Python object is actually called *before* the connection to the Java side is established.
+So you cannot currently override construction of the Java object or run code during initialization that would affect the Java half of the combined structure.
+You will have to create a factory method if you want to achieve this.
+
+For example:
 
 ```python
 import atexit
@@ -276,6 +286,8 @@ logger.warning("Bye")
 for record in handler.this.logged:
     print(f'Python captured message "{record.getMessage()}" at level {record.getLevel().getName()}')
 ```
+
+For more information about how the generated Java subclass behaves, see the [Truffle documentation](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/TruffleLanguage.Env.html#createHostAdapter(java.lang.Object%5B%5D)).
 
 ## Embedding Python into Java
 

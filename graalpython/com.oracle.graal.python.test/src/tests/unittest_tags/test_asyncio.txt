@@ -606,7 +606,7 @@ test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_recvfrom @ darwin
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_recvfrom_into @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sendto_blocking @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_accept @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_connect_racing @ darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_connect_racing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_fail @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_ops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_racing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

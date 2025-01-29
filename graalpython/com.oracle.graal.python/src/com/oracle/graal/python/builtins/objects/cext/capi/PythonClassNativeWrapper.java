@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,20 +76,20 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
 
-    private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name) {
+    private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name, TruffleString.SwitchEncodingNode switchEncoding) {
         super(object, true);
-        this.nameWrapper = new CStringWrapper(name);
+        this.nameWrapper = new CStringWrapper(switchEncoding.execute(name, TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
     }
 
     public CStringWrapper getNameWrapper() {
         return nameWrapper;
     }
 
-    public static PythonClassNativeWrapper wrap(PythonManagedClass obj, TruffleString name) {
+    public static PythonClassNativeWrapper wrap(PythonManagedClass obj, TruffleString name, TruffleString.SwitchEncodingNode switchEncoding) {
         // important: native wrappers are cached
         PythonClassNativeWrapper nativeWrapper = obj.getClassNativeWrapper();
         if (nativeWrapper == null) {
-            nativeWrapper = new PythonClassNativeWrapper(obj, name);
+            nativeWrapper = new PythonClassNativeWrapper(obj, name, switchEncoding);
             obj.setNativeWrapper(nativeWrapper);
         }
         return nativeWrapper;
@@ -108,7 +108,7 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        PythonClassNativeWrapper wrapper = new PythonClassNativeWrapper(clazz, name);
+        PythonClassNativeWrapper wrapper = new PythonClassNativeWrapper(clazz, name, TruffleString.SwitchEncodingNode.getUncached());
         clazz.setNativeWrapper(wrapper);
 
         CStructAccess.ReadI64Node readI64 = CStructAccess.ReadI64Node.getUncached();

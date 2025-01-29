@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Tran
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
@@ -104,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -337,7 +337,7 @@ public final class PythonCextErrBuiltins {
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
-                        @Cached SetItemNode setItemNode,
+                        @Cached PyDictSetItem setItemNode,
                         @Cached TypeNode typeNode,
                         @Cached InlinedBranchProfile notDotProfile,
                         @Cached InlinedBranchProfile notModuleProfile,
@@ -358,7 +358,7 @@ public final class PythonCextErrBuiltins {
             }
             if (getItem.execute(null, inliningTarget, ((PDict) dict).getDictStorage(), base) == null) {
                 notModuleProfile.enter(inliningTarget);
-                setItemNode.execute(null, dict, T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
+                setItemNode.execute(null, inliningTarget, (PDict) dict, T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
             }
             PTuple bases;
             if (baseProfile.profile(inliningTarget, base instanceof PTuple)) {
