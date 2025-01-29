@@ -2398,16 +2398,26 @@ def python_coverage(args):
             '--strict-mode',
             '--tags', args.tags,
         ] + jacoco_args, env=env)
-        mx.run_mx([
-            '--strict-compliance',
-            '--kill-with-sigquit',
-            'jacocoreport',
-            '--format', 'lcov',
-            '--omit-excluded',
-            'coverage',
-            '--generic-paths',
-            '--exclude-src-gen',
-        ], env=env)
+        # On windows, the command can fail if the file is still locked by lingering test processes
+        retries = 3 if WIN32 else 1
+        while True:
+            retval = mx.run_mx([
+                '--strict-compliance',
+                '--kill-with-sigquit',
+                'jacocoreport',
+                '--format', 'lcov',
+                '--omit-excluded',
+                'coverage',
+                '--generic-paths',
+                '--exclude-src-gen',
+            ], env=env)
+            if retval == 0:
+                break
+            retries -= 1
+            if not retries:
+                sys.exit("Failed to collect coverage report")
+            time.sleep(10)
+
     if args.mode == 'truffle':
         executable = graalpy_standalone_jvm()
         file_filter = f"*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*,*lib/graalpy{graal_version_short()}*,*include/python{py_version_short()}*"
