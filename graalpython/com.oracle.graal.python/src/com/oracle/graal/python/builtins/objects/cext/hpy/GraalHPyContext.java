@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNIContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.llvm.GraalHPyLLVMContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -96,8 +95,8 @@ import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -588,9 +587,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                          * receive a Python exception. If it happens, consider that to be a problem
                          * (however, it is not fatal problem).
                          */
-                        if (e.getUnreifiedException() instanceof PBaseException managedException) {
-                            e.setMessage(managedException.getFormattedMessage());
-                        }
+                        e.materializeMessage();
                         LOGGER.warning("HPy reference cleaner thread received a Python exception: " + e);
                     }
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.complex;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__imag;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__real;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
@@ -52,16 +51,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
@@ -233,8 +226,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.nb_absolute, isComplex = true)
     @GenerateNodeFactory
-    @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
 
         public abstract double executeDouble(Object arg);
@@ -415,10 +408,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = J___TRUEDIV__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_true_divide, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class DivNode extends PythonBinaryBuiltinNode {
+    public abstract static class DivNode extends BinaryOpBuiltinNode {
 
         public abstract PComplex executeComplex(VirtualFrame frame, Object left, Object right);
 
@@ -503,9 +495,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
-    abstract static class SubNode extends PythonBinaryBuiltinNode {
+    @Slot(value = SlotKind.nb_subtract, isComplex = true)
+    abstract static class SubNode extends BinaryOpBuiltinNode {
         static PComplex doComplex(PComplex left, double right,
                         @Shared @Cached PythonObjectFactory factory) {
             return factory.createComplex(left.getReal() - right, left.getImag());
@@ -813,8 +804,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.nb_negative, isComplex = true)
     @GenerateNodeFactory
-    @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PComplex neg(Object self,
@@ -826,8 +817,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.nb_positive, isComplex = true)
     @GenerateNodeFactory
-    @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PComplex pos(Object self,

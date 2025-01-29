@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,31 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RLSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
 import java.util.Arrays;
 
@@ -105,7 +127,18 @@ public class TpSlotBinaryOp {
 
     public enum BinaryOpSlot {
         NB_ADD(T___ADD__, T___RADD__),
-        NB_MULTIPLY(T___MUL__, T___RMUL__);
+        NB_SUBTRACT(T___SUB__, T___RSUB__),
+        NB_MULTIPLY(T___MUL__, T___RMUL__),
+        NB_REMAINDER(T___MOD__, T___RMOD__),
+        NB_LSHIFT(T___LSHIFT__, T___RLSHIFT__),
+        NB_RSHIFT(T___RSHIFT__, T___RRSHIFT__),
+        NB_AND(T___AND__, T___RAND__),
+        NB_XOR(T___XOR__, T___RXOR__),
+        NB_OR(T___OR__, T___ROR__),
+        NB_FLOOR_DIVIDE(T___FLOORDIV__, T___RFLOORDIV__),
+        NB_TRUE_DIVIDE(T___TRUEDIV__, T___RTRUEDIV__),
+        NB_DIVMOD(T___DIVMOD__, T___RDIVMOD__),
+        NB_MATRIX_MULTIPLY(T___MATMUL__, T___RMATMUL__);
 
         private static final BinaryOpSlot[] VALUES = values();
         private final TruffleString name;
@@ -120,7 +153,18 @@ public class TpSlotBinaryOp {
             // switch instead of using TpSlotMeta for better inlining on fast-path
             return switch (this) {
                 case NB_ADD -> slots.nb_add();
+                case NB_SUBTRACT -> slots.nb_subtract();
                 case NB_MULTIPLY -> slots.nb_multiply();
+                case NB_REMAINDER -> slots.nb_remainder();
+                case NB_LSHIFT -> slots.nb_lshift();
+                case NB_RSHIFT -> slots.nb_rshift();
+                case NB_AND -> slots.nb_and();
+                case NB_XOR -> slots.nb_xor();
+                case NB_OR -> slots.nb_or();
+                case NB_FLOOR_DIVIDE -> slots.nb_floor_divide();
+                case NB_TRUE_DIVIDE -> slots.nb_true_divide();
+                case NB_DIVMOD -> slots.nb_divmod();
+                case NB_MATRIX_MULTIPLY -> slots.nb_matrix_multiply();
             };
         }
 

@@ -46,7 +46,7 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import java.io.IOException;
 
-import org.graalvm.python.embedding.utils.GraalPyResources;
+import org.graalvm.python.embedding.GraalPyResources;
 
 public class GraalPy {
     private static final String PYTHON = "python";

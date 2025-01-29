@@ -70,6 +70,7 @@ graalpython/com.oracle.graal.python.cext/expat/nametab.h,expat.copyright
 graalpython/com.oracle.graal.python.cext/expat/pyexpatns.h,python.copyright
 graalpython/com.oracle.graal.python.cext/expat/siphash.h,siphash.copyright
 graalpython/com.oracle.graal.python.cext/expat/utf8tab.h,expat.copyright
+graalpython/com.oracle.graal.python.cext/expat/winconfig.h,expat.copyright
 graalpython/com.oracle.graal.python.cext/expat/xmlparse.c,expat.copyright
 graalpython/com.oracle.graal.python.cext/expat/xmlrole.c,expat.copyright
 graalpython/com.oracle.graal.python.cext/expat/xmlrole.h,expat.copyright

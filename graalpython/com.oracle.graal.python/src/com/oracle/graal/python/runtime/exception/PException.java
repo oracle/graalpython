@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -148,13 +149,15 @@ public final class PException extends AbstractTruffleException {
     @Override
     public String getMessage() {
         if (message == null) {
-            message = pythonException.toString();
+            return pythonException.toString();
         }
         return message;
     }
 
-    public void setMessage(Object object) {
-        message = object.toString();
+    public void materializeMessage() {
+        if (message == null) {
+            message = ExceptionUtils.getExceptionMessage(pythonException);
+        }
     }
 
     @Override
@@ -344,12 +347,6 @@ public final class PException extends AbstractTruffleException {
     }
 
     @ExportMessage
-    ExceptionType getExceptionType(
-                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-        return lib.getExceptionType(pythonException);
-    }
-
-    @ExportMessage
     RuntimeException throwException(@Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -376,5 +373,102 @@ public final class PException extends AbstractTruffleException {
         throw UnsupportedMessageException.create();
     }
 
-    // Note: remaining interop messages are forwarded to the contained PBaseException
+    @ExportMessage
+    ExceptionType getExceptionType(
+                    @Shared @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+        if (pythonException instanceof PBaseException) {
+            return lib.getExceptionType(pythonException);
+        }
+        // Native exceptions currently cannot be any other type
+        return ExceptionType.RUNTIME_ERROR;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isExceptionIncompleteSource() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasExceptionMessage() {
+        return true;
+    }
+
+    @ExportMessage
+    String getExceptionMessage(
+                    @Shared("gil") @Cached GilNode gil) {
+        if (message == null) {
+            boolean mustRelease = gil.acquire();
+            try {
+                materializeMessage();
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+        return message;
+    }
+
+    @ExportMessage
+    int getExceptionExitStatus(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Cached InlinedBranchProfile unsupportedProfile) throws UnsupportedMessageException {
+        if (pythonException instanceof PBaseException) {
+            return lib.getExceptionExitStatus(pythonException);
+        }
+        // Native exceptions currently cannot be exit exceptions
+        unsupportedProfile.enter(inliningTarget);
+        throw UnsupportedMessageException.create();
+    }
+
+    private Object getCause(Node inliningTarget, ExceptionNodes.GetContextNode getContextNode, ExceptionNodes.GetSuppressContextNode getSuppressContextNode, ExceptionNodes.GetCauseNode getCauseNode) {
+        Object cause = getCauseNode.execute(inliningTarget, pythonException);
+        if (cause != PNone.NONE) {
+            return cause;
+        }
+        if (!getSuppressContextNode.execute(inliningTarget, pythonException)) {
+            Object context = getContextNode.execute(inliningTarget, pythonException);
+            if (context != PNone.NONE) {
+                return context;
+            }
+        }
+        return null;
+    }
+
+    @ExportMessage
+    boolean hasExceptionCause(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared @Cached ExceptionNodes.GetContextNode getContextNode,
+                    @Shared @Cached ExceptionNodes.GetSuppressContextNode getSuppressContextNode,
+                    @Shared @Cached ExceptionNodes.GetCauseNode getCauseNode,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getCause(inliningTarget, getContextNode, getSuppressContextNode, getCauseNode) != null;
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    Object getExceptionCause(
+                    @Bind("$node") Node inliningTarget,
+                    @Shared @Cached ExceptionNodes.GetContextNode getContextNode,
+                    @Shared @Cached ExceptionNodes.GetSuppressContextNode getSuppressContextNode,
+                    @Shared @Cached ExceptionNodes.GetCauseNode getCauseNode,
+                    @Cached InlinedBranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object result = getCause(inliningTarget, getContextNode, getSuppressContextNode, getCauseNode);
+            if (result != null) {
+                return result;
+            }
+            unsupportedProfile.enter(inliningTarget);
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Context.Builder;
-import org.graalvm.python.embedding.utils.GraalPyResources;
+import org.graalvm.python.embedding.GraalPyResources;
 
 /**
  * A simple launcher for Python. The launcher sets the filesystem up to read the Python core,

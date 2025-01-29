@@ -114,6 +114,7 @@ test.test_os.RemoveDirsTests.test_remove_nothing @ darwin-arm64,darwin-x86_64,li
 test.test_os.RemoveDirsTests.test_remove_partial @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_os.StatAttributeTests.test_15261 @ win32-AMD64
 test.test_os.StatAttributeTests.test_1686475 @ win32-AMD64
+test.test_os.StatAttributeTests.test_access_denied @ win32-AMD64
 test.test_os.StatAttributeTests.test_stat_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_os.StatAttributeTests.test_stat_attributes_bytes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_os.StatAttributeTests.test_stat_result_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

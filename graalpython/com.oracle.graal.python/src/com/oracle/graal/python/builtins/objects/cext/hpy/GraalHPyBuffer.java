@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -157,7 +157,7 @@ public final class GraalHPyBuffer implements TruffleObject {
             case J_MEMBER_NDIM:
                 return buffer.getDims();
             case J_MEMBER_FORMAT:
-                return buffer.getFormat() != null ? new CStringWrapper(buffer.getFormat()) : toNativeNode.execute(PNone.NO_VALUE);
+                return buffer.getFormat() != null ? new CStringWrapper(buffer.getFormat().switchEncodingUncached(UTF_8), UTF_8) : toNativeNode.execute(PNone.NO_VALUE);
             case J_MEMBER_SHAPE:
                 return toCArray(toNativeNode, buffer.getShape());
             case J_MEMBER_STRIDES:

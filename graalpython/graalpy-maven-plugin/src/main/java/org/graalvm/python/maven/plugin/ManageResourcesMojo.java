@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,7 +63,6 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.GRAALPY_GROUP_ID;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.LAUNCHER_NAME;
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 
@@ -87,6 +86,12 @@ public class ManageResourcesMojo extends AbstractMojo {
     String pythonResourcesDirectory;
 
     @Parameter
+    String externalDirectory;
+
+    @Parameter
+    String resourceDirectory;
+
+    @Parameter
     List<String> packages;
 
     public static class PythonHome {
@@ -105,32 +110,87 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private Set<String> launcherClassPath;
 
+    private static String normalizeEmpty(String s) {
+        if (s == null) {
+            return s;
+        }
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     public void execute() throws MojoExecutionException {
+        pythonResourcesDirectory = normalizeEmpty(pythonResourcesDirectory);
+        externalDirectory = normalizeEmpty(externalDirectory);
+        resourceDirectory = normalizeEmpty(resourceDirectory);
 
         if(pythonResourcesDirectory != null) {
-            if(pythonResourcesDirectory.trim().isEmpty()) {
-                pythonResourcesDirectory = null;
-            } else {
-                pythonResourcesDirectory = pythonResourcesDirectory.trim();
+            if (externalDirectory != null) {
+                throw new MojoExecutionException(
+                        "Cannot use <externalDirectory> and <resourceDirectory> at the same time. " +
+                                "New option <externalDirectory> is a replacement for deprecated <pythonResourcesDirectory>. " +
+                                "If you want to deploy the virtual environment into physical filesystem, use <externalDirectory>. " +
+                                "The deployment of the external directory alongside the application is not handled by the GraalPy Maven plugin in such case." +
+                                "If you want to bundle the virtual filesystem in Java resources, use <resourceDirectory>. " +
+                                "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ");
+            }
+            getLog().warn("Option <pythonResourcesDirectory> is deprecated and will be removed. Use <externalDirectory> instead.");
+            externalDirectory = pythonResourcesDirectory;
+        }
+
+        if (resourceDirectory != null) {
+            if (resourceDirectory.startsWith("/") || resourceDirectory.endsWith("/")) {
+                throw new MojoExecutionException(
+                        "Value of <resourceDirectory> should be relative resources path, i.e., without the leading '/', and it also must not end with trailing '/'");
             }
         }
 
-        manageHome();
+        if (resourceDirectory == null) {
+            if (externalDirectory != null) {
+                getLog().info(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
+                        "This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem. " +
+                        "Consider adding <resourceDirectory>GRAALPY-VFS/${project.groupId}/${project.artifactId}</resourceDirectory> to your pom.xml, " +
+                        "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory." +
+                        "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ",
+                        VFS_ROOT,
+                        Path.of(VFS_ROOT, "src"),
+                        Path.of("GRAALPY-VFS", project.getGroupId(), project.getArtifactId())));
+            }
+            resourceDirectory = VFS_ROOT;
+        }
+
+        if(pythonHome != null) {
+            getLog().warn("The GraalPy plugin <pythonHome> configuration setting was deprecated and has no effect anymore.\n" +
+                "For execution in jvm mode, the python language home is always available.\n" +
+                "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
+                    "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources documentation.");
+        }
+
         manageVenv();
         listGraalPyResources();
         manageNativeImageConfig();
 
         for(Resource r : project.getBuild().getResources()) {
-            if (Files.exists(Path.of(r.getDirectory(), VFS_ROOT, "proj"))) {
-                getLog().warn(String.format("usage of %s is deprecated, use %s instead", Path.of(VFS_ROOT, "proj"), Path.of(VFS_ROOT, "src")));
+            if (Files.exists(Path.of(r.getDirectory(), resourceDirectory, "proj"))) {
+                getLog().warn(String.format("usage of %s is deprecated, use %s instead", Path.of(resourceDirectory, "proj"), Path.of(resourceDirectory, "src")));
             }
-            if (!Files.exists(Path.of(r.getDirectory(), VFS_ROOT)) && Files.exists(Path.of(r.getDirectory(), "vfs", "proj"))) {
+            if (!Files.exists(Path.of(r.getDirectory(), resourceDirectory)) && Files.exists(Path.of(r.getDirectory(), "vfs", "proj"))) {
                 // there isn't the actual vfs resource root "org.graalvm.python.vfs" (VFS_ROOT), and there is only the outdated "vfs/proj"
                 // => looks like a project created < 24.1.0
                 throw new MojoExecutionException(String.format(
                         "Wrong virtual filesystem root!\n" +
                         "Since 24.1.0 the virtual filesystem root has to be '%s'.\n" +
-                        "Please rename the resource directory '%s' to '%s'", VFS_ROOT, Path.of(r.getDirectory(), "vfs"), Path.of(r.getDirectory(), VFS_ROOT)));
+                        "Please rename the resource directory '%s' to '%s'", resourceDirectory, Path.of(r.getDirectory(), "vfs"), Path.of(r.getDirectory(), resourceDirectory)));
+            }
+            Path srcPath = Path.of(r.getDirectory(), resourceDirectory, "src");
+            if (externalDirectory != null && Files.exists(srcPath)) {
+                getLog().warn(String.format(
+                        "Found Java resources directory %s, however, the GraalPy Maven plugin is configured to use <externalDirectory> instead of Java resources. " +
+                                "The files from %s will not be available in Contexts created using GraalPyResources#contextBuilder(Path). Move them to '%s' if " +
+                                "you want to make them available when using external directory, or use Java resources by removing <externalDirectory> option.",
+                        srcPath,
+                        srcPath,
+                        Path.of(externalDirectory, "src")
+                ));
             }
         }
 
@@ -138,76 +198,33 @@ public class ManageResourcesMojo extends AbstractMojo {
 
     private void manageNativeImageConfig() throws MojoExecutionException {
         try {
-            VFSUtils.writeNativeImageConfig(Path.of(project.getBuild().getOutputDirectory(), "META-INF"), GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID);
+            VFSUtils.writeNativeImageConfig(Path.of(project.getBuild().getOutputDirectory(), "META-INF"), GRAALPY_MAVEN_PLUGIN_ARTIFACT_ID, resourceDirectory);
         } catch (IOException e) {
             throw new MojoExecutionException("failed to create native image configuration files", e);
         }
     }
 
-    private void manageHome() throws MojoExecutionException {
-        if (pythonHome == null) {
-            pythonHome = new PythonHome();
-            pythonHome.includes = Arrays.asList(".*");
-            pythonHome.excludes = Collections.emptyList();
-        } else {
-            if (pythonHome.includes != null) {
-                VFSUtils.trim(pythonHome.includes);
-            }
-            if (pythonHome.includes == null || pythonHome.includes.isEmpty()) {
-                pythonHome.includes = Arrays.asList(".*");
-            }
-            if (pythonHome.excludes == null) {
-                pythonHome.excludes = Collections.emptyList();
-            } else {
-                VFSUtils.trim(pythonHome.excludes);
-            }
-        }
-
-        Path homeDirectory;
-        if(pythonResourcesDirectory == null) {
-            homeDirectory = Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_HOME);
-        } else {
-            homeDirectory = Path.of(pythonResourcesDirectory, VFS_HOME);
-        }
-        List<String> includes = toSortedArrayList(pythonHome.includes);
-        List<String> excludes = toSortedArrayList(pythonHome.excludes);
-
-        try {
-            VFSUtils.createHome(homeDirectory, getGraalPyVersion(project), includes, excludes, () -> calculateLauncherClasspath(project), new MavenDelegateLog(getLog()), (s) -> getLog().info(s));
-        } catch(IOException e) {
-            throw new MojoExecutionException(String.format("failed to copy graalpy home %s", homeDirectory), e);
-        }
-    }
-
-    private ArrayList<String> toSortedArrayList(List<String> l) {
-        if(l != null) {
-            Collections.sort(l);
-            return new ArrayList<>(l);
-        }
-        return new ArrayList<>(0);
-    }
-
     private void listGraalPyResources() throws MojoExecutionException {
-        Path vfs = Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT);
+        Path vfs = Path.of(project.getBuild().getOutputDirectory(), resourceDirectory);
         if (Files.exists(vfs)) {
             try {
-                VFSUtils.generateVFSFilesList(vfs);
+                VFSUtils.generateVFSFilesList(Path.of(project.getBuild().getOutputDirectory()), vfs);
             } catch (IOException e) {
-                throw new MojoExecutionException(String.format("Failed to generate files list in '%s'", vfs.toString()), e);
+                throw new MojoExecutionException(String.format("Failed to generate files list in '%s'", vfs), e);
             }
         }
     }
 
     private void manageVenv() throws MojoExecutionException {
         Path venvDirectory;
-        if(pythonResourcesDirectory == null) {
-            venvDirectory = Path.of(project.getBuild().getOutputDirectory(), VFS_ROOT, VFS_VENV);
+        if(externalDirectory == null) {
+            venvDirectory = Path.of(project.getBuild().getOutputDirectory(), resourceDirectory, VFS_VENV);
         } else {
-            venvDirectory = Path.of(pythonResourcesDirectory, VFS_VENV);
+            venvDirectory = Path.of(externalDirectory, VFS_VENV);
         }
 
         try {
-            if (packages == null && pythonResourcesDirectory == null) {
+            if (packages == null && externalDirectory == null) {
                 getLog().info(String.format("No venv packages declared, deleting %s", venvDirectory));
                 delete(venvDirectory);
                 return;
@@ -219,15 +236,15 @@ public class ManageResourcesMojo extends AbstractMojo {
         }
     }
 
-    private void delete(Path homeDirectory) throws MojoExecutionException {
+    private void delete(Path dir) throws MojoExecutionException {
         try {
-            try (var s = Files.walk(homeDirectory)) {
+            try (var s = Files.walk(dir)) {
                 s.sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
             }
         } catch (IOException e) {
-            new MojoExecutionException(String.format("failed to delete %s", homeDirectory),  e);
+            new MojoExecutionException(String.format("failed to delete %s", dir),  e);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package org.graalvm.python.embedding.tools.exec;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public interface SubprocessLog {
 
     default void subProcessOut(CharSequence out) {
@@ -58,4 +61,27 @@ public interface SubprocessLog {
         System.out.println(txt);
         t.printStackTrace();
     }
+
+    final class CollectOutputLog implements SubprocessLog {
+        private final List<String> output = new ArrayList<>();
+
+        public List<String> getOutput() {
+            return output;
+        }
+
+        @Override
+        public void subProcessOut(CharSequence var1) {
+            output.add(var1.toString());
+        }
+
+        @Override
+        public void subProcessErr(CharSequence var1) {
+            System.err.println(var1);
+        }
+
+        @Override
+        public void log(CharSequence var1) {
+        }
+    }
+
 }

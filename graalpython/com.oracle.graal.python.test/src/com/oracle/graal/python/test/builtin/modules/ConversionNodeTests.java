@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import org.junit.Assert;
 import org.junit.function.ThrowingRunnable;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -109,15 +108,14 @@ public class ConversionNodeTests {
             }
         } catch (PException e) {
             // materialize PException's error message since we are leaving Python
-            if (e.getUnreifiedException() instanceof PBaseException managedException) {
-                e.setMessage(managedException.getFormattedMessage());
-            }
+            e.materializeMessage();
             throw e;
         }
     }
 
     protected void expectPythonMessage(String expectedMessage, ThrowingRunnable runnable) {
         PException exception = Assert.assertThrows(PException.class, runnable);
+        exception.materializeMessage();
         Assert.assertEquals(expectedMessage, exception.getMessage());
     }
 }

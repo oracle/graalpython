@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,18 +69,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.LAUNCHER_NAME;
-import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_HOME;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_ROOT;
 import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
 
 /**
  * This task is responsible for setting up the Python launcher and installing the dependencies which
  * were requested by the user. This is either done in generated resources folder or in external
- * directory provided by the user in {@link GraalPyExtension#getPythonResourcesDirectory()}.
+ * directory provided by the user in {@link GraalPyExtension#getExternalDirectory()}.
  */
 @CacheableTask
 public abstract class ResourcesTask extends DefaultTask {
 
+    /** @see #getOutput() */
     @Input
     @Optional
     public abstract Property<Boolean> getIncludeVfsRoot();
@@ -88,20 +88,34 @@ public abstract class ResourcesTask extends DefaultTask {
     @Input
     public abstract ListProperty<String> getPackages();
 
-    @Input
-    public abstract ListProperty<String> getIncludes();
-
-    @Input
-    public abstract ListProperty<String> getExcludes();
-
     @Internal
     public abstract DirectoryProperty getLauncherDirectory();
 
     @Classpath
     public abstract ConfigurableFileCollection getLauncherClasspath();
 
+    /**
+     * The directory where the virtual filesystem should be generated. If {@link #getIncludeVfsRoot()} is set,
+     * then this is the parent directory where the actual VFS directory should be created and populated with
+     * "venv" subdirectory (this is the case when we generate the VFS to Java resources). Otherwise, this path
+     * is used as is.
+     */
     @OutputDirectory
     public abstract DirectoryProperty getOutput();
+
+    /**
+     * The directory where the VFS should be generated within Java resources, i.e., applied only when
+     * {@link #getIncludeVfsRoot()} is set.
+     */
+    @Input
+    @Optional
+    public abstract Property<String> getResourceDirectory();
+
+    /**
+     * Desired polyglot runtime and GraalPy version.
+     */
+    @Input
+    public abstract Property<String> getPolyglotVersion();
 
     @Input
     protected String getOperatingSystem() {
@@ -111,28 +125,13 @@ public abstract class ResourcesTask extends DefaultTask {
     @TaskAction
     public void exec() throws IOException {
         Files.createDirectories(computeLauncherDirectory());
-        manageHome();
         manageVenv();
-    }
-
-    private void manageHome() {
-        Path homeDirectory = getHomeDirectory();
-
-        List<String> includes = new ArrayList<>(getIncludes().get());
-        List<String> excludes = new ArrayList<>(getExcludes().get());
-
-        try {
-            VFSUtils.createHome(homeDirectory, GraalPyGradlePlugin.determineGraalPyVersion(), includes, excludes, this::calculateLauncherClasspath, GradleLogger.of(getLogger()),
-                            (s) -> getLogger().lifecycle(s));
-        } catch (IOException e) {
-            throw new GradleException(String.format("failed to copy graalpy home %s", homeDirectory), e);
-        }
     }
 
     private void manageVenv() {
         List<String> packages = getPackages().getOrElse(null);
         try {
-            VFSUtils.createVenv(getVenvDirectory(), new ArrayList<String>(packages), getLauncherPath(), this::calculateLauncherClasspath, GraalPyGradlePlugin.determineGraalPyVersion(),
+            VFSUtils.createVenv(getVenvDirectory(), new ArrayList<String>(packages), getLauncherPath(), this::calculateLauncherClasspath, getPolyglotVersion().get(),
                             GradleLogger.of(getLogger()), (s) -> getLogger().lifecycle(s));
         } catch (IOException e) {
             throw new GradleException(String.format("failed to create venv %s", getVenvDirectory()), e);
@@ -152,16 +151,11 @@ public abstract class ResourcesTask extends DefaultTask {
         return getLauncherDirectory().get().getAsFile().toPath();
     }
 
-    private Path getHomeDirectory() {
-        return getResourceDirectory(VFS_HOME);
-    }
-
     private Path getVenvDirectory() {
-        return getResourceDirectory(VFS_VENV);
+        String path = "";
+        if (getIncludeVfsRoot().getOrElse(true)) {
+            path = getResourceDirectory().getOrElse(VFS_ROOT);
+        }
+        return Path.of(getOutput().get().getAsFile().toURI()).resolve(path).resolve(VFS_VENV);
     }
-
-    private Path getResourceDirectory(String type) {
-        return Path.of(getOutput().get().getAsFile().toURI()).resolve(getIncludeVfsRoot().getOrElse(true) ? VFS_ROOT : "").resolve(type);
-    }
-
 }

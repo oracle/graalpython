@@ -249,4 +249,5 @@ ctypes.test.test_unicode.UnicodeTestCase.test_wcslen @ darwin-arm64,darwin-x86_6
 ctypes.test.test_values.PythonValuesTestCase.test_undefined @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_values.ValuesTestCase.test_undefined @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_varsize_struct.VarSizeTest.test_array_invalid_length @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+ctypes.test.test_varsize_struct.VarSizeTest.test_zerosized_array @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 ctypes.test.test_wintypes.WinTypesTest.test_variant_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

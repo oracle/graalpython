@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -47,10 +47,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUFFLE_RICHCOMPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
@@ -129,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
@@ -1832,12 +1831,13 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_remainder, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class ModNode extends PythonBinaryBuiltinNode {
-        @Specialization
+    public abstract static class ModNode extends BinaryOpBuiltinNode {
+        @Specialization(guards = "check.execute(inliningTarget, self)", limit = "1")
         static Object doGeneric(VirtualFrame frame, Object self, Object right,
                         @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyUnicodeCheckNode check,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached TupleBuiltins.GetItemNode getTupleItemNode,
@@ -1852,14 +1852,9 @@ public final class StringBuiltins extends PythonBuiltins {
                 IndirectCallContext.exit(frame, language, context, state);
             }
         }
-    }
 
-    @Builtin(name = J___RMOD__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RModNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        Object mod(Object self, Object right) {
+        @Fallback
+        static Object doOther(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

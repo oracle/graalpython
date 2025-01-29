@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ package com.oracle.graal.python.test.shell;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -57,11 +57,11 @@ public class TestPathResolution {
     @Before
     public void setup() throws NoSuchMethodException {
         // Use reflection to avoid exposing the method in public API
-        calculateProgramFullPathMethod = GraalPythonMain.class.getDeclaredMethod("calculateProgramFullPath", String.class, Function.class, String.class);
+        calculateProgramFullPathMethod = GraalPythonMain.class.getDeclaredMethod("calculateProgramFullPath", String.class, Predicate.class, String.class);
         calculateProgramFullPathMethod.setAccessible(true);
     }
 
-    public String calculateProgramFullPath(String executable, Function<Path, Boolean> isExecutable, String path) {
+    public String calculateProgramFullPath(String executable, Predicate<Path> isExecutable, String path) {
         try {
             return (String) calculateProgramFullPathMethod.invoke(new GraalPythonMain(), executable, isExecutable, path);
         } catch (Throwable e) {

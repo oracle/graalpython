@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -355,7 +355,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 getValue.execute(inliningTarget, behavior, method, this, key, value);
             } else {
                 try {
-                    sequenceSetItemNode.execute(this, PInt.intValueExact(key), value);
+                    sequenceSetItemNode.execute(null, inliningTarget, this, PInt.intValueExact(key), value);
                 } catch (OverflowException cce) {
                     throw InvalidArrayIndexException.create(key);
                 } catch (PException pe) {
@@ -383,7 +383,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 getValue.execute(inliningTarget, behavior, method, this, key);
             } else {
                 try {
-                    sequenceDelItemNode.execute(this, PInt.intValueExact(key));
+                    sequenceDelItemNode.execute(null, inliningTarget, this, PInt.intValueExact(key));
                 } catch (OverflowException cce) {
                     throw InvalidArrayIndexException.create(key);
                 } catch (PException pe) {

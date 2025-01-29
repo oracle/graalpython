@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,7 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.SEQUENCE_INDEX_MUST_BE_INT_NOT_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -57,12 +55,11 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
+import com.oracle.graal.python.lib.PySequenceGetItemNode.IndexForSqSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -78,7 +75,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
  * Equivalent of CPython's {@code PyObject_GetItem}.
@@ -131,34 +127,26 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
         public abstract Object execute(Frame frame, Node inliningTarget, Object object, TpSlots objectKlassSlots, Object key);
 
         @Specialization(guards = "slots.mp_subscript() != null")
-        static Object doMapping(Frame frame, Node inliningTarget, Object object, TpSlots slots, Object key,
+        static Object doMapping(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, Object key,
                         @Cached CallSlotBinaryFuncNode callNode) {
-            return callNode.execute((VirtualFrame) frame, inliningTarget, slots.mp_subscript(), object, key);
+            return callNode.execute(frame, inliningTarget, slots.mp_subscript(), object, key);
+        }
+
+        @Specialization(guards = {"slots.mp_subscript() == null", "slots.sq_item() != null", "key >= 0"})
+        static Object doSequenceFastPath(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, int key,
+                        @Exclusive @Cached CallSlotSizeArgFun callSqItem) {
+            return callSqItem.execute(frame, inliningTarget, slots.sq_item(), object, key);
         }
 
         // Note: this is uncommon path, but DSL wouldn't know, so it does not generate
         // specialization data-class.
-        @Specialization(guards = {"slots.sq_item() != null", "slots.mp_subscript() == null"})
+        @Specialization(guards = {"slots.mp_subscript() == null", "slots.sq_item() != null"}, replaces = "doSequenceFastPath")
         @InliningCutoff // uncommon case: defining sq_item, but not mp_subscript
-        static Object doSequence(Frame frame, Node inliningTarget, Object object, TpSlots slots, Object key,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Cached CallSlotLenNode callLenSlot,
-                        @Cached CallSlotSizeArgFun callSqItem) {
-
-            if (!indexCheckNode.execute(inliningTarget, key)) {
-                raiseSeqIndexMustBeInt(inliningTarget, key, raiseNode);
-            }
-            int intKey = asSizeNode.executeExact(frame, inliningTarget, key, IndexError);
-            return PySequenceGetItemNode.getItem((VirtualFrame) frame, inliningTarget, object, slots, intKey,
-                            negativeIndexProfile, callLenSlot, callSqItem, raiseNode);
-        }
-
-        @InliningCutoff
-        private static void raiseSeqIndexMustBeInt(Node inliningTarget, Object key, Lazy raiseNode) {
-            raiseNode.get(inliningTarget).raise(TypeError, SEQUENCE_INDEX_MUST_BE_INT_NOT_P, key);
+        static Object doSequence(VirtualFrame frame, Node inliningTarget, Object object, TpSlots slots, Object key,
+                        @Cached IndexForSqSlot indexForSqSlot,
+                        @Exclusive @Cached CallSlotSizeArgFun callSqItem) {
+            int index = indexForSqSlot.execute(frame, inliningTarget, object, slots, key);
+            return callSqItem.execute(frame, inliningTarget, slots.sq_item(), object, index);
         }
 
         @Fallback
@@ -169,7 +157,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                         @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
                         @Cached(inline = false) PythonObjectFactory factory,
                         @Cached(inline = false) CallNode callClassGetItem,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode.Lazy raiseNode) {
             if (isTypeNode.execute(inliningTarget, maybeType)) {
                 Object classGetitem = lookupClassGetItem.execute(frame, inliningTarget, maybeType, T___CLASS_GETITEM__);
                 if (!(classGetitem instanceof PNone)) {

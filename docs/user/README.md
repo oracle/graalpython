@@ -147,7 +147,7 @@ In order to distribute the resulting application for other systems, follow these
       package interop;
    
       import org.graalvm.polyglot.*;
-      import org.graalvm.python.embedding.utils.GraalPyResources;
+      import org.graalvm.python.embedding.GraalPyResources;
    
       class App {
       ...
