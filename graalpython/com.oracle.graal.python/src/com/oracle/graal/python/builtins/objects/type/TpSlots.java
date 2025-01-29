@@ -921,7 +921,7 @@ public record TpSlots(TpSlot nb_bool, //
                         existingSlotWrapper = execWrapper;
                     } else if (executable != null) {
                         // This can happen for legacy slots where the delegate would be a PFunction
-                        LOGGER.warning(() -> String.format("Unexpected executable for slot pointer: %s", executable));
+                        LOGGER.fine(() -> String.format("Unexpected executable for slot pointer: %s", executable));
                     }
                 } catch (UnsupportedMessageException e) {
                     throw new IllegalStateException(e);
