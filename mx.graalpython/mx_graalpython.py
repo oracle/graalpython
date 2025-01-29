@@ -1238,7 +1238,7 @@ def graalpython_gate_runner(args, tasks):
                     except:
                         pass # Sometimes this fails on windows
             else:
-                mx.command_function('tck')()
+                mx.command_function('tck')([])
 
     # JUnit tests with Maven
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
