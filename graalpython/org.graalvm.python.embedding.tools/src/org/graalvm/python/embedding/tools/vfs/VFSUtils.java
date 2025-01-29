@@ -293,14 +293,14 @@ public final class VFSUtils {
 
     public static void createVenv(Path venvDirectory, List<String> packages, Path requirementsFile,
                     String inconsistentPackagesError, String wrongPackageVersionFormatError, String missingRequirementsFileWarning,
-                    Launcher launcherArgs, String graalPyVersion, BuildToolLog log) throws IOException {
+                    Launcher launcher, String graalPyVersion, BuildToolLog log) throws IOException {
         Objects.requireNonNull(venvDirectory);
         Objects.requireNonNull(packages);
-        Objects.requireNonNull(launcherArgs);
+        Objects.requireNonNull(launcher);
         Objects.requireNonNull(graalPyVersion);
         Objects.requireNonNull(log);
 
-        logVenvArgs(venvDirectory, packages, requirementsFile, launcherArgs, graalPyVersion, log);
+        logVenvArgs(venvDirectory, packages, requirementsFile, launcher, graalPyVersion, log);
 
         List<String> pluginPackages = trim(packages);
         List<String> requirementsPackages = requirementsFile != null && Files.exists(requirementsFile) ? readPackagesFromFile(requirementsFile) : null;
@@ -308,12 +308,26 @@ public final class VFSUtils {
             return;
         }
 
-        VenvContents venvContents = ensureVenv(venvDirectory, graalPyVersion, log, ensureLauncher(launcherArgs, log));
+        VenvContents venvContents = ensureVenv(venvDirectory, graalPyVersion, log, ensureLauncher(launcher, log));
 
         boolean installed = requirementsPackages != null ? install(venvDirectory, requirementsFile, requirementsPackages, log)
                         : install(venvDirectory, pluginPackages, venvContents, missingRequirementsFileWarning, log);
         if (installed) {
             venvContents.write(pluginPackages);
+        }
+    }
+
+    public static void freezePackages(Path venvDirectory, List<String> packages, Path requirementsFile, String requirementsHeader, String wrongPackageVersionFormatError, Launcher launcher,
+                    String graalPyVersion, BuildToolLog log) throws IOException {
+        checkVersionFormat(packages, wrongPackageVersionFormatError, log);
+
+        createVenv(venvDirectory, packages, launcher, graalPyVersion, log);
+
+        if (Files.exists(venvDirectory)) {
+            VFSUtils.createRequirementsFile(venvDirectory, requirementsFile, requirementsHeader, log);
+        } else {
+            // how comes?
+            log.warning("did not generate new python requirements file due to missing venv");
         }
     }
 
@@ -403,7 +417,7 @@ public final class VFSUtils {
             installedPackages.freeze(log);
             return true;
         } else {
-            log.info("Python packages up to date, skipping install from requirements file");
+            log.info("Python packages up to date, skipping install");
         }
         return false;
     }
@@ -424,7 +438,7 @@ public final class VFSUtils {
         return false;
     }
 
-    public static void createRequirementsFile(Path venvDirectory, Path requirementsFile, String requirementsFileHeader, BuildToolLog log) throws IOException {
+    private static void createRequirementsFile(Path venvDirectory, Path requirementsFile, String requirementsFileHeader, BuildToolLog log) throws IOException {
         Objects.requireNonNull(venvDirectory);
         Objects.requireNonNull(requirementsFile);
         Objects.requireNonNull(requirementsFileHeader);

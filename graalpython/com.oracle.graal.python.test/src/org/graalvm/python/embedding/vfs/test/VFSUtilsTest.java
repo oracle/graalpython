@@ -57,6 +57,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.graalvm.python.embedding.test.EmbeddingTestUtils.createLauncher;
 import static org.graalvm.python.embedding.test.EmbeddingTestUtils.delete;
 import static org.graalvm.python.embedding.test.EmbeddingTestUtils.deleteDirOnShutdown;
 import static org.junit.Assert.assertEquals;
@@ -357,9 +358,13 @@ public class VFSUtilsTest {
 
         // check that freeze rewrites an existing requirements file
         writeRequirementsFile(requirements); // no packages
-        VFSUtils.createRequirementsFile(venvDir, requirements, REQUIREMENTS_HEADER, log);
-        checkRequirementsFile(requirements, "hello-world", "tiny-tiny==0.1");
+        freeze(venvDir, requirements, log, "hello-world==0.1", "tiny-tiny==0.1");
+        checkRequirementsFile(requirements, "hello-world==0.1", "tiny-tiny==0.1");
         log.clearOutput();
+    }
+
+    private static void freeze(Path venvDir, Path requirements, TestLog log, String... packages) throws IOException {
+        VFSUtils.freezePackages(venvDir, Arrays.asList(packages), requirements, REQUIREMENTS_HEADER, WRONG_PKG_VERSION_ERROR, createLauncher(venvDir), "0.1", log);
     }
 
     private void writeRequirementsFile(Path requirements, String... packages) throws IOException {
@@ -389,7 +394,7 @@ public class VFSUtilsTest {
         log.clearOutput();
 
         // freeze requirements
-        VFSUtils.createRequirementsFile(venvDir, requirements, REQUIREMENTS_HEADER, log);
+        freeze(venvDir, requirements, log, "requests==2.32.3");
         checkRequirementsFile(requirements, "requests==2.32.3", "charset-normalizer", "idna", "urllib3", "certifi");
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         log.clearOutput();
@@ -415,17 +420,23 @@ public class VFSUtilsTest {
         Path requirements = tmpDir.resolve("requirements.txt");
 
         // install package from plugin config
-        createVenv(venvDir, "0.1", log, requirements, "hello-world");
+        createVenv(venvDir, "0.1", log, requirements, "hello-world==0.2");
         assertTrue(Files.exists(venvDir));
         checkVenvCreate(log.getOutput(), true);
         checkInstalledPackages(venvDir.resolve("installed.txt"), "hello-world");
-        checkVenvContentsFile(contents, "0.1", "hello-world");
+        checkVenvContentsFile(contents, "0.1", "hello-world==0.2");
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
+        log.clearOutput();
+
         // freeze requirements
-        VFSUtils.createRequirementsFile(venvDir, requirements, REQUIREMENTS_HEADER, log);
-        checkRequirementsFile(requirements, "hello-world");
+        checkException(IOException.class, () -> freeze(venvDir, requirements, log, "hello-world"));
+        assertFalse(Files.exists(requirements));
+        assertFalse(log.getOutput().contains(String.format(WRONG_PKG_VERSION_ERROR, "hello-world")));
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
 
+        freeze(venvDir, requirements, log, "hello-world==0.2");
+        checkRequirementsFile(requirements, "hello-world==0.2");
+        assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         log.clearOutput();
 
         // reinstall without exact version declared - fails
@@ -433,8 +444,8 @@ public class VFSUtilsTest {
         checkVenvCreate(log.getOutput(), false);
         assertTrue(log.getOutput().contains(String.format(WRONG_PKG_VERSION_ERROR, "'hello-world'")));
         assertFalse(log.getOutput().contains("pip install"));
-        checkInstalledPackages(venvDir.resolve("installed.txt"), "hello-world");
-        checkVenvContentsFile(contents, "0.1", "hello-world");
+        checkInstalledPackages(venvDir.resolve("installed.txt"), "hello-world==0.2");
+        checkVenvContentsFile(contents, "0.1", "hello-world==0.2");
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         log.clearOutput();
 
@@ -448,7 +459,7 @@ public class VFSUtilsTest {
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         log.clearOutput();
         // freeze requirements
-        VFSUtils.createRequirementsFile(venvDir, requirements, REQUIREMENTS_HEADER, log);
+        freeze(venvDir, requirements, log, "hello-world==0.1");
         checkRequirementsFile(requirements, "hello-world==0.1");
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         log.clearOutput();
@@ -473,7 +484,7 @@ public class VFSUtilsTest {
         checkVenvContentsFile(contents, "0.1", "hello-world==0.1", "tiny-tiny==0.2");
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         // freeze requirements - hello-world, tiny-tiny
-        VFSUtils.createRequirementsFile(venvDir, requirements, REQUIREMENTS_HEADER, log);
+        freeze(venvDir, requirements, log, "hello-world==0.1", "tiny-tiny==0.2");
         checkRequirementsFile(requirements, "hello-world==0.1", "tiny-tiny==0.2");
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         log.clearOutput();
@@ -507,7 +518,7 @@ public class VFSUtilsTest {
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         log.clearOutput();
         // freeze requirements with new hello-world
-        VFSUtils.createRequirementsFile(venvDir, requirements, REQUIREMENTS_HEADER, log);
+        freeze(venvDir, requirements, log, "hello-world==0.2", "tiny-tiny==0.2");
         checkRequirementsFile(requirements, "hello-world==0.2", "tiny-tiny==0.2");
         assertFalse(log.getOutput().contains(MISSING_REQUIREMENTS_FILE_WARNING));
         log.clearOutput();

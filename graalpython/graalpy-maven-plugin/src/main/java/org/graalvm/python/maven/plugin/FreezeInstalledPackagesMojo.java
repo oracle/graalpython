@@ -45,6 +45,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 import java.io.IOException;
@@ -73,16 +74,7 @@ public class FreezeInstalledPackagesMojo extends AbstractGraalPyMojo {
         Path requirements = getRequirementsFile();
 
         try {
-            VFSUtils.checkVersionFormat(packages, WRONG_PACKAGE_VERSION_FORMAT_ERROR, log);
-
-            VFSUtils.createVenv(venvDirectory, packages, createLauncher(), getGraalPyVersion(project), log);
-
-            if(Files.exists(venvDirectory)) {
-                VFSUtils.createRequirementsFile(venvDirectory, requirements, REQUIREMENTS_FILE_HEADER, log);
-            } else {
-                // how comes?
-                log.warning("did not generate new python requirements file due to missing venv");
-            }
+            VFSUtils.freezePackages(venvDirectory, packages, requirements, REQUIREMENTS_FILE_HEADER, WRONG_PACKAGE_VERSION_FORMAT_ERROR, createLauncher(), getGraalPyVersion(project), log);
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }

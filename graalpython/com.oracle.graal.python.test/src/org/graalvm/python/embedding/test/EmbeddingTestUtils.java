@@ -68,12 +68,7 @@ public final class EmbeddingTestUtils {
         try {
             log.info("<<< creating test venv <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
-            Path launcherFile = venvDir.getParent().resolve(VFSUtils.LAUNCHER_NAME);
-            Launcher launcher = new Launcher(launcherFile) {
-                public Set<String> computeClassPath() {
-                    return getClasspath();
-                };
-            };
+            Launcher launcher = createLauncher(venvDir);
             if (requirements != null) {
                 VFSUtils.createVenv(venvDir, Arrays.asList(packages), requirements, iconsistentPackagesError, wrongPackageVersionError, missingRequirementsFileWarning, launcher, graalPyVersion, log);
             } else {
@@ -85,6 +80,14 @@ public final class EmbeddingTestUtils {
         } finally {
             log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
         }
+    }
+
+    public static Launcher createLauncher(Path venvDir) {
+        return new Launcher(venvDir.getParent().resolve(VFSUtils.LAUNCHER_NAME)) {
+            public Set<String> computeClassPath() {
+                return getClasspath();
+            };
+        };
     }
 
     public static void deleteDirOnShutdown(Path tmpdir) {
