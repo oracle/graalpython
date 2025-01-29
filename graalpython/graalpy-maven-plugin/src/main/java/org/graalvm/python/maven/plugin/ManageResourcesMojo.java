@@ -69,8 +69,7 @@ public class ManageResourcesMojo extends AbstractGraalPyMojo {
         MavenDelegateLog log = new MavenDelegateLog(getLog());
         Path requirements = getRequirementsFile();
         try {
-            VFSUtils.createVenv(venvDirectory, packages, requirements, INCONSISTENT_PACKAGES_ERROR, WRONG_PACKAGE_VERSION_FORMAT_ERROR, createLauncher(), getGraalPyVersion(project), log);
-            VFSUtils.warnMissingRequirementsFile(requirements, MISSING_REQUIREMENTS_FILE_WARNING, log);
+            VFSUtils.createVenv(venvDirectory, packages, requirements, INCONSISTENT_PACKAGES_ERROR, WRONG_PACKAGE_VERSION_FORMAT_ERROR, MISSING_REQUIREMENTS_FILE_WARNING, createLauncher(), getGraalPyVersion(project), log);
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }

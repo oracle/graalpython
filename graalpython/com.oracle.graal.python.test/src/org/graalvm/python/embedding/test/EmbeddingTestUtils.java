@@ -59,10 +59,11 @@ public final class EmbeddingTestUtils {
     }
 
     public static void createVenv(Path venvDir, String graalPyVersion, BuildToolLog log, String... packages) throws IOException {
-        createVenv(venvDir, graalPyVersion, log, null, null, null, packages);
+        createVenv(venvDir, graalPyVersion, log, null, null, null, null, packages);
     }
 
-    public static void createVenv(Path venvDir, String graalPyVersion, BuildToolLog log, Path requirements, String iconsistentPackagesError, String wrongPackageVersionError, String... packages)
+    public static void createVenv(Path venvDir, String graalPyVersion, BuildToolLog log, Path requirements, String iconsistentPackagesError, String wrongPackageVersionError,
+                    String missingRequirementsFileWarning, String... packages)
                     throws IOException {
         try {
             log.info("<<< creating test venv <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
@@ -74,7 +75,7 @@ public final class EmbeddingTestUtils {
                 };
             };
             if (requirements != null) {
-                VFSUtils.createVenv(venvDir, Arrays.asList(packages), requirements, iconsistentPackagesError, wrongPackageVersionError, launcher, graalPyVersion, log);
+                VFSUtils.createVenv(venvDir, Arrays.asList(packages), requirements, iconsistentPackagesError, wrongPackageVersionError, missingRequirementsFileWarning, launcher, graalPyVersion, log);
             } else {
                 VFSUtils.createVenv(venvDir, Arrays.asList(packages), launcher, graalPyVersion, log);
             }
@@ -88,11 +89,17 @@ public final class EmbeddingTestUtils {
 
     public static void deleteDirOnShutdown(Path tmpdir) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try (var fs = Files.walk(tmpdir)) {
-                fs.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            try {
+                delete(tmpdir);
             } catch (IOException e) {
             }
         }));
+    }
+
+    public static void delete(Path dir) throws IOException {
+        try (var fs = Files.walk(dir)) {
+            fs.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        }
     }
 
     private static Set<String> getClasspath() {

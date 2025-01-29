@@ -196,12 +196,6 @@ public final class VFSUtils {
         }
     }
 
-    public static void warnMissingRequirementsFile(Path requirementsFile, String missingRequirementsFileWarning, BuildToolLog log) {
-        if (!Files.exists(requirementsFile)) {
-            warning(String.format(missingRequirementsFileWarning, requirementsFile) + "\n" + FOR_MORE_INFO_REFERENCE_MSG, log);
-        }
-    }
-
     public static abstract class Launcher {
         private final Path launcherPath;
 
@@ -230,7 +224,7 @@ public final class VFSUtils {
             return new InstalledPackages(venvDirectory, installed, pkgs);
         }
 
-        void freeze(BuildToolLog log) throws IOException {
+        List<String> freeze(BuildToolLog log) throws IOException {
             CollectOutputLog collectOutputLog = new CollectOutputLog();
             runPip(venvDirectory, "freeze", collectOutputLog, "--local");
             packages = new ArrayList<>(collectOutputLog.getOutput());
@@ -246,6 +240,7 @@ public final class VFSUtils {
                     log.debug("  " + p);
                 }
             }
+            return packages;
         }
     }
 
@@ -293,10 +288,11 @@ public final class VFSUtils {
     }
 
     public static void createVenv(Path venvDirectory, List<String> packagesArgs, Launcher launcherArgs, String graalPyVersion, BuildToolLog log) throws IOException {
-        createVenv(venvDirectory, packagesArgs, null, null, null, launcherArgs, graalPyVersion, log);
+        createVenv(venvDirectory, packagesArgs, null, null, null, null, launcherArgs, graalPyVersion, log);
     }
 
-    public static void createVenv(Path venvDirectory, List<String> packages, Path requirementsFile, String inconsistentPackagesError, String wrongPackageVersionFormatError,
+    public static void createVenv(Path venvDirectory, List<String> packages, Path requirementsFile,
+                    String inconsistentPackagesError, String wrongPackageVersionFormatError, String missingRequirementsFileWarning,
                     Launcher launcherArgs, String graalPyVersion, BuildToolLog log) throws IOException {
         Objects.requireNonNull(venvDirectory);
         Objects.requireNonNull(packages);
@@ -314,7 +310,8 @@ public final class VFSUtils {
 
         VenvContents venvContents = ensureVenv(venvDirectory, graalPyVersion, log, ensureLauncher(launcherArgs, log));
 
-        boolean installed = requirementsPackages != null ? install(venvDirectory, requirementsFile, requirementsPackages, log) : install(venvDirectory, pluginPackages, venvContents, log);
+        boolean installed = requirementsPackages != null ? install(venvDirectory, requirementsFile, requirementsPackages, log)
+                        : install(venvDirectory, pluginPackages, venvContents, missingRequirementsFileWarning, log);
         if (installed) {
             venvContents.write(pluginPackages);
         }
@@ -411,12 +408,17 @@ public final class VFSUtils {
         return false;
     }
 
-    private static boolean install(Path venvDirectory, List<String> newPackages, VenvContents venvContents, BuildToolLog log) throws IOException {
+    private static boolean install(Path venvDirectory, List<String> newPackages, VenvContents venvContents, String missingRequirementsFileWarning, BuildToolLog log) throws IOException {
         boolean needsUpdate = false;
         needsUpdate |= deleteUnwantedPackages(venvDirectory, newPackages, venvContents.packages, log);
         needsUpdate |= installWantedPackages(venvDirectory, newPackages, venvContents.packages, log);
         if (needsUpdate) {
-            InstalledPackages.fromVenv(venvDirectory).freeze(log);
+            List<String> installedPackages = InstalledPackages.fromVenv(venvDirectory).freeze(log);
+            if (missingRequirementsFileWarning != null && !Boolean.getBoolean("graalpy.vfs.skipMissingRequirementsWarning")) {
+                if (installedPackages.size() != newPackages.size()) {
+                    warning(String.format(missingRequirementsFileWarning) + "\n" + FOR_MORE_INFO_REFERENCE_MSG, log);
+                }
+            }
             return true;
         }
         return false;

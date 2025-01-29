@@ -80,9 +80,10 @@ public abstract class AbstractGraalPyMojo extends AbstractMojo {
         """;
 
     protected static final String MISSING_REQUIREMENTS_FILE_WARNING = """
-        Missing python requirements file '%s'.
+        Missing python requirements file.
+        It looks like some transitive python dependencies were installed together with the packages declared in graalpy-maven-plugin configuration.
         
-        It is highly recommended to freeze transitive python dependencies by running the maven goal 'org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages'
+        It is highly recommended to freeze python dependencies by running the maven goal 'org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages'.
         """;
 
     protected static final String WRONG_PACKAGE_VERSION_FORMAT_ERROR = """
