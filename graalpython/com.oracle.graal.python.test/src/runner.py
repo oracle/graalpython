@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -744,17 +744,19 @@ class SubprocessWorker:
                     ]
                     if self.runner.failfast:
                         cmd.append('--failfast')
-                    self.process = subprocess.Popen(cmd, stdout=self.out_file, stderr=self.out_file)
 
-                    server.settimeout(180.0)
+                    self.process = None
                     try:
+                        self.process = subprocess.Popen(cmd, stdout=self.out_file, stderr=self.out_file)
+                        server.settimeout(180.0)
                         sock = server.accept()[0]
-                    except TimeoutError:
-                        interrupt_process(self.process)
+                    except (TimeoutError, OSError):
+                        if self.process:
+                            interrupt_process(self.process)
                         retries -= 1
                         if retries:
                             continue
-                        sys.exit("Worker failed to connect to runner multiple times")
+                        sys.exit("Worker failed to start/connect to runner multiple times")
 
                     with sock:
                         conn = Connection(sock)
