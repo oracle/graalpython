@@ -154,6 +154,11 @@ suite = {
               "version": "RELEASE120-1",
             },
         },
+        "GRAALPYTHON_PYFLATE_BENCHMARK_RESOURCE" : {
+            # just any reasonably sized .tar.gz or .tar.bz2 for running the benchmark
+            "urls" : ["https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/visualvm/visualvm-944-linux-amd64.tar.gz"],
+            "digest" : "sha512:72982ca01cce9dfa876687ec7b9627b81e241e6cddc8dedb976a5d06d058a067f83f5c063dc07d7ed19730ffb54af8343eae8ca0cc156353f7b18530eef73c50"
+        },
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -1402,6 +1407,19 @@ suite = {
                 ],
                 "modules/": [
                     "classpath-dependencies:GRAALPY_STANDALONE_DEPENDENCIES",
+                ],
+            },
+        },
+
+        "GRAALPYTHON_POLYBENCH_BENCHMARKS": {
+            "description": "Distribution for GraalPython polybench benchmarks",
+            "layout": {
+                "./interpreter/": [
+                    "file:benchmarks/interpreter/*.py",
+                ],
+                "./warmup/": [
+                    "file:benchmarks/warmup/*.py",
+                    "dependency:GRAALPYTHON_PYFLATE_BENCHMARK_RESOURCE",
                 ],
             },
         },

@@ -696,3 +696,10 @@ mx.graalpython/mx_graalpython.py,zippy.copyright
 mx.graalpython/mx_graalpython_bench_param.py,zippy.copyright
 mx.graalpython/mx_graalpython_benchmark.py,zippy.copyright
 mx.graalpython/suite.py,no.copyright
+benchmarks/interpreter/deltablue.py,no.copyright
+benchmarks/interpreter/pyinit.py,no.copyright
+benchmarks/interpreter/sieve.py,no.copyright
+benchmarks/interpreter/fibonacci.py,no.copyright
+benchmarks/interpreter/richards.py,no.copyright
+benchmarks/warmup/raytrace.py,no.copyright
+benchmarks/warmup/pyflate-fast.py,no.copyright

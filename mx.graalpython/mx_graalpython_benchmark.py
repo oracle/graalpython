@@ -39,6 +39,7 @@ from pathlib import Path
 
 import mx
 import mx_benchmark
+import mx_polybench
 from mx_benchmark import StdOutRule, java_vm_registry, OutputCapturingVm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
 
@@ -1087,3 +1088,38 @@ def register_suites():
     mx_benchmark.add_bm_suite(PythonJMHDistMxBenchmarkSuite())
     for py_bench_suite in PythonHeapBenchmarkSuite.get_benchmark_suites(HEAP_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
+
+
+mx_polybench.register_polybench_language(mx_suite=SUITE, language="python", distributions=["GRAALPYTHON", "GRAALPYTHON_RESOURCES"])
+
+
+def graalpython_polybench_runner(polybench_run: mx_polybench.PolybenchRunFunction, tags) -> None:
+    fork_count_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "polybench-fork-counts.json")
+    if "gate" in tags:
+        polybench_run(["--jvm", "interpreter/*.py", "--experimental-options", "--engine.Compilation=false", "-w", "1", "-i", "1"])
+        polybench_run(["--native", "interpreter/*.py", "--experimental-options", "--engine.Compilation=false", "-w", "1", "-i", "1"])
+        polybench_run(["--native", "warmup/*.py", "-w", "1", "-i", "1", "--metric=one-shot", "--mx-benchmark-args", "--fork-count-file", fork_count_file])
+    if "benchmark" in tags:
+        polybench_run(["--jvm", "interpreter/*.py", "--experimental-options", "--engine.Compilation=false"])
+        polybench_run(["--native", "interpreter/*.py", "--experimental-options", "--engine.Compilation=false"])
+        polybench_run(["--jvm", "interpreter/*.py"])
+        polybench_run(["--native", "interpreter/*.py"])
+        polybench_run(["--native", "warmup/*.py", "--metric=one-shot", "--mx-benchmark-args", "--fork-count-file", fork_count_file])
+        polybench_run(
+            ["--jvm", "interpreter/pyinit.py", "-w", "0", "-i", "0", "--metric=none", "--mx-benchmark-args", "--fork-count-file", fork_count_file])
+        polybench_run(
+            ["--native", "interpreter/pyinit.py", "-w", "0", "-i", "0", "--metric=none", "--mx-benchmark-args", "--fork-count-file", fork_count_file])
+        polybench_run(["--jvm", "interpreter/*.py", "--metric=metaspace-memory"])
+        polybench_run(["--jvm", "interpreter/*.py", "--metric=application-memory"])
+        polybench_run(["--jvm", "interpreter/*.py", "--metric=allocated-bytes", "-w", "40", "-i", "10", "--experimental-options", "--engine.Compilation=false"])
+        polybench_run(["--native", "interpreter/*.py", "--metric=allocated-bytes", "-w", "40", "-i", "10", "--experimental-options", "--engine.Compilation=false"])
+        polybench_run(["--jvm", "interpreter/*.py", "--metric=allocated-bytes", "-w", "40", "-i", "10"])
+        polybench_run(["--native", "interpreter/*.py", "--metric=allocated-bytes", "-w", "40", "-i", "10"])
+    if "instructions" in tags:
+        assert mx_polybench.is_enterprise()
+        polybench_run(["--native", "interpreter/*.py", "--metric=instructions", "--experimental-options", "--engine.Compilation=false",
+                       "--mx-benchmark-args", "--fork-count-file", fork_count_file])
+
+
+mx_polybench.register_polybench_benchmark_suite(mx_suite=SUITE, name="python", languages=["python"], benchmark_distribution="GRAALPYTHON_POLYBENCH_BENCHMARKS",
+                                                benchmark_file_filter=".*py$", runner=graalpython_polybench_runner, tags={"gate", "benchmark", "instructions"})
