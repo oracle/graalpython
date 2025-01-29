@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -498,7 +498,20 @@ push_native_references_to_managed(PyObject *op, GraalPyGC_Cycle *cycle)
 
     // avoid costly upcalls
     if (cycle->n > 0) {
-        GraalPyTruffleObject_ReplicateNativeReferences(op, cycle->head, cycle->n);
+        int dead = 0;
+        // Some managed handles can be already collected if the GC is already cleaning the cycle
+        for (n = cycle->head; n != NULL; n = n->next) {
+            if (points_to_py_handle_space(n->item)) {
+                GraalPyObject* obj = (GraalPyObject*)pointer_to_stub(n->item);
+                if (obj->handle_table_index == 0) {
+                    dead = 1;
+                    break;
+                }
+            }
+        }
+        if (!dead) {
+            GraalPyTruffleObject_ReplicateNativeReferences(op, cycle->head, cycle->n);
+        }
     }
 
     // destroy list

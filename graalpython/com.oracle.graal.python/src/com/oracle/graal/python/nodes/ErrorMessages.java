@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -134,7 +134,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BAD_OPERAND_FOR = tsLiteral("bad operand type for %s%s: '%p'");
     public static final TruffleString BAD_VALUES_IN_FDS_TO_KEEP = tsLiteral("bad value(s) in fds_to_keep");
     public static final TruffleString BAD_TYPECODE = tsLiteral("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
-    public static final TruffleString BASE_OUT_OF_RANGE_FOR_INT = tsLiteral("base is out of range for int()");
+    public static final TruffleString INT_BASE_MUST_BE_2_AND_36_OR_0 = tsLiteral("int() base must be >= 2 and <= 36, or 0");
     public static final TruffleString BASES_ITEM_CAUSES_INHERITANCE_CYCLE = tsLiteral("a __bases__ item causes an inheritance cycle");
     public static final TruffleString BASE_MUST_BE = tsLiteral("PyNumber_ToBase: base must be 2, 8, 10 or 16");
     public static final TruffleString BOOL_SHOULD_RETURN_BOOL = tsLiteral("__bool__ should return bool, returned %p");
@@ -387,7 +387,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = tsLiteral("instance exception may not have a separate value");
     public static final TruffleString INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = tsLiteral("int() can't convert non-string with explicit base");
     public static final TruffleString INT_TOO_LARGE_TO_CONVERT_TO_FLOAT = tsLiteral("int too large to convert to float");
-    public static final TruffleString INTEGER_DIVISION_BY_ZERO = tsLiteral("ZeroDivisionError: integer division or modulo by zero");
+    public static final TruffleString INT_MISSING_STRING_ARGUMENT = tsLiteral("int() missing string argument");
     public static final TruffleString INTEGER_DIVISION_RESULT_TOO_LARGE = tsLiteral("integer division result too large for a float");
     public static final TruffleString S_EXPECTED_GOT_P = tsLiteral("%s argument expected, got %p");
     public static final TruffleString REC_LIMIT_GREATER_THAN_1 = tsLiteral("recursion limit must be greater or equal than 1");
@@ -692,7 +692,6 @@ public abstract class ErrorMessages {
     public static final TruffleString STATE_IS_NOT_A_DICT = tsLiteral("state is not a dictionary");
     public static final TruffleString STATE_VECTOR_INVALID = tsLiteral("state vector invalid.");
     public static final TruffleString STATE_VECTOR_MUST_BE_A_TUPLE = tsLiteral("state vector must be a tuple");
-    public static final TruffleString STEP_1_NOT_SUPPORTED = tsLiteral("step != 1 not supported");
     public static final TruffleString STEP_FOR_ISLICE_MUST_BE = tsLiteral("Step for islice() must be a positive integer or None.");
     public static final TruffleString STRING_ARG_WO_ENCODING = tsLiteral("string argument without an encoding");
     public static final TruffleString STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII = tsLiteral("string argument should contain only ASCII characters");
@@ -989,6 +988,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET = tsLiteral("casting a native int object is not implemented yet");
     public static final TruffleString PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED = tsLiteral("Putting non-module objects in sys.modules is not supported");
     public static final TruffleString GETTING_POLYGLOT_STORAGE_FOR_NATIVE_STORAGE_NOT_IMPLEMENTED = tsLiteral("Getting polyglot storage for native storage not implemented");
+    public static final TruffleString P_OBJECT_DOESNT_SUPPORT_SLICE_ASSIGNMENT = tsLiteral("%p object doesn't support slice assignment");
+    public static final TruffleString P_OBJECT_DOESNT_SUPPORT_SLICE_DELETION = tsLiteral("%p object doesn't support slice deletion");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1048,6 +1049,14 @@ public abstract class ErrorMessages {
     public static final TruffleString TOO_MANY_REMAINING_BYTES_TO_BE_STORED = tsLiteral("There are too many remaining bytes to be stored in a bytes object.");
     public static final TruffleString MMAP_CANNOT_MODIFY_READONLY_MEMORY = tsLiteral("mmap can't modify a readonly memory map.");
     public static final TruffleString DATA_OUT_OF_RANGE = tsLiteral("data out of range");
+    public static final TruffleString MMAP_CLOSED_OR_INVALID = tsLiteral("mmap closed or invalid");
+    public static final TruffleString MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION = tsLiteral("mmap object doesn't support item deletion");
+    public static final TruffleString MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION = tsLiteral("mmap object doesn't support slice deletion");
+    public static final TruffleString MMAP_ASSIGNMENT_MUST_BE_LENGTH_1_BYTES = tsLiteral("mmap assignment must be length-1 bytes()");
+    public static final TruffleString MMAP_INDICES_MUST_BE_INTEGER = tsLiteral("mmap indices must be integer");
+    public static final TruffleString MMAP_ITEM_VALUE_MUST_BE_AN_INT = tsLiteral("mmap item value must be an int");
+    public static final TruffleString MMAP_ITEM_VALUE_MUST_BE_IN_RANGE = tsLiteral("mmap item value must be in range(0, 256)");
+    public static final TruffleString MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE = tsLiteral("mmap slice assignment is wrong size");
 
     // zlib errors
     public static final TruffleString WHILE_FLUSHING = tsLiteral("while flushing");
@@ -1188,6 +1197,7 @@ public abstract class ErrorMessages {
 
     // ctypes
     public static final TruffleString PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED = tsLiteral("Passing structs by value is not supported on NFI backend");
+    public static final TruffleString RETURNING_STRUCT_BY_VALUE_NOT_SUPPORTED = tsLiteral("ctypes: returning struct by value is not supported.");
     public static final TruffleString MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY = tsLiteral("Memoryview cannot be converted to native memory");
     public static final TruffleString CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE = tsLiteral("Cannot convert Object pointer to native");
     public static final TruffleString CANNOT_APPLY_OFFSET_TO_AN_OBJECT_POINTER = tsLiteral("Cannot apply offset to an object pointer");

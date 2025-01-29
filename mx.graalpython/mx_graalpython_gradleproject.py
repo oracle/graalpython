@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -239,7 +239,7 @@ def _run_gradlew(args, cwd):
             mx.abort("Could not find a JDK of version between 17 and 21 to build a Gradle project.\n"
                      "Export GRADLE_JAVA_HOME pointing to a suitable JDK "
                      "or use the generic MX mechanism explained below:\n" + msg)
-        jdk = mx.get_jdk('17..21', abortCallback=abortCallback)
+        jdk = mx.get_tools_jdk('17..21', abortCallback=abortCallback)
         env['GRADLE_JAVA_HOME'] = jdk.home
         env['JAVA_HOME'] = jdk.home
     else:

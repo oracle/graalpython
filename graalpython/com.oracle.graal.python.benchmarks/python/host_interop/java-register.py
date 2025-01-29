@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,21 +41,22 @@
 # This benchmark hits the GetRegisteredClassNodes as much as possible with one registration
 
 import polyglot
-from java.util import LinkedList
-from java.util import List
-
-
+import sys
+from java.util import List, ArrayList
 
 @polyglot.interop_type(List)
 class JList:
     def append(self, value):
         self.add(value)
 
-    # def __getitem__(self, item):
-    #     return self.get(item)
+    def __getitem__(self, item):
+        return self.get(item)
 
     def get_value(self):
-        return sum(self)
+        sum = 0
+        for i in range(self.length()):
+            sum += self[i]
+        return sum
 
     def length(self):
         return self.size()
@@ -64,21 +65,20 @@ class JList:
 # igv: function_root_create_list_at
 def create_list(num: int, l: JList):
     for i in range(num):
-        l.add(LinkedList())
+        l.append(ArrayList())
         for j in range(i):
-            l[i].add(j)
+            l[i].append(j)
 
-    for index, li in enumerate(l):
+    for i in range(num):
+        li = l[i]
         assert li.length() * (li.length() - 1) / 2 == li.get_value()
 
-
 def measure(num):
-    j_list = LinkedList()
+    j_list = ArrayList()
     create_list(num, j_list)
-
 
 def __benchmark__(num=2_000):
     measure(num)
 
 if __name__ == '__main__':
-    __benchmark__()
+    __benchmark__(int(sys.argv[1]))

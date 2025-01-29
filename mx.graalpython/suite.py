@@ -45,7 +45,7 @@ suite = {
             },
             {
                 "name": "sdk",
-                "version": "0c2731c6e441a7617013a4cfd4fcce4209e3890b",
+                "version": "b035c61c0c1dcfcb8ed2f0fc7046e4d702619b5a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "0c2731c6e441a7617013a4cfd4fcce4209e3890b",
+                "version": "b035c61c0c1dcfcb8ed2f0fc7046e4d702619b5a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "0c2731c6e441a7617013a4cfd4fcce4209e3890b",
+                "version": "b035c61c0c1dcfcb8ed2f0fc7046e4d702619b5a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -69,7 +69,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "0c2731c6e441a7617013a4cfd4fcce4209e3890b",
+                "version": "b035c61c0c1dcfcb8ed2f0fc7046e4d702619b5a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -255,9 +255,9 @@ suite = {
             "source": [],
         },
 
-        "graalpy-virtualenv": {
+        "graalpy-virtualenv-seeder": {
             "type": "python",
-            "path": "graalpy_virtualenv",
+            "path": "graalpy_virtualenv_seeder",
             "source": [],
         }
     },
@@ -597,6 +597,7 @@ suite = {
                 "bin/<lib:bz2support>",
             ],
             "cmakeConfig": {
+                "CMAKE_BUILD_TYPE": "Release",
                 "BZIP2_ROOT": "<path:BZIP2>",
                 "BZIP2_VERSION_MAJOR": "1",
                 "BZIP2_VERSION_MINOR": "0",
@@ -714,6 +715,7 @@ suite = {
                             "bin/modules/_cpython_sre<graalpy_ext:native>",
                             "bin/modules/_cpython_unicodedata<graalpy_ext:native>",
                             "bin/modules/_sha3<graalpy_ext:native>",
+                            "bin/modules/pyexpat<graalpy_ext:native>",
                         ],
                     },
                 },
@@ -1073,6 +1075,7 @@ suite = {
                                 "dependency:com.oracle.graal.python.jni/*",
                                 "dependency:com.oracle.graal.python.cext/bin/*",
                                 "dependency:com.oracle.graal.python.hpy.llvm/bin/*",
+                                "dependency:python-libbz2/bin/*",
                             ]
                         },
                     },
@@ -1480,12 +1483,12 @@ suite = {
             "maven": False,
         },
 
-        "GRAALPY_VIRTUALENV": {
+        "GRAALPY_VIRTUALENV_SEEDER": {
             "native": True, # so it produces a tar, not a jar file
             "platformDependent": False,
-            "description": "graalpy-virtualenv plugin sources usable to be installed into other interpreters",
+            "description": "graalpy-virtualenv-seeder plugin sources usable to be installed into other interpreters",
             "layout": {
-                "graalpy_virtualenv": "file:graalpy_virtualenv",
+                "graalpy_virtualenv_seeder": "file:graalpy_virtualenv_seeder",
             },
             "maven": False,
         },

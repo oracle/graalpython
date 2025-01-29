@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -2357,6 +2357,7 @@ PyLong_FromString(const char *str, char **pend, int base)
     while (*str != '\0' && Py_ISSPACE(Py_CHARMASK(*str))) {
         str++;
     }
+    const char *orig_str = str;
     if (*str == '+') {
         ++str;
     } else if (*str == '-') {
@@ -2428,10 +2429,7 @@ PyLong_FromString(const char *str, char **pend, int base)
         if (error_if_nonzero) {
             base = 0;
         }
-        PyObject* string = PyUnicode_FromStringAndSize(numberStart, digits);
-        PyObject* result = GraalPyTruffleLong_FromString(string, base, negative);
-        Py_DecRef(string);
-        return result;
+        return GraalPyTruffleLong_FromString(orig_str, base);
     } else {
         return PyLong_FromLong(negative ? value : -value);
     }

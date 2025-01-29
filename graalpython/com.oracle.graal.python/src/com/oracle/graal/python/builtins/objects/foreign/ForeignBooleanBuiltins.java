@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,11 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+
+import java.util.List;
+
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -51,12 +56,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-
-import java.util.List;
-
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 
 /*
  * This class handles foreign booleans and reimplements the methods of Python bool.
@@ -95,7 +94,7 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___INDEX__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.nb_index, isComplex = true)
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,10 +98,6 @@ public abstract class MethodsFlags {
 
     // this is helpful to determine if the binop slot is of a heaptype.
     public static final long SLOT1BINFULL = 1L << 39;
-
-    private static final long SLOT1BINFULL_METHODS = SLOT1BINFULL | NB_SUBTRACT | NB_POWER | NB_FLOOR_DIVIDE |
-                    NB_TRUE_DIVIDE | NB_LSHIFT | NB_RSHIFT | NB_AND | NB_XOR | NB_OR | NB_MULTIPLY | NB_REMAINDER |
-                    NB_DIVMOD | NB_MATRIX_MULTIPLY;
 
     // PySequenceMethods
 

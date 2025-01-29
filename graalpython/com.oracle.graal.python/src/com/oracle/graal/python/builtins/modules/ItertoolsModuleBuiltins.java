@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,9 +38,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_FOR_ISLICE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,9 +77,9 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -879,36 +876,25 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object construct(VirtualFrame frame, Object cls, Object start, Object step,
+        static Object construct(Object cls, Object start, Object step,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectTypeCheck typeCheckNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached InlinedBranchProfile startNumberProfile,
-                        @Cached InlinedBranchProfile stepNumberProfile,
+                        @Cached PyNumberCheckNode checkNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
+            if (!checkNode.execute(inliningTarget, start)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, NUMBER_IS_REQUIRED);
+            }
+            if (!checkNode.execute(inliningTarget, step)) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, NUMBER_IS_REQUIRED);
+            }
             PCount self = factory.createCount(cls);
-            checkType(frame, inliningTarget, start, typeCheckNode, lookupAttrNode, startNumberProfile, raiseNode);
-            checkType(frame, inliningTarget, step, typeCheckNode, lookupAttrNode, stepNumberProfile, raiseNode);
             self.setCnt(start);
             self.setStep(step);
             return self;
-        }
-
-        private static void checkType(VirtualFrame frame, Node inliningTarget, Object obj, PyObjectTypeCheck typeCheckNode, PyObjectLookupAttr lookupAttrNode, InlinedBranchProfile isNumberProfile,
-                        PRaiseNode.Lazy raiseNode) {
-            if (typeCheckNode.execute(inliningTarget, obj, PythonBuiltinClassType.PComplex) ||
-                            lookupAttrNode.execute(frame, inliningTarget, obj, T___INDEX__) != PNone.NO_VALUE ||
-                            lookupAttrNode.execute(frame, inliningTarget, obj, T___FLOAT__) != PNone.NO_VALUE ||
-                            lookupAttrNode.execute(frame, inliningTarget, obj, T___INT__) != PNone.NO_VALUE) {
-                isNumberProfile.enter(inliningTarget);
-                return;
-            }
-            throw raiseNode.get(inliningTarget).raise(TypeError, NUMBER_IS_REQUIRED);
         }
     }
 

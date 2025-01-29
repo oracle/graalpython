@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -172,12 +172,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
+import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
@@ -185,9 +183,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -1926,7 +1922,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             } else if (clazz == PythonBuiltinClassType.PList && PGuards.isInteger(key) && ctxListSetItem(receiver, ((Number) key).longValue(), hValue)) {
                 return 0;
             }
-            return setItemGeneric(receiver, clazz, key, value);
+            PyObjectSetItem.executeUncached(receiver, key, value);
+            return 0;
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
             // non-null value indicates an error
@@ -1948,7 +1945,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
                 return 0;
             }
             Object value = HPyAsPythonObjectNodeGen.getUncached().execute(hValue);
-            return setItemGeneric(receiver, clazz, lidx, value);
+            PyObjectSetItem.executeUncached(receiver, lidx, value);
+            return 0;
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
             // non-null value indicates an error
@@ -1982,16 +1980,6 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         return false;
     }
 
-    @TruffleBoundary
-    private static int setItemGeneric(Object receiver, Object clazz, Object key, Object value) {
-        Object setItemAttribute = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.SetItem).execute(clazz);
-        if (setItemAttribute == PNone.NO_VALUE) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, receiver);
-        }
-        CallTernaryMethodNode.getUncached().execute(null, setItemAttribute, receiver, key, value);
-        return 0;
-    }
-
     public int ctxNumberCheck(long handle) {
         increment(HPyJNIUpcall.HPyNumberCheck);
         if (GraalHPyBoxing.isBoxedDouble(handle) || GraalHPyBoxing.isBoxedInt(handle)) {
@@ -2000,11 +1988,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
 
         try {
-            if (PyIndexCheckNode.executeUncached(receiver) || CanBeDoubleNode.executeUncached(receiver)) {
-                return 1;
-            }
-            Object receiverType = GetClassNode.executeUncached(receiver);
-            return PInt.intValue(LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Int).execute(receiverType) != PNone.NO_VALUE);
+            return PInt.intValue(PyNumberCheckNode.executeUncached(receiver));
         } catch (PException e) {
             HPyTransformExceptionToNativeNode.executeUncached(context, e);
             return 0;
