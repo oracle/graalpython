@@ -45,54 +45,97 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface BuildToolLog {
-    default void subProcessOut(CharSequence out) {
+    default void subProcessOut(String out) {
         System.out.println(out);
     }
 
-    default void subProcessErr(CharSequence err) {
+    default void subProcessErr(String err) {
         System.err.println(err);
     }
 
-    default void info(String s) {
-        System.out.println(s);
-    };
+    void info(String s);
 
-    default void warning(String s) {
-        System.out.println(s);
-    }
+    void warning(String s);
 
-    default void warning(String s, Throwable t) {
-        System.out.println(s);
-        t.printStackTrace();
-    }
+    void warning(String s, Throwable t);
 
-    default void error(String s) {
-        System.err.println(s);
-    }
+    void error(String s);
 
-    default public boolean isDebugEnabled() {
-        return false;
-    }
+    void debug(String s);
 
-    default void debug(String s) {
-        System.out.println(s);
-    }
+    boolean isWarningEnabled();
+
+    boolean isInfoEnabled();
+
+    boolean isErrorEnabled();
+
+    boolean isDebugEnabled();
 
     final class CollectOutputLog implements BuildToolLog {
         private final List<String> output = new ArrayList<>();
+        private final BuildToolLog delegate;
+
+        public CollectOutputLog(BuildToolLog delegate) {
+            this.delegate = delegate;
+        }
 
         public List<String> getOutput() {
             return output;
         }
 
         @Override
-        public void subProcessOut(CharSequence var1) {
-            output.add(var1.toString());
+        public boolean isDebugEnabled() {
+            return delegate.isDebugEnabled();
         }
 
         @Override
-        public void subProcessErr(CharSequence var1) {
-            System.err.println(var1);
+        public boolean isInfoEnabled() {
+            return delegate.isInfoEnabled();
+        }
+
+        @Override
+        public void info(String s) {
+            delegate.info(s);
+        }
+
+        @Override
+        public void warning(String s) {
+            delegate.warning(s);
+        }
+
+        @Override
+        public void warning(String s, Throwable t) {
+            delegate.warning(s, t);
+        }
+
+        @Override
+        public void error(String s) {
+            delegate.error(s);
+        }
+
+        @Override
+        public void debug(String s) {
+            delegate.debug(s);
+        }
+
+        @Override
+        public boolean isWarningEnabled() {
+            return delegate.isWarningEnabled();
+        }
+
+        @Override
+        public boolean isErrorEnabled() {
+            return delegate.isErrorEnabled();
+        }
+
+        @Override
+        public void subProcessOut(String s) {
+            output.add(s);
+        }
+
+        @Override
+        public void subProcessErr(String s) {
+            delegate.error(s);
         }
     }
 }

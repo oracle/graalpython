@@ -77,7 +77,7 @@ public class GraalPyRunner {
         if (workdir != null) {
             pb.directory(new File(workdir));
         }
-        log.info(String.format("Running GraalPy: %s", String.join(" ", cmd)));
+        infoCmd(log, "Running GraalPy:", cmd);
         runProcess(pb, log);
     }
 
@@ -85,7 +85,7 @@ public class GraalPyRunner {
         var cmd = new ArrayList<String>();
         cmd.add(launcherPath);
         cmd.addAll(List.of(args));
-        log.info(String.format("Running: %s", String.join(" ", cmd)));
+        infoCmd(log, "Running:", cmd);
         var pb = new ProcessBuilder(cmd);
         runProcess(pb, log);
     }
@@ -109,7 +109,7 @@ public class GraalPyRunner {
         var cmd = new ArrayList<String>();
         cmd.add(venvDirectory.resolve(BIN_DIR).resolve(command + EXE_SUFFIX).toString());
         cmd.addAll(args);
-        log.info("Executing: " + String.join(" ", cmd));
+        infoCmd(log, "Executing:", cmd);
         var pb = new ProcessBuilder(cmd);
         runProcess(pb, log);
     }
@@ -147,12 +147,12 @@ public class GraalPyRunner {
             try (InputStream is = process.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    log.subProcessOut(line);
+                    subProcessOut(log, line);
                 }
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.warning("exception while reading subprocess out", e);
+                warn(log, "exception while reading subprocess out", e);
             }
         });
         outputReader.start();
@@ -162,12 +162,12 @@ public class GraalPyRunner {
                 BufferedReader errorBufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                 String line;
                 while ((line = errorBufferedReader.readLine()) != null) {
-                    log.subProcessErr(line);
+                    subProcessErr(log, line);
                 }
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.warning("exception while reading subprocess err", e);
+                warn(log, "exception while reading subprocess err", e);
             }
         });
         errorReader.start();
@@ -181,4 +181,27 @@ public class GraalPyRunner {
         }
     }
 
+    private static void warn(BuildToolLog log, String txt, Throwable t) {
+        if (log.isWarningEnabled()) {
+            log.warning(txt, t);
+        }
+    }
+
+    private static void infoCmd(BuildToolLog log, String msg, List<String> cmd) {
+        if (log.isInfoEnabled()) {
+            log.info(String.format("%s %s", msg, String.join(" ", cmd)));
+        }
+    }
+
+    private static void subProcessOut(BuildToolLog log, String txt) {
+        if (log.isInfoEnabled()) {
+            log.subProcessOut(txt);
+        }
+    }
+
+    private static void subProcessErr(BuildToolLog log, String txt) {
+        if (log.isErrorEnabled()) {
+            log.subProcessErr(txt);
+        }
+    }
 }

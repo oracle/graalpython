@@ -81,14 +81,10 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
-import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.NONE;
-import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ;
-import static org.graalvm.python.embedding.utils.VirtualFileSystem.HostIO.READ_WRITE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Simple copy of VirtualFileSystemTest to test also the deprecated

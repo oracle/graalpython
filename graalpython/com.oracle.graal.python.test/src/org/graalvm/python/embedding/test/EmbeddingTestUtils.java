@@ -66,7 +66,7 @@ public final class EmbeddingTestUtils {
                     String missingRequirementsFileWarning, String... packages)
                     throws IOException {
         try {
-            log.info("<<< creating test venv <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+            info(log, "<<<<<< create test venv %s <<<<<<", venvDir);
 
             Launcher launcher = createLauncher(venvDir);
             if (requirements != null) {
@@ -78,7 +78,13 @@ public final class EmbeddingTestUtils {
             System.err.println(getClasspath());
             throw e;
         } finally {
-            log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            info(log, ">>>>>> create test venv %s >>>>>>", venvDir);
+        }
+    }
+
+    private static void info(BuildToolLog log, String txt, Object... args) {
+        if (log.isInfoEnabled()) {
+            log.info(String.format(txt, args));
         }
     }
 
@@ -86,7 +92,7 @@ public final class EmbeddingTestUtils {
         return new Launcher(venvDir.getParent().resolve(VFSUtils.LAUNCHER_NAME)) {
             public Set<String> computeClassPath() {
                 return getClasspath();
-            };
+            }
         };
     }
 

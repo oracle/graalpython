@@ -50,27 +50,48 @@ final class MavenDelegateLog implements BuildToolLog {
         this.delegate = delegate;
     }
 
+    @Override
     public void info(String txt) {
         delegate.info(txt);
     }
 
+    @Override
     public void warning(String txt) {
         delegate.warn(txt);
     }
 
+    @Override
     public void warning(String txt, Throwable t) {
         delegate.warn(txt, t);
     }
 
+    @Override
     public void error(String txt) {
         delegate.error(txt);
     }
 
+    @Override
+    public void debug(String txt) {
+        delegate.debug(txt);
+    }
+
+    @Override
     public boolean isDebugEnabled() {
         return delegate.isDebugEnabled();
     }
 
-    public void debug(String txt) {
-        delegate.debug(txt);
+    @Override
+    public boolean isWarningEnabled() {
+        return delegate.isWarnEnabled();
+    }
+
+    @Override
+    public boolean isErrorEnabled() {
+        return delegate.isErrorEnabled();
+    }
+
+    @Override
+    public boolean isInfoEnabled() {
+        return delegate.isInfoEnabled();
     }
 }

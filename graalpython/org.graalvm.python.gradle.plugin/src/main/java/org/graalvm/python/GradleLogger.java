@@ -43,6 +43,15 @@ package org.graalvm.python;
 import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.gradle.api.logging.Logger;
 
+/**
+ * XXX how to handle gradle logger finer level granularity?
+ * ERROR - Error messages
+ * QUIET - Important information messages
+ * WARNING - Warning messages
+ * LIFECYCLE - Progress information messages
+ * INFO - Information messages
+ * DEBUG - Debug messages
+ */
 public class GradleLogger implements BuildToolLog {
     private Logger logger;
 
@@ -51,18 +60,18 @@ public class GradleLogger implements BuildToolLog {
     }
 
     @Override
-    public void subProcessOut(CharSequence out) {
-        logger.lifecycle(out.toString());
+    public void subProcessOut(String out) {
+        logger.info(out.toString());
     }
 
     @Override
-    public void subProcessErr(CharSequence err) {
+    public void subProcessErr(String err) {
         logger.warn(err.toString());
     }
 
     @Override
     public void info(String txt) {
-        logger.lifecycle(txt.toString());
+        logger.info(txt.toString());
     }
 
     @Override
@@ -78,6 +87,31 @@ public class GradleLogger implements BuildToolLog {
     @Override
     public void error(String txt) {
         logger.error(txt);
+    }
+
+    @Override
+    public void debug(String txt) {
+        logger.debug(txt);
+    }
+
+    @Override
+    public boolean isDebugEnabled() {
+        return logger.isDebugEnabled();
+    }
+
+    @Override
+    public boolean isWarningEnabled() {
+        return logger.isWarnEnabled();
+    }
+
+    @Override
+    public boolean isErrorEnabled() {
+        return logger.isErrorEnabled();
+    }
+
+    @Override
+    public boolean isInfoEnabled() {
+        return logger.isInfoEnabled();
     }
 
     public static GradleLogger of(Logger logger) {

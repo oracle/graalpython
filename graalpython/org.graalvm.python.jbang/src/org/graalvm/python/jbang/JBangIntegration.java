@@ -81,6 +81,46 @@ public class JBangIntegration {
         private static final boolean debugEnabled = Boolean.getBoolean("org.graalvm.python.jbang.log.debug");
 
         @Override
+        public void info(String s) {
+            System.out.println(s);
+        }
+
+        @Override
+        public void warning(String s) {
+            System.out.println(s);
+        }
+
+        @Override
+        public void warning(String s, Throwable t) {
+            System.out.println(s);
+        }
+
+        @Override
+        public void error(String s) {
+            System.err.println(s);
+        }
+
+        @Override
+        public void debug(String s) {
+            System.out.println(s);
+        }
+
+        @Override
+        public boolean isWarningEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isInfoEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isErrorEnabled() {
+            return true;
+        }
+
+        @Override
         public boolean isDebugEnabled() {
             return debugEnabled;
         }
@@ -248,6 +288,8 @@ public class JBangIntegration {
     }
 
     private static void log(String txt) {
-        BUILD_TOOL_LOG.info("[graalpy jbang integration] " + txt);
+        if (BUILD_TOOL_LOG.isInfoEnabled()) {
+            BUILD_TOOL_LOG.info("[graalpy jbang integration] " + txt);
+        }
     }
 }

@@ -214,7 +214,7 @@ public final class VFSUtils {
 
         private InstalledPackages(Path venvDirectory, Path installedFile, List<String> packages) {
             this.venvDirectory = venvDirectory;
-            this.installedFile = venvDirectory.resolve("installed.txt");
+            this.installedFile = installedFile;
             this.packages = packages;
         }
 
@@ -225,7 +225,7 @@ public final class VFSUtils {
         }
 
         List<String> freeze(BuildToolLog log) throws IOException {
-            CollectOutputLog collectOutputLog = new CollectOutputLog();
+            CollectOutputLog collectOutputLog = new CollectOutputLog(log);
             runPip(venvDirectory, "freeze", collectOutputLog, "--local");
             packages = new ArrayList<>(collectOutputLog.getOutput());
 
@@ -234,12 +234,8 @@ public final class VFSUtils {
                             String.join("\n", packages);
             Files.write(installedFile, toWrite.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-            if (log.isDebugEnabled()) {
-                log.debug("VFSUtils.createVenv installed python packages:");
-                for (String p : packages) {
-                    log.debug("  " + p);
-                }
-            }
+            logDebug(log, packages, "VFSUtils.createVenv installed python packages:");
+
             return packages;
         }
     }
@@ -327,13 +323,14 @@ public final class VFSUtils {
             VFSUtils.createRequirementsFile(venvDirectory, requirementsFile, requirementsHeader, log);
         } else {
             // how comes?
-            log.warning("did not generate new python requirements file due to missing venv");
+            warning(log, "did not generate new python requirements file due to missing venv");
         }
     }
 
     private static void logVenvArgs(Path venvDirectory, List<String> packages, Path requirementsFile, Launcher launcherArgs, String graalPyVersion, BuildToolLog log)
                     throws IOException {
         if (log.isDebugEnabled()) {
+            // avoid computing classpath if not necessary
             Set<String> lcp = launcherArgs.computeClassPath();
             log.debug("VFSUtils.createVenv():");
             log.debug("  graalPyVersion: " + graalPyVersion);
@@ -360,10 +357,10 @@ public final class VFSUtils {
     private static boolean needVenv(Path venvDirectory, List<String> packages, BuildToolLog log) throws IOException {
         if ((packages.isEmpty())) {
             if (Files.exists(venvDirectory)) {
-                log.info(String.format("No packages to install, deleting venv"));
+                info(log, "No packages to install, deleting venv");
                 delete(venvDirectory);
             } else {
-                log.debug("VFSUtils.createVenv: skipping - no package or requirements file provided");
+                debug(log, "VFSUtils.createVenv: skipping - no package or requirements file provided");
             }
             return false;
         }
@@ -372,9 +369,9 @@ public final class VFSUtils {
 
     private static void logPackages(List<String> packages, Path requirementsFile, BuildToolLog log) {
         if (requirementsFile != null) {
-            log.info(String.format("Installing %s python packages from requirements file: %s", packages.size(), requirementsFile));
+            info(log, "Installing %s python packages from requirements file: %s", packages.size(), requirementsFile);
         } else {
-            log.info(String.format("Installing %s python packages from GraalPy plugin configuration", packages.size()));
+            info(log, "Installing %s python packages from GraalPy plugin configuration", packages.size());
         }
     }
 
@@ -388,17 +385,17 @@ public final class VFSUtils {
             checkVenvLauncher(venvDirectory, launcherPath, log);
             contents = VenvContents.fromVenv(venvDirectory);
             if (contents == null) {
-                log.warning(String.format("Reinstalling GraalPy venv due to corrupt contents file"));
+                warning(log, "Reinstalling GraalPy venv due to corrupt contents file");
                 delete(venvDirectory);
             } else if (!graalPyVersion.equals(contents.graalPyVersion)) {
                 contents = null;
-                log.info(String.format("Stale GraalPy venv, updating to %s", graalPyVersion));
+                info(log, "Stale GraalPy venv, updating to %s", graalPyVersion);
                 delete(venvDirectory);
             }
         }
 
         if (!Files.exists(venvDirectory)) {
-            log.info(String.format("Creating GraalPy %s venv", graalPyVersion));
+            info(log, "Creating GraalPy %s venv", graalPyVersion);
             runLauncher(launcherPath.toString(), log, "-m", "venv", venvDirectory.toString(), "--without-pip");
             runVenvBin(venvDirectory, "graalpy", log, "-I", "-m", "ensurepip");
         }
@@ -417,7 +414,7 @@ public final class VFSUtils {
             installedPackages.freeze(log);
             return true;
         } else {
-            log.info("Python packages up to date, skipping install");
+            info(log, "Python packages up to date, skipping install");
         }
         return false;
     }
@@ -430,12 +427,24 @@ public final class VFSUtils {
             List<String> installedPackages = InstalledPackages.fromVenv(venvDirectory).freeze(log);
             if (missingRequirementsFileWarning != null && !Boolean.getBoolean("graalpy.vfs.skipMissingRequirementsWarning")) {
                 if (installedPackages.size() != newPackages.size()) {
-                    warning(String.format(missingRequirementsFileWarning) + "\n" + FOR_MORE_INFO_REFERENCE_MSG, log);
+                    missingRequirementsWarning(log, missingRequirementsFileWarning);
                 }
             }
             return true;
         }
         return false;
+    }
+
+    private static void missingRequirementsWarning(BuildToolLog log, String missingRequirementsFileWarning) {
+        if (log.isWarningEnabled()) {
+            String txt = missingRequirementsFileWarning + "\n" + FOR_MORE_INFO_REFERENCE_MSG;
+            String prefix = txt.startsWith("WARNING:") ? "WARNING:" : "";
+            log.warning("");
+            for (String t : txt.split("\n")) {
+                log.warning(t.startsWith(prefix) ? t : prefix + " " + t);
+            }
+            log.warning("");
+        }
     }
 
     private static void createRequirementsFile(Path venvDirectory, Path requirementsFile, String requirementsFileHeader, BuildToolLog log) throws IOException {
@@ -446,19 +455,14 @@ public final class VFSUtils {
 
         assert Files.exists(venvDirectory);
 
-        log.info(String.format("Creating %s", requirementsFile));
+        info(log, "Creating %s", requirementsFile);
 
         InstalledPackages installedPackages = InstalledPackages.fromVenv(venvDirectory);
         List<String> header = getHeaderList(requirementsFileHeader);
         Files.write(requirementsFile, header, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         Files.write(requirementsFile, installedPackages.packages, StandardOpenOption.APPEND);
 
-        if (log.isDebugEnabled()) {
-            log.debug("VFSUtils created requirements file: " + requirementsFile);
-            for (String p : installedPackages.packages) {
-                log.debug("  " + p);
-            }
-        }
+        logDebug(log, installedPackages.packages, "VFSUtils created requirements file: %s", installedPackages.installedFile);
     }
 
     private static List<String> getHeaderList(String requirementsFileHeader) {
@@ -482,7 +486,7 @@ public final class VFSUtils {
             }
         }
         if (!sb.isEmpty()) {
-            wrongPackageVersionError(sb.toString(), wrongPackageVersionFormatError, log);
+            wrongPackageVersionError(log, wrongPackageVersionFormatError, sb.toString());
         }
     }
 
@@ -499,8 +503,10 @@ public final class VFSUtils {
         return true;
     }
 
-    private static void wrongPackageVersionError(String pkgs, String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
-        error(String.format(wrongPackageVersionFormatError, pkgs) + "\n" + FOR_MORE_INFO_REFERENCE_MSG, log);
+    private static void wrongPackageVersionError(BuildToolLog log, String wrongPackageVersionFormatError, String pkgs) throws IOException {
+        if (log.isErrorEnabled()) {
+            extendedError(log, String.format(wrongPackageVersionFormatError, pkgs) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
+        }
         throw new IOException("invalid package format: " + pkgs);
     }
 
@@ -526,9 +532,15 @@ public final class VFSUtils {
         }
 
         if (!sb.isEmpty()) {
-            error(String.format(inconsistentPackagesError, sb) + "\n" + FOR_MORE_INFO_REFERENCE_MSG, log);
-            throw new IOException("inconsistent packages");
+            inconsistentPackagesError(log, inconsistentPackagesError, sb.toString());
         }
+    }
+
+    private static void inconsistentPackagesError(BuildToolLog log, String inconsistentPackagesError, String packages) throws IOException {
+        if (log.isErrorEnabled()) {
+            extendedError(log, String.format(inconsistentPackagesError, packages) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
+        }
+        throw new IOException("inconsistent packages");
     }
 
     private static void checkVenvLauncher(Path venvDirectory, Path launcherPath, BuildToolLog log) throws IOException {
@@ -547,7 +559,7 @@ public final class VFSUtils {
                         if (l.trim().equals("executable")) {
                             Path cfgLauncherPath = Path.of(r);
                             if (!Files.exists(cfgLauncherPath) || !Files.isSameFile(launcherPath, cfgLauncherPath)) {
-                                log.info(String.format("Deleting GraalPy venv due to changed launcher path"));
+                                info(log, "Deleting GraalPy venv due to changed launcher path");
                                 delete(venvDirectory);
                             }
                             break;
@@ -559,7 +571,7 @@ public final class VFSUtils {
                 throw new IOException(String.format("failed to read config file %s", cfg), e);
             }
         } else {
-            log.info(String.format("Missing venv config file: '%s'", cfg));
+            info(log, "Missing venv config file: '%s'", cfg);
         }
     }
 
@@ -575,7 +587,7 @@ public final class VFSUtils {
 
     private static void generateLaunchers(Launcher launcherArgs, BuildToolLog log) throws IOException {
         if (!Files.exists(launcherArgs.launcherPath)) {
-            log.info("Generating GraalPy launchers");
+            info(log, "Generating GraalPy launchers");
             createParentDirectories(launcherArgs.launcherPath);
             Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
             String classpath = String.join(File.pathSeparator, launcherArgs.computeClassPath());
@@ -693,20 +705,41 @@ public final class VFSUtils {
         return l;
     }
 
-    private static void warning(String txt, BuildToolLog log) {
-        String prefix = txt.startsWith("WARNING:") ? "WARNING:" : "";
-        log.warning("");
-        for (String t : txt.split("\n")) {
-            log.warning(t.startsWith(prefix) ? t : prefix + " " + t);
+    private static void warning(BuildToolLog log, String txt) {
+        if (log.isWarningEnabled()) {
+            log.warning(txt);
         }
-        log.warning("");
     }
 
-    private static void error(String txt, BuildToolLog log) {
-        log.error("");
-        for (String t : txt.split("\n")) {
-            log.error(t);
+    private static void extendedError(BuildToolLog log, String txt) {
+        if (log.isErrorEnabled()) {
+            log.error("");
+            for (String t : txt.split("\n")) {
+                log.error(t);
+            }
+            log.error("");
         }
-        log.error("");
     }
+
+    private static void info(BuildToolLog log, String txt, Object... args) {
+        if (log.isInfoEnabled()) {
+            log.info(String.format(txt, args));
+        }
+    }
+
+    private static void debug(BuildToolLog log, String txt) {
+        if (log.isDebugEnabled()) {
+            log.debug(txt);
+        }
+    }
+
+    private static void logDebug(BuildToolLog log, List<String> l, String msg, Object... args) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format(msg, args));
+            for (String p : l) {
+                log.debug("  " + p);
+            }
+        }
+    }
+
 }

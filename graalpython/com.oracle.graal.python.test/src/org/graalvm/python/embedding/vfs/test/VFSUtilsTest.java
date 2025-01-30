@@ -83,44 +83,75 @@ public class VFSUtilsTest {
             output.delete(0, output.length());
         }
 
-        public void subProcessOut(CharSequence s) {
-            System.out.println(s);
+        public void subProcessOut(String s) {
+            println("[subout] ", s);
             addLine(s.toString());
         }
 
-        public void subProcessErr(CharSequence s) {
-            System.err.println(s);
+        public void subProcessErr(String s) {
+            println("[suberr] ", s);
             addLine(s.toString());
         }
 
         public void info(String s) {
-            System.out.println(s);
+            println("[info] ", s);
             addLine(s);
-        };
+        }
 
         public void warning(String s) {
-            System.out.println(s);
+            println("[warn] ", s);
             addLine(s);
         }
 
         public void warning(String s, Throwable t) {
-            System.out.println(s);
+            println("[warn] ", s);
             t.printStackTrace();
             addLine(s);
         }
 
         public void error(String s) {
-            System.err.println(s);
+            println("[err] ", s);
             addLine(s);
         }
 
         @Override
-        public boolean isDebugEnabled() {
+        public void debug(String s) {
+            println("[debug] ", s);
+            addLine(s);
+        }
+
+        @Override
+        public boolean isWarningEnabled() {
             return true;
+        }
+
+        @Override
+        public boolean isInfoEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isErrorEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isDebugEnabled() {
+            return isVerbose();
         }
 
         public String getOutput() {
             return output.toString();
+        }
+
+        static void println(String... args) {
+            if (isVerbose()) {
+                System.out.println(String.join(" ", args));
+            }
+        }
+
+        private static boolean isVerbose() {
+            return Boolean.getBoolean("com.oracle.graal.python.test.verbose");
         }
     }
 
@@ -262,7 +293,6 @@ public class VFSUtilsTest {
         TestLog log = new TestLog();
         Path tmpDir = Files.createTempDirectory("VFSUtilsTest_emptyRequirements");
         Path venvDir = tmpDir.resolve("venv");
-        Path contents = venvDir.resolve("contents");
         deleteDirOnShutdown(tmpDir);
 
         Path requirements = tmpDir.resolve("requirements.txt");
@@ -367,7 +397,7 @@ public class VFSUtilsTest {
         VFSUtils.freezePackages(venvDir, Arrays.asList(packages), requirements, REQUIREMENTS_HEADER, WRONG_PKG_VERSION_ERROR, createLauncher(venvDir), "0.1", log);
     }
 
-    private void writeRequirementsFile(Path requirements, String... packages) throws IOException {
+    private static void writeRequirementsFile(Path requirements, String... packages) throws IOException {
         List<String> lines = new ArrayList<>(Arrays.asList("# " + String.join("\n# ", REQUIREMENTS_HEADER.split("\n"))));
         lines.addAll(Arrays.asList(packages));
         Files.write(requirements, lines, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);

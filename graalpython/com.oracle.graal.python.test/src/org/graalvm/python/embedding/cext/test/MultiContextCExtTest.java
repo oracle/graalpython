@@ -70,6 +70,8 @@ public class MultiContextCExtTest {
         final StringBuilder stderr = new StringBuilder();
         final StringBuilder stdout = new StringBuilder();
         final StringBuilder info = new StringBuilder();
+        final StringBuilder warn = new StringBuilder();
+        final StringBuilder debug = new StringBuilder();
         final StringBuilder truffleLog = new StringBuilder();
 
         static void println(CharSequence... args) {
@@ -78,25 +80,67 @@ public class MultiContextCExtTest {
             }
         }
 
-        public void warning(CharSequence txt, Throwable t) {
+        @Override
+        public void warning(String txt, Throwable t) {
             println("[warning]", txt);
             println("[throwable]", t.getMessage());
             logThrowable.append(txt).append(t.getMessage());
         }
 
-        public void subProcessErr(CharSequence err) {
+        @Override
+        public void error(String s) {
+            println("[err]", s);
+            stderr.append(s);
+        }
+
+        @Override
+        public void debug(String s) {
+            println("[debug]", s);
+            debug.append(s);
+        }
+
+        @Override
+        public void subProcessErr(String err) {
             println("[err]", err);
             stderr.append(err);
         }
 
-        public void subProcessOut(CharSequence out) {
+        @Override
+        public void subProcessOut(String out) {
             println("[out]", out);
             stdout.append(out);
         }
 
+        @Override
         public void info(String s) {
             println("[info]", s);
             info.append(s);
+        }
+
+        @Override
+        public void warning(String s) {
+            println("[warning]", s);
+            warn.append(s);
+        }
+
+        @Override
+        public boolean isDebugEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isWarningEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isInfoEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isErrorEnabled() {
+            return true;
         }
 
         @Override
