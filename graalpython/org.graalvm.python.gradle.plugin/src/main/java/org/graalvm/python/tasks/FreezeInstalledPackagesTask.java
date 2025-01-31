@@ -40,41 +40,48 @@
  */
 package org.graalvm.python.tasks;
 
-import org.graalvm.python.dsl.GraalPyExtension;
 import org.gradle.api.GradleException;
-import org.gradle.api.tasks.*;
+import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.TaskAction;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
 /**
- * This task is responsible installing the dependencies which were requested by the user.
- * This is either done in generated resources folder or in external directory provided by the user
- * in {@link GraalPyExtension#getExternalDirectory()}.
+ * Creates a python requirements file from all user packages installed in the python virtual environment.
  *
- * <p/>
- * In scope of this task:
- * <ol>
- *     <li>The GraalPy launcher is set up.</li>
- *     <li>A python venv is created.</li>
- *     <li>Python packages are installed into the venv.</li>
- * </ol>
- *
+ * If there is no virtual environment preset then it is first created and packages are installed the same way
+ * as in scope of {@link InstallPackagesTask}.
  */
 @CacheableTask
-public abstract class InstallPackagesTask extends AbstractPackagesTask {
+public abstract class FreezeInstalledPackagesTask extends AbstractPackagesTask {
     @TaskAction
     public void exec() throws GradleException {
+        checkEmptyPackages();
+
         Path venvDirectory = getVenvDirectory();
         try {
-            VFSUtils.createVenv(venvDirectory, getPackages().get(), getRequirementsPath(),
-                    INCONSISTENT_PACKAGES_ERROR, WRONG_PACKAGE_VERSION_FORMAT_ERROR, MISSING_REQUIREMENTS_FILE_WARNING,
-                    createLauncher(),  getPolyglotVersion().get(), getLog());
+            VFSUtils.freezePackages(getVenvDirectory(), getPackages().get(), getRequirementsPath(),
+                    REQUIREMENTS_FILE_HEADER, WRONG_PACKAGE_VERSION_FORMAT_ERROR,
+                    createLauncher(), getPolyglotVersion().get(), getLog());
         } catch (IOException e) {
-            throw new GradleException(String.format("failed to create python virtual environment in %s", venvDirectory), e);
+            throw new GradleException(String.format("failed to freeze packages in python virtual environment %s", venvDirectory), e);
+        }
+    }
+
+    private void checkEmptyPackages() throws GradleException {
+        List<String> packages = getPackages().get();
+        if((packages == null || packages.isEmpty())) {
+            getLog().error("");
+            getLog().error("In order to run the graalpyFreezeInstalledPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.");
+            getLog().error("");
+            getLog().error("For more information, please refer to https://github.com/oracle/graalpython/blob/master/docs/user/Embedding-Build-Tools.md");
+            getLog().error("");
+
+            throw new GradleException("missing python packages in plugin configuration");
         }
     }
 }

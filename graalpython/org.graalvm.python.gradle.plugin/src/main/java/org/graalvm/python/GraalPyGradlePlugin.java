@@ -41,6 +41,8 @@
 package org.graalvm.python;
 
 import org.graalvm.python.dsl.GraalPyExtension;
+import org.graalvm.python.tasks.AbstractPackagesTask;
+import org.graalvm.python.tasks.FreezeInstalledPackagesTask;
 import org.graalvm.python.tasks.MetaInfTask;
 import org.graalvm.python.tasks.InstallPackagesTask;
 import org.graalvm.python.tasks.VFSFilesListTask;
@@ -51,6 +53,9 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
@@ -85,8 +90,10 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String DEFAULT_FILESLIST_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "fileslist";
     private static final String GRAALPY_META_INF_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "META-INF";
     private static final String GRAALPY_INSTALL_PACKAGES_TASK = "graalPyInstallPackages";
+    private static final String GRAALPY_FREEZE_DEPENDENCIES_TASK = "graalPyFreezeInstalledPackages";
     private static final String GRAALPY_META_INF_TASK_TASK = "graalPyMetaInf";
     private static final String GRAALPY_VFS_FILESLIST_TASK = "graalPyVFSFilesList";
+    private static final String PYTHON_REQUIREMENTS_FILE = "requirements.txt";
 
     GraalPyExtension extension;
     Project project;
@@ -105,9 +112,12 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         TaskProvider<InstallPackagesTask> installPackagesTask = registerInstallPackagesTask(project, launcherClasspath, extension);
         registerMetaInfTask(extension);
 
-        var vfsFilesListTask = registerCreateVfsFilesListTask(installPackagesTask, javaPluginExtension, extension);
+        TaskProvider<VFSFilesListTask> vfsFilesListTask = registerCreateVfsFilesListTask(installPackagesTask, javaPluginExtension, extension);
         var mainSourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         mainSourceSet.getResources().srcDir(installPackagesTask);
+
+        registerFreezeInstalledPackagesTask(project, launcherClasspath, extension);
+
         addDependencies();
 
         project.afterEvaluate(proj -> {
@@ -194,18 +204,36 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
                         "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
                         "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources.");
             }
+            registerPackagesTask(project, launcherClasspath, extension, t);
+        });
+    }
+
+    private TaskProvider<FreezeInstalledPackagesTask> registerFreezeInstalledPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
+        return project.getTasks().register(GRAALPY_FREEZE_DEPENDENCIES_TASK, FreezeInstalledPackagesTask.class, t -> {
+            registerPackagesTask(project, launcherClasspath, extension, t);
+            // TODO probably not necessary
+            // t.getOutputs().upToDateWhen(tt -> false);
+        });
+    }
+
+    private void registerPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension, AbstractPackagesTask t) {
+        ProjectLayout layout = project.getLayout();
+        DirectoryProperty buildDirectory = layout.getBuildDirectory();
+        Directory projectDirectory = layout.getProjectDirectory();
+
+        t.getLauncherClasspath().from(launcherClasspath);
+        t.getLauncherDirectory().convention(buildDirectory.dir("python-launcher"));
+        t.getPolyglotVersion().convention(extension.getPolyglotVersion().orElse(determineGraalPyDefaultVersion()));
         t.getPackages().set(extension.getPackages());
 
-        t.getOutput().convention(
-                extension.getExternalDirectory().orElse(
-                    extension.getPythonResourcesDirectory()
-                            .orElse(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY))));
-        t.getIncludeVfsRoot().convention(extension.getExternalDirectory().map(d -> false)
-                .orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
+        DirectoryProperty externalDirectory = extension.getExternalDirectory();
+        t.getOutput().convention(externalDirectory.orElse(extension.getPythonResourcesDirectory().orElse(buildDirectory.dir(DEFAULT_RESOURCES_DIRECTORY))));
+        t.getIncludeVfsRoot().convention(externalDirectory.map(d -> false).orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
         t.getResourceDirectory().set(extension.getResourceDirectory());
 
+        t.getRequirementsFile().convention(extension.getRequirementsFile().orElse(projectDirectory.file(PYTHON_REQUIREMENTS_FILE)));
+
         t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
-        });
     }
 
     private boolean userPythonHome() {

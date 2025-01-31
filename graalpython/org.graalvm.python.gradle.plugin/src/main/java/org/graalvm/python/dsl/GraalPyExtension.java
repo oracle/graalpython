@@ -43,6 +43,7 @@ package org.graalvm.python.dsl;
 import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Nested;
@@ -62,7 +63,7 @@ public interface GraalPyExtension {
 
     /**
      * Optional external directory supposed to be populated with python resources, namely the
-     * virtual environment in the "venv" subdirectory.  Existing files and directories other
+     * virtual environment in the "venv" subdirectory. Existing files and directories other
      * than the "venv" subdirectory will not be touched by the plugin and can be maintained manually.
      * Mutually exclusive with {@link #getResourceDirectory()}.
      */
@@ -76,6 +77,16 @@ public interface GraalPyExtension {
     Property<String> getResourceDirectory();
 
     /**
+     * A python requirements file.
+     *
+     * If present then used as exclusive input when installing python packages
+     * for GraalPy usage instead of {@link #getPackages()}.
+     *
+     * @see #getPackages()
+     */
+    RegularFileProperty getRequirementsFile();
+
+    /**
      * Experimental property. Allows overriding the default Polyglot and GraalPy version.
      * This is intended only for testing of new unreleased versions. It is recommended
      * to use corresponding versions of GraalPy Gradle plugin and the polyglot runtime.
@@ -84,7 +95,10 @@ public interface GraalPyExtension {
     Property<String> getPolyglotVersion();
 
     /**
-     * Determines third party python packages to be installed for graalpy usage.
+     * Determines third party python packages to be installed for GraalPy usage in case
+     * no python requirements file is provided by {@link #getRequirementsFile()}.
+     *
+     * @see #getRequirementsFile()
      */
     SetProperty<String> getPackages();
 

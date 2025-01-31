@@ -232,7 +232,7 @@ def get_gradle_wrapper(project_dir, env):
     cmd = gradle_cmd + ["--version"]
     out, return_code = run_cmd(cmd, env, cwd=project_dir)
     check_ouput(GRADLE_VERSION, out)
-    return gradle_cmd
+    return gradle_cmd + ["-i"]
 
 def get_gp():
     if "PYTHON_STANDALONE_HOME" not in os.environ:
