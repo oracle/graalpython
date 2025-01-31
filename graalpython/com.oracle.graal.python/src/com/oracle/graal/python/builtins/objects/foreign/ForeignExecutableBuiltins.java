@@ -77,8 +77,8 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode gil,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             try {
                 Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                 gil.release(true);

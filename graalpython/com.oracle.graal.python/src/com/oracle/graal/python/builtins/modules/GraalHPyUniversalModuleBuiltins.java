@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -147,7 +147,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 HPyMode hmode = debug ? HPyMode.MODE_DEBUG : HPyMode.MODE_UNIVERSAL;
@@ -191,7 +191,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
             Object module;
 
             PythonContext context = PythonContext.get(inliningTarget);
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 HPyMode hmode = getHPyModeFromEnviron(name, env);

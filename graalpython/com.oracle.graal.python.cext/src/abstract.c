@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -2344,7 +2344,6 @@ PyMapping_GetItemString(PyObject *o, const char *key)
     return GraalPyTruffleObject_GetItemString(o, key);
 }
 
-#if 0 // GraalPy change
 int
 PyMapping_SetItemString(PyObject *o, const char *key, PyObject *value)
 {
@@ -2392,6 +2391,7 @@ PyMapping_HasKey(PyObject *o, PyObject *key)
     return 0;
 }
 
+#if 0 // GraalPy change
 /* This function is quite similar to PySequence_Fast(), but specialized to be
    a helper for PyMapping_Keys(), PyMapping_Items() and PyMapping_Values().
  */

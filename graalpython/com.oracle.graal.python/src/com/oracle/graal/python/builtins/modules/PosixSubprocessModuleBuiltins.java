@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -166,10 +166,11 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(env)")
         static Object doSequence(VirtualFrame frame, Object env,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ToBytesNode toBytesNode,
                         @Cached PyObjectGetItem getItem,
-                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode.Lazy raiseNode) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
             int length = sizeNode.execute(frame, inliningTarget, env);
@@ -177,7 +178,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < length; ++i) {
                 Object o = getItem.execute(frame, inliningTarget, env, i);
                 byte[] bytes = toBytesNode.execute(frame, o);
-                Object o1 = posixLib.createPathFromBytes(PythonContext.get(inliningTarget).getPosixSupport(), bytes);
+                Object o1 = posixLib.createPathFromBytes(context.getPosixSupport(), bytes);
                 if (o1 == null) {
                     throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
                 }

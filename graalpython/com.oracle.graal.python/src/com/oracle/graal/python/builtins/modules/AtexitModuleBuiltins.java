@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -132,9 +132,10 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
-            RootCallTarget callTarget = getLanguage().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
-            getContext().registerAtexitHook(callable, arguments, keywords, callTarget);
+        static Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
+            PythonContext context = PythonContext.get(null);
+            RootCallTarget callTarget = context.getLanguage().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
+            context.registerAtexitHook(callable, arguments, keywords, callTarget);
             return callable;
         }
     }

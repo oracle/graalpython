@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -100,8 +100,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.arrow.ArrowSupport;
-import com.oracle.graal.python.runtime.arrow.ArrowVectorSupport;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -165,6 +163,8 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
+import com.oracle.graal.python.runtime.arrow.ArrowSupport;
+import com.oracle.graal.python.runtime.arrow.ArrowVectorSupport;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
@@ -710,7 +710,7 @@ public final class PythonContext extends Python3Core {
         @Specialization(replaces = "doNoShutdownWithContext")
         @InliningCutoff
         PythonThreadState doGenericWithContext(Node inliningTarget, PythonContext context) {
-            PythonThreadState curThreadState = PythonLanguage.get(inliningTarget).getThreadStateLocal().get(context.env.getContext());
+            PythonThreadState curThreadState = context.getLanguage(inliningTarget).getThreadStateLocal().get(context.env.getContext());
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
                 context.killThread();
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -124,6 +124,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.DebuggerTags;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
@@ -172,6 +173,7 @@ import com.oracle.truffle.api.strings.TruffleString;
                 StandardTags.WriteVariableTag.class,
                 DebuggerTags.AlwaysHalt.class
 })
+@Bind.DefaultExpression("get($node)")
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String J_GRAALPYTHON_ID = "graalpy";
     public static final TruffleString T_GRAALPYTHON_ID = tsLiteral(J_GRAALPYTHON_ID);

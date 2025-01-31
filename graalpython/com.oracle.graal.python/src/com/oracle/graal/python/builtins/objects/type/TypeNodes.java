@@ -2113,8 +2113,8 @@ public abstract class TypeNodes {
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached GetItemSizeNode getItemSize) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Python3Core core = context.getCore();
             TypeNewContext ctx = new TypeNewContext();
             Object[] array = getObjectArray.execute(inliningTarget, bases);

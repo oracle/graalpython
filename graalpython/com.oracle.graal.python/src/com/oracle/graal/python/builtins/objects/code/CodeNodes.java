@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,8 +95,8 @@ public abstract class CodeNodes {
                         TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
                         byte[] linetable) {
 
-            PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
+            PythonLanguage language = context.getLanguage(this);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return createCode(language, context, argcount,
