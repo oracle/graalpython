@@ -2638,19 +2638,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return makeFunctionNode.execute(virtualFrame, globals, stackTop, flags);
     }
 
-    @BytecodeInterpreterSwitch
     private int bytecodeMakeTypeParam(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci, int kind) {
         MakeTypeParamNode makeTypeParamNode = insertChildNode(localNodes, beginBci, UNCACHED_MAKE_TYPE_PARAM, MakeTypeParamNodeGen.class, NODE_MAKE_TYPE_PARAM, useCachedNodes);
         return makeTypeParamNode.execute(virtualFrame, stackTop, kind);
     }
 
-    @BytecodeInterpreterSwitch
     private int bytecodeMakeTypeAlias(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         MakeTypeAliasNode makeTypeAliasNode = insertChildNode(localNodes, beginBci, UNCACHED_MAKE_TYPE_ALIAS, MakeTypeAliasNodeGen.class, NODE_MAKE_TYPE_ALIAS, useCachedNodes);
         return makeTypeAliasNode.execute(virtualFrame, stackTop);
     }
 
-    @BytecodeInterpreterSwitch
     private int bytecodeMakeGeneric(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         MakeGenericNode makeGenericNode = insertChildNode(localNodes, beginBci, UNCACHED_MAKE_GENERIC, MakeGenericNodeGen.class, NODE_MAKE_GENERIC, useCachedNodes);
         return makeGenericNode.execute(virtualFrame, stackTop);

@@ -287,8 +287,8 @@ public abstract class GenericTypeNodes {
         }
         if (nitems != nparams) {
             throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.TOO_S_ARGUMENTS_FOR_S_ACTUAL_D_EXPECTED_D,
-                    nitems > nparams ? "many" : "few", PyObjectReprAsTruffleStringNode.executeUncached(self),
-                    nitems, nparams);
+                            nitems > nparams ? "many" : "few", PyObjectReprAsTruffleStringNode.executeUncached(self),
+                            nitems, nparams);
         }
         SequenceStorage argsStorage = args.getSequenceStorage();
         List<Object> newargs = new ArrayList<>(argsStorage.length());

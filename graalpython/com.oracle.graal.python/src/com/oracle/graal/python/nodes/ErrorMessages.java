@@ -141,6 +141,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BIVARIANT_TYPES_ARE_NOT_SUPPORTED = tsLiteral("Bivariant types are not supported.");
     public static final TruffleString BOOL_SHOULD_RETURN_BOOL = tsLiteral("__bool__ should return bool, returned %p");
     public static final TruffleString BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS = tsLiteral("both points must have the same number of dimensions");
+    public static final TruffleString BOUND_MUST_BE_A_TYPE = tsLiteral("Bound must be a type.");
     public static final TruffleString BYTECODE_VERSION_MISMATCH = tsLiteral("Bytecode version mismatch, expected %d actual %d");
     public static final TruffleString BYTE_STR_IS_TOO_LARGE = tsLiteral("byte string is too large");
     public static final TruffleString BYTEARRAY_OUT_OF_BOUNDS = tsLiteral("bytearray index out of range");

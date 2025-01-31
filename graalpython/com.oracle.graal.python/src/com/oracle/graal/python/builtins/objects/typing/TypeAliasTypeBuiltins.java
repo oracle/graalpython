@@ -144,8 +144,8 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.module == null", "self.computeValue != null"})
         static Object doComputed(VirtualFrame frame, PTypeAliasType self,
-                                 @Bind("this") Node inliningTarget,
-                                 @Cached PyObjectGetItem getItemNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyObjectGetItem getItemNode) {
             if (self.computeValue instanceof PFunction fun && fun.getGlobals() != null) {
                 return getItemNode.execute(frame, inliningTarget, fun.getGlobals(), T___NAME__);
             }

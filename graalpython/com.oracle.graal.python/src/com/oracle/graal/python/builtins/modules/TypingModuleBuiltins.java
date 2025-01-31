@@ -50,6 +50,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__TYPING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_TYPING;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_SINGLE_CONSTRAINT_IS_NOT_ALLOWED;
 import static com.oracle.graal.python.nodes.ErrorMessages.BIVARIANT_TYPES_ARE_NOT_SUPPORTED;
+import static com.oracle.graal.python.nodes.ErrorMessages.BOUND_MUST_BE_A_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CONSTRAINTS_CANNOT_BE_COMBINED_WITH_BOUND;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_PARAMS_MUST_BE_A_TUPLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.VARIANCE_CANNOT_BE_SPECIFIED_WITH_INFER_VARIANCE;
@@ -119,8 +120,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__TYPING)
 public class TypingModuleBuiltins extends PythonBuiltins {
-
-    private static final TruffleString T_BOUND_MUST_BE_A_TYPE = tsLiteral("Bound must be a type.");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -488,40 +487,6 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         }
     }
 
-// @Builtin(name = J_GENERIC, minNumOfPositionalArgs = 1, parameterNames = {"$cls"}, constructsClass
-// = PythonBuiltinClassType.PGeneric, doc = """
-// Abstract base class for generic types.
-//
-// On Python 3.12 and newer, generic classes implicitly inherit from
-// Generic when they declare a parameter list after the class's name::
-//
-// class Mapping[KT, VT]:
-// def __getitem__(self, key: KT) -> VT:
-// ...
-// # Etc.
-//
-// On older versions of Python, however, generic classes have to
-// explicitly inherit from Generic.
-//
-// After a class has been declared to be generic, it can then be used as
-// follows::
-//
-// def lookup_name[KT, VT](mapping: Mapping[KT, VT], key: KT, default: VT) -> VT:
-// try:
-// return mapping[key]
-// except KeyError:
-// return default
-// """)
-// @GenerateNodeFactory
-// abstract static class GenericNode extends PythonUnaryBuiltinNode {
-//
-// @Specialization
-// static PGeneric newGeneric(Object cls,
-// @Cached PythonObjectFactory factory) {
-// return factory.createGeneric(cls);
-// }
-// }
-
     @GenerateInline
     @GenerateCached(false)
     abstract static class CheckBoundNode extends Node {
@@ -535,7 +500,7 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Fallback
         static Object check(VirtualFrame frame, Node inliningTarget, Object bound,
                         @Cached TypeCheckNode typeCheckNode) {
-            return typeCheckNode.execute(frame, inliningTarget, bound, T_BOUND_MUST_BE_A_TYPE);
+            return typeCheckNode.execute(frame, inliningTarget, bound, BOUND_MUST_BE_A_TYPE);
         }
     }
 
@@ -663,9 +628,9 @@ public class TypingModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple doUnpack(VirtualFrame frame, Node inliningTarget, PTuple params,
-                               @Cached ToArrayNode toArrayNode,
-                               @Cached UnpackNode unpackNode,
-                               @Cached PythonObjectFactory factory) {
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached UnpackNode unpackNode,
+                        @Cached PythonObjectFactory factory) {
             Object[] elements = toArrayNode.execute(inliningTarget, params.getSequenceStorage());
             boolean found = false;
             for (Object element : elements) {
