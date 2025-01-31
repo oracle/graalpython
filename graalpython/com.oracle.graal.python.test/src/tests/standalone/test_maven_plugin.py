@@ -48,6 +48,10 @@ import unittest
 from tests.standalone import util
 from tests.standalone.util import TemporaryTestDirectory, Logger
 
+MISSING_FILE_WARNING = "Some python dependencies were installed in addition to packages declared in graalpy-maven-plugin configuration"
+WRONG_PACKAGE_VERSION_FORMAT = "Some python package(s) in graalpy-maven-plugin configuration have no exact version declared"
+PACKAGES_INCONSISTENT_ERROR = "are either missing or have a different version in python requirements file"
+
 class MavenPluginTest(util.BuildToolTestBase):
 
     def generate_app(self, tmpdir, target_dir, target_name, pom_template=None, group_id="archetype.it", package="it.pkg"):
@@ -220,15 +224,15 @@ class MavenPluginTest(util.BuildToolTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("pip install", out)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Missing python requirements file", out)
+            util.check_ouput(MISSING_FILE_WARNING, out)
             assert not os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # freeze - fails due to no version
             cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages", "-DrequirementsFile=test-requirements.txt"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=False)
-            util.check_ouput("Missing python requirements file", out, contains=False)
-            util.check_ouput("Some python package(s) in graalpy-maven-plugin configuration have no exact version declared", out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)            
+            util.check_ouput(WRONG_PACKAGE_VERSION_FORMAT, out)
             assert not os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # freeze with correct version
@@ -236,7 +240,7 @@ class MavenPluginTest(util.BuildToolTestBase):
             cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages", "-DrequirementsFile=test-requirements.txt"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=True)
-            util.check_ouput("Missing python requirements file", out, contains=False)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
             assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # add termcolor and build - fails as it is not part of requirements
@@ -244,23 +248,23 @@ class MavenPluginTest(util.BuildToolTestBase):
             cmd = mvnw_cmd + ["package", "-DrequirementsFile=test-requirements.txt"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=False)
-            util.check_ouput("are either missing or have a different version in python requirements file", out)
+            util.check_ouput(PACKAGES_INCONSISTENT_ERROR, out)
             assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # freeze with termcolor
             cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages", "-DrequirementsFile=test-requirements.txt"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=True)
-            util.check_ouput("Missing python requirements file", out, contains=False)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
             assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # rebuild with requirements and exec
             cmd = mvnw_cmd + ["package", "exec:java", "-DrequirementsFile=test-requirements.txt", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("pip install", out, False)
+            util.check_ouput("pip install -r", out)
             util.check_ouput("hello java", out)
-            util.check_ouput("Missing python requirements file", out, contains=False)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 
             # disable packages config in pom
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "<packages>", "<!--<packages>")
@@ -277,7 +281,7 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("pip install", out)
             util.check_ouput("hello java", out)
-            util.check_ouput("Missing python requirements file", out, contains=False)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app_external_resources(self):

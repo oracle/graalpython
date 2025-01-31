@@ -701,7 +701,7 @@ public class VFSUtilsTest {
             }
         }
 
-        lines = lines.stream().filter(line -> !line.trim().startsWith("#")).toList();
+        lines = lines.stream().filter(line -> !line.trim().startsWith("#") && !line.trim().isEmpty()).toList();
         assertEquals(packages.length, lines.size());
         for (String pkg : packages) {
             boolean found = false;

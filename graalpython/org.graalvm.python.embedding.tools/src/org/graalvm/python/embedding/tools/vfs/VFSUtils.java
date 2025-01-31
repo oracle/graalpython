@@ -220,7 +220,7 @@ public final class VFSUtils {
 
         static InstalledPackages fromVenv(Path venvDirectory) throws IOException {
             Path installed = venvDirectory.resolve("installed.txt");
-            List pkgs = Files.exists(installed) ? readPackagesFromFile(installed) : Collections.EMPTY_LIST;
+            List<String> pkgs = Files.exists(installed) ? readPackagesFromFile(installed) : Collections.emptyList();
             return new InstalledPackages(venvDirectory, installed, pkgs);
         }
 
@@ -253,7 +253,7 @@ public final class VFSUtils {
         }
 
         static VenvContents create(Path venvDirectory, String graalPyVersion) {
-            return new VenvContents(venvDirectory.resolve(CONTENTS_FILE_NAME), Collections.EMPTY_LIST, graalPyVersion);
+            return new VenvContents(venvDirectory.resolve(CONTENTS_FILE_NAME), Collections.emptyList(), graalPyVersion);
         }
 
         static VenvContents fromVenv(Path venvDirectory) throws IOException {
@@ -274,11 +274,11 @@ public final class VFSUtils {
             return new VenvContents(contentsFile, packages, graalPyVersion);
         }
 
-        void write(List<String> packages) throws IOException {
+        void write(List<String> pkgs) throws IOException {
             Files.write(contentsFile, List.of(graalPyVersion), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            if (packages != null) {
-                Files.write(contentsFile, packages, StandardOpenOption.APPEND);
-                this.packages = packages;
+            if (pkgs != null) {
+                Files.write(contentsFile, pkgs, StandardOpenOption.APPEND);
+                this.packages = pkgs;
             }
         }
     }
@@ -320,7 +320,7 @@ public final class VFSUtils {
         createVenv(venvDirectory, packages, launcher, graalPyVersion, log);
 
         if (Files.exists(venvDirectory)) {
-            VFSUtils.createRequirementsFile(venvDirectory, requirementsFile, requirementsHeader, log);
+            createRequirementsFile(venvDirectory, requirementsFile, requirementsHeader, log);
         } else {
             // how comes?
             warning(log, "did not generate new python requirements file due to missing venv");
@@ -376,7 +376,13 @@ public final class VFSUtils {
     }
 
     private static List<String> readPackagesFromFile(Path file) throws IOException {
-        return Files.readAllLines(file).stream().filter((s) -> s != null && !s.trim().startsWith("#")).toList();
+        return Files.readAllLines(file).stream().filter((s) -> {
+            if (s == null) {
+                return false;
+            }
+            String l = s.trim();
+            return !l.startsWith("#") && !s.isEmpty();
+        }).toList();
     }
 
     private static VenvContents ensureVenv(Path venvDirectory, String graalPyVersion, BuildToolLog log, Path launcherPath) throws IOException {
@@ -437,13 +443,10 @@ public final class VFSUtils {
 
     private static void missingRequirementsWarning(BuildToolLog log, String missingRequirementsFileWarning) {
         if (log.isWarningEnabled()) {
-            String txt = missingRequirementsFileWarning + "\n" + FOR_MORE_INFO_REFERENCE_MSG;
-            String prefix = txt.startsWith("WARNING:") ? "WARNING:" : "";
-            log.warning("");
+            String txt = missingRequirementsFileWarning + "\n" + FOR_MORE_INFO_REFERENCE_MSG + "\n";
             for (String t : txt.split("\n")) {
-                log.warning(t.startsWith(prefix) ? t : prefix + " " + t);
+                log.warning(t);
             }
-            log.warning("");
         }
     }
 
@@ -471,6 +474,7 @@ public final class VFSUtils {
         for (String l : lines) {
             list.add("# " + l);
         }
+        list.add("");
         return list;
     }
 
@@ -490,7 +494,7 @@ public final class VFSUtils {
         }
     }
 
-    private static boolean checkValidPackageVersion(String pkg) throws IOException {
+    private static boolean checkValidPackageVersion(String pkg) {
         int idx = pkg.indexOf("==");
         if (idx <= 0) {
             return false;
