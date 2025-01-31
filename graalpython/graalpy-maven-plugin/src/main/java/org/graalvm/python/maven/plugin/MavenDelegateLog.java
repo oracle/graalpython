@@ -76,6 +76,17 @@ final class MavenDelegateLog implements BuildToolLog {
     }
 
     @Override
+    public void subProcessOut(String out) {
+        // don't annotate output with [INFO]
+        System.out.println(out);
+    }
+
+    @Override
+    public void subProcessErr(String err) {
+        delegate.error(err);
+    }
+
+    @Override
     public boolean isDebugEnabled() {
         return delegate.isDebugEnabled();
     }
@@ -88,6 +99,11 @@ final class MavenDelegateLog implements BuildToolLog {
     @Override
     public boolean isErrorEnabled() {
         return delegate.isErrorEnabled();
+    }
+
+    @Override
+    public boolean isSubprocessOutEnabled() {
+        return delegate.isInfoEnabled();
     }
 
     @Override

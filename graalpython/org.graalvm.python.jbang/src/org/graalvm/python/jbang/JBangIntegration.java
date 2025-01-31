@@ -81,6 +81,16 @@ public class JBangIntegration {
         private static final boolean debugEnabled = Boolean.getBoolean("org.graalvm.python.jbang.log.debug");
 
         @Override
+        public void subProcessOut(String out) {
+            System.out.println(out);
+        }
+
+        @Override
+        public void subProcessErr(String err) {
+            System.err.println(err);
+        }
+
+        @Override
         public void info(String s) {
             System.out.println(s);
         }
@@ -123,6 +133,11 @@ public class JBangIntegration {
         @Override
         public boolean isDebugEnabled() {
             return debugEnabled;
+        }
+
+        @Override
+        public boolean isSubprocessOutEnabled() {
+            return true;
         }
     };
 
@@ -220,9 +235,10 @@ public class JBangIntegration {
             throw new IllegalStateException("could not resolve parent for venv path: " + venv);
         }
         Launcher launcher = new Launcher(getLauncherPath(venvParent.toString())) {
+            @Override
             public Set<String> computeClassPath() {
                 return calculateClasspath(dependencies);
-            };
+            }
         };
         VFSUtils.createVenv(venv, pkgs, launcher, graalPyVersion, BUILD_TOOL_LOG);
 

@@ -50,7 +50,7 @@ from tests.standalone.util import TemporaryTestDirectory, Logger
 
 MISSING_FILE_WARNING = "Some python dependencies were installed in addition to packages declared in graalpy-maven-plugin configuration"
 WRONG_PACKAGE_VERSION_FORMAT = "Some python package(s) in graalpy-maven-plugin configuration have no exact version declared"
-PACKAGES_INCONSISTENT_ERROR = "are either missing or have a different version in python requirements file"
+PACKAGES_INCONSISTENT_ERROR = "some packages from graalpy-maven-plugin configuration are either missing or have a different version"
 
 class MavenPluginTest(util.BuildToolTestBase):
 
@@ -224,7 +224,7 @@ class MavenPluginTest(util.BuildToolTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("pip install", out)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput(MISSING_FILE_WARNING, out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
             assert not os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # freeze - fails due to no version
@@ -249,6 +249,7 @@ class MavenPluginTest(util.BuildToolTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=False)
             util.check_ouput(PACKAGES_INCONSISTENT_ERROR, out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
             assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # freeze with termcolor
@@ -262,7 +263,7 @@ class MavenPluginTest(util.BuildToolTestBase):
             cmd = mvnw_cmd + ["package", "exec:java", "-DrequirementsFile=test-requirements.txt", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("pip install -r", out)
+            util.check_ouput("Python packages up to date, skipping install", out)
             util.check_ouput("hello java", out)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 

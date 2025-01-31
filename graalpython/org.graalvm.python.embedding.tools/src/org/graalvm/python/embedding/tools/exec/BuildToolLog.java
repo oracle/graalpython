@@ -45,12 +45,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface BuildToolLog {
-    default void subProcessOut(String out) {
-        System.out.println(out);
-    }
+    void subProcessOut(String out);
 
-    default void subProcessErr(String err) {
-        System.err.println(err);
+    void subProcessErr(String err);
+
+    default void lifecycle(String s) {
+        info(s);
     }
 
     void info(String s);
@@ -65,11 +65,17 @@ public interface BuildToolLog {
 
     boolean isWarningEnabled();
 
+    default boolean isLifecycleEnabled() {
+        return true;
+    }
+
     boolean isInfoEnabled();
 
     boolean isErrorEnabled();
 
     boolean isDebugEnabled();
+
+    boolean isSubprocessOutEnabled();
 
     final class CollectOutputLog implements BuildToolLog {
         private final List<String> output = new ArrayList<>();
@@ -126,6 +132,11 @@ public interface BuildToolLog {
         @Override
         public boolean isErrorEnabled() {
             return delegate.isErrorEnabled();
+        }
+
+        @Override
+        public boolean isSubprocessOutEnabled() {
+            return true;
         }
 
         @Override

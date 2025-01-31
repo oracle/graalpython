@@ -194,7 +194,7 @@ public class GraalPyRunner {
     }
 
     private static void subProcessOut(BuildToolLog log, String txt) {
-        if (log.isInfoEnabled()) {
+        if (log.isSubprocessOutEnabled()) {
             log.subProcessOut(txt);
         }
     }

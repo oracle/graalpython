@@ -58,9 +58,8 @@ import java.nio.file.Path;
 public class FreezeInstalledPackagesMojo extends AbstractGraalPyMojo {
 
     public void execute() throws MojoExecutionException {
+        preExec(false);
         checkEmptyPackages();
-
-        preExec();
         
         manageVenv();
         listGraalPyResources();
@@ -103,7 +102,7 @@ public class FreezeInstalledPackagesMojo extends AbstractGraalPyMojo {
             getLog().error("For more information, please refer to https://github.com/oracle/graalpython/blob/master/docs/user/Embedding-Build-Tools.md");
             getLog().error("");
 
-            throw new MojoExecutionException("missing packages");
+            throw new MojoExecutionException("missing python packages in plugin configuration");
         }
     }
 }

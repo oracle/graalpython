@@ -196,7 +196,7 @@ public final class VFSUtils {
         }
     }
 
-    public static abstract class Launcher {
+    public abstract static class Launcher {
         private final Path launcherPath;
 
         protected Launcher(Path launcherPath) {
@@ -234,14 +234,14 @@ public final class VFSUtils {
                             String.join("\n", packages);
             Files.write(installedFile, toWrite.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-            logDebug(log, packages, "VFSUtils.createVenv installed python packages:");
+            logDebug(log, packages, "VFSUtils venv packages after install %s:", installedFile);
 
             return packages;
         }
     }
 
     private static class VenvContents {
-        private final static String CONTENTS_FILE_NAME = "contents";
+        private static final String CONTENTS_FILE_NAME = "contents";
         final Path contentsFile;
         List<String> packages;
         final String graalPyVersion;
@@ -323,7 +323,7 @@ public final class VFSUtils {
             createRequirementsFile(venvDirectory, requirementsFile, requirementsHeader, log);
         } else {
             // how comes?
-            warning(log, "did not generate new python requirements file due to missing venv");
+            warning(log, "did not generate new python requirements file due to missing python virtual environment");
         }
     }
 
@@ -332,7 +332,7 @@ public final class VFSUtils {
         if (log.isDebugEnabled()) {
             // avoid computing classpath if not necessary
             Set<String> lcp = launcherArgs.computeClassPath();
-            log.debug("VFSUtils.createVenv():");
+            log.debug("VFSUtils.createVenv with:");
             log.debug("  graalPyVersion: " + graalPyVersion);
             log.debug("  venvDirectory: " + venvDirectory);
             log.debug("  packages: " + packages);
@@ -345,7 +345,7 @@ public final class VFSUtils {
     private static boolean checkPackages(Path venvDirectory, List<String> pluginPackages, List<String> requirementsPackages, Path requirementsFile, String inconsistentPackagesError,
                     String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
         if (requirementsPackages != null) {
-            checkPackagesConsistent(pluginPackages, requirementsPackages, inconsistentPackagesError, wrongPackageVersionFormatError, log);
+            checkPackagesConsistent(pluginPackages, requirementsPackages, requirementsFile, inconsistentPackagesError, wrongPackageVersionFormatError, log);
             logPackages(requirementsPackages, requirementsFile, log);
             return needVenv(venvDirectory, requirementsPackages, log);
         } else {
@@ -360,7 +360,7 @@ public final class VFSUtils {
                 info(log, "No packages to install, deleting venv");
                 delete(venvDirectory);
             } else {
-                debug(log, "VFSUtils.createVenv: skipping - no package or requirements file provided");
+                debug(log, "VFSUtils skipping venv create - no package or requirements file provided");
             }
             return false;
         }
@@ -369,9 +369,9 @@ public final class VFSUtils {
 
     private static void logPackages(List<String> packages, Path requirementsFile, BuildToolLog log) {
         if (requirementsFile != null) {
-            info(log, "Installing %s python packages from requirements file: %s", packages.size(), requirementsFile);
+            info(log, "There is %s python package(s) in requirements file: %s", packages.size(), requirementsFile);
         } else {
-            info(log, "Installing %s python packages from GraalPy plugin configuration", packages.size());
+            info(log, "There is %s python package(s) in GraalPy plugin configuration", packages.size());
         }
     }
 
@@ -458,14 +458,13 @@ public final class VFSUtils {
 
         assert Files.exists(venvDirectory);
 
-        info(log, "Creating %s", requirementsFile);
-
         InstalledPackages installedPackages = InstalledPackages.fromVenv(venvDirectory);
         List<String> header = getHeaderList(requirementsFileHeader);
         Files.write(requirementsFile, header, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         Files.write(requirementsFile, installedPackages.packages, StandardOpenOption.APPEND);
 
-        logDebug(log, installedPackages.packages, "VFSUtils created requirements file: %s", installedPackages.installedFile);
+        lifecycle(log, "Created python requirements file: %s", requirementsFile);
+        logDebug(log, installedPackages.packages, null);
     }
 
     private static List<String> getHeaderList(String requirementsFileHeader) {
@@ -514,7 +513,7 @@ public final class VFSUtils {
         throw new IOException("invalid package format: " + pkgs);
     }
 
-    private static void checkPackagesConsistent(List<String> packages, List<String> requiredPackages, String inconsistentPackagesError,
+    private static void checkPackagesConsistent(List<String> packages, List<String> requiredPackages, Path requirementsFile, String inconsistentPackagesError,
                     String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
         if (packages.isEmpty()) {
             return;
@@ -536,13 +535,13 @@ public final class VFSUtils {
         }
 
         if (!sb.isEmpty()) {
-            inconsistentPackagesError(log, inconsistentPackagesError, sb.toString());
+            inconsistentPackagesError(log, inconsistentPackagesError, requirementsFile, sb.toString());
         }
     }
 
-    private static void inconsistentPackagesError(BuildToolLog log, String inconsistentPackagesError, String packages) throws IOException {
+    private static void inconsistentPackagesError(BuildToolLog log, String inconsistentPackagesError, Object... args) throws IOException {
         if (log.isErrorEnabled()) {
-            extendedError(log, String.format(inconsistentPackagesError, packages) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
+            extendedError(log, String.format(inconsistentPackagesError, args) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
         }
         throw new IOException("inconsistent packages");
     }
@@ -731,6 +730,12 @@ public final class VFSUtils {
         }
     }
 
+    private static void lifecycle(BuildToolLog log, String txt, Object... args) {
+        if (log.isLifecycleEnabled()) {
+            log.lifecycle(String.format(txt, args));
+        }
+    }
+
     private static void debug(BuildToolLog log, String txt) {
         if (log.isDebugEnabled()) {
             log.debug(txt);
@@ -739,7 +744,9 @@ public final class VFSUtils {
 
     private static void logDebug(BuildToolLog log, List<String> l, String msg, Object... args) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format(msg, args));
+            if (msg != null) {
+                log.debug(String.format(msg, args));
+            }
             for (String p : l) {
                 log.debug("  " + p);
             }

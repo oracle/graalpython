@@ -144,6 +144,11 @@ public class MultiContextCExtTest {
         }
 
         @Override
+        public boolean isSubprocessOutEnabled() {
+            return true;
+        }
+
+        @Override
         public void publish(LogRecord record) {
             var msg = String.format("[%s] %s: %s", record.getLoggerName(), record.getLevel().getName(), String.format(record.getMessage(), record.getParameters()));
             println(msg);

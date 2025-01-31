@@ -90,6 +90,7 @@ public final class EmbeddingTestUtils {
 
     public static Launcher createLauncher(Path venvDir) {
         return new Launcher(venvDir.getParent().resolve(VFSUtils.LAUNCHER_NAME)) {
+            @Override
             public Set<String> computeClassPath() {
                 return getClasspath();
             }

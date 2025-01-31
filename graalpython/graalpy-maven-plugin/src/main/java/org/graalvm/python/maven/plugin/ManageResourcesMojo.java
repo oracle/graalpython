@@ -55,7 +55,7 @@ import java.nio.file.Path;
 public class ManageResourcesMojo extends AbstractGraalPyMojo {
 
     public void execute() throws MojoExecutionException {
-        preExec();
+        preExec(true);
 
         manageVenv();
         listGraalPyResources();
