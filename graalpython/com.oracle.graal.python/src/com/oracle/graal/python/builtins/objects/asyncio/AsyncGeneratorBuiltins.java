@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -132,10 +132,12 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ASend extends PythonBinaryBuiltinNode {
         @Specialization
-        Object aSend(VirtualFrame frame, PAsyncGen self, Object sent,
+        static Object aSend(VirtualFrame frame, PAsyncGen self, Object sent,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
                         @Cached PythonObjectFactory factory) {
-            callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
+            callHooks(frame, self, context.getThreadState(context.getLanguage(inliningTarget)), callFirstIter);
             return factory.createAsyncGeneratorASend(self, sent);
         }
     }
@@ -146,10 +148,12 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PAsyncGen self, Object arg1, Object arg2, Object arg3);
 
         @Specialization
-        Object athrow(VirtualFrame frame, PAsyncGen self, Object arg1, Object arg2, Object arg3,
+        static Object athrow(VirtualFrame frame, PAsyncGen self, Object arg1, Object arg2, Object arg3,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
                         @Cached PythonObjectFactory factory) {
-            callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
+            callHooks(frame, self, context.getThreadState(context.getLanguage(inliningTarget)), callFirstIter);
             return factory.createAsyncGeneratorAThrow(self, arg1, arg2, arg3);
         }
     }
@@ -167,10 +171,12 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ANext extends PythonUnaryBuiltinNode {
         @Specialization
-        Object aNext(VirtualFrame frame, PAsyncGen self,
+        static Object aNext(VirtualFrame frame, PAsyncGen self,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
                         @Cached PythonObjectFactory factory) {
-            callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
+            callHooks(frame, self, context.getThreadState(context.getLanguage(inliningTarget)), callFirstIter);
             return factory.createAsyncGeneratorASend(self, PNone.NONE);
         }
     }
@@ -180,9 +186,11 @@ public final class AsyncGeneratorBuiltins extends PythonBuiltins {
     public abstract static class AClose extends PythonUnaryBuiltinNode {
         @Specialization
         Object aClose(VirtualFrame frame, PAsyncGen self,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CallUnaryMethodNode callFirstIter,
                         @Cached PythonObjectFactory factory) {
-            callHooks(frame, self, getContext().getThreadState(getLanguage()), callFirstIter);
+            callHooks(frame, self, context.getThreadState(context.getLanguage(inliningTarget)), callFirstIter);
             return factory.createAsyncGeneratorAThrow(self, null, PNone.NO_VALUE, PNone.NO_VALUE);
         }
     }

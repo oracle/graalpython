@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,7 +65,6 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
@@ -214,10 +213,10 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
              * Install from_param class methods in ctypes base classes. Overrides the
              * PyCSimpleType_from_param generic method.
              */
-            Python3Core core = PythonContext.get(inliningTarget);
-            PythonObjectSlowPathFactory slowPathFactory = core.factory();
-            if (getBaseClassNode.execute(inliningTarget, result) == core.lookupType(SimpleCData)) {
-                PythonLanguage language = PythonLanguage.get(internStringNode);
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonObjectSlowPathFactory slowPathFactory = context.factory();
+            if (getBaseClassNode.execute(inliningTarget, result) == context.lookupType(SimpleCData)) {
+                PythonLanguage language = context.getLanguage();
                 if (eqNode.execute(T_LOWER_Z, proto_str, TS_ENCODING)) { /* c_char_p */
                     LazyPyCSimpleTypeBuiltins.addCCharPFromParam(slowPathFactory, language, result);
                     stgdict.flags |= TYPEFLAG_ISPOINTER;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -184,9 +184,10 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             Class<? extends PythonBuiltinBaseNode> builtinClass = builtinNode.getClass();
             Node parent = getParent();
             int recursiveCalls = 0;
+            PythonLanguage language = PythonLanguage.get(this);
             while (parent != null && !(parent instanceof RootNode)) {
                 if (parent.getClass() == builtinClass) {
-                    int recursionLimit = PythonLanguage.get(this).getEngineOption(PythonOptions.NodeRecursionLimit);
+                    int recursionLimit = language.getEngineOption(PythonOptions.NodeRecursionLimit);
                     if (recursiveCalls == recursionLimit) {
                         return true;
                     }
@@ -198,7 +199,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             RootNode root = getRootNode();
             // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
             // ASTs will only be shared between contexts that have the same value for this option.
-            int maxSize = PythonLanguage.get(this).getEngineOption(PythonOptions.BuiltinsInliningMaxCallerSize);
+            int maxSize = language.getEngineOption(PythonOptions.BuiltinsInliningMaxCallerSize);
             if (root instanceof PRootNode) {
                 PRootNode pRoot = (PRootNode) root;
                 int rootNodeCount = pRoot.getNodeCountForInlining();

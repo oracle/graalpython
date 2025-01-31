@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -235,10 +235,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
         private static Object tryImport() {
             return AbstractImportNode.importModule(T_WARNINGS);
-        }
-
-        private PythonLanguage getLanguage() {
-            return PythonLanguage.get(this);
         }
 
         private PythonContext getContext() {
@@ -817,11 +813,13 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
             // the rest of this function is behind a TruffleBoundary, since we don't care so much
             // about performance when warnings are enabled.
-            Object state = IndirectCallContext.enter(frame, getLanguage(), getContext(), indirectCallData);
+            PythonContext context = getContext();
+            PythonLanguage language = context.getLanguage(this);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
-                warnExplicitPart2(PythonContext.get(this), this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item[0], action);
+                warnExplicitPart2(context, this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item[0], action);
             } finally {
-                IndirectCallContext.exit(frame, getLanguage(), getContext(), state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 

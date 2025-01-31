@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -68,11 +69,12 @@ public abstract class WritableBufferConversionNode extends ArgumentCastNode {
     @SuppressWarnings("truffle-static-method")
     Object doObject(VirtualFrame frame, Object value,
                     @Bind("this") Node inliningTarget,
+                    @Bind PythonContext context,
                     @Cached("createFor(this)") IndirectCallData indirectCallData,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                     @Cached PRaiseNode.Lazy raiseNode) {
         try {
-            return acquireLib.acquireWritable(value, frame, getContext(), getLanguage(), indirectCallData);
+            return acquireLib.acquireWritable(value, frame, context, context.getLanguage(inliningTarget), indirectCallData);
         } catch (PException e) {
             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, builtinName, value);
         }

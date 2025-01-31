@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.nodes.object;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POLYGLOT;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+
+import java.util.ArrayList;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -48,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -60,11 +66,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.util.ArrayList;
-
-import static com.oracle.graal.python.nodes.BuiltinNames.T_POLYGLOT;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 
 // there is no value to (DSL & host)-inline this node, it can only make the caller node bigger
 @GenerateCached
@@ -134,16 +135,18 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     PythonManagedClass cached(Object object,
                     @CachedLibrary("object") InteropLibrary interop,
                     @Bind("getTraits(object, interop)") int traits,
+                    @Bind PythonContext context,
                     @Cached("traits") int cachedTraits) {
         assert IsForeignObjectNode.executeUncached(object);
-        return classForTraits(cachedTraits);
+        return classForTraits(context, cachedTraits);
     }
 
     @Specialization(replaces = "cached", limit = "getCallSiteInlineCacheMaxDepth()")
     PythonManagedClass uncached(Object object,
+                    @Bind PythonContext context,
                     @CachedLibrary("object") InteropLibrary interop) {
         assert IsForeignObjectNode.executeUncached(object);
-        return classForTraits(getTraits(object, interop));
+        return classForTraits(context, getTraits(object, interop));
     }
 
     protected static int getTraits(Object object, InteropLibrary interop) {
@@ -162,21 +165,21 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
                         (interop.isString(object) ? Trait.STRING.bit : 0);
     }
 
-    private PythonManagedClass classForTraits(int traits) {
-        PythonManagedClass pythonClass = getContext().polyglotForeignClasses[traits];
+    private PythonManagedClass classForTraits(PythonContext context, int traits) {
+        PythonManagedClass pythonClass = context.polyglotForeignClasses[traits];
         if (pythonClass == null) {
             if (isSingleContext(this)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
             }
-            pythonClass = resolvePolyglotForeignClassAndSetInCache(traits);
+            pythonClass = resolvePolyglotForeignClassAndSetInCache(context, traits);
         }
         return pythonClass;
     }
 
     @TruffleBoundary
-    private PythonManagedClass resolvePolyglotForeignClassAndSetInCache(int traits) {
-        PythonManagedClass pythonClass = resolvePolyglotForeignClass(traits);
-        getContext().polyglotForeignClasses[traits] = pythonClass;
+    private PythonManagedClass resolvePolyglotForeignClassAndSetInCache(PythonContext context, int traits) {
+        PythonManagedClass pythonClass = resolvePolyglotForeignClass(context, traits);
+        context.polyglotForeignClasses[traits] = pythonClass;
         return pythonClass;
     }
 
@@ -185,8 +188,8 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     // Foreign...List...Iterable -> Foreign...List... (since all Python lists are iterable)
     // Foreign...Dict...Iterable -> Foreign...Dict... (since all Python dicts are iterable)
     @TruffleBoundary
-    private PythonManagedClass resolvePolyglotForeignClass(int traits) {
-        PythonBuiltinClass base = getContext().lookupType(PythonBuiltinClassType.ForeignObject);
+    private PythonManagedClass resolvePolyglotForeignClass(PythonContext context, int traits) {
+        PythonBuiltinClass base = context.lookupType(PythonBuiltinClassType.ForeignObject);
         if (traits == 0) {
             return base;
         }
@@ -197,7 +200,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
          * (they have __iter__)
          */
         if ((Trait.ARRAY.isSet(traits) || Trait.HASH.isSet(traits)) && Trait.ITERABLE.isSet(traits)) {
-            return classForTraits(traits - Trait.ITERABLE.bit);
+            return classForTraits(context, traits - Trait.ITERABLE.bit);
         }
 
         // If there is a single trait we build a new class using the trait.type
@@ -212,10 +215,10 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
 
                 if (singleTrait) {
                     if (trait.type != null) {
-                        traitsList.add(getContext().lookupType(trait.type));
+                        traitsList.add(context.lookupType(trait.type));
                     }
                 } else {
-                    traitsList.add(classForTraits(trait.bit));
+                    traitsList.add(classForTraits(context, trait.bit));
                 }
 
                 if (trait == Trait.META_OBJECT) {
@@ -244,9 +247,9 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
 
         PythonAbstractClass[] bases = traitsList.toArray(PythonAbstractClass.EMPTY_ARRAY);
 
-        PythonModule polyglotModule = getContext().lookupBuiltinModule(T_POLYGLOT);
+        PythonModule polyglotModule = context.lookupBuiltinModule(T_POLYGLOT);
 
-        PythonClass pythonClass = getContext().factory().createPythonClassAndFixupSlots(getLanguage(), PythonBuiltinClassType.PythonClass, name, base, bases);
+        PythonClass pythonClass = context.factory().createPythonClassAndFixupSlots(context.getLanguage(), PythonBuiltinClassType.PythonClass, name, base, bases);
         pythonClass.setAttribute(T___MODULE__, T_POLYGLOT);
 
         assert polyglotModule.getAttribute(name) == PNone.NO_VALUE : name;
@@ -255,10 +258,10 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         return pythonClass;
     }
 
-    public void defineSingleTraitClasses() {
-        PythonModule polyglotModule = getContext().lookupBuiltinModule(T_POLYGLOT);
+    public void defineSingleTraitClasses(PythonContext context) {
+        PythonModule polyglotModule = context.lookupBuiltinModule(T_POLYGLOT);
         for (Trait trait : Trait.VALUES) {
-            PythonManagedClass traitClass = classForTraits(trait.bit);
+            PythonManagedClass traitClass = classForTraits(context, trait.bit);
             assert polyglotModule.getAttribute(traitClass.getName()) == traitClass : traitClass.getName();
         }
     }

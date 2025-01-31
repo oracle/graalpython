@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODING_STR_NOT_SUPPORTED;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -110,7 +109,8 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
                     @Exclusive @Cached PyUnicodeDecode decode,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached(inline = false) PythonObjectFactory factory) {
-        Object buffer = bufferAcquireLib.acquireReadonly(object, frame, PythonContext.get(inliningTarget), PythonLanguage.get(inliningTarget), indirectCallNode);
+        PythonContext context = PythonContext.get(inliningTarget);
+        Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, context.getLanguage(inliningTarget), indirectCallNode);
         try {
             int len = bufferLib.getBufferLength(buffer);
             if (emptyStringProfile.profile(inliningTarget, len == 0)) {

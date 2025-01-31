@@ -395,6 +395,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -890,7 +891,25 @@ public abstract class Python3Core {
         return (PythonContext) this;
     }
 
+    /**
+     * Return the language corresponding to this context. In runtime compiled code, prefer
+     * {@link #getLanguage(Node)}.
+     */
     public final PythonLanguage getLanguage() {
+        return language;
+    }
+
+    /**
+     * Return the language corresponding to this context.
+     *
+     * @param node And adopted node that can make the lookup fold in compiled code in even in
+     *            multi-context mode. Can be null.
+     */
+    public final PythonLanguage getLanguage(Node node) {
+        if (CompilerDirectives.inCompiledCode() && node != null && CompilerDirectives.isPartialEvaluationConstant(node) && node.getRootNode() != null) {
+            // This will make it PE-constant in multi-context mode
+            return PythonLanguage.get(node);
+        }
         return language;
     }
 

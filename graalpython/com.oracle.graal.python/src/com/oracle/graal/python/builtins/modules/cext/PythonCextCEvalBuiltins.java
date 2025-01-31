@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi11BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
@@ -93,9 +92,10 @@ public final class PythonCextCEvalBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
         @Specialization
-        static Object save(@Cached GilNode gil) {
-            PythonContext context = PythonContext.get(gil);
-            Object threadState = PThreadState.getOrCreateNativeThreadState(PythonLanguage.get(gil), context);
+        static Object save(@Cached GilNode gil,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            Object threadState = PThreadState.getOrCreateNativeThreadState(context.getLanguage(inliningTarget), context);
             LOGGER.fine("C extension releases GIL");
             gil.release(context, true);
             return threadState;
@@ -108,13 +108,14 @@ public final class PythonCextCEvalBuiltins {
 
         @Specialization
         static Object restore(@SuppressWarnings("unused") Object ptr,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached GilNode gil) {
-            PythonContext context = PythonContext.get(gil);
             /*
              * The thread state is not really used but fetching it checks if we are shutting down
              * and will handle that properly.
              */
-            context.getThreadState(PythonLanguage.get(gil));
+            context.getThreadState(context.getLanguage(inliningTarget));
             LOGGER.fine("C extension acquires GIL");
             gil.acquire(context);
             return PNone.NO_VALUE;
