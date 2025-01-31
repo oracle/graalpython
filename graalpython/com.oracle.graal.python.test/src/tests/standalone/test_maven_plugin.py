@@ -49,7 +49,7 @@ from tests.standalone import util
 from tests.standalone.util import TemporaryTestDirectory, Logger
 
 MISSING_FILE_WARNING = "Some python dependencies were installed in addition to packages declared in graalpy-maven-plugin configuration"
-WRONG_PACKAGE_VERSION_FORMAT = "Some python package(s) in graalpy-maven-plugin configuration have no exact version declared"
+WRONG_PACKAGE_VERSION_FORMAT = "Some python packages in graalpy-maven-plugin configuration have no exact version declared"
 PACKAGES_INCONSISTENT_ERROR = "some packages from graalpy-maven-plugin configuration are either missing or have a different version"
 
 class MavenPluginTest(util.BuildToolTestBase):
@@ -186,22 +186,6 @@ class MavenPluginTest(util.BuildToolTestBase):
         self.check_generated_app(use_default_vfs_path=True, use_utils_pkg=True)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
-    def test_wrong_configuration(self):
-        with util.TemporaryTestDirectory() as tmpdir:
-
-            target_name = "test_wrong_configuration"
-            target_dir = os.path.join(str(tmpdir), target_name)
-            pom_template = os.path.join(os.path.dirname(__file__), "check_plugin_configuration.xml")
-            self.generate_app(tmpdir, target_dir, target_name, pom_template)
-
-            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
-            cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages", "-DrequirementsFile=test-requirements.txt"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("BUILD SUCCESS", out, contains=False)
-            util.check_ouput("In order to run the freeze-installed-packages goal there have to be python packages declared in the graalpy-maven-plugin configuration", out, contains=True)
-            assert not os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
-
-    @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_freeze_requirements(self):
         with util.TemporaryTestDirectory() as tmpdir:
 
@@ -253,31 +237,33 @@ class MavenPluginTest(util.BuildToolTestBase):
             assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # freeze with termcolor
-            cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages", "-DrequirementsFile=test-requirements.txt"]
+            # stop using requirementsFile system property but test also with field in pom.xml
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "</packages>\n<requirementsFile>test-requirements.txt</requirementsFile>")
+            cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=True)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
             assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
 
             # rebuild with requirements and exec
-            cmd = mvnw_cmd + ["package", "exec:java", "-DrequirementsFile=test-requirements.txt", "-Dexec.mainClass=it.pkg.GraalPy"]
+            cmd = mvnw_cmd + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("Python packages up to date, skipping install", out)
             util.check_ouput("hello java", out)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 
-            # disable packages config in pom
+            # disable packages config in pom - run with no packages, only requirements file
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "<packages>", "<!--<packages>")
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "</packages>-->")
 
-            # should be able to import ujson if installed
+            # should be able to import requests if installed
             util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
                 "import hello",
                 "import requests; import hello")
 
             # clean and rebuild with requirements and exec
-            cmd = mvnw_cmd + ["clean", "package", "exec:java", "-DrequirementsFile=test-requirements.txt", "-Dexec.mainClass=it.pkg.GraalPy"]
+            cmd = mvnw_cmd + ["clean", "package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput("pip install", out)
@@ -451,11 +437,23 @@ class MavenPluginTest(util.BuildToolTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
 
+            cmd = mvnw_cmd + ["-X", "org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput("In order to run the freeze-installed-packages goal there have to be python packages declared in the graalpy-maven-plugin configuration", out)
+            assert not os.path.exists(os.path.join(target_dir, "requirements.txt"))
+
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "<package></package><package> </package></packages>")
 
             cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
+
+            cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput("In order to run the freeze-installed-packages goal there have to be python packages declared in the graalpy-maven-plugin configuration", out)
+            assert not os.path.exists(os.path.join(target_dir, "requirements.txt"))
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_python_resources_dir_deprecation(self):
