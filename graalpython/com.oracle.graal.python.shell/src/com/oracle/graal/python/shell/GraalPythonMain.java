@@ -778,9 +778,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.IntMaxStrDigits", Integer.toString(intMaxStrDigits));
         }
         contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
-        if (verboseFlag) {
-            contextBuilder.option("log.python.level", "INFO");
-        }
         contextBuilder.option("python.QuietFlag", Boolean.toString(quietFlag));
         contextBuilder.option("python.NoUserSiteFlag", Boolean.toString(noUserSite));
         contextBuilder.option("python.NoSiteFlag", Boolean.toString(noSite));
