@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -102,18 +102,18 @@ public abstract class BuiltinClassProfiles {
         abstract boolean execute(Node inliningTarget, Object clazz, PythonBuiltinClassType forbiddenType);
 
         @Specialization
-        static boolean doType(Node inliningTarget, PythonBuiltinClassType clazz, PythonBuiltinClassType forbiddenType) {
+        static boolean doType(PythonBuiltinClassType clazz, PythonBuiltinClassType forbiddenType) {
             return clazz != forbiddenType;
         }
 
         @Specialization
-        static boolean doClass(Node inliningTarget, PythonBuiltinClass clazz, PythonBuiltinClassType forbiddenType) {
+        static boolean doClass(PythonBuiltinClass clazz, PythonBuiltinClassType forbiddenType) {
             return clazz.getType() != forbiddenType;
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static boolean doOthers(Node inliningTarget, Object clazz, PythonBuiltinClassType forbiddenType) {
+        static boolean doOthers(Object clazz, PythonBuiltinClassType forbiddenType) {
             return false;
         }
     }

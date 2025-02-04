@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -201,7 +201,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PRaiseNode.Lazy lazyRaiseNode) {
-            if (isTrueNode.execute(frame, inliningTarget, getAttr.execute(frame, inliningTarget, self, T_CLOSED))) {
+            if (isTrueNode.execute(frame, getAttr.execute(frame, inliningTarget, self, T_CLOSED))) {
                 throw lazyRaiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;

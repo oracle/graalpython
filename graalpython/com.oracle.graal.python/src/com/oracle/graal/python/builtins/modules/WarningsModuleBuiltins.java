@@ -480,7 +480,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 }
             } catch (CannotCastException e) {
                 Object result = getCallMethodNode().executeCached(frame, obj, T_MATCH, arg);
-                return getIsTrueNode().executeCached(frame, result);
+                return getIsTrueNode().execute(frame, result);
             }
         }
 
@@ -647,7 +647,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             } else {
                 Object alreadyWarned = getItem.executeCached(frame, registry, key);
                 if (alreadyWarned != null) {
-                    return isTrueNode.executeCached(frame, alreadyWarned);
+                    return isTrueNode.execute(frame, alreadyWarned);
                 }
             }
             if (shouldSet) {

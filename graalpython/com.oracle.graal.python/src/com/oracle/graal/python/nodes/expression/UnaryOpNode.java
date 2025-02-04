@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,12 +27,7 @@ package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 
 public abstract class UnaryOpNode extends PNodeWithContext {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object value);
-
-    public final Object executeCached(VirtualFrame frame, Object value) {
-        return execute(frame, this, value);
-    }
+    public abstract Object executeCached(VirtualFrame frame, Object value);
 }

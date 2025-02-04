@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,7 +98,7 @@ public final class CompressBuiltins extends PythonBuiltins {
             do {
                 nextItem = nextNode.execute(frame, self.getData(), PNone.NO_VALUE);
                 nextSelector = nextNode.execute(frame, self.getSelectors(), PNone.NO_VALUE);
-            } while (loopConditionProfile.profile(inliningTarget, !isTrue.execute(frame, inliningTarget, nextSelector)));
+            } while (loopConditionProfile.profile(inliningTarget, !isTrue.execute(frame, nextSelector)));
             return nextItem;
         }
     }

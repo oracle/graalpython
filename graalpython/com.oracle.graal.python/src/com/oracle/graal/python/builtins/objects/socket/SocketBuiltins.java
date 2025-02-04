@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -145,7 +144,6 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Exclusive @Cached HiddenAttr.ReadNode readNode,
                         @Cached GilNode gil,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // sic! CPython really has __new__ there, even though it's in __init__
@@ -174,7 +172,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 }
                 try {
                     posixLib.setInheritable(context.getPosixSupport(), fd, false);
-                    sockInit(inliningTarget, context, posixLib, readNode, self, fd, family, type, proto);
+                    sockInit(context, posixLib, self, fd, family, type, proto);
                 } catch (Exception e) {
                     // If we failed before giving the fd to python-land, close it
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -197,7 +195,6 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Exclusive @Cached HiddenAttr.ReadNode readNode,
                         @Cached PyLongAsIntNode asIntNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
@@ -233,14 +230,14 @@ public final class SocketBuiltins extends PythonBuiltins {
                 } else {
                     proto = 0;
                 }
-                sockInit(inliningTarget, context, posixLib, readNode, self, fd, family, type, proto);
+                sockInit(context, posixLib, self, fd, family, type, proto);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
         }
 
-        private static void sockInit(Node inliningTarget, PythonContext context, PosixSupportLibrary posixLib, HiddenAttr.ReadNode readNode,
+        private static void sockInit(PythonContext context, PosixSupportLibrary posixLib,
                         PSocket self, int fd, int family, int type, int proto) throws PosixException {
             self.setFd(fd);
             self.setFamily(family);

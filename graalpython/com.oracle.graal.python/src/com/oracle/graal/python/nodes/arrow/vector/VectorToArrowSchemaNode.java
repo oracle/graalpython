@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,7 +79,7 @@ public abstract class VectorToArrowSchemaNode extends PNodeWithContext {
     }
 
     @Fallback
-    static ArrowSchema doError(Node inliningTarget, Object object) {
+    static ArrowSchema doError(Object object) {
         throw CompilerDirectives.shouldNotReachHere();
     }
 }

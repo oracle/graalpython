@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,8 +63,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
-import com.oracle.graal.python.builtins.objects.set.PSet;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -84,6 +82,8 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.IntNodesFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -628,7 +628,7 @@ public class PPickler extends PythonBuiltinObject {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isTrueNode = insert(PyObjectIsTrueNode.create());
             }
-            return isTrueNode.executeCached(frame, object);
+            return isTrueNode.execute(frame, object);
         }
 
         private boolean isSame(Object a, Object b) {

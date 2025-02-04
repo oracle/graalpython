@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -655,7 +655,7 @@ public class HashingStorageNodes {
 
         @Specialization
         @InliningCutoff
-        static int dom(Node inliningTarget, DynamicObjectStorage self,
+        static int dom(DynamicObjectStorage self,
                         @Cached(inline = false) DynamicObjectStorage.LengthNode lengthNode) {
             return lengthNode.execute(self);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -281,7 +281,7 @@ public abstract class PyObjectRichCompareBool {
                 if (reverseMethod != PNone.NO_VALUE) {
                     Object result = callReverseMethod.executeObject(frame, reverseMethod, b, a);
                     if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                        return isTrueNode.execute(frame, inliningTarget, result);
+                        return isTrueNode.execute(frame, result);
                     }
                 }
             }
@@ -289,7 +289,7 @@ public abstract class PyObjectRichCompareBool {
             if (method != PNone.NO_VALUE) {
                 Object result = callMethod.executeObject(frame, method, a, b);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                    return isTrueNode.execute(frame, inliningTarget, result);
+                    return isTrueNode.execute(frame, result);
                 }
             }
             if (!checkedReverseOp) {
@@ -297,7 +297,7 @@ public abstract class PyObjectRichCompareBool {
                 if (reverseMethod != PNone.NO_VALUE) {
                     Object result = callReverseMethod.executeObject(frame, reverseMethod, b, a);
                     if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                        return isTrueNode.execute(frame, inliningTarget, result);
+                        return isTrueNode.execute(frame, result);
                     }
                 }
             }

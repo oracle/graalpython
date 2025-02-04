@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -360,9 +360,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setCheckHostname(VirtualFrame frame, PSSLContext self, Object value,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            boolean checkHostname = isTrueNode.execute(frame, inliningTarget, value);
+            boolean checkHostname = isTrueNode.execute(frame, value);
             if (checkHostname && self.getVerifyMode() == SSLModuleBuiltins.SSL_CERT_NONE) {
                 self.setVerifyMode(SSLModuleBuiltins.SSL_CERT_REQUIRED);
             }

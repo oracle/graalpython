@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -141,7 +141,7 @@ public class BufferedIONodes {
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrue) {
             Object res = getAttr.execute(frame, inliningTarget, self.getRaw(), T_CLOSED);
-            return isTrue.execute(frame, inliningTarget, res);
+            return isTrue.execute(frame, res);
         }
     }
 
@@ -158,7 +158,7 @@ public class BufferedIONodes {
                         @Cached PRaiseNode.Lazy raiseNode) {
             assert self.isOK();
             Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_SEEKABLE);
-            if (!isTrue.execute(frame, inliningTarget, res)) {
+            if (!isTrue.execute(frame, res)) {
                 throw raiseNode.get(inliningTarget).raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
             }
             return true;

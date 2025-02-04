@@ -124,6 +124,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetIterNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
+import com.oracle.graal.python.lib.PyObjectIsNotTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNodeGen;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -170,7 +171,6 @@ import com.oracle.graal.python.nodes.exception.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
@@ -399,7 +399,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
             case UnaryOpsConstants.NOT:
-                return CoerceToBooleanNode.createIfFalseNode();
+                return PyObjectIsNotTrueNode.create();
             case UnaryOpsConstants.POSITIVE:
                 return PyNumberPositiveNode.create();
             case UnaryOpsConstants.NEGATIVE:
@@ -2492,7 +2492,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private boolean evaluateObjectCondition(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, byte[] localBC, Node[] localNodes, int beginBci) {
         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_IS_TRUE, PyObjectIsTrueNodeGen.class, NODE_OBJECT_IS_TRUE, useCachedNodes);
         Object condObj = virtualFrame.getObject(stackTop);
-        boolean cond = isTrue.executeCached(virtualFrame, condObj);
+        boolean cond = isTrue.execute(virtualFrame, condObj);
         return profileCondition(cond, localBC, bci, useCachedNodes);
     }
 
@@ -3324,7 +3324,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             cond = generalizePopCondition(virtualFrame, stackTop, bci);
         }
         virtualFrame.setObject(stackTop, null);
-        return isTrue.executeCached(virtualFrame, cond);
+        return isTrue.execute(virtualFrame, cond);
     }
 
     private Object generalizePopCondition(VirtualFrame virtualFrame, int stackTop, int bci) {

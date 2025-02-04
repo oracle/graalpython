@@ -195,7 +195,7 @@ public abstract class ListNodes {
         }
 
         @Fallback
-        static Object doForeign(Node inliningTarget, Object list) {
+        static Object doForeign(Object list) {
             assert InteropLibrary.getUncached().hasArrayElements(list);
             // Avoid creating a PList object with type ForeignList
             return PythonBuiltinClassType.PList;

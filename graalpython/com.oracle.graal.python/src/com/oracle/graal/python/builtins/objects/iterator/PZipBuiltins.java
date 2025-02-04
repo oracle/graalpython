@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -154,9 +154,8 @@ public final class PZipBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doit(VirtualFrame frame, PZip self, Object state,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            self.setStrict(isTrueNode.execute(frame, inliningTarget, state));
+            self.setStrict(isTrueNode.execute(frame, state));
             return PNone.NONE;
         }
     }

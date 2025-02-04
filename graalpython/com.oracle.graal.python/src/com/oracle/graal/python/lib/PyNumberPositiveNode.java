@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -59,17 +60,18 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 public abstract class PyNumberPositiveNode extends UnaryOpNode {
 
     @Specialization
-    static Object doNumber(Number object) {
+    public static Object doNumber(Number object) {
         return object;
     }
 
     @Fallback
     @InliningCutoff
-    static Object doObject(VirtualFrame frame, Node inliningTarget, Object object,
+    public static Object doObject(VirtualFrame frame, Object object,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,

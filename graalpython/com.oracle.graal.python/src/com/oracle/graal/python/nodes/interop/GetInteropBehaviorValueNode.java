@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -227,14 +227,14 @@ public abstract class GetInteropBehaviorValueNode extends PNodeWithContext {
         public abstract Object execute(Node inliningTarget, CallTarget callTarget, Object[] arguments);
 
         @Specialization(guards = {"cachedCallTarget == callTarget"}, limit = "3")
-        static Object doDirectCall(Node inliningTarget, CallTarget callTarget, Object[] arguments,
+        static Object doDirectCall(CallTarget callTarget, Object[] arguments,
                         @Cached("callTarget") CallTarget cachedCallTarget,
                         @Cached("create(callTarget)") DirectCallNode directCallNode) {
             return directCallNode.call(arguments);
         }
 
         @Specialization(replaces = "doDirectCall")
-        static Object doIndirectCall(Node inliningTarget, CallTarget callTarget, Object[] arguments,
+        static Object doIndirectCall(CallTarget callTarget, Object[] arguments,
                         @Cached IndirectCallNode indirectCallNode) {
             return indirectCallNode.call(callTarget, arguments);
         }

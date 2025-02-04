@@ -79,7 +79,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 @GenerateCached
 public abstract class CastToListExpressionNode extends UnaryOpNode {
 

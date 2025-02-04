@@ -46,38 +46,27 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode.PyObjectIsTrueNodeGeneric;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * Equivalent of CPython's {@code PyObject_IsTrue}. Converts object to a boolean value using its
- * {@code __bool__} special method. Falls back to comparing {@code __len__} result with 0. Defaults
- * to true if neither is defined.
+ * Equivalent of a negation of CPython's {@code PyObject_IsTrue}. This class exists only so that we
+ * can have quickening fast-paths for this operation. The fast-paths should be synchronized with
+ * {@link PyObjectIsNotTrueNode}.
  */
-@GenerateUncached
 @GenerateInline(false)
-@GenerateCached
-public abstract class PyObjectIsTrueNode extends UnaryOpNode {
+public abstract class PyObjectIsNotTrueNode extends UnaryOpNode {
     public abstract boolean execute(Frame frame, Object object);
 
     @Override
@@ -85,55 +74,51 @@ public abstract class PyObjectIsTrueNode extends UnaryOpNode {
         return execute(frame, value);
     }
 
-    public static boolean executeUncached(Object object) {
-        return getUncached().execute(null, object);
-    }
-
     @Specialization
     public static boolean doBoolean(boolean object) {
-        return object;
+        return !object;
     }
 
     @Specialization
     public static boolean doNone(@SuppressWarnings("unused") PNone object) {
-        return false;
+        return true;
     }
 
     @Specialization
     public static boolean doInt(int object) {
-        return object != 0;
+        return object == 0;
     }
 
     @Specialization
     public static boolean doLong(long object) {
-        return object != 0;
+        return object == 0;
     }
 
     @Specialization
     public static boolean doDouble(double object) {
-        return object != 0.0;
+        return object == 0.0;
     }
 
     @Specialization
     public static boolean doString(TruffleString object) {
-        return !object.isEmpty();
+        return object.isEmpty();
     }
 
     @Specialization(guards = "isBuiltinList(object)")
     public static boolean doList(PList object) {
-        return object.getSequenceStorage().length() != 0;
+        return object.getSequenceStorage().length() == 0;
     }
 
     @Specialization(guards = "isBuiltinTuple(object)")
     public static boolean doTuple(PTuple object) {
-        return object.getSequenceStorage().length() != 0;
+        return object.getSequenceStorage().length() == 0;
     }
 
     @Specialization(guards = "isBuiltinDict(object)")
     public static boolean doDict(PDict object,
                     @Bind Node inliningTarget,
                     @Exclusive @Cached HashingStorageLen lenNode) {
-        return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
+        return lenNode.execute(inliningTarget, object.getDictStorage()) == 0;
     }
 
     @Specialization(guards = "isBuiltinAnySet(object)")
@@ -141,61 +126,19 @@ public abstract class PyObjectIsTrueNode extends UnaryOpNode {
     public static boolean doSet(PBaseSet object,
                     @Bind Node inliningTarget,
                     @Exclusive @Cached HashingStorageLen lenNode) {
-        return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
+        return lenNode.execute(inliningTarget, object.getDictStorage()) == 0;
     }
 
-    // Intentionally not a fallback. We replace specializations with complex guards to avoid them in
-    // the fallback guard. Possible improvement: check if not replacing the other fast-paths pay
-    // off, because in the no-fast-path case, these extra typechecks have some measurable overhead
-    // in micro benchmarks (if-polymorphic)
     @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInt(object)", "!isLong(object)", "!isDouble(object)", "!isTruffleString(object)"}, //
                     replaces = {"doList", "doTuple", "doDict", "doSet"})
     @InliningCutoff
     public static boolean doOthers(VirtualFrame frame, Object object,
                     @Cached(inline = false) PyObjectIsTrueNodeGeneric internalNode) {
-        // Cached PyObjectItTrue nodes used in PBytecodeRootNode are significant contributors to
-        // footprint, so we use indirection to save all the fields for the nodes used in the generic
-        // variant + this is one polymorphic dispatch to the execute method. Inside the cached
-        // execute method, the hosted inlining can then inline cached nodes, unlike if we inlined to
-        // logic here
-        return internalNode.execute(frame, object);
-    }
-
-    @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class PyObjectIsTrueNodeGeneric extends PNodeWithContext {
-        public abstract boolean execute(Frame frame, Object object);
-
-        protected abstract Object executeObject(Frame frame, Object object);
-
-        @Specialization
-        static boolean doIt(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetObjectSlotsNode getTpSlotsNode,
-                        @Cached CallSlotNbBoolNode callBoolNode,
-                        @Cached InlinedBranchProfile lenLookupBranch,
-                        @Cached InlinedConditionProfile hasLenProfile,
-                        @Cached CallSlotLenNode callLenNode) {
-            // Full transcript of CPython:PyObject_IsTrue logic
-            TpSlots slots = getTpSlotsNode.execute(inliningTarget, object);
-            if (slots.nb_bool() != null) {
-                return callBoolNode.execute(frame, inliningTarget, slots.nb_bool(), object);
-            }
-            lenLookupBranch.enter(inliningTarget);
-            TpSlot lenSlot = slots.combined_mp_sq_length();
-            if (hasLenProfile.profile(inliningTarget, lenSlot != null)) {
-                return callLenNode.execute(frame, inliningTarget, lenSlot, object) != 0;
-            }
-            return true;
-        }
+        return !internalNode.execute(frame, object);
     }
 
     @NeverDefault
-    public static PyObjectIsTrueNode create() {
-        return PyObjectIsTrueNodeGen.create();
-    }
-
-    public static PyObjectIsTrueNode getUncached() {
-        return PyObjectIsTrueNodeGen.getUncached();
+    public static PyObjectIsNotTrueNode create() {
+        return PyObjectIsNotTrueNodeGen.create();
     }
 }

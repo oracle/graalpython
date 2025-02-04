@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -58,24 +59,15 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 public abstract class PyNumberSubtractNode extends BinaryOpNode {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
-
     @Override
     public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right);
+        return execute(frame, left, right);
     }
 
-    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
-        return execute(frame, this, v, w);
-    }
-
-    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
+    public abstract Object execute(VirtualFrame frame, Object v, Object w);
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
@@ -83,47 +75,48 @@ public abstract class PyNumberSubtractNode extends BinaryOpNode {
      */
 
     @Specialization(rewriteOn = ArithmeticException.class)
-    static int doII(int x, int y) throws ArithmeticException {
+    public static int doII(int x, int y) throws ArithmeticException {
         return Math.subtractExact(x, y);
     }
 
     @Specialization
-    static long doIIOvf(int x, int y) {
+    public static long doIIOvf(int x, int y) {
         return (long) x - (long) y;
     }
 
     @Specialization(rewriteOn = ArithmeticException.class)
-    static long doLL(long x, long y) throws ArithmeticException {
+    public static long doLL(long x, long y) throws ArithmeticException {
         return Math.subtractExact(x, y);
     }
 
     @Specialization
-    static double doDD(double left, double right) {
+    public static double doDD(double left, double right) {
         return left - right;
     }
 
     @Specialization
-    static double doDL(double left, long right) {
+    public static double doDL(double left, long right) {
         return left - right;
     }
 
     @Specialization
-    static double doLD(long left, double right) {
+    public static double doLD(long left, double right) {
         return left - right;
     }
 
     @Specialization
-    static double doDI(double left, int right) {
+    public static double doDI(double left, int right) {
         return left - right;
     }
 
     @Specialization
-    static double doID(int left, double right) {
+    public static double doID(int left, double right) {
         return left - right;
     }
 
     @Fallback
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w,
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getVClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,

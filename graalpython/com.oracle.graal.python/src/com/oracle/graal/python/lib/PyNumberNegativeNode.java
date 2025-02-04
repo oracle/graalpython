@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -59,35 +60,36 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 public abstract class PyNumberNegativeNode extends UnaryOpNode {
 
-    protected static final int INT_MIN_VALUE = Integer.MIN_VALUE;
-    protected static final long LONG_MIN_VALUE = Long.MIN_VALUE;
+    public static final int INT_MIN_VALUE = Integer.MIN_VALUE;
+    public static final long LONG_MIN_VALUE = Long.MIN_VALUE;
 
     @Specialization(guards = "object != INT_MIN_VALUE")
-    static int doInt(int object) {
+    public static int doInt(int object) {
         return -object;
     }
 
     @Specialization(guards = "object == INT_MIN_VALUE")
-    static long doIntMin(@SuppressWarnings("unused") int object) {
+    public static long doIntMin(@SuppressWarnings("unused") int object) {
         return -(long) INT_MIN_VALUE;
     }
 
     @Specialization(guards = "object != LONG_MIN_VALUE")
-    static long doLong(long object) {
+    public static long doLong(long object) {
         return -object;
     }
 
     @Specialization
-    static double doDouble(double object) {
+    public static double doDouble(double object) {
         return -object;
     }
 
     @Fallback
     @InliningCutoff
-    static Object doObject(VirtualFrame frame, Node inliningTarget, Object object,
+    public static Object doObject(VirtualFrame frame, Object object,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,

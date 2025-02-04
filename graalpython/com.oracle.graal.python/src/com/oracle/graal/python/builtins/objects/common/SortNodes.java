@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -131,9 +131,9 @@ public abstract class SortNodes {
                 Object[] arguments = frame.getArguments();
                 Object a = arguments[PArguments.USER_ARGUMENTS_OFFSET];
                 Object b = arguments[PArguments.USER_ARGUMENTS_OFFSET + 1];
-                if (isTrueNode.executeCached(frame, ltNodeA.executeObject(frame, a, b))) {
+                if (isTrueNode.execute(frame, ltNodeA.executeObject(frame, a, b))) {
                     return Result.LT;
-                } else if (isTrueNode.executeCached(frame, ltNodeB.executeObject(frame, b, a))) {
+                } else if (isTrueNode.execute(frame, ltNodeB.executeObject(frame, b, a))) {
                     return Result.GT;
                 } else {
                     return Result.EQ;

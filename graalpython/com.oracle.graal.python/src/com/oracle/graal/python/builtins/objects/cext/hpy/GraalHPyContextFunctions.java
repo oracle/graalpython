@@ -1412,7 +1412,6 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object left, Object value,
-                        @Bind("this") Node inliningTarget,
                         @Cached ListNodes.AppendNode appendNode,
                         @Cached PRaiseNode raiseNode) {
             if (!PGuards.isList(left)) {
@@ -2082,9 +2081,8 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static int doGeneric(@SuppressWarnings("unused") Object hpyContext, Object object,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            return PInt.intValue(isTrueNode.execute(null, inliningTarget, object));
+            return PInt.intValue(isTrueNode.execute(null, object));
         }
     }
 
@@ -2574,7 +2572,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CallTernaryMethodNode callRichcmp,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object result = GraalHPyRichcompare.doGeneric(ctx, receiver, arg1, arg2, inliningTarget, getClassNode, lookupRichcmp, callRichcmp);
-            return PInt.intValue(isTrueNode.execute(null, inliningTarget, result));
+            return PInt.intValue(isTrueNode.execute(null, result));
         }
     }
 
@@ -3162,7 +3160,6 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, PythonObject owner, Object hpyFieldPtr, Object referent,
-                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.WriteHPyFieldNode writeHPyFieldNode) {
             writeHPyFieldNode.write(hpyContext, owner, hpyFieldPtr, referent);
             return 0;
