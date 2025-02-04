@@ -1083,9 +1083,6 @@ public abstract class Python3Core {
                 }
             }
 
-            // import polyglot decorators and special interop predefined behavior
-            loadFile(toTruffleStringUncached("_polyglot"), getContext().getCoreHomeOrFail());
-
             initialized = true;
         }
     }
