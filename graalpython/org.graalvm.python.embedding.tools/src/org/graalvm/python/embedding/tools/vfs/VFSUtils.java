@@ -136,13 +136,6 @@ public final class VFSUtils {
         return REPLACE_BACKSLASHES ? path.replace("\\", "/") : path;
     }
 
-    /**
-     * Adds the VFS filelist entries to given set. Caller may provide a non-empty set.
-     */
-    public static void generateVFSFilesList(Path vfs, Set<String> ret, Consumer<String> duplicateHandler) throws IOException {
-        generateVFSFilesList(null, vfs, ret, duplicateHandler);
-    }
-
     public static void generateVFSFilesList(Path resourcesRoot, Path vfs, Set<String> ret, Consumer<String> duplicateHandler) throws IOException {
         if (!Files.isDirectory(vfs)) {
             throw new IOException(String.format("'%s' has to exist and be a directory.\n", vfs));
@@ -697,7 +690,7 @@ public final class VFSUtils {
         }
     }
 
-    public static List<String> trim(List<String> l) {
+    private static List<String> trim(List<String> l) {
         Iterator<String> it = l.iterator();
         while (it.hasNext()) {
             String p = it.next();
