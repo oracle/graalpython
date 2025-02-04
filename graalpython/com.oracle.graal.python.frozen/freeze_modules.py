@@ -105,13 +105,15 @@ def add_graalpython_core():
     l.append("polyglot.arrow : polyglot.arrow = " + os.path.join(lib_graalpython, "modules/_polyglot_arrow.py"))
     for name in [
         "modules/_sysconfigdata",
+        "modules/_polyglot",
+        "modules/_polyglot_datetime",
+        "modules/_polyglot_time",
     ]:
         modname = os.path.basename(name)
         modpath = os.path.join(lib_graalpython, f"{name}.py")
         l.append(f"{modname} : {modname} = {modpath}")
     for name in [
         "__graalpython__",
-        "_polyglot",
         "_sre",
         "_sysconfig",
         "_weakref",
