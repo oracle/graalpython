@@ -59,18 +59,21 @@ public final class EmbeddingTestUtils {
     }
 
     public static void createVenv(Path venvDir, String graalPyVersion, BuildToolLog log, String... packages) throws IOException {
-        createVenv(venvDir, graalPyVersion, log, null, null, null, null, packages);
+        createVenv(venvDir, graalPyVersion, log, null, null, null, null, null, packages);
     }
 
-    public static void createVenv(Path venvDir, String graalPyVersion, BuildToolLog log, Path requirements, String iconsistentPackagesError, String wrongPackageVersionError,
-                    String missingRequirementsFileWarning, String... packages)
+    public static void createVenv(Path venvDir, String graalPyVersion, BuildToolLog log, Path requirements,
+                    String inconsistentPackagesError, String wrongPackageVersionError, String missingRequirementsFileWarning, String packagesListChangedError,
+                    String... packages)
                     throws IOException {
         try {
             info(log, "<<<<<< create test venv %s <<<<<<", venvDir);
 
             Launcher launcher = createLauncher(venvDir);
             if (requirements != null) {
-                VFSUtils.createVenv(venvDir, Arrays.asList(packages), requirements, iconsistentPackagesError, wrongPackageVersionError, missingRequirementsFileWarning, launcher, graalPyVersion, log);
+                VFSUtils.createVenv(venvDir, Arrays.asList(packages), requirements,
+                                inconsistentPackagesError, wrongPackageVersionError, missingRequirementsFileWarning, packagesListChangedError,
+                                launcher, graalPyVersion, log);
             } else {
                 VFSUtils.createVenv(venvDir, Arrays.asList(packages), launcher, graalPyVersion, log);
             }

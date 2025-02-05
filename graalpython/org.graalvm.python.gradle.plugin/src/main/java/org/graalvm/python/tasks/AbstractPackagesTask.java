@@ -104,9 +104,19 @@ public abstract class AbstractPackagesTask extends DefaultTask {
 
     protected static final String INCONSISTENT_PACKAGES_ERROR = """                    
         Install of python packages is based on requirements file %s,
-        but some packages in graalpy-gradle-plugin configuration are either missing or have a different version: %s.
+        but some packages in graalpy-gradle-plugin configuration are either missing in requirements file or have a different version: %s.
          
         The requirements file has to be refreshed by running the gradle task 'graalpyFreezeInstalledPackages'.
+        """;
+
+    protected static final String PACKAGES_LIST_CHANGED_ERROR = """
+        Install of python packages is based on requirements file %s,
+        but some packages in graalpy-gradle-plugin configuration are different then previously used to generate the requirements file.
+        
+        Packages currently declared in graalpy-gradle-plugin configuration: %s
+        Packages which were used to generate the requirements file: %s
+         
+        The requirements file has to be refreshed by running the gradle task 'graalpyFreezeInstalledPackages'.        
         """;
 
     /** @see #getOutput() */
@@ -140,13 +150,9 @@ public abstract class AbstractPackagesTask extends DefaultTask {
     @Optional
     public abstract Property<String> getResourceDirectory();
 
-    // XXX String or file or RegularFileProperty?
-    // XXX cached ?
-//    @Input
     @InputFiles
     @Optional
     @PathSensitive(PathSensitivity.RELATIVE)
-//    public abstract Property<String> getRequirementsFile();
     public abstract RegularFileProperty getRequirementsFile();
 
     /**

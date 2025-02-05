@@ -131,7 +131,7 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
                                 "New property 'externalDirectory' is a replacement for deprecated 'pythonResourcesDirectory'. " +
                                 "If you want to deploy the virtual environment into physical filesystem, use 'externalDirectory'. " +
                                 "The deployment of the external directory alongside the application is not handled by the GraalPy Maven plugin in such case." +
-                                "If you wish to bundle the virtual filesystem in Java resources, use 'resourceDirectory'. " +
+                                "If you wish to bundle the virtual filesystem in Java resources, use 'resourcesDirectory'. \n" +
                                 "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ");
             }
 
@@ -146,7 +146,7 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
                                     "This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem. " +
                                     "Consider adding `resourceDirectory = \"GRAALPY-VFS/${groupId}/${artifactId}\"` to your build.gradle script " +
                                     "(replace the placeholders with values specific to your project), " +
-                                    "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory." +
+                                    "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory.\n" +
                                     "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ",
                             VFS_ROOT,
                             Path.of(VFS_ROOT, "src"),

@@ -277,11 +277,11 @@ public final class VFSUtils {
     }
 
     public static void createVenv(Path venvDirectory, List<String> packagesArgs, Launcher launcherArgs, String graalPyVersion, BuildToolLog log) throws IOException {
-        createVenv(venvDirectory, packagesArgs, null, null, null, null, launcherArgs, graalPyVersion, log);
+        createVenv(venvDirectory, packagesArgs, null, null, null, null, null, launcherArgs, graalPyVersion, log);
     }
 
     public static void createVenv(Path venvDirectory, List<String> packages, Path requirementsFile,
-                    String inconsistentPackagesError, String wrongPackageVersionFormatError, String missingRequirementsFileWarning,
+                    String inconsistentPackagesError, String wrongPackageVersionFormatError, String missingRequirementsFileWarning, String packagesListChangedError,
                     Launcher launcher, String graalPyVersion, BuildToolLog log) throws IOException {
         Objects.requireNonNull(venvDirectory);
         Objects.requireNonNull(packages);
@@ -299,10 +299,29 @@ public final class VFSUtils {
 
         VenvContents venvContents = ensureVenv(venvDirectory, graalPyVersion, log, ensureLauncher(launcher, log));
 
-        boolean installed = requirementsPackages != null ? install(venvDirectory, requirementsFile, requirementsPackages, log)
-                        : install(venvDirectory, pluginPackages, venvContents, missingRequirementsFileWarning, log);
+        boolean installed;
+        if (requirementsPackages != null) {
+            checkPluginPackagesChanged(venvContents, pluginPackages, requirementsFile, packagesListChangedError, log);
+            installed = install(venvDirectory, requirementsFile, requirementsPackages, log);
+        } else {
+            installed = install(venvDirectory, pluginPackages, venvContents, missingRequirementsFileWarning, log);
+        }
         if (installed) {
             venvContents.write(pluginPackages);
+        }
+    }
+
+    /**
+     * checks if plugin packages are still the same as the packages previously used to generate the
+     * requirements file
+     */
+    private static void checkPluginPackagesChanged(VenvContents venvContents, List<String> pluginPackages, Path requirementsFile, String packagesListChangedError, BuildToolLog log)
+                    throws IOException {
+        if (packagesListChangedError != null && venvContents.packages != null &&
+                        venvContents.packages.size() != pluginPackages.size() && venvContents.packages.containsAll(pluginPackages)) {
+            extendedError(log, String.format(packagesListChangedError, requirementsFile,
+                            String.join(", ", pluginPackages.stream().sorted().toList()), String.join(", ", venvContents.packages.stream().sorted().toList())));
+            throw new IOException("packages from plugin configuration changed");
         }
     }
 
@@ -338,7 +357,8 @@ public final class VFSUtils {
     private static boolean checkPackages(Path venvDirectory, List<String> pluginPackages, List<String> requirementsPackages, Path requirementsFile, String inconsistentPackagesError,
                     String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
         if (requirementsPackages != null) {
-            checkPackagesConsistent(pluginPackages, requirementsPackages, requirementsFile, inconsistentPackagesError, wrongPackageVersionFormatError, log);
+            checkVersionFormat(pluginPackages, wrongPackageVersionFormatError, log);
+            checkPluginPackagesInRequirementsFile(pluginPackages, requirementsPackages, requirementsFile, inconsistentPackagesError, log);
             logPackages(requirementsPackages, requirementsFile, log);
             return needVenv(venvDirectory, requirementsPackages, log);
         } else {
@@ -413,7 +433,7 @@ public final class VFSUtils {
             installedPackages.freeze(log);
             return true;
         } else {
-            info(log, "Python packages up to date, skipping install");
+            info(log, "Virtual environment is up to date with requirements file, skipping install");
         }
         return false;
     }
@@ -470,7 +490,10 @@ public final class VFSUtils {
         return list;
     }
 
-    public static void checkVersionFormat(List<String> packages, String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
+    /**
+     * check that packages are declared with a specific version - package_name==version
+     */
+    private static void checkVersionFormat(List<String> packages, String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
         Objects.requireNonNull(packages);
         Objects.requireNonNull(wrongPackageVersionFormatError);
         Objects.requireNonNull(log);
@@ -500,22 +523,21 @@ public final class VFSUtils {
     }
 
     private static void wrongPackageVersionError(BuildToolLog log, String wrongPackageVersionFormatError, String pkgs) throws IOException {
-        if (log.isErrorEnabled()) {
-            extendedError(log, String.format(wrongPackageVersionFormatError, pkgs) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
-        }
+        extendedError(log, String.format(wrongPackageVersionFormatError, pkgs) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
         throw new IOException("invalid package format: " + pkgs);
     }
 
-    private static void checkPackagesConsistent(List<String> packages, List<String> requiredPackages, Path requirementsFile, String inconsistentPackagesError,
-                    String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
+    /**
+     * check that there are no plugin packages missing in requirements file
+     */
+    private static void checkPluginPackagesInRequirementsFile(List<String> packages, List<String> requiredPackages, Path requirementsFile, String inconsistentPackagesError, BuildToolLog log)
+                    throws IOException {
         if (packages.isEmpty()) {
             return;
         }
 
-        checkVersionFormat(packages, wrongPackageVersionFormatError, log);
-
         Map<String, String> requiredPackagesMap = requiredPackages.stream().filter(p -> p.contains("==")).map(p -> p.split("==")).collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
-        StringBuilder sb = new StringBuilder();
+        List<String> inconsistent = new ArrayList<>();
         for (String pkg : packages) {
             String[] s = pkg.split("==");
             String pName = s[0];
@@ -524,18 +546,16 @@ public final class VFSUtils {
             if (rVersion != null && rVersion.startsWith(pVersion)) {
                 continue;
             }
-            sb.append(!sb.isEmpty() ? ", " : "").append("'").append(pkg).append("'");
+            inconsistent.add(pkg);
         }
 
-        if (!sb.isEmpty()) {
-            inconsistentPackagesError(log, inconsistentPackagesError, requirementsFile, sb.toString());
+        if (!inconsistent.isEmpty()) {
+            inconsistentPackagesError(log, inconsistentPackagesError, requirementsFile, String.join(", ", inconsistent));
         }
     }
 
     private static void inconsistentPackagesError(BuildToolLog log, String inconsistentPackagesError, Object... args) throws IOException {
-        if (log.isErrorEnabled()) {
-            extendedError(log, String.format(inconsistentPackagesError, args) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
-        }
+        extendedError(log, String.format(inconsistentPackagesError, args) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
         throw new IOException("inconsistent packages");
     }
 

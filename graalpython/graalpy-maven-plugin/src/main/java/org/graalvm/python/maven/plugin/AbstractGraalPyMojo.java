@@ -97,7 +97,17 @@ public abstract class AbstractGraalPyMojo extends AbstractMojo {
 
     protected static final String INCONSISTENT_PACKAGES_ERROR = """
         Install of python packages is based on requirements file %s,
-        but some packages from graalpy-maven-plugin configuration are either missing or have a different version: %s.
+        but some packages in graalpy-maven-plugin configuration are either missing in requirements file or have a different version: %s.
+         
+        The requirements file has to be refreshed by running the maven goal 'org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages'.        
+        """;
+
+    protected static final String PACKAGES_LIST_CHANGED_ERROR = """
+        Install of python packages is based on requirements file %s,
+        but some packages in graalpy-maven-plugin configuration are different then previously used to generate the requirements file.
+        
+        Packages currently declared in graalpy-maven-plugin configuration: %s
+        Packages which were used to generate the requirements file: %s
          
         The requirements file has to be refreshed by running the maven goal 'org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages'.        
         """;
@@ -162,46 +172,48 @@ public abstract class AbstractGraalPyMojo extends AbstractMojo {
         requirementsFile = normalizeEmpty(requirementsFile);
         packages = packages != null ? packages.stream().filter(p -> p != null && !p.trim().isEmpty()).toList() : Collections.EMPTY_LIST;
 
-        if(!checkFields) {
-            return;
-        }
-
         if(pythonResourcesDirectory != null) {
-            if (externalDirectory != null) {
-                throw new MojoExecutionException(
-                        "Cannot use <externalDirectory> and <resourceDirectory> at the same time. " +
-                                "New option <externalDirectory> is a replacement for deprecated <pythonResourcesDirectory>. " +
-                                "If you want to deploy the virtual environment into physical filesystem, use <externalDirectory>. " +
-                                "The deployment of the external directory alongside the application is not handled by the GraalPy Maven plugin in such case." +
-                                "If you want to bundle the virtual filesystem in Java resources, use <resourceDirectory>. " +
-                                "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ");
+            if(checkFields) {
+                if (externalDirectory != null) {
+                    throw new MojoExecutionException(
+                            "Cannot use <externalDirectory> and <resourceDirectory> at the same time. " +
+                                    "New option <externalDirectory> is a replacement for deprecated <pythonResourcesDirectory>. " +
+                                    "If you want to deploy the virtual environment into physical filesystem, use <externalDirectory>. " +
+                                    "The deployment of the external directory alongside the application is not handled by the GraalPy Maven plugin in such case." +
+                                    "If you want to bundle the virtual filesystem in Java resources, use <resourceDirectory>. " +
+                                    "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ");
+                }
+                getLog().warn("Option <pythonResourcesDirectory> is deprecated and will be removed. Use <externalDirectory> instead.");
             }
-            getLog().warn("Option <pythonResourcesDirectory> is deprecated and will be removed. Use <externalDirectory> instead.");
             externalDirectory = pythonResourcesDirectory;
         }
 
         if (resourceDirectory != null) {
-            if (resourceDirectory.startsWith("/") || resourceDirectory.endsWith("/")) {
-                throw new MojoExecutionException(
-                        "Value of <resourceDirectory> should be relative resources path, i.e., without the leading '/', and it also must not end with trailing '/'");
+            if(checkFields) {
+                if (resourceDirectory.startsWith("/") || resourceDirectory.endsWith("/")) {
+                    throw new MojoExecutionException(
+                            "Value of <resourceDirectory> should be relative resources path, i.e., without the leading '/', and it also must not end with trailing '/'");
+                }
             }
         }
 
         if (resourceDirectory == null) {
-            if (externalDirectory == null) {
-                getLog().info(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
-                        "This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem. " +
-                        "Consider adding <resourceDirectory>GRAALPY-VFS/${project.groupId}/${project.artifactId}</resourceDirectory> to your pom.xml, " +
-                        "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory." +
-                        "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ",
-                        VFS_ROOT,
-                        Path.of(VFS_ROOT, "src"),
-                        Path.of("GRAALPY-VFS", project.getGroupId(), project.getArtifactId())));
+            if(checkFields) {
+                if (externalDirectory == null) {
+                    getLog().info(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
+                            "This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem. " +
+                            "Consider adding <resourceDirectory>GRAALPY-VFS/${project.groupId}/${project.artifactId}</resourceDirectory> to your pom.xml, " +
+                            "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory." +
+                            "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ",
+                            VFS_ROOT,
+                            Path.of(VFS_ROOT, "src"),
+                            Path.of("GRAALPY-VFS", project.getGroupId(), project.getArtifactId())));
+                }
             }
             resourceDirectory = VFS_ROOT;
         }
 
-        if(pythonHome != null) {
+        if(checkFields && pythonHome != null) {
             getLog().warn("The GraalPy plugin <pythonHome> configuration setting was deprecated and has no effect anymore.\n" +
                 "For execution in jvm mode, the python language home is always available.\n" +
                 "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
