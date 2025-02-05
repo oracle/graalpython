@@ -94,7 +94,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -501,7 +500,7 @@ public abstract class CExtCommonNodes {
              * Run the ToNative conversion early so that nothing interrups the code between setting
              * the managed and native states
              */
-            Object currentException = pythonToNativeNode.execute(e.getUnreifiedException());
+            Object currentException = pythonToNativeNode.execute(e.getEscapedException());
             // TODO connect f_back
             getCurrentFrameRef.execute(frame, inliningTarget).markAsEscaped();
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
