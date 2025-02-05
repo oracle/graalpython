@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -218,8 +218,8 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
                 return module;
             }
             if (self.getSelf() instanceof PythonModule) {
-                PythonLanguage language = PythonLanguage.get(inliningTarget);
                 PythonContext context = PythonContext.get(inliningTarget);
+                PythonLanguage language = context.getLanguage(inliningTarget);
                 Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                 try {
                     return lookup.execute(null, inliningTarget, self.getSelf(), T___NAME__);

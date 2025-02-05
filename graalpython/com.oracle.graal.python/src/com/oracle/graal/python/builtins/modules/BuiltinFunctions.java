@@ -1124,6 +1124,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object generic(VirtualFrame frame, Object wSource, Object wFilename, TruffleString mode, int flags, @SuppressWarnings("unused") boolean dontInherit, int optimize, int featureVersion,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Bind PythonContext context,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
@@ -1417,8 +1418,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Shared @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 // Note: we need actual recursion to trigger the stack overflow error like CPython
@@ -2510,7 +2511,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             PythonContext ctx = PythonContext.get(calculateMetaClass);
             Env env = ctx.getEnv();
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = ctx.getLanguage(inliningTarget);
             if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
                 // we want to subclass a Java class
                 return buildJavaClass(frame, language, (PFunction) function, arguments, factory, callBody, name);

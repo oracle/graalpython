@@ -170,6 +170,7 @@ public final class PythonCextErrBuiltins {
         @Specialization
         static Object run(Object typ, Object val, Object tb,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached PrepareExceptionNode prepareExceptionNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
@@ -177,7 +178,7 @@ public final class PythonCextErrBuiltins {
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             if (typ != PNone.NO_VALUE) {
-                PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, PythonContext.get(inliningTarget));
+                PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
                 Object exception;
                 exception = prepareExceptionNode.execute(null, typ, val);
                 if (threadState.getCurrentException() != null) {
@@ -188,7 +189,7 @@ public final class PythonCextErrBuiltins {
                     Object currentExceptionObject = getEscapedExceptionNode.execute(inliningTarget, currentException);
                     setContextNode.execute(inliningTarget, currentExceptionObject, exception);
                 } else {
-                    PException e = PException.fromExceptionInfo(exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(inliningTarget)));
+                    PException e = PException.fromExceptionInfo(exception, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage(inliningTarget)));
                     transformExceptionToNativeNode.execute(inliningTarget, e, tb instanceof PTraceback ptb ? new LazyTraceback(ptb) : null);
                 }
             }
@@ -259,17 +260,19 @@ public final class PythonCextErrBuiltins {
     abstract static class PyErr_SetExcInfo extends CApiTernaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object doClear(Object typ, PNone val, Object tb) {
-            PythonContext pythonContext = getContext();
-            PythonLanguage lang = getLanguage();
-            pythonContext.getThreadState(lang).setCaughtException(PException.NO_EXCEPTION);
+        Object doClear(Object typ, PNone val, Object tb,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            PythonLanguage lang = context.getLanguage(inliningTarget);
+            context.getThreadState(lang).setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }
 
         @Specialization
-        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") Object tb) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
+        Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, @SuppressWarnings("unused") Object tb,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
             PException e = PException.fromExceptionInfo(val, PythonOptions.isPExceptionWithJavaStacktrace(language));
             context.getThreadState(language).setCaughtException(e);
             return PNone.NONE;
@@ -461,7 +464,7 @@ public final class PythonCextErrBuiltins {
             PythonContext context = PythonContext.get(null);
             NativePointer nativeNull = context.getNativeNull();
 
-            PythonThreadState threadState = context.getThreadState(PythonLanguage.get(null));
+            PythonThreadState threadState = context.getThreadState(context.getLanguage());
             Object err = PyErrOccurredNode.executeUncached(threadState);
             PythonModule sys = context.getSysModule();
             if (err != nativeNull && IsBuiltinObjectProfile.profileObjectUncached(err, PythonBuiltinClassType.SystemExit)) {

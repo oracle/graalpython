@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1471,6 +1471,49 @@ class TestAbstract(CPyExtTestCase):
             ({'a': 0, 'b': 1, 'c': 2}, "c"),
         ),
         resultspec="O",
+        argspec='Os',
+        arguments=["PyObject* mapping", "char* keyStr"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyMapping_SetItemString = CPyExtFunction(
+        _reference_setitem,
+        lambda: (
+            ({'a': 1}, 'a', 2),
+        ),
+        code=''' PyObject* wrap_PyMapping_SetItemString(PyObject* mapping, char* key, PyObject* value) {
+            if (PyMapping_SetItemString(mapping, key, value) < 0) {
+                return NULL;
+            }
+            return mapping;
+        }
+        ''',
+        resultspec="O",
+        argspec='OsO',
+        arguments=["PyObject* mapping", "char* key", "PyObject* value"],
+        callfunction="wrap_PyMapping_SetItemString",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyMapping_HasKey = CPyExtFunction(
+        lambda args: int(args[1] in args[0]),
+        lambda: (
+            ({'a': 1}, 'a'),
+            ({'a': 1}, 'b'),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* mapping", "PyObject* key"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyMapping_HasKeyString = CPyExtFunction(
+        lambda args: int(args[1] in args[0]),
+        lambda: (
+            ({'a': 1}, 'a'),
+            ({'a': 1}, 'b'),
+        ),
+        resultspec="i",
         argspec='Os',
         arguments=["PyObject* mapping", "char* keyStr"],
         cmpfunc=unhandled_error_compare

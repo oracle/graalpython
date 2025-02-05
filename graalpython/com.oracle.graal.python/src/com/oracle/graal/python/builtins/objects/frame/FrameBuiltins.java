@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -206,7 +207,9 @@ public final class FrameBuiltins extends PythonBuiltins {
                     throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER);
                 }
             } else {
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT, getContext().getThreadState(getLanguage()).getTracingWhat().pythonName);
+                PythonContext context = getContext();
+                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT,
+                                context.getThreadState(context.getLanguage(inliningTarget)).getTracingWhat().pythonName);
             }
             return PNone.NONE;
         }

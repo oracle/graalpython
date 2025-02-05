@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -150,7 +150,7 @@ class InteropTests(unittest.TestCase):
         # ForeignInstantiable
         self.assertEqual(t((e for e in [1])), polyglot.ForeignIteratorIterable)
         self.assertEqual(t(iter([1])), polyglot.ForeignIteratorIterable)
-        self.assertEqual(t(object), polyglot.ForeignExecutableClass)
+        self.assertEqual(t(object), polyglot.ForeignClassExecutable)
         self.assertEqual(t(None), polyglot.ForeignNone)
         self.assertEqual(t(1), polyglot.ForeignNumber)
         self.assertEqual(t("abc"), polyglot.ForeignString)
@@ -471,10 +471,19 @@ class InteropTests(unittest.TestCase):
                 os.unlink(tempname)
 
     def test_java_class(self):
-        from java.lang import Integer, Number, NumberFormatException
-        self.assertEqual(type(Integer).mro(), [polyglot.ForeignClass, polyglot.ForeignInstantiable, polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
+        from java.lang import Number, NumberFormatException
+        from java.util import ArrayList
+        self.assertEqual(type(ArrayList).mro(), [polyglot.ForeignClass, polyglot.ForeignAbstractClass, polyglot.ForeignInstantiable, polyglot.ForeignObject, object])
         self.assertEqual(type(Number).mro(), [polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
-        self.assertEqual(type(NumberFormatException).mro(), [polyglot.ForeignClass, polyglot.ForeignInstantiable, polyglot.ForeignAbstractClass, polyglot.ForeignObject, object])
+        self.assertEqual(type(NumberFormatException).mro(), [polyglot.ForeignClass, polyglot.ForeignAbstractClass, polyglot.ForeignInstantiable, polyglot.ForeignObject, object])
+
+        from java.util import ArrayList
+        l = ArrayList()
+        assert isinstance(l, ArrayList)
+        self.assertEqual(getattr(ArrayList, 'class'), l.getClass())
+
+        with self.assertRaisesRegex(TypeError, "ForeignInstantiable.__call__\(\) got an unexpected keyword argument 'kwarg'"):
+            ArrayList(kwarg=42)
 
     def test_java_exceptions(self):
         # TODO: more tests
@@ -1040,7 +1049,9 @@ class InteropTests(unittest.TestCase):
         h.__init__(a=1, b=2)
         assert h == {'a': 1, 'b': 2}
 
-        with self.assertRaisesRegex(TypeError, 'invalid instantiation of foreign object'):
+        # Because it tries to call ForeignDict.__call__, but ForeignDict is not executable/instantiable,
+        # so it resolves to type.__call__, which cannot create a ForeignDict
+        with self.assertRaisesRegex(TypeError, "descriptor requires a 'dict' object but received a 'ForeignDict'"):
             type(h).fromkeys(['a', 'b'], 42)
 
     def test_java_iterator(self):

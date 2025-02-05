@@ -1174,7 +1174,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         public PythonContext.PythonThreadState getThreadState(Node node) {
             if (this.getTraceData().threadState == null) {
-                return this.getTraceData().threadState = PythonContext.get(node).getThreadState(PythonLanguage.get(node));
+                PythonContext context = PythonContext.get(node);
+                return this.getTraceData().threadState = context.getThreadState(context.getLanguage(node));
             }
             return this.getTraceData().threadState;
         }
@@ -1259,7 +1260,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             unboxVariables(localFrame);
         }
 
-        final PythonLanguage language = PythonLanguage.get(this);
+        final PythonLanguage language = getLanguage(PythonLanguage.class);
         final Assumption noTraceOrProfile = language.noTracingOrProfilingAssumption;
         final InstrumentationSupport instrumentation = instrumentationRoot.getInstrumentation();
         if (instrumentation != null && !fromOSR) {
@@ -5033,7 +5034,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         assert kind == CollectionBits.KIND_LIST || kind == CollectionBits.KIND_TUPLE;
         boolean list = kind == CollectionBits.KIND_LIST;
         var context = PythonContext.get(this);
-        boolean useNativePrimitiveStorage = context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy);
+        boolean useNativePrimitiveStorage = context.getLanguage(this).getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy);
         switch (CollectionBits.elementType(typeAndKind)) {
             case CollectionBits.ELEMENT_INT: {
                 int[] a = (int[]) array;

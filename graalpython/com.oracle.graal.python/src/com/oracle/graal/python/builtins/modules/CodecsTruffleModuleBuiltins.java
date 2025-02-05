@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -239,7 +239,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         // TODO - the incremental codec and reader/writer won't work well with stateful
         // encodings, like some of the CJK encodings
         CodecsTruffleModuleBuiltins codecsTruffleBuiltins = (CodecsTruffleModuleBuiltins) codecsTruffleModule.getBuiltins();
-        PythonLanguage language = PythonLanguage.get(null);
+        PythonLanguage language = context.getLanguage();
 
         // class TruffleCodec(codecs.Codec):
         //     def encode(self, input, errors='strict'):

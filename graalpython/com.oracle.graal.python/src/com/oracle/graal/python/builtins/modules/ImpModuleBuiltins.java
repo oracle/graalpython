@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -289,6 +289,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached ReadAttributeFromPythonObjectNode readNameNode,
                         @Cached ReadAttributeFromPythonObjectNode readOriginNode,
@@ -298,8 +299,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             TruffleString name = castToTruffleStringNode.execute(inliningTarget, readNameNode.execute(moduleSpec, T_NAME));
             TruffleString path = castToTruffleStringNode.execute(inliningTarget, readOriginNode.execute(moduleSpec, T_ORIGIN));
 
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return run(context, new ModuleSpec(name, path, moduleSpec));
@@ -375,7 +375,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
              * ExecModuleNode will run the module definition's exec function which may run arbitrary
              * C code. So we need to setup an indirect call.
              */
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return execModuleNode.execute(context.getCApiContext(), extensionModule, nativeModuleDef);

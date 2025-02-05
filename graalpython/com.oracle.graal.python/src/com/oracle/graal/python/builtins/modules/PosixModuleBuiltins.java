@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
@@ -3461,20 +3462,22 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         PosixFileHandle doBuffer(VirtualFrame frame, Object value,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), indirectCallData);
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, context, language, indirectCallData);
             try {
                 warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                 ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
                 Object path = posixLib.createPathFromBytes(PosixSupport.get(inliningTarget), bufferLib.getCopiedByteArray(value));
                 return new PosixPath(value, checkPath(inliningTarget, path, raiseNode), true);
             } finally {
-                bufferLib.release(buffer, frame, getContext(), getLanguage(), indirectCallData);
+                bufferLib.release(buffer, frame, context, language, indirectCallData);
             }
         }
 

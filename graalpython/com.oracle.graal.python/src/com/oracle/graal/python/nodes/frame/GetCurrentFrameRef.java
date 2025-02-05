@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -78,7 +77,8 @@ public abstract class GetCurrentFrameRef extends Node {
     Reference doWithoutFrame(@SuppressWarnings("unused") Frame frame,
                     @Cached(value = "getFlag()", uncached = "getFlagUncached()", dimensions = 1) ConditionProfile[] flag) {
 
-        PFrame.Reference ref = PythonContext.get(this).peekTopFrameInfo(PythonLanguage.get(this));
+        PythonContext context = PythonContext.get(this);
+        PFrame.Reference ref = context.peekTopFrameInfo(context.getLanguage(this));
         if (flag[0] == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             // executed the first time, don't pollute the profile, we'll mark the caller to
@@ -99,7 +99,8 @@ public abstract class GetCurrentFrameRef extends Node {
     Reference doGeneric(Frame frame) {
         PFrame.Reference ref;
         if (frame == null) {
-            ref = PythonContext.get(this).peekTopFrameInfo(PythonLanguage.get(this));
+            PythonContext context = PythonContext.get(this);
+            ref = context.peekTopFrameInfo(context.getLanguage(this));
             if (ref == null) {
                 return PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
             }

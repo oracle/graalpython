@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.GetNode;
@@ -191,7 +190,7 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
         PythonClass pythonClass;
         try {
             // The call might not succeed if, for instance, the MRO can't be constructed
-            pythonClass = context.factory().createPythonClassAndFixupSlots(PythonLanguage.get(inliningTarget), PythonBuiltinClassType.PythonClass, className, bases[0], basesWithForeign);
+            pythonClass = context.factory().createPythonClassAndFixupSlots(context.getLanguage(), PythonBuiltinClassType.PythonClass, className, bases[0], basesWithForeign);
         } catch (PException e) {
             // Catch the error to additionally print the collected classes and specify the error
             // occurred during class creation

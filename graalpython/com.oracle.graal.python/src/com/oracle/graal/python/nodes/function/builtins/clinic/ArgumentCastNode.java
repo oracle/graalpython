@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,10 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -67,13 +65,4 @@ public abstract class ArgumentCastNode extends Node {
             return PGuards.isNoValue(value);
         }
     }
-
-    public final PythonLanguage getLanguage() {
-        return PythonLanguage.get(this);
-    }
-
-    public final PythonContext getContext() {
-        return PythonContext.get(this);
-    }
-
 }

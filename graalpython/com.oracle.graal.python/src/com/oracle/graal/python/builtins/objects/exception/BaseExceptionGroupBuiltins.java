@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -312,8 +312,8 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PythonObjectFactory factory) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             /*
              * TODO this could benefit from PE, but the recusions and list building make that
@@ -338,8 +338,8 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         static Object subgroup(VirtualFrame frame, PBaseExceptionGroup self, Object matcherValue,
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             /*
              * TODO this could benefit from PE, but the recusions and list building make that

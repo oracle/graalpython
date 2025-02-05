@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -324,7 +324,10 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyLong_FromVoidPtr", ret = PyObject, args = {Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyMapping_Check", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMapping_GetItemString", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
+    @CApiBuiltin(name = "PyMapping_HasKey", ret = Int, args = {PyObject, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyMapping_HasKeyString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyMapping_Length", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyMapping_SetItemString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMapping_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMem_Calloc", ret = Pointer, args = {SIZE_T, SIZE_T}, call = CImpl)
     @CApiBuiltin(name = "PyMem_Free", ret = Void, args = {Pointer}, call = CImpl)
@@ -796,9 +799,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInterpreterState_Next", ret = PyInterpreterState, args = {PyInterpreterState}, call = CImpl)
     @CApiBuiltin(name = "PyInterpreterState_ThreadHead", ret = PyThreadState, args = {PyInterpreterState}, call = CImpl)
     @CApiBuiltin(name = "PyLong_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyMapping_HasKey", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "PyMapping_HasKeyString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
-    @CApiBuiltin(name = "PyMapping_SetItemString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyMarshal_ReadLastObjectFromFile", ret = PyObject, args = {FILE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyMarshal_ReadLongFromFile", ret = PrimitiveResult64, args = {FILE_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyMarshal_ReadObjectFromFile", ret = PyObject, args = {FILE_PTR}, call = NotImplemented)
