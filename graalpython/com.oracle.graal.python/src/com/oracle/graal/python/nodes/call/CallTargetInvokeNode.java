@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.call;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -119,7 +118,8 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         // 2. This invoke node is (indirectly) used behind a TruffleBoundary.
         // This is preferably prepared using 'IndirectCallContext.enter'.
         if (profileIsNullFrame(frame == null)) {
-            PythonThreadState threadState = PythonContext.get(this).getThreadState(PythonLanguage.get(this));
+            PythonContext context = PythonContext.get(this);
+            PythonThreadState threadState = context.getThreadState(context.getLanguage(this));
             Object state = IndirectCalleeContext.enter(threadState, arguments, ct);
             try {
                 return callNode.call(arguments);

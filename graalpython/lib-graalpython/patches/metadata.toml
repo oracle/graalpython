@@ -394,11 +394,23 @@ patch = 'protobuf-3.21.9.patch'
 license = 'BSD-3-Clause'
 
 [[psycopg2.rules]]
-patch = "psycopg2.patch"
+version = '<= 2.9.9'
+patch = "psycopg2-2.9.9.patch"
+license = "LGPL-3.0-or-later WITH openssl-exception"
+
+[[psycopg2.rules]]
+version = '>= 2.9.10'
+patch = "psycopg2-2.9.10.patch"
 license = "LGPL-3.0-or-later WITH openssl-exception"
 
 [[psycopg2-binary.rules]]
-patch = "psycopg2-binary.patch"
+version = '<= 2.9.9'
+patch = "psycopg2-2.9.9.patch"
+license = "LGPL-3.0-or-later WITH openssl-exception"
+
+[[psycopg2-binary.rules]]
+version = '>= 2.9.10'
+patch = "psycopg2-2.9.10.patch"
 license = "LGPL-3.0-or-later WITH openssl-exception"
 
 [[py4j.rules]]
@@ -414,6 +426,11 @@ license = 'Apache-2.0'
 [[pyarrow.rules]]
 version = '== 12.0.0'
 patch = 'pyarrow-12.0.0.patch'
+license = 'Apache-2.0'
+
+[[pyarrow.rules]]
+version = '== 19.0.0'
+patch = 'pyarrow-19.0.0.patch'
 license = 'Apache-2.0'
 
 [[pybind11.rules]]

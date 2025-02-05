@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -361,7 +361,8 @@ public abstract class ExecutionContext {
             }
 
             Node indirectCallNode = indirectCallData.getNode();
-            PythonThreadState pythonThreadState = PythonContext.get(indirectCallNode).getThreadState(PythonLanguage.get(indirectCallNode));
+            PythonContext context = PythonContext.get(indirectCallNode);
+            PythonThreadState pythonThreadState = context.getThreadState(context.getLanguage(indirectCallNode));
             return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, indirectCallNode);
         }
 
@@ -418,7 +419,7 @@ public abstract class ExecutionContext {
                 Node indirectCallNode = indirectCallData.getNode();
                 PythonContext context = PythonContext.get(indirectCallNode);
                 if (context != null) {
-                    PythonLanguage language = PythonLanguage.get(indirectCallNode);
+                    PythonLanguage language = context.getLanguage(indirectCallNode);
                     exit(frame, context.getThreadState(language), savedState);
                     return;
                 }

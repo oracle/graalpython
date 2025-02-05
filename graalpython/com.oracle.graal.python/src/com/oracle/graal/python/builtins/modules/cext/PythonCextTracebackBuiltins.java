@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -85,10 +84,10 @@ public final class PythonCextTracebackBuiltins {
         @Specialization
         static int tbHere(PFrame frame,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
                         @Cached PythonObjectFactory factory) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
-            PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(language);
+            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             AbstractTruffleException currentException = threadState.getCurrentException();
             if (currentException != null) {
                 PTraceback currentTraceback = null;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -364,14 +364,16 @@ public final class CharmapNodes {
         public abstract TruffleString execute(VirtualFrame frame, Object data, TruffleString errors, Object mapping);
 
         @Specialization(limit = "3")
-        TruffleString decodeLatin1(VirtualFrame frame, Object data, @SuppressWarnings("unused") TruffleString errors, @SuppressWarnings("unused") PNone mapping,
+        static TruffleString decodeLatin1(VirtualFrame frame, Object data, @SuppressWarnings("unused") TruffleString errors, @SuppressWarnings("unused") PNone mapping,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             // equivalent of PyUnicode_DecodeLatin1
-            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, getContext(), getLanguage(), indirectCallData);
+            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, context, context.getLanguage(inliningTarget), indirectCallData);
             try {
                 int len = bufferLib.getBufferLength(dataBuffer);
                 byte[] src = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
@@ -398,7 +400,7 @@ public final class CharmapNodes {
                         @Cached @Exclusive CallDecodingErrorHandlerNode callErrorHandlerNode) {
             // equivalent of charmap_decode_string
             PythonContext context = PythonContext.get(inliningTarget);
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
 
             ErrorHandlerCache cache = new ErrorHandlerCache();
             Object srcObj = data;
@@ -466,7 +468,7 @@ public final class CharmapNodes {
                         @Cached PRaiseNode.Lazy raiseNode) {
             // equivalent of charmap_decode_mapping
             PythonContext context = PythonContext.get(inliningTarget);
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
 
             ErrorHandlerCache cache = new ErrorHandlerCache();
             Object srcObj = data;

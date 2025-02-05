@@ -457,15 +457,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class GetErrnoNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object getErrno(@SuppressWarnings("unused") PythonModule module,
+        static Object getErrno(@SuppressWarnings("unused") PythonModule module,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached AuditNode auditNode) {
             auditNode.audit(inliningTarget, "ctypes.get_errno");
-            return get_errno(getContext(), getLanguage());
-        }
-
-        static Object get_errno(PythonContext context, PythonLanguage language) {
-            CtypesThreadState ctypes = CtypesThreadState.get(context, language);
+            CtypesThreadState ctypes = CtypesThreadState.get(context, context.getLanguage(inliningTarget));
             return ctypes.errno;
         }
     }
@@ -482,11 +479,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object setErrno(int newErrno,
+        static Object setErrno(int newErrno,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached AuditNode auditNode) {
             auditNode.audit(inliningTarget, "ctypes.set_errno", newErrno);
-            return set_errno(newErrno, getContext(), getLanguage());
+            return set_errno(newErrno, context, context.getLanguage(inliningTarget));
         }
 
         static Object set_errno(int newErrno, PythonContext context, PythonLanguage language) {
@@ -504,6 +502,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object POINTER(VirtualFrame frame, Object cls,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
                         @Cached IsTypeNode isTypeNode,
@@ -513,7 +512,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached SimpleTruffleStringFormatNode formatNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
-            CtypesThreadState ctypes = CtypesThreadState.get(PythonContext.get(inliningTarget), PythonLanguage.get(inliningTarget));
+            CtypesThreadState ctypes = CtypesThreadState.get(context, context.getLanguage(inliningTarget));
             Object result = getItem.execute(frame, inliningTarget, ctypes.ptrtype_cache, cls);
             if (result != null) {
                 return result;
@@ -545,13 +544,14 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     protected abstract static class PointerObjectNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object pointer(VirtualFrame frame, Object arg,
+        static Object pointer(VirtualFrame frame, Object arg,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PointerTypeNode callPOINTER,
                         @Cached CallNode callNode,
                         @Cached GetClassNode getClassNode) {
-            CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
+            CtypesThreadState ctypes = CtypesThreadState.get(context, context.getLanguage(inliningTarget));
             Object typ = getItem.execute(frame, inliningTarget, ctypes.ptrtype_cache, getClassNode.execute(inliningTarget, arg));
             if (typ != null) {
                 return callNode.execute(frame, typ, arg);
@@ -733,7 +733,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                     registerAddress(context, handle.adr, handle);
                     return factory.createNativeVoidPtr(handle);
                 } else if (context.getEnv().isNativeAccessAllowed()) {
-                    CtypesThreadState ctypes = CtypesThreadState.get(context, PythonLanguage.get(inliningTarget));
+                    CtypesThreadState ctypes = CtypesThreadState.get(context, context.getLanguage());
                     /*-
                      TODO: (mq) cryptography in macos isn't always compatible with ctypes.
                      */

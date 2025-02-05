@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -204,6 +204,7 @@ public final class StgDictBuiltins extends PythonBuiltins {
             }
 
             PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             for (int i = 0; i < sizeNode.execute(frame, inliningTarget, fields); ++i) {
                 PTuple pair = (PTuple) getItemNode.execute(frame, inliningTarget, fields, i); /*
                                                                                                * borrowed
@@ -217,7 +218,6 @@ public final class StgDictBuiltins extends PythonBuiltins {
                     throw raiseNode.get(inliningTarget).raise(TypeError, UNEXPECTED_TYPE);
                 }
                 if (fdescr.anonymous != 0) {
-                    PythonLanguage language = PythonLanguage.get(inliningTarget);
                     Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
                     try {
                         recursiveNode.executeBoundary(type, fdescr, index + fdescr.index, offset + fdescr.offset, context.factory());

@@ -3036,7 +3036,6 @@ public abstract class GraalHPyContextFunctions {
                         @Bind("this") Node inliningTarget,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.CodePointLengthNode codepointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
@@ -3051,14 +3050,13 @@ public abstract class GraalHPyContextFunctions {
             } else {
                 doc = null;
             }
-            return createNewExceptionWithDoc(inliningTarget, namePtr, base, dictObj, doc, fromCharPointerNode, castToTruffleStringNode, indexOfCodepointNode, codepointLengthNode, substringNode,
+            return createNewExceptionWithDoc(inliningTarget, namePtr, base, dictObj, doc, fromCharPointerNode, indexOfCodepointNode, codepointLengthNode, substringNode,
                             getHashingStorageItem,
                             setHashingStorageItem, callTypeConstructorNode, raiseNode, factory);
         }
 
         static Object createNewExceptionWithDoc(Node inliningTarget, Object namePtr, Object base, Object dictObj, TruffleString doc,
                         FromCharPointerNode fromCharPointerNode,
-                        CastToTruffleStringNode castToTruffleStringNode,
                         TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         TruffleString.CodePointLengthNode codepointLengthNode,
                         TruffleString.SubstringNode substringNode,
@@ -3081,7 +3079,7 @@ public abstract class GraalHPyContextFunctions {
             PDict dict;
             HashingStorage dictStorage;
             if (dictObj == PNone.NO_VALUE) {
-                dictStorage = new DynamicObjectStorage(PythonLanguage.get(castToTruffleStringNode));
+                dictStorage = new DynamicObjectStorage(PythonLanguage.get(inliningTarget));
                 dict = factory.createDict(dictStorage);
             } else {
                 if (!(dictObj instanceof PDict)) {
@@ -3122,7 +3120,6 @@ public abstract class GraalHPyContextFunctions {
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object namePtr, Object base, Object dictObj,
                         @Bind("this") Node inliningTarget,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.CodePointLengthNode codepointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
@@ -3131,7 +3128,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CallNode callTypeConstructorNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
-            return GraalHPyNewExceptionWithDoc.createNewExceptionWithDoc(inliningTarget, namePtr, base, dictObj, null, fromCharPointerNode, castToTruffleStringNode, indexOfCodepointNode,
+            return GraalHPyNewExceptionWithDoc.createNewExceptionWithDoc(inliningTarget, namePtr, base, dictObj, null, fromCharPointerNode, indexOfCodepointNode,
                             codepointLengthNode,
                             substringNode, getHashingStorageItem, setHashingStorageItem, callTypeConstructorNode, raiseNode, factory);
         }
@@ -3275,9 +3272,10 @@ public abstract class GraalHPyContextFunctions {
 
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext,
+                        @Bind("this") Node inliningTarget,
                         @Cached GilNode gil) {
             PythonContext context = hpyContext.getContext();
-            PythonThreadState threadState = context.getThreadState(PythonLanguage.get(gil));
+            PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             gil.release(context, true);
             return threadState;
         }
@@ -3505,12 +3503,14 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyContextVarGet extends HPyQuaternaryContextFunction {
         @Specialization
         static int doGeneric(GraalHPyContext hpyContext, Object var, Object def, Object outPtr,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached(parameters = "hpyContext") GraalHPyCAccess.WriteHPyNode writeHPyNode) {
             if (!(var instanceof PContextVar contextVar)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
-            PythonThreadState threadState = hpyContext.getContext().getThreadState(PythonLanguage.get(raiseNode));
+            PythonContext context = hpyContext.getContext();
+            PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             Object result = getObject(threadState, contextVar, def);
             writeHPyNode.write(hpyContext, outPtr, result);
             return 0;
@@ -3536,12 +3536,14 @@ public abstract class GraalHPyContextFunctions {
     public abstract static class GraalHPyContextVarSet extends HPyTernaryContextFunction {
         @Specialization
         static Object doGeneric(GraalHPyContext hpyContext, Object var, Object val,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory) {
             if (!(var instanceof PContextVar contextVar)) {
                 throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
-            PythonThreadState threadState = hpyContext.getContext().getThreadState(PythonLanguage.get(raiseNode));
+            PythonContext context = hpyContext.getContext();
+            PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             Object oldValue = contextVar.getValue(threadState);
             contextVar.setValue(threadState, val);
             return factory.createContextVarsToken(contextVar, oldValue);

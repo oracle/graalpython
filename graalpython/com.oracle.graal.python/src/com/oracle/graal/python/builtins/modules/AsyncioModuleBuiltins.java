@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -92,9 +93,11 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetRunningLoop extends PythonBuiltinNode {
         @Specialization
-        public Object getCurrentLoop(
+        static Object getCurrentLoop(
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached PRaiseNode raise) {
-            Object eventLoop = getContext().getThreadState(getLanguage()).getRunningEventLoop();
+            Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
             if (eventLoop == null) {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.NO_RUNNING_EVENT_LOOP);
             } else {
@@ -107,8 +110,10 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InternalGetRunningLoop extends PythonBuiltinNode {
         @Specialization
-        public Object getCurrentLoop() {
-            Object eventLoop = getContext().getThreadState(getLanguage()).getRunningEventLoop();
+        static Object getCurrentLoop(
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
 
             return eventLoop == null ? PNone.NONE : eventLoop;
         }
@@ -118,8 +123,10 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InternalSetRunningLoop extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object setCurrentLoop(Object loop) {
-            getContext().getThreadState(getLanguage()).setRunningEventLoop(loop == PNone.NONE ? null : loop);
+        static Object setCurrentLoop(Object loop,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            context.getThreadState(context.getLanguage(inliningTarget)).setRunningEventLoop(loop == PNone.NONE ? null : loop);
             return PNone.NONE;
         }
     }
@@ -134,15 +141,17 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
     public abstract static class GetEventLoop extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object getCurrentLoop(VirtualFrame frame, Object ignored,
+        static Object getCurrentLoop(VirtualFrame frame, Object ignored,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CallNode callGetPolicy,
                         @Cached CallNode callGetLoop,
                         @Cached AbstractImportNode.ImportName importName,
                         @Cached(parameters = "T_GET_EVENT_LOOP") GetAttributeNode.GetFixedAttributeNode getGetLoop,
                         @Cached(parameters = "T_GET_EVENT_LOOP_POLICY") GetAttributeNode.GetFixedAttributeNode getGetLoopPolicy) {
-            Object eventLoop = getContext().getThreadState(getLanguage()).getRunningEventLoop();
+            Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
             if (eventLoop == null) {
-                Object asyncio = importName.execute(frame, getContext(), getContext().getBuiltins(), T_ASYNCIO_EVENTS, PNone.NONE, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
+                Object asyncio = importName.execute(frame, context, context.getBuiltins(), T_ASYNCIO_EVENTS, PNone.NONE, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
                 Object asyncioGetPolicy = getGetLoopPolicy.execute(frame, asyncio);
                 Object policy = callGetPolicy.execute(frame, asyncioGetPolicy);
                 Object getLoop = getGetLoop.execute(frame, policy);

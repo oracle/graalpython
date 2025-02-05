@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -113,8 +113,8 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
         @Specialization
         PNone doit(VirtualFrame frame, Object file, boolean allThreads,
                         @Cached("createFor(this)") IndirectCallData indirectCallData) {
-            PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = getContext();
+            PythonLanguage language = context.getLanguage(this);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 // it's not important for this to be fast at all

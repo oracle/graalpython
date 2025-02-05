@@ -830,7 +830,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, indirectCallData);
             try {
                 if (bufferLib.getBufferLength(buffer) != 1) {
@@ -1545,12 +1545,13 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(object)"}, limit = "3")
-        byte[] doBuffer(VirtualFrame frame, Object object,
+        static byte[] doBuffer(VirtualFrame frame, Object object,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            PythonContext context = getContext();
-            PythonLanguage language = getLanguage();
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, indirectCallData);
             try {
                 // TODO avoid copying
