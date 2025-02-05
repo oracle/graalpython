@@ -1138,10 +1138,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetTrace extends PythonBuiltinNode {
         @Specialization
-        Object settrace(Object function) {
-            PythonContext ctx = getContext();
-            PythonLanguage language = getLanguage();
-            PythonContext.PythonThreadState state = ctx.getThreadState(language);
+        static Object settrace(Object function,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonContext.PythonThreadState state = context.getThreadState(language);
             if (function == PNone.NONE) {
                 state.setTraceFun(null, language);
             } else {
@@ -1156,10 +1157,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetProfile extends PythonBuiltinNode {
         @Specialization
-        Object settrace(Object function) {
-            PythonContext ctx = getContext();
-            PythonLanguage language = getLanguage();
-            PythonContext.PythonThreadState state = ctx.getThreadState(language);
+        static Object settrace(Object function,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonContext.PythonThreadState state = context.getThreadState(language);
             if (function == PNone.NONE) {
                 state.setProfileFun(null, language);
             } else {
@@ -1173,9 +1175,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetTrace extends PythonBuiltinNode {
         @Specialization
-        Object gettrace() {
-            PythonContext ctx = getContext();
-            PythonContext.PythonThreadState state = ctx.getThreadState(getLanguage());
+        static Object gettrace(
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            PythonContext.PythonThreadState state = context.getThreadState(context.getLanguage(inliningTarget));
             Object trace = state.getTraceFun();
             return trace == null ? PNone.NONE : trace;
 
@@ -1186,9 +1189,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetProfile extends PythonBuiltinNode {
         @Specialization
-        Object getProfile() {
-            PythonContext ctx = getContext();
-            PythonContext.PythonThreadState state = ctx.getThreadState(getLanguage());
+        static Object getProfile(
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
+            PythonContext.PythonThreadState state = context.getThreadState(context.getLanguage(inliningTarget));
             Object trace = state.getProfileFun();
             return trace == null ? PNone.NONE : trace;
         }
@@ -1198,11 +1202,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetAsyncgenHooks extends PythonBuiltinNode {
         @Specialization
-        Object setAsyncgenHooks(Object firstIter, Object finalizer) {
+        static Object setAsyncgenHooks(Object firstIter, Object finalizer,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context) {
             if (firstIter != PNone.NO_VALUE && firstIter != PNone.NONE) {
-                getContext().getThreadState(getLanguage()).setAsyncgenFirstIter(firstIter);
+                context.getThreadState(context.getLanguage(inliningTarget)).setAsyncgenFirstIter(firstIter);
             } else if (firstIter == PNone.NONE) {
-                getContext().getThreadState(getLanguage()).setAsyncgenFirstIter(null);
+                context.getThreadState(context.getLanguage(inliningTarget)).setAsyncgenFirstIter(null);
             }
             // Ignore finalizer, since we don't have a useful place to call it
             return PNone.NONE;
@@ -1213,10 +1219,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetAsyncgenHooks extends PythonBuiltinNode {
         @Specialization
-        Object setAsyncgenHooks(
+        static Object setAsyncgenHooks(
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached PythonObjectFactory factory) {
             // TODO: use asyncgen_hooks object
-            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             Object firstiter = threadState.getAsyncgenFirstIter();
             return factory.createTuple(new Object[]{firstiter == null ? PNone.NONE : firstiter, PNone.NONE});
         }
@@ -1227,7 +1235,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class GetCoroOriginTrackingDepth extends PythonBuiltinNode {
 
         @Specialization
-        Object getCoroDepth() {
+        static Object getCoroDepth() {
             // TODO: Implement
             return 0;
         }
@@ -1238,7 +1246,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SetCoroOriginTrackingDepth extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object setCoroDepth(Object newValue) {
+        static Object setCoroDepth(Object newValue) {
             // TODO: Implement
             return PNone.NONE;
         }

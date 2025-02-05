@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -149,11 +149,12 @@ public final class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Run extends PythonBuiltinNode {
         @Specialization
-        Object get(VirtualFrame frame, PContextVarsContext self, Object fun, Object[] args, PKeyword[] keywords,
+        static Object get(VirtualFrame frame, PContextVarsContext self, Object fun, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CallNode call,
                         @Cached PRaiseNode.Lazy raise) {
-            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             self.enter(inliningTarget, threadState, raise);
             try {
                 return call.execute(frame, fun, args, keywords);

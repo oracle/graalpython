@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -89,8 +89,8 @@ public final class StringModuleBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             List<Object[]> parserList;
-            PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
+            PythonLanguage language = context.getLanguage(this);
             Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 parserList = formatter.formatterParser(this);
@@ -124,8 +124,8 @@ public final class StringModuleBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             TemplateFormatter.FieldNameSplitResult result;
-            PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
+            PythonLanguage language = context.getLanguage(this);
             Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 result = formatter.formatterFieldNameSplit(this);

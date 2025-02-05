@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,10 +95,6 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         public abstract PList execute(VirtualFrame frame, Object list);
 
-        protected PythonLanguage getLanguage() {
-            return PythonLanguage.get(this);
-        }
-
         @Specialization(guards = {"isBuiltinTuple(v)", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
         @ExplodeLoop
         static PList starredTupleCachedLength(PTuple v,
@@ -131,8 +127,8 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Shared @Cached ConstructListNode constructListNode) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return constructListNode.execute(frame, value);
@@ -148,15 +144,16 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Shared @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinObjectProfile attrProfile,
                         @Cached PRaiseNode raise) {
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, PythonContext.get(inliningTarget), indirectCallData);
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return constructListNode.execute(frame, v);
             } catch (PException e) {
                 e.expectAttributeError(inliningTarget, attrProfile);
                 throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
             } finally {
-                IndirectCallContext.exit(frame, language, PythonContext.get(inliningTarget), state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 

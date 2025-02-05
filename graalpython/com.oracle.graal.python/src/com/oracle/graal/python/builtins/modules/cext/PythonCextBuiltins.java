@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -210,6 +210,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -1333,46 +1334,36 @@ public final class PythonCextBuiltins {
         }
     }
 
+    @GenerateCached(false)
     abstract static class PyTruffleGcTracingNode extends CApiUnaryBuiltinNode {
 
-        @Specialization(guards = {"!traceCalls(getContext())", "traceMem(getContext())"})
-        Object doNativeWrapper(Object ptr,
-                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            trace(getContext(), CApiContext.asPointer(ptr, lib), null, null);
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = {"traceCalls(getContext())", "traceMem(getContext())"})
-        Object doNativeWrapperTraceCall(Object ptr,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
-
-            PFrame.Reference ref = getCurrentFrameRef.execute(null, inliningTarget);
-            trace(getContext(), CApiContext.asPointer(ptr, lib), ref, null);
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "!traceMem(getContext())")
-        static Object doNothing(@SuppressWarnings("unused") Object ptr) {
+        @Specialization(guards = "!traceMem(language)")
+        static Object doNothing(@SuppressWarnings("unused") Object ptr,
+                        @SuppressWarnings("unused") @Bind PythonLanguage language) {
             // do nothing
             return PNone.NO_VALUE;
         }
 
-        @NonIdempotent
-        static boolean traceMem(PythonContext context) {
-            return context.getLanguage().getEngineOption(PythonOptions.TraceNativeMemory);
+        @Fallback
+        Object doNativeWrapper(Object ptr,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            PFrame.Reference ref = null;
+            if (context.getOption(PythonOptions.TraceNativeMemoryCalls)) {
+                ref = getCurrentFrameRef.execute(null, inliningTarget);
+            }
+            trace(context, CApiContext.asPointer(ptr, lib), ref, null);
+            return PNone.NO_VALUE;
         }
 
-        @NonIdempotent
-        static boolean traceCalls(PythonContext context) {
-            return context.getOption(PythonOptions.TraceNativeMemoryCalls);
+        @Idempotent
+        boolean traceMem(PythonLanguage language) {
+            return language.getEngineOption(PythonOptions.TraceNativeMemory);
         }
 
-        @SuppressWarnings("unused")
-        protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
+        protected abstract void trace(PythonContext context, Object ptr, Reference ref, TruffleString className);
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
@@ -1672,7 +1663,8 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         int getNativeOptions() {
             int options = 0;
-            if (PythonLanguage.get(null).getEngineOption(PythonOptions.TraceNativeMemory)) {
+            PythonLanguage language = PythonLanguage.get(null);
+            if (language.getEngineOption(PythonOptions.TraceNativeMemory)) {
                 options |= TRACE_MEM;
             }
             if (LOGGER.isLoggable(Level.INFO)) {
@@ -1693,7 +1685,7 @@ public final class PythonCextBuiltins {
             if (PythonContext.DEBUG_CAPI) {
                 options |= DEBUG_CAPI;
             }
-            if (PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC)) {
+            if (language.getEngineOption(PythonOptions.PythonGC)) {
                 options |= PYTHON_GC;
             }
             return options;

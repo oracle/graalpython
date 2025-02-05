@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -86,7 +85,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile defIsNoValueProfile,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object defValue = defIsNoValueProfile.profile(inliningTarget, isNoValue(def)) ? PContextVar.NO_DEFAULT : def;
-            PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(PythonLanguage.get(inliningTarget));
+            PythonContext context = PythonContext.get(inliningTarget);
+            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             Object value = self.get(threadState, defValue);
             if (value != null) {
                 return value;
@@ -99,9 +99,11 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object set(PContextVar self, Object value,
+        static Object set(PContextVar self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached PythonObjectFactory factory) {
-            PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             Object oldValue = self.getValue(threadState);
             self.setValue(threadState, value);
             return factory.createContextVarsToken(self, oldValue);
@@ -112,12 +114,13 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ResetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object reset(PContextVar self, PContextVarsToken token,
+        static Object reset(PContextVar self, PContextVarsToken token,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext pythonContext,
                         @Shared @Cached PRaiseNode.Lazy raise) {
             if (self == token.getVar()) {
                 token.use(inliningTarget, raise);
-                PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
+                PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
                 if (token.getOldValue() == null) {
                     PContextVarsContext context = threadState.getContextVarsContext();
                     context.contextVarValues = context.contextVarValues.without(self, self.getHash());

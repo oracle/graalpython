@@ -456,7 +456,7 @@ public abstract class CExtCommonNodes {
     public abstract static class CheckFunctionResultNode extends PNodeWithContext {
 
         public final Object execute(PythonContext context, TruffleString name, Object result) {
-            PythonLanguage language = PythonLanguage.get(this);
+            PythonLanguage language = context.getLanguage(this);
             return execute(context.getThreadState(language), name, result);
         }
 

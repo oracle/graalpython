@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -121,9 +121,11 @@ public final class PythonCextPyStateBuiltins {
     abstract static class PyTruffleThreadState_Get extends CApiUnaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object get(Object tstateCurrentPtr,
+        static Object get(Object tstateCurrentPtr,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
-            PythonThreadState pythonThreadState = getContext().getThreadState(getLanguage());
+            PythonThreadState pythonThreadState = context.getThreadState(context.getLanguage(inliningTarget));
             if (!lib.isNull(tstateCurrentPtr)) {
                 pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
             }
@@ -146,9 +148,11 @@ public final class PythonCextPyStateBuiltins {
 
         @Specialization
         @TruffleBoundary
-        PDict get(@Cached PythonObjectFactory factory) {
-
-            PythonThreadState threadState = getContext().getThreadState(getLanguage());
+        static PDict get(
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached PythonObjectFactory factory) {
+            PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             PDict threadStateDict = threadState.getDict();
             if (threadStateDict == null) {
                 threadStateDict = factory.createDict();
