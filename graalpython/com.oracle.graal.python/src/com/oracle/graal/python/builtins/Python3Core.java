@@ -906,11 +906,12 @@ public abstract class Python3Core {
      *            multi-context mode. Can be null.
      */
     public final PythonLanguage getLanguage(Node node) {
-        if (CompilerDirectives.inCompiledCode() && node != null && CompilerDirectives.isPartialEvaluationConstant(node) && node.getRootNode() != null) {
-            // This will make it PE-constant in multi-context mode
-            return PythonLanguage.get(node);
+        // The condition is always true in the interpreter
+        if (CompilerDirectives.isPartialEvaluationConstant(language)) {
+            return language;
         }
-        return language;
+        // This will make it PE-constant in multi-context mode
+        return PythonLanguage.get(node);
     }
 
     /**
