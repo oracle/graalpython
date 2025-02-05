@@ -46,6 +46,7 @@ package com.oracle.graal.python.builtins.objects.type;
  */
 public abstract class TypeFlags {
 
+    public static final long MANAGED_WEAKREF = (1L << 3);
     public static final long MANAGED_DICT = (1L << 4);
     public static final long SEQUENCE = (1L << 5);
     public static final long MAPPING = (1L << 6);
