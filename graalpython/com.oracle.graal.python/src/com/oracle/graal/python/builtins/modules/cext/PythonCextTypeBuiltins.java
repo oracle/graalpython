@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -381,8 +381,9 @@ public final class PythonCextTypeBuiltins {
             assert !(doc instanceof CArrayWrapper);
             // note: 'doc' may be NULL; in this case, we would store 'None'
             PBuiltinFunction get = null;
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
             if (!interopLibrary.isNull(getter)) {
-                RootCallTarget getterCT = getterCallTarget(name, PythonLanguage.get(inliningTarget));
+                RootCallTarget getterCT = getterCallTarget(name, language);
                 getter = EnsureExecutableNode.executeUncached(getter, PExternalFunctionWrapper.GETTER);
                 get = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
             }
@@ -390,7 +391,7 @@ public final class PythonCextTypeBuiltins {
             PBuiltinFunction set = null;
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
-                RootCallTarget setterCT = setterCallTarget(name, PythonLanguage.get(inliningTarget));
+                RootCallTarget setterCT = setterCallTarget(name, language);
                 setter = EnsureExecutableNode.executeUncached(setter, PExternalFunctionWrapper.SETTER);
                 set = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
             }

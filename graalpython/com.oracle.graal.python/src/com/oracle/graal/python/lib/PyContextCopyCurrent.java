@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,8 +62,9 @@ public abstract class PyContextCopyCurrent extends PNodeWithContext {
     @Specialization
     static PContextVarsContext doIt(Node inliningTarget,
                     @Cached(inline = false) PythonObjectFactory factory) {
-        PythonLanguage language = PythonLanguage.get(inliningTarget);
-        PythonContext.PythonThreadState threadState = PythonContext.get(inliningTarget).getThreadState(language);
+        PythonContext context = PythonContext.get(inliningTarget);
+        PythonLanguage language = context.getLanguage(inliningTarget);
+        PythonContext.PythonThreadState threadState = context.getThreadState(language);
         return factory.copyContextVarsContext(threadState.getContextVarsContext());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,8 +43,6 @@ package com.oracle.graal.python.test.advanced;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -69,6 +67,7 @@ import org.netbeans.lib.profiler.heap.HeapFactory;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
 
+import com.oracle.graal.python.test.integration.Utils;
 import com.sun.management.HotSpotDiagnosticMXBean;
 
 public class LeakTest extends AbstractLanguageLauncher {
@@ -127,7 +126,7 @@ public class LeakTest extends AbstractLanguageLauncher {
             }
 
             MBeanServer server = doFullGC();
-            String threadDump = getThreadDump();
+            String threadDump = Utils.getThreadDump();
             Path dumpFile = dumpHeap(server, keepDump);
             boolean fail = checkForLeaks(dumpFile);
             if (fail) {
@@ -136,24 +135,6 @@ public class LeakTest extends AbstractLanguageLauncher {
             } else {
                 System.exit(0);
             }
-        }
-
-        private String getThreadDump() {
-            ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-            ThreadInfo[] threads = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
-            final String line = "=====================================\n";
-            StringBuilder sb = new StringBuilder(line);
-            for (ThreadInfo thread : threads) {
-                if (thread != null) {
-                    sb.append("-------\n");
-                    sb.append(thread.getThreadName()).append('\n');
-                    sb.append("Thread state:").append(thread.getThreadState()).append('\n');
-                    for (StackTraceElement element : thread.getStackTrace()) {
-                        sb.append("    ").append(element).append('\n');
-                    }
-                }
-            }
-            return sb.append(line).toString();
         }
 
         private boolean checkForLeaks(Path dumpFile) {

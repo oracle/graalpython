@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -574,8 +574,8 @@ public abstract class GraalHPyNodes {
         static Object callCreate(Node inliningTarget, Object callable, GraalHPyContext hPyContext, Object spec,
                         HPyCheckFunctionResultNode checkFunctionResultNode, HPyAsHandleNode asHandleNode, InteropLibrary lib) {
 
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext ctx = hPyContext.getContext();
+            PythonLanguage language = ctx.getLanguage(inliningTarget);
             PythonThreadState pythonThreadState = ctx.getThreadState(language);
 
             GraalHPyHandle hSpec = asHandleNode.execute(spec);
@@ -626,8 +626,8 @@ public abstract class GraalHPyNodes {
         static void callExec(Node node, GraalHPyContext hPyContext, Object callable, PythonModule module,
                         HPyCheckPrimitiveResultNode checkFunctionResultNode, HPyAsHandleNode asHandleNode, InteropLibrary lib) {
 
-            PythonLanguage language = PythonLanguage.get(node);
             PythonContext ctx = hPyContext.getContext();
+            PythonLanguage language = ctx.getLanguage(node);
             PythonThreadState pythonThreadState = ctx.getThreadState(language);
 
             GraalHPyHandle hModule = asHandleNode.execute(module);
@@ -665,6 +665,7 @@ public abstract class GraalHPyNodes {
 
         @Specialization
         static PBuiltinFunction doIt(GraalHPyContext context, Object enclosingType, Object methodDef,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadPointerNode readPointerNode,
                         @Cached(parameters = "context") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadGenericNode readGenericNode,
@@ -693,7 +694,8 @@ public abstract class GraalHPyNodes {
             methodFunctionPointer = readPointerNode.read(context, methodDef, GraalHPyCField.HPyDef__meth__impl);
             methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, signature.getLLVMFunctionType());
 
-            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(PythonLanguage.get(raiseNode), context, signature, methodName, methodFunctionPointer, enclosingType, factory);
+            PythonLanguage language = context.getContext().getLanguage(inliningTarget);
+            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(language, context, signature, methodName, methodFunctionPointer, enclosingType, factory);
 
             // write doc string; we need to directly write to the storage otherwise it is
             // disallowed writing to builtin types.
@@ -764,7 +766,7 @@ public abstract class GraalHPyNodes {
              */
             Object closurePtr = context.nativeToInteropPointer(readPointerNode.execute(context, legacyGetSetDef, closureOffset));
 
-            PythonLanguage lang = PythonLanguage.get(raiseNode);
+            PythonLanguage lang = context.getContext().getLanguage(inliningTarget);
             PBuiltinFunction getterObject = null;
             if (!isNullNode.execute(context, getterFunPtr)) {
                 Object getterFunInteropPtr = ensureExecutableNode.execute(inliningTarget, context.nativeToInteropPointer(getterFunPtr), PExternalFunctionWrapper.GETTER);
@@ -913,13 +915,13 @@ public abstract class GraalHPyNodes {
          */
         @Specialization
         static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object memberDefArrPtr, int i,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadPointerNode readPointerNode,
                         @Cached(parameters = "context") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadGenericNode readGenericNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToPythonObjectNode writeDocNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached WriteAttributeToPythonObjectNode writeDocNode) {
 
             // computes offsets like '&(memberDefArrPtr[i].name)'
             int pyMemberDefSize = context.getCTypeSize(HPyContextSignatureType.PyMemberDef);
@@ -947,7 +949,7 @@ public abstract class GraalHPyNodes {
             int type = readGenericNode.executeInt(context, memberDefArrPtr, typeOffset, HPyContextSignatureType.Int);
             int offset = readGenericNode.executeInt(context, memberDefArrPtr, offsetOffset, HPyContextSignatureType.Int);
 
-            PythonLanguage language = PythonLanguage.get(raiseNode);
+            PythonLanguage language = context.getContext().getLanguage(inliningTarget);
             PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
             Object setterObject = null;
@@ -981,14 +983,14 @@ public abstract class GraalHPyNodes {
          */
         @Specialization
         static HPyProperty doIt(GraalHPyContext context, PythonClass enclosingType, Object memberDef,
+                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadPointerNode readPointerNode,
                         @Cached(parameters = "context") GraalHPyCAccess.IsNullNode isNullNode,
                         @Cached(parameters = "context") GraalHPyCAccess.ReadGenericNode readGenericNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToPythonObjectNode writeDocNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached WriteAttributeToPythonObjectNode writeDocNode) {
 
             TruffleString name = fromCharPointerNode.execute(readPointerNode.read(context, memberDef, GraalHPyCField.HPyDef__member__name));
 
@@ -1007,7 +1009,7 @@ public abstract class GraalHPyNodes {
                 enclosingType.setHPyVectorcallOffset(offset);
             }
 
-            PythonLanguage language = PythonLanguage.get(raiseNode);
+            PythonLanguage language = context.getContext().getLanguage(inliningTarget);
             PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
             Object setterObject = null;
@@ -1190,7 +1192,7 @@ public abstract class GraalHPyNodes {
                     HPySlotWrapper slotWrapper = slotWrappers[i];
 
                     Object enclosingTypeForFun = HPY_TP_NEW.equals(slot) ? null : enclosingType;
-                    PythonLanguage language = PythonLanguage.get(raiseNode);
+                    PythonLanguage language = context.getContext().getLanguage(inliningTarget);
                     Object function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, null, null, methodNameStr, slotData.impl(), enclosingTypeForFun, factory);
                     property = new HPyProperty(methodName, function, property);
                 }
@@ -1324,7 +1326,7 @@ public abstract class GraalHPyNodes {
                                     // native function pointer
                                     callable = interopPFuncPtr;
                                 }
-                                PythonLanguage lang = PythonLanguage.get(raiseNode);
+                                PythonLanguage lang = context.getContext().getLanguage(inliningTarget);
                                 method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, callable, enclosingType, 0, slot.getSignature(), lang, factory, true);
                             }
                             writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
@@ -2498,7 +2500,8 @@ public abstract class GraalHPyNodes {
                      */
                     // Lookup the inherited constructor and pass it to the HPy decorator.
                     Object inheritedConstructor = lookupNewNode.execute(baseClass);
-                    PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode), inheritedConstructor, builtinShape);
+                    PythonLanguage language = context.getContext().getLanguage(inliningTarget);
+                    PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(language, inheritedConstructor, builtinShape);
                     writeAttributeToObjectNode.execute(newType, SpecialMethodNames.T___NEW__, constructorDecorator);
                 }
 

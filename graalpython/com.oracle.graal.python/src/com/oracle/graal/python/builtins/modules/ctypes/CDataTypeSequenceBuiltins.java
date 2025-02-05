@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -110,6 +109,7 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
         @Specialization(guards = "length >= 0")
         static Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageGetItem getItem,
                         @Cached CallNode callNode,
@@ -119,7 +119,7 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object key = factory.createTuple(new Object[]{itemtype, length});
-            CtypesThreadState ctypes = CtypesThreadState.get(PythonContext.get(inliningTarget), PythonLanguage.get(inliningTarget));
+            CtypesThreadState ctypes = CtypesThreadState.get(context, context.getLanguage(inliningTarget));
             Object result = getItem.execute(frame, inliningTarget, ctypes.cache, key);
             if (result != null) {
                 return result;

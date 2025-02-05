@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.graalvm.polyglot.Context;
@@ -58,6 +59,7 @@ import org.junit.Rule;
 
 import com.oracle.graal.python.test.integration.CleanupRule;
 import com.oracle.graal.python.test.integration.PythonTests;
+import com.oracle.graal.python.test.integration.Utils;
 
 /**
  * Base class for tests that run in multiple context with a shared engine and in parallel.
@@ -112,8 +114,17 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
                 }
             });
         }
+        boolean wasTimeout = false;
         for (Future<?> future : futures) {
-            future.get();
+            try {
+                future.get(2, TimeUnit.MINUTES);
+            } catch (TimeoutException e) {
+                wasTimeout = true;
+            }
+        }
+        if (wasTimeout) {
+            System.err.println(Utils.getThreadDump());
+            throw new AssertionError("One of the tasks did not finish in 2 minutes");
         }
         log("All %d futures finished...", tasks.length);
     }

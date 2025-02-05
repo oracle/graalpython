@@ -59,6 +59,9 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.foreign.ForeignExecutableBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -259,6 +262,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignAbstractClassBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
@@ -391,6 +395,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -487,6 +492,10 @@ public abstract class Python3Core {
                         new ForeignObjectBuiltins(),
                         new ForeignNumberBuiltins(),
                         new ForeignBooleanBuiltins(),
+                        new ForeignAbstractClassBuiltins(),
+                        new ForeignExecutableBuiltins(),
+                        new ForeignInstantiableBuiltins(),
+                        new ForeignIterableBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),
@@ -882,7 +891,25 @@ public abstract class Python3Core {
         return (PythonContext) this;
     }
 
+    /**
+     * Return the language corresponding to this context. In runtime compiled code, prefer
+     * {@link #getLanguage(Node)}.
+     */
     public final PythonLanguage getLanguage() {
+        return language;
+    }
+
+    /**
+     * Return the language corresponding to this context.
+     *
+     * @param node And adopted node that can make the lookup fold in compiled code in even in
+     *            multi-context mode. Can be null.
+     */
+    public final PythonLanguage getLanguage(Node node) {
+        if (CompilerDirectives.inCompiledCode() && node != null && CompilerDirectives.isPartialEvaluationConstant(node) && node.getRootNode() != null) {
+            // This will make it PE-constant in multi-context mode
+            return PythonLanguage.get(node);
+        }
         return language;
     }
 

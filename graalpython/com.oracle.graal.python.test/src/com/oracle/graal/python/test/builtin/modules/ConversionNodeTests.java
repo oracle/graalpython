@@ -64,8 +64,8 @@ public class ConversionNodeTests {
     static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("arg"), null);
 
     protected static Object call(Object arg, ArgumentCastNode castNode) {
-        PythonLanguage language = PythonLanguage.get(castNode);
         final PythonContext pythonContext = PythonContext.get(castNode);
+        PythonLanguage language = pythonContext.getLanguage(castNode);
 
         RootCallTarget callTarget = new PRootNode(language) {
             @Child private CalleeContext calleeContext = CalleeContext.create();

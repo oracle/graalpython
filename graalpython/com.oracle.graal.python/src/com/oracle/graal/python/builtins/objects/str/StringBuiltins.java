@@ -299,8 +299,8 @@ public final class StringBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T_FORMAT, "str", self);
             }
             TemplateFormatter template = new TemplateFormatter(string);
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return template.build(inliningTarget, args, kwargs, format);
@@ -327,8 +327,8 @@ public final class StringBuiltins extends PythonBuiltins {
 
             TemplateFormatter template = new TemplateFormatter(self);
 
-            PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
+            PythonLanguage language = context.getLanguage(this);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return template.build(this, null, mapping, format);
@@ -1844,7 +1844,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             String selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___MOD__, self);
             PythonContext context = PythonContext.get(inliningTarget);
-            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
                 return fromJavaStringNode.execute(new StringFormatProcessor(context, getTupleItemNode, selfStr, inliningTarget).format(assertNoJavaString(right)), TS_ENCODING);
