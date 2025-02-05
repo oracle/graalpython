@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -128,10 +128,10 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
         static Object type(Object name,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringNode castToStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Env env = PythonContext.get(inliningTarget).getEnv();
             if (!env.isHostLookupAllowed()) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
             }
             String javaString = castToStringNode.execute(name);
             Object hostValue;
@@ -141,7 +141,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                 hostValue = null;
             }
             if (hostValue == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.HOST_SYM_NOT_DEFINED, javaString);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.KeyError, ErrorMessages.HOST_SYM_NOT_DEFINED, javaString);
             } else {
                 return hostValue;
             }
@@ -149,8 +149,8 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doError(Object object,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_P, object);
         }
     }
 
@@ -161,10 +161,10 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
         static PNone add(Object[] args,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToString,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Env env = PythonContext.get(inliningTarget).getEnv();
             if (!env.isHostLookupAllowed()) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
             }
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
@@ -175,9 +175,9 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                     // implicitly
                     env.addToHostClassPath(PythonContext.get(inliningTarget).getPublicTruffleFileRelaxed(entry, T_JAR));
                 } catch (CannotCastException e) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
                 } catch (SecurityException e) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALD_OR_UNREADABLE_CLASSPATH, entry, e);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INVALD_OR_UNREADABLE_CLASSPATH, entry, e);
                 }
             }
             return PNone.NONE;
@@ -232,7 +232,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             Env env = PythonContext.get(inliningTarget).getEnv();
             try {
                 Object hostKlass = env.asHostObject(klass);
@@ -240,7 +240,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                     return ((Class<?>) hostKlass).isInstance(object);
                 }
             } catch (ClassCastException cce) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.KLASS_ARG_IS_NOT_HOST_OBJ, klass);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.KLASS_ARG_IS_NOT_HOST_OBJ, klass);
             }
             return false;
         }
@@ -250,7 +250,7 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
                         @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             Env env = PythonContext.get(inliningTarget).getEnv();
             try {
                 Object hostObject = env.asHostObject(object);
@@ -259,15 +259,15 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
                     return ((Class<?>) hostKlass).isInstance(hostObject);
                 }
             } catch (ClassCastException cce) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ, object, klass);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ, object, klass);
             }
             return false;
         }
 
         @Fallback
         static boolean fallback(Object object, Object klass,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
         }
     }
 

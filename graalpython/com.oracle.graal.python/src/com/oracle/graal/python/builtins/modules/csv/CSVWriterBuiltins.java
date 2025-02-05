@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -103,14 +103,14 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object iter;
 
             try {
                 iter = getIter.execute(frame, inliningTarget, seq);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(inliningTarget, seq));
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(inliningTarget, seq));
             }
 
             // Join all fields of passed in sequence in internal buffer.
@@ -135,7 +135,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             }
             if (!first && sb.isEmpty()) {
                 if (dialect.quoting == QUOTE_NONE) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
                 }
                 joinAppend(inliningTarget, sb, dialect, null, true, createCodePointIteratorNode, nextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode, raiseNode);
             }
@@ -146,7 +146,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
         private static void joinField(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, Object field, TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         TruffleStringIterator.NextNode nextNode, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode, TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode, PyObjectStrAsTruffleStringNode objectStrAsTruffleStringNode, PyNumberCheckNode pyNumberCheckNode,
-                        PRaiseNode.Lazy raiseNode) {
+                        PRaiseNode raiseNode) {
             boolean quoted;
 
             switch (dialect.quoting) {
@@ -171,7 +171,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
 
         private static void joinAppend(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, TruffleString field, boolean quoted,
                         TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode, TruffleStringIterator.NextNode nextNode, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
-                        TruffleStringBuilder.AppendCodePointNode appendCodePointNode, TruffleStringBuilder.AppendStringNode appendStringNode, PRaiseNode.Lazy raiseNode) {
+                        TruffleStringBuilder.AppendCodePointNode appendCodePointNode, TruffleStringBuilder.AppendStringNode appendStringNode, PRaiseNode raiseNode) {
             /*
              * If we don't already know that the field must be quoted due to dialect settings, check
              * if the field contains characters due to which it must be quoted.
@@ -214,7 +214,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         }
                         if (wantEscape) {
                             if (dialect.escapeCharCodePoint == NOT_SET_CODEPOINT) {
-                                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.ESCAPE_WITHOUT_ESCAPECHAR);
+                                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.ESCAPE_WITHOUT_ESCAPECHAR);
                             }
                             appendStringNode.execute(sb, dialect.escapeChar);
                         }

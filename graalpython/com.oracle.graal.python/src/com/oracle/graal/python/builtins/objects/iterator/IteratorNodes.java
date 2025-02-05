@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -177,7 +177,7 @@ public abstract class IteratorNodes {
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached InlinedConditionProfile hasLenProfile,
                         @Cached InlinedConditionProfile hasLengthHintProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object clazz = getClassNode.execute(inliningTarget, iterable);
             TpSlots slots = getSlotsNode.execute(inliningTarget, clazz);
             if (hasLenProfile.profile(inliningTarget, slots.combined_sq_mp_length() != null)) {
@@ -204,11 +204,11 @@ public abstract class IteratorNodes {
                     if (indexCheckNode.execute(inliningTarget, len)) {
                         int intLen = asSizeNode.executeExact(frame, inliningTarget, len);
                         if (intLen < 0) {
-                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
+                            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
                         }
                         return intLen;
                     } else {
-                        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LENGTH_HINT__, len);
+                        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_INTEGER_NOT_P, T___LENGTH_HINT__, len);
                     }
                 }
             }

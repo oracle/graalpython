@@ -112,7 +112,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         static void doGenericKey(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castKeyNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
                         @Shared @Cached WriteAttributeToObjectNode write,
                         @Shared @Cached TruffleString.EqualNode equalNode,

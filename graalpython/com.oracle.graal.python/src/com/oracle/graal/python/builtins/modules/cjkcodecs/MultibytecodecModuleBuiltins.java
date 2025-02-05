@@ -127,14 +127,14 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object createCodec(PyCapsule arg,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             return createCodec(inliningTarget, arg, raiseNode);
         }
 
         static Object createCodec(Node inliningTarget, PyCapsule arg,
-                        PRaiseNode.Lazy raiseNode) {
+                        PRaiseNode raiseNode) {
             if (!PyCapsule.capsuleJavaNameIs(arg, PyMultibyteCodec_CAPSULE_NAME)) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ARGUMENT_TYPE_INVALID);
+                throw raiseNode.raise(inliningTarget, ValueError, ARGUMENT_TYPE_INVALID);
             }
             MultibyteCodec codec;
             codec = (MultibyteCodec) arg.getPointer();
@@ -144,8 +144,8 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object createCodec(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object arg,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ARGUMENT_TYPE_INVALID);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ARGUMENT_TYPE_INVALID);
         }
 
     }

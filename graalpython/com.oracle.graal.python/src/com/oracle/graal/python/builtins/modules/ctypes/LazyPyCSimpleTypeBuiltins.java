@@ -157,7 +157,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CWCharPFromParamNode cwCharPFromParamNode,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (PGuards.isString(value)) {
                 PyCArgObject parg = PFactory.createCArgObject(PythonLanguage.get(inliningTarget));
                 parg.pffi_type = ffi_type_pointer;
@@ -192,7 +192,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (as_parameter != PNone.NO_VALUE) {
                 return cwCharPFromParamNode.execute(frame, type, as_parameter);
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, WRONG_TYPE);
+            throw raiseNode.raise(inliningTarget, TypeError, WRONG_TYPE);
         }
     }
 
@@ -267,7 +267,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             /* c_void_p instance (or subclass) */
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
@@ -316,7 +316,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (as_parameter != PNone.NO_VALUE) {
                 return cVoidPFromParamNode.execute(frame, type, as_parameter);
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, WRONG_TYPE);
+            throw raiseNode.raise(inliningTarget, TypeError, WRONG_TYPE);
         }
     }
 
@@ -354,7 +354,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CCharPFromParamNode cCharPFromParamNode,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
                 return value;
@@ -381,7 +381,7 @@ public final class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (as_parameter != PNone.NO_VALUE) {
                 return cCharPFromParamNode.execute(frame, type, as_parameter);
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, WRONG_TYPE);
+            throw raiseNode.raise(inliningTarget, TypeError, WRONG_TYPE);
         }
     }
 }

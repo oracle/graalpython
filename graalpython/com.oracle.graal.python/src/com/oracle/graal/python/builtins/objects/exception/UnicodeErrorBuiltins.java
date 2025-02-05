@@ -92,17 +92,17 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         return UnicodeErrorBuiltinsFactory.getFactories();
     }
 
-    public static TruffleString getArgAsString(Node inliningTarget, Object[] args, int index, PRaiseNode.Lazy raiseNode, CastToTruffleStringNode castNode) {
+    public static TruffleString getArgAsString(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToTruffleStringNode castNode) {
         if (args.length < index + 1 || !PGuards.isString(args[index])) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
         } else {
             return castNode.execute(inliningTarget, args[index]);
         }
     }
 
-    public static int getArgAsInt(Node inliningTarget, Object[] args, int index, PRaiseNode.Lazy raiseNode, CastToJavaIntExactNode castNode) {
+    public static int getArgAsInt(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToJavaIntExactNode castNode) {
         if (args.length < index + 1 || !(PGuards.isInteger(args[index]) || PGuards.isPInt(args[index]))) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
         } else {
             return castNode.execute(inliningTarget, args[index]);
         }
@@ -143,9 +143,9 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    public static Object getArgAsBytes(VirtualFrame frame, Node inliningTarget, Object[] args, int index, PRaiseNode.Lazy raiseNode, GetArgAsBytesNode getArgAsBytesNode) {
+    public static Object getArgAsBytes(VirtualFrame frame, Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, GetArgAsBytesNode getArgAsBytesNode) {
         if (args.length < index + 1) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
         } else {
             return getArgAsBytesNode.execute(frame, inliningTarget, args[index]);
         }
@@ -209,8 +209,8 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
         @SuppressWarnings("unused")
         static Object generic(PBaseException self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
         }
     }
 
@@ -246,8 +246,8 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
         @SuppressWarnings("unused")
         static Object generic(PBaseException self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, INTEGER_REQUIRED);
         }
     }
 

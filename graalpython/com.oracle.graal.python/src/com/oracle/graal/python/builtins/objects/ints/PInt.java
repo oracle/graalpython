@@ -403,7 +403,7 @@ public final class PInt extends PythonBuiltinObject {
     public static double doubleValueWithOverflow(Node raisingNode, BigInteger value) {
         double d = value.doubleValue();
         if (Double.isInfinite(d)) {
-            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
+            throw PRaiseNode.raiseStatic(raisingNode, OverflowError, ErrorMessages.INT_TOO_LARGE_TO_CONVERT_TO_FLOAT);
         }
         return d;
     }
@@ -605,7 +605,7 @@ public final class PInt extends PythonBuiltinObject {
         int intSize = (int) size;
         if (intSize != size) {
             errorProfile.enter(inliningTarget);
-            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
         }
         return intSize;
     }
@@ -689,7 +689,6 @@ public final class PInt extends PythonBuiltinObject {
      * Creates a Python {@code int} object from a Java {@code long} value by interpreting it as an
      * unsigned number.
      *
-     * @param factory Python object factory
      * @param profile condition profile for the case when the unsigned value fits into Java
      *            {@code long}
      * @param value the value

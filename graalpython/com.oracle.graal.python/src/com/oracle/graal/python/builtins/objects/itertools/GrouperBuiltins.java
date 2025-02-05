@@ -104,11 +104,11 @@ public final class GrouperBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile currValueMarkerProfile,
                         @Cached InlinedBranchProfile currValueTgtProfile,
                         @Cached InlinedConditionProfile hasFuncProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PGroupBy gbo = self.getParent();
             if (gbo.getCurrGrouper() != self) {
                 currGrouperProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             if (gbo.getCurrValue() == null) {
                 currValueMarkerProfile.enter(inliningTarget);
@@ -116,7 +116,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
             }
             if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
                 currValueTgtProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             Object r = gbo.getCurrValue();
             gbo.setCurrValue(null);

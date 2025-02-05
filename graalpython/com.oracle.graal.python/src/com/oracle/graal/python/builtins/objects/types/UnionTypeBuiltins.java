@@ -219,13 +219,13 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
             for (int i = 0; i < argsStorage.length(); i++) {
                 Object arg = getItem.execute(inliningTarget, argsStorage, i);
                 if (arg instanceof PGenericAlias) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
                 if (!result) {
                     result = isInstanceNode.executeWith(frame, other, arg);
@@ -245,16 +245,16 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, other)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
             }
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
             for (int i = 0; i < argsStorage.length(); i++) {
                 Object arg = getItem.execute(inliningTarget, argsStorage, i);
                 if (arg instanceof PGenericAlias) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
                 if (!result) {
                     result = isSubClassNode.executeWith(frame, other, arg);

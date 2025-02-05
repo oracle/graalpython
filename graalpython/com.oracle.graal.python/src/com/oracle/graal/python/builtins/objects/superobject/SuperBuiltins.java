@@ -85,6 +85,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
@@ -117,6 +118,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -201,11 +203,13 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private GetClassNode getClassNode;
         @Child private PyObjectLookupAttr getAttrNode;
         @Child private TypeNodes.IsTypeNode isTypeNode;
+        private final BranchProfile errorProfile = BranchProfile.create();
 
         @Override
         public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (keywords.length != 0) {
-                throw raise(RuntimeError, ErrorMessages.UNEXPECTED_KEYWORD_ARGS, "super()");
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.UNEXPECTED_KEYWORD_ARGS, "super()");
             }
             if (arguments.length == 1) {
                 return execute(frame, arguments[0], PNone.NO_VALUE, PNone.NO_VALUE);
@@ -214,14 +218,16 @@ public final class SuperBuiltins extends PythonBuiltins {
             } else if (arguments.length == 3) {
                 return execute(frame, arguments[0], arguments[1], arguments[2]);
             } else {
-                throw raise(RuntimeError, ErrorMessages.INVALID_NUMBER_OF_ARGUMENTS, "super()");
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.INVALID_NUMBER_OF_ARGUMENTS, "super()");
             }
         }
 
         @Override
         public final Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
             if (keywords.length != 0) {
-                throw raise(RuntimeError, ErrorMessages.UNEXPECTED_KEYWORD_ARGS, "super()");
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.UNEXPECTED_KEYWORD_ARGS, "super()");
             }
             if (arguments.length == 0) {
                 return execute(frame, self, PNone.NO_VALUE, PNone.NO_VALUE);
@@ -230,16 +236,19 @@ public final class SuperBuiltins extends PythonBuiltins {
             } else if (arguments.length == 2) {
                 return execute(frame, self, arguments[0], arguments[1]);
             } else {
-                throw raise(RuntimeError, ErrorMessages.TOO_MANY_ARG, "super()");
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.TOO_MANY_ARG, "super()");
             }
         }
 
         protected abstract Object execute(VirtualFrame frame, Object self, Object cls, Object obj);
 
         @Specialization(guards = "!isNoValue(cls)")
-        PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj) {
+        PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode raiseNode) {
             if (!(obj instanceof PNone)) {
-                Object type = supercheck(frame, cls, obj);
+                Object type = supercheck(frame, inliningTarget, cls, obj, raiseNode);
                 self.init(cls, type, obj);
             } else {
                 self.init(cls, null, null);
@@ -258,13 +267,14 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone initInPlace(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode raiseNode,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
             PBytecodeRootNode rootNode = (PBytecodeRootNode) getRootNode();
             Frame localFrame = frame;
             if (rootNode.getCodeUnit().isGeneratorOrCoroutine()) {
                 localFrame = PArguments.getGeneratorFrame(frame);
             }
-            return initFromLocalFrame(frame, inliningTarget, self, rootNode, localFrame, getRefNode);
+            return initFromLocalFrame(frame, inliningTarget, self, rootNode, localFrame, getRefNode, raiseNode);
         }
 
         /**
@@ -273,41 +283,43 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Bind("this") Node inliningTarget,
+                        @Shared @Cached PRaiseNode raiseNode,
                         @Cached ReadCallerFrameNode readCaller,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
             PFrame target = readCaller.executeWith(frame, FrameSelector.SKIP_PYTHON_BUILTIN, 0);
             if (target == null) {
-                throw raise(RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
             }
             MaterializedFrame locals = target.getLocals();
             if (locals == null) {
-                throw raise(RuntimeError, ErrorMessages.SUPER_NO_CLASS);
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
             FrameInfo frameInfo = (FrameInfo) locals.getFrameDescriptor().getInfo();
-            return initFromLocalFrame(frame, inliningTarget, self, frameInfo.getRootNode(), locals, getRefNode);
+            return initFromLocalFrame(frame, inliningTarget, self, frameInfo.getRootNode(), locals, getRefNode, raiseNode);
         }
 
-        private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, PBytecodeRootNode rootNode, Frame localFrame, CellBuiltins.GetRefNode getRefNode) {
+        private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, PBytecodeRootNode rootNode, Frame localFrame, CellBuiltins.GetRefNode getRefNode,
+                        PRaiseNode raiseNode) {
             PCell classCell = rootNode.readClassCell(localFrame);
             if (classCell == null) {
-                throw raise(RuntimeError, ErrorMessages.SUPER_NO_CLASS);
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
             Object cls = getRefNode.execute(inliningTarget, classCell);
             if (cls == null) {
                 // the cell is empty
-                throw raise(RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
             }
             Object obj = rootNode.readSelf(localFrame);
             if (obj == null) {
-                throw raise(RuntimeError, ErrorMessages.NO_ARGS, "super()");
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
-            return init(frame, self, cls, obj);
+            return init(frame, self, cls, obj, inliningTarget, raiseNode);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         PNone initFallback(Object self, Object cls, Object obj) {
-            throw raise(RuntimeError, ErrorMessages.INVALID_ARGS, "super()");
+            throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.INVALID_ARGS, "super()");
         }
 
         private IsSubtypeNode getIsSubtype() {
@@ -342,7 +354,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getAttrNode;
         }
 
-        private Object supercheck(VirtualFrame frame, Object cls, Object object) {
+        private Object supercheck(VirtualFrame frame, Node inliningTarget, Object cls, Object object, PRaiseNode raiseNode) {
             /*
              * Check that a super() call makes sense. Return a type object.
              *
@@ -379,7 +391,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                     // error is ignored
                 }
 
-                throw raise(PythonErrorType.TypeError, ErrorMessages.SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE);
             }
         }
     }

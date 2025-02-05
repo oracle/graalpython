@@ -192,7 +192,7 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             if (newLocale != null) {
                 ctx.setCurrentLocale(current.withCategory(category, newLocale));
             } else {
-                throw PRaiseNode.raiseUncached(nodeForRaise, PythonErrorType.ValueError, ErrorMessages.UNSUPPORTED_LOCALE_SETTING);
+                throw PRaiseNode.raiseStatic(nodeForRaise, PythonErrorType.ValueError, ErrorMessages.UNSUPPORTED_LOCALE_SETTING);
             }
             return LocaleUtils.toPosix(newLocale);
         }
@@ -204,10 +204,10 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached FromJavaStringNode resultAsTruffleStringNode,
                         @Cached ToJavaStringNode toJavaStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             long l = asLongNode.execute(frame, inliningTarget, category);
             if (!isValidCategory(l)) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
             }
 
             TruffleString posixLocaleIDStr = null;

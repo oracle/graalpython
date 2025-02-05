@@ -137,8 +137,8 @@ public final class SetBuiltins extends PythonBuiltins {
 
         @Fallback
         static PNone fail(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object self, Object iterable,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, iterable);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, iterable);
         }
     }
 
@@ -684,9 +684,9 @@ public final class SetBuiltins extends PythonBuiltins {
         static Object remove(VirtualFrame frame, PSet self, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!discardNode.execute(frame, self, key)) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, new Object[]{key});
+                throw raiseNode.raise(inliningTarget, PythonErrorType.KeyError, new Object[]{key});
             }
             return PNone.NONE;
         }
@@ -710,12 +710,12 @@ public final class SetBuiltins extends PythonBuiltins {
         static Object remove(PSet self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStoragePop popNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object[] result = popNode.execute(inliningTarget, self.getDictStorage(), self);
             if (result != null) {
                 return result[0];
             }
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
         }
     }
 

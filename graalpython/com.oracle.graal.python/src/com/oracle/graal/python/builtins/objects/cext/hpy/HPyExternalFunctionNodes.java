@@ -121,6 +121,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class HPyExternalFunctionNodes {
@@ -365,6 +366,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Specialization(limit = "1")
         Object doIt(VirtualFrame frame, TruffleString name, Object callable, GraalHPyContext hPyContext, Object[] arguments,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
@@ -385,9 +387,9 @@ public abstract class HPyExternalFunctionNodes {
             try {
                 return checkFunctionResultNode.execute(pythonThreadState, name, lib.execute(callable, convertedArguments));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
             } catch (ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
@@ -926,7 +928,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadVarArgsNode readVarargsNode;
-        @Child private PRaiseNode raiseNode;
+        private final BranchProfile errorProfile = BranchProfile.create();
 
         public HPyMethObjObjArgProcRoot(PythonLanguage language, TruffleString name) {
             super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
@@ -940,18 +942,10 @@ public abstract class HPyExternalFunctionNodes {
             } else if (varargs.length == 1) {
                 return new Object[]{getSelf(frame), getArg1(frame), varargs[0]};
             } else {
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError,
                                 ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S,
                                 getName(), 2, 3, "s", 1 + varargs.length, "were", "");
             }
-        }
-
-        private PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
         }
 
         private Object[] getVarargs(VirtualFrame frame) {
@@ -1135,7 +1129,7 @@ public abstract class HPyExternalFunctionNodes {
         static Object doObject(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("value") InteropLibrary lib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode,
+                        @Shared @Cached PRaiseNode raiseNode,
                         @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             if (lib.fitsInLong(value)) {
                 try {
@@ -1146,7 +1140,7 @@ public abstract class HPyExternalFunctionNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.FUNC_S_DIDNT_RETURN_INT, name);
+            throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.FUNC_S_DIDNT_RETURN_INT, name);
         }
     }
 
@@ -1372,7 +1366,7 @@ public abstract class HPyExternalFunctionNodes {
             Object nativeSpacePtr = getNativeSpacePointerNode.executeCached(objects[0]);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.ATTEMPTING_GETTER_NO_NATIVE_SPACE);
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.ATTEMPTING_GETTER_NO_NATIVE_SPACE);
             }
             objects[0] = new PythonAbstractNativeObject(nativeSpacePtr);
             return objects;
@@ -1454,7 +1448,7 @@ public abstract class HPyExternalFunctionNodes {
             Object nativeSpacePtr = getNativeSpacePointerNode.executeCached(objects[0]);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.ATTEMPTING_SETTER_NO_NATIVE_SPACE);
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.ATTEMPTING_SETTER_NO_NATIVE_SPACE);
             }
             objects[0] = new PythonAbstractNativeObject(nativeSpacePtr);
             return objects;
@@ -1777,7 +1771,7 @@ public abstract class HPyExternalFunctionNodes {
                 callable = null;
             }
             if (callable == null) {
-                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.HPY_OBJECT_DOES_NOT_SUPPORT_CALL, self);
+                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.HPY_OBJECT_DOES_NOT_SUPPORT_CALL, self);
             }
 
             getCalleeContext().enter(frame);

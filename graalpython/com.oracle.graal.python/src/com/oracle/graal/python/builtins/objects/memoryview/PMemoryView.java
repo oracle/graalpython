@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -250,9 +250,9 @@ public final class PMemoryView extends PythonBuiltinObject {
         this.shouldReleaseImmediately = shouldReleaseImmediately;
     }
 
-    public void checkReleased(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+    public void checkReleased(Node inliningTarget, PRaiseNode raiseNode) {
         if (isReleased()) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }
     }
 
@@ -263,10 +263,10 @@ public final class PMemoryView extends PythonBuiltinObject {
         return false;
     }
 
-    void checkExports(PRaiseNode node) {
+    void checkExports(Node inliningTarget, PRaiseNode node) {
         long exportsValue = getExports().get();
         if (exportsValue > 0) {
-            throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exportsValue);
+            throw node.raise(inliningTarget, BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exportsValue);
         }
     }
 
@@ -290,29 +290,29 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     Object acquire(int requestedFlags,
                     @Bind("$node") Node inliningTarget,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         checkReleased(inliningTarget, raiseNode);
         if (BufferFlags.requestsWritable(requestedFlags) && readonly) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_WRITABLE);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_WRITABLE);
         }
         if (BufferFlags.requestsCContiguous(requestedFlags) && !isCContiguous()) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
         }
         if (BufferFlags.requestsFContiguous(requestedFlags) && !isFortranContiguous()) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_FORTRAN_CONTIGUOUS);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_FORTRAN_CONTIGUOUS);
         }
         if (BufferFlags.requestsAnyContiguous(requestedFlags) && !isAnyContiguous()) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_CONTIGUOUS);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_CONTIGUOUS);
         }
         if (!BufferFlags.requestsIndirect(requestedFlags) && (flags & FLAG_PIL) != 0) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_REQUIRES_SUBOFFSETS);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_REQUIRES_SUBOFFSETS);
         }
         if (!BufferFlags.requestsStrides(requestedFlags) && !isCContiguous()) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
         }
         // TODO should reflect the cast to unsigned bytes if necessary
         if (!BufferFlags.requestsShape(requestedFlags) && BufferFlags.requestsFormat(requestedFlags)) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.MV_CANNOT_CAST_UNSIGNED_BYTES_IF_FMT_FLAG);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.MV_CANNOT_CAST_UNSIGNED_BYTES_IF_FMT_FLAG);
         }
         exports.incrementAndGet();
         return this;
@@ -329,7 +329,7 @@ public final class PMemoryView extends PythonBuiltinObject {
          * should be no such helper memoryviews, the C buffer should have a separate implementation.
          */
         if (shouldReleaseImmediately) {
-            checkExports(raiseNode);
+            checkExports(inliningTarget, raiseNode);
             if (checkShouldReleaseBuffer()) {
                 releaseNode.execute(inliningTarget, getLifecycleManager());
             }

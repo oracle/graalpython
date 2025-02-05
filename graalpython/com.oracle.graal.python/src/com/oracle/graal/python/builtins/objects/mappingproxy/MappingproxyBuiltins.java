@@ -287,8 +287,8 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     abstract static class IOrNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object or(Object self, @SuppressWarnings("unused") Object other,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD, self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD, self);
         }
     }
 

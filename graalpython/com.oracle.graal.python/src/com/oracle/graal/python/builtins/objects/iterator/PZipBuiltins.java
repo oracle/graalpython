@@ -74,8 +74,8 @@ public final class PZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isEmpty(self.getIterators())")
         static Object doEmpty(@SuppressWarnings("unused") PZip self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
@@ -96,7 +96,7 @@ public final class PZipBuiltins extends PythonBuiltins {
                         @Shared @Cached GetNextNode next,
                         @Cached IsBuiltinObjectProfile classProfile,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             int i = 0;
@@ -108,12 +108,12 @@ public final class PZipBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, classProfile);
                 if (i > 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
                 }
                 for (i = 1; i < iterators.length; i++) {
                     try {
                         next.execute(frame, iterators[i]);
-                        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
                     } catch (PException e2) {
                         e2.expectStopIteration(inliningTarget, classProfile);
                     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -210,8 +210,8 @@ public abstract class TpSlotDescrSet {
         }
     }
 
-    private static PException raiseAttributeError(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString attrName) {
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, attrName);
+    private static PException raiseAttributeError(Node inliningTarget, PRaiseNode raiseNode, TruffleString attrName) {
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, attrName);
     }
 
     @GenerateInline(inlineByDefault = true)
@@ -241,7 +241,7 @@ public abstract class TpSlotDescrSet {
         @Specialization(guards = "!isNoValue(value)")
         static void callPythonSet(VirtualFrame frame, Node inliningTarget, TpSlotDescrSetPython slot, Object self, Object obj, Object value,
                         @Cached TernaryPythonSlotDispatcherNode dispatcherNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object callable = slot.getSetCallable();
             if (callable == null) {
                 throw raiseAttributeError(inliningTarget, raiseNode, T___SET__);
@@ -253,7 +253,7 @@ public abstract class TpSlotDescrSet {
         @InliningCutoff
         static void callPythonDel(VirtualFrame frame, Node inliningTarget, TpSlotDescrSetPython slot, Object self, Object obj, @SuppressWarnings("unused") Object value,
                         @Cached BinaryPythonSlotDispatcherNode dispatcherNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object callable = slot.getDelCallable();
             if (callable == null) {
                 throw raiseAttributeError(inliningTarget, raiseNode, T___DEL__);

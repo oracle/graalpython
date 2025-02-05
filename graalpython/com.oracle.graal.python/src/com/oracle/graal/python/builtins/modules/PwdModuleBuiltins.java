@@ -152,13 +152,13 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             long uid;
             try {
                 uid = uidConversionNode.executeLong(frame, uidObj);
             } catch (PException ex) {
                 if (classProfile.profileException(inliningTarget, ex, PythonBuiltinClassType.OverflowError)) {
-                    throw raiseUidNotFound(raiseNode.get(inliningTarget));
+                    throw raiseUidNotFound(inliningTarget, raiseNode);
                 }
                 throw ex;
             }
@@ -174,14 +174,14 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (pwd == null) {
-                throw raiseUidNotFound(raiseNode.get(inliningTarget));
+                throw raiseUidNotFound(inliningTarget, raiseNode);
             }
             PythonLanguage language = context.getLanguage(inliningTarget);
             return PFactory.createStructSeq(language, STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, language, unsignedConversionProfile));
         }
 
-        private static PException raiseUidNotFound(PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.KeyError, ErrorMessages.GETPWUID_NOT_FOUND);
+        private static PException raiseUidNotFound(Node inliningTarget, PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.KeyError, ErrorMessages.GETPWUID_NOT_FOUND);
         }
     }
 
@@ -205,7 +205,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile unsignedConversionProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // Note: CPython also takes only Strings, not bytes, and then encodes the String
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
             Object nameEncoded = encodeFSDefault.execute(inliningTarget, name);
@@ -221,7 +221,7 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (pwd == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, ErrorMessages.GETPWNAM_NAME_NOT_FOUND, name);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.KeyError, ErrorMessages.GETPWNAM_NAME_NOT_FOUND, name);
             }
             return PFactory.createStructSeq(language, STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, context.getLanguage(inliningTarget), unsignedConversionProfile));
         }

@@ -204,12 +204,12 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetNextNode getNextNode,
                         @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile isStopIterationProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!PGuards.isPNone(maxlenObj)) {
                 try {
                     int maxlen = castToIntNode.execute(inliningTarget, maxlenObj);
                     if (maxlen < 0) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MAXLEN_MUST_BE_NONNEG);
+                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MAXLEN_MUST_BE_NONNEG);
                     }
                     self.setMaxLength(maxlen);
                 } catch (PException e) {
@@ -218,9 +218,9 @@ public final class DequeBuiltins extends PythonBuiltins {
                      * OverflowError
                      */
                     e.expect(inliningTarget, TypeError, isTypeErrorProfile);
-                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
                 } catch (CannotCastException e) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
             }
 
@@ -318,7 +318,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                     n++;
                 }
                 if (startState != self.getState()) {
-                    throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
+                    throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
                 }
             }
             return n;
@@ -405,7 +405,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         static int doWithoutSlice(VirtualFrame frame, PDeque self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop,
                         @Bind("this") Node inliningTarget,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return doWithIntSlice(frame, self, value, 0, self.getSize(), inliningTarget, eqNode, raiseNode);
         }
 
@@ -413,7 +413,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         static int doWithIntSlice(VirtualFrame frame, PDeque self, Object value, int start, int stop,
                         @Bind("this") Node inliningTarget,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             int size = self.getSize();
             int normStart = normalize(start, size);
             int normStop = normalize(stop, size);
@@ -436,11 +436,11 @@ public final class DequeBuiltins extends PythonBuiltins {
                         return idx;
                     }
                     if (startState != self.getState()) {
-                        throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
+                        throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
                     }
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.S_IS_NOT_DEQUE, value);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.S_IS_NOT_DEQUE, value);
         }
 
         @Specialization
@@ -450,7 +450,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached PyNumberAsSizeNode startIndexNode,
                         @Cached PyNumberAsSizeNode stopIndexNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int istart;
             int istop;
             if (start != PNone.NO_VALUE) {
@@ -496,7 +496,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         PNone doGeneric(PDeque self, int index, Object value) {
             int n = self.getSize();
             if (self.getMaxLength() == n) {
-                throw PRaiseNode.raiseUncached(this, IndexError, ErrorMessages.DEQUE_AT_MAX_SIZE);
+                throw PRaiseNode.raiseStatic(this, IndexError, ErrorMessages.DEQUE_AT_MAX_SIZE);
             }
 
             // shortcuts for simple cases
@@ -526,10 +526,10 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGeneric(PDeque self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object value = self.pop();
             if (value == null) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
             }
             return value;
         }
@@ -543,10 +543,10 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGeneric(PDeque self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object value = self.popLeft();
             if (value == null) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.POP_FROM_EMPTY_DEQUE);
             }
             return value;
         }
@@ -566,7 +566,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                 try {
                     boolean result = PyObjectRichCompareBool.EqNode.compareUncached(self.peekLeft(), value);
                     if (n != self.getSize()) {
-                        throw PRaiseNode.raiseUncached(this, IndexError, DEQUE_MUTATED_DURING_REMOVE);
+                        throw PRaiseNode.raiseStatic(this, IndexError, DEQUE_MUTATED_DURING_REMOVE);
                     }
                     if (result) {
                         Object removed = self.popLeft();
@@ -586,7 +586,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                     throw e;
                 }
             }
-            throw PRaiseNode.raiseUncached(this, ValueError, DEQUE_REMOVE_X_NOT_IN_DEQUE);
+            throw PRaiseNode.raiseStatic(this, ValueError, DEQUE_REMOVE_X_NOT_IN_DEQUE);
         }
     }
 
@@ -734,9 +734,9 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doDeque")
         static PDeque doGeneric(PDeque self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!(other instanceof PDeque)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE, other);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE, other);
             }
             return doDeque(self, (PDeque) other);
         }
@@ -770,7 +770,7 @@ public final class DequeBuiltins extends PythonBuiltins {
             }
 
             if (size > Integer.MAX_VALUE / n) {
-                throw PRaiseNode.raiseUncached(node, MemoryError);
+                throw PRaiseNode.raiseStatic(node, MemoryError);
             }
 
             // Reduce the number of repetitions when maxlen would be exceeded
@@ -814,7 +814,7 @@ public final class DequeBuiltins extends PythonBuiltins {
                     return true;
                 }
                 if (startState != self.getState()) {
-                    throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
+                    throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
                 }
             }
             return false;

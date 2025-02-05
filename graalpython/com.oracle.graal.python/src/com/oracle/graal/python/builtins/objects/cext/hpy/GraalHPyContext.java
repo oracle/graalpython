@@ -210,8 +210,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         try {
             abiVersion = backend.getHPyABIVersion(llvmLibrary, hpyMajorVersionFuncName, hpyMinorVersionFuncName);
         } catch (Exception e) {
-            throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ERROR_LOADING_EXT_MODULE,
-                            path, hpyMajorVersionFuncName, hpyMinorVersionFuncName, e.getMessage());
+            throw PRaiseNode.raiseStatic(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ERROR_LOADING_EXT_MODULE, path, hpyMajorVersionFuncName, hpyMinorVersionFuncName,
+                            e.getMessage());
         }
 
         /*
@@ -219,8 +219,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
          * which HPyContext to create.
          */
         if (abiVersion.major != HPY_ABI_VERSION || abiVersion.minor > HPY_ABI_VERSION_MINOR) {
-            throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_VERSION_ERROR,
-                            name, abiVersion.major, abiVersion.minor, HPY_ABI_VERSION, HPY_ABI_VERSION_MINOR);
+            throw PRaiseNode.raiseStatic(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_VERSION_ERROR, name, abiVersion.major, abiVersion.minor, HPY_ABI_VERSION,
+                            HPY_ABI_VERSION_MINOR);
         }
 
         // Sanity check of the tag in the shared object filename
@@ -233,7 +233,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             // HPy only supports multi-phase extension module initialization.
             assert !(hpyModuleDefPtr instanceof PythonModule);
             if (InteropLibrary.getUncached().isNull(hpyModuleDefPtr)) {
-                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.ERROR_LOADING_HPY_EXT_S_S, path, name);
+                throw PRaiseNode.raiseStatic(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.ERROR_LOADING_HPY_EXT_S_S, path, name);
             }
 
             Object module = GraalHPyModuleCreateNodeGen.getUncached().execute(context.getHPyContext(), name, spec, hpyModuleDefPtr);
@@ -255,14 +255,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             String abiTagVersion = matcher.group(1);
             int abiTag = Integer.parseInt(abiTagVersion);
             if (abiTag != abiVersion.major) {
-                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_TAG_MISMATCH,
-                                shortname, soname, abiTag, abiVersion.major, abiVersion.minor);
+                throw PRaiseNode.raiseStatic(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_ABI_TAG_MISMATCH, shortname, soname, abiTag, abiVersion.major, abiVersion.minor);
             }
             // major version fits -> validation successful
             return;
         }
-        throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_NO_ABI_TAG,
-                        shortname, soname, abiVersion.major, abiVersion.minor);
+        throw PRaiseNode.raiseStatic(location, PythonBuiltinClassType.RuntimeError, ErrorMessages.HPY_NO_ABI_TAG, shortname, soname, abiVersion.major, abiVersion.minor);
     }
 
     public Object createArgumentsArray(Object[] args) {

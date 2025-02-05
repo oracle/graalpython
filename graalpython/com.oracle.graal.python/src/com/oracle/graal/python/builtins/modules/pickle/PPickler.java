@@ -273,32 +273,32 @@ public class PPickler extends PythonBuiltinObject {
     }
 
     // helper methods
-    public void setProtocol(Node inliningTarget, PRaiseNode.Lazy raiseNode, int protocol, boolean fixImports) {
+    public void setProtocol(Node inliningTarget, PRaiseNode raiseNode, int protocol, boolean fixImports) {
         proto = protocol;
         if (proto < 0) {
             proto = PickleUtils.PICKLE_PROTOCOL_HIGHEST;
         } else if (proto > PickleUtils.PICKLE_PROTOCOL_HIGHEST) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.PICKLE_PROTO_MUST_BE_LE, PickleUtils.PICKLE_PROTOCOL_HIGHEST);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.PICKLE_PROTO_MUST_BE_LE, PickleUtils.PICKLE_PROTOCOL_HIGHEST);
         }
 
         this.bin = (proto > 0) ? 1 : 0;
         this.fixImports = fixImports && proto < 3;
     }
 
-    public void setOutputStream(VirtualFrame frame, Node inliningTarget, PRaiseNode.Lazy raiseNode, PyObjectLookupAttr lookup, Object file) {
+    public void setOutputStream(VirtualFrame frame, Node inliningTarget, PRaiseNode raiseNode, PyObjectLookupAttr lookup, Object file) {
         write = lookup.execute(frame, inliningTarget, file, PickleUtils.T_METHOD_WRITE);
         if (write == PNone.NO_VALUE) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.FILE_MUST_HAVE_WRITE_ATTR);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FILE_MUST_HAVE_WRITE_ATTR);
         }
     }
 
-    public void setBufferCallback(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object callback) {
+    public void setBufferCallback(Node inliningTarget, PRaiseNode raiseNode, Object callback) {
         bufferCallback = callback;
         if (PGuards.isNone(callback) || PGuards.isNoValue(callback)) {
             bufferCallback = null;
         }
         if (bufferCallback != null && proto < 5) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.BUFFCB_NEEDS_PROTO_GE_5);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.BUFFCB_NEEDS_PROTO_GE_5);
         }
     }
 
@@ -951,7 +951,7 @@ public class PPickler extends PythonBuiltinObject {
             boolean useNewobj = false, useNewobjEx = false;
 
             if (!(arguments instanceof PTuple)) {
-                throw getRaiseNode().raiseBadInternalCall();
+                throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
             int size = length(frame, arguments);
             if (size < 2 || size > 6) {

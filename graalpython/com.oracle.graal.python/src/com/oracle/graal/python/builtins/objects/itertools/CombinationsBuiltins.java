@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
@@ -105,8 +106,8 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
         static Object nextStopped(PAbstractCombinations self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
         }
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
@@ -130,7 +131,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
                         @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
@@ -139,12 +140,12 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
                         @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
         private static Object nextInternal(Node inliningTarget, PAbstractCombinations self, InlinedLoopConditionProfile indexLoopProfile,
-                        InlinedLoopConditionProfile resultLoopProfile, PRaiseNode.Lazy raiseNode) throws PException {
+                        InlinedLoopConditionProfile resultLoopProfile, PRaiseNode raiseNode) throws PException {
 
             CompilerAsserts.partialEvaluationConstant(self.getClass());
 
@@ -161,7 +162,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             // If i is negative, then the indices are all at their maximum value and we're done
             if (i < 0) {
                 self.setStopped(true);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, StopIteration);
             }
 
             // Increment the current index which we know is not at its maximum.
@@ -223,7 +224,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode cast,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int n = self.getPool().length;
             if (stateObj instanceof PTuple state && state.getSequenceStorage().length() == self.getR()) {
                 SequenceStorage storage = state.getSequenceStorage();
@@ -240,7 +241,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         self.getIndices()[i] = index;
                     }
                 } catch (CannotCastException e) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 Object[] result = new Object[self.getR()];
                 for (int i = 0; i < self.getR(); i++) {
@@ -249,7 +250,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 self.setLastResult(result);
                 return PNone.NONE;
             } else {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.INVALID_ARGS, T___SETSTATE__);
             }
         }
     }

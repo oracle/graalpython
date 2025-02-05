@@ -133,14 +133,14 @@ public final class MethodBuiltins extends PythonBuiltins {
                         @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // TODO: (GR-53090) this is different to what CPython does and CPython also does not
             // define tp_descrget for method
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             try {
@@ -154,8 +154,8 @@ public final class MethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPMethod(self)")
         @InliningCutoff
         static Object getattribute(Object self, @SuppressWarnings("unused") Object key,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "method", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "method", self);
         }
     }
 

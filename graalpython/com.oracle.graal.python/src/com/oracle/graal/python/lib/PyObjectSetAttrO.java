@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -117,11 +117,11 @@ public abstract class PyObjectSetAttrO extends PNodeWithContext {
         static void doIt(Frame frame, Object self, Object nameObj, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
-                        @Cached PRaiseNode.Lazy raise,
+                        @Cached PRaiseNode raise,
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached CallSlotSetAttrONode callSetAttr) {
             if (!unicodeCheckNode.execute(inliningTarget, nameObj)) {
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, nameObj);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, nameObj);
             }
             assert value != null; // should use PNone.NO_VALUE
             TpSlots slots = getSlotsNode.execute(inliningTarget, self);

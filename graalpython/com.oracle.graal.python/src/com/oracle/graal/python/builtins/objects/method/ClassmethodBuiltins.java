@@ -127,7 +127,7 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClass,
                         @Shared @Cached MakeMethodNode makeMethod,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), makeMethod, raiseNode);
         }
 
@@ -145,14 +145,14 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
         static Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached MakeMethodNode makeMethod,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return doGet(inliningTarget, self, type, makeMethod, raiseNode);
         }
 
-        private static Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, MakeMethodNode makeMethod, PRaiseNode.Lazy raiseNode) {
+        private static Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, MakeMethodNode makeMethod, PRaiseNode raiseNode) {
             Object callable = self.getCallable();
             if (callable == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
             return makeMethod.execute(inliningTarget, type, callable);
         }

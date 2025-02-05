@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Revers
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -130,7 +129,7 @@ public abstract class PyNumberMultiplyNode extends BinaryOpNode {
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberAsSizeNode asSizeNode,
                     @Cached CallSlotSizeArgFun callSlotNode,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
@@ -157,15 +156,15 @@ public abstract class PyNumberMultiplyNode extends BinaryOpNode {
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Lazy raiseNode) {
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "+", v, w);
+    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "+", v, w);
     }
 
     private static Object sequenceRepeat(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object seq, Object n,
                     PyIndexCheckNode indexCheckNode,
                     PyNumberAsSizeNode asSizeNode,
                     CallSlotSizeArgFun callSlotNode,
-                    PRaiseNode.Lazy raiseNode) {
+                    PRaiseNode raiseNode) {
         if (indexCheckNode.execute(inliningTarget, n)) {
             int count = asSizeNode.execute(frame, inliningTarget, n, PythonBuiltinClassType.OverflowError);
             return callSlotNode.execute(frame, inliningTarget, slot, seq, count);
@@ -175,8 +174,8 @@ public abstract class PyNumberMultiplyNode extends BinaryOpNode {
     }
 
     @InliningCutoff
-    private static PException raiseNonIntSqMul(Node inliningTarget, Object n, Lazy raiseNode) {
-        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, n);
+    private static PException raiseNonIntSqMul(Node inliningTarget, Object n, PRaiseNode raiseNode) {
+        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, n);
     }
 
     @NeverDefault

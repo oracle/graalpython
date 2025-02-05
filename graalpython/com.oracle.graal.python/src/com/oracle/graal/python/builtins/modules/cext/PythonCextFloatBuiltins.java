@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,10 +73,10 @@ public final class PythonCextFloatBuiltins {
 
         @Specialization(guards = "!isDouble(obj)")
         static Object fromDouble(Object obj,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached StrNode strNode) {
             // cpython PyFloat_FromDouble takes only 'double'
-            throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }
     }
 

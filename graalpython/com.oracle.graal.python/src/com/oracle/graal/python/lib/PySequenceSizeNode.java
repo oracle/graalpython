@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
@@ -125,7 +124,7 @@ public abstract class PySequenceSizeNode extends Node {
     static int doOthers(Frame frame, Node inliningTarget, Object object,
                     @Cached GetObjectSlotsNode getTpSlotsNode,
                     @Cached TpSlotLen.CallSlotLenNode callSlotLenNode,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         TpSlots slots = getTpSlotsNode.execute(inliningTarget, object);
         if (slots.sq_length() != null) {
             return callSlotLenNode.execute((VirtualFrame) frame, inliningTarget, slots.sq_length(), object);
@@ -134,11 +133,11 @@ public abstract class PySequenceSizeNode extends Node {
     }
 
     @InliningCutoff
-    private static PException raiseError(Object object, Node inliningTarget, Lazy raiseNode, TpSlots slots) {
+    private static PException raiseError(Object object, Node inliningTarget, PRaiseNode raiseNode, TpSlots slots) {
         TruffleString error = ErrorMessages.OBJ_HAS_NO_LEN;
         if (slots.mp_length() == null) {
             error = ErrorMessages.IS_NOT_A_SEQUENCE;
         }
-        throw raiseNode.get(inliningTarget).raise(TypeError, error, object);
+        throw raiseNode.raise(inliningTarget, TypeError, error, object);
     }
 }

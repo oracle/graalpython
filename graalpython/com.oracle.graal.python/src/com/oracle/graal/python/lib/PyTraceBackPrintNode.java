@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.MAXSIZE
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_TRACEBACKLIMIT;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NEWLINE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -56,6 +57,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
@@ -401,8 +403,8 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
     @Specialization(guards = "!isPTraceback(tb)")
     @SuppressWarnings("unused")
     public void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raiseBadInternalCall();
+                    @Bind("this") Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
 
     @NeverDefault

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,61 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
+package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
-/**
- * Casts a Python integer to a Java long without coercion. <b>ATTENTION:</b> If the cast isn't
- * possible, the node will throw a {@link CannotCastException}.
- */
 @GenerateUncached
-@GenerateInline
-@GenerateCached(false)
-public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
-
-    public final long executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode raiseNode) {
-        return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
+abstract class PRaiseCachedNode extends Node {
+    public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... formatArgs) {
+        throw execute(type, format, formatArgs);
     }
 
-    public final long executeWithThrow(Node inliningTarget, Object x, PRaiseNode raiseNode, PythonBuiltinClassType errType) {
-        try {
-            return execute(inliningTarget, x);
-        } catch (CannotCastException cce) {
-            throw raiseNode.raise(inliningTarget, errType, MUST_BE_S_NOT_P, "a long", x);
-        }
+    protected abstract PException execute(PythonBuiltinClassType type, TruffleString format, Object[] formatArgs);
+
+    @Specialization
+    PException doRaise(PythonBuiltinClassType type, TruffleString format, Object[] formatArgs) {
+        throw PRaiseNode.raiseStatic(this, type, format, formatArgs);
     }
 
-    public static long executeUncached(Object x) throws CannotCastException {
-        return CastToJavaLongExactNodeGen.getUncached().execute(null, x);
+    @NeverDefault
+    public static PRaiseCachedNode create() {
+        return PRaiseCachedNodeGen.create();
     }
 
-    @Specialization(rewriteOn = OverflowException.class)
-    protected static long toLongNoOverflow(PInt x) throws OverflowException {
-        return x.longValueExact();
-    }
-
-    @Specialization(replaces = "toLongNoOverflow")
-    protected static long toLong(Node inliningTarget, PInt x,
-                    @Cached PRaiseNode raiseNode) {
-        try {
-            return x.longValueExact();
-        } catch (OverflowException e) {
-            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
-        }
+    public static PRaiseCachedNode getUncached() {
+        return PRaiseCachedNodeGen.getUncached();
     }
 }

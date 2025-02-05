@@ -137,7 +137,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile validProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached BytesNodes.GetBytesStorage getBytesStorage,
                         @Cached SequenceStorageMpSubscriptNode subscriptNode) {
             if (!validProfile.profile(inliningTarget, SequenceStorageMpSubscriptNode.isValidIndex(inliningTarget, idx, indexCheckNode))) {
@@ -148,8 +148,8 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        private static PException raiseNonIntIndex(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object index) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "byte", index);
+        private static PException raiseNonIntIndex(Node inliningTarget, PRaiseNode raiseNode, Object index) {
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "byte", index);
         }
     }
 
@@ -178,7 +178,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile hasDelete,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached PyBytesCheckExactNode checkExactNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             byte[] bTable = null;
             if (table != PNone.NONE) {
                 hasTable.enter(inliningTarget);
@@ -264,7 +264,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached PyBytesCheckNode check,
                         @Cached BytesNodes.GetBytesStorage getBytesStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalByteArrayNode getArray,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (check.execute(inliningTarget, self)) {
                 if (check.execute(inliningTarget, other)) {
                     SequenceStorage selfStorage = getBytesStorage.execute(inliningTarget, self);
@@ -274,7 +274,7 @@ public class BytesBuiltins extends PythonBuiltins {
                     return PNotImplemented.NOT_IMPLEMENTED;
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_BYTES, self);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.builtinName, J_BYTES, self);
         }
     }
 

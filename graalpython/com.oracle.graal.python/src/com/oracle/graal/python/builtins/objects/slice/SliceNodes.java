@@ -137,13 +137,13 @@ public abstract class SliceNodes {
 
         @Specialization
         static PSlice.SliceInfo calc(Node inliningTarget, int length, PSlice.SliceInfo slice,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int start = slice.start;
             int stop = slice.stop;
             int step = slice.step;
 
             if (step == 0) {
-                raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
             assert step > Integer.MIN_VALUE : "step must not be minimum integer value";
 
@@ -207,8 +207,8 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "length < 0")
         PSlice.SliceInfo doSliceInt(@SuppressWarnings("unused") PSlice slice, @SuppressWarnings("unused") int length,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
     }
 
@@ -297,7 +297,7 @@ public abstract class SliceNodes {
         @InliningCutoff
         static PSlice.SliceInfo doSliceObject(Node inliningTarget, PObjectSlice slice,
                         @Cached SliceLossyCastToInt toInt,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             /* this is harder to get right than you might think */
             int start, stop, step;
             if (slice.getStep() == PNone.NONE) {
@@ -305,7 +305,7 @@ public abstract class SliceNodes {
             } else {
                 step = (int) toInt.execute(inliningTarget, slice.getStep());
                 if (step == 0) {
-                    raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
                 }
             }
 
@@ -339,10 +339,10 @@ public abstract class SliceNodes {
 
         @Specialization
         static PSlice.SliceInfoLong doSliceInt(Node inliningTarget, PIntSlice slice,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             long step = slice.getIntStep();
             if (step == 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
 
             long start;
@@ -357,7 +357,7 @@ public abstract class SliceNodes {
         @Specialization
         static PSlice.SliceInfoLong doSliceObject(Node inliningTarget, PObjectSlice slice,
                         @Cached SliceLossyCastToLong toInt,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             /* this is harder to get right than you might think */
             long start, stop, step;
             if (slice.getStep() == PNone.NONE) {
@@ -365,7 +365,7 @@ public abstract class SliceNodes {
             } else {
                 step = toInt.execute(inliningTarget, slice.getStep());
                 if (step == 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
                 }
                 /*
                  * Same as in CPython 'PySlice_Unpack': Here step might be -Long.MAX_VALUE-1; in
@@ -410,13 +410,13 @@ public abstract class SliceNodes {
         @Specialization(guards = "!isPNone(i)")
         protected static Object doGeneric(Node inliningTarget, Object i,
                         @Cached InlinedBranchProfile exceptionProfile,
-                        @Cached PRaiseNode.Lazy raise,
+                        @Cached PRaiseNode raise,
                         @Cached CastToJavaBigIntegerNode cast) {
             try {
                 return cast.execute(inliningTarget, i);
             } catch (PException e) {
                 exceptionProfile.enter(inliningTarget);
-                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+                throw raise.raise(inliningTarget, TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
             }
         }
     }
@@ -436,13 +436,13 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "!isPNone(i)")
         protected static Object doGeneric(Node inliningTarget, Object i,
-                        @Cached PRaiseNode.Lazy raise,
+                        @Cached PRaiseNode raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             if (indexCheckNode.execute(inliningTarget, i)) {
                 return asSizeNode.executeExact(null, inliningTarget, i);
             }
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
         }
     }
 
@@ -462,14 +462,14 @@ public abstract class SliceNodes {
         @Specialization(guards = "!isPNone(i)")
         protected static Object doGeneric(Node inliningTarget, Object i,
                         @Cached InlinedBranchProfile exceptionProfile,
-                        @Cached PRaiseNode.Lazy raise,
+                        @Cached PRaiseNode raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             if (indexCheckNode.execute(inliningTarget, i)) {
                 return asSizeNode.executeLossy(null, inliningTarget, i);
             }
             exceptionProfile.enter(inliningTarget);
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
         }
     }
 
@@ -483,7 +483,7 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "!isPNone(i)")
         static long doGeneric(Node inliningTarget, Object i,
-                        @Cached PRaiseNode.Lazy raise,
+                        @Cached PRaiseNode raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached(inline = false) PyLongSign signNode,
                         @Cached PyLongAsLongAndOverflowNode asSizeNode) {
@@ -497,7 +497,7 @@ public abstract class SliceNodes {
                     return Long.MAX_VALUE;
                 }
             }
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
         }
     }
 }

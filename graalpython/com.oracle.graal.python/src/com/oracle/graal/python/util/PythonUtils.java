@@ -471,7 +471,7 @@ public final class PythonUtils {
         int r = (int) x;
         if (r != x) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_INT_OVERFLOW);
+            throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.INTERNAL_INT_OVERFLOW);
         }
         return r;
     }

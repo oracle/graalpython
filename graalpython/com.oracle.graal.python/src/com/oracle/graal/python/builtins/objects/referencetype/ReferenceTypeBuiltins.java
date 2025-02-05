@@ -141,21 +141,21 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile referentProfile,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object referent = self.getObject();
             if (referentProfile.profile(inliningTarget, referent != null)) {
                 long hash = hashNode.execute(frame, inliningTarget, referent);
                 self.setHash(hash);
                 return hash;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.WEAK_OBJ_GONE_AWAY);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.WEAK_OBJ_GONE_AWAY);
             }
         }
 
         @Fallback
         static int hashWrong(@SuppressWarnings("unused") Object self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
         }
     }
 

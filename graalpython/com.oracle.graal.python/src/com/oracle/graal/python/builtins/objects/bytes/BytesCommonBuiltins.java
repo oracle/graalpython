@@ -198,12 +198,12 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         return null;
     }
 
-    public static CodingErrorAction toCodingErrorAction(Node inliningTarget, TruffleString errors, PRaiseNode.Lazy raiseNode, TruffleString.EqualNode eqNode) {
+    public static CodingErrorAction toCodingErrorAction(Node inliningTarget, TruffleString errors, PRaiseNode raiseNode, TruffleString.EqualNode eqNode) {
         CodingErrorAction action = toCodingErrorAction(errors, eqNode);
         if (action != null) {
             return action;
         }
-        throw raiseNode.get(inliningTarget).raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
+        throw raiseNode.raise(inliningTarget, PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
     }
 
     @TruffleBoundary
@@ -244,10 +244,10 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
                         @Cached IsInstanceNode isInstanceNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object result = decodeNode.executeWithStrings(frame, self, encoding, errors);
             if (!isInstanceNode.executeWith(frame, result, PythonBuiltinClassType.PString)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
+                throw raiseNode.raise(inliningTarget, TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
             }
             return result;
         }
@@ -305,12 +305,12 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.ConcatNode concatNode,
                         @Cached @Exclusive BytesNodes.CreateBytesNode create,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object buffer;
             try {
                 buffer = bufferAcquireLib.acquireReadonly(other, frame, indirectCallData);
             } catch (PException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
             try {
                 // TODO avoid copying
@@ -449,8 +449,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Fallback
         static boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
                         @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
         }
 
         protected abstract boolean doIt(byte[] bytes, int len, byte[] prefix, int start, int end);
@@ -578,10 +578,10 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         static int index(VirtualFrame frame, Object self, Object arg, int start, int end,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.FindNode findNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int result = findNode.execute(frame, inliningTarget, self, arg, start, end);
             if (result == -1) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
             }
             return result;
         }
@@ -603,10 +603,10 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         static int indexWithStartEnd(VirtualFrame frame, Object self, Object arg, int start, int end,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.FindNode findNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int result = findNode.executeReverse(frame, inliningTarget, self, arg, start, end);
             if (result == -1) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
             }
             return result;
         }
@@ -627,7 +627,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile notFound,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached BytesNodes.CreateBytesNode createBytesNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
             byte[] bytes = toBytesNode.execute(frame, self);
@@ -635,7 +635,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             try {
                 int lenSep = bufferLib.getBufferLength(sepBuffer);
                 if (lenSep == 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMPTY_SEPARATOR);
                 }
                 byte[] sepBytes = bufferLib.getCopiedByteArray(sepBuffer);
                 int idx = BytesNodes.FindNode.find(bytes, len, sepBytes, 0, bytes.length, isRight());
@@ -805,14 +805,14 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode toStr,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString str = toStr.execute(inliningTarget, strObj);
             if (codePointLengthNode.execute(str, TS_ENCODING) != 1) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, SEP_MUST_BE_LENGTH_1);
+                throw raiseNode.raise(inliningTarget, ValueError, SEP_MUST_BE_LENGTH_1);
             }
             int cp = codePointAtIndexNode.execute(str, 0, TS_ENCODING);
             if (cp > 127) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, SEP_MUST_BE_ASCII);
+                throw raiseNode.raise(inliningTarget, ValueError, SEP_MUST_BE_ASCII);
             }
             return (byte) cp;
         }
@@ -823,17 +823,17 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, indirectCallData);
             try {
                 if (bufferLib.getBufferLength(buffer) != 1) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, SEP_MUST_BE_LENGTH_1);
+                    throw raiseNode.raise(inliningTarget, ValueError, SEP_MUST_BE_LENGTH_1);
                 }
                 byte b = bufferLib.readByte(buffer, 0);
                 if (b < 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, SEP_MUST_BE_ASCII);
+                    throw raiseNode.raise(inliningTarget, ValueError, SEP_MUST_BE_ASCII);
                 }
                 return b;
             } finally {
@@ -844,8 +844,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static byte error(VirtualFrame frame, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.SEP_MUST_BE_STR_OR_BYTES);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.SEP_MUST_BE_STR_OR_BYTES);
         }
 
         @ClinicConverterFactory
@@ -897,8 +897,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static TruffleString err(Object self, Object sep, Object bytesPerSepGroup,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, DESCRIPTOR_NEED_OBJ, "hex", "bytes");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_NEED_OBJ, "hex", "bytes");
         }
     }
 
@@ -1206,7 +1206,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedBranchProfile hasFill,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int width = asSizeNode.executeExact(frame, inliningTarget, widthObj);
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
@@ -1216,7 +1216,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 if (fillObj instanceof PBytesLike && bufferLib.getBufferLength(fillObj) == 1) {
                     fillByte = bufferLib.readByte(fillObj, 0);
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BYTE_STRING_OF_LEN_ONE_ONLY, methodName(), fillObj);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BYTE_STRING_OF_LEN_ONE_ONLY, methodName(), fillObj);
                 }
             }
             if (checkSkip(len, width)) {
@@ -1360,8 +1360,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Fallback
         static boolean error(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement, @SuppressWarnings("unused") Object count,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, BYTESLIKE_OBJ_REQUIRED, substr);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BYTESLIKE_OBJ_REQUIRED, substr);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1482,22 +1482,22 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization
         static int toInt(long x,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return PInt.intValueExact(x);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
         }
 
         @Specialization
         static int toInt(PInt x,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return x.intValueExact();
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
         }
 
@@ -1634,8 +1634,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"isEmptySep(sep)"})
         static PList error(Object bytes, byte[] sep, int maxsplit,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.ValueError, ErrorMessages.EMPTY_SEPARATOR);
         }
 
         private static PList getBytesResult(List<byte[]> bytes, ListNodes.AppendNode appendNode, Object self, Node inliningTarget, BytesNodes.CreateBytesNode createBytesNode,
@@ -1940,8 +1940,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object strip(Object self, Object object,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, ErrorMessages.INVALID_ARGS, "lstrip/rstrip");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.INVALID_ARGS, "lstrip/rstrip");
         }
 
         protected abstract int mod();
@@ -2071,11 +2071,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BytesNodes.ToBytesNode toByteNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             byte[] fromB = toByteNode.execute(frame, from);
             byte[] toB = toByteNode.execute(frame, to);
             if (fromB.length != toB.length) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.ARGS_MUST_HAVE_SAME_LENGTH, "maketrans");
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ARGS_MUST_HAVE_SAME_LENGTH, "maketrans");
             }
 
             byte[] table = new byte[256];
@@ -2191,7 +2191,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Cached GetBytesStorage getBytesStorage,
                         @Cached GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached BytesNodes.CreateBytesNode create,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
             if (len == 0) {
@@ -2206,18 +2206,18 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     if (tabsize > 0) {
                         int incr = tabsize - (j % tabsize);
                         if (j > max - incr) {
-                            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
+                            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.RESULT_TOO_LONG);
                         }
                         j += incr;
                     }
                 } else {
                     if (j > max - 1) {
-                        throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
+                        throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.RESULT_TOO_LONG);
                     }
                     j++;
                     if (p == N || p == R) {
                         if (i > max - j) {
-                            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
+                            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.RESULT_TOO_LONG);
                         }
                         i += j;
                         j = 0;
@@ -2225,7 +2225,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 }
             }
             if (i > max - j) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.RESULT_TOO_LONG);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.RESULT_TOO_LONG);
             }
 
             byte[] q = new byte[i + j];

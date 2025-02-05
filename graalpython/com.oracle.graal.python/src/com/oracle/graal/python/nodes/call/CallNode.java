@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -165,7 +165,7 @@ public abstract class CallNode extends PNodeWithContext {
                     @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
         Object call = lookupCall.execute(frame, getClassNode.execute(inliningTarget, callableObject), callableObject);
-        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
+        return callCall(frame, inliningTarget, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
     @Specialization(guards = "isPythonClass(callableObject)", replaces = "doType")
@@ -176,7 +176,7 @@ public abstract class CallNode extends PNodeWithContext {
                     @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
         Object call = lookupCall.execute(frame, getClassNode.execute(inliningTarget, callableObject), callableObject);
-        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
+        return callCall(frame, inliningTarget, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
     @Specialization(guards = {"!isCallable(callableObject)", "!isForeignMethod(callableObject)"}, replaces = {"doType", "doPythonClass"})
@@ -187,14 +187,13 @@ public abstract class CallNode extends PNodeWithContext {
                     @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
         Object call = lookupCall.execute(frame, getClassNode.execute(inliningTarget, callableObject), callableObject);
-        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
+        return callCall(frame, inliningTarget, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
     @Specialization
     @InliningCutoff
     protected static Object doForeignMethod(ForeignMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Bind("this") Node inliningTarget,
-                    @Shared("raise") @Cached PRaiseNode raise,
                     @Cached PForeignToPTypeNode fromForeign,
                     @Cached InlinedBranchProfile keywordsError,
                     @Cached InlinedBranchProfile typeError,
@@ -202,14 +201,14 @@ public abstract class CallNode extends PNodeWithContext {
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
         if (keywords.length != 0) {
             keywordsError.enter(inliningTarget);
-            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
         gil.release(true);
         try {
             return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, arguments));
         } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
             typeError.enter(inliningTarget);
-            throw raise.raise(TypeError, e);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, e);
         } catch (UnknownIdentifierException e) {
             // PyObjectGetMethod is supposed to have checked isMemberInvocable
             throw CompilerDirectives.shouldNotReachHere("Cannot invoke member");
@@ -218,9 +217,10 @@ public abstract class CallNode extends PNodeWithContext {
         }
     }
 
-    private static Object callCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords, PRaiseNode raise, CallVarargsMethodNode callCallNode, Object call) {
+    private static Object callCall(VirtualFrame frame, Node inliningTarget, Object callableObject, Object[] arguments, PKeyword[] keywords, PRaiseNode raise, CallVarargsMethodNode callCallNode,
+                    Object call) {
         if (call == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
         }
         return callCallNode.execute(frame, call, PythonUtils.prependArgument(callableObject, arguments), keywords);
     }
@@ -311,7 +311,7 @@ public abstract class CallNode extends PNodeWithContext {
                             inliningTarget, dispatch, createArgs, raise, getClassNode, lookupCall, callCallNode);
         }
         Object callableType = getClassNode.execute(inliningTarget, callableObject);
-        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, lookupCall.execute(frame, callableType, callableObject));
+        return callCall(frame, inliningTarget, callableObject, arguments, keywords, raise, callCallNode, lookupCall.execute(frame, callableType, callableObject));
     }
 
     protected static boolean isForeignMethod(Object object) {

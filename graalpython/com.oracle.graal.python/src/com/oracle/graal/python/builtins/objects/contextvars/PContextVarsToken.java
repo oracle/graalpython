@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,9 +60,9 @@ public class PContextVarsToken extends PythonBuiltinObject {
         this.oldValue = oldValue;
     }
 
-    public void use(Node inliningTarget, PRaiseNode.Lazy raise) {
+    public void use(Node inliningTarget, PRaiseNode raise) {
         if (used) {
-            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ALREADY_USED, this);
+            throw raise.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ALREADY_USED, this);
         }
         used = true;
     }

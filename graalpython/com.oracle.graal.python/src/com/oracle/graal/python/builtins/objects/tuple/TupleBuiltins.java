@@ -153,7 +153,7 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile startLe0Profile,
                         @Cached InlinedBranchProfile endLe0Profile,
                         @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, self);
             int start = startIn;
             if (start < 0) {
@@ -175,7 +175,7 @@ public final class TupleBuiltins extends PythonBuiltins {
             if (idx != -1) {
                 return idx;
             }
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
         }
     }
 
@@ -289,7 +289,7 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile validProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageMpSubscriptNode subscriptNode) {
             if (!validProfile.profile(inliningTarget, SequenceStorageMpSubscriptNode.isValidIndex(inliningTarget, idx, indexCheckNode))) {
@@ -300,8 +300,8 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        private static void raiseNonIntIndex(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object index) {
-            raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", index);
+        private static void raiseNonIntIndex(Node inliningTarget, PRaiseNode raiseNode, Object index) {
+            raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", index);
         }
     }
 
@@ -469,8 +469,8 @@ public final class TupleBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doGeneric(@SuppressWarnings("unused") Object left, Object right,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "tuple", right, "tuple");
         }
     }
 

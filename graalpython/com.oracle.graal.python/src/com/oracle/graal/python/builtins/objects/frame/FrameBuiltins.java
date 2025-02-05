@@ -156,8 +156,8 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object delete(VirtualFrame frame, PFrame self, DescriptorDeleteMarker ignored,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Cached.Exclusive PRaiseNode.Lazy raise) {
-            raise.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
+                        @Cached @Cached.Exclusive PRaiseNode raise) {
+            raise.raise(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
             return PNone.NONE;
         }
 
@@ -187,7 +187,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached @Cached.Exclusive InlinedConditionProfile isCurrentFrameProfile,
                         @Cached @Cached.Exclusive MaterializeFrameNode materializeNode,
-                        @Cached @Cached.Exclusive PRaiseNode.Lazy raise,
+                        @Cached @Cached.Exclusive PRaiseNode raise,
                         @Cached PyLongCheckExactNode isLong,
                         @Cached PyLongAsLongAndOverflowNode toLong) {
             syncLocationIfNeeded(frame, self, this, inliningTarget, isCurrentFrameProfile, materializeNode);
@@ -198,17 +198,17 @@ public final class FrameBuiltins extends PythonBuiltins {
                         if (lineno <= Integer.MAX_VALUE && lineno >= Integer.MIN_VALUE) {
                             self.setJumpDestLine((int) lineno);
                         } else {
-                            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
+                            throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
                         }
                     } catch (OverflowException e) {
-                        throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
+                        throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
                     }
                 } else {
-                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER);
+                    throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER);
                 }
             } else {
                 PythonContext context = getContext();
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT,
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT,
                                 context.getThreadState(context.getLanguage(inliningTarget)).getTracingWhat().pythonName);
             }
             return PNone.NONE;
@@ -261,7 +261,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             try {
                 self.setTraceLine(cast.execute(inliningTarget, v));
             } catch (CannotCastException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_VALUE_MUST_BE_BOOL);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_VALUE_MUST_BE_BOOL);
             }
             return PNone.NONE;
         }

@@ -135,9 +135,9 @@ public final class PythonCextContextBuiltins {
         static Object doGeneric(Object var, Object val,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext pythonContext,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!(var instanceof PContextVar pvar)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             }
             PythonLanguage language = pythonContext.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = pythonContext.getThreadState(language);
@@ -181,7 +181,7 @@ public final class PythonCextContextBuiltins {
         static Object doGeneric(PContextVarsContext context,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext pythonContext,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
             context.enter(inliningTarget, threadState, raiseNode);
             return 0;

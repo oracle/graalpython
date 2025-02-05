@@ -113,7 +113,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) { // "|s:IncrementalDecoder"
+                        @Cached PRaiseNode raiseNode) { // "|s:IncrementalDecoder"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
@@ -123,7 +123,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.raise(inliningTarget, TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;
@@ -164,7 +164,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
         static Object decode(VirtualFrame frame, MultibyteIncrementalDecoderObject self, byte[] input, int end,
                         @Bind("this") Node inliningTarget,
                         @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             byte[] data = input;
             int size = input.length;
 
@@ -174,7 +174,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
             byte[] wdata = data;
             if (self.pendingsize != 0) {
                 if (size > MAXSIZE - self.pendingsize) {
-                    throw raiseNode.get(inliningTarget).raise(MemoryError);
+                    throw raiseNode.raise(inliningTarget, MemoryError);
                 }
                 wsize = size + self.pendingsize;
                 wdata = new byte[wsize];
@@ -208,11 +208,11 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
 
         static int decoderAppendPending(Node inliningTarge, MultibyteStatefulDecoderContext ctx,
                         MultibyteDecodeBuffer buf,
-                        PRaiseNode.Lazy raiseNode) {
+                        PRaiseNode raiseNode) {
             int npendings = buf.remaining();
             if (npendings + ctx.pendingsize > MAXDECPENDING ||
                             npendings > MAXSIZE - ctx.pendingsize) {
-                throw raiseNode.get(inliningTarge).raise(UnicodeError, PENDING_BUFFER_OVERFLOW);
+                throw raiseNode.raise(inliningTarge, UnicodeError, PENDING_BUFFER_OVERFLOW);
             }
             buf.getRemaining(ctx.pending, ctx.pendingsize, npendings);
             ctx.pendingsize += npendings;
@@ -270,7 +270,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
                         @Cached HiddenAttr.ReadNode readHiddenAttrNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object[] array = getArray.execute(inliningTarget, state.getSequenceStorage());
             Object buffer = array[0];
             Object statelong = array[1];
@@ -278,7 +278,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
             byte[] bufferstr = toBytesNode.execute(frame, buffer);
             int buffersize = bufferstr.length;
             if (buffersize > MAXDECPENDING) {
-                throw raiseNode.get(inliningTarget).raise(UnicodeError, PENDING_BUFFER_TOO_LARGE);
+                throw raiseNode.raise(inliningTarget, UnicodeError, PENDING_BUFFER_TOO_LARGE);
             }
 
             self.pendingsize = buffersize;

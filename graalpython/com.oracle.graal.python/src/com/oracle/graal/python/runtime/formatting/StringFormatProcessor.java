@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -45,7 +45,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         try {
             return formatText.charAt(index++);
         } catch (StringIndexOutOfBoundsException e) {
-            throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.INCOMPLETE_FORMAT);
+            throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.INCOMPLETE_FORMAT);
         }
     }
 
@@ -91,7 +91,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         } else {
             f = formatInteger(asNumber(arg, spec.type), spec);
             if (f == null) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR, spec.type);
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR, spec.type);
             }
         }
         return f;

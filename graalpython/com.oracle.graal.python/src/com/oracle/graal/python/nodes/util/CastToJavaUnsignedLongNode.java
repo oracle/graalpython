@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -85,34 +85,33 @@ public abstract class CastToJavaUnsignedLongNode extends PNodeWithContext {
 
     @Specialization
     static long toUnsignedLong(Node inliningTarget, long x,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         checkNegative(x < 0, inliningTarget, raiseNode);
         return x;
     }
 
     @Specialization
     static long toUnsignedLong(Node inliningTarget, PInt x,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         checkNegative(x.isNegative(), inliningTarget, raiseNode);
         return convertBigInt(x.getValue(), inliningTarget);
     }
 
     @Fallback
-    static long doUnsupported(Node inliningTarget, @SuppressWarnings("unused") Object x,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
-        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+    static long doUnsupported(Node inliningTarget, @SuppressWarnings("unused") Object x) {
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
     }
 
-    private static void checkNegative(boolean negative, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+    private static void checkNegative(boolean negative, Node inliningTarget, PRaiseNode raiseNode) {
         if (negative) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
         }
     }
 
     @TruffleBoundary
     private static long convertBigInt(BigInteger bi, Node nodeForRaise) {
         if (bi.bitLength() > 64) {
-            throw PRaiseNode.raiseUncached(nodeForRaise, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "unsigned long");
+            throw PRaiseNode.raiseStatic(nodeForRaise, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "unsigned long");
         }
         return bi.longValue();
     }

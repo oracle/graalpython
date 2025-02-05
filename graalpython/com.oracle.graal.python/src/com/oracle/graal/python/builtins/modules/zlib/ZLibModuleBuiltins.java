@@ -310,8 +310,8 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
         }
 
         @ClinicConverterFactory
@@ -387,8 +387,8 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         static long error(Object data, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, EXPECTED_BYTESLIKE_GOT_P, data);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, EXPECTED_BYTESLIKE_GOT_P, data);
         }
 
         long nativeCrc32(byte[] bytes, int len, int value,
@@ -576,10 +576,10 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached DecompressInnerNode innerNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (bufsize < 0) {
-                    throw raiseNode.get(inliningTarget).raise(ZLibError, ErrorMessages.MUST_BE_NON_NEGATIVE, "bufsize");
+                    throw raiseNode.raise(inliningTarget, ZLibError, ErrorMessages.MUST_BE_NON_NEGATIVE, "bufsize");
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -622,14 +622,14 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                     while (!decompresser.finished()) {
                         int howmany = decompresser.inflate(resultArray);
                         if (howmany == 0 && decompresser.needsInput()) {
-                            throw PRaiseNode.raiseUncached(inliningTarget, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
+                            throw PRaiseNode.raiseStatic(inliningTarget, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
                         }
                         baos.write(resultArray, 0, howmany);
                     }
                     decompresser.end();
                     return baos.toByteArray();
                 } catch (DataFormatException e) {
-                    throw PRaiseNode.raiseUncached(inliningTarget, ZLibError, ErrorMessages.WHILE_PREPARING_TO_S_DATA, "decompress");
+                    throw PRaiseNode.raiseStatic(inliningTarget, ZLibError, ErrorMessages.WHILE_PREPARING_TO_S_DATA, "decompress");
                 }
             }
         }
@@ -707,15 +707,15 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"method == DEFLATED", "!useNative()", "!isValidWBitRange(wbits)"})
         static Object invalid(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"method != DEFLATED"})
         static Object methodErr(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFLATED_ALLOWED_AS_METHOD, DEFLATED, method);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFLATED_ALLOWED_AS_METHOD, DEFLATED, method);
         }
     }
 
@@ -782,8 +782,8 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!useNative()", "!isValidWBitRange(wbits)"})
         static Object invalid(int wbits, byte[] zdict,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
     }
 }

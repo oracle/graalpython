@@ -109,7 +109,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) { // "O|s:StreamReader"
+                        @Cached PRaiseNode raiseNode) { // "O|s:StreamReader"
 
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
@@ -119,7 +119,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
             MultibyteStreamReaderObject self = PFactory.createMultibyteStreamReaderObject(language, type, getInstanceShape.execute(type));
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.raise(inliningTarget, TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;
@@ -156,7 +156,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached MultibyteCodecUtil.DecodeErrorNode decodeErrorNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             if (sizehint == 0) {
                 return T_EMPTY_STRING;
@@ -173,7 +173,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 if (!(cres instanceof PBytes)) {
                     Object crestType = getClassNode.execute(inliningTarget, cres);
                     if (!bytesCheckNode.execute(inliningTarget, crestType)) {
-                        throw raiseNode.get(inliningTarget).raise(TypeError, STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S, getNameNode.execute(inliningTarget, cres));
+                        throw raiseNode.raise(inliningTarget, TypeError, STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S, getNameNode.execute(inliningTarget, cres));
                     }
                 }
 

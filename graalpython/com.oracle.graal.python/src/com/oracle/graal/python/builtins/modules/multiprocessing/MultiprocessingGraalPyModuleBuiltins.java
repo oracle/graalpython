@@ -136,9 +136,9 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (kind != PGraalPySemLock.RECURSIVE_MUTEX && kind != PGraalPySemLock.SEMAPHORE) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
             }
             Semaphore semaphore = newSemaphore(value);
             if (!unlink) {
@@ -149,7 +149,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
                 // semaphores, so a conflict raises.
                 SharedMultiprocessingData multiprocessing = PythonContext.get(inliningTarget).getSharedMultiprocessingData();
                 if (multiprocessing.getNamedSemaphore(name) != null) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
                 } else {
                     multiprocessing.putNamedSemaphore(name, semaphore);
                 }
@@ -305,7 +305,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
                 byte[] bytes = bufferLib.getCopiedByteArray(data);
                 sharedData.addPipeData(fd, bytes,
                                 () -> {
-                                    throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                                    throw PRaiseNode.raiseStatic(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                                 },
                                 () -> {
                                     throw PConstructAndRaiseNode.getUncached().raiseOSError(null, OSErrorEnum.EPIPE);
@@ -335,7 +335,7 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
             gil.release(true);
             try {
                 Object data = sharedData.takePipeData(this, fd, () -> {
-                    throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                    throw PRaiseNode.raiseStatic(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 });
                 if (data == PNone.NONE) {
                     return PFactory.createEmptyBytes(language);

@@ -298,14 +298,14 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object state = callMethod.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
             if (!(state instanceof PTuple)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             flag <<= 1;
@@ -326,10 +326,10 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             self.setPendingCR((flag & 1) != 0);
@@ -344,10 +344,10 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
             if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ILLEGAL_STATE_ARGUMENT);
+                throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
             self.setPendingCR((flag & 1) != 0);
@@ -358,8 +358,8 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object err(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object state,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, STATE_ARGUMENT_MUST_BE_A_TUPLE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, STATE_ARGUMENT_MUST_BE_A_TUPLE);
         }
     }
 

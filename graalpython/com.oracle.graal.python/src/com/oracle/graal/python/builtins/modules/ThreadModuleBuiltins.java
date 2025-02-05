@@ -199,9 +199,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         static long getStackSize(long stackSize,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (stackSize < 0) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
             }
             return PythonContext.get(inliningTarget).getAndSetPythonsThreadStackSize(stackSize);
         }
@@ -303,8 +303,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class ExitThreadNode extends PythonBuiltinNode {
         @Specialization
         static Object exit(
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseSystemExit(PNone.NONE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseSystemExitStatic(inliningTarget, PNone.NONE);
         }
     }
 }

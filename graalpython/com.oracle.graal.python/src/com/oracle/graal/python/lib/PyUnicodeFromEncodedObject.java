@@ -57,7 +57,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -92,15 +91,15 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     @Specialization
     @SuppressWarnings("unused")
     static Object doString(VirtualFrame frame, TruffleString object, Object encoding, Object errors,
-                    @Shared @Cached(inline = false) PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
+                    @Bind("this") Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization
     @SuppressWarnings("unused")
     static Object doPString(VirtualFrame frame, PString object, Object encoding, Object errors,
-                    @Shared @Cached(inline = false) PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
+                    @Bind("this") Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")

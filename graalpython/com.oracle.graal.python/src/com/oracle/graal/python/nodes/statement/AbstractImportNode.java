@@ -118,14 +118,14 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
         Object modules = sysModule.getAttribute(T_MODULES);
         if (modules == PNone.NO_VALUE) {
-            throw PRaiseNode.getUncached().raise(RuntimeError, ErrorMessages.UNABLE_TO_GET_S, "sys.modules");
+            throw PRaiseNode.raiseStatic(null, RuntimeError, ErrorMessages.UNABLE_TO_GET_S, "sys.modules");
         }
         Object module = PyObjectGetItem.executeUncached(modules, name);
         if (module instanceof PythonModule pythonModule) {
             return pythonModule;
         }
         // FIXME CPython allows putting any object in sys.modules
-        throw PRaiseNode.getUncached().raise(NotImplementedError, ErrorMessages.PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED);
+        throw PRaiseNode.raiseStatic(null, NotImplementedError, ErrorMessages.PUTTING_NON_MODULE_OBJECTS_IN_SYS_MODULES_IS_NOT_SUPPORTED);
     }
 
     protected final Object importModule(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level, ImportName importNameNode) {
@@ -205,7 +205,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         @SuppressWarnings("unused")
         @Specialization(guards = "level < 0")
         Object levelLtZero(VirtualFrame frame, PythonContext context, TruffleString name, Object globals, TruffleString[] fromList, int level) {
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.LEVEL_MUST_BE_AT_LEAST_ZERO);
+            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.LEVEL_MUST_BE_AT_LEAST_ZERO);
         }
 
         protected static boolean containsDot(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
@@ -217,7 +217,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         @SuppressWarnings("unused") TruffleString[] fromList,
                         @SuppressWarnings("unused") int level,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached PyDictGetItem getModuleNode,
                         @Exclusive @Cached EnsureInitializedNode ensureInitialized,
                         @Exclusive @Cached FindAndLoad findAndLoad,
@@ -225,7 +225,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         @Exclusive @Cached @SuppressWarnings("unused") TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
             final TruffleString absName = name;
             if (name.isEmpty()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
             }
             PDict sysModules = context.getSysModules();
             Object mod = getModuleNode.execute(frame, inliningTarget, sysModules, absName); // import_get_module
@@ -253,7 +253,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         static Object genericImport(VirtualFrame frame, PythonContext context, TruffleString name, Object globals, TruffleString[] fromList, int level,
                         @Bind("this") Node inliningTarget,
                         @Cached ResolveName resolveName,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached PyDictGetItem getModuleNode,
                         @Exclusive @Cached EnsureInitializedNode ensureInitialized,
                         @Cached PyObjectLookupAttr getPathNode,
@@ -268,7 +268,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                 absName = resolveName.execute(frame, name, globals, level);
             } else {
                 if (name.isEmpty()) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
                 }
                 absName = name;
             }
@@ -310,7 +310,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         TruffleString toReturn = substringNode.execute(absName, 0, codePointLengthNode.execute(absName, TS_ENCODING) - cutoff, TS_ENCODING, true);
                         Object finalModule = getModuleNode.execute(frame, inliningTarget, sysModules, toReturn); // import_get_module
                         if (finalModule == null) {
-                            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, ErrorMessages.S_NOT_IN_SYS_MODS, toReturn);
+                            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.KeyError, ErrorMessages.S_NOT_IN_SYS_MODS, toReturn);
                         }
                         return finalModule;
                     }
@@ -331,7 +331,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         }
 
         static Object genericImportRecursion(VirtualFrame frame, Node inliningTarget, PythonContext context, ModuleFront front,
-                        PRaiseNode.Lazy raiseNode,
+                        PRaiseNode raiseNode,
                         PyDictGetItem getModuleNode,
                         EnsureInitializedNode ensureInitialized,
                         FindAndLoad findAndLoad,
@@ -340,7 +340,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         TruffleString.SubstringNode substringNode) {
             TruffleString absName = front.front;
             if (absName.isEmpty()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.EMPTY_MOD_NAME);
             }
             PDict sysModules = context.getSysModules();
             Object mod = getModuleNode.execute(frame, inliningTarget, sysModules, absName); // import_get_module
@@ -480,7 +480,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates[0] |= CANNOT_CAST;
                     }
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.PACKAGE_MUST_BE_A_STRING);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.PACKAGE_MUST_BE_A_STRING);
                 }
                 if (spec != null && spec != PNone.NONE) {
                     if ((branchStates[0] & SPEC_IS_STH) == 0) {
@@ -506,7 +506,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates[0] |= CANNOT_CAST;
                     }
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.SPEC_PARENT_MUST_BE_A_STRING);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.SPEC_PARENT_MUST_BE_A_STRING);
                 }
             } else {
                 if ((branchStates[0] & NO_SPEC_PKG) == 0) {
@@ -526,7 +526,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates[0] |= GOT_NO_NAME;
                     }
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.KeyError, ErrorMessages.NAME_NOT_IN_GLOBALS);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.KeyError, ErrorMessages.NAME_NOT_IN_GLOBALS);
                 }
                 try {
                     pkgString = castPackageNode.execute(inliningTarget, pkg);
@@ -535,7 +535,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates[0] |= CANNOT_CAST;
                     }
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.NAME_MUST_BE_A_STRING);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.NAME_MUST_BE_A_STRING);
                 }
                 Object path = getPackageOrNameNode.execute(frame, inliningTarget, globalsDict, SpecialAttributeNames.T___PATH__);
                 if (path == null) {

@@ -168,9 +168,9 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 3) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "3-tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "3-tuple");
             }
 
             Object currValue = getItemNode.execute(frame, state, 0);

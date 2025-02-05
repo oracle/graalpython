@@ -112,8 +112,8 @@ public final class PairwiseBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getIterable() == null")
         static Object next(@SuppressWarnings("unused") PPairwise self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
     }
 }

@@ -157,13 +157,13 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object buffer = acquireLib.acquire(value, BufferFlags.PyBUF_SIMPLE, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 if (len > self.b_size) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, BYTE_STRING_TOO_LONG);
+                    throw raiseNode.raise(inliningTarget, ValueError, BYTE_STRING_TOO_LONG);
                 }
                 writeBytesNode.execute(inliningTarget, self.b_ptr, bytes, 0, len);
                 return PNone.NONE;
@@ -191,11 +191,11 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = value.getSequenceStorage();
             int len = storage.length();
             if (len > self.b_size) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, BYTE_STRING_TOO_LONG);
+                throw raiseNode.raise(inliningTarget, ValueError, BYTE_STRING_TOO_LONG);
             }
             byte[] bytes = getBytes.execute(inliningTarget, storage);
             writeBytesNode.execute(inliningTarget, self.b_ptr, bytes, 0, len);
@@ -204,8 +204,8 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, BYTES_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BYTES_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
         }
     }
 
@@ -232,11 +232,11 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(inliningTarget, value), WCHAR_T_ENCODING);
             int len = str.byteLength(WCHAR_T_ENCODING);
             if (len > self.b_size) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, STRING_TOO_LONG);
+                throw raiseNode.raise(inliningTarget, ValueError, STRING_TOO_LONG);
             }
             InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
             writeBytesNode.execute(inliningTarget, self.b_ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
@@ -245,8 +245,8 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
         }
     }
 

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
@@ -101,8 +102,8 @@ public final class IsliceBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isNone(self.getIterable())")
         static Object next(@SuppressWarnings("unused") PIslice self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
@@ -113,7 +114,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile nextExceptionProfile,
                         @Cached InlinedBranchProfile nextExceptionProfile2,
                         @Cached InlinedBranchProfile setNextProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object it = self.getIterable();
             int stop = self.getStop();
             Object item;
@@ -130,7 +131,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
             }
             if (stop != -1 && self.getCnt() >= stop) {
                 self.setIterable(PNone.NONE);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, StopIteration);
             }
             try {
                 item = nextNode.execute(frame, it, PNone.NO_VALUE);
@@ -184,11 +185,11 @@ public final class IsliceBuiltins extends PythonBuiltins {
         static Object setState(PIslice self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntLossyNode castInt,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 self.setCnt(castInt.execute(inliningTarget, state));
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             return PNone.NONE;
         }

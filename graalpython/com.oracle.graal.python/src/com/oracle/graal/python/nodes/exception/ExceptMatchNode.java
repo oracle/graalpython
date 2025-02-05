@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,14 +72,10 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class ExceptMatchNode extends Node {
     public abstract boolean executeMatch(Frame frame, Object exception, Object clause);
 
-    private static void raiseIfNoException(VirtualFrame frame, Object clause, ValidExceptionNode isValidException, PRaiseNode raiseNode) {
+    private static void raiseIfNoException(VirtualFrame frame, Node inliningTarget, Object clause, ValidExceptionNode isValidException) {
         if (!isValidException.execute(frame, clause)) {
-            raiseNoException(raiseNode);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
         }
-    }
-
-    private static void raiseNoException(PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
     }
 
     @Specialization(guards = "!isPTuple(clause)")
@@ -87,20 +83,19 @@ public abstract class ExceptMatchNode extends Node {
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtype,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        raiseIfNoException(frame, clause, isValidException, raiseNode);
+                    @Cached IsSubtypeNode isSubtype) {
+        raiseIfNoException(frame, inliningTarget, clause, isValidException);
         return isSubtype.execute(frame, getClassNode.execute(inliningTarget, e.getUnreifiedException()), clause);
     }
 
     @Specialization(guards = {"!isPTuple(clause)", "!isPException(e)"}, limit = "1")
     public static boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
+                    @Bind("this") Node inliningTarget,
                     @Shared @Cached ValidExceptionNode isValidException,
-                    @CachedLibrary("clause") InteropLibrary clauseLib,
-                    @Shared @Cached PRaiseNode raiseNode) {
+                    @CachedLibrary("clause") InteropLibrary clauseLib) {
         // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
         // foreign exception types if they *are* exception types
-        raiseIfNoException(frame, clause, isValidException, raiseNode);
+        raiseIfNoException(frame, inliningTarget, clause, isValidException);
         if (clauseLib.isMetaObject(clause)) {
             try {
                 return clauseLib.isMetaInstance(clause, e);

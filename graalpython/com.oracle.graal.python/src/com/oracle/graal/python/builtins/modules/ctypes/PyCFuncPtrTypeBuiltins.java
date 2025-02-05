@@ -129,7 +129,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             StgDictObject stgdict = PFactory.createStgDictObject(language);
 
             stgdict.paramfunc = CArgObjectBuiltins.PyCFuncPtrTypeParamFunc;
@@ -160,7 +160,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
             Object ob = getItem.execute(inliningTarget, stgdict.getDictStorage(), T_FLAGS_);
             if (!PGuards.isInteger(ob)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
+                throw raiseNode.raise(inliningTarget, TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
             }
             stgdict.flags = asNumber.execute(inliningTarget, ob) | TYPEFLAG_ISPOINTER;
 
@@ -168,7 +168,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             ob = getItem.execute(inliningTarget, stgdict.getDictStorage(), T_ARGTYPES_);
             if (ob != null) {
                 if (!PGuards.isPTuple(ob)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
+                    throw raiseNode.raise(inliningTarget, TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
                 }
                 SequenceStorage storage = ((PTuple) ob).getSequenceStorage();
                 Object[] obtuple = getArray.execute(inliningTarget, storage);
@@ -181,7 +181,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             if (!PGuards.isPNone(ob)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(inliningTarget, ob);
                 if (dict == null && !callableCheck.execute(inliningTarget, ob)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
+                    throw raiseNode.raise(inliningTarget, TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }
                 stgdict.restype = ob;
                 Object checker = lookupAttr.execute(frame, inliningTarget, ob, T__CHECK_RETVAL_);
@@ -192,7 +192,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
         }
 
         static Object[] converters_from_argtypes(VirtualFrame frame, Node inliningTarget, Object[] args, int nArgs,
-                        PRaiseNode.Lazy raiseNode,
+                        PRaiseNode raiseNode,
                         PyObjectLookupAttr lookupAttr) {
             Object[] converters = new Object[nArgs];
 
@@ -202,7 +202,7 @@ public final class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
                 cnv = lookupAttr.execute(frame, inliningTarget, tp, T_FROM_PARAM);
                 if (cnv == PNone.NO_VALUE) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD, i + 1);
+                    throw raiseNode.raise(inliningTarget, TypeError, ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD, i + 1);
                 }
                 converters[i] = cnv;
             }

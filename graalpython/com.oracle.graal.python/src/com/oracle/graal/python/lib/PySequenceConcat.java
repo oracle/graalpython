@@ -120,7 +120,7 @@ public abstract class PySequenceConcat extends PNodeWithContext {
                     @Cached InlinedBranchProfile hasNbAddSlot,
                     @Cached InlinedBranchProfile hasNbAddResult,
                     @Cached CallSlotBinaryFuncNode callBinarySlotNode,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
         if (slotsV.sq_concat() != null) {
@@ -144,7 +144,7 @@ public abstract class PySequenceConcat extends PNodeWithContext {
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, PRaiseNode.Lazy raiseNode) {
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, v);
+    private static PException raiseNotSupported(Node inliningTarget, Object v, PRaiseNode raiseNode) {
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, v);
     }
 }

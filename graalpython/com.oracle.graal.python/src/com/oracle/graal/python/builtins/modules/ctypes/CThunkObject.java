@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -167,7 +167,7 @@ public final class CThunkObject extends PythonBuiltinObject {
                         memcpyNode.execute(inliningTarget, obj.b_ptr, value, dict.size);
                         arglist[i] = obj;
                     } else {
-                        throw raiseNode.raise(TypeError, CANNOT_BUILD_PARAMETER);
+                        throw raiseNode.raise(inliningTarget, TypeError, CANNOT_BUILD_PARAMETER);
                         // PrintError("Parsing argument %zd\n", i);
                     }
                 }

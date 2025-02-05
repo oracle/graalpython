@@ -109,10 +109,10 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CompressInnerNode innerNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (!self.isInitialized()) {
-                    throw raiseNode.get(inliningTarget).raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
+                    throw raiseNode.raise(inliningTarget, ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -183,15 +183,15 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isInitialized()", "!self.canCopy()"})
         static PNone error(ZLibCompObject.JavaZlibCompObject self,
-                        @Cached.Shared @Cached(inline = false) PRaiseNode raise) {
-            throw raise.raise(NotImplementedError, toTruffleStringUncached("JDK based zlib doesn't support copying"));
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("JDK based zlib doesn't support copying"));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         static PNone error(ZLibCompObject self,
-                        @Cached.Shared @Cached(inline = false) PRaiseNode raise) {
-            throw raise.raise(ValueError, ErrorMessages.INCONSISTENT_STREAM_STATE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INCONSISTENT_STREAM_STATE);
         }
     }
 
@@ -283,8 +283,8 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         static PNone error(ZLibCompObject self, int mode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while compressing data", "inconsistent stream state");
         }
     }
 

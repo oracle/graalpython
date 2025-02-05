@@ -133,7 +133,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                     @Cached PyNumberIndexNode indexNode,
                     @Cached PyLongAsDoubleNode asDoubleNode,
                     @Cached HandleFloatResultNode handleFloatResultNode,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlots.execute(inliningTarget, type);
         if (slots.nb_float() != null) {
@@ -147,7 +147,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
             Object index = indexNode.execute(frame, inliningTarget, object);
             return asDoubleNode.execute(inliningTarget, index);
         }
-        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
+        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
     }
 
     @InliningCutoff
@@ -172,11 +172,11 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                         @Cached IsSubtypeNode resultSubtypeNode,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object resultType = resultClassNode.execute(inliningTarget, result);
             if (!resultProfile.profileClass(inliningTarget, resultType, PythonBuiltinClassType.PFloat)) {
                 if (!resultSubtypeNode.execute(resultType, PythonBuiltinClassType.PFloat)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, original, result);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NON_FLOAT, original, result);
                 } else {
                     warnNode.warnFormat(frame, null, DeprecationWarning, 1,
                                     ErrorMessages.WARN_P_RETURNED_NON_P, original, T___FLOAT__, "float", result, "float");

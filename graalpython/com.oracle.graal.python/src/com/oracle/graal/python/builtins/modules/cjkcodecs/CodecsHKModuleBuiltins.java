@@ -118,15 +118,15 @@ public final class CodecsHKModuleBuiltins extends PythonBuiltins {
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             if (!unicodeCheckNode.execute(inliningTarget, encoding)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ENCODING_NAME_MUST_BE_A_STRING);
+                throw raiseNode.raise(inliningTarget, TypeError, ENCODING_NAME_MUST_BE_A_STRING);
             }
 
             MultibyteCodec codec = findCodec(CODEC_LIST, asUTF8Node.execute(inliningTarget, encoding), isEqual);
             if (codec == null) {
-                throw raiseNode.get(inliningTarget).raise(LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
+                throw raiseNode.raise(inliningTarget, LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
             PyCapsule codecobj = PFactory.createCapsuleJavaName(language, codec, PyMultibyteCodec_CAPSULE_NAME);

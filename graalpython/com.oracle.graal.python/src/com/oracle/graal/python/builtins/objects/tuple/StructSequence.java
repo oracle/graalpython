@@ -353,7 +353,7 @@ public class StructSequence {
         @Specialization
         @SuppressWarnings("unused")
         Object error(Object cls, Object[] arguments, PKeyword[] keywords) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, StructSequence.getTpName(cls));
+            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, StructSequence.getTpName(cls));
         }
     }
 
@@ -384,7 +384,7 @@ public class StructSequence {
                         @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile, raiseNode);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile, raiseNode);
             for (int i = src.length; i < dst.length; ++i) {
@@ -405,7 +405,7 @@ public class StructSequence {
                         @Cached HashingStorageGetItem getItem,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile, raiseNode);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile, raiseNode);
             HashingStorage hs = dict.getDictStorage();
@@ -419,23 +419,23 @@ public class StructSequence {
         @Specialization(guards = {"!isNoValue(dict)", "!isDict(dict)"})
         @SuppressWarnings("unused")
         static PTuple doDictError(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
         }
 
         private static Object[] sequenceToArray(VirtualFrame frame, Node inliningTarget, Object sequence, FastConstructListNode fastConstructListNode,
-                        ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile, PRaiseNode.Lazy raiseNode) {
+                        ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile, PRaiseNode raiseNode) {
             PSequence seq;
             try {
                 seq = fastConstructListNode.execute(frame, inliningTarget, sequence);
             } catch (PException e) {
                 e.expect(inliningTarget, TypeError, notASequenceProfile);
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
             }
             return toArrayNode.execute(inliningTarget, seq.getSequenceStorage());
         }
 
-        private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile, PRaiseNode.Lazy raiseNode) {
+        private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile, PRaiseNode raiseNode) {
             int len = src.length;
             int minLen = inSequence;
             int maxLen = fieldNames.length;
@@ -443,12 +443,12 @@ public class StructSequence {
             if (len < minLen || len > maxLen) {
                 wrongLenProfile.enter(inliningTarget);
                 if (minLen == maxLen) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 }
                 if (len < minLen) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 } else {    // len > maxLen
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
                 }
             }
 

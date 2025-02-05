@@ -122,14 +122,14 @@ public final class PTeeDataObject extends PythonBuiltinObject {
         return nextlink;
     }
 
-    Object getItem(VirtualFrame frame, Node inliningTarget, int i, BuiltinFunctions.NextNode nextNode, PRaiseNode.Lazy raiseNode) {
+    Object getItem(VirtualFrame frame, Node inliningTarget, int i, BuiltinFunctions.NextNode nextNode, PRaiseNode raiseNode) {
         assert i < TeeDataObjectBuiltins.LINKCELLS;
         if (i < numread) {
             return values[i];
         } else {
             assert i == numread;
             if (running) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, CANNOT_REENTER_TEE_ITERATOR);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, CANNOT_REENTER_TEE_ITERATOR);
             }
 
             running = true;

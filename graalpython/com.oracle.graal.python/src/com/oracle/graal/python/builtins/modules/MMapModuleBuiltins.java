@@ -169,12 +169,12 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (lengthIn < 0) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MEM_MAPPED_LENGTH_MUST_BE_POSITIVE);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MEM_MAPPED_LENGTH_MUST_BE_POSITIVE);
             }
             if (offset < 0) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MEM_MAPPED_OFFSET_MUST_BE_POSITIVE);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MEM_MAPPED_OFFSET_MUST_BE_POSITIVE);
             }
             int flags = flagsIn;
             int prot = protIn;
@@ -203,7 +203,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
                     }
                     break;
                 default:
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MEM_MAPPED_OFFSET_INVALID_ACCESS);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MEM_MAPPED_OFFSET_INVALID_ACCESS);
             }
 
             auditNode.audit(inliningTarget, "mmap.__new__", fd, lengthIn, access, offset);
@@ -220,15 +220,15 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
                 }
                 if (fstatResult != null && length == 0) {
                     if (fstatResult[ST_SIZE] == 0) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CANNOT_MMAP_AN_EMPTY_FILE);
+                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_MMAP_AN_EMPTY_FILE);
                     }
                     if (offset >= fstatResult[ST_SIZE]) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MMAP_S_IS_GREATER_THAN_FILE_SIZE, "offset");
+                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MMAP_S_IS_GREATER_THAN_FILE_SIZE, "offset");
                     }
                     // Unlike in CPython, this always fits in the long range
                     length = fstatResult[ST_SIZE] - offset;
                 } else if (fstatResult != null && (offset > fstatResult[ST_SIZE] || fstatResult[ST_SIZE] - offset < length)) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MMAP_S_IS_GREATER_THAN_FILE_SIZE, "length");
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MMAP_S_IS_GREATER_THAN_FILE_SIZE, "length");
                 }
             }
 
@@ -260,8 +260,8 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isIllegal(fd)")
         @SuppressWarnings("unused")
         static PMMap doIllegal(Object clazz, int fd, long lengthIn, int flagsIn, int protIn, int accessIn, long offset,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.OSError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.OSError);
         }
 
         protected static boolean isIllegal(int fd) {

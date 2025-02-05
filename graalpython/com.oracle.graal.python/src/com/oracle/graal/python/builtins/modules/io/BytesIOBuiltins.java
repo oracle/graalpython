@@ -142,8 +142,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.hasBuf()")
         @SuppressWarnings("unused")
         static Object closedError(PBytesIO self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_CLOSED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
 
@@ -151,8 +151,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.hasBuf()")
         @SuppressWarnings("unused")
         static Object closedError(PBytesIO self, Object arg,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_CLOSED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
 
@@ -166,8 +166,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.hasBuf()")
         @SuppressWarnings("unused")
         static Object closedError(PBytesIO self, Object arg,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_CLOSED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
 
@@ -181,7 +181,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static PNone init(PBytesIO self, PNone initvalue,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             self.setPos(0);
             return PNone.NONE;
@@ -191,7 +191,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         static PNone init(VirtualFrame frame, PBytesIO self, Object initvalue,
                         @Bind("this") Node inliningTarget,
                         @Cached WriteNode writeNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             /* In case, __init__ is called multiple times. */
             self.setStringSize(0);
             self.setPos(0);
@@ -399,10 +399,10 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             if (size < 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, NEGATIVE_SIZE_VALUE_D, size);
+                throw raiseNode.raise(inliningTarget, ValueError, NEGATIVE_SIZE_VALUE_D, size);
             }
             if (size < self.getStringSize()) {
                 self.unshareAndResize(bufferLib, language, size, true);
@@ -416,7 +416,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return truncate(self, self.getPos(), inliningTarget, language, bufferLib, raiseNode);
         }
 
@@ -426,7 +426,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             return truncate(self, asSizeNode.executeExact(frame, inliningTarget, size), inliningTarget, language, bufferLib, raiseNode);
         }
     }
@@ -442,7 +442,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             Object buffer = acquireLib.acquireReadonly(b, frame, indirectCallData);
             try {
@@ -475,7 +475,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached WriteNode writeNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
@@ -560,35 +560,35 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.hasBuf()", "!isSupportedWhence(whence)"})
         static Object whenceError(@SuppressWarnings("unused") PBytesIO self, @SuppressWarnings("unused") int pos, int whence,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2, whence);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.hasBuf()", "isLargePos(pos, self.getPos())", "whence == 1"})
         static Object largePos1(PBytesIO self, int pos, int whence,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(OverflowError, NEW_POSITION_TOO_LARGE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.hasBuf()", "isLargePos(pos, self.getStringSize())", "whence == 2"})
         static Object largePos2(PBytesIO self, int pos, int whence,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(OverflowError, NEW_POSITION_TOO_LARGE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, NEW_POSITION_TOO_LARGE);
         }
 
         @Specialization(guards = {"self.hasBuf()", "pos < 0", "whence == 0"})
         static Object negPos(@SuppressWarnings("unused") PBytesIO self, int pos, @SuppressWarnings("unused") int whence,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, NEGATIVE_SEEK_VALUE_D, pos);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, NEGATIVE_SEEK_VALUE_D, pos);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.hasBuf()")
         static Object closedError(PBytesIO self, int pos, int whence,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_CLOSED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_CLOSED);
         }
     }
 
@@ -650,12 +650,12 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             SequenceStorage storage = state.getSequenceStorage();
             Object[] array = getArray.execute(inliningTarget, storage);
             if (storage.length() < 3) {
-                return notTuple(self, state, raiseNode.get(inliningTarget));
+                return notTuple(self, state, raiseNode);
             }
             /*
              * Reset the object to its default state. This is only needed to handle the case of
@@ -674,18 +674,18 @@ public final class BytesIOBuiltins extends PythonBuiltins {
              * against erroneous (or malicious) inputs.
              */
             if (!indexCheckNode.execute(inliningTarget, array[1])) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P, array[1]);
+                throw raiseNode.raise(inliningTarget, TypeError, SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P, array[1]);
             }
             int pos = asSizeNode.executeExact(frame, inliningTarget, array[1]);
             if (pos < 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, POSITION_VALUE_CANNOT_BE_NEGATIVE);
+                throw raiseNode.raise(inliningTarget, ValueError, POSITION_VALUE_CANNOT_BE_NEGATIVE);
             }
             self.setPos(pos);
 
             /* Set the dictionary of the instance variables. */
             if (!PGuards.isNone(array[2])) {
                 if (!PGuards.isDict(array[2])) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P, array[2]);
+                    throw raiseNode.raise(inliningTarget, TypeError, THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P, array[2]);
                 }
                 /*
                  * Alternatively, we could replace the internal dictionary completely. However, it
@@ -699,8 +699,8 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPTuple(state)")
         static Object notTuple(PBytesIO self, Object state,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 3, state);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 3, state);
         }
     }
 
@@ -761,7 +761,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization
         static Object close(PBytesIO self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             self.setBuf(null);
             return PNone.NONE;
@@ -777,10 +777,10 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int n = scanEOL(self, -1, bufferLib);
             if (n == 0) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             return readBytes(self, n, bufferLib, language);
         }

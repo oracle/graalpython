@@ -128,12 +128,12 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
         @Specialization
         static Object doNoTimeout(PSimpleQueue self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object result = self.poll();
             if (result != null) {
                 return result;
             }
-            throw raiseNode.get(inliningTarget).raise(Empty);
+            throw raiseNode.raise(inliningTarget, Empty);
         }
     }
 
@@ -165,7 +165,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
         static Object doNoTimeout(PSimpleQueue self, boolean block, @SuppressWarnings("unused") Object timeout,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GilNode gil,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             // CPython first tries a non-blocking get without releasing the GIL
             Object result = self.poll();
             if (result != null) {
@@ -183,7 +183,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(Empty);
+            throw raiseNode.raise(inliningTarget, Empty);
         }
 
         @Specialization(guards = "withTimeout(block, timeout)")
@@ -192,7 +192,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
                         @Cached PyLongAsLongAndOverflowNode asLongNode,
                         @Cached CastToJavaDoubleNode castToDouble,
                         @Shared @Cached GilNode gil,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             assert block;
 
             // convert timeout object (given in seconds) to a Java long in microseconds
@@ -203,12 +203,12 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
                 try {
                     ltimeout = PythonUtils.multiplyExact(asLongNode.execute(frame, inliningTarget, timeout), 1000000);
                 } catch (OverflowException oe) {
-                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
+                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
                 }
             }
 
             if (ltimeout < 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TIMEOUT_MUST_BE_NON_NEG_NUM);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TIMEOUT_MUST_BE_NON_NEG_NUM);
             }
 
             // CPython first tries a non-blocking get without releasing the GIL
@@ -229,7 +229,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            throw raiseNode.get(inliningTarget).raise(Empty);
+            throw raiseNode.raise(inliningTarget, Empty);
         }
 
         static boolean withTimeout(boolean block, Object timeout) {
@@ -253,13 +253,13 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
         @Specialization
         static PNone doGeneric(PSimpleQueue self, Object item, @SuppressWarnings("unused") Object block, @SuppressWarnings("unused") Object timeout,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!self.put(item)) {
                 /*
                  * CPython uses a Python list as backing storage. This will throw an OverflowError
                  * if no more elements can be added to the list.
                  */
-                throw raiseNode.get(inliningTarget).raise(OverflowError);
+                throw raiseNode.raise(inliningTarget, OverflowError);
             }
             return PNone.NONE;
         }
@@ -278,13 +278,13 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
         @Specialization
         static PNone doGeneric(PSimpleQueue self, Object item,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!self.put(item)) {
                 /*
                  * CPython uses a Python list as backing storage. This will throw an OverflowError
                  * if no more elements can be added to the list.
                  */
-                throw raiseNode.get(inliningTarget).raise(OverflowError);
+                throw raiseNode.raise(inliningTarget, OverflowError);
             }
             return PNone.NONE;
         }

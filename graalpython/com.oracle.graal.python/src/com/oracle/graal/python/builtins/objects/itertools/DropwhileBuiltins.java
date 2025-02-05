@@ -140,11 +140,11 @@ public final class DropwhileBuiltins extends PythonBuiltins {
         static Object setState(PDropwhile self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaBooleanNode castToBoolean,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 self.setDoneDropping(castToBoolean.execute(inliningTarget, state));
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             return PNone.NONE;
         }

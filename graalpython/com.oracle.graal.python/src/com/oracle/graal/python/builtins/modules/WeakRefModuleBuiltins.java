@@ -263,7 +263,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached HiddenAttr.ReadNode readQueueNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object obj = object;
             if (object instanceof PythonBuiltinClassType tobj) {
                 obj = PythonContext.get(inliningTarget).getCore().lookupType(tobj);
@@ -275,7 +275,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                 allowed = type.getWeaklistoffset() != 0;
             }
             if (!allowed) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, obj);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, obj);
             }
             assert obj instanceof PythonAbstractObject;
             Object wr = readWeaklistNode.execute(inliningTarget, (PythonAbstractObject) obj, WEAKLIST, null);
@@ -307,7 +307,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached HiddenAttr.ReadNode readQueueNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object actualCallback = callback instanceof PNone ? null : callback;
             Object clazz = getClassNode.execute(inliningTarget, pythonObject);
 
@@ -341,14 +341,14 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                 CApiTransitions.addNativeWeakRef(getContext(), pythonObject);
                 return PFactory.createReferenceType(language, cls, getInstanceShape.execute(cls), pythonObject, actualCallback, getWeakReferenceQueue(inliningTarget, readQueueNode));
             } else {
-                return refType(cls, pythonObject, actualCallback, raiseNode.get(inliningTarget));
+                return refType(cls, pythonObject, actualCallback, raiseNode);
             }
         }
 
         @Fallback
         static PReferenceType refType(@SuppressWarnings("unused") Object cls, Object object, @SuppressWarnings("unused") Object callback,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
         }
 
         @SuppressWarnings("unchecked")

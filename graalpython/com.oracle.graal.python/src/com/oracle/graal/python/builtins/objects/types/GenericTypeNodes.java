@@ -268,7 +268,7 @@ public abstract class GenericTypeNodes {
         SequenceStorage paramsStorage = parameters.getSequenceStorage();
         int nparams = paramsStorage.length();
         if (nparams == 0) {
-            throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.S_IS_NOT_A_GENERIC_CLASS, PyObjectReprAsTruffleStringNode.executeUncached(self));
+            throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.S_IS_NOT_A_GENERIC_CLASS, PyObjectReprAsTruffleStringNode.executeUncached(self));
         }
         Object[] argitems = unpackArgs(item);
         for (int i = 0; i < nparams; i++) {
@@ -280,9 +280,8 @@ public abstract class GenericTypeNodes {
             }
         }
         if (argitems.length != nparams) {
-            throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.TOO_S_ARGUMENTS_FOR_S_ACTUAL_D_EXPECTED_D,
-                            argitems.length > nparams ? "many" : "few", PyObjectReprAsTruffleStringNode.executeUncached(self),
-                            argitems.length, nparams);
+            throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.TOO_S_ARGUMENTS_FOR_S_ACTUAL_D_EXPECTED_D, argitems.length > nparams ? "many" : "few",
+                            PyObjectReprAsTruffleStringNode.executeUncached(self), argitems.length, nparams);
         }
         SequenceStorage argsStorage = args.getSequenceStorage();
         List<Object> newargs = new ArrayList<>(argsStorage.length());

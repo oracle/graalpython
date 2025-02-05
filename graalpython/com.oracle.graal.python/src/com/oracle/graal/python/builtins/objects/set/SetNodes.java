@@ -101,8 +101,8 @@ public abstract class SetNodes {
 
         @Fallback
         static PSet setObject(Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, value);
         }
 
         @NeverDefault

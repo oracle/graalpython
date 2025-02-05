@@ -77,6 +77,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @SuppressWarnings("truffle-inlining")
@@ -155,11 +156,12 @@ public enum BinaryArithmetic {
 
         static Supplier<NotImplementedHandler> createHandler(String operator) {
             return () -> new NotImplementedHandler() {
-                @Child private PRaiseNode raiseNode = PRaiseNode.create();
+                private final BranchProfile errorProfile = BranchProfile.create();
 
                 @Override
                 public Object execute(VirtualFrame frame, Object arg, Object arg2) {
-                    throw raiseNode.raise(TypeError, getErrorMessage(arg), operator, arg, arg2);
+                    errorProfile.enter();
+                    throw PRaiseNode.raiseStatic(this, TypeError, getErrorMessage(arg), operator, arg, arg2);
                 }
 
                 @CompilerDirectives.TruffleBoundary

@@ -146,12 +146,12 @@ public class OrderedDictBuiltins extends PythonBuiltins {
         static PNone update(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @Cached UpdateFromArgsNode update,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object mapping = PNone.NO_VALUE;
             if (args.length == 1) {
                 mapping = args[0];
             } else if (args.length > 1) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, 1, args.length);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, 1, args.length);
             }
             update.execute(frame, inliningTarget, self, mapping, kwargs);
             return PNone.NONE;
@@ -192,7 +192,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
             long hash = hashNode.execute(frame, inliningTarget, key);
             ODictNode node = (ODictNode) removeNode.execute(frame, inliningTarget, self.nodes, key, hash);
             if (node == null) {
-                throw raiseNode.raise(KeyError, new Object[]{key});
+                throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
             }
             self.remove(node);
             // TODO with hash
@@ -338,7 +338,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                         @Cached PySequenceContainsNode containsNode,
                         @Cached PyObjectGetItem getItem,
                         @Cached PyObjectDelItem delItem,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // XXX the CPython implementation is weird when self is a subclass
             if (containsNode.execute(frame, inliningTarget, self, key)) {
                 Object value = getItem.execute(frame, inliningTarget, self, key);
@@ -347,7 +347,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
             } else if (defaultValue != PNone.NO_VALUE) {
                 return defaultValue;
             } else {
-                throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
+                throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
             }
         }
     }
@@ -362,10 +362,10 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                         @Cached HashingStorageNodes.HashingStorageDelItem delItem,
                         @Cached ObjectHashMap.RemoveNode removeNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raise) {
+                        @Cached PRaiseNode raise) {
             ODictNode node = last ? self.last : self.first;
             if (node == null) {
-                throw raise.get(inliningTarget).raise(KeyError, ErrorMessages.IS_EMPTY, "dictionary");
+                throw raise.raise(inliningTarget, KeyError, ErrorMessages.IS_EMPTY, "dictionary");
             }
             self.remove(node);
             removeNode.execute(frame, inliningTarget, self.nodes, node.key, node.hash);
@@ -420,13 +420,13 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             if (self.first == null) {
                 // Empty
-                throw raiseNode.raise(KeyError, new Object[]{key});
+                throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
             }
             if ((last ? self.last : self.first).key != key) {
                 long hash = hashNode.execute(frame, inliningTarget, key);
                 ODictNode node = (ODictNode) getNode.execute(frame, inliningTarget, self.nodes, key, hash);
                 if (node == null) {
-                    throw raiseNode.raise(KeyError, new Object[]{key});
+                    throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
                 }
                 if (last) {
                     if (self.last != node) {
@@ -630,8 +630,8 @@ public class OrderedDictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static PNone dict(@SuppressWarnings("unused") Object self, Object mapping,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 

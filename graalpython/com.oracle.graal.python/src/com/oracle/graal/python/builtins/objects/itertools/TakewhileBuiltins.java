@@ -97,11 +97,11 @@ public final class TakewhileBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object value = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
             if (!isTrue.execute(frame, callNode.execute(frame, self.getPredicate(), value))) {
                 self.setIterable(PFactory.createSequenceIterator(language, PFactory.createList(language, PythonUtils.EMPTY_OBJECT_ARRAY)));
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             return value;
         }

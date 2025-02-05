@@ -188,8 +188,9 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static Object doIt(PythonNativeClass self, TruffleString className) {
-            PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(self);
+        static Object doIt(PythonNativeClass self, TruffleString className,
+                        @Bind("this") Node inliningTarget) {
+            PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(inliningTarget, self);
             return PFactory.createTuple(PythonLanguage.get(null), new MroSequenceStorage(className, doSlowPath));
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -177,7 +177,7 @@ public final class PythonCextModuleBuiltins {
             Object nameAttr = read.execute(module, T___NAME__);
             if (!pyUnicodeCheckNode.execute(inliningTarget, nameAttr)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.NAMELESS_MODULE);
+                throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.NAMELESS_MODULE);
             }
             Object promotedName = promoteBorrowedValue.execute(inliningTarget, nameAttr);
             if (promotedName == null) {
@@ -209,11 +209,10 @@ public final class PythonCextModuleBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
         static Object pop(Object m, Object key, Object defaultValue,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
         }
     }
 
@@ -232,11 +231,10 @@ public final class PythonCextModuleBuiltins {
 
         @Specialization(guards = "!isModuleSubtype(inliningTarget, m, getClassNode, isSubtypeNode)")
         static Object pop(@SuppressWarnings("unused") Object m, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddIntConstant", "module");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddIntConstant", "module");
         }
     }
 

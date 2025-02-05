@@ -115,7 +115,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached InlinedBranchProfile iterableProfile,
                         @Cached InlinedBranchProfile firstPassProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.getIterable() != null) {
                 iterableProfile.enter(inliningTarget);
                 try {
@@ -131,7 +131,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 }
             }
             if (isEmpty(self.getSaved())) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             Object item = get(self.getSaved(), self.getIndex());
             self.setIndex(self.getIndex() + 1);
@@ -223,13 +223,13 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile,
                         @Cached ToArrayNode toArrayNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "2-tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object obj = getItemNode.execute(frame, state, 0);
             if (!(obj instanceof PList)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "Plist");
+                throw raiseNode.raise(inliningTarget, TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "Plist");
             }
             PList saved = (PList) obj;
 
@@ -238,7 +238,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 firstPass = asSizeNode.executeLossy(frame, inliningTarget, getItemNode.execute(frame, state, 1)) != 0;
             } catch (PException e) {
                 e.expectTypeError(inliningTarget, isTypeErrorProfile);
-                throw raiseNode.get(inliningTarget).raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
+                throw raiseNode.raise(inliningTarget, TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
             }
 
             Object[] savedArray = toArrayNode.execute(inliningTarget, saved.getSequenceStorage());

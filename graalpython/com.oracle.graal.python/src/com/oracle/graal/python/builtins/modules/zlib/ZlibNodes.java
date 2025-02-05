@@ -88,6 +88,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -243,6 +244,7 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "err == Z_VERSION_ERROR")
         static void doVersionError(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             /*
@@ -250,11 +252,12 @@ public class ZlibNodes {
              * first, before looking at comp->zst.msg.
              */
             deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-            throw raise.raise(ZLibError, ERROR_D_S_S, err, msg, LIBRARY_VERSION_MISMATCH);
+            throw raise.raise(inliningTarget, ZLibError, ERROR_D_S_S, err, msg, LIBRARY_VERSION_MISMATCH);
         }
 
         @Specialization(guards = "err != Z_VERSION_ERROR")
         static void doError(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction hasStreamErrorMsg,
@@ -277,9 +280,9 @@ public class ZlibNodes {
             }
             deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
             if (zmsg == null) {
-                throw raise.raise(ZLibError, ERROR_D_S, err, msg);
+                throw raise.raise(inliningTarget, ZLibError, ERROR_D_S, err, msg);
             } else {
-                throw raise.raise(ZLibError, ERROR_D_S_S, err, msg, zmsg);
+                throw raise.raise(inliningTarget, ZLibError, ERROR_D_S_S, err, msg, zmsg);
             }
         }
     }
@@ -293,68 +296,72 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == DEFLATE_INIT_ERROR")
         static void deflateInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, OUT_OF_MEMORY_WHILE_S_DATA, "compressing");
+                throw raise.raise(inliningTarget, MemoryError, OUT_OF_MEMORY_WHILE_S_DATA, "compressing");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
+                throw raise.raise(inliningTarget, ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_S_DATA, "compressing"), zlibSupport, deallocate);
         }
 
         @Specialization(guards = "function == DEFLATE_OBJ_ERROR")
         static void deflateObjInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "compression");
+                throw raise.raise(inliningTarget, MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "compression");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INVALID_INITIALIZATION_OPTION);
+                throw raise.raise(inliningTarget, ValueError, INVALID_INITIALIZATION_OPTION);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_CREATING_S_OBJECT, "compression"), zlibSupport, deallocate);
         }
 
         @Specialization(guards = "function == DEFLATE_COPY_ERROR")
         static void deflateCopyError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "compression");
+                throw raise.raise(inliningTarget, MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "compression");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INCONSISTENT_STREAM_STATE);
+                throw raise.raise(inliningTarget, ValueError, INCONSISTENT_STREAM_STATE);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_COPYING_S_OBJECT, "compression"), zlibSupport, deallocate);
         }
 
         @Specialization(guards = "function == INFLATE_COPY_ERROR")
         static void inflateCopyError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "decompression");
+                throw raise.raise(inliningTarget, MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "decompression");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INCONSISTENT_STREAM_STATE);
+                throw raise.raise(inliningTarget, ValueError, INCONSISTENT_STREAM_STATE);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_COPYING_S_OBJECT, "compression"), zlibSupport, deallocate);
         }
@@ -362,25 +369,27 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "function == DEFLATE_DICT_ERROR")
         static void deflateDictError(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INVALID_DICTIONARY);
+                throw raise.raise(inliningTarget, ValueError, INVALID_DICTIONARY);
             }
-            throw raise.raise(ValueError, ErrorMessages.DEFLATED_SET_DICT);
+            throw raise.raise(inliningTarget, ValueError, ErrorMessages.DEFLATED_SET_DICT);
 
         }
 
         @Specialization(guards = "function == INFLATE_INIT_ERROR")
         static void inflateInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, OUT_OF_MEMORY_WHILE_S_DATA, "decompressing");
+                throw raise.raise(inliningTarget, MemoryError, OUT_OF_MEMORY_WHILE_S_DATA, "decompressing");
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_PREPARING_TO_S_DATA, "decompress"), zlibSupport, deallocate);
 
@@ -388,17 +397,18 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == INFLATE_OBJ_ERROR")
         static void inflateObjInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "decompression");
+                throw raise.raise(inliningTarget, MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "decompression");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INVALID_INITIALIZATION_OPTION);
+                throw raise.raise(inliningTarget, ValueError, INVALID_INITIALIZATION_OPTION);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_CREATING_S_OBJECT, "decompression"), zlibSupport, deallocate);
         }
@@ -452,16 +462,17 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "function == MEMORY_ERROR")
         static void memError(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-            throw raise.raise(MemoryError);
+            throw raise.raise(inliningTarget, MemoryError);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         void fallback(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate) {
-            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.UNHANDLED_ERROR);
+            throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.UNHANDLED_ERROR);
         }
     }
 
@@ -584,11 +595,11 @@ public class ZlibNodes {
                             // we inflate again with a dictionary
                             bytesWritten = inflater.inflate(result, 0, len);
                         } else {
-                            throw PRaiseNode.raiseUncached(nodeForRaise, ZLibError, WHILE_SETTING_ZDICT);
+                            throw PRaiseNode.raiseStatic(nodeForRaise, ZLibError, WHILE_SETTING_ZDICT);
                         }
                     }
                 } catch (DataFormatException e) {
-                    throw PRaiseNode.raiseUncached(nodeForRaise, ZLibError, e);
+                    throw PRaiseNode.raiseStatic(nodeForRaise, ZLibError, e);
                 }
                 baos.write(result, 0, bytesWritten);
             }

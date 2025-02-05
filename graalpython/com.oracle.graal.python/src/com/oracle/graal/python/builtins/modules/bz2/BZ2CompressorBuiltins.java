@@ -105,14 +105,14 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             gil.release(true);
             try {
                 NFIBz2Support bz2Support = PythonContext.get(this).getNFIBz2Support();
                 Object bzst = bz2Support.createStream(createStream);
                 int err = bz2Support.compressInit(bzst, compresslevel, compressInit);
                 if (err != BZ_OK) {
-                    errorHandling(err, raiseNode.get(inliningTarget));
+                    errorHandling(inliningTarget, err, raiseNode);
                 }
                 self.init(bzst, bz2Support);
                 return PNone.NONE;
@@ -124,8 +124,8 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static Object err(Object self, Object compresslevel,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9);
         }
     }
 
@@ -158,8 +158,8 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(BZ2Object.BZ2Compressor self, Object data,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
         }
     }
 
@@ -179,8 +179,8 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(BZ2Object.BZ2Compressor self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, REPEATED_CALL_TO_FLUSH);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }
 }

@@ -104,7 +104,7 @@ public final class DequeIterBuiltins extends PythonBuiltins {
                 if (self.startState == self.deque.getState()) {
                     if (!self.hasNext()) {
                         assert self.lengthHint() == 0;
-                        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.StopIteration);
+                        throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.StopIteration);
                     }
                     return self.next();
                 }
@@ -114,7 +114,7 @@ public final class DequeIterBuiltins extends PythonBuiltins {
                 // fall through
             }
             self.reset();
-            throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
+            throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
         }
     }
 

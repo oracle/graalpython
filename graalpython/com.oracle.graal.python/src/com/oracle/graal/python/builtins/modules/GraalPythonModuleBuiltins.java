@@ -827,13 +827,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 case "economicmap":
                     return EconomicMapStorage.create();
                 default:
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_STORAGE_STRATEGY);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_STORAGE_STRATEGY);
             }
         }
 
         private void validate(HashingStorage dictStorage) {
             if (HashingStorageLen.executeUncached(dictStorage) != 0) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
             }
         }
     }
@@ -868,25 +868,25 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         static Object doIt(Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (ImageInfo.inImageBuildtimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new UnsupportedOperationException(ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM.toJavaStringUncached());
             }
             if (ImageInfo.inImageRuntimeCode()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
+                throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
             }
 
             Env env = PythonContext.get(inliningTarget).getEnv();
             if (!isType(value, env, lib)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
             }
 
             try {
                 return env.createHostAdapter(new Object[]{value});
             } catch (Exception ex) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, PythonUtils.getMessage(ex), ex);
+                throw raiseNode.raise(inliningTarget, TypeError, PythonUtils.getMessage(ex), ex);
             }
         }
 
@@ -1194,7 +1194,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             try {
                 NativeLibraryLocator.replicate(context.getEnv().getPublicTruffleFile(venvPath.toJavaStringUncached()), context, count);
             } catch (IOException | InterruptedException e) {
-                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.ValueError, e);
+                throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ValueError, e);
             }
             return PNone.NONE;
         }

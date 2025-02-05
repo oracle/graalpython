@@ -84,7 +84,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         static Object get(PContextVar self, Object def,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile defIsNoValueProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object defValue = defIsNoValueProfile.profile(inliningTarget, isNoValue(def)) ? PContextVar.NO_DEFAULT : def;
             PythonContext context = PythonContext.get(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
@@ -92,7 +92,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
             if (value != null) {
                 return value;
             }
-            throw raiseNode.get(inliningTarget).raise(LookupError);
+            throw raiseNode.raise(inliningTarget, LookupError);
         }
     }
 
@@ -118,7 +118,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         static Object reset(PContextVar self, PContextVarsToken token,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext pythonContext,
-                        @Shared @Cached PRaiseNode.Lazy raise) {
+                        @Shared @Cached PRaiseNode raise) {
             if (self == token.getVar()) {
                 token.use(inliningTarget, raise);
                 PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
@@ -129,7 +129,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
                     self.setValue(threadState, token.getOldValue());
                 }
             } else {
-                throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
+                throw raise.raise(inliningTarget, ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
             }
             return PNone.NONE;
         }
@@ -137,8 +137,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isToken(token)")
         Object doError(@SuppressWarnings("unused") PContextVar self, Object token,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode.Lazy raise) {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
+                        @Shared @Cached PRaiseNode raise) {
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
         }
 
         static boolean isToken(Object obj) {

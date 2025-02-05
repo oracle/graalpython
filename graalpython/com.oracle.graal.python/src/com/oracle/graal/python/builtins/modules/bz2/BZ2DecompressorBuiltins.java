@@ -93,12 +93,12 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             NFIBz2Support bz2Support = PythonContext.get(inliningTarget).getNFIBz2Support();
             Object bzst = bz2Support.createStream(createStream);
             int err = bz2Support.decompressInit(bzst, compressInit);
             if (err != BZ_OK) {
-                errorHandling(err, raiseNode.get(inliningTarget));
+                errorHandling(inliningTarget, err, raiseNode);
             }
             self.init(bzst, bz2Support);
             return PNone.NONE;
@@ -144,8 +144,8 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isEOF()"})
         static Object err(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(EOFError, END_OF_STREAM_ALREADY_REACHED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, EOFError, END_OF_STREAM_ALREADY_REACHED);
         }
     }
 

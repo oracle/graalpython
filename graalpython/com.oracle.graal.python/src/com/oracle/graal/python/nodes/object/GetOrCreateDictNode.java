@@ -99,7 +99,7 @@ public abstract class GetOrCreateDictNode extends PNodeWithContext {
         PDict dict = getDict.execute(object);
         if (dict == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.UNABLE_SET_DICT_OF_OBJ, object);
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.UNABLE_SET_DICT_OF_OBJ, object);
         }
         return dict;
     }

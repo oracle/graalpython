@@ -238,10 +238,10 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object function = args[0];
             if (!callableCheckNode.execute(inliningTarget, function)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, S_ARG_MUST_BE_CALLABLE, "the first");
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, S_ARG_MUST_BE_CALLABLE, "the first");
             }
 
             final Object[] funcArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
@@ -257,8 +257,8 @@ public final class PartialBuiltins extends PythonBuiltins {
         @Specialization(guards = "!atLeastOneArg(args)")
         @SuppressWarnings("unused")
         static Object noCallable(Object cls, Object[] args, PKeyword[] keywords,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT, "partial");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT, "partial");
         }
     }
 
@@ -302,8 +302,8 @@ public final class PartialBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static Object setDict(@SuppressWarnings("unused") PPartial self, Object mapping,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 
@@ -358,9 +358,9 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached HashingStorageCopy copyStorageNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (state.getSequenceStorage().length() != 4) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 
             final Object function = getItemNode.execute(inliningTarget, state, 0);
@@ -371,7 +371,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             if (!callableCheckNode.execute(inliningTarget, function) ||
                             !PGuards.isPTuple(fnArgs) ||
                             (fnKwargs != PNone.NONE && !PGuards.isDict(fnKwargs))) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 
             self.setFn(function);
@@ -407,8 +407,8 @@ public final class PartialBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object fallback(Object self, Object state,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
         }
     }
 

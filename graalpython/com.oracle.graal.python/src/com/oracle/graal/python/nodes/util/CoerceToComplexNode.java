@@ -93,7 +93,7 @@ public abstract class CoerceToComplexNode extends PNodeWithContext {
                     @Cached(value = "create(T___COMPLEX__)", inline = false) LookupAndCallUnaryNode callComplexFunc,
                     @Cached PyFloatAsDoubleNode asDoubleNode,
                     @Bind PythonLanguage language,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object result = callComplexFunc.executeObject(frame, x);
         if (result != PNone.NO_VALUE) {
             if (result instanceof PComplex) {
@@ -104,7 +104,7 @@ public abstract class CoerceToComplexNode extends PNodeWithContext {
                 // and may be removed in a future version of Python.
                 return (PComplex) result;
             } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
             }
         }
         return PFactory.createComplex(language, asDoubleNode.execute(frame, inliningTarget, x), 0);

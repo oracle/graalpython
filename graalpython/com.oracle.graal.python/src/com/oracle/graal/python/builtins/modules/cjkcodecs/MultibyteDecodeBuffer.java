@@ -129,7 +129,7 @@ public class MultibyteDecodeBuffer {
     protected void grow(Node raisingNode) {
         int newCapacity = 2 * writer.capacity() + 1;
         if (newCapacity < 0) {
-            throw PRaiseNode.raiseUncached(raisingNode, MemoryError);
+            throw PRaiseNode.raiseStatic(raisingNode, MemoryError);
         }
         CharBuffer newBuffer = CharBuffer.allocate(newCapacity);
         writer.flip();

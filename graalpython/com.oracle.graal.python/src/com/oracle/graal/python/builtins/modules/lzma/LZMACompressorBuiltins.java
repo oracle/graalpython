@@ -136,22 +136,22 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         @Specialization(guards = "badIntegrity(format, check)")
         @SuppressWarnings("unused")
         static PNone integrityError(LZMACompressor self, long format, long check, Object preset, Object filters,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "badPresetFilters(preset, filters)"})
         @SuppressWarnings("unused")
         static PNone presetError(LZMACompressor self, long format, long check, Object preset, Object filters,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badPresetFilters(preset, filters)", "badRawFilter(format, filters)"})
         @SuppressWarnings("unused")
         static PNone rawError(LZMACompressor self, long format, long check, Object preset, PNone filters,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, MUST_SPECIFY_FILTERS);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_SPECIFY_FILTERS);
         }
 
         protected static boolean badIntegrity(long format, long check) {
@@ -189,8 +189,8 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(LZMACompressor self, Object data,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
         }
 
         @ValueType
@@ -236,8 +236,8 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(LZMACompressor self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, REPEATED_CALL_TO_FLUSH);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }
 

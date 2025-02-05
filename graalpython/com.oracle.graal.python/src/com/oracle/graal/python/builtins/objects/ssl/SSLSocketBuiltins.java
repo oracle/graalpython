@@ -106,11 +106,11 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared @Cached SSLOperationNode sslOperationNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (len == 0) {
                 return PFactory.createBytes(language, new byte[0]);
             } else if (len < 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
             ByteBuffer output = PythonUtils.allocateByteBuffer(len);
             sslOperationNode.read(frame, inliningTarget, self, output);
@@ -126,7 +126,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached SSLOperationNode sslOperationNode,
                         // unused node to avoid mixing shared and non-shared inlined nodes
-                        @SuppressWarnings("unused") @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @SuppressWarnings("unused") @Shared @Cached PRaiseNode raiseNode) {
             Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, indirectCallData);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
@@ -294,9 +294,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object set(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object obj,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             // JDK API doesn't support setting session ID
-            throw raiseNode.raise(NotImplementedError);
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -317,9 +317,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         static Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (!self.isHandshakeComplete()) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate != null) {
@@ -338,9 +338,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         static PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (!self.isHandshakeComplete()) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
@@ -387,9 +387,9 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object getChannelBinding(PSSLSocket self, TruffleString sbType,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             // JDK doesn't have an API to access what we need. BouncyCastle could provide this
-            throw raiseNode.raise(ValueError, ErrorMessages.S_CHANNEL_BINDING_NOT_IMPLEMENTED, sbType);
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.S_CHANNEL_BINDING_NOT_IMPLEMENTED, sbType);
         }
 
         @Override

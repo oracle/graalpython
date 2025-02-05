@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,6 +78,7 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum InplaceArithmetic {
@@ -123,11 +124,12 @@ public enum InplaceArithmetic {
         this.slot = slot;
 
         this.notImplementedHandler = () -> new LookupAndCallInplaceNode.NotImplementedHandler() {
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+            private final BranchProfile errorProfile = BranchProfile.create();
 
             @Override
             public Object execute(Object arg, Object arg2) {
-                throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, operator, arg, arg2);
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, operator, arg, arg2);
             }
         };
     }

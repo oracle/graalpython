@@ -330,9 +330,9 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = "!isDict(obj)")
         static Object getItem(Object obj, @SuppressWarnings("unused") Object key,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNode raiseNode) {
-            return raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
+                        @Bind("this") Node inliningTarget,
+                        @Cached StrNode strNode) {
+            return PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }
 
         protected boolean isDict(Object obj) {
@@ -394,10 +394,10 @@ public final class PythonCextDictBuiltins {
                         @Cached CastToJavaLongExactNode castToLong,
                         @Cached SetItemNode setItemNode,
                         @Cached InlinedBranchProfile wrongHashProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (hashNode.execute(null, inliningTarget, key) != castToLong.execute(inliningTarget, givenHash)) {
                 wrongHashProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AssertionError, HASH_MISMATCH);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AssertionError, HASH_MISMATCH);
             }
             setItemNode.execute(null, inliningTarget, dict, key, value);
             return 0;
@@ -524,10 +524,10 @@ public final class PythonCextDictBuiltins {
                         @Cached PyObjectLookupAttr lookupKeys,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Shared @Cached CallNode callNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // lookup "keys" to raise the right error:
             if (lookupKeys.execute(null, inliningTarget, b, T_KEYS) == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
+                throw raiseNode.raise(inliningTarget, AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
             }
             Object updateCallable = lookupAttr.execute(null, inliningTarget, a, T_UPDATE);
             callNode.executeWithoutFrame(updateCallable, new Object[]{b});

@@ -90,11 +90,11 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
         @Specialization
         static DigestObject copy(DigestObject self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return self.copy();
             } catch (CloneNotSupportedException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError);
             }
         }
     }
@@ -135,9 +135,9 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.wasReset()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.UPDATING_FINALIZED_DIGEST_IS_NOT_SUPPORTED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.UPDATING_FINALIZED_DIGEST_IS_NOT_SUPPORTED);
             }
             try {
                 self.update(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));

@@ -308,11 +308,10 @@ public final class PythonCextErrBuiltins {
     abstract static class _PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
         }
 
         @Specialization(guards = "isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
@@ -346,7 +345,7 @@ public final class PythonCextErrBuiltins {
                         @Cached InlinedBranchProfile notDotProfile,
                         @Cached InlinedBranchProfile notModuleProfile,
                         @Cached InlinedConditionProfile baseProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (base == PNone.NO_VALUE) {
                 base = PythonErrorType.Exception;
             }
@@ -357,7 +356,7 @@ public final class PythonCextErrBuiltins {
             int dotIdx = indexOfCodepointNode.execute(name, '.', 0, length, TS_ENCODING);
             if (dotIdx < 0) {
                 notDotProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
+                throw raiseNode.raise(inliningTarget, SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
             }
             if (getItem.execute(null, inliningTarget, ((PDict) dict).getDictStorage(), base) == null) {
                 notModuleProfile.enter(inliningTarget);

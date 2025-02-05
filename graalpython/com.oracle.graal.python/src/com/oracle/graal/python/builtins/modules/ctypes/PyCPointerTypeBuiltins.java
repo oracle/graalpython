@@ -130,7 +130,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached StringUtils.SimpleTruffleStringFormatNode formatNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             /*
              * stgdict items size, align, length contain info about pointers itself, stgdict.proto
              * has info about the pointed to type!
@@ -186,9 +186,9 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
         /* _byref consumes a refcount to its argument */
         static PyCArgObject byref(Node inliningTarget, Object obj,
                         PyTypeCheck pyTypeCheck,
-                        PRaiseNode.Lazy raiseNode) {
+                        PRaiseNode raiseNode) {
             if (!pyTypeCheck.isCDataObject(inliningTarget, obj)) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, EXPECTED_CDATA_INSTANCE);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, EXPECTED_CDATA_INSTANCE);
             }
 
             CDataObject cdata = (CDataObject) obj;
@@ -217,7 +217,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CDataTypeFromParamNode fromParamNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             StgDictObject typedict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             /*
              * If we expect POINTER(<type>), but receive a <type> instance, accept it by calling
@@ -251,7 +251,7 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached HashingStorageSetItem setItem,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, self, raiseNode);
             PyCPointerType_SetProto(inliningTarget, dict, type, isTypeNode, pyTypeStgDictNode, raiseNode);
             dict.setDictStorage(setItem.execute(inliningTarget, dict.getDictStorage(), T__TYPE_, type));
@@ -261,8 +261,8 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(type)")
         static Object error(Object self, Object type,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, TYPE_MUST_BE_A_TYPE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, TYPE_MUST_BE_A_TYPE);
         }
     }
 
@@ -281,12 +281,12 @@ public final class PyCPointerTypeBuiltins extends PythonBuiltins {
     static void PyCPointerType_SetProto(Node inliningTarget, StgDictObject stgdict, Object proto,
                     IsTypeNode isTypeNode,
                     PyTypeStgDictNode pyTypeStgDictNode,
-                    PRaiseNode.Lazy raiseNode) {
+                    PRaiseNode raiseNode) {
         if (proto == null || !isTypeNode.execute(inliningTarget, proto)) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_BE_A_TYPE);
+            throw raiseNode.raise(inliningTarget, TypeError, TYPE_MUST_BE_A_TYPE);
         }
         if (pyTypeStgDictNode.execute(inliningTarget, proto) == null) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
+            throw raiseNode.raise(inliningTarget, TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
         }
         stgdict.proto = proto;
     }

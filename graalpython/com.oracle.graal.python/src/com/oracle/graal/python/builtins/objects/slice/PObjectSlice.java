@@ -134,7 +134,7 @@ public final class PObjectSlice extends PSlice {
         BigInteger start, stop, step, length;
         length = (BigInteger) lengthIn;
         if (pySign(length) < 0) {
-            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+            throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
         if (slice.getStep() == PNone.NONE) {
             step = ONE;
@@ -143,7 +143,7 @@ public final class PObjectSlice extends PSlice {
             step = (BigInteger) slice.getStep();
             stepIsNegative = pySign(step) < 0;
             if (pySign(step) == 0) {
-                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
 

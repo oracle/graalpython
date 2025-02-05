@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,14 +87,14 @@ public final class Sha3ModuleBuiltins extends PythonBuiltins {
         static Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Bind("this") Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PythonBuiltinClassType resultType;
             if (type instanceof PythonBuiltinClass builtinType) {
                 resultType = builtinType.getType();
             } else if (type instanceof PythonBuiltinClassType enumType) {
                 resultType = enumType;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
             return createNode.execute(frame, inliningTarget, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer);
         }

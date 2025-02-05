@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -104,7 +103,7 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
     static void setFixedAttr(Frame frame, Node inliningTarget, Object self, @SuppressWarnings("unused") TruffleString name, Object value,
                     @SuppressWarnings("unused") @Cached("name") TruffleString cachedName,
                     @Shared @Cached GetObjectSlotsNode getSlotsNode,
-                    @Shared @Cached PRaiseNode.Lazy raise,
+                    @Shared @Cached PRaiseNode raise,
                     @Shared @Cached CallSlotSetAttrNode callSetAttr) {
         assert value != null; // should use PNone.NO_VALUE
         TpSlots slots = getSlotsNode.execute(inliningTarget, self);
@@ -119,13 +118,13 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
     @InliningCutoff
     static void doDynamicAttr(Frame frame, Node inliningTarget, Object self, TruffleString name, Object value,
                     @Shared @Cached GetObjectSlotsNode getSlotsNode,
-                    @Shared @Cached PRaiseNode.Lazy raise,
+                    @Shared @Cached PRaiseNode raise,
                     @Shared @Cached CallSlotSetAttrNode callSetAttr) {
         setFixedAttr(frame, inliningTarget, self, name, value, name, getSlotsNode, raise, callSetAttr);
     }
 
     @InliningCutoff
-    static void raiseNoSlotError(Node inliningTarget, Object self, Object name, Object value, Lazy raise, TpSlots slots) {
+    static void raiseNoSlotError(Node inliningTarget, Object self, Object name, Object value, PRaiseNode raise, TpSlots slots) {
         TruffleString message;
         boolean isDelete = value == PNone.NO_VALUE;
         if (slots.combined_tp_getattro_getattr() == null) {
@@ -133,7 +132,7 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
         } else {
             message = isDelete ? P_HAS_RO_ATTRS_S_TO_DELETE : P_HAS_RO_ATTRS_S_TO_ASSIGN;
         }
-        throw raise.get(inliningTarget).raise(TypeError, message, self, name);
+        throw raise.raise(inliningTarget, TypeError, message, self, name);
     }
 
     @NeverDefault

@@ -1065,7 +1065,7 @@ public abstract class CApiTransitions {
                  * Python-level MemoryError.
                  */
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.MemoryError);
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.MemoryError);
             } finally {
                 gil.release(acquired);
             }

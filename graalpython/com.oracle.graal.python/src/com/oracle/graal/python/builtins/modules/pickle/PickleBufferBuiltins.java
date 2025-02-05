@@ -86,16 +86,16 @@ public class PickleBufferBuiltins extends PythonBuiltins {
                         @Cached PyMemoryViewFromObject memoryViewFromObject,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             final Object view = self.getView();
             if (view == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
             }
             PMemoryView mv = memoryViewFromObject.execute(frame, self);
             // Make it into raw (1-dimensional bytes) memoryview
             try {
                 if (!mv.isAnyContiguous()) {
-                    throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.CANNOT_EXTRACT_RAW_BUFFER_FROM_NON_CONTIGUOUS);
+                    throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.CANNOT_EXTRACT_RAW_BUFFER_FROM_NON_CONTIGUOUS);
                 }
                 int[] shape = new int[]{mv.getLength()};
                 int[] strides = new int[]{1};

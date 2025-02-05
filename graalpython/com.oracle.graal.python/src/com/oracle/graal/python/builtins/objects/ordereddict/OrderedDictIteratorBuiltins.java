@@ -99,10 +99,10 @@ public class OrderedDictIteratorBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode,
                         @Cached HashingStorageNodes.HashingStorageGetItemWithHash getItem) {
             if (self.current == null) {
-                throw raiseNode.raise(StopIteration);
+                throw raiseNode.raise(inliningTarget, StopIteration);
             }
             if (self.size != self.dict.nodes.size()) {
-                throw raiseNode.raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "OrderedDict");
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "OrderedDict");
             }
             Object result;
             Object key = self.current.key;
@@ -111,7 +111,7 @@ public class OrderedDictIteratorBuiltins extends PythonBuiltins {
             } else {
                 Object value = getItem.execute(frame, inliningTarget, self.dict.getDictStorage(), key, self.current.hash);
                 if (value == null) {
-                    throw raiseNode.raise(KeyError, new Object[]{key});
+                    throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
                 }
                 if (self.type == POrderedDictIterator.IteratorType.VALUES) {
                     result = value;

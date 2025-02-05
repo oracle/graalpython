@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,10 +71,10 @@ public abstract class PyObjectDir extends PNodeWithContext {
                     @Cached(inline = false) ListBuiltins.ListSortNode sortNode,
                     @Cached(inline = false) ListNodes.ConstructListNode constructListNode,
                     @Cached(value = "create(T___DIR__)", inline = false) LookupAndCallUnaryNode callDir,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object result = callDir.executeObject(frame, object);
         if (result == PNone.NO_VALUE) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_DOES_NOT_PROVIDE_DIR);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_DOES_NOT_PROVIDE_DIR);
         }
         PList list = constructListNode.execute(frame, result);
         sortNode.execute(frame, list);

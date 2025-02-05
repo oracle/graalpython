@@ -99,7 +99,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raise) {
             Object eventLoop = context.getThreadState(context.getLanguage(inliningTarget)).getRunningEventLoop();
             if (eventLoop == null) {
-                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.NO_RUNNING_EVENT_LOOP);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.NO_RUNNING_EVENT_LOOP);
             } else {
                 return eventLoop;
             }
@@ -189,7 +189,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
             if (item == null) {
                 set.execute(frame, inliningTarget, dict, loop, task);
             } else {
-                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANT_ENTER_TASK_ALREADY_RUNNING, task, item);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CANT_ENTER_TASK_ALREADY_RUNNING, task, item);
             }
             return PNone.NONE;
         }
@@ -210,7 +210,7 @@ public final class AsyncioModuleBuiltins extends PythonBuiltins {
                 item = PNone.NONE;
             }
             if (item != task) {
-                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TASK_NOT_ENTERED, task, item);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TASK_NOT_ENTERED, task, item);
             }
             del.execute(frame, inliningTarget, dict, loop);
             return PNone.NONE;

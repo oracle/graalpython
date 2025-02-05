@@ -195,7 +195,7 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
         } catch (PException e) {
             // Catch the error to additionally print the collected classes and specify the error
             // occurred during class creation
-            throw PRaiseNode.getUncached().raiseWithCause(PythonBuiltinClassType.TypeError, e, ErrorMessages.INTEROP_CLASS_CREATION_NOT_POSSIBLE,
+            throw PRaiseNode.raiseWithCauseStatic(inliningTarget, PythonBuiltinClassType.TypeError, e, ErrorMessages.INTEROP_CLASS_CREATION_NOT_POSSIBLE,
                             interopLibrary.getMetaQualifiedName(metaObject),
                             Arrays.toString(basesWithForeign));
         }

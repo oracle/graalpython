@@ -123,7 +123,7 @@ public final class PythonCextComplexBuiltins {
                         @Cached CallNode callNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString name;
             if (isComplexSubtypeProfile.profile(inliningTarget, isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode))) {
                 name = T_REAL;
@@ -133,7 +133,7 @@ public final class PythonCextComplexBuiltins {
             try {
                 return callNode.executeWithoutFrame(getAttr.execute(null, inliningTarget, obj, name));
             } catch (PException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError);
+                throw raiseNode.raise(inliningTarget, TypeError);
             }
         }
     }

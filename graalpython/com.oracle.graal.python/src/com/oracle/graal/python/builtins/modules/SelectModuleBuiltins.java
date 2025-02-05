@@ -134,7 +134,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             ObjAndFDList readFDs = seq2set(frame, inliningTarget, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
             ObjAndFDList writeFDs = seq2set(frame, inliningTarget, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
             ObjAndFDList xFDs = seq2set(frame, inliningTarget, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
@@ -144,7 +144,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 isNotNoneTimeout.enter(inliningTarget);
                 timeoutval = TimeUtils.pyTimeAsTimeval(pyTimeFromObjectNode.execute(frame, inliningTarget, timeout, RoundType.TIMEOUT, SEC_TO_NS));
                 if (timeoutval.getSeconds() < 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
                 }
             }
 
@@ -186,7 +186,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
 
         private static ObjAndFDList seq2set(VirtualFrame frame, Node inliningTarget, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor,
                         PyObjectGetItem callGetItemNode,
-                        FastConstructListNode constructListNode, PRaiseNode.Lazy raiseNode) {
+                        FastConstructListNode constructListNode, PRaiseNode raiseNode) {
             // We cannot assume any size of those two arrays, because the sequence may change as a
             // side effect of the invocation of fileno. We also need to call PyObjectSizeNode
             // repeatedly in the loop condition
@@ -198,7 +198,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 objects.add(pythonObject);
                 int fd = asFileDescriptor.execute(frame, inliningTarget, pythonObject);
                 if (fd >= FD_SETSIZE.value) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
                 }
                 fds.add(fd);
             }

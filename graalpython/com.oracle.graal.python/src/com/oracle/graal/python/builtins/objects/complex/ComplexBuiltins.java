@@ -234,7 +234,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static double abs(Object self,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             ComplexValue c = toComplexValueNode.execute(inliningTarget, self);
             double x = c.getReal();
             double y = c.getImag();
@@ -268,7 +268,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                     // remove scaling
                     double r = scalb(scaledH, middleExp);
                     if (Double.isInfinite(r)) {
-                        throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
+                        throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.ABSOLUTE_VALUE_TOO_LARGE);
                     }
                     return r;
                 }
@@ -425,7 +425,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile topConditionProfile,
                         @Cached InlinedConditionProfile zeroDivisionProfile,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             ComplexValue left = toComplexLeft.execute(inliningTarget, leftObj);
             ComplexValue right = toComplexRight.execute(inliningTarget, rightObj);
             if (notImplementedProfile.profile(inliningTarget, left == null || right == null)) {
@@ -438,7 +438,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             if (topConditionProfile.profile(inliningTarget, absRightReal >= absRightImag)) {
                 /* divide tops and bottom by right.real */
                 if (zeroDivisionProfile.profile(inliningTarget, absRightReal == 0.0)) {
-                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_BY_ZERO, "complex");
                 } else {
                     double ratio = right.getImag() / right.getReal();
                     double denom = right.getReal() + right.getImag() * ratio;
@@ -537,7 +537,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile smallNegativeProfile,
                         @Cached InlinedBranchProfile complexProfile,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             ComplexValue left = toComplexLeft.execute(inliningTarget, leftObj);
             ComplexValue right = toComplexRight.execute(inliningTarget, rightObj);
             if (notImplementedProfile.profile(inliningTarget, left == null || right == null)) {
@@ -550,7 +550,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             } else if (left.getReal() == 0.0 && left.getImag() == 0.0) {
                 leftZeroProfile.enter(inliningTarget);
                 if (right.getImag() != 0.0 || right.getReal() < 0.0) {
-                    throw PRaiseNode.raiseUncached(inliningTarget, ZeroDivisionError, ErrorMessages.COMPLEX_ZERO_TO_NEGATIVE_POWER);
+                    throw PRaiseNode.raiseStatic(inliningTarget, ZeroDivisionError, ErrorMessages.COMPLEX_ZERO_TO_NEGATIVE_POWER);
                 }
                 result = PFactory.createComplex(language, 0.0, 0.0);
             } else if (right.getImag() == 0.0 && right.getReal() == (int) right.getReal() && right.getReal() < 100 && right.getReal() > -100) {
@@ -566,7 +566,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                 result = complexToComplexBoundary(left.getReal(), left.getImag(), right.getReal(), right.getImag(), language);
             }
             if (Double.isInfinite(result.getReal()) || Double.isInfinite(result.getImag())) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.COMPLEX_EXPONENTIATION);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.COMPLEX_EXPONENTIATION);
             }
             return result;
         }
@@ -575,8 +575,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
         @InliningCutoff
         @SuppressWarnings("unused")
         static Object error(Object left, Object right, Object mod,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.COMPLEX_MODULO);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.COMPLEX_MODULO);
         }
 
         private static PComplex complexToSmallPositiveIntPower(ComplexValue x, long n, PythonLanguage language) {
@@ -759,7 +759,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
         static TruffleString format(Object self, TruffleString formatString,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexValueNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             ComplexValue c = toComplexValueNode.execute(inliningTarget, self);
             InternalFormat.Spec spec = InternalFormat.fromText(formatString, Spec.NONE, '>', inliningTarget);
             validateSpec(inliningTarget, spec, raiseNode);
@@ -773,14 +773,14 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return formatter.pad().getResult();
         }
 
-        private static void validateSpec(Node inliningTarget, Spec spec, PRaiseNode.Lazy raiseNode) {
+        private static void validateSpec(Node inliningTarget, Spec spec, PRaiseNode raiseNode) {
             if (spec.getFill(' ') == '0') {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT);
             }
 
             char align = spec.getAlign('>');
             if (align == '=') {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT, align);
             }
         }
     }

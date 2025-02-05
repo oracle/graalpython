@@ -310,14 +310,14 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode equalNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // TODO implement properly
             if (equalNode.execute(T_OID_TLS_SERVER, txt, TS_ENCODING)) {
                 return PFactory.createTuple(language, new Object[]{129, T_SERVER_AUTH, T_TLS_WEB_SERVER_AUTHENTICATION, txt});
             } else if (equalNode.execute(T_OID_TLS_CLIENT, txt, TS_ENCODING)) {
                 return PFactory.createTuple(language, new Object[]{130, T_CLIENT_AUTH, T_TLS_WEB_CLIENT_AUTHENTICATION, txt});
             }
-            throw raiseNode.get(inliningTarget).raise(NotImplementedError);
+            throw raiseNode.raise(inliningTarget, NotImplementedError);
         }
 
         @Override
@@ -332,8 +332,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object nid2obj(Object nid,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -342,8 +342,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class RandStatusNode extends PythonBuiltinNode {
         @Specialization
         static Object randStatus(
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -353,8 +353,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randAdd(Object string, Object entropy,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -364,8 +364,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randBytes(Object n,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -375,8 +375,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randPseudoBytes(Object n,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -408,8 +408,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object fail(TruffleString argument,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PermissionError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PermissionError);
         }
     }
 

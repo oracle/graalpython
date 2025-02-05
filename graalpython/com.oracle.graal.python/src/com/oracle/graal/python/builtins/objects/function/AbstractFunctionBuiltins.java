@@ -132,8 +132,8 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static Object getClosure(Object self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__closure__");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__closure__");
         }
     }
 
@@ -157,8 +157,8 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static Object getGlobals(Object self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__globals__");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__globals__");
         }
     }
 
@@ -210,8 +210,8 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object getModule(PBuiltinFunction self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__module__");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__module__");
         }
     }
 
@@ -243,8 +243,8 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object getModule(PBuiltinFunction self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__annotations__");
         }
     }
 
@@ -268,15 +268,15 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static PNone dict(@SuppressWarnings("unused") PFunction self, Object mapping,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
 
         @Specialization
         @SuppressWarnings("unused")
         static Object builtinCode(PBuiltinFunction self, Object mapping,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__dict__");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__dict__");
         }
     }
 
@@ -288,10 +288,10 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         static Object getFunction(PFunction self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object signature = readNode.execute(self, T___TEXT_SIGNATURE__);
             if (signature == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "function", "__text_signature__");
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "function", "__text_signature__");
             }
             return signature;
         }
@@ -309,7 +309,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget) {
             Signature signature = self.getSignature();
             if (signature.isHidden()) {
-                throw PRaiseNode.raiseUncached(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, self, T___TEXT_SIGNATURE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, self, T___TEXT_SIGNATURE__);
             }
             return signatureToText(signature, false);
         }
@@ -378,8 +378,8 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static Object setBuiltin(@SuppressWarnings("unused") PBuiltinFunction self,
                         @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__text_signature__", "builtin_function_or_method");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__text_signature__", "builtin_function_or_method");
         }
 
         public static TextSignatureNode create() {

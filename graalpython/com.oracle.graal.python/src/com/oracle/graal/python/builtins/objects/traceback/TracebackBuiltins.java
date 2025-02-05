@@ -272,12 +272,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Exclusive @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // Check for loops
             PTraceback tb = next;
             while (loopProfile.profile(inliningTarget, tb != null)) {
                 if (tb == self) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TRACEBACK_LOOP_DETECTED);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TRACEBACK_LOOP_DETECTED);
                 }
                 tb = tb.getNext();
             }
@@ -301,8 +301,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(next)", "!isPTraceback(next)"})
         static Object setError(@SuppressWarnings("unused") PTraceback self, Object next,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ, next);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ, next);
         }
     }
 

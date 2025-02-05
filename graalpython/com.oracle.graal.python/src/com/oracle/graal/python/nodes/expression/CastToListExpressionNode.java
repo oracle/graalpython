@@ -150,7 +150,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                 return constructListNode.execute(frame, v);
             } catch (PException e) {
                 e.expectAttributeError(inliningTarget, attrProfile);
-                throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
+                throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }

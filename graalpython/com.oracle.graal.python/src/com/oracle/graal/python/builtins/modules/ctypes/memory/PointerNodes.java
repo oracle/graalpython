@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -671,7 +671,7 @@ public abstract class PointerNodes {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             } else {
-                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY);
+                throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY);
             }
             memory.storage = new LongPointerStorage(nativePointer);
             return nativePointer + offset;
@@ -689,7 +689,7 @@ public abstract class PointerNodes {
                 if (!lib.isPointer(nativeObject)) {
                     lib.toNative(nativeObject);
                     if (!lib.isPointer(nativeObject)) {
-                        throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE);
+                        throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE);
                     }
                 }
                 try {
@@ -716,7 +716,7 @@ public abstract class PointerNodes {
         @Specialization
         static Object doObjectPointer(Node inliningTarget, @SuppressWarnings("unused") MemoryBlock memory, ObjectPointerStorage storage, int offset) {
             if (offset != 0) {
-                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_APPLY_OFFSET_TO_AN_OBJECT_POINTER);
+                throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_APPLY_OFFSET_TO_AN_OBJECT_POINTER);
             }
             return storage.pointer;
         }
@@ -734,7 +734,7 @@ public abstract class PointerNodes {
         @Specialization
         @SuppressWarnings("unused")
         static long doObjectPointer(Node inliningTarget, MemoryBlock memory, ObjectPointerStorage storage, int offset) {
-            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE);
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.CANNOT_CONVERT_OBJECT_POINTER_TO_NATIVE);
         }
     }
 

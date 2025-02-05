@@ -100,7 +100,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         try {
             return (char) formatBytes[index++];
         } catch (ArrayIndexOutOfBoundsException e) {
-            throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.INCOMPLETE_FORMAT);
+            throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.INCOMPLETE_FORMAT);
         }
     }
 
@@ -132,7 +132,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
             return super.asFloat(arg);
         } catch (PException ex) {
             // exactly like in CPython, all errors are translated to this
-            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
+            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
         }
     }
 
@@ -182,7 +182,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         }
 
         if (!foundByte) {
-            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE);
+            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE);
         }
 
         BytesFormatter f = new BytesFormatter(buffer, spec, raisingNode);
@@ -191,7 +191,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     private PException raiseOverflow() {
-        throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE256_DECIMAL);
+        throw PRaiseNode.raiseStatic(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE256_DECIMAL);
     }
 
     @Override
@@ -228,14 +228,14 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         if (attribute != PNone.NO_VALUE) {
             Object bytesResult = call(attribute, arg);
             if (!(bytesResult instanceof PBytes)) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, arg);
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, arg);
             }
             return toBytes((PBytes) bytesResult);
         }
         // otherwise: use the buffer protocol
         byte[] result = byteBufferAsBytesOrNull(arg);
         if (result == null) {
-            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, T___BYTES__, arg);
+            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, T___BYTES__, arg);
         }
         return result;
     }

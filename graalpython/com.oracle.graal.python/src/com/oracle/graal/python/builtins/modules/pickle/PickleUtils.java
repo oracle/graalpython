@@ -287,11 +287,11 @@ public final class PickleUtils {
     }
 
     @TruffleBoundary
-    public static double asciiBytesToDouble(byte[] bytes, PRaiseNode raiseNode, PythonBuiltinClassType errorType) {
+    public static double asciiBytesToDouble(Node node, byte[] bytes, PythonBuiltinClassType errorType) {
         try {
             return asciiBytesToDouble(bytes);
         } catch (NumberFormatException nfe) {
-            throw raiseNode.raise(errorType);
+            throw PRaiseNode.raiseStatic(node, errorType);
         }
     }
 

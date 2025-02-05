@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -133,14 +133,14 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasDescrProfile,
                         @Cached InlinedConditionProfile hasDescrGetProfile,
                         @Cached InlinedConditionProfile hasValueProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             Object type = getClassNode.execute(inliningTarget, object);
@@ -167,7 +167,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                     return dispatch(frame, object, type, descr, descrGetSlot);
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
         private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, TpSlot get) {
@@ -199,7 +199,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached GenericSetAttrWithDictNode setAttrWithDictNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);

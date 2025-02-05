@@ -117,9 +117,9 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached DequeIterNextNode getNextNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!dequeProfile.profile(inliningTarget, deque instanceof PDeque)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
             }
             PDequeIter dequeIter = PFactory.createDequeIter(language, (PDeque) deque);
             if (indexNoneProfile.profile(inliningTarget, indexObj != PNone.NO_VALUE)) {
@@ -146,9 +146,9 @@ public final class CollectionsModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached DequeIterNextNode getNextNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!dequeProfile.profile(inliningTarget, deque instanceof PDeque)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.T_DEQUE, deque);
             }
             PDequeIter dequeIter = PFactory.createDequeRevIter(language, (PDeque) deque);
             if (indexNoneProfile.profile(inliningTarget, indexObj != PNone.NO_VALUE)) {

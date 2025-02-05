@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.pegparser.InputType;
@@ -75,6 +76,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = AstModuleBuiltins.J__AST, isEager = true)
@@ -136,7 +138,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static ModTy obj2sst(PythonContext context, Object obj, InputType type) {
+    public static ModTy obj2sst(Node node, PythonContext context, Object obj, InputType type) {
         AstState state = getAstState(context);
         PythonClass expectedClass;
         switch (type) {
@@ -153,11 +155,12 @@ public final class AstModuleBuiltins extends PythonBuiltins {
                 throw shouldNotReachHere();
         }
         if (!Obj2SstBase.isInstanceOf(obj, expectedClass)) {
-            throw Obj2SstBase.raiseTypeError(EXPECTED_S_NODE_GOT_P, expectedClass.getName(), obj);
+            Object[] arguments = new Object[]{expectedClass.getName(), obj};
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.TypeError, EXPECTED_S_NODE_GOT_P, arguments);
         }
 
-        ModTy mod = new Obj2Sst(state).obj2ModTy(obj);
-        Validator.validateMod(mod);
+        ModTy mod = new Obj2Sst(node, state).obj2ModTy(obj);
+        Validator.validateMod(node, mod);
         return mod;
     }
 

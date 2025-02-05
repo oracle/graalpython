@@ -154,9 +154,9 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isAscii(value, getCodeRangeNode)")
         static Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
-                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
         }
 
         @Specialization
@@ -164,20 +164,19 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached InlinedConditionProfile asciiProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached InlinedConditionProfile asciiProfile) {
             TruffleString ts = cast.execute(inliningTarget, value);
             if (asciiProfile.profile(inliningTarget, isAscii(ts, getCodeRangeNode))) {
                 return asciiString(ts, getCodeRangeNode);
             } else {
-                return nonAsciiString(ts, getCodeRangeNode, raiseNode.get(inliningTarget));
+                return nonAsciiString(ts, inliningTarget, getCodeRangeNode);
             }
         }
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
         }
 
         @ClinicConverterFactory
@@ -227,19 +226,19 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                     } else if (c == '=') {
                         padding++;
                     } else if (strictMode) {
-                        throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.ONLY_BASE64_DATA_IS_ALLOWED);
+                        throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.ONLY_BASE64_DATA_IS_ALLOWED);
                     }
                 }
                 int expectedPadding = 0;
                 if (base64chars % 4 == 1) {
-                    throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.INVALID_BASE64_ENCODED_STRING);
+                    throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.INVALID_BASE64_ENCODED_STRING);
                 } else if (base64chars % 4 == 2) {
                     expectedPadding = 2;
                 } else if (base64chars % 4 == 3) {
                     expectedPadding = 1;
                 }
                 if (padding < expectedPadding) {
-                    throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.INCORRECT_PADDING);
+                    throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.INCORRECT_PADDING);
                 }
                 // Find the end of the expected padding, if any
                 int decodeLen = lastBase64Char + 1;
@@ -263,7 +262,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                 ByteBuffer result = decoder.decode(ByteBuffer.wrap(data, 0, decodeLen));
                 return new ByteSequenceStorage(result.array(), result.limit());
             } catch (IllegalArgumentException e) {
-                throw PRaiseNode.raiseUncached(this, BinasciiError, e);
+                throw PRaiseNode.raiseStatic(this, BinasciiError, e);
             }
         }
 
@@ -293,7 +292,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private byte[] a2b(byte[] bytes, int length) {
             if (length % 2 != 0) {
-                throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
+                throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
             }
             byte[] output = new byte[length / 2];
             for (int i = 0; i < length / 2; i++) {
@@ -310,7 +309,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
             } else if (b >= 'A' && b <= 'F') {
                 return b - 'A' + 10;
             } else {
-                throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
+                throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
             }
         }
 
@@ -331,7 +330,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
             try {
                 encoded = Base64.getEncoder().encode(ByteBuffer.wrap(data, 0, lenght));
             } catch (IllegalArgumentException e) {
-                throw PRaiseNode.raiseUncached(this, BinasciiError, e);
+                throw PRaiseNode.raiseStatic(this, BinasciiError, e);
             }
             if (newline != 0) {
                 byte[] encodedWithNL = Arrays.copyOf(encoded.array(), encoded.limit() + 1);
@@ -373,10 +372,10 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (sep != PNone.NO_VALUE || bytesPerSep != 1) {
                 // TODO implement sep and bytes_per_sep
-                throw raiseNode.get(inliningTarget).raise(NotImplementedError);
+                throw raiseNode.raise(inliningTarget, NotImplementedError);
             }
             try {
                 return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), language);

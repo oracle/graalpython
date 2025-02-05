@@ -154,7 +154,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 return constant.getValueIfDefined();
             }
         }
-        throw PRaiseNode.raiseUncached(raisingNode, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+        throw PRaiseNode.raiseStatic(raisingNode, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
     }
 
     @Override
@@ -428,7 +428,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString protocolName;
             if (noneProtocol.profile(inliningTarget, PGuards.isNoValue(protocolNameObj))) {
                 protocolName = null;
@@ -464,7 +464,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     addrInfoCursorLib.release(cursor);
                 }
             } catch (GetAddrInfoException e) {
-                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+                throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             }
         }
 
@@ -490,7 +490,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString protocolName;
             if (nonProtocol.profile(inliningTarget, PGuards.isNoValue(protocolNameObj))) {
                 protocolName = null;
@@ -504,7 +504,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
              * the legacy API in the future
              */
             if (port < 0 || port > 0xffff) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.S_PORT_RANGE, "getservbyport");
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.S_PORT_RANGE, "getservbyport");
             }
             auditNode.audit(inliningTarget, "socket.getservbyport", port, protocolName != null ? protocolName : "");
 
@@ -524,14 +524,14 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (GetAddrInfoException e) {
-                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+                throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             }
         }
 
         @TruffleBoundary
         private void checkName(TruffleString name) {
             if (name.toJavaStringUncached().matches("^\\d+$")) {
-                throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+                throw PRaiseNode.raiseStatic(this, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             }
         }
 
@@ -559,11 +559,11 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.FromLongNode fromLongNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage addr = sockaddr.getSequenceStorage();
             int addrLen = addr.length();
             if (addrLen < 2 || addrLen > 4) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
             }
             TruffleString address;
             int port, flowinfo = 0, scopeid = 0;
@@ -571,13 +571,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             try {
                 address = castAddress.execute(inliningTarget, arg0);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, arg0);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, arg0);
             }
             port = asIntNode.execute(frame, inliningTarget, getItem.execute(inliningTarget, addr, 1));
             if (addrLen > 2) {
                 flowinfo = asIntNode.execute(frame, inliningTarget, getItem.execute(inliningTarget, addr, 2));
                 if (flowinfo < 0 || flowinfo > 0xfffff) {
-                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, "getnameinfo");
+                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.S_FLOWINFO_RANGE, "getnameinfo");
                 }
             }
             if (addrLen > 3) {
@@ -600,7 +600,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         family = addrInfoCursorLib.getFamily(cursor);
                         resolvedAddr = addrInfoCursorLib.getSockAddr(cursor);
                         if (addrInfoCursorLib.next(cursor)) {
-                            throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.SOCKADDR_RESOLVED_TO_MULTIPLE_ADDRESSES);
+                            throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.SOCKADDR_RESOLVED_TO_MULTIPLE_ADDRESSES);
                         }
                     } finally {
                         addrInfoCursorLib.release(cursor);
@@ -612,13 +612,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 UniversalSockAddr queryAddr;
                 if (family == AF_INET.value) {
                     if (addrLen != 2) {
-                        throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.IPV4_MUST_BE_2_TUPLE);
+                        throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.IPV4_MUST_BE_2_TUPLE);
                     }
                     queryAddr = posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(port, sockAddrLibrary.asInet4SockAddr(resolvedAddr).getAddress()));
                 } else if (family == AF_INET6.value) {
                     queryAddr = posixLib.createUniversalSockAddrInet6(posixSupport, new Inet6SockAddr(port, sockAddrLibrary.asInet6SockAddr(resolvedAddr).getAddress(), flowinfo, scopeid));
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.UNKNOWN_FAMILY);
+                    throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.UNKNOWN_FAMILY);
                 }
 
                 Object[] getnameinfo = posixLib.getnameinfo(posixSupport, queryAddr, flags);
@@ -633,8 +633,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object error(Object sockaddr, Object flags,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.GETNAMEINFO_ARG1_MUST_BE_TUPLE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.GETNAMEINFO_ARG1_MUST_BE_TUPLE);
         }
 
         @Override
@@ -667,7 +667,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached TruffleString.FromLongNode fromLongNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object host = null;
             PosixSupport posixSupport = context.getPosixSupport();
             if (hostObject != PNone.NONE) {
@@ -685,7 +685,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             } else if (portObject == PNone.NONE) {
                 port = null;
             } else {
-                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.INT_OR_STRING_EXPECTED);
+                throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.INT_OR_STRING_EXPECTED);
             }
 
             auditNode.audit(inliningTarget, "socket.getaddrinfo", hostObject, portObjectProfiled, family, type, proto, flags);
@@ -804,7 +804,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 PosixSupport posixSupport = context.getPosixSupport();
                 int converted = posixLib.inet_aton(posixSupport, posixLib.createPathFromString(posixSupport, addr));
@@ -812,7 +812,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 ByteArraySupport.bigEndian().putInt(bytes, 0, converted);
                 return PFactory.createBytes(context.getLanguage(inliningTarget), bytes);
             } catch (PosixSupportLibrary.InvalidAddressException e) {
-                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_ATON);
+                throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_ATON);
             }
         }
 
@@ -833,13 +833,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 if (len != 4) {
-                    throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
+                    throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
                 }
                 PosixSupport posixSupport = context.getPosixSupport();
                 Object result = posixLib.inet_ntoa(posixSupport, ByteArraySupport.bigEndian().getInt(bytes, 0));
@@ -861,7 +861,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 PosixSupport posixSupport = context.getPosixSupport();
                 byte[] bytes = posixLib.inet_pton(posixSupport, family, posixLib.createPathFromString(posixSupport, addr));
@@ -869,7 +869,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } catch (PosixSupportLibrary.InvalidAddressException e) {
-                throw raiseNode.get(inliningTarget).raise(OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_PTON);
+                throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.ILLEGAL_IP_ADDR_STRING_TO_INET_PTON);
             }
         }
 
@@ -892,21 +892,21 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 if (family == AF_INET.value) {
                     if (len != 4) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ILLEGAL_LENGTH_OF_PACKED_IP_ADDRS);
+                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ILLEGAL_LENGTH_OF_PACKED_IP_ADDRS);
                     }
                 } else if (family == AF_INET6.value) {
                     if (len != 16) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.ILLEGAL_LENGTH_OF_PACKED_IP_ADDRS);
+                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ILLEGAL_LENGTH_OF_PACKED_IP_ADDRS);
                     }
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, family);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, family);
                 }
                 try {
                     PosixSupport posixSupport = context.getPosixSupport();
@@ -935,10 +935,10 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int x = asIntNode.execute(frame, inliningTarget, xObj);
             if (x < 0) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.NTOHS_CANT_CONVERT_NEG_PYTHON_INT);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.NTOHS_CANT_CONVERT_NEG_PYTHON_INT);
             }
             if (x > 0xFFFF) {
                 warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.NTOH_PYTHON_STRING_TOO_LARGE_TO_CONVERT, 1);
@@ -959,13 +959,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         static long convert(VirtualFrame frame, Object xObj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongAsLongNode asLongNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             long x = asLongNode.execute(frame, inliningTarget, xObj);
             if (x < 0) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
             }
             if (x > 0xFFFFFFFFL) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.INT_LATGER_THAN_32_BITS);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.INT_LATGER_THAN_32_BITS);
             }
             int i = (int) x;
             if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {

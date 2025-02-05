@@ -161,11 +161,11 @@ public final class PythonCextStructSeqBuiltins {
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.T_N_FIELDS);
                 if (realSizeObj == PNone.NO_VALUE) {
-                    throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
+                    throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
                 } else {
                     int realSize = castToIntNode.execute(inliningTarget, realSizeObj);
                     Object[] values = new Object[realSize];

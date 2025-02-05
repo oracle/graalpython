@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.Normali
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -193,7 +192,7 @@ public abstract class IndexNodes {
         static int doInt(int index, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             int normalizedIndex = index;
             if (negativeIndexProfile.profile(inliningTarget, normalizedIndex < 0)) {
                 normalizedIndex += length;
@@ -205,7 +204,7 @@ public abstract class IndexNodes {
         @Specialization
         static int doBool(boolean bIndex, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             int index = PInt.intValue(bIndex);
             checkBounds(inliningTarget, raiseNode, errorMessage, index, length);
             return index;
@@ -215,7 +214,7 @@ public abstract class IndexNodes {
         static int doLong(long lIndex, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+                        @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
             int index = PInt.intValueExact(lIndex);
             return doInt(index, length, errorMessage, inliningTarget, negativeIndexProfile, raiseNode);
         }
@@ -224,11 +223,11 @@ public abstract class IndexNodes {
         int doLongOvf(long index, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return doLong(index, length, errorMessage, inliningTarget, negativeIndexProfile, raiseNode);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, index);
             }
         }
 
@@ -236,7 +235,7 @@ public abstract class IndexNodes {
         static int doPInt(PInt index, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws OverflowException {
+                        @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
             int idx = index.intValueExact();
             return doInt(idx, length, errorMessage, inliningTarget, negativeIndexProfile, raiseNode);
         }
@@ -245,11 +244,11 @@ public abstract class IndexNodes {
         int doPIntOvf(PInt index, int length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             try {
                 return doPInt(index, length, errorMessage, inliningTarget, negativeIndexProfile, raiseNode);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, index);
             }
         }
 
@@ -257,7 +256,7 @@ public abstract class IndexNodes {
         static long doLongLong(long lIndex, long length, TruffleString errorMessage,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             long normalizedIndex = lIndex;
             if (negativeIndexProfile.profile(inliningTarget, normalizedIndex < 0)) {
                 normalizedIndex += length;
@@ -306,7 +305,7 @@ public abstract class IndexNodes {
             try {
                 return doLong(index, length, errorMessage, inliningTarget, negativeIndexProfile);
             } catch (OverflowException e) {
-                throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, index);
             }
         }
 
@@ -326,7 +325,7 @@ public abstract class IndexNodes {
             try {
                 return doPInt(index, length, errorMessage, inliningTarget, negativeIndexProfile);
             } catch (OverflowException e) {
-                throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, index);
             }
         }
 
@@ -342,26 +341,26 @@ public abstract class IndexNodes {
         }
     }
 
-    public static void checkBounds(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString errorMessage, int idx, int length) {
+    public static void checkBounds(Node inliningTarget, PRaiseNode raiseNode, TruffleString errorMessage, int idx, int length) {
         if (idx < 0 || idx >= length) {
             raiseIndexError(inliningTarget, errorMessage, raiseNode);
         }
     }
 
-    public static void checkBounds(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString errorMessage, long idx, long length) {
+    public static void checkBounds(Node inliningTarget, PRaiseNode raiseNode, TruffleString errorMessage, long idx, long length) {
         if (idx < 0 || idx >= length) {
             raiseIndexError(inliningTarget, errorMessage, raiseNode);
         }
     }
 
-    public static void checkBounds(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString errorMessage, int idx, long length) {
+    public static void checkBounds(Node inliningTarget, PRaiseNode raiseNode, TruffleString errorMessage, int idx, long length) {
         if (idx < 0 || idx >= length) {
             raiseIndexError(inliningTarget, errorMessage, raiseNode);
         }
     }
 
     @InliningCutoff
-    private static void raiseIndexError(Node inliningTarget, TruffleString errorMessage, Lazy raiseNode) {
-        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, errorMessage);
+    private static void raiseIndexError(Node inliningTarget, TruffleString errorMessage, PRaiseNode raiseNode) {
+        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, errorMessage);
     }
 }

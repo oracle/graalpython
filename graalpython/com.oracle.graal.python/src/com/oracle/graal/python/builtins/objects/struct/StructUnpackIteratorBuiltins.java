@@ -49,8 +49,8 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         static Object createNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, CANNOT_CREATE_P_OBJECTS, type);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_CREATE_P_OBJECTS, type);
         }
     }
 
@@ -82,8 +82,8 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isExhausted()")
         static Object nextExhausted(@SuppressWarnings("unused") PStructUnpackIterator self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.StopIteration);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         @Specialization(guards = "!self.isExhausted()", limit = "3")
@@ -93,7 +93,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             final PStruct struct = self.getStruct();
             final Object buffer = self.getBuffer();
             final int bufferLen = bufferLib.getBufferLength(buffer);
@@ -101,7 +101,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
             if (struct == null || self.index >= bufferLen) {
                 self.setExhausted();
                 bufferLib.release(buffer, frame, indirectCallData);
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.StopIteration);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
 
             assert self.index + struct.getSize() <= bufferLen;

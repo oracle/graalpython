@@ -150,10 +150,10 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode indexCheck,
                         @Cached PyNumberAsSizeNode numberAsSize,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             if (!callableCheck.execute(inliningTarget, func)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, THE_FIRST_ARGUMENT_MUST_BE_CALLABLE);
+                throw raiseNode.raise(inliningTarget, TypeError, THE_FIRST_ARGUMENT_MUST_BE_CALLABLE);
             }
 
             /* select the caching function, and make/inc maxsize_O */
@@ -174,7 +174,7 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
                     wrapper = WrapperType.BOUNDED;
                 }
             } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, MAXSIZE_SHOULD_BE_INTEGER_OR_NONE);
+                throw raiseNode.raise(inliningTarget, TypeError, MAXSIZE_SHOULD_BE_INTEGER_OR_NONE);
             }
 
             PythonContext context = PythonContext.get(inliningTarget);
@@ -258,8 +258,8 @@ public final class LruCacheWrapperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static Object setDict(@SuppressWarnings("unused") LruCacheObject self, Object mapping,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 

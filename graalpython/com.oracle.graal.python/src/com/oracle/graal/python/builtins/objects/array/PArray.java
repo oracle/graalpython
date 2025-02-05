@@ -140,9 +140,9 @@ public final class PArray extends PythonBuiltinObject {
         return exports;
     }
 
-    public void checkCanResize(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+    public void checkCanResize(Node inliningTarget, PRaiseNode raiseNode) {
         if (exports.get() != 0) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
     }
 

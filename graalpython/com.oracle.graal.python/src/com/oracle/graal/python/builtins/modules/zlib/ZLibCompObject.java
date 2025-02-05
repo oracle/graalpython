@@ -242,12 +242,12 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             int idx = 0;
             // Check header magic
             if (readShort(bytes, idx, crc) != GZIP_MAGIC) {
-                throw PRaiseNode.raiseUncached(node, ZLibError, ErrorMessages.NOT_IN_GZIP_FORMAT);
+                throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.NOT_IN_GZIP_FORMAT);
             }
             idx += 2;
             // Check compression method
             if (getValue(bytes[idx++], crc) != 8) {
-                throw PRaiseNode.raiseUncached(node, ZLibError, ErrorMessages.UNSUPPORTED_COMPRESSION_METHOD);
+                throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.UNSUPPORTED_COMPRESSION_METHOD);
             }
             // Read flags
             int flg = getValue(bytes[idx++], crc);
@@ -278,7 +278,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             if ((flg & FHCRC) == FHCRC) {
                 int v = (int) crc.getValue() & 0xffff;
                 if (readShort(bytes, idx, crc) != v) {
-                    throw PRaiseNode.raiseUncached(node, ZLibError, ErrorMessages.CORRUPT_GZIP_HEADER);
+                    throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.CORRUPT_GZIP_HEADER);
                 }
                 idx += 2;
                 n += 2;

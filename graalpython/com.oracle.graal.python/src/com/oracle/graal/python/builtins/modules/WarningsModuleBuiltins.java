@@ -204,7 +204,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
     static final class WarningsModuleNode extends Node {
         @Child CastToTruffleStringNode castStr;
-        @Child PRaiseNode raiseNode;
         @Child PyObjectRichCompareBool.EqNode eqNode;
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
@@ -376,15 +375,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             return substringNode;
         }
 
-        private PRaiseNode getRaise() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
-        }
-
         private IsSubClassNode getIsSubClass() {
             if (isSubClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -465,7 +455,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                     return getEqualNode().execute(objStr, getCastStr().executeCached(arg), TS_ENCODING);
                 } catch (CannotCastException e) {
                     // Python calls PyUnicode_Compare directly, which raises this error
-                    throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANT_COMPARE, obj, arg);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.CANT_COMPARE, obj, arg);
                 }
             } catch (CannotCastException e) {
                 Object result = getCallMethodNode().executeCached(frame, obj, T_MATCH, arg);
@@ -529,7 +519,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 registry = getStateOnceRegistry(module);
             }
             if (!(registry instanceof PDict)) {
-                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.TypeError, ErrorMessages.WARN_ONCE_REG_MUST_BE_DICT, registry);
+                throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.TypeError, ErrorMessages.WARN_ONCE_REG_MUST_BE_DICT, registry);
             }
             return (PDict) registry;
         }
@@ -545,7 +535,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             try {
                 return getCastStr().executeCached(defaultAction);
             } catch (CannotCastException e) {
-                throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.WARN_DEF_ACTION_MUST_BE_STRING, defaultAction);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.WARN_DEF_ACTION_MUST_BE_STRING, defaultAction);
             }
         }
 
@@ -560,18 +550,18 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 filters = getStateFilters(_warnings);
             }
             if (!(filters instanceof PList)) {
-                throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_MUST_BE_LIST);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_MUST_BE_LIST);
             }
             SequenceStorage filtersStorage = ((PList) filters).getSequenceStorage();
             SequenceStorageNodes.GetItemScalarNode sequenceGetItem = getSequenceGetItemNode();
             for (int i = 0; i < filtersStorage.length(); i++) {
                 Object tmpItem = sequenceGetItem.executeCached(filtersStorage, i);
                 if (!(tmpItem instanceof PTuple)) {
-                    throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
                 SequenceStorage tmpStorage = ((PTuple) tmpItem).getSequenceStorage();
                 if (tmpStorage.length() != 5) {
-                    throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
 
                 Object actionObj = sequenceGetItem.executeCached(tmpStorage, 0);
@@ -581,7 +571,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 } catch (CannotCastException e) {
                     // CPython does this check after the other __getitem__ calls, but we know it's a
                     // tuple so...
-                    throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ACTION_MUST_BE_STRING, actionObj);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.ACTION_MUST_BE_STRING, actionObj);
                 }
                 Object msg = sequenceGetItem.executeCached(tmpStorage, 1);
                 Object cat = sequenceGetItem.executeCached(tmpStorage, 2);
@@ -713,10 +703,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void callShowWarning(PythonContext context, Object category, Object text, Object message,
+        private void callShowWarning(PythonContext context, Object category, Object text, Object message,
                         TruffleString filename, int lineno, TruffleString sourceline, Object sourceIn) {
-            PRaiseNode raise = PRaiseNode.getUncached();
-
             Object showFn = getWarningsAttr(context, T__SHOWWARNMSG, sourceIn != null);
             if (showFn == null) {
                 showWarning(filename, lineno, text, category, sourceline);
@@ -724,12 +712,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             }
 
             if (!PyCallableCheckNode.executeUncached(showFn)) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.WARN_MUST_BE_SET_CALLABLE);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.WARN_MUST_BE_SET_CALLABLE);
             }
 
             Object warnmsgCls = getWarningsAttr(context, T_WARNING_MESSAGE, false);
             if (warnmsgCls == null) {
-                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNABLE_GET_WARN_MSG);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNABLE_GET_WARN_MSG);
             }
             Object source = sourceIn == null ? PNone.NONE : sourceIn;
 
@@ -765,7 +753,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             } else if (registryObj instanceof PDict) {
                 registry = (PDict) registryObj;
             } else {
-                throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.REGISTRY_MUST_BE_DICT);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.REGISTRY_MUST_BE_DICT);
             }
 
             if (module == null) {
@@ -806,22 +794,21 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             PythonLanguage language = context.getLanguage(this);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
             try {
-                warnExplicitPart2(context, this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item[0], action);
+                warnExplicitPart2(context, warnings, filename, lineno, registry, globals, source, category, message, text, key, item[0], action);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
         }
 
         @TruffleBoundary
-        private static void warnExplicitPart2(PythonContext context, Node node, PythonModule warnings, TruffleString filename, int lineno, PDict registry, PDict globals, Object source,
+        private void warnExplicitPart2(PythonContext context, PythonModule warnings, TruffleString filename, int lineno, PDict registry, PDict globals, Object source,
                         Object category, Object message, Object text, Object key, Object item, TruffleString action) {
 
             if (action.equalsUncached(T_ERROR, TS_ENCODING)) {
                 if (!PyExceptionInstanceCheckNode.executeUncached(message)) {
-                    throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION,
-                                    PyObjectReprAsTruffleStringNode.executeUncached(message));
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.EXCEPTION_NOT_BASEEXCEPTION, PyObjectReprAsTruffleStringNode.executeUncached(message));
                 } else {
-                    throw PRaiseNode.raiseExceptionObject(node, message);
+                    throw PRaiseNode.raiseExceptionObject(this, message);
                 }
             }
 
@@ -833,7 +820,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 boolean alreadyWarned = false;
                 if (action.equalsUncached(T_ONCE, TS_ENCODING)) {
                     if (registry == null) {
-                        PDict currentRegistry = getOnceRegistry(node, context, warnings);
+                        PDict currentRegistry = getOnceRegistry(this, context, warnings);
                         alreadyWarned = updateRegistry(context.getLanguage(), warnings, currentRegistry, text, category, false);
                     } else {
                         alreadyWarned = updateRegistry(context.getLanguage(), warnings, registry, text, category, false);
@@ -843,7 +830,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                         alreadyWarned = updateRegistry(context.getLanguage(), warnings, registry, text, category, false);
                     }
                 } else if (!action.equalsUncached(T_DEFAULT, TS_ENCODING)) {
-                    throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNRECOGNIZED_ACTION_IN_WARNINGS, action,
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNRECOGNIZED_ACTION_IN_WARNINGS, action,
                                     PyObjectReprAsTruffleStringNode.executeUncached(item));
                 }
 
@@ -856,7 +843,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             // to delay it
             TruffleString sourceline = null;
             if (globals != null) {
-                sourceline = getSourceLine(node, globals, lineno);
+                sourceline = getSourceLine(this, globals, lineno);
             }
 
             callShowWarning(context, category, text, message, filename, lineno, sourceline, source);
@@ -912,7 +899,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             } else if (category == null || category == PNone.NONE) {
                 return PythonBuiltinClassType.UserWarning;
             } else if (!getIsTypeNode().executeCached(category) || !getIsSubClass().executeBoolean(frame, category, PythonBuiltinClassType.Warning)) {
-                throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CATEGORY_MUST_BE_WARN_SUBCLS, category);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.CATEGORY_MUST_BE_WARN_SUBCLS, category);
             } else {
                 return category;
             }
@@ -958,13 +945,13 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             try {
                 src = CastToJavaStringNode.getUncached().execute(source);
             } catch (CannotCastException e) {
-                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_S_NOT_P, "str", source);
+                throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_S_NOT_P, "str", source);
             }
             String[] lines = src.split("\n");
             if (lines.length >= lineno) {
                 return toTruffleStringUncached(lines[lineno - 1]);
             } else {
-                throw PRaiseNode.raiseUncached(node, PythonBuiltinClassType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
+                throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -1010,12 +997,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached WarningsModuleNode moduleFunctionsNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString filename;
             try {
                 filename = castStr.execute(inliningTarget, flname);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "warn_explicit()", 3, "str", flname);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "warn_explicit()", 3, "str", flname);
             }
             PDict globalsDict;
             if (globals instanceof PNone) {
@@ -1023,7 +1010,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             } else if (globals instanceof PDict) {
                 globalsDict = (PDict) globals;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.MOD_GLOBALS_MUST_BE_DICT, globals);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MOD_GLOBALS_MUST_BE_DICT, globals);
             }
             // CPython calls get_source_line here. But since that's potentially slow, maybe we can
             // get away with doing that lazily

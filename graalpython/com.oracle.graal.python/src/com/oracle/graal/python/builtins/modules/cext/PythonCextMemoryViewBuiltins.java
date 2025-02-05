@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -85,7 +85,7 @@ public final class PythonCextMemoryViewBuiltins {
                         @Cached ContiguousNode contiguousNode,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             assert buffertype == PY_BUF_READ || buffertype == PY_BUF_WRITE;
             char order = (char) orderByte;
             assert order == 'C' || order == 'F' || order == 'A';
@@ -94,14 +94,14 @@ public final class PythonCextMemoryViewBuiltins {
             boolean release = true;
             try {
                 if (buffertype == PY_BUF_WRITE && mv.isReadOnly()) {
-                    throw raiseNode.get(inliningTarget).raise(BufferError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
+                    throw raiseNode.raise(inliningTarget, BufferError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
                 }
                 if ((boolean) contiguousNode.execute(null, mv)) {
                     release = false;
                     return mv;
                 }
                 if (buffertype == PY_BUF_WRITE) {
-                    throw raiseNode.get(inliningTarget).raise(BufferError, WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS);
+                    throw raiseNode.raise(inliningTarget, BufferError, WRITABLE_CONTIGUES_FOR_NON_CONTIGUOUS);
                 }
                 PMemoryView mvBytes = memoryViewFromObject.execute(null, toBytesNode.execute(null, mv, fromCodePointNode.execute(order, TS_ENCODING, true)));
                 if (eqNode.execute(T_UINT_8_TYPE_CODE, mv.getFormatString(), TS_ENCODING)) {

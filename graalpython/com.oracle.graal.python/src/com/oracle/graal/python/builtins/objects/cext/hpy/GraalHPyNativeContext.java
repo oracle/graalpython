@@ -239,7 +239,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
         out.println("should not throw exceptions apart from PException");
         t.printStackTrace(out);
         out.flush();
-        throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
+        throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
     }
 
     public abstract AllocateNode createAllocateNode();

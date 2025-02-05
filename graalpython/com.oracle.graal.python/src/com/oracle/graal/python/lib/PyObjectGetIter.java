@@ -96,7 +96,7 @@ public abstract class PyObjectGetIter extends Node {
                     @Cached(parameters = "Iter", inline = false) LookupSpecialMethodSlotNode lookupIter,
                     @Cached PySequenceCheckNode sequenceCheckNode,
                     @Bind PythonLanguage language,
-                    @Cached PRaiseNode.Lazy raise,
+                    @Cached PRaiseNode raise,
                     @Cached(inline = false) CallUnaryMethodNode callIter,
                     @Cached PyIterCheckNode checkNode) {
         Object type = getReceiverClass.execute(inliningTarget, receiver);
@@ -113,11 +113,11 @@ public abstract class PyObjectGetIter extends Node {
         } else {
             Object result = callIter.executeObject(frame, iterMethod, receiver);
             if (!checkNode.execute(inliningTarget, result)) {
-                throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NONITER, result);
+                throw raise.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NONITER, result);
             }
             return result;
         }
-        throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
+        throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
     }
 
     @NeverDefault

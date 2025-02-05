@@ -194,7 +194,7 @@ public abstract class StringNodes {
                 return intValue((Number) result);
             }
             // the object's type is not a subclass of 'str'
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         @Specialization
@@ -232,11 +232,11 @@ public abstract class StringNodes {
         @Specialization(guards = "!isTruffleString(self)")
         static String doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
                         @Cached(inline = false) CastToJavaStringNode castToJavaStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return castToJavaStringNode.execute(self);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
         }
     }
@@ -259,11 +259,11 @@ public abstract class StringNodes {
         @Specialization(guards = "!isTruffleString(self)")
         static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return castToTruffleStringNode.execute(inliningTarget, self);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
         }
     }
@@ -306,7 +306,7 @@ public abstract class StringNodes {
                         @Cached InlinedConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Exclusive @Cached CastToTruffleStringNode castToStringNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raise,
+                        @Exclusive @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
 
@@ -337,16 +337,16 @@ public abstract class StringNodes {
                 }
                 return toStringNode.execute(sb);
             } catch (OutOfMemoryError e) {
-                throw raise.get(inliningTarget).raise(MemoryError);
+                throw raise.raise(inliningTarget, MemoryError);
             } catch (CannotCastException e) {
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, INVALID_SEQ_ITEM, i, item);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_SEQ_ITEM, i, item);
             }
         }
 
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, TruffleString string, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raise,
+                        @Exclusive @Cached PRaiseNode raise,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinObjectProfile errorProfile0,
@@ -360,7 +360,7 @@ public abstract class StringNodes {
                 iterator = getIter.execute(frame, inliningTarget, iterable);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile0);
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
             try {
                 TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
@@ -383,15 +383,15 @@ public abstract class StringNodes {
                     appendStringNode.execute(sb, checkItem(inliningTarget, value, i++, castToStringNode, raise));
                 }
             } catch (OutOfMemoryError e) {
-                throw raise.get(inliningTarget).raise(MemoryError);
+                throw raise.raise(inliningTarget, MemoryError);
             }
         }
 
-        private static TruffleString checkItem(Node inliningTarget, Object item, int pos, CastToTruffleStringNode castNode, PRaiseNode.Lazy raise) {
+        private static TruffleString checkItem(Node inliningTarget, Object item, int pos, CastToTruffleStringNode castNode, PRaiseNode raise) {
             try {
                 return castNode.execute(inliningTarget, item);
             } catch (CannotCastException e) {
-                throw raise.get(inliningTarget).raise(TypeError, INVALID_SEQ_ITEM, pos, item);
+                throw raise.raise(inliningTarget, TypeError, INVALID_SEQ_ITEM, pos, item);
             }
         }
 
@@ -414,34 +414,37 @@ public abstract class StringNodes {
 
         @Specialization
         static void doInt(TruffleStringBuilder sb, int translated,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             if (Character.isValidCodePoint(translated)) {
                 appendCodePointNode.execute(sb, translated, 1, true);
             } else {
-                throw raise.raise(ValueError, ErrorMessages.INVALID_UNICODE_CODE_POINT);
+                throw raise.raise(inliningTarget, ValueError, ErrorMessages.INVALID_UNICODE_CODE_POINT);
             }
         }
 
         @Specialization
         static void doLong(TruffleStringBuilder sb, long translated,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
-                doInt(sb, PInt.intValueExact(translated), raise, appendCodePointNode);
+                doInt(sb, PInt.intValueExact(translated), inliningTarget, raise, appendCodePointNode);
             } catch (OverflowException e) {
-                throw raiseError(raise);
+                throw raiseError(inliningTarget, raise);
             }
         }
 
         @Specialization
         static void doPInt(TruffleStringBuilder sb, PInt translated,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
-                doInt(sb, translated.intValueExact(), raise, appendCodePointNode);
+                doInt(sb, translated.intValueExact(), inliningTarget, raise, appendCodePointNode);
             } catch (OverflowException e) {
-                throw raiseError(raise);
+                throw raiseError(inliningTarget, raise);
             }
         }
 
@@ -462,12 +465,12 @@ public abstract class StringNodes {
                 TruffleString translatedStr = castToStringNode.execute(inliningTarget, translated);
                 doString(sb, translatedStr, appendStringNode);
             } catch (CannotCastException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);
             }
         }
 
-        private static PException raiseError(PRaiseNode raise) {
-            return raise.raise(ValueError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, PInt.toHexString(Character.MAX_CODE_POINT + 1));
+        private static PException raiseError(Node inliningTarget, PRaiseNode raise) {
+            return raise.raise(inliningTarget, ValueError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, PInt.toHexString(Character.MAX_CODE_POINT + 1));
         }
     }
 

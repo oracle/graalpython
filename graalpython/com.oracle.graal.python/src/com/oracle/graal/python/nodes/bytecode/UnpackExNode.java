@@ -83,7 +83,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                     @Bind PythonLanguage language,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(countBefore);
         CompilerAsserts.partialEvaluationConstant(countAfter);
         int resultStackTop = initialStackTop + countBefore + 1 + countAfter;
@@ -92,7 +92,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
         int len = storage.length();
         int starLen = len - countBefore - countAfter;
         if (starLen < 0) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
         }
         stackTop = moveItemsToStack(frame, inliningTarget, storage, stackTop, 0, countBefore, getItemNode);
         PList starList = PFactory.createList(language, getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
@@ -112,7 +112,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                     @Bind PythonLanguage language,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(countBefore);
         CompilerAsserts.partialEvaluationConstant(countAfter);
         int resultStackTop = initialStackTop + countBefore + 1 + countAfter;
@@ -122,14 +122,14 @@ public abstract class UnpackExNode extends PNodeWithContext {
             iterator = getIter.execute(frame, inliningTarget, collection);
         } catch (PException e) {
             e.expectTypeError(inliningTarget, notIterableProfile);
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
         stackTop = moveItemsToStack(frame, inliningTarget, iterator, stackTop, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
         PList starAndAfter = constructListNode.execute(frame, iterator);
         SequenceStorage storage = starAndAfter.getSequenceStorage();
         int lenAfter = storage.length();
         if (lenAfter < countAfter) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
         }
         if (countAfter == 0) {
             frame.setObject(stackTop, starAndAfter);
@@ -144,7 +144,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
 
     @ExplodeLoop
     private static int moveItemsToStack(VirtualFrame frame, Node inliningTarget, Object iterator, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
-                    IsBuiltinObjectProfile stopIterationProfile, PRaiseNode.Lazy raiseNode) {
+                    IsBuiltinObjectProfile stopIterationProfile, PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
@@ -153,7 +153,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
                 frame.setObject(stackTop--, item);
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, stopIterationProfile);
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
             }
         }
         return stackTop;

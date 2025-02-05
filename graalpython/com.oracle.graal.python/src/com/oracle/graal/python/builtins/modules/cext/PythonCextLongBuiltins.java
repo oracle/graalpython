@@ -229,7 +229,7 @@ public final class PythonCextLongBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
                         @Cached CastToNativeLongNode castToNativeLongNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 /*
                  * The 'mode' parameter is usually a constant since this function is primarily used
@@ -237,7 +237,7 @@ public final class PythonCextLongBuiltins {
                  * profile the value and even if it is not constant, it is profiled implicitly.
                  */
                 if (requiredPInt(mode) && !isSubtypeNode.execute(getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
                 Object coerced = convertPIntToPrimitiveNode.execute(inliningTarget, object, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
@@ -353,13 +353,13 @@ public final class PythonCextLongBuiltins {
         long doPointer(PInt n,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedBranchProfile overflowProfile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             try {
                 return n.longValueExact();
             } catch (OverflowException e) {
                 overflowProfile.enter(inliningTarget);
                 try {
-                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
                 } catch (PException pe) {
                     ensureTransformExcNode().executeCached(pe);
                     return 0;
@@ -375,7 +375,7 @@ public final class PythonCextLongBuiltins {
         @Fallback
         long doGeneric(Object n,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (asPrimitiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 asPrimitiveNode = insert(ConvertPIntToPrimitiveNodeGen.create());
@@ -384,7 +384,7 @@ public final class PythonCextLongBuiltins {
                 try {
                     return asPrimitiveNode.executeLongCached(n, 0, Long.BYTES);
                 } catch (UnexpectedResultException e) {
-                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
                 }
             } catch (PException e) {
                 ensureTransformExcNode().executeCached(e);
@@ -403,10 +403,10 @@ public final class PythonCextLongBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
     abstract static class _PyLong_AsByteArray extends CApi5BuiltinNode {
-        private static void checkSign(Node inliningTarget, boolean negative, int isSigned, PRaiseNode.Lazy raiseNode) {
+        private static void checkSign(Node inliningTarget, boolean negative, int isSigned, PRaiseNode raiseNode) {
             if (negative) {
                 if (isSigned == 0) {
-                    throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
                 }
             }
         }
@@ -416,7 +416,7 @@ public final class PythonCextLongBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached CStructAccess.WriteByteNode write,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             checkSign(inliningTarget, value < 0, isSigned, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             write.writeByteArray(bytes, array);
@@ -428,7 +428,7 @@ public final class PythonCextLongBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached CStructAccess.WriteByteNode write,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             checkSign(inliningTarget, value < 0, isSigned, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             write.writeByteArray(bytes, array);
@@ -440,7 +440,7 @@ public final class PythonCextLongBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached CStructAccess.WriteByteNode write,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             checkSign(inliningTarget, value.isNegative(), isSigned, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             write.writeByteArray(bytes, array);
@@ -465,9 +465,9 @@ public final class PythonCextLongBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached IntNodes.PyLongFromByteArray fromByteArray,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (size != (int) size) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
             }
             byte[] bytes = readByteNode.readByteArray(charPtr, (int) size);
             return fromByteArray.execute(inliningTarget, bytes, littleEndian != 0, signed != 0);

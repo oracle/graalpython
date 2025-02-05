@@ -97,8 +97,8 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "zeroSize(self)")
         static Object nextNoFillValue(VirtualFrame frame, PZipLongest self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
         }
 
         @Specialization(guards = "!zeroSize(self)")
@@ -110,13 +110,13 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noActiveProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedConditionProfile isNullFillProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object fillValue = isNullFillProfile.profile(inliningTarget, isNullFillValue(self)) ? PNone.NONE : self.getFillValue();
             return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile, raiseNode);
         }
 
         private static Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
-                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile, PRaiseNode.Lazy raiseNode) {
+                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile, PRaiseNode raiseNode) {
             Object[] result = new Object[self.getItTuple().length];
             loopProfile.profileCounted(inliningTarget, result.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < result.length); i++) {
@@ -131,7 +131,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         if (isStopIterationProfile.profileException(inliningTarget, e, StopIteration)) {
                             self.setNumActive(self.getNumActive() - 1);
                             if (noActiveProfile.profile(inliningTarget, self.getNumActive() == 0)) {
-                                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                                throw raiseNode.raise(inliningTarget, StopIteration);
                             } else {
                                 item = fillValue;
                                 self.getItTuple()[i] = PNone.NONE;

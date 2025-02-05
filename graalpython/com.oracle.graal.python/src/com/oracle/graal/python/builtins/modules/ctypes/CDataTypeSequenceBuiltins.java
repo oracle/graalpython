@@ -118,7 +118,7 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
                         @Cached GetNameNode getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleFormatNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object key = PFactory.createTuple(language, new Object[]{itemtype, length});
             CtypesThreadState ctypes = CtypesThreadState.get(context, context.getLanguage(inliningTarget));
             Object result = getItem.execute(frame, inliningTarget, ctypes.cache, key);
@@ -127,7 +127,7 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
             }
 
             if (!isTypeNode.execute(inliningTarget, itemtype)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_A_TYPE_OBJECT);
+                throw raiseNode.raise(inliningTarget, TypeError, EXPECTED_A_TYPE_OBJECT);
             }
             TruffleString name = simpleFormatNode.format("%s_Array_%d", getNameNode.execute(inliningTarget, itemtype), length);
             PDict dict = PFactory.createDict(language, new PKeyword[]{new PKeyword(T__LENGTH_, length), new PKeyword(T__TYPE_, itemtype)});
@@ -140,8 +140,8 @@ public final class CDataTypeSequenceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "length < 0")
         static Object error(@SuppressWarnings("unused") Object self, int length,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ARRAY_LENGTH_MUST_BE_0_NOT_D, length);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ARRAY_LENGTH_MUST_BE_0_NOT_D, length);
         }
     }
 }

@@ -152,7 +152,7 @@ public abstract class TpSlotInquiry {
                         @Bind("this") Node inliningTarget,
                         @Cached UnaryPythonSlotDispatcherNode dispatcherNode,
                         @Cached PyBoolCheckNode pyBoolCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PyObjectIsTrueNode pyObjectIsTrueNode) {
             // See CPython: slot_nb_bool
             // TODO: it is not clear to me why CPython lookups __len__ in the slot wrapper although
@@ -160,7 +160,7 @@ public abstract class TpSlotInquiry {
             // __len__. We ignore the __len__ lookup for now.
             Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self);
             if (!pyBoolCheckNode.execute(inliningTarget, result)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
             }
             return pyObjectIsTrueNode.execute(frame, result);
         }

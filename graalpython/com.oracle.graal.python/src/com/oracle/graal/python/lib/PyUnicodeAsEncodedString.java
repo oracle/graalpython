@@ -128,7 +128,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithContext {
                     @Cached InlinedConditionProfile isByteArrayProfile,
                     @Cached SequenceStorageNodes.CopyNode copyNode,
                     @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @SuppressWarnings("unused") @Shared("ts2js") @Cached(inline = false) TruffleString.ToJavaStringNode toJavaStringNode) {
         final Object v = encodeNode.execute(frame, unicode, encoding, errors);
         // the normal path
@@ -141,7 +141,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithContext {
             return PFactory.createBytes(PythonLanguage.get(inliningTarget), copyNode.execute(inliningTarget, ((PByteArray) v).getSequenceStorage()));
         }
 
-        throw raiseNode.get(inliningTarget).raise(TypeError, S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, v);
+        throw raiseNode.raise(inliningTarget, TypeError, S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, v);
     }
 
     @Specialization(guards = {"isString(unicode)", "isNoValue(encoding)"})
@@ -153,7 +153,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithContext {
     @Specialization(guards = "!isString(unicode)")
     @SuppressWarnings("unused")
     static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object unicode, Object encoding, Object errors,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-        throw raiseNode.get(inliningTarget).raiseBadInternalCall();
+                    @Exclusive @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raiseBadInternalCall(inliningTarget);
     }
 }

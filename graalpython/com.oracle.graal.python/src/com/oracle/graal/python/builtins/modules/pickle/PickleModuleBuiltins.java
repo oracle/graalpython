@@ -173,7 +173,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
                         @Cached PPickler.DumpNode dumpNode,
                         @Cached PPickler.FlushToFileNode flushToFileNode,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PPickler pickler = PFactory.createPickler(language);
             pickler.setProtocol(inliningTarget, raiseNode, protocol, fixImports);
             pickler.setOutputStream(frame, inliningTarget, raiseNode, lookup, file);
@@ -201,7 +201,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PPickler.DumpNode dumpNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PPickler pickler = PFactory.createPickler(language);
             pickler.setProtocol(inliningTarget, raiseNode, protocol, fixImports);
             pickler.setBufferCallback(inliningTarget, raiseNode, bufferCallback);
@@ -230,7 +230,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
                         @Cached PUnpickler.LoadNode loadNode,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PUnpickler unpickler = PFactory.createUnpickler(language);
             unpickler.setInputStream(frame, inliningTarget, raiseNode, lookup, file);
             unpickler.setInputEncoding(encoding, errors);

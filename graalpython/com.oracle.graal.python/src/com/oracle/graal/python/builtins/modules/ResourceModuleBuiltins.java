@@ -164,14 +164,14 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PosixSupport posixSupport = context.getPosixSupport();
             RusageResult rusage;
             try {
                 rusage = posixLib.getrusage(posixSupport, who);
             } catch (PosixException e) {
                 if (e.getErrorCode() == OSErrorEnum.EINVAL.getNumber()) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.RUSAGE_INVALID_WHO);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.RUSAGE_INVALID_WHO);
                 } else {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }

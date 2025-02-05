@@ -135,18 +135,18 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         return CommonGeneratorBuiltinsFactory.getFactories();
     }
 
-    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode.Lazy raiseNode) {
+    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode raiseNode) {
         if (self.isFinished()) {
             if (self.isAsyncGen()) {
-                throw raiseNode.get(inliningTarget).raise(StopAsyncIteration);
+                throw raiseNode.raise(inliningTarget, StopAsyncIteration);
             }
             if (self.isCoroutine()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
         if (self.isRunning()) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
         }
     }
 
@@ -161,7 +161,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached(value = "createDirectCall(self.getCurrentCallTarget())", inline = false) CallTargetInvokeNode call,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
@@ -174,7 +174,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
                 returnProfile.enter(inliningTarget);
-                throw handleReturn(self, e, raiseNode.get(inliningTarget));
+                throw handleReturn(inliningTarget, self, e);
             } finally {
                 self.setRunning(false);
             }
@@ -188,7 +188,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached(inline = false) GenericInvokeNode call,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
             if (sendValue != null) {
@@ -205,25 +205,25 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
                 returnProfile.enter(inliningTarget);
-                throw handleReturn(self, e, raiseNode.get(inliningTarget));
+                throw handleReturn(inliningTarget, self, e);
             } finally {
                 self.setRunning(false);
             }
             return handleResult(inliningTarget, self, result);
         }
 
-        private static PException handleException(PGenerator self, Node inliningTarget, IsBuiltinObjectProfile profile, PRaiseNode.Lazy raiseNode, PException e) {
+        private static PException handleException(PGenerator self, Node inliningTarget, IsBuiltinObjectProfile profile, PRaiseNode raiseNode, PException e) {
             self.markAsFinished();
             if (self.isAsyncGen()) {
                 // Async generators need to wrap StopAsyncIteration in a runtime error
                 if (profile.profileException(inliningTarget, e, StopAsyncIteration)) {
-                    throw raiseNode.get(inliningTarget).raiseWithCause(RuntimeError, e.getEscapedException(), ErrorMessages.ASYNCGEN_RAISED_ASYNCSTOPITER);
+                    throw raiseNode.raiseWithCause(inliningTarget, RuntimeError, e, ErrorMessages.ASYNCGEN_RAISED_ASYNCSTOPITER);
                 }
             }
             // PEP 479 - StopIteration raised from generator body needs to be wrapped in
             // RuntimeError
             e.expectStopIteration(inliningTarget, profile);
-            throw raiseNode.get(inliningTarget).raiseWithCause(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
+            throw raiseNode.raiseWithCause(inliningTarget, RuntimeError, e, ErrorMessages.GENERATOR_RAISED_STOPITER);
         }
 
         private static Object handleResult(Node node, PGenerator self, GeneratorYieldResult result) {
@@ -231,15 +231,15 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             return result.yieldValue;
         }
 
-        private static PException handleReturn(PGenerator self, GeneratorReturnException e, PRaiseNode raiseNode) {
+        private static PException handleReturn(Node inliningTarget, PGenerator self, GeneratorReturnException e) {
             self.markAsFinished();
             if (self.isAsyncGen()) {
-                throw raiseNode.raise(StopAsyncIteration);
+                throw PRaiseNode.raiseStatic(inliningTarget, StopAsyncIteration);
             }
             if (e.value != PNone.NONE) {
-                throw raiseNode.raise(StopIteration, new Object[]{e.value});
+                throw PRaiseNode.raiseStatic(inliningTarget, StopIteration, new Object[]{e.value});
             } else {
-                throw raiseNode.raise(StopIteration);
+                throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
             }
         }
 
@@ -260,12 +260,12 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         static Object send(VirtualFrame frame, PGenerator self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // even though this isn't a builtin for async generators, SendNode is used on async
             // generators by PAsyncGenSend
             checkResumable(inliningTarget, self, raiseNode);
             if (!self.isStarted() && value != PNone.NONE) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
             }
             return resumeGeneratorNode.execute(frame, inliningTarget, self, value);
         }
@@ -288,15 +288,15 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
                         @Cached ExceptionNodes.SetContextNode setContextNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             boolean hasTb = hasTbProfile.profile(inliningTarget, !(tb instanceof PNone));
             if (hasTb && !(tb instanceof PTraceback)) {
                 invalidTbProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.THROW_THIRD_ARG_MUST_BE_TRACEBACK);
             }
             if (self.isRunning()) {
                 runningProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             Object instance = prepareExceptionNode.execute(frame, typ, val);
             if (hasTb) {
@@ -306,7 +306,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             setContextNode.execute(inliningTarget, instance, PNone.NONE); // Will be filled when
                                                                           // caught
             if (self.isCoroutine() && self.isFinished()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }
             if (startedProfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 // Pass it to the generator where it will be thrown by the last yield, the location
@@ -342,9 +342,9 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Cached InlinedConditionProfile isStartedPorfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.isRunning()) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             if (isStartedPorfile.profile(inliningTarget, self.isStarted() && !self.isFinished())) {
                 PBaseException pythonException = PFactory.createBaseException(PythonLanguage.get(inliningTarget), GeneratorExit);
@@ -362,7 +362,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 } finally {
                     self.markAsFinished();
                 }
-                throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.GENERATOR_IGNORED_EXIT);
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.GENERATOR_IGNORED_EXIT);
             } else {
                 self.markAsFinished();
                 return PNone.NONE;

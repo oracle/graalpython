@@ -78,10 +78,11 @@ public final class GenericAliasIteratorBuiltins extends PythonBuiltins {
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object next(PGenericAliasIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Bind PythonLanguage language) {
             if (self.isExhausted()) {
-                throw raiseNode.raise(PythonBuiltinClassType.StopIteration);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             PGenericAlias alias = self.getObj();
             PGenericAlias starredAlias = PFactory.createGenericAlias(language, alias.getOrigin(), alias.getArgs(), true);

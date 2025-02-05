@@ -207,11 +207,11 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (self.getKind() == PSemLock.RECURSIVE_MUTEX) {
                 if (!self.isMine()) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
                 }
                 if (self.getCount() > 1) {
                     self.decreaseCount();
@@ -223,7 +223,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                     try {
                         sval = posixLib.semGetValue(posixSupport, self.getHandle());
                         if (sval >= self.getMaxValue()) {
-                            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
+                            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
                         }
                     } catch (UnsupportedPosixFeatureException e) {
                         /* We will only check properly the maxvalue == 1 case */
@@ -231,7 +231,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                             if (posixLib.semTryWait(posixSupport, self.getHandle())) {
                                 /* it was not locked so undo wait and raise */
                                 posixLib.semPost(posixSupport, self.getHandle());
-                                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
+                                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
                             }
                         }
                     }
@@ -296,7 +296,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int sval = posixLib.semGetValue(posixSupport, self.getHandle());
                 /*
@@ -311,7 +311,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } catch (UnsupportedPosixFeatureException e) {
                 // Not available on Darwin
-                throw raiseNode.get(inliningTarget).raise(NotImplementedError);
+                throw raiseNode.raise(inliningTarget, NotImplementedError);
             }
         }
     }

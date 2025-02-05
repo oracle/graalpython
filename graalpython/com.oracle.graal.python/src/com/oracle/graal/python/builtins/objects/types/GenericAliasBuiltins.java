@@ -348,8 +348,8 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object check(PGenericAlias self, Object other,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
         }
     }
 
@@ -359,8 +359,8 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object check(PGenericAlias self, Object other,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC);
         }
     }
 

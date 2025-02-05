@@ -607,7 +607,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
             byte[] bytes = source.getBytes().toByteArray();
-            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(context, bytes);
+            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(null, context, bytes);
             boolean internal = shouldMarkSourceInternal(context);
             // The original file path should be passed as the name
             String name = source.getName();

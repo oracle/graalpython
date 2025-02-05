@@ -308,7 +308,7 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached GetListStorageNode getStorageNode,
                         @Cached InlinedConditionProfile validProfile,
                         @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached SequenceStorageMpSubscriptNode subscriptNode) {
             if (!validProfile.profile(inliningTarget, SequenceStorageMpSubscriptNode.isValidIndex(inliningTarget, idx, indexCheckNode))) {
                 raiseNonIntIndex(inliningTarget, raiseNode, idx);
@@ -319,8 +319,8 @@ public final class ListBuiltins extends PythonBuiltins {
         }
 
         @InliningCutoff
-        private static void raiseNonIntIndex(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object index) {
-            raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", index);
+        private static void raiseNonIntIndex(Node inliningTarget, PRaiseNode raiseNode, Object index) {
+            raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", index);
         }
     }
 
@@ -394,8 +394,8 @@ public final class ListBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isIndexOrSlice(this, indexCheckNode, key)")
         static void doError(Object self, Object key, Object value,
                         @Shared("indexCheckNode") @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         @NeverDefault
@@ -519,7 +519,7 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage listStore = getStorageNode.execute(inliningTarget, list);
             int len = listStore.length();
             for (int i = 0; i < len; i++) {
@@ -529,7 +529,7 @@ public final class ListBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.NOT_IN_LIST_MESSAGE);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.NOT_IN_LIST_MESSAGE);
         }
     }
 
@@ -564,8 +564,8 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object list, Object arg,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
         }
 
         @NeverDefault
@@ -593,7 +593,7 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile startAdjust,
                         @Cached InlinedBranchProfile stopAdjust,
                         @Cached SequenceStorageNodes.ItemIndexNode indexNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage s = getListStorageNode.execute(inliningTarget, self);
             start = adjustIndex(inliningTarget, s, start, startAdjust);
             stop = adjustIndex(inliningTarget, s, stop, stopAdjust);
@@ -601,7 +601,7 @@ public final class ListBuiltins extends PythonBuiltins {
             if (idx != -1) {
                 return idx;
             }
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_LIST);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_LIST);
         }
 
         private static int adjustIndex(Node inliningTarget, SequenceStorage s, int index, InlinedBranchProfile profile) {
@@ -692,14 +692,14 @@ public final class ListBuiltins extends PythonBuiltins {
         static Object doPList(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached SortSequenceStorageNode sortSequenceStorageNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = list.getSequenceStorage();
             // Make the list temporarily empty to prevent concurrent modification
             list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
             try {
                 sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
                 if (list.getSequenceStorage() != EmptySequenceStorage.INSTANCE) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.LIST_MODIFIED_DURING_SORT);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.LIST_MODIFIED_DURING_SORT);
                 }
             } finally {
                 list.setSequenceStorage(storage);
@@ -754,9 +754,9 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!isListNode.execute(inliningTarget, right)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "list", right, "list");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "list", right, "list");
             }
 
             var leftStorage = getStorageNode.execute(inliningTarget, left);
@@ -805,7 +805,7 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!isListNode.execute(inliningTarget, left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -815,7 +815,7 @@ public final class ListBuiltins extends PythonBuiltins {
                 SequenceStorage repeated = repeatNode.execute(frame, sequenceStorage, right);
                 return PFactory.createList(language, repeated);
             } catch (ArithmeticException | OutOfMemoryError e) {
-                throw raiseNode.get(inliningTarget).raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             }
         }
     }

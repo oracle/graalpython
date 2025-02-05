@@ -173,7 +173,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
         @FunctionalInterface
         interface Op {
-            ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode);
+            ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode);
         }
 
         abstract PComplex execute(VirtualFrame frame, Node inliningTarget, Object value, Op op);
@@ -181,21 +181,21 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PComplex doL(Node inliningTarget, long value, Op op,
                         @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return op.compute(inliningTarget, value, 0, raiseNode).toPComplex(language);
         }
 
         @Specialization
         static PComplex doD(Node inliningTarget, double value, Op op,
                         @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return op.compute(inliningTarget, value, 0, raiseNode).toPComplex(language);
         }
 
         @Specialization
         static PComplex doC(Node inliningTarget, PComplex value, Op op,
                         @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return op.compute(inliningTarget, value.getReal(), value.getImag(), raiseNode).toPComplex(language);
         }
 
@@ -203,7 +203,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         static PComplex doGeneral(VirtualFrame frame, Node inliningTarget, Object value, Op op,
                         @Cached CoerceToComplexNode coerceToComplex,
                         @Bind PythonLanguage language,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             return doC(inliningTarget, coerceToComplex.execute(frame, inliningTarget, value), op, language, raiseNode);
         }
     }
@@ -399,7 +399,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             if (!Double.isFinite(r) || !Double.isFinite(phi)) {
                 // need to raise an exception if r is a nonzero number and phi is infinite
                 if (r != 0.0 && !Double.isNaN(r) && Double.isInfinite(phi)) {
-                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
 
                 // if r is +/-infinity and phi is finite but nonzero then
@@ -503,7 +503,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                     final double scaleUp = 0x1.0p53;
                     return Math.log(Math.hypot(ax * scaleUp, ay * scaleUp)) - 53 * LN_2;
                 }
-                throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
             double h = Math.hypot(ax, ay);
             if (0.71 <= h && h <= 1.73) {
@@ -562,7 +562,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, SqrtNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue result = specialValue(SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
@@ -616,7 +616,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, AcosNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue result = specialValue(SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
@@ -666,7 +666,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, AcoshNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue result = specialValue(SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
@@ -697,7 +697,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, AsinNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue s = AsinhNode.compute(inliningTarget, -imag, real, raiseNode);
             return new ComplexValue(s.imag, -s.real);
         }
@@ -727,7 +727,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, AsinhNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue result = specialValue(SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
@@ -763,7 +763,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, AtanNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue s = AtanhNode.compute(inliningTarget, -imag, real, raiseNode);
             return new ComplexValue(s.imag, -s.real);
         }
@@ -796,7 +796,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, AtanhNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue result = specialValue(SPECIAL_VALUES, real, imag);
             if (result != null) {
                 return result;
@@ -807,7 +807,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return computeWithRealPositive(inliningTarget, real, imag, 1.0, raiseNode);
         }
 
-        private static ComplexValue computeWithRealPositive(Node inliningTarget, double real, double imag, double resultScale, PRaiseNode.Lazy raiseNode) {
+        private static ComplexValue computeWithRealPositive(Node inliningTarget, double real, double imag, double resultScale, PRaiseNode raiseNode) {
             double rreal;
             double rimag;
             double ay = Math.abs(imag);
@@ -817,7 +817,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 rimag = -Math.copySign(Math.PI / 2.0, -imag);
             } else if (real == 1.0 && ay < CM_SQRT_DBL_MIN) {
                 if (ay == 0.0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 rreal = -Math.log(Math.sqrt(ay) / Math.sqrt(Math.hypot(ay, 2.0)));
                 rimag = Math.copySign(Math.atan2(2.0, -ay) / 2, imag);
@@ -853,7 +853,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, ExpNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
                 ComplexValue r;
                 if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
@@ -866,7 +866,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                     r = specialValue(SPECIAL_VALUES, real, imag);
                 }
                 if (Double.isInfinite(imag) && (Double.isFinite(real) || (Double.isInfinite(real) && real > 0))) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 return r;
             }
@@ -882,7 +882,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 rimag = l * Math.sin(imag);
             }
             if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             }
             return new ComplexValue(rreal, rimag);
         }
@@ -899,7 +899,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, CosNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             return CoshNode.compute(inliningTarget, -imag, real, raiseNode);
         }
     }
@@ -928,10 +928,10 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, CoshNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
                 if (Double.isInfinite(imag) && !Double.isNaN(real)) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
                     double r = Math.copySign(INF, Math.sin(imag));
@@ -951,7 +951,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 rimag = Math.sin(imag) * Math.sinh(real);
             }
             if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             }
             return new ComplexValue(rreal, rimag);
         }
@@ -968,7 +968,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, SinNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue s = SinhNode.compute(inliningTarget, -imag, real, raiseNode);
             return new ComplexValue(s.imag, -s.real);
         }
@@ -998,10 +998,10 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, SinhNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
                 if (Double.isInfinite(imag) && !Double.isNaN(real)) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
                     double r = Math.copySign(INF, Math.cos(imag));
@@ -1021,7 +1021,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                 rimag = Math.sin(imag) * Math.cosh(real);
             }
             if (Double.isInfinite(rreal) || Double.isInfinite(rimag)) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.MATH_RANGE_ERROR);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MATH_RANGE_ERROR);
             }
             return new ComplexValue(rreal, rimag);
         }
@@ -1038,7 +1038,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, TanNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             ComplexValue s = TanhNode.compute(inliningTarget, -imag, real, raiseNode);
             return new ComplexValue(s.imag, -s.real);
         }
@@ -1068,10 +1068,10 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return helperNode.execute(frame, inliningTarget, value, TanhNode::compute);
         }
 
-        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode.Lazy raiseNode) {
+        static ComplexValue compute(Node inliningTarget, double real, double imag, PRaiseNode raiseNode) {
             if (!Double.isFinite(real) || !Double.isFinite(imag)) {
                 if (Double.isInfinite(imag) && Double.isFinite(real)) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
                 }
                 if (Double.isInfinite(real) && Double.isFinite(imag) && imag != 0.0) {
                     return new ComplexValue(real > 0 ? 1.0 : -1.0, Math.copySign(0.0, 2.0 * Math.sin(imag) * Math.cos(imag)));
@@ -1105,7 +1105,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         static boolean doCCDD(PComplex a, PComplex b, double relTolObj, double absTolObj,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached AbsNode absNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return isClose(inliningTarget, a, b, relTolObj, absTolObj, absNode, raiseNode);
         }
 
@@ -1114,7 +1114,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         static boolean doCCNN(PComplex a, PComplex b, PNone relTolObj, PNone absTolObj,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached AbsNode absNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return isClose(inliningTarget, a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL, absNode, raiseNode);
         }
 
@@ -1126,7 +1126,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
                         @Cached PyFloatAsDoubleNode relAsDoubleNode,
                         @Cached PyFloatAsDoubleNode absAsDoubleNode,
                         @Shared @Cached AbsNode absNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             PComplex a = coerceAToComplex.execute(frame, inliningTarget, aObj);
             PComplex b = coerceBToComplex.execute(frame, inliningTarget, bObj);
             double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relAsDoubleNode.execute(frame, inliningTarget, relTolObj);
@@ -1134,9 +1134,9 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
             return isClose(inliningTarget, a, b, relTol, absTol, absNode, raiseNode);
         }
 
-        private static boolean isClose(Node inliningTarget, PComplex a, PComplex b, double relTol, double absTol, AbsNode absNode, PRaiseNode.Lazy raiseNode) {
+        private static boolean isClose(Node inliningTarget, PComplex a, PComplex b, double relTol, double absTol, AbsNode absNode, PRaiseNode raiseNode) {
             if (relTol < 0.0 || absTol < 0.0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOLERANCE_MUST_NON_NEGATIVE);
             }
             if (a.getReal() == b.getReal() && a.getImag() == b.getImag()) {
                 return true;

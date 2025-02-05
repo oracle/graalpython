@@ -148,7 +148,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         static Object next(VirtualFrame frame, PTee self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached BuiltinFunctions.NextNode nextNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
             self.setIndex(self.getIndex() + 1);
             return value;
@@ -159,7 +159,7 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached BuiltinFunctions.NextNode nextNode,
                         @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             self.setDataObj(self.getDataobj().jumplink(language));
             Object value = self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
             self.setIndex(1);
@@ -194,14 +194,14 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Cached LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached CastToJavaIntLossyNode castToIntNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 2) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "2-tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object dataObject = getItemNode.execute(frame, state, 0);
             if (!(dataObject instanceof PTeeDataObject)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "_tee_dataobject");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "_tee_dataobject");
             }
             self.setDataObj((PTeeDataObject) dataObject);
             Object secondElement = getItemNode.execute(frame, state, 1);
@@ -209,10 +209,10 @@ public final class TeeBuiltins extends PythonBuiltins {
             try {
                 index = castToIntNode.execute(inliningTarget, secondElement);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
+                throw raiseNode.raise(inliningTarget, TypeError, INTEGER_REQUIRED_GOT, secondElement);
             }
             if (index < 0 || index > LINKCELLS) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, INDEX_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, ValueError, INDEX_OUT_OF_RANGE);
             }
             self.setIndex(index);
             return PNone.NONE;

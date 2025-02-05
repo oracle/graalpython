@@ -1470,7 +1470,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         Object var = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(varBits));
         if (!(var instanceof PContextVar)) {
             try {
-                throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.INSTANCE_OF_CONTEXTVAR_EXPECTED);
             } catch (PException e) {
                 HPyTransformExceptionToNativeNode.executeUncached(context, e);
             }
@@ -1550,7 +1550,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
             if (!(capsule instanceof PyCapsule pyCapsule) || pyCapsule.getPointer() == null) {
                 return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(context, 0, ValueError, GraalHPyCapsuleGet.getErrorMessage(key));
             }
-            GraalHPyCapsuleGet.isLegalCapsule(capsule, key, PRaiseNode.getUncached());
+            GraalHPyCapsuleGet.isLegalCapsule(null, capsule, key, PRaiseNode.getUncached());
             Object result;
             switch (key) {
                 case CapsuleKey.Pointer -> {
@@ -1839,13 +1839,13 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         try {
             // If handle 'hCollection' is a boxed int or double, the object is not subscriptable.
             if (!GraalHPyBoxing.isBoxedHandle(hCollection)) {
-                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, 0);
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, 0);
             }
             Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hCollection));
             Object clazz = GetClassNode.executeUncached(receiver);
             if (clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple) {
                 if (!PInt.isIntRange(lidx)) {
-                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
                 }
                 int idx = (int) lidx;
                 PSequence sequence = (PSequence) receiver;
@@ -1893,7 +1893,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         try {
             // If handle 'hSequence' is a boxed int or double, the object is not a sequence.
             if (!GraalHPyBoxing.isBoxedHandle(hSequence)) {
-                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
             }
             Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hSequence));
             Object clazz = GetClassNode.executeUncached(receiver);
@@ -1937,7 +1937,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         try {
             // If handle 'hSequence' is a boxed int or double, the object is not a sequence.
             if (!GraalHPyBoxing.isBoxedHandle(hSequence)) {
-                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
             }
             Object receiver = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hSequence));
             Object clazz = GetClassNode.executeUncached(receiver);
@@ -1958,7 +1958,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     private boolean ctxListSetItem(Object receiver, long lidx, long hValue) {
         // fast path for list
         if (!PInt.isIntRange(lidx)) {
-            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
+            throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
         }
         int idx = (int) lidx;
         PList sequence = (PList) receiver;
@@ -2603,7 +2603,7 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
         assert args != 0 || lnargs == 0;
         try {
             if (!PInt.isIntRange(lnargs)) {
-                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
             }
             int nargs = (int) lnargs;
             Object callableObj = context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(callable));

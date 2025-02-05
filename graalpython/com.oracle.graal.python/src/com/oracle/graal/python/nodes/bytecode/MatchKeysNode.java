@@ -74,14 +74,14 @@ public abstract class MatchKeysNode extends PNodeWithContext {
                     @Cached("keys.length") int keysLen,
                     @Shared @Cached PyObjectRichCompareBool.EqNode compareNode,
                     @Shared @Cached PyObjectCallMethodObjArgs callMethod,
-                    @Shared @Cached PRaiseNode.Lazy raise) {
+                    @Shared @Cached PRaiseNode raise) {
         Object[] values = getValues(frame, inliningTarget, map, keys, keysLen, compareNode, callMethod, raise);
         return values != null ? PFactory.createTuple(PythonLanguage.get(inliningTarget), values) : PNone.NONE;
     }
 
     @ExplodeLoop
     private static Object[] getValues(VirtualFrame frame, Node inliningTarget, Object map, Object[] keys, int keysLen, PyObjectRichCompareBool.EqNode compareNode, PyObjectCallMethodObjArgs callMethod,
-                    PRaiseNode.Lazy raise) {
+                    PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(keysLen);
         Object[] values = new Object[keysLen];
         Object dummy = new Object();
@@ -100,10 +100,10 @@ public abstract class MatchKeysNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static void checkSeen(VirtualFrame frame, Node inliningTarget, PRaiseNode.Lazy raise, Object[] seen, Object key, PyObjectRichCompareBool.EqNode compareNode) {
+    private static void checkSeen(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, Object[] seen, Object key, PyObjectRichCompareBool.EqNode compareNode) {
         for (int i = 0; i < seen.length; i++) {
             if (seen[i] != null && compareNode.compare(frame, inliningTarget, seen[i], key)) {
-                raise.get(inliningTarget).raise(ValueError, ErrorMessages.MAPPING_PATTERN_CHECKS_DUPE_KEY_S, key);
+                raise.raise(inliningTarget, ValueError, ErrorMessages.MAPPING_PATTERN_CHECKS_DUPE_KEY_S, key);
             }
         }
     }
@@ -113,7 +113,7 @@ public abstract class MatchKeysNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Shared @Cached PyObjectRichCompareBool.EqNode compareNode,
                     @Shared @Cached PyObjectCallMethodObjArgs callMethod,
-                    @Shared @Cached PRaiseNode.Lazy raise) {
+                    @Shared @Cached PRaiseNode raise) {
         if (keys.length == 0) {
             return PFactory.createTuple(PythonLanguage.get(inliningTarget), PythonUtils.EMPTY_OBJECT_ARRAY);
         }
@@ -122,7 +122,7 @@ public abstract class MatchKeysNode extends PNodeWithContext {
     }
 
     private static Object[] getValuesLongArray(VirtualFrame frame, Node inliningTarget, Object map, Object[] keys, PyObjectRichCompareBool.EqNode compareNode, PyObjectCallMethodObjArgs callMethod,
-                    PRaiseNode.Lazy raise) {
+                    PRaiseNode raise) {
         Object[] values = new Object[keys.length];
         Object dummy = new Object();
         Object[] seen = new Object[keys.length];
@@ -139,10 +139,10 @@ public abstract class MatchKeysNode extends PNodeWithContext {
         return values;
     }
 
-    private static void checkSeenLongArray(VirtualFrame frame, Node inliningTarget, PRaiseNode.Lazy raise, Object[] seen, Object key, PyObjectRichCompareBool.EqNode compareNode) {
+    private static void checkSeenLongArray(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, Object[] seen, Object key, PyObjectRichCompareBool.EqNode compareNode) {
         for (int i = 0; i < seen.length; i++) {
             if (seen[i] != null && compareNode.compare(frame, inliningTarget, seen[i], key)) {
-                raise.get(inliningTarget).raise(ValueError, ErrorMessages.MAPPING_PATTERN_CHECKS_DUPE_KEY_S, key);
+                raise.raise(inliningTarget, ValueError, ErrorMessages.MAPPING_PATTERN_CHECKS_DUPE_KEY_S, key);
             }
         }
     }

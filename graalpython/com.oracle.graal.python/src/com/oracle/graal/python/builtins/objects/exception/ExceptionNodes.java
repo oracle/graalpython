@@ -157,7 +157,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, Object value) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 
@@ -221,7 +221,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, Object value) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 
@@ -280,7 +280,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, boolean value) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 
@@ -352,7 +352,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, Object value) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 
@@ -479,7 +479,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, PTuple argsTuple) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 }

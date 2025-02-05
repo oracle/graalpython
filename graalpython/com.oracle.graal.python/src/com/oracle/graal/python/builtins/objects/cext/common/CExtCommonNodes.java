@@ -202,18 +202,18 @@ public abstract class CExtCommonNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString str;
             try {
                 str = castToTruffleStringNode.execute(inliningTarget, unicodeObject);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "a string", unicodeObject);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "a string", unicodeObject);
             }
             try {
                 CodingErrorAction action = BytesCommonBuiltins.toCodingErrorAction(inliningTarget, errors, raiseNode, eqNode);
                 return BytesCommonBuiltins.doEncode(charset, str, action);
             } catch (CharacterCodingException e) {
-                throw raiseNode.get(inliningTarget).raise(UnicodeEncodeError, ErrorMessages.M, e);
+                throw raiseNode.raise(inliningTarget, UnicodeEncodeError, ErrorMessages.M, e);
             }
         }
     }
@@ -605,7 +605,7 @@ public abstract class CExtCommonNodes {
 
         @TruffleBoundary
         private static PException raiseNullButNoError(Node node, TruffleString name, TruffleString nullButNoErrorMessage) {
-            throw PRaiseNode.raiseUncached(node, SystemError, nullButNoErrorMessage, name);
+            throw PRaiseNode.raiseStatic(node, SystemError, nullButNoErrorMessage, name);
         }
 
         @TruffleBoundary
@@ -697,9 +697,10 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
         @SuppressWarnings("unused")
         static int doIntToUInt32(int value, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
-                throw raiseNegativeValue(raiseNativeNode);
+                throw raiseNegativeValue(inliningTarget, raiseNativeNode);
             }
             return value;
         }
@@ -719,9 +720,10 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
         @SuppressWarnings("unused")
         static long doIntToUInt64(int value, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
-                throw raiseNegativeValue(raiseNativeNode);
+                throw raiseNegativeValue(inliningTarget, raiseNativeNode);
             }
             return value;
         }
@@ -741,9 +743,10 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
         @SuppressWarnings("unused")
         static long doLongToUInt64(long value, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             if (exact && value < 0) {
-                throw raiseNegativeValue(raiseNativeNode);
+                throw raiseNegativeValue(inliningTarget, raiseNativeNode);
             }
             return value;
         }
@@ -751,33 +754,36 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
         @SuppressWarnings("unused")
         static int doLongToInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return PInt.intValueExact(obj);
             } catch (OverflowException e) {
-                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
             }
         }
 
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0", "obj >= 0"})
         @SuppressWarnings("unused")
         static int doLongToUInt32PosExact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (Integer.toUnsignedLong((int) obj) == obj) {
                 return (int) obj;
             } else {
-                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
             }
         }
 
         @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"}, replaces = "doLongToUInt32PosExact")
         @SuppressWarnings("unused")
         static int doLongToUInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (obj < 0) {
-                throw raiseNegativeValue(raiseNode);
+                throw raiseNegativeValue(inliningTarget, raiseNode);
             }
-            return doLongToUInt32PosExact(obj, signed, targetTypeSize, exact, raiseNode);
+            return doLongToUInt32PosExact(obj, signed, targetTypeSize, exact, inliningTarget, raiseNode);
         }
 
         @Specialization(guards = {"!exact", "targetTypeSize == 4"})
@@ -796,40 +802,42 @@ public abstract class CExtCommonNodes {
         @SuppressWarnings("unused")
         @TruffleBoundary
         static int doPIntTo32Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 if (signed != 0) {
                     return obj.intValueExact();
                 } else if (obj.bitLength() <= 32) {
                     if (obj.isNegative()) {
-                        throw raiseNegativeValue(raiseNode);
+                        throw raiseNegativeValue(inliningTarget, raiseNode);
                     }
                     return obj.intValue();
                 }
             } catch (OverflowException e) {
                 // fall through
             }
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
         @Specialization(guards = {"exact", "targetTypeSize == 8"})
         @SuppressWarnings("unused")
         @TruffleBoundary
         static long doPIntTo64Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 if (signed != 0) {
                     return obj.longValueExact();
                 } else if (obj.bitLength() <= 64) {
                     if (obj.isNegative()) {
-                        throw raiseNegativeValue(raiseNode);
+                        throw raiseNegativeValue(inliningTarget, raiseNode);
                     }
                     return obj.longValue();
                 }
             } catch (OverflowException e) {
                 // fall through
             }
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
         @Specialization(guards = {"!exact", "targetTypeSize == 4"})
@@ -864,84 +872,84 @@ public abstract class CExtCommonNodes {
              * 'signed', 'targetTypeSize', and 'exact' are usually constants.
              */
             if (targetTypeSize == 4) {
-                return toInt32(result, signed, exact, raiseNode);
+                return toInt32(inliningTarget, result, signed, exact, raiseNode);
             } else if (targetTypeSize == 8) {
-                return toInt64(result, signed, exact, raiseNode);
+                return toInt64(inliningTarget, result, signed, exact, raiseNode);
             }
-            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+            throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
         @SuppressWarnings("unused")
         static int doUnsupportedTargetSize(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
-        private static PException raiseNegativeValue(PRaiseNode raiseNativeNode) {
-            throw raiseNativeNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+        private static PException raiseNegativeValue(Node inliningTarget, PRaiseNode raiseNativeNode) {
+            throw raiseNativeNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
         }
 
         /**
          * Slow-path conversion of an object to a signed or unsigned 32-bit value.
          */
-        private static int toInt32(Object object, int signed, boolean exact,
+        private static int toInt32(Node inliningTarget, Object object, int signed, boolean exact,
                         PRaiseNode raiseNode) {
             if (object instanceof Integer) {
                 int ival = (int) object;
                 if (signed != 0) {
                     return ival;
                 }
-                return doIntToUInt32(ival, signed, 4, exact, raiseNode);
+                return doIntToUInt32(ival, signed, 4, exact, inliningTarget, raiseNode);
             } else if (object instanceof Long) {
                 long lval = (long) object;
                 if (exact) {
                     if (signed != 0) {
-                        return doLongToInt32Exact(lval, 1, 4, true, raiseNode);
+                        return doLongToInt32Exact(lval, 1, 4, true, inliningTarget, raiseNode);
                     }
-                    return doLongToUInt32Exact(lval, signed, 4, true, raiseNode);
+                    return doLongToUInt32Exact(lval, signed, 4, true, inliningTarget, raiseNode);
                 }
                 return doLongToInt32Lossy(lval, 0, 4, false);
             } else if (object instanceof PInt) {
                 PInt pval = (PInt) object;
                 if (exact) {
-                    return doPIntTo32Bit(pval, signed, 4, true, raiseNode);
+                    return doPIntTo32Bit(pval, signed, 4, true, inliningTarget, raiseNode);
                 }
                 return doPIntToInt32Lossy(pval, signed, 4, false);
             } else if (object instanceof PythonNativeVoidPtr) {
                 // that's just not possible
-                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, 4);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, 4);
             }
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
         }
 
         /**
          * Slow-path conversion of an object to a signed or unsigned 64-bit value.
          */
-        private static Object toInt64(Object object, int signed, boolean exact,
+        private static Object toInt64(Node inliningTarget, Object object, int signed, boolean exact,
                         PRaiseNode raiseNode) {
             if (object instanceof Integer) {
                 Integer ival = (Integer) object;
                 if (signed != 0) {
                     return ival.longValue();
                 }
-                return doIntToUInt64(ival, signed, 8, exact, raiseNode);
+                return doIntToUInt64(ival, signed, 8, exact, inliningTarget, raiseNode);
             } else if (object instanceof Long) {
                 long lval = (long) object;
                 if (signed != 0) {
                     return doLongToInt64(lval, 1, 8, exact);
                 }
-                return doLongToUInt64(lval, signed, 8, exact, raiseNode);
+                return doLongToUInt64(lval, signed, 8, exact, inliningTarget, raiseNode);
             } else if (object instanceof PInt) {
                 PInt pval = (PInt) object;
                 if (exact) {
-                    return doPIntTo64Bit(pval, signed, 8, true, raiseNode);
+                    return doPIntTo64Bit(pval, signed, 8, true, inliningTarget, raiseNode);
                 }
                 return doPIntToInt64Lossy(pval, signed, 8, false);
             } else if (object instanceof PythonNativeVoidPtr) {
                 return doVoidPtrToI64((PythonNativeVoidPtr) object, signed, 8, exact);
             }
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
         }
     }
 
@@ -1146,10 +1154,10 @@ public abstract class CExtCommonNodes {
         static byte doGeneric(Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, T_STRICT);
             if (encoded.length != 1) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
             return encoded[0];
         }

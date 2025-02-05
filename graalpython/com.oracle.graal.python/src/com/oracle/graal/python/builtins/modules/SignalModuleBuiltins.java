@@ -334,8 +334,8 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     abstract static class DefaultIntHandlerNode extends PythonBuiltinNode {
         @Specialization
         static Object defaultIntHandler(@SuppressWarnings("unused") Object[] args,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.KeyboardInterrupt);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.KeyboardInterrupt);
         }
     }
 
@@ -376,7 +376,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                     data.signalSema.release();
                 });
             } catch (IllegalArgumentException e) {
-                throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.ValueError, e);
+                throw PRaiseNode.raiseStatic(raisingNode, PythonErrorType.ValueError, e);
             }
             Object result = handlerToPython(oldHandler, signum, data);
             data.signalHandlers.put(signum, handler);
@@ -393,7 +393,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                     oldHandler = Signals.setSignalHandler(signum, id);
                 }
             } catch (IllegalArgumentException e) {
-                throw PRaiseNode.raiseUncached(raisingNode, PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
+                throw PRaiseNode.raiseStatic(raisingNode, PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
             }
             Object result = handlerToPython(oldHandler, signum, data);
             data.signalHandlers.remove(signum);

@@ -170,10 +170,10 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SSLMethod method = SSLMethod.fromPythonId(protocol);
             if (method == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
             }
             try {
                 boolean checkHostname;
@@ -194,7 +194,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 context.setOptions(options);
                 return context;
             } catch (NoSuchAlgorithmException e) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e);
             } catch (KeyManagementException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
             }
@@ -231,9 +231,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
             } catch (IllegalArgumentException e) {
                 if (serverHostname.contains("\0")) {
-                    throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.ARG_MUST_BE_ENCODED_NON_NULL);
+                    throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.ARG_MUST_BE_ENCODED_NON_NULL);
                 }
-                throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.INVALID_HOSTNAME);
+                throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.INVALID_HOSTNAME);
             }
             if (context.getCheckHostname()) {
                 parameters.setEndpointIdentificationAlgorithm("HTTPS");
@@ -307,8 +307,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object wrap(Object context, Object sock, Object serverSide, Object serverHostname, Object owner, Object session,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_WRAP_SOCKET_CALL);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_WRAP_SOCKET_CALL);
         }
 
         @Override
@@ -344,8 +344,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object wrap(Object context, Object incoming, Object outgoing, Object serverSide, Object serverHostname, Object owner, Object session,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_WRAP_BIO_CALL);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_WRAP_BIO_CALL);
         }
 
         @Override
@@ -433,10 +433,10 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         static Object set(VirtualFrame frame, PSSLContext self, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int mode = asSizeNode.executeLossy(frame, inliningTarget, value);
             if (mode == SSLModuleBuiltins.SSL_CERT_NONE && self.getCheckHostname()) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CANNOT_SET_VERIFY_MODE_TO_CERT_NONE);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_SET_VERIFY_MODE_TO_CERT_NONE);
             }
             switch (mode) {
                 case SSLModuleBuiltins.SSL_CERT_NONE:
@@ -445,14 +445,14 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     self.setVerifyMode(mode);
                     return PNone.NONE;
                 default:
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_VALUE_FOR_VERIFY_MODE);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.INVALID_VALUE_FOR_VERIFY_MODE);
             }
         }
     }
 
-    private static void setMinMaxVersion(Node inliningTarget, PRaiseNode.Lazy raiseNode, PSSLContext context, boolean maximum, int value) {
+    private static void setMinMaxVersion(Node inliningTarget, PRaiseNode raiseNode, PSSLContext context, boolean maximum, int value) {
         if (context.getMethod().isSingleVersion()) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.CONTEXT_DOESNT_SUPPORT_MIN_MAX);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CONTEXT_DOESNT_SUPPORT_MIN_MAX);
         }
         SSLProtocol selected = null;
         switch (value) {
@@ -470,7 +470,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     }
                 }
                 if (selected == null) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNSUPPORTED_PROTOCOL_VERSION, value);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNSUPPORTED_PROTOCOL_VERSION, value);
                 }
         }
         if (maximum) {
@@ -492,7 +492,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         static Object set(VirtualFrame frame, PSSLContext self, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             setMinMaxVersion(inliningTarget, raiseNode, self, false, asSizeNode.executeExact(frame, inliningTarget, obj));
             return PNone.NONE;
         }
@@ -510,7 +510,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         static Object set(VirtualFrame frame, PSSLContext self, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             setMinMaxVersion(inliningTarget, raiseNode, self, true, asSizeNode.executeExact(frame, inliningTarget, obj));
             return PNone.NONE;
         }
@@ -556,17 +556,17 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
         static int get(PSSLContext self, PNone value,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             // not used yet so rather raise error
-            throw raiseNode.raise(NotImplementedError);
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isNoValue(value)")
         static Object set(VirtualFrame frame, PSSLContext self, Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             // not used yet so rather raise error
-            throw raiseNode.raise(NotImplementedError);
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
             // int num;
             // try {
             // num = (int) castToLong.execute(lib.asIndexWithFrame(value, frame));
@@ -589,8 +589,8 @@ public final class SSLContextBuiltins extends PythonBuiltins {
     abstract static class SNICallbackNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object notImplemented(@SuppressWarnings("unused") PSSLContext self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -723,15 +723,15 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (cafile instanceof PNone && capath instanceof PNone && cadata instanceof PNone) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
             }
             if (!(cafile instanceof PNone) && !PGuards.isString(cafile) && !PGuards.isBytes(cafile)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
             }
             if (!(capath instanceof PNone) && !PGuards.isString(capath) && !PGuards.isBytes(capath)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "capath");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "capath");
             }
             final TruffleFile file;
             if (!(cafile instanceof PNone)) {
@@ -758,7 +758,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         if (cadata instanceof PBytesLike) {
                             certificates = fromBytesLike(toBytes.execute(inliningTarget, ((PBytesLike) cadata).getSequenceStorage()));
                         } else {
-                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_ASCII_OR_BYTELIKE, "cadata");
+                            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_SHOULD_BE_ASCII_OR_BYTELIKE, "cadata");
                         }
                     }
                     self.setCAEntries(certificates);
@@ -790,10 +790,10 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private static List<Object> fromString(Node inliningTarget, String dataString, PRaiseNode.Lazy raiseNode)
+        private static List<Object> fromString(Node inliningTarget, String dataString, PRaiseNode raiseNode)
                         throws IOException, CertificateException, CRLException {
             if (dataString.isEmpty()) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
             }
             return getCertificates(dataString);
         }
@@ -845,12 +845,12 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Cached GetPasswordNode getPasswordNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!PGuards.isString(certfile) && !PGuards.isBytes(certfile)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "certfile");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "certfile");
             }
             if (!(keyfile instanceof PNone) && !PGuards.isString(keyfile) && !PGuards.isBytes(keyfile)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "keyfile");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "keyfile");
             }
             Object kf = keyfile instanceof PNone ? certfile : keyfile;
             TruffleFile certTruffleFile = toTruffleFile(frame, inliningTarget, asPath.execute(frame, certfile), toJavaStringNode, eqNode, constructAndRaiseNode);
@@ -867,7 +867,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                             throw CompilerDirectives.shouldNotReachHere();
                         }
                     }
-                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.PASSWORD_NOT_IMPLEMENTED);
+                    throw raiseNode.raise(inliningTarget, NotImplementedError, ErrorMessages.PASSWORD_NOT_IMPLEMENTED);
                 }
             } catch (IOException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
@@ -888,7 +888,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 LOGGER.fine(() -> String.format("load_cert_chain %s:%s", arg, file.getPath()));
                 return file.newBufferedReader();
             } catch (CannotCastException e) {
-                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, arg);
+                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, arg);
             }
         }
 
@@ -937,20 +937,22 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(password)")
         static char[] doString(Object password,
+                        @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringNode cast,
                         @Shared @Cached PRaiseNode raiseNode) {
             String str = cast.execute(password);
-            checkPasswordLength(raiseNode, str.length());
+            checkPasswordLength(raiseNode, str.length(), inliningTarget);
             return stringToChars(str);
         }
 
         @Specialization(limit = "2")
         static char[] doBytes(PBytesLike bytes,
+                        @Bind("this") Node inliningTarget,
                         @CachedLibrary("bytes") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PRaiseNode raiseNode) {
             byte[] data = bufferLib.getInternalOrCopiedByteArray(bytes);
             int length = bufferLib.getBufferLength(bytes);
-            checkPasswordLength(raiseNode, length);
+            checkPasswordLength(raiseNode, length, inliningTarget);
             char[] res = new char[length];
             for (int i = 0; i < res.length; i++) {
                 res[i] = (char) data[i];
@@ -970,9 +972,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 if (PGuards.isString(result) || result instanceof PBytesLike) {
                     return recursive.execute(frame, result);
                 }
-                throw raiseNode.raise(TypeError, ErrorMessages.PSSWD_CALLBACK_MUST_RETURN_STR);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.PSSWD_CALLBACK_MUST_RETURN_STR);
             }
-            throw raiseNode.raise(TypeError, ErrorMessages.PSSWD_SHOULD_BE_STR_OR_CALLABLE);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.PSSWD_SHOULD_BE_STR_OR_CALLABLE);
         }
 
         @TruffleBoundary
@@ -980,9 +982,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             return str.toCharArray();
         }
 
-        private static void checkPasswordLength(PRaiseNode raiseNode, int length) {
+        private static void checkPasswordLength(PRaiseNode raiseNode, int length, Node inliningTarget) {
             if (length > MAX_LEN) {
-                throw raiseNode.raise(ValueError, ErrorMessages.PSSWD_CANNOT_BE_LONGER_THAN_D_BYTES, MAX_LEN);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.PSSWD_CANNOT_BE_LONGER_THAN_D_BYTES, MAX_LEN);
             }
         }
     }
@@ -993,11 +995,11 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static PNone load(VirtualFrame frame, PSSLContext self, Object pathObject,
-                        @Cached PyUnicodeFSDecoderNode asPath,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyUnicodeFSDecoderNode asPath) {
             TruffleString path = asPath.execute(frame, pathObject);
             // not used yet so rather raise error
-            throw raiseNode.raise(NotImplementedError);
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
             // File file = new File(path);
             // if (!file.exists()) {
             // throw raiseOSError(frame, OSErrorEnum.ENOENT);

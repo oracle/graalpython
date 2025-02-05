@@ -140,18 +140,18 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object iterator, boolean throwStopIteration);
 
-        private static Object stopIteration(Node inliningTarget, PBuiltinIterator self, boolean throwStopIteration, PRaiseNode.Lazy raiseNode) {
+        private static Object stopIteration(Node inliningTarget, PBuiltinIterator self, boolean throwStopIteration, PRaiseNode raiseNode) {
             self.setExhausted();
             if (throwStopIteration) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             } else {
                 return STOP_MARKER;
             }
         }
 
-        private static Object stopIterationForeign(Node inliningTarget, boolean throwStopIteration, PRaiseNode.Lazy raiseNode) {
+        private static Object stopIterationForeign(Node inliningTarget, boolean throwStopIteration, PRaiseNode raiseNode) {
             if (throwStopIteration) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             } else {
                 return STOP_MARKER;
             }
@@ -159,9 +159,9 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isExhausted()")
         static Object exhausted(Node inliningTarget, @SuppressWarnings("unused") PBuiltinIterator self, boolean throwStopIteration,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (throwStopIteration) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             } else {
                 return STOP_MARKER;
             }
@@ -171,7 +171,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         static Object next(Node inliningTarget, PArrayIterator self, boolean throwStopIteration,
                         @Cached InlinedExactClassProfile itemTypeProfile,
                         @Cached ArrayNodes.GetValueNode getValueNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             PArray array = self.array;
             if (self.getIndex() < array.getLength()) {
                 return itemTypeProfile.profile(inliningTarget, getValueNode.execute(inliningTarget, array, self.index++));
@@ -181,7 +181,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(Node inliningTarget, PIntegerSequenceIterator self, boolean throwStopIteration,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
@@ -190,7 +190,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(Node inliningTarget, PObjectSequenceIterator self, boolean throwStopIteration,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getObjectItemNormalized(self.index++);
             }
@@ -200,7 +200,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         static Object next(Node inliningTarget, PIntRangeIterator self, boolean throwStopIteration,
                         @Exclusive @Cached InlinedConditionProfile profile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (profile.profile(inliningTarget, self.hasNextInt())) {
                 return self.nextInt();
             }
@@ -210,7 +210,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         static Object next(Node inliningTarget, PBigRangeIterator self, boolean throwStopIteration,
                         @Bind PythonLanguage language,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.hasNextBigInt()) {
                 return PFactory.createInt(language, self.nextBigInt());
             }
@@ -219,7 +219,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(Node inliningTarget, PDoubleSequenceIterator self, boolean throwStopIteration,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
@@ -228,7 +228,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(Node inliningTarget, PLongSequenceIterator self, boolean throwStopIteration,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getLongItemNormalized(self.index++);
             }
@@ -239,7 +239,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         static Object next(Node inliningTarget, PStringIterator self, boolean throwStopIteration,
                         @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached(inline = false) TruffleString.SubstringNode substringNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.getIndex() < codePointLengthNode.execute(self.value, TS_ENCODING)) {
                 return substringNode.execute(self.value, self.index++, 1, TS_ENCODING, false);
             }
@@ -253,13 +253,13 @@ public final class IteratorBuiltins extends PythonBuiltins {
                         @Cached HashingStorageIteratorNext nextNode,
                         @Cached PHashingStorageIteratorNextValue itValueNode,
                         @Exclusive @Cached InlinedConditionProfile profile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             HashingStorage storage = self.getHashingStorage();
             final HashingStorageIterator it = self.getIterator();
             if (profile.profile(inliningTarget, nextNode.execute(inliningTarget, storage, it))) {
                 if (sizeChanged.profile(inliningTarget, self.checkSizeChanged(inliningTarget, lenNode))) {
                     String name = PBaseSetIterator.isInstance(self) ? "Set" : "dictionary";
-                    throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
+                    throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
                 }
                 self.index++;
                 return itValueNode.execute(inliningTarget, self, storage, it);
@@ -271,7 +271,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         static Object next(Node inliningTarget, PSequenceIterator self, boolean throwStopIteration,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached(value = "createNotNormalized()", inline = false) SequenceStorageNodes.GetItemNode getItemNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             SequenceStorage s = getStorage.execute(inliningTarget, self.getPSequence());
             if (self.getIndex() < s.length()) {
                 return getItemNode.execute(s, self.index++);
@@ -283,7 +283,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
         static Object next(VirtualFrame frame, Node inliningTarget, PSequenceIterator self, boolean throwStopIteration,
                         @Cached(inline = false) PySequenceGetItemNode getItem,
                         @Cached IsBuiltinObjectProfile profile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             try {
                 /*
                  * This must use PySequence_GetItem and not any other get item nodes. The reason is
@@ -305,7 +305,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) PForeignToPTypeNode toPythonNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             final Object element;
 
             gil.release(true);
@@ -597,9 +597,8 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Fallback
         static int other(Object self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "iterator", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "iterator", self);
         }
 
         private static PTuple reduceInternal(VirtualFrame frame, Node inliningTarget, Object arg, PythonContext context, PyObjectGetAttr getAttrNode) {
@@ -650,9 +649,8 @@ public final class IteratorBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object other(Object self, Object index,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "iterator", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "iterator", self);
         }
 
         protected static boolean isPBigRangeIterator(Object obj) {

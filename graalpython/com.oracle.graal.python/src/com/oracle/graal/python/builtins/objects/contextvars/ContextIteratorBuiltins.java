@@ -83,10 +83,10 @@ public final class ContextIteratorBuiltins extends PythonBuiltins {
         static Object next(PContextIterator self,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object next = self.next(language);
             if (next == null) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             } else {
                 return next;
             }

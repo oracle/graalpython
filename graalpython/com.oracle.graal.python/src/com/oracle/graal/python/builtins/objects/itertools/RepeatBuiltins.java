@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -106,8 +107,8 @@ public final class RepeatBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() == 0")
         static Object nextZero(PRepeat self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
         }
 
         @Specialization(guards = "self.getCnt() < 0")
@@ -127,8 +128,8 @@ public final class RepeatBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() < 0")
         static Object hintNeg(PRepeat self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, LEN_OF_UNSIZED_OBJECT);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, LEN_OF_UNSIZED_OBJECT);
         }
     }
 

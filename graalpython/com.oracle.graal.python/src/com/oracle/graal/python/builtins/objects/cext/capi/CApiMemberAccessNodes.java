@@ -82,7 +82,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -213,8 +212,6 @@ public class CApiMemberAccessNodes {
 
         @Child private PythonToNativeNode toSulongNode;
         @Child private CExtAsPythonObjectNode asPythonObjectNode;
-        @Child private PForeignToPTypeNode fromForeign;
-        @Child private PRaiseNode raiseNode;
 
         @Child private CStructAccess.ReadBaseNode read;
 
@@ -229,13 +226,12 @@ public class CApiMemberAccessNodes {
             this.read = getReadNode(type);
             this.offset = offset;
             this.asPythonObjectNode = asPythonObjectNode;
-            if (asPythonObjectNode == null) {
-                fromForeign = PForeignToPTypeNode.create();
-            }
         }
 
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self) {
+        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode raiseNode) {
             if (read == null) {
                 return PNone.NONE;
             } else {
@@ -243,7 +239,7 @@ public class CApiMemberAccessNodes {
                 assert !(nativeResult instanceof Byte || nativeResult instanceof Short || nativeResult instanceof Float || nativeResult instanceof Character || nativeResult instanceof PException ||
                                 nativeResult instanceof String) : nativeResult + " " + nativeResult.getClass();
                 if (type == T_OBJECT_EX && nativeResult == PNone.NO_VALUE) {
-                    throw ensureRaiseNode().raise(PythonBuiltinClassType.AttributeError);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError);
                 }
                 if (type == T_OBJECT && nativeResult == PNone.NO_VALUE) {
                     nativeResult = PNone.NONE;
@@ -262,14 +258,6 @@ public class CApiMemberAccessNodes {
                 toSulongNode = insert(PythonToNativeNodeGen.create());
             }
             return toSulongNode;
-        }
-
-        private PRaiseNode ensureRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
         }
 
         @TruffleBoundary
@@ -295,8 +283,8 @@ public class CApiMemberAccessNodes {
         @Specialization
         @SuppressWarnings("unused")
         Object doGeneric(Object self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
         }
 
         @TruffleBoundary
@@ -315,12 +303,12 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static Object doGeneric(Object self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             if (value == DescriptorDeleteMarker.INSTANCE) {
                 // This node is actually only used for T_NONE, so this error message is right.
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
             }
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
         }
 
         @TruffleBoundary
@@ -495,12 +483,13 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(Object pointer, Object newValue,
+                        @Bind("this") Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode read,
                         @Cached CStructAccess.WriteObjectNewRefNode write,
                         @Cached PRaiseNode raise) {
             Object current = read.readGeneric(pointer, 0);
             if (newValue == DescriptorDeleteMarker.INSTANCE && current == PNone.NO_VALUE) {
-                throw raise.raise(PythonBuiltinClassType.AttributeError);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.AttributeError);
             }
             write.write(pointer, newValue);
         }
@@ -586,7 +575,7 @@ public class CApiMemberAccessNodes {
         @Specialization
         Object doGeneric(Object self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object selfPtr = toSulongNode.execute(self);
             selfPtr = getElement.readGeneric(selfPtr, offset);
 
@@ -598,12 +587,12 @@ public class CApiMemberAccessNodes {
              */
             if (type != T_OBJECT && type != T_OBJECT_EX) {
                 if (value == DescriptorDeleteMarker.INSTANCE) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
                 }
             }
 
             if (type == T_BOOL && !ensureIsSameTypeNode().executeCached(PythonBuiltinClassType.Boolean, ensureGetClassNode().executeCached(value))) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL);
             }
 
             write.execute(selfPtr, value);

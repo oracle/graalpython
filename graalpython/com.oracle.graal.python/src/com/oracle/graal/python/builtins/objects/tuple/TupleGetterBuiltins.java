@@ -109,10 +109,10 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             final int index = self.getIndex();
             if (index >= sizeNode.execute(frame, inliningTarget, instance)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
             }
             return getItemNode.execute(frame, instance, index);
         }
@@ -125,9 +125,9 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         @Fallback
         @InliningCutoff
         static Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, Object self, Object instance, @SuppressWarnings("unused") Object owner,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             final int index = ((PTupleGetter) self).getIndex();
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
                             index, "tuple subclasses", instance);
         }
     }
@@ -140,9 +140,9 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         void set(PTupleGetter self, Object instance, Object value) {
             if (PGuards.isNoValue(value)) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
             } else {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,33 +94,33 @@ public abstract class CastToJavaByteNode extends PNodeWithContext {
     @Specialization(replaces = "fromInt")
     @InliningCutoff
     static byte fromIntErr(Node inliningTarget, int x,
-                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         try {
             return PInt.byteValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 
     @Specialization(replaces = "fromLong")
     @InliningCutoff
     static byte fromLongErr(Node inliningTarget, long x,
-                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         try {
             return PInt.byteValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 
     @Specialization(replaces = "fromPInt")
     @InliningCutoff
     static byte fromPIntErr(Node inliningTarget, PInt x,
-                    @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         try {
             return x.byteValueExact();
         } catch (ArithmeticException e) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 }

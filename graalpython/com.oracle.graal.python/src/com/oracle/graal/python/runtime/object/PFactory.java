@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
@@ -907,12 +909,12 @@ public final class PFactory {
      * guarantee on how many. Therefore, it is important that this method is simple. In particular,
      * do not add calls if that can be avoided.
      */
-    public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, TruffleString format, Object[] args) {
-        return createBaseException(language, cls, shape, null, format, args);
+    public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, TruffleString format, Object[] formatArgs) {
+        return createBaseException(language, cls, shape, null, format, formatArgs);
     }
 
-    public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, TruffleString format, Object[] args) {
-        return createBaseException(language, type, type.getInstanceShape(language), null, format, args);
+    public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, TruffleString format, Object[] formatArgs) {
+        return createBaseException(language, type, type.getInstanceShape(language), null, format, formatArgs);
     }
 
     public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, Object[] data, TruffleString format, Object[] args) {
@@ -932,12 +934,8 @@ public final class PFactory {
         return create(language, () -> new PBaseException(type, type.getInstanceShape(language), null));
     }
 
-    public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, Object[] data) {
-        return createBaseException(language, type, type.getInstanceShape(language), data);
-    }
-
-    public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, Object[] data) {
-        return create(language, () -> new PBaseException(cls, shape, data));
+    public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, TruffleString format) {
+        return create(language, () -> new PBaseException(type, type.getInstanceShape(language), null, format, EMPTY_OBJECT_ARRAY));
     }
 
     public static PBaseExceptionGroup createBaseExceptionGroup(PythonLanguage language, Object cls, Shape shape, TruffleString message, Object[] exceptions, Object[] args) {

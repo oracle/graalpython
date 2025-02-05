@@ -64,7 +64,7 @@ public final class PythonCextClassBuiltins {
         static Object staticmethod(Object func,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             checkNonNullArg(inliningTarget, func, raiseNode);
             PDecoratedMethod res = PFactory.createInstancemethod(language);
             res.setCallable(func);
@@ -78,7 +78,7 @@ public final class PythonCextClassBuiltins {
         static Object methodNew(Object func, Object self,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             checkNonNullArg(inliningTarget, func, self, raiseNode);
             // Note: CPython also constructs the object directly, without running the constructor or
             // checking the inputs

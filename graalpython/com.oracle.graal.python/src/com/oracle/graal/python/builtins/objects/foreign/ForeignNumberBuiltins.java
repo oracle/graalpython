@@ -79,6 +79,7 @@ import com.oracle.graal.python.lib.PyNumberSubtractNode;
 import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
 import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -700,7 +701,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                         throw new IllegalStateException("foreign value claims to be a big integer but isn't");
                     }
                 }
-                throw raiseNode.raiseIntegerInterpretationError(object);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
             } finally {
                 gil.acquire();
             }

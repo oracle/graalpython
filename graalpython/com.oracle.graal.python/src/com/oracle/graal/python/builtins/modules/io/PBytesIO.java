@@ -101,9 +101,9 @@ public final class PBytesIO extends PythonBuiltinObject {
         return exports.getExports().get();
     }
 
-    public void checkExports(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+    public void checkExports(Node inliningTarget, PRaiseNode raiseNode) {
         if (getExports() != 0) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
         }
     }
 

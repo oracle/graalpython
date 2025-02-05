@@ -152,7 +152,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached TruffleString.FromCharArrayUTF16Node fromCharArrayNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             /*
              * create the new instance (which is a class, since we are a metatype!)
@@ -161,7 +161,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
             Object proto = lookupAttrType.execute(frame, inliningTarget, result, T__TYPE_);
             if (proto == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
+                throw raiseNode.raise(inliningTarget, AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
             TruffleString proto_str;
             int proto_len;
@@ -169,19 +169,19 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 proto_str = toTruffleStringNode.execute(inliningTarget, proto);
                 proto_len = codePointLengthNode.execute(proto_str, TS_ENCODING);
             } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE);
+                throw raiseNode.raise(inliningTarget, TypeError, CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE);
             }
             if (proto_len != 1) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, A_TYPE_ATTRIBUTE_WHICH_MUST_BE_A_STRING_OF_LENGTH_1);
+                throw raiseNode.raise(inliningTarget, ValueError, A_TYPE_ATTRIBUTE_WHICH_MUST_BE_A_STRING_OF_LENGTH_1);
             }
             if (indexOfStringNode.execute(T_SIMPLE_TYPE_CHARS, proto_str, 0, SIMPLE_TYPE_CHARS_LENGTH, TS_ENCODING) < 0) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, WHICH_MUST_BE_A_SINGLE_CHARACTER_STRING_CONTAINING_ONE_OF_S, T_SIMPLE_TYPE_CHARS);
+                throw raiseNode.raise(inliningTarget, AttributeError, WHICH_MUST_BE_A_SINGLE_CHARACTER_STRING_CONTAINING_ONE_OF_S, T_SIMPLE_TYPE_CHARS);
             }
 
             char code = (char) codePointAtIndexNode.execute(proto_str, 0, TS_ENCODING);
             FieldDesc fmt = FFIType._ctypes_get_fielddesc(code);
             if (fmt == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, TYPE_S_NOT_SUPPORTED, proto_str);
+                throw raiseNode.raise(inliningTarget, ValueError, TYPE_S_NOT_SUPPORTED, proto_str);
             }
 
             StgDictObject stgdict = PFactory.createStgDictObject(language);
@@ -309,7 +309,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectLookupAttr lookupAsParam,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             /*
              * If the value is already an instance of the requested type, we can use it as is
              */
@@ -345,7 +345,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 // Py_LeaveRecursiveCall();
                 return r;
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, WRONG_TYPE);
+            throw raiseNode.raise(inliningTarget, TypeError, WRONG_TYPE);
         }
     }
 

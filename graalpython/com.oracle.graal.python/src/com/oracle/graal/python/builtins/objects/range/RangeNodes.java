@@ -73,9 +73,9 @@ public abstract class RangeNodes {
         public abstract PBigRange execute(Node inliningTarget, Object start, Object stop, Object step);
 
         @TruffleBoundary
-        private static void checkStepZero(Node inliningTarget, BigInteger stepBI, PRaiseNode.Lazy raise) {
+        private static void checkStepZero(Node inliningTarget, BigInteger stepBI, PRaiseNode raise) {
             if (stepBI.compareTo(BigInteger.ZERO) == 0) {
-                throw raise.get(inliningTarget).raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
+                throw raise.raise(inliningTarget, ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
             }
         }
 
@@ -85,7 +85,7 @@ public abstract class RangeNodes {
                         @Cached CastToJavaBigIntegerNode startToBI,
                         @Cached CastToJavaBigIntegerNode stopToBI,
                         @Cached CastToJavaBigIntegerNode stepToBI,
-                        @Cached PRaiseNode.Lazy raise) {
+                        @Cached PRaiseNode raise) {
             BigInteger stepBI = stepToBI.execute(inliningTarget, step);
             checkStepZero(inliningTarget, stepBI, raise);
             BigInteger startBI = startToBI.execute(inliningTarget, start);

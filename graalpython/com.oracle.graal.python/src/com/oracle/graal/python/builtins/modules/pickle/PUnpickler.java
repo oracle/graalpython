@@ -294,7 +294,7 @@ public class PUnpickler extends PythonBuiltinObject {
         this.persFuncSelf = pair.getRight();
     }
 
-    public void setInputStream(VirtualFrame frame, Node inliningTarget, PRaiseNode.Lazy raiseNode, PyObjectLookupAttr lookup, Object file) {
+    public void setInputStream(VirtualFrame frame, Node inliningTarget, PRaiseNode raiseNode, PyObjectLookupAttr lookup, Object file) {
         this.peek = lookup.execute(frame, inliningTarget, file, T_METHOD_PEEK);
         if (this.peek == PNone.NO_VALUE) {
             this.peek = null;
@@ -306,7 +306,7 @@ public class PUnpickler extends PythonBuiltinObject {
         this.read = lookup.execute(frame, inliningTarget, file, T_METHOD_READ);
         this.readline = lookup.execute(frame, inliningTarget, file, T_METHOD_READLINE);
         if (this.readline == PNone.NO_VALUE || this.read == PNone.NO_VALUE) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.FILE_MUST_HAVE_A_AND_B_ATTRS, T_METHOD_READ, T_METHOD_READLINE);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FILE_MUST_HAVE_A_AND_B_ATTRS, T_METHOD_READ, T_METHOD_READLINE);
         }
     }
 
@@ -926,7 +926,7 @@ public class PUnpickler extends PythonBuiltinObject {
 
             // TODO: (cbasca) we skip an entire branch from _pickle.c:load_float
             // TODO: (cbasca) should we return a PFloat ? (same for load_int/long variants)
-            value = PickleUtils.asciiBytesToDouble(s, getRaiseNode(), PythonBuiltinClassType.OverflowError);
+            value = PickleUtils.asciiBytesToDouble(this, s, PythonBuiltinClassType.OverflowError);
             pDataPush(self, value);
         }
 

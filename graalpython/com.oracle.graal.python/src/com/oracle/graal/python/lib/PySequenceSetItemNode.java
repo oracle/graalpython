@@ -86,7 +86,7 @@ public abstract class PySequenceSetItemNode extends Node {
                     @Cached GetObjectSlotsNode getSlotsNode,
                     @Cached IndexForSqSlotInt indexForSqSlot,
                     @Cached CallSlotSqAssItemNode callSetItem,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         TpSlots slots = getSlotsNode.execute(inliningTarget, object);
         index = indexForSqSlot.execute(frame, inliningTarget, object, slots, index);
         if (slots.sq_ass_item() != null) {
@@ -97,11 +97,11 @@ public abstract class PySequenceSetItemNode extends Node {
     }
 
     @InliningCutoff
-    static PException raiseNotSupported(Object object, Node inliningTarget, PRaiseNode.Lazy raiseNode, TpSlots slots) {
+    static PException raiseNotSupported(Object object, Node inliningTarget, PRaiseNode raiseNode, TpSlots slots) {
         TruffleString message = ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT;
         if (slots.mp_subscript() != null) {
             message = ErrorMessages.IS_NOT_A_SEQUENCE;
         }
-        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, message, object);
+        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, message, object);
     }
 }

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -133,9 +134,11 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object init(PBaseException self, Object[] args, PKeyword[] kwargs,
+        static Object init(PBaseException self, Object[] args, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PRaiseNode raiseNode) {
             baseExceptionInitNode.execute(self, args);
             Object[] attrs = IMPORT_ERROR_ATTR_FACTORY.create(args);
             for (PKeyword kw : kwargs) {
@@ -145,7 +148,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                 } else if (equalNode.execute(kwName, PATH, TS_ENCODING)) {
                     attrs[IDX_PATH] = kw.getValue();
                 } else {
-                    throw raise(PythonBuiltinClassType.TypeError, S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "ImportError");
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "ImportError");
                 }
             }
             self.setExceptionAttributes(attrs);

@@ -139,7 +139,6 @@ import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNodeGen;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNodeGen;
@@ -262,8 +261,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ImportStarNode> NODE_IMPORT_STAR = ImportStarNode::create;
     private static final NodeSupplier<PyObjectGetAttr> NODE_OBJECT_GET_ATTR = PyObjectGetAttr::create;
     private static final PyObjectGetAttr UNCACHED_OBJECT_GET_ATTR = PyObjectGetAttr.getUncached();
-    private static final NodeSupplier<PRaiseNode> NODE_RAISE = PRaiseNode::create;
-    private static final PRaiseNode UNCACHED_RAISE = PRaiseNode.getUncached();
+    private static final NodeSupplier<PRaiseCachedNode> NODE_RAISE = PRaiseCachedNode::create;
+    private static final PRaiseCachedNode UNCACHED_RAISE = PRaiseCachedNode.getUncached();
     private static final NodeSupplier<CallNode> NODE_CALL = CallNode::create;
     private static final CallNode UNCACHED_CALL = CallNode.getUncached();
     private static final NodeSupplier<CallQuaternaryMethodNode> NODE_CALL_QUATERNARY_METHOD = CallQuaternaryMethodNode::create;
@@ -2948,10 +2947,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     mutableData.setPastBci(bci);
                     if (newBci == CodeUnit.LINE_TO_BCI_LINE_AFTER_CODEBLOCK) {
                         // line after the code block
-                        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, pyFrame.getLine());
+                        throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, pyFrame.getLine());
                     } else if (newBci == CodeUnit.LINE_TO_BCI_LINE_BEFORE_CODEBLOCK) {
                         // line before the code block
-                        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, pyFrame.getJumpDestLine());
+                        throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, pyFrame.getJumpDestLine());
                     } else {
                         ret = computeJumpStackDifference(bci, newBci);
                         mutableData.setJumpBci(newBci);
@@ -2968,9 +2967,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private int computeJumpStackDifference(int bci, int newBci) {
         int ret;
         var stacks = co.computeStackElems();
-        String error = co.checkJump(stacks, bci, newBci);
+        String error = co.checkJump(this, stacks, bci, newBci);
         if (error != null) {
-            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.CANT_JUMP_INTO_S, error);
+            throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.CANT_JUMP_INTO_S, error);
         }
         ret = stacks.get(newBci).size() - stacks.get(bci).size();
         return ret;
@@ -3274,7 +3273,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private PException raiseUnknownBytecodeError(byte bc) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw PRaiseNode.raiseUncached(this, SystemError, toTruffleStringUncached("not implemented bytecode %s"), OpCodes.fromOpCode(bc));
+        TruffleString format = toTruffleStringUncached("not implemented bytecode %s");
+        throw PRaiseNode.raiseStatic(this, SystemError, format, OpCodes.fromOpCode(bc));
     }
 
     private void generalizeForIterI(int bci, QuickeningGeneralizeException e) {
@@ -3661,7 +3661,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @InliningCutoff
     private void raiseDivOrModByZero(int bci, Node[] localNodes, boolean useCachedNodes) {
-        PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
+        PRaiseCachedNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseCachedNodeGen.class, NODE_RAISE, useCachedNodes);
         throw raiseNode.raise(ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
     }
 
@@ -3811,7 +3811,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @InliningCutoff
     private void raiseDivByZero(int bci, Node[] localNodes, boolean useCachedNodes) {
-        PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
+        PRaiseCachedNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseCachedNodeGen.class, NODE_RAISE, useCachedNodes);
         throw raiseNode.raise(ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
     }
 
@@ -4559,7 +4559,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @InliningCutoff
     private PException raiseVarReferencedBeforeAssignment(Node[] localNodes, int bci, int index) {
-        PRaiseNode raiseNode = insertChildNode(localNodes, bci, PRaiseNodeGen.class, NODE_RAISE);
+        PRaiseCachedNode raiseNode = insertChildNode(localNodes, bci, PRaiseCachedNodeGen.class, NODE_RAISE);
         throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[index]);
     }
 
@@ -4846,7 +4846,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             try {
                 delItemNode.executeCached(virtualFrame, locals, varname);
             } catch (PException e) {
-                PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
+                PRaiseCachedNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseCachedNodeGen.class, NODE_RAISE, useCachedNodes);
                 throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, varname);
             }
         } else {
@@ -5426,7 +5426,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @InliningCutoff
     private void raiseUnboundCell(Node[] localNodes, int bci, int oparg, boolean useCachedNodes) {
-        PRaiseNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseNodeGen.class, NODE_RAISE, useCachedNodes);
+        PRaiseCachedNode raiseNode = insertChildNode(localNodes, bci, UNCACHED_RAISE, PRaiseCachedNodeGen.class, NODE_RAISE, useCachedNodes);
         if (oparg < cellvars.length) {
             throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, cellvars[oparg]);
         } else {
@@ -5683,7 +5683,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.getUncached().raise(SystemError, ErrorMessages.INVALID_TYPE_FOR_S, "COLLECTION_ADD_COLLECTION");
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.INVALID_TYPE_FOR_S, "COLLECTION_ADD_COLLECTION");
         }
         virtualFrame.setObject(stackTop--, null);
         virtualFrame.setObject(stackTop, result);
@@ -5716,7 +5716,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             default:
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.getUncached().raise(SystemError, ErrorMessages.INVALID_TYPE_FOR_S, "ADD_TO_COLLECTION");
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.INVALID_TYPE_FOR_S, "ADD_TO_COLLECTION");
         }
         virtualFrame.setObject(stackTop--, null);
         return stackTop;
@@ -5889,7 +5889,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          *
          * TODO We should revisit this when the AST interpreter is removed.
          */
-        return MarshalModuleBuiltins.serializeCodeUnit(PythonContext.get(this), co);
+        return MarshalModuleBuiltins.serializeCodeUnit(this, PythonContext.get(this), co);
     }
 
     @Override

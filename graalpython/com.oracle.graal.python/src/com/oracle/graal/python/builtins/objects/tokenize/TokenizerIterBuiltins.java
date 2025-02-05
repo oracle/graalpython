@@ -94,10 +94,10 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Token token = self.getNextToken();
             if (token.type == Kind.ERRORTOKEN || token.type == Kind.ENDMARKER) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration(T_EOF);
+                throw raiseNode.raiseStopIteration(inliningTarget, T_EOF);
             }
             int startColumn;
             int endColumn;

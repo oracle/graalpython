@@ -160,10 +160,10 @@ public final class RandomBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached CastToJavaUnsignedLongNode castNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object[] arr = getObjectArrayNode.execute(inliningTarget, tuple);
             if (arr.length != PRandom.N + 1) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
             int[] state = new int[PRandom.N];
             for (int i = 0; i < PRandom.N; ++i) {
@@ -172,7 +172,7 @@ public final class RandomBuiltins extends PythonBuiltins {
             }
             long index = castNode.execute(inliningTarget, arr[PRandom.N]);
             if (index < 0 || index > PRandom.N) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
             random.restore(state, (int) index);
             return PNone.NONE;
@@ -181,8 +181,8 @@ public final class RandomBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object setstate(Object random, Object state,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
         }
     }
 
@@ -236,8 +236,8 @@ public final class RandomBuiltins extends PythonBuiltins {
         @Specialization(guards = "k < 0")
         @SuppressWarnings("unused")
         static int negative(PRandom random, int k,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE);
         }
 
         @Specialization(guards = "k == 0")

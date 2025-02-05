@@ -173,7 +173,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         static PBytes doInt(VirtualFrame frame, PMMap self, int index,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib) {
             long len = self.getLength();
@@ -201,7 +201,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PyLongAsLongNode asLongNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             long i = asLongNode.execute(frame, inliningTarget, idxObj);
             long len = self.getLength();
             long idx = negativeIndexProfile.profile(inliningTarget, i < 0) ? i + len : i;
@@ -223,7 +223,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLenNode,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             try {
                 SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, idx), PInt.intValueExact(self.getLength()));
                 int len = sliceLenNode.len(inliningTarget, info);
@@ -233,7 +233,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 byte[] result = readBytes(frame, inliningTarget, self, posixSupportLib, context.getPosixSupport(), info.start, len, constructAndRaiseNode);
                 return PFactory.createBytes(context.getLanguage(inliningTarget), result);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, e);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, e);
             }
         }
     }
@@ -250,25 +250,25 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyBytesCheckNode checkNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // NB: sq_ass_item and mp_ass_subscript implementations behave differently even with
             // integer indices
             if (self.isClosed()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
             }
             long len = self.getLength();
             long idx = index < 0 ? index + len : index;
             if (idx < 0 || idx >= len) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
             }
             if (val == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION);
             }
             if (!(checkNode.execute(inliningTarget, val) && bufferLib.getBufferLength(val) == 1)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_ASSIGNMENT_MUST_BE_LENGTH_1_BYTES);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, MMAP_ASSIGNMENT_MUST_BE_LENGTH_1_BYTES);
             }
             if (self.isReadonly()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
             }
             byte b = bufferLib.readByte(val, 0);
             try {
@@ -291,33 +291,33 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode checkNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             // NB: sq_ass_item and mp_ass_subscript implementations behave differently even with
             // integer indices
             if (self.isClosed()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
             }
             if (self.isReadonly()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
             }
             if (!checkNode.execute(inliningTarget, idxObj)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_INDICES_MUST_BE_INTEGER);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_INDICES_MUST_BE_INTEGER);
             }
             long idx = asSizeNode.executeExact(frame, inliningTarget, idxObj, PythonBuiltinClassType.IndexError);
             long len = self.getLength();
             idx = idx < 0 ? idx + len : idx;
             if (idx < 0 || idx >= len) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
             }
             if (valueObj == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION);
             }
             if (!checkNode.execute(inliningTarget, valueObj)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_ITEM_VALUE_MUST_BE_AN_INT);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_ITEM_VALUE_MUST_BE_AN_INT);
             }
             int value = asSizeNode.executeExact(frame, inliningTarget, valueObj, PythonBuiltinClassType.TypeError);
             if (value < 0 || value > 255) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, MMAP_ITEM_VALUE_MUST_BE_IN_RANGE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_ITEM_VALUE_MUST_BE_IN_RANGE);
             }
             try {
                 posixSupportLib.mmapWriteByte(context.getPosixSupport(), self.getPosixSupportHandle(), idx, (byte) value);
@@ -337,28 +337,28 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached InlinedConditionProfile step1Profile,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (self.isClosed()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
             }
             if (self.isReadonly()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_CANNOT_MODIFY_READONLY_MEMORY);
             }
             int len;
             try {
                 len = PInt.intValueExact(self.getLength());
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError);
             }
             SliceInfo info = adjustIndices.execute(inliningTarget, len, sliceUnpack.execute(inliningTarget, slice));
             if (valueObj == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_SLICE_DELETION);
             }
             Object buffer = acquireLib.acquireReadonly(valueObj);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 if (info.sliceLength != bufferLen) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, MMAP_SLICE_ASSIGNMENT_IS_WRONG_SIZE);
                 }
                 if (info.sliceLength > 0) {
                     try {
@@ -388,7 +388,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         @Specialization
         static int len(PMMap self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             return PyNumberAsSizeNode.doLongExact(inliningTarget, self.getLength(), PythonBuiltinClassType.OverflowError, raiseNode);
         }
     }
@@ -454,9 +454,9 @@ public final class MMapBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static long resize(PMMap self, Object n,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             // TODO: implement resize in NFI
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.RESIZING_NOT_AVAILABLE);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.RESIZING_NOT_AVAILABLE);
         }
     }
 
@@ -480,9 +480,9 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.getPos() >= self.getLength()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, READ_BYTE_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, READ_BYTE_OUT_OF_RANGE);
             }
             try {
                 byte res = posixSupportLib.mmapReadByte(context.getPosixSupport(), self.getPosixSupportHandle(), self.getPos());
@@ -510,7 +510,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached InlinedConditionProfile negativeProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             long nread;
             // intentionally accept NO_VALUE and NONE; both mean that we read unlimited # of bytes
             if (noneProfile.profile(inliningTarget, isPNone(n))) {
@@ -518,7 +518,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             } else {
                 // _Py_convert_optional_to_ssize_t:
                 if (!indexCheckNode.execute(inliningTarget, n)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);
                 }
                 nread = asSizeNode.executeExact(frame, inliningTarget, n);
 
@@ -536,7 +536,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 self.setPos(self.getPos() + buffer.length);
                 return PFactory.createBytes(context.getLanguage(inliningTarget), buffer);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, ErrorMessages.TOO_MANY_REMAINING_BYTES_TO_BE_STORED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.TOO_MANY_REMAINING_BYTES_TO_BE_STORED);
             }
         }
     }
@@ -597,15 +597,15 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (!self.isWriteable()) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MMAP_CANNOT_MODIFY_READONLY_MEMORY);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MMAP_CANNOT_MODIFY_READONLY_MEMORY);
                 }
                 byte[] dataBytes = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
                 int dataLen = bufferLib.getBufferLength(dataBuffer);
                 if (self.getPos() > self.getLength() || self.getLength() - self.getPos() < dataLen) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.DATA_OUT_OF_RANGE);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.DATA_OUT_OF_RANGE);
                 }
                 posixLib.mmapWriteBytes(context.getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), dataBytes, dataLen);
                 self.setPos(self.getPos() + dataLen);
@@ -632,7 +632,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         static Object seek(PMMap self, long dist, int how,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedBranchProfile errorProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             long where;
             switch (how) {
                 case 0: // relative to start
@@ -646,10 +646,10 @@ public final class MMapBuiltins extends PythonBuiltins {
                     break;
                 default:
                     errorProfile.enter(inliningTarget);
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_S_TYPE, "seek");
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_S_TYPE, "seek");
             }
             if (where > self.getLength() || where < 0) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.SEEK_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.SEEK_OUT_OF_RANGE);
             }
             self.setPos(where);
             return PNone.NONE;
@@ -678,7 +678,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached LongIndexConverterNode endConverter,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 long start = normalizeIndex(frame, startConverter, startIn, self.getLength(), self.getPos());
                 long end = normalizeIndex(frame, endConverter, endIn, self.getLength(), self.getLength());
@@ -737,13 +737,13 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
 
         private static void readBytes(VirtualFrame frame, Node inliningTarget, PMMap self, PosixSupportLibrary posixLib, PosixSupport posixSupport, long index, byte[] buffer,
-                        PConstructAndRaiseNode.Lazy constructAndRaiseNode, PRaiseNode.Lazy raiseNode) {
+                        PConstructAndRaiseNode.Lazy constructAndRaiseNode, PRaiseNode raiseNode) {
             try {
                 long remaining = self.getLength() - index;
                 int toReadLen = remaining > buffer.length ? buffer.length : (int) remaining;
                 int nread = posixLib.mmapReadBytes(posixSupport, self.getPosixSupportHandle(), index, buffer, toReadLen);
                 if (toReadLen != nread) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, MMAP_CHANGED_LENGTH);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, MMAP_CHANGED_LENGTH);
                 }
             } catch (PosixException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);
@@ -784,7 +784,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached LongIndexConverterNode sizeConversion,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             long size;
             if (sizeObj == PNone.NO_VALUE) {
                 size = self.getLength();
@@ -793,7 +793,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
 
             if (size < 0 || offset < 0 || self.getLength() - offset < size) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.FLUSH_VALUES_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.FLUSH_VALUES_OUT_OF_RANGE);
             }
             if (self.getAccess() == ACCESS_READ || self.getAccess() == ACCESS_COPY) {
                 return PNone.NONE;

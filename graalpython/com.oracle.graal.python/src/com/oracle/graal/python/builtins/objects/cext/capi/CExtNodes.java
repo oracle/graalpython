@@ -729,7 +729,7 @@ public abstract class CExtNodes {
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached(inline = false) LookupAndCallUnaryDynamicNode callComplex,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object result = callComplex.executeObject(value, T___COMPLEX__);
             // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
             // of PComplex
@@ -737,7 +737,7 @@ public abstract class CExtNodes {
                 if (result instanceof PComplex) {
                     return (PComplex) result;
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
                 }
             } else {
                 return PFactory.createComplex(language, asDoubleNode.execute(null, inliningTarget, value), 0.0);
@@ -1148,7 +1148,7 @@ public abstract class CExtNodes {
         private static void raiseNative(Frame frame, Node inliningTarget, PythonBuiltinClassType errType, TruffleString format, Object[] arguments, PRaiseNode raiseNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                throw raiseNode.raise(errType, format, arguments);
+                throw raiseNode.raise(inliningTarget, errType, format, arguments);
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(frame, inliningTarget, p);
             }
@@ -1431,7 +1431,6 @@ public abstract class CExtNodes {
             CastToJavaStringNode castToJavaStringNode = CastToJavaStringNodeGen.getUncached();
             FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
             InteropLibrary interopLibrary = InteropLibrary.getUncached();
-            PRaiseNode raiseNode = PRaiseNode.getUncached();
 
             StringBuilder result = new StringBuilder();
             int vaArgIdx = 0;
@@ -1453,7 +1452,7 @@ public abstract class CExtNodes {
                     int prec = getPrec(matcher.group("prec"));
                     assert spec.length() == 1;
                     char la = spec.charAt(0);
-                    PythonContext context = PythonContext.get(raiseNode);
+                    PythonContext context = PythonContext.get(null);
                     switch (la) {
                         case '%':
                             // %%
@@ -1461,9 +1460,9 @@ public abstract class CExtNodes {
                             valid = true;
                             break;
                         case 'c':
-                            int ordinal = getAndCastToInt(interopLibrary, raiseNode, vaList);
+                            int ordinal = getAndCastToInt(interopLibrary, vaList);
                             if (ordinal < 0 || ordinal > 0x110000) {
-                                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
+                                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
                             }
                             result.append((char) ordinal);
                             vaArgIdx++;
@@ -1478,12 +1477,12 @@ public abstract class CExtNodes {
                                     case "l":
                                     case "z":
                                         vaArgIdx++;
-                                        result.append(castToLong(interopLibrary, raiseNode, GetNextVaArgNode.executeUncached(vaList)));
+                                        result.append(castToLong(interopLibrary, GetNextVaArgNode.executeUncached(vaList)));
                                         valid = true;
                                         break;
                                 }
                             } else {
-                                result.append(getAndCastToInt(interopLibrary, raiseNode, vaList));
+                                result.append(getAndCastToInt(interopLibrary, vaList));
                                 vaArgIdx++;
                                 valid = true;
                             }
@@ -1496,19 +1495,19 @@ public abstract class CExtNodes {
                                     case "l":
                                     case "z":
                                         vaArgIdx++;
-                                        result.append(castToLong(interopLibrary, raiseNode, GetNextVaArgNode.executeUncached(vaList)));
+                                        result.append(castToLong(interopLibrary, GetNextVaArgNode.executeUncached(vaList)));
                                         valid = true;
                                         break;
                                 }
                             } else {
-                                result.append(Integer.toUnsignedString(getAndCastToInt(interopLibrary, raiseNode, vaList)));
+                                result.append(Integer.toUnsignedString(getAndCastToInt(interopLibrary, vaList)));
                                 vaArgIdx++;
                                 valid = true;
                             }
                             break;
                         case 'x':
                             // %x
-                            result.append(Integer.toHexString(getAndCastToInt(interopLibrary, raiseNode, vaList)));
+                            result.append(Integer.toHexString(getAndCastToInt(interopLibrary, vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
@@ -1600,7 +1599,7 @@ public abstract class CExtNodes {
                 // matched)
                 result.append(format, cur, format.length());
             } catch (InteropException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ERROR_WHEN_ACCESSING_VAR_ARG_AT_POS, vaArgIdx);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.ERROR_WHEN_ACCESSING_VAR_ARG_AT_POS, vaArgIdx);
             }
             return toTruffleStringUncached(result.toString());
         }
@@ -1616,7 +1615,7 @@ public abstract class CExtNodes {
          * Read an element from the {@code va_list} with the specified type and cast it to a Java
          * {@code int}. Throws a {@code SystemError} if this is not possible.
          */
-        private static int getAndCastToInt(InteropLibrary lib, PRaiseNode raiseNode, Object vaList) throws InteropException {
+        private int getAndCastToInt(InteropLibrary lib, Object vaList) throws InteropException {
             Object value = GetNextVaArgNode.executeUncached(vaList);
             if (lib.fitsInInt(value)) {
                 try {
@@ -1635,14 +1634,14 @@ public abstract class CExtNodes {
                     throw shouldNotReachHere();
                 }
             }
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
+            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
         }
 
         /**
          * Cast a value to a Java {@code long}. Throws a {@code SystemError} if this is not
          * possible.
          */
-        private static long castToLong(InteropLibrary lib, PRaiseNode raiseNode, Object value) {
+        private long castToLong(InteropLibrary lib, Object value) {
             if (lib.fitsInLong(value)) {
                 try {
                     return lib.asLong(value);
@@ -1660,7 +1659,7 @@ public abstract class CExtNodes {
                     throw shouldNotReachHere();
                 }
             }
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
+            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
         }
 
         private static Object getPyObject(Object vaList) throws InteropException {
@@ -1727,7 +1726,7 @@ public abstract class CExtNodes {
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // call to type the pointer
             Object moduleDef = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : moduleDefWrapper;
 
@@ -1749,7 +1748,7 @@ public abstract class CExtNodes {
             mSize = readI64.read(moduleDef, PyModuleDef__m_size);
 
             if (mSize < 0) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, mName);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, mName);
             }
 
             // parse slot definitions
@@ -1764,7 +1763,7 @@ public abstract class CExtNodes {
                             break loop;
                         case SLOT_PY_MOD_CREATE:
                             if (createFunction != null) {
-                                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
+                                throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
                             }
                             createFunction = readPointerNode.readStructArrayElement(slotDefinitions, i, PyModuleDef_Slot__value);
                             break;
@@ -1772,7 +1771,7 @@ public abstract class CExtNodes {
                             hasExecutionSlots = true;
                             break;
                         default:
-                            throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
+                            throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
                     }
                 }
             }
@@ -1805,10 +1804,10 @@ public abstract class CExtNodes {
                  */
                 if (!(module instanceof PythonModule)) {
                     if (mSize > 0) {
-                        throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
+                        throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
                     }
                     if (hasExecutionSlots) {
-                        throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE, mName);
+                        throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE, mName);
                     }
                     // otherwise CPython is just fine
                 } else {
@@ -1920,7 +1919,7 @@ public abstract class CExtNodes {
                                             ErrorMessages.EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:
-                            throw raiseNode.raise(SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
+                            throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
                     }
                 }
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {

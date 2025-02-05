@@ -90,13 +90,13 @@ public abstract class PyLongFromDoubleNode extends Node {
     }
 
     @Specialization(guards = "!isFinite(value)")
-    static Object doInfinite(double value,
-                    @Cached(inline = false) PRaiseNode raiseNode) {
+    static Object doInfinite(Node inliningTarget, double value,
+                    @Cached PRaiseNode raiseNode) {
         if (Double.isNaN(value)) {
-            throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER);
         }
         assert Double.isInfinite(value);
-        throw raiseNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_FLOAT_INFINITY_TO_INTEGER);
+        throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_FLOAT_INFINITY_TO_INTEGER);
     }
 
     @TruffleBoundary

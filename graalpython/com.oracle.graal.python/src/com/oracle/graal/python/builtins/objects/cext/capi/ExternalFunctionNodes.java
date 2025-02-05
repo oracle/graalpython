@@ -61,6 +61,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -860,10 +861,10 @@ public abstract class ExternalFunctionNodes {
                 return lib.execute(callable, cArguments);
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
             } catch (ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } catch (Throwable exception) {
                 /*
                  * Always re-acquire the GIL here. This is necessary because it could happen that C
@@ -2418,7 +2419,7 @@ public abstract class ExternalFunctionNodes {
                 AbstractTruffleException currentException = state.getCurrentException();
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == null) {
-                    throw raiseNode.raiseStopIteration();
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
                 } else {
                     throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, state);
                 }
@@ -2558,7 +2559,7 @@ public abstract class ExternalFunctionNodes {
                 }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.FUNC_DIDNT_RETURN_INT, name);
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.FUNC_DIDNT_RETURN_INT, name);
         }
     }
 }

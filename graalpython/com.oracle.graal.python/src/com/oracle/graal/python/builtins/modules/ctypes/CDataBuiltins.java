@@ -158,8 +158,8 @@ public final class CDataBuiltins extends PythonBuiltins {
     protected abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
         static long hash(@SuppressWarnings("unused") CDataObject self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, UNHASHABLE_TYPE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, UNHASHABLE_TYPE);
         }
     }
 
@@ -176,10 +176,10 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromPythonObjectNode readAttrNode,
                         @Cached PointerNodes.ReadBytesNode readBytesNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             StgDictObject stgDict = pyObjectStgDictNode.execute(inliningTarget, self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
+                throw raiseNode.raise(inliningTarget, ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
             }
             Object dict = getAttributeNode.executeObject(frame, self);
             Object[] t1 = new Object[]{dict, null};
@@ -190,7 +190,7 @@ public final class CDataBuiltins extends PythonBuiltins {
             Object unpickle = readAttrNode.execute(ctypes, T_UNPICKLE, null);
             if (unpickle == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));
+                throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));
             }
             Object[] t3 = new Object[]{unpickle, PFactory.createTuple(language, t2)};
             return PFactory.createTuple(language, t3); // "O(O(NN))"
@@ -211,11 +211,11 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Cached GetNameNode getNameNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = args.getSequenceStorage();
             Object[] array = getArray.execute(inliningTarget, storage);
             if (storage.length() < 3 || !PGuards.isDict(array[0]) || !PGuards.isInteger(array[2])) {
-                throw raiseNode.get(inliningTarget).raise(TypeError);
+                throw raiseNode.raise(inliningTarget, TypeError);
             }
             PDict dict = (PDict) array[0];
             Object data = array[1];
@@ -228,7 +228,7 @@ public final class CDataBuiltins extends PythonBuiltins {
             memmove(inliningTarget, self.b_ptr, data, len);
             Object mydict = getAttributeNode.executeObject(frame, self);
             if (!PGuards.isDict(mydict)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
+                throw raiseNode.raise(inliningTarget, TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)),
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, mydict)));
             }
@@ -240,7 +240,7 @@ public final class CDataBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         private static void memmove(Node raisingNode, Object dest, Object src, int len) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(raisingNode, NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
+            throw PRaiseNode.raiseStatic(raisingNode, NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
         }
     }
 }

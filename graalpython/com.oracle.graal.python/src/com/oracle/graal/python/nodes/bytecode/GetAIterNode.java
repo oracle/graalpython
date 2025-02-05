@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,7 +83,7 @@ public abstract class GetAIterNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached(parameters = "AIter") LookupSpecialMethodSlotNode getAIter,
                     @Cached GetClassNode getAsyncIterType,
-                    @Cached PRaiseNode.Lazy raiseNoAIter,
+                    @Cached PRaiseNode raiseNoAIter,
                     @Cached TypeNodes.GetNameNode getName,
                     @Cached InlinedBranchProfile errorProfile,
                     @Cached CallUnaryMethodNode callAIter,
@@ -93,13 +93,13 @@ public abstract class GetAIterNode extends PNodeWithContext {
         Object getter = getAIter.execute(frame, type, receiver);
         if (getter == PNone.NO_VALUE) {
             errorProfile.enter(this);
-            throw raiseNoAIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, getName.execute(inliningTarget, type));
+            throw raiseNoAIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_AITER, getName.execute(inliningTarget, type));
         }
         Object asyncIterator = callAIter.executeObject(frame, getter, receiver);
         Object anext = lookupANext.execute(inliningTarget, asyncIterator, T___ANEXT__);
         if (anext == PNone.NO_VALUE) {
             errorProfile.enter(this);
-            throw raiseNoAIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, getName.execute(inliningTarget, type));
+            throw raiseNoAIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_INITIAL, getName.execute(inliningTarget, type));
         }
         return asyncIterator;
     }

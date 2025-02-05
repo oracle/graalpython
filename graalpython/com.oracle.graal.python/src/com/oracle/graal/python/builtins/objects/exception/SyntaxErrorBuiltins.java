@@ -189,7 +189,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             baseExceptionInitNode.execute(self, args);
             Object[] attrs = SYNTAX_ERROR_ATTR_FACTORY.create();
             if (args.length >= 1) {
@@ -200,7 +200,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                 final SequenceStorage storage = info.getSequenceStorage();
                 if (storage.length() != 4) {
                     // not a very good error message, but it's what Python 2.4 gives
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
                 }
 
                 attrs[IDX_FILENAME] = getItemNode.execute(storage, 0);

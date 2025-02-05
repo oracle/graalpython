@@ -100,10 +100,10 @@ public abstract class PyIterNextNode extends PNodeWithContext {
                     @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
                     @Cached CallUnaryMethodNode callNext,
                     @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object nextMethod = lookupNext.execute(frame, getClassNode.execute(inliningTarget, iterator), iterator);
         if (nextMethod == PNone.NO_VALUE) {
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
         }
         try {
             return callNext.executeObject(frame, nextMethod, iterator);

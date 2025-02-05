@@ -110,7 +110,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -139,7 +138,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
         PythonBuiltinClass unsupportedOpExcType = core.lookupType(IOUnsupportedOperation);
         PythonBuiltinClass osError = core.lookupType(OSError);
-        unsupportedOpExcType.setBases(osError, new PythonAbstractClass[]{osError, core.lookupType(ValueError)});
+        unsupportedOpExcType.setBases(null, osError, new PythonAbstractClass[]{osError, core.lookupType(ValueError)});
         addBuiltinConstant(IOUnsupportedOperation.getName(), unsupportedOpExcType);
         addBuiltinConstant(BlockingIOError.getName(), core.lookupType(BlockingIOError));
 
@@ -330,7 +329,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
                         @Bind PythonLanguage language,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
             Object result = fileIO;
             try {
@@ -359,12 +358,12 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                     buffering = fileIO.getBlksize();
                 }
                 if (buffering < 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_BUFFERING_SIZE);
+                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_BUFFERING_SIZE);
                 }
 
                 /* if not buffering, returns the raw file object */
                 if (buffering == 0) {
-                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener, raiseNode.get(inliningTarget));
+                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener, raiseNode);
                 }
 
                 /* wraps into a buffered file */
@@ -411,7 +410,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
             return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose, raiseNode);
         }
@@ -427,7 +426,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
             try {
                 /* buffering */
@@ -451,7 +450,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                     buffering = fileIO.getBlksize();
                 }
                 if (buffering < 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_BUFFERING_SIZE);
+                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_BUFFERING_SIZE);
                 }
 
                 /* if not buffering, returns the raw file object */
@@ -472,35 +471,35 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isUnknown(mode)")
         protected static Object unknownMode(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, UNKNOWN_MODE_S, mode.mode);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, UNKNOWN_MODE_S, mode.mode);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isTB(mode)")
         protected static Object invalidTB(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isValidUniveral(mode)")
         protected static Object invalidUniversal(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isXRWA(mode)")
         protected static Object invalidxrwa(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isBinary(mode)", "isAnyNotNone(encoding, errors, newline)"})
         protected static Object invalidBinary(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             String s;
             if (encoding != PNone.NONE) {
                 s = "encoding";
@@ -509,14 +508,14 @@ public final class IOModuleBuiltins extends PythonBuiltins {
             } else {
                 s = "newline";
             }
-            throw raiseNode.raise(ValueError, BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT, s);
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT, s);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isBinary(mode)", "bufferingValue == 0"})
         protected static Object invalidunbuf(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
         }
 
         public static boolean isAnyNotNone(Object encoding, Object errors, Object newline) {

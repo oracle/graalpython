@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -508,7 +508,7 @@ public class InternalFormat {
          * @return exception to throw
          */
         public static PException unknownFormat(char code, String forType, Node raisingNode) {
-            throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.UNKNOWN_FORMAT_CODE, code, forType);
+            throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.UNKNOWN_FORMAT_CODE, code, forType);
         }
 
         /**
@@ -520,7 +520,7 @@ public class InternalFormat {
          * @return exception to throw
          */
         public PException precisionTooLarge(String type) {
-            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.FORMATED_S_TOO_LONG, type);
+            throw PRaiseNode.raiseStatic(raisingNode, OverflowError, ErrorMessages.FORMATED_S_TOO_LONG, type);
         }
     }
 
@@ -806,7 +806,7 @@ public class InternalFormat {
                     width = scanInteger();
                 } catch (NumberFormatException ex) {
                     // CPython seems to happily parse big ints and then it chokes on the allocation
-                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.WIDTH_TOO_BIG);
+                    throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.WIDTH_TOO_BIG);
                 }
             }
 
@@ -816,11 +816,11 @@ public class InternalFormat {
             }
             if (scanPast('_')) {
                 if (specified(grouping)) {
-                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
+                    throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
                 }
                 grouping = '_';
                 if (scanPast(',')) {
-                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
+                    throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
                 }
             }
 
@@ -830,10 +830,10 @@ public class InternalFormat {
                     try {
                         precision = scanInteger();
                     } catch (NumberFormatException ex) {
-                        throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.PRECISION_TOO_BIG);
+                        throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.PRECISION_TOO_BIG);
                     }
                 } else {
-                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.FMT_SPECIFIER_MISSING_PRECISION);
+                    throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.FMT_SPECIFIER_MISSING_PRECISION);
                 }
             }
 
@@ -844,7 +844,7 @@ public class InternalFormat {
 
             // If we haven't reached the end, something is wrong
             if (ptr != spec.length()) {
-                throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.INVALID_CONVERSION_SPECIFICATION);
+                throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.INVALID_CONVERSION_SPECIFICATION);
             }
 
             // Some basic validation
@@ -875,7 +875,7 @@ public class InternalFormat {
                         valid = false;
                 }
                 if (!valid) {
-                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_C_WITH_C, grouping, type);
+                    throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.CANNOT_SPECIFY_C_WITH_C, grouping, type);
                 }
             }
 

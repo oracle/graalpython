@@ -227,7 +227,7 @@ public class BufferedWriterNodes {
                         @Bind PythonLanguage language,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode.Lazy lazyRaiseNode) {
+                        @Cached PRaiseNode lazyRaiseNode) {
             PBytes memobj = PFactory.createBytes(language, buf, len);
             Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_WRITE, memobj);
             if (res == PNone.NONE) {
@@ -238,7 +238,7 @@ public class BufferedWriterNodes {
             }
             int n = asSizeNode.executeExact(frame, inliningTarget, res, ValueError);
             if (n < 0 || n > len) {
-                throw lazyRaiseNode.get(inliningTarget).raise(OSError, IO_S_INVALID_LENGTH, "write()", n, len);
+                throw lazyRaiseNode.raise(inliningTarget, OSError, IO_S_INVALID_LENGTH, "write()", n, len);
             }
             if (n > 0 && self.getAbsPos() != -1) {
                 self.incAbsPos(n);

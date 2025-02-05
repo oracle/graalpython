@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,17 +78,17 @@ public final class PythonCextByteArrayBuiltins {
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CStructAccess.GetElementPtrNode getArray,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PByteArray)) {
                 return getArray.getElementPtr(obj.getPtr(), CFields.PyByteArrayObject__ob_start);
             }
-            return doError(obj, raiseNode.get(inliningTarget));
+            return doError(obj, raiseNode);
         }
 
         @Fallback
         static Object doError(Object obj,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytearray", obj);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytearray", obj);
         }
     }
 }

@@ -142,7 +142,7 @@ public final class PythonCextBytesBuiltins {
         @TruffleBoundary
         static long fallback(Object obj,
                         @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
         }
     }
 
@@ -184,7 +184,7 @@ public final class PythonCextBytesBuiltins {
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached BytesNode bytesNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (PGuards.isPBytes(obj)) {
                 return obj;
             } else {
@@ -194,7 +194,7 @@ public final class PythonCextBytesBuiltins {
                 } else if (isAcceptedSubtype(inliningTarget, obj, klass, isSubtypeNode, lookupAttrNode)) {
                     return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
+                    throw raiseNode.raise(inliningTarget, TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
                 }
             }
         }
@@ -235,13 +235,13 @@ public final class PythonCextBytesBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return PFactory.createBytes(language, getByteArrayNode.execute(inliningTarget, nativePointer, size));
             } catch (InteropException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
         }
     }
@@ -268,13 +268,13 @@ public final class PythonCextBytesBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached GetByteArrayNode getByteArrayNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return PFactory.createByteArray(language, getByteArrayNode.execute(inliningTarget, nativePointer, size));
             } catch (InteropException e) {
-                return raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.M, e);
+                return raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
             } catch (OverflowException e) {
-                return raiseNode.get(inliningTarget).raise(PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
+                return raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
         }
     }
@@ -303,8 +303,8 @@ public final class PythonCextBytesBuiltins {
 
         @Fallback
         static int fallback(Object self, @SuppressWarnings("unused") Object o,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
         }
     }
 
@@ -327,11 +327,11 @@ public final class PythonCextBytesBuiltins {
         static PBytes doLongOvf(long size,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(PInt.intValueExact(size), language);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
             }
         }
 
@@ -345,11 +345,11 @@ public final class PythonCextBytesBuiltins {
         static PBytes doPIntOvf(PInt size,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(size.intValueExact(), language);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
             }
         }
     }
@@ -373,11 +373,11 @@ public final class PythonCextBytesBuiltins {
         static PByteArray doLongOvf(long size,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(PInt.intValueExact(size), language);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
             }
         }
 
@@ -391,11 +391,11 @@ public final class PythonCextBytesBuiltins {
         static PByteArray doPIntOvf(PInt size,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(size.intValueExact(), language);
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raiseNumberTooLarge(IndexError, size);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
             }
         }
     }
@@ -436,17 +436,17 @@ public final class PythonCextBytesBuiltins {
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached CStructAccess.GetElementPtrNode getArray,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
                 return getArray.getElementPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
             }
-            return doError(obj, raiseNode.get(inliningTarget));
+            return doError(obj, raiseNode);
         }
 
         @Fallback
         static Object doError(Object obj,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
         }
     }
 }

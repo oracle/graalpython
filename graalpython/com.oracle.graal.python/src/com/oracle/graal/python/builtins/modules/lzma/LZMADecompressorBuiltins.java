@@ -117,12 +117,12 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode cast,
                         @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int memlimit;
             try {
                 memlimit = cast.execute(inliningTarget, memlimitObj);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
             return doNotRaw(frame, self, format, memlimit, decompressInit);
 
@@ -155,29 +155,29 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"isRaw(format)", "!isPNone(memlimit)"})
         static PNone rawError(LZMADecompressor self, int format, Object memlimit, Object filters,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_MEM_LIMIT);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.CANNOT_SPECIFY_MEM_LIMIT);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isRaw(format)")
         static PNone rawFilterError(LZMADecompressor self, int format, Object memlimit, PNone filters,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.MUST_SPECIFY_FILTERS);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.MUST_SPECIFY_FILTERS);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isRaw(format)", "!isPNone(filters)"})
         static PNone rawFilterError(LZMADecompressor self, int format, Object memlimit, Object filters,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_FILTERS);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.CANNOT_SPECIFY_FILTERS);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!validFormat(format)")
         static PNone invalidFormat(LZMADecompressor self, int format, Object memlimit, Object filters,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.INVALID_CONTAINER_FORMAT, format);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_CONTAINER_FORMAT, format);
         }
 
         protected static boolean validFormat(int format) {
@@ -229,8 +229,8 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isEOF()"})
         static Object err(LZMADecompressor self, Object data, int maxLength,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(EOFError, ALREADY_AT_END_OF_STREAM);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, EOFError, ALREADY_AT_END_OF_STREAM);
         }
     }
 
@@ -270,8 +270,8 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         static int doCheck(@SuppressWarnings("unused") LZMADecompressor.Java self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, T_LZMA_JAVA_ERROR);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, T_LZMA_JAVA_ERROR);
         }
 
     }

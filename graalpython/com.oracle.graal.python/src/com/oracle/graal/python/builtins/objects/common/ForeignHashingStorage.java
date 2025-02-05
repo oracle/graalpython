@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -121,7 +120,7 @@ public final class ForeignHashingStorage extends HashingStorage {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) PForeignToPTypeNode toPythonNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             var dict = storage.foreignDict;
             Object value;
             gil.release(true);
@@ -130,7 +129,7 @@ public final class ForeignHashingStorage extends HashingStorage {
             } catch (UnknownKeyException e) {
                 return null;
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_READABLE, key, dict);
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_READABLE, key, dict);
             } finally {
                 gil.acquire();
             }
@@ -150,21 +149,21 @@ public final class ForeignHashingStorage extends HashingStorage {
         static void put(Node inliningTarget, ForeignHashingStorage storage, Object key, Object value,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached(inline = false) GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             var dict = storage.foreignDict;
             gil.release(true);
             try {
                 interop.writeHashEntry(dict, key, value);
             } catch (UnknownKeyException e) {
-                throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
+                throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
             } catch (UnsupportedMessageException e) {
                 if (interop.isHashEntryExisting(dict, key)) {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, key, dict);
+                    throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, key, dict);
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_INSERTABLE, key, dict);
+                    throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_INSERTABLE, key, dict);
                 }
             } catch (UnsupportedTypeException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
             } finally {
                 gil.acquire();
             }
@@ -182,7 +181,7 @@ public final class ForeignHashingStorage extends HashingStorage {
         static boolean remove(Node inliningTarget, ForeignHashingStorage storage, Object key,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached(inline = false) GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             var dict = storage.foreignDict;
 
             gil.release(true);
@@ -191,7 +190,7 @@ public final class ForeignHashingStorage extends HashingStorage {
             } catch (UnknownKeyException e) {
                 return false;
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE, key, dict);
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE, key, dict);
             } finally {
                 gil.acquire();
             }
@@ -233,7 +232,7 @@ public final class ForeignHashingStorage extends HashingStorage {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached(inline = false) GilNode gil,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary iteratorInterop,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // We cannot just remove while iterating otherwise we get e.g.
             // ConcurrentModificationException with java.util.HashMap
             // So we remove keys by batch of 32 keys.
@@ -262,13 +261,13 @@ public final class ForeignHashingStorage extends HashingStorage {
             }
         }
 
-        private static void remove(Node inliningTarget, Object dict, Object key, InteropLibrary interop, Lazy raiseNode) {
+        private static void remove(Node inliningTarget, Object dict, Object key, InteropLibrary interop, PRaiseNode raiseNode) {
             try {
                 interop.removeHashEntry(dict, key);
             } catch (UnknownKeyException e) {
                 // already removed concurrently
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE, key, dict);
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE, key, dict);
             }
         }
     }

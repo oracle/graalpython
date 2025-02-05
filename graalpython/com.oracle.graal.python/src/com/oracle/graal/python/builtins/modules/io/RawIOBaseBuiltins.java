@@ -158,7 +158,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile chunksSize0Profile,
                         @Cached InlinedCountingConditionProfile bytesLen0Profile,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
                 Object data = callMethodRead.execute(frame, inliningTarget, self, T_READ, DEFAULT_BUFFER_SIZE);
@@ -170,7 +170,7 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
                     break;
                 }
                 if (!(data instanceof PBytes)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, S_SHOULD_RETURN_BYTES, "read()");
+                    throw raiseNode.raise(inliningTarget, TypeError, S_SHOULD_RETURN_BYTES, "read()");
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(data);
                 int bytesLen = bufferLib.getBufferLength(data);
@@ -193,8 +193,8 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         static Object readinto(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -207,8 +207,8 @@ public final class RawIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         static Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 }

@@ -71,12 +71,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
 public final class GeneratorBuiltins extends PythonBuiltins {
 
-    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode.Lazy raiseNode) {
+    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode raiseNode) {
         if (self.isFinished()) {
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
         if (self.isRunning()) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
         }
     }
 
@@ -146,7 +146,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
         static Object next(VirtualFrame frame, PGenerator self,
                         @Bind("this") Node inliningTarget,
                         @Cached CommonGeneratorBuiltins.ResumeGeneratorNode resumeGeneratorNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             checkResumable(inliningTarget, self, raiseNode);
             return resumeGeneratorNode.execute(frame, inliningTarget, self, null);
         }
@@ -173,8 +173,8 @@ public final class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object setRunning(@SuppressWarnings("unused") PGenerator self, @SuppressWarnings("unused") Object obj,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, "gi_running", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, "gi_running", self);
         }
     }
 

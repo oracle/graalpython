@@ -101,14 +101,16 @@ public class StructBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object pack(VirtualFrame frame, PStruct self, Object[] args, PKeyword[] keywords,
+        static Object pack(VirtualFrame frame, PStruct self, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached StructNodes.PackValueNode packValueNode) {
+                        @Cached StructNodes.PackValueNode packValueNode,
+                        @Cached PRaiseNode raiseNode) {
             if (keywords.length != 0) {
-                throw raise(TypeError, S_TAKES_NO_KEYWORD_ARGS, "pack()");
+                throw raiseNode.raise(inliningTarget, TypeError, S_TAKES_NO_KEYWORD_ARGS, "pack()");
             }
             if (args.length != self.getLen()) {
-                throw raise(StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, self.getLen(), args.length);
+                throw raiseNode.raise(inliningTarget, StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, self.getLen(), args.length);
             }
             byte[] bytes = new byte[self.getSize()];
             packInternal(frame, self, packValueNode, args, bytes, 0);
@@ -134,11 +136,11 @@ public class StructBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.PackValueNode packValueNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 final long size = self.getUnsignedSize();
                 if (args.length != self.getLen()) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, size, args.length);
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, size, args.length);
                 }
                 int bufferOffset = offset;
                 int bufferLen = bufferLib.getBufferLength(buffer);
@@ -154,12 +156,12 @@ public class StructBuiltins extends PythonBuiltins {
                 if (bufferOffset < 0) {
                     // Check that negative offset is low enough to fit data
                     if (bufferOffset + size > 0) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_NO_SPACE_TO_PACK_N_BYTES, size, bufferOffset);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_NO_SPACE_TO_PACK_N_BYTES, size, bufferOffset);
                     }
 
                     // Check that negative offset is not crossing buffer boundary
                     if (bufferOffset + bufferLen < 0) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_OFFSET_OUT_OF_RANGE, bufferOffset, bufferLen);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_OFFSET_OUT_OF_RANGE, bufferOffset, bufferLen);
                     }
 
                     bufferOffset += bufferLen;
@@ -170,7 +172,7 @@ public class StructBuiltins extends PythonBuiltins {
                     assert bufferOffset >= 0;
                     assert size >= 0;
 
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_PACK_INTO_REQ_BUFFER_TO_PACK, size + bufferOffset, size, bufferOffset, bufferLen);
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_PACK_INTO_REQ_BUFFER_TO_PACK, size + bufferOffset, size, bufferOffset, bufferLen);
                 }
 
                 // TODO: GR-54860 use buffer API in the packing process
@@ -208,12 +210,12 @@ public class StructBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int bytesLen = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 if (bytesLen != self.getSize()) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, UNPACK_REQ_A_BUFFER_OF_N_BYTES, self.getSize());
+                    throw raiseNode.raise(inliningTarget, StructError, UNPACK_REQ_A_BUFFER_OF_N_BYTES, self.getSize());
                 }
                 return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, 0));
             } finally {
@@ -239,14 +241,14 @@ public class StructBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (self.getSize() == 0) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0);
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0);
                 }
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 if (bufferLen % self.getSize() != 0) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES, self.getSize());
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES, self.getSize());
                 }
             } catch (Exception e) {
                 bufferLib.release(buffer, frame, indirectCallData);
@@ -279,7 +281,7 @@ public class StructBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int bufferOffset = offset;
                 int bytesLen = bufferLib.getBufferLength(buffer);
@@ -288,17 +290,17 @@ public class StructBuiltins extends PythonBuiltins {
                 final long size = self.getUnsignedSize();
                 if (bufferOffset < 0) {
                     if (bufferOffset + size > 0) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_NOT_ENOUGH_DATA_TO_UNPACK_N_BYTES, size, bufferOffset);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_NOT_ENOUGH_DATA_TO_UNPACK_N_BYTES, size, bufferOffset);
                     }
 
                     if (bufferOffset + bytesLen < 0) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_OFFSET_OUT_OF_RANGE, bufferOffset, bytesLen);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_OFFSET_OUT_OF_RANGE, bufferOffset, bytesLen);
                     }
                     bufferOffset += bytesLen;
                 }
 
                 if ((bytesLen - bufferOffset) < size) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES, size + bufferOffset, size, bufferOffset, bytesLen);
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES, size + bufferOffset, size, bufferOffset, bytesLen);
                 }
 
                 return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, bufferOffset));

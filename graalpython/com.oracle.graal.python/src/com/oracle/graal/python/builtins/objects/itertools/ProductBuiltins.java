@@ -120,7 +120,7 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile doneProfile,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object[][] gears = self.getGears();
             int x = gears.length - 1;
             if (gearsProfile.profile(inliningTarget, x >= 0)) {
@@ -140,7 +140,7 @@ public final class ProductBuiltins extends PythonBuiltins {
 
             if (self.isStopped()) {
                 wasStoppedProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
 
             // the existing lst array can be changed in a following next call
@@ -152,8 +152,8 @@ public final class ProductBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
         static Object nextStopped(PProduct self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         private static void rotatePreviousGear(Node inliningTarget, PProduct self, InlinedLoopConditionProfile loopProfile, InlinedBranchProfile doneProfile) {

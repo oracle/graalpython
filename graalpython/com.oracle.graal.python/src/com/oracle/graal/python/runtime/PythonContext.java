@@ -2737,13 +2737,13 @@ public final class PythonContext extends Python3Core {
 
     public void ensureLLVMLanguage(Node nodeForRaise) {
         if (!env.getInternalLanguages().containsKey(J_LLVM_LANGUAGE)) {
-            throw PRaiseNode.raiseUncached(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.LLVM_NOT_AVAILABLE);
+            throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.LLVM_NOT_AVAILABLE);
         }
     }
 
     public void ensureNFILanguage(Node nodeForRaise, String optionName, String optionValue) {
         if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
-            throw PRaiseNode.raiseUncached(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, optionName, optionValue);
+            throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, optionName, optionValue);
         }
     }
 

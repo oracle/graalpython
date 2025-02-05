@@ -127,8 +127,8 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
     public abstract static class TokenNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object construct(@SuppressWarnings("unused") Object cls,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ONLY_BY_CONTEXTVAR);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ONLY_BY_CONTEXTVAR);
         }
     }
 }

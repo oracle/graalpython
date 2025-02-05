@@ -316,7 +316,7 @@ public class CtypesNodes {
 
         @Specialization
         static CDataObject PyCData_FromBaseObj(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CreateCDataObjectNode createCDataObjectNode,
                         @Cached PyCDataMallocBufferNode mallocBufferNode,

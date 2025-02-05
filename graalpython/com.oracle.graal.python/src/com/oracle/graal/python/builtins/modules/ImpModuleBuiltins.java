@@ -350,7 +350,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached ExecModuleNode execModuleNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
             if (nativeModuleDef == null) {
                 return 0;
@@ -367,7 +367,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
             PythonContext context = PythonContext.get(inliningTarget);
             if (!context.hasCApiContext()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
             }
 
             /*
@@ -448,7 +448,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 return builtinModule;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("_imp.create_builtin"));
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("_imp.create_builtin"));
         }
     }
 
@@ -545,7 +545,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached InlinedConditionProfile isCodeObjectProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 try {
@@ -573,7 +573,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             }
 
             if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
             }
 
             return code;

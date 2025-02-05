@@ -349,7 +349,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
              * Returns a new PyObject representation of the term.
              */
             if (idx < 0) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.IDX_CANNOT_BE_NEG);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.IDX_CANNOT_BE_NEG);
             }
             int length = string.length();
             if (idx >= length) {
@@ -431,7 +431,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         StringBuilder builder = null;
 
         if (start < 0 || start > string.length()) {
-            throw PRaiseNode.raiseUncached(raisingNode, PythonBuiltinClassType.ValueError, ErrorMessages.END_IS_OUT_OF_BOUNDS);
+            throw PRaiseNode.raiseStatic(raisingNode, PythonBuiltinClassType.ValueError, ErrorMessages.END_IS_OUT_OF_BOUNDS);
         }
         int idx = start;
         while (idx < string.length()) {

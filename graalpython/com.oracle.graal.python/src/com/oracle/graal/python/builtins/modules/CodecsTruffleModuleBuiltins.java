@@ -432,7 +432,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
             PTuple codecInfo = lookupNode.execute(frame, inliningTarget, encoding);
             Object isTextObj = getAttributeNode.execute(frame, inliningTarget, codecInfo, T_IS_TEXT_ENCODING);
             if (!((isTextObj instanceof Boolean) && (boolean) isTextObj)) {
-                throw raiseNode.raise(LookupError, IS_NOT_TEXT_ENCODING, encoding, alternateCommand);
+                throw raiseNode.raise(inliningTarget, LookupError, IS_NOT_TEXT_ENCODING, encoding, alternateCommand);
             }
             return codecInfo;
         }

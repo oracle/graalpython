@@ -87,8 +87,8 @@ public final class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isExhausted()")
         static Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -96,7 +96,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceGetItemNode getItemNode,
                         @Cached IsBuiltinObjectProfile profile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.index >= 0) {
                 try {
                     return getItemNode.execute(frame, self.getObject(), self.index--);
@@ -105,19 +105,19 @@ public final class ReversedBuiltins extends PythonBuiltins {
                 }
             }
             self.setExhausted();
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(PStringReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.SubstringNode substringNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.index >= 0) {
                 return substringNode.execute(self.value, self.index--, 1, TS_ENCODING, false);
             }
             self.setExhausted();
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
     }
 
@@ -149,10 +149,10 @@ public final class ReversedBuiltins extends PythonBuiltins {
         static int lengthHint(PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.LenNode lenNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int len = lenNode.execute(inliningTarget, self.getPSequence());
             if (len == -1) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, OBJ_HAS_NO_LEN, self);
+                throw raiseNode.raise(inliningTarget, TypeError, OBJ_HAS_NO_LEN, self);
             }
             if (len < self.index) {
                 return 0;

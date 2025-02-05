@@ -154,7 +154,7 @@ public abstract class CodeNodes {
 
         @SuppressWarnings("static-method")
         private RootCallTarget deserializeForBytecodeInterpreter(PythonContext context, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {
-            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(context, data);
+            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(null, context, data);
             if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars)) {
                 code = new CodeUnit(code.name, code.qualname, code.argCount, code.kwOnlyArgCount, code.positionalOnlyArgCount, code.stacksize, code.code,
                                 code.srcOffsetTable, code.flags, code.names, code.varnames,

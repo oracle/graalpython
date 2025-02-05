@@ -147,8 +147,8 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isInit(self)")
         static Object error(VirtualFrame frame, PRWPair self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_UNINIT);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_UNINIT);
         }
     }
 
@@ -161,8 +161,8 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isInit(self)")
         static Object error(VirtualFrame frame, PRWPair self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_UNINIT);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_UNINIT);
         }
     }
 
@@ -175,8 +175,8 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isInit(self)")
         static Object error(VirtualFrame frame, PRWPair self, Object arg,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_UNINIT);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_UNINIT);
         }
     }
 
@@ -189,8 +189,8 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isInit(self)")
         static Object error(VirtualFrame frame, PRWPair self, Object arg,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, IO_UNINIT);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_UNINIT);
         }
     }
 
@@ -305,7 +305,7 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile gotException,
                         @Cached InlinedBranchProfile hasException,
                         @Cached PyErrChainExceptions chainExceptions,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PException writeEx = null;
             if (self.getWriter() != null) {
                 try {
@@ -315,7 +315,7 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
                     writeEx = e;
                 }
             } else {
-                writeEx = raiseNode.get(inliningTarget).raise(ValueError, IO_UNINIT);
+                writeEx = raiseNode.raise(inliningTarget, ValueError, IO_UNINIT);
             }
 
             PException readEx;
@@ -330,7 +330,7 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
                     readEx = e;
                 }
             } else {
-                readEx = raiseNode.get(inliningTarget).raise(ValueError, IO_UNINIT);
+                readEx = raiseNode.raise(inliningTarget, ValueError, IO_UNINIT);
             }
 
             hasException.enter(inliningTarget);
@@ -379,8 +379,8 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static Object error(VirtualFrame frame, Object self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(RuntimeError, THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED, "BufferedRWPair");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, RuntimeError, THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED, "BufferedRWPair");
         }
     }
 }

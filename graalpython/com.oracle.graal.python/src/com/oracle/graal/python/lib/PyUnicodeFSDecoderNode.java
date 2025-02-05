@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,7 +110,7 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
 
     private static TruffleString checkString(Node raisingNode, TruffleString str, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
         if (byteIndexOfCodePointNode.execute(str, 0, 0, str.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
-            throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
         }
         return str;
     }

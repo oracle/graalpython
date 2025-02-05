@@ -116,8 +116,8 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "!checkCallableNode.execute(this, callable)")
         static PNone noCallble(@SuppressWarnings("unused") PDecoratedMethod self, Object callable,
                         @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);
         }
     }
 

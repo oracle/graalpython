@@ -91,8 +91,8 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static TruffleString setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
         }
     }
 
@@ -106,8 +106,8 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static TruffleString setQualname(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
         }
     }
 
@@ -117,8 +117,8 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
         static Object objclassMissing(@SuppressWarnings("unused") PBuiltinFunction self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")
@@ -151,7 +151,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         static Object doIt(PBuiltinFunction fun,
                         @Bind("this") Node inliningTarget) {
             if (fun.getSignature().isHidden()) {
-                throw PRaiseNode.raiseUncached(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
             }
             return createInspectSignature(fun.getSignature(), false);
         }

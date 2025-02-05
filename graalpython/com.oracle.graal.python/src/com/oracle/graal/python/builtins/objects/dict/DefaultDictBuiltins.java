@@ -151,9 +151,8 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class MissingNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNone(self.getDefaultFactory())")
         static Object doNoFactory(@SuppressWarnings("unused") PDefaultDict self, Object key,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, new Object[]{key});
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.KeyError, new Object[]{key});
         }
 
         @Specialization(guards = "!isNone(self.getDefaultFactory())")
@@ -175,13 +174,13 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached DictBuiltins.InitNode dictInitNode,
                         @Cached PyCallableCheckNode callableCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object[] newArgs = args;
             Object newDefault = PNone.NONE;
             if (newArgs.length > 0) {
                 newDefault = newArgs[0];
                 if (newDefault != PNone.NONE && !callableCheckNode.execute(inliningTarget, newDefault)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
+                    throw raiseNode.raise(inliningTarget, TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
                 }
                 newArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
             }
@@ -216,7 +215,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached CallNode callNode,
                         @Cached DictNodes.UpdateNode updateNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PDefaultDict dd = (PDefaultDict) (self instanceof PDefaultDict ? self : other);
             Object type = getClassNode.execute(inliningTarget, dd);
             Object result = callNode.execute(frame, type, dd.getDefaultFactory(), self);
@@ -225,7 +224,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
                 return result;
             } else {
                 /* Cpython doesn't check for this and ends up with SystemError */
-                throw raiseNode.get(inliningTarget).raise(TypeError);
+                throw raiseNode.raise(inliningTarget, TypeError);
             }
         }
 

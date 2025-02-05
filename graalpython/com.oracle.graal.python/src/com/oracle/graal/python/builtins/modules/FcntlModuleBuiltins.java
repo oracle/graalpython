@@ -153,7 +153,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PyLongAsLongNode asLongNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(inliningTarget, "fcntl.lockf", fd, code, lenObj != PNone.NO_VALUE ? lenObj : PNone.NONE, startObj != PNone.NO_VALUE ? startObj : PNone.NONE, whence);
             int lockType;
@@ -164,7 +164,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
             } else if ((code & LOCK_EX.value) != 0) {
                 lockType = F_WRLCK.getValueIfDefined();
             } else {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNRECOGNIZED_LOCKF_ARGUMENT);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNRECOGNIZED_LOCKF_ARGUMENT);
             }
             long start = 0;
             if (startObj != PNone.NO_VALUE) {
@@ -209,7 +209,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Cached GilNode gilNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit(inliningTarget, "fcnt.ioctl", fd, request, arg);
@@ -249,7 +249,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                                     }
                                 } else {
                                     if (len > IOCTL_BUFSZ) {
-                                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
                                     }
                                 }
                                 if (ioctlArg == null) {
@@ -285,7 +285,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         stringArg = switchEncodingNode.execute(stringArg, utf8);
                         int len = stringArg.byteLength(utf8);
                         if (len > IOCTL_BUFSZ) {
-                            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
                         }
                         byte[] ioctlArg = new byte[len + 1];
                         copyToByteArrayNode.execute(stringArg, 0, ioctlArg, 0, len, utf8);

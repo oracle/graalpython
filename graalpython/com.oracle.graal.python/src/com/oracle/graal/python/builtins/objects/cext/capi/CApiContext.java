@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1115,7 +1115,7 @@ public final class CApiContext extends CExtContext {
             interopLib = InteropLibrary.getUncached(library);
             try {
                 if (interopLib.getLanguage(library).toString().startsWith("class com.oracle.truffle.nfi")) {
-                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.SystemError, ErrorMessages.NO_BITCODE_FOUND, spec.path);
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -1297,7 +1297,7 @@ public final class CApiContext extends CExtContext {
              */
             Object clazz = GetClassNode.executeUncached(result);
             if (clazz == PNone.NO_VALUE) {
-                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
+                throw PRaiseNode.raiseStatic(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
             return CreateModuleNodeGen.getUncached().execute(cApiContext, spec, result, sharedLibrary);

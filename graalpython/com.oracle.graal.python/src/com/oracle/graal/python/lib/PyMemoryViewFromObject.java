@@ -89,7 +89,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     @Specialization
     static PMemoryView fromMemoryView(PMemoryView object,
                     @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         object.checkReleased(inliningTarget, raiseNode);
         PythonContext context = PythonContext.get(inliningTarget);
         return PFactory.createMemoryView(context.getLanguage(inliningTarget), context, object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
@@ -110,7 +110,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached PyMemoryViewFromObject recursive,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         /*
          * PickleBuffer is just a buffer proxy for other objects, including native objects or other
          * memoryviews, we need to process the delegate recursively.
@@ -120,7 +120,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
             owner = bufferLib.getOwner(object.getView());
         }
         if (owner == null) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
         }
         return recursive.execute(frame, owner);
     }
@@ -140,7 +140,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
                     @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                     @Cached TruffleString.CodePointLengthNode lengthNode,
                     @Cached TruffleString.CodePointAtIndexNode atIndexNode,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         Object typeObj = getClassNode.execute(inliningTarget, object);
         assert typeObj instanceof PythonBuiltinClassType || typeObj instanceof PythonAbstractObject;
         PythonAbstractObject type;
@@ -190,7 +190,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
                             bufferLib.isReadonly(buffer),
                             bufferLib.getFormatString(buffer), lengthNode, atIndexNode);
         } else {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
         }
     }
 

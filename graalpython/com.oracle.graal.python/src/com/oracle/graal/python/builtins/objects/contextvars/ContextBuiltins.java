@@ -101,7 +101,7 @@ public final class ContextBuiltins extends PythonBuiltins {
         @Specialization
         Object get(PContextVarsContext self, Object key,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raise) {
+                        @Cached PRaiseNode raise) {
             return getContextVar(inliningTarget, self, key, null, raise);
         }
     }
@@ -154,7 +154,7 @@ public final class ContextBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached CallNode call,
-                        @Cached PRaiseNode.Lazy raise) {
+                        @Cached PRaiseNode raise) {
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             self.enter(inliningTarget, threadState, raise);
             try {
@@ -185,7 +185,7 @@ public final class ContextBuiltins extends PythonBuiltins {
         Object doGetDefault(PContextVarsContext self, Object key, Object def,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile noValueProfile,
-                        @Cached PRaiseNode.Lazy raise) {
+                        @Cached PRaiseNode raise) {
             Object defVal = noValueProfile.profile(inliningTarget, isNoValue(def)) ? PNone.NONE : def;
             return getContextVar(inliningTarget, self, key, defVal, raise);
         }
@@ -197,20 +197,21 @@ public final class ContextBuiltins extends PythonBuiltins {
     public abstract static class Contains extends PythonBuiltinNode {
         @Specialization
         boolean doIn(PContextVarsContext self, Object key,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raise) {
             if (key instanceof PContextVar var) {
                 return self.contextVarValues.lookup(var, var.getHash()) != null;
             }
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
+            throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
         }
     }
 
-    private static Object getContextVar(Node inliningTarget, PContextVarsContext self, Object key, Object def, PRaiseNode.Lazy raise) {
+    private static Object getContextVar(Node inliningTarget, PContextVarsContext self, Object key, Object def, PRaiseNode raise) {
         if (key instanceof PContextVar ctxVar) {
             Object value = self.contextVarValues.lookup(key, ctxVar.getHash());
             if (value == null) {
                 if (def == null) {
-                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, new Object[]{key});
+                    throw raise.raise(inliningTarget, PythonBuiltinClassType.KeyError, new Object[]{key});
                 } else {
                     return def;
                 }
@@ -218,7 +219,7 @@ public final class ContextBuiltins extends PythonBuiltins {
                 return value;
             }
         } else {
-            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
+            throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CONTEXTVAR_KEY_EXPECTED, key);
         }
     }
 }

@@ -264,10 +264,10 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
         @Specialization
         static Object doRelease(PGraalPySemLock self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.getKind() == PGraalPySemLock.RECURSIVE_MUTEX) {
                 if (!self.isMine()) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
                 }
                 if (self.getCount() > 1) {
                     self.decreaseCount();

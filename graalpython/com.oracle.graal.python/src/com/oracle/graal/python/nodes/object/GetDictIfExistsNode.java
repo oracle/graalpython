@@ -144,7 +144,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
                 return dict;
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, dictObject);
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, dictObject);
             }
         }
     }

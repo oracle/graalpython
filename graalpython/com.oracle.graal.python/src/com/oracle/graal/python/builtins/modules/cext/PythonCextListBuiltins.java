@@ -98,8 +98,8 @@ public final class PythonCextListBuiltins {
     abstract static class PyList_New extends CApiUnaryBuiltinNode {
         @Specialization(guards = "size < 0")
         static Object newListError(long size,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
         }
 
         @SuppressWarnings("unused")
@@ -132,11 +132,11 @@ public final class PythonCextListBuiltins {
                         @Cached ListGeneralizationNode generalizationNode,
                         @Cached SetItemScalarNode setItemNode,
                         @Cached GetItemScalarNode getItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage sequenceStorage = list.getSequenceStorage();
             // we must do a bounds-check but we must not normalize the index
             if (key < 0 || key >= sequenceStorage.length()) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
             }
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, (int) key);
             Object promotedValue = promoteNode.execute(inliningTarget, result);

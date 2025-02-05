@@ -91,10 +91,9 @@ public abstract class PrepareExceptionNode extends Node {
 
     @Specialization(guards = {"check.execute(inliningTarget, exc)", "!isPNone(value)"})
     static Object doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
+                    @Bind("this") Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
     @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isPTuple(value)"}, limit = "1")
@@ -107,7 +106,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type, isSubtypeNode, raiseNode);
+        checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         if (isInstanceProfile.profile(inliningTarget, isInstanceNode.executeWith(frame, value, type))) {
             return value;
         } else {
@@ -128,7 +127,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type, isSubtypeNode, raiseNode);
+        checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         Object instance = callConstructor.execute(frame, type);
         if (check.execute(inliningTarget, instance)) {
             return instance;
@@ -146,7 +145,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type, isSubtypeNode, raiseNode);
+        checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         Object[] args = getObjectArrayNode.execute(inliningTarget, value);
         Object instance = callConstructor.execute(frame, type, args);
         if (check.execute(inliningTarget, instance)) {
@@ -159,9 +158,8 @@ public abstract class PrepareExceptionNode extends Node {
     @Specialization(guards = "fallbackGuard(type, inliningTarget, isTypeNode)", limit = "1")
     static Object doError(Object type, @SuppressWarnings("unused") Object value,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
+                    @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
     }
 
     static boolean fallbackGuard(Object type, Node inliningTarget, IsTypeNode isTypeNode) {
@@ -176,9 +174,9 @@ public abstract class PrepareExceptionNode extends Node {
         return PFactory.createBaseException(PythonLanguage.get(null), TypeError, ErrorMessages.CALLING_N_SHOULD_HAVE_RETURNED_AN_INSTANCE_OF_BASE_EXCEPTION_NOT_P, new Object[]{type, instance});
     }
 
-    private static void checkExceptionClass(Object type, IsSubtypeNode isSubtypeNode, PRaiseNode raiseNode) {
+    private static void checkExceptionClass(Node inliningTarget, Object type, IsSubtypeNode isSubtypeNode, PRaiseNode raiseNode) {
         if (!isSubtypeNode.execute(type, PythonBuiltinClassType.PBaseException)) {
-            throw raiseNode.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
         }
     }
 }

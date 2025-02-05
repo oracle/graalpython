@@ -136,7 +136,7 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (self.didWriteEOF()) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSL_CANNOT_WRITE_AFTER_EOF);
@@ -147,7 +147,7 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
                     self.write(bytes, len);
                     return len;
                 } catch (OverflowException | OutOfMemoryError e) {
-                    throw raiseNode.get(inliningTarget).raise(MemoryError);
+                    throw raiseNode.raise(inliningTarget, MemoryError);
                 }
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);

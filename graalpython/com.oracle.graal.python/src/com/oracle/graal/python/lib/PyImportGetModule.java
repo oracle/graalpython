@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,10 +70,10 @@ public abstract class PyImportGetModule extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached InlinedConditionProfile noSysModulesProfile,
                     @Cached(inline = false) DictBuiltins.GetItemNode getDictItemNode,
-                    @Cached PRaiseNode.Lazy raise) {
+                    @Cached PRaiseNode raise) {
         final PDict sysModules = PythonContext.get(node).getSysModules();
         if (noSysModulesProfile.profile(inliningTarget, sysModules == null)) {
-            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, UNABLE_TO_GET_S, "sys.modules");
+            throw raise.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, UNABLE_TO_GET_S, "sys.modules");
         }
         return getDictItemNode.execute(frame, sysModules, name);
     }

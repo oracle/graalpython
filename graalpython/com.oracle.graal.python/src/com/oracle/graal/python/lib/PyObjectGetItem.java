@@ -157,7 +157,7 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                         @Cached PyObjectLookupAttr lookupClassGetItem,
                         @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
                         @Cached(inline = false) CallNode callClassGetItem,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (isTypeNode.execute(inliningTarget, maybeType)) {
                 Object classGetitem = lookupClassGetItem.execute(frame, inliningTarget, maybeType, T___CLASS_GETITEM__);
                 if (!(classGetitem instanceof PNone)) {
@@ -167,9 +167,9 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                     // Special case type[int], but disallow other types so str[int] fails
                     return PFactory.createGenericAlias(PythonLanguage.get(inliningTarget), maybeType, key);
                 }
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_NOT_SUBSCRIPTABLE, maybeType);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_NOT_SUBSCRIPTABLE, maybeType);
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, maybeType);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, maybeType);
         }
     }
 

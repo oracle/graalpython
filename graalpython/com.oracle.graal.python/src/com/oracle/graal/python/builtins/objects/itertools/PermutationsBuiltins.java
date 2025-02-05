@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
@@ -105,9 +106,9 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isStopped()")
         static Object next(PPermutations self,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             self.setRaisedStopIteration(true);
-            throw raiseNode.raiseStopIteration();
+            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
         }
 
         @Specialization(guards = "!self.isStopped()")
@@ -119,7 +120,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile mainLoopProfile,
                         @Cached InlinedLoopConditionProfile shiftIndicesProfile,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int r = self.getR();
 
             int[] indices = self.getIndices();
@@ -156,7 +157,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
             self.setStopped(true);
             if (isStartedProfile.profile(inliningTarget, self.isStarted())) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, StopIteration);
             } else {
                 self.setStarted(true);
             }
@@ -210,16 +211,16 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile cyclesProfile,
                         @Cached CastToJavaBooleanNode castBoolean,
                         @Cached CastToJavaIntExactNode castInt,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (sizeNode.execute(frame, inliningTarget, state) != 3) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
                 }
                 Object indices = getItemNode.execute(frame, state, 0);
                 Object cycles = getItemNode.execute(frame, state, 1);
                 int poolLen = self.getPool().length;
                 if (sizeNode.execute(frame, inliningTarget, indices) != poolLen || sizeNode.execute(frame, inliningTarget, cycles) != self.getR()) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
                 }
 
                 self.setStarted(castBoolean.execute(inliningTarget, getItemNode.execute(frame, state, 2)));
@@ -247,7 +248,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
                 return PNone.NONE;
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
         }
     }

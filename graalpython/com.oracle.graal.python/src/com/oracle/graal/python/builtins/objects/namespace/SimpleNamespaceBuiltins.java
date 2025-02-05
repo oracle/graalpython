@@ -121,10 +121,12 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class SimpleNamespaceInitNode extends PythonVarargsBuiltinNode {
         @Specialization
-        Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
-                        @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
+        static Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Cached WriteAttributeToPythonObjectNode writeAttrNode,
+                        @Cached PRaiseNode raiseNode) {
             if (args.length > 0) {
-                throw raise(PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
             }
             for (PKeyword keyword : kwargs) {
                 writeAttrNode.execute(self, keyword.getName(), keyword.getValue());
@@ -233,7 +235,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                 try {
                     return castStr.execute(inliningTarget, reprObj);
                 } catch (CannotCastException e) {
-                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprObj);
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprObj);
                 }
             }
 

@@ -119,9 +119,8 @@ public abstract class ListNodes {
         }
 
         @Fallback
-        static SequenceStorage doFallback(Node inliningTarget, Object seq,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "list", seq);
+        static SequenceStorage doFallback(Node inliningTarget, Object seq) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "list", seq);
         }
     }
 

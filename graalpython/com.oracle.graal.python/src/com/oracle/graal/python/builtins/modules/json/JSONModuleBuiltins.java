@@ -126,7 +126,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int len = string.byteLength(TS_ENCODING);
                 // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
@@ -134,7 +134,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                 JSONUtils.appendString(string, createCodePointIteratorNode.execute(string, TS_ENCODING), builder, false, nextNode, appendCodePointNode, appendStringNode, substringNode);
                 return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
         }
 
@@ -162,7 +162,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int len = string.byteLength(TS_ENCODING);
                 // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
@@ -171,7 +171,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                                 nextNode, appendCodePointNode, appendStringNode, substringNode);
                 return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
         }
     }
@@ -226,7 +226,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
         PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator, boolean sortKeys,
                         boolean skipKeys, boolean allowNan) {
             if (markers != PNone.NONE && !(markers instanceof PDict)) {
-                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
+                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
             }
 
             FastEncode fastEncode = FastEncode.None;

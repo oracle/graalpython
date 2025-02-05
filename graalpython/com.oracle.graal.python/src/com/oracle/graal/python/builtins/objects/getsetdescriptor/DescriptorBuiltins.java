@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -142,10 +142,10 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         static void check(Node inliningTarget, Object descrType, Object name, Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) IsSubtypeNode isSubtypeNode,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
             if (!isSubtypeNode.execute(type, descrType)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.DESC_S_FOR_N_DOESNT_APPLY_TO_N, name, descrType, type);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESC_S_FOR_N_DOESNT_APPLY_TO_N, name, descrType, type);
             }
         }
     }
@@ -158,27 +158,27 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached GetNameNode getNameNode,
                         @Cached CallUnaryMethodNode callNode) {
             if (descr.getGet() != null) {
                 return callNode.executeObject(frame, descr.getGet(), obj);
             } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_READABLE, descr.getName(), getNameNode.execute(inliningTarget, descr.getType()));
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_READABLE, descr.getName(), getNameNode.execute(inliningTarget, descr.getType()));
             }
         }
 
         @Specialization
         Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached GetOrCreateIndexedSlots getSlotsNode) {
             Object[] slots = getSlotsNode.execute(inliningTarget, obj);
             Object val = slots[descr.getIndex()];
             if (val != null) {
                 return val;
             }
-            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getName());
+            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getName());
         }
     }
 
@@ -190,12 +190,12 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
                         @Bind("this") Node inliningTarget,
                         @Cached GetNameNode getNameNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached CallBinaryMethodNode callNode) {
             if (descr.getSet() != null) {
                 return callNode.executeObject(frame, descr.getSet(), obj, value);
             } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, descr.getName(), getNameNode.execute(inliningTarget, descr.getType()));
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, descr.getName(), getNameNode.execute(inliningTarget, descr.getType()));
             }
         }
 
@@ -215,7 +215,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached GetNameNode getNameNode,
                         @Cached CallBinaryMethodNode callNode,
                         @Cached InlinedBranchProfile branchProfile) {
@@ -224,9 +224,9 @@ public final class DescriptorBuiltins extends PythonBuiltins {
             } else {
                 branchProfile.enter(inliningTarget);
                 if (descr.getSet() != null) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getNameNode.execute(inliningTarget, descr.getType()), descr.getName());
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getNameNode.execute(inliningTarget, descr.getType()), descr.getName());
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, descr.getName(), obj);
+                    throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, descr.getName(), obj);
                 }
             }
         }
@@ -234,7 +234,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         @Specialization
         Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached GetOrCreateIndexedSlots getSlotsNode,
                         @Cached InlinedConditionProfile profile) {
             // PyMember_SetOne - Check if the attribute is set.
@@ -243,7 +243,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
                 slots[descr.getIndex()] = null;
                 return PNone.NONE;
             }
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getName());
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.S, descr.getName());
         }
     }
 

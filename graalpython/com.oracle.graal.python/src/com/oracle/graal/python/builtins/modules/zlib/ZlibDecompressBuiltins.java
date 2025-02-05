@@ -115,13 +115,13 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached DecompressInnerNode innerNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (!self.isInitialized()) {
-                    throw raiseNode.get(inliningTarget).raise(ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while decompressing data", "inconsistent stream state");
+                    throw raiseNode.raise(inliningTarget, ZLibError, ERROR_D_S_S, Z_STREAM_ERROR, "while decompressing data", "inconsistent stream state");
                 }
                 if (maxLength < 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_GREATER_THAN_ZERO, "max_length");
+                    throw raiseNode.raise(inliningTarget, ValueError, S_MUST_BE_GREATER_THAN_ZERO, "max_length");
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -188,15 +188,15 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isInitialized()", "!self.canCopy()"})
         static PNone error(ZLibCompObject.JavaZlibCompObject self,
-                        @Cached.Shared @Cached(inline = false) PRaiseNode raise) {
-            throw raise.raise(NotImplementedError, toTruffleStringUncached("JDK based zlib doesn't support copying"));
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("JDK based zlib doesn't support copying"));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isInitialized()")
         static PNone error(ZLibCompObject self,
-                        @Cached.Shared @Cached(inline = false) PRaiseNode raise) {
-            throw raise.raise(ValueError, INCONSISTENT_STREAM_STATE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INCONSISTENT_STREAM_STATE);
         }
     }
 
@@ -295,8 +295,8 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "length <= 0")
         static PBytes error(ZLibCompObject self, int length,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, S_MUST_BE_GREATER_THAN_ZERO, "length");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, S_MUST_BE_GREATER_THAN_ZERO, "length");
         }
     }
 

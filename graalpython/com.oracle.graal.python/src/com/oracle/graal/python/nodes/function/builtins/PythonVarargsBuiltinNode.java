@@ -40,15 +40,10 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Subclasses must override {@link #varArgExecute(VirtualFrame, Object, Object[], PKeyword[])} to
@@ -56,28 +51,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  * for them, otherwise they will never be on the direct call path.
  */
 public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
-
-    @Child private PRaiseNode raiseNode;
-
-    protected final PRaiseNode getRaiseNode() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                raiseNode = insert(PRaiseNode.create());
-            } else {
-                raiseNode = PRaiseNode.getUncached();
-            }
-        }
-        return raiseNode;
-    }
-
-    public PException raise(PythonBuiltinClassType type, TruffleString string) {
-        return getRaiseNode().raise(type, string);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
-        return getRaiseNode().raise(type, format, arguments);
-    }
 
     public static final class VarargsBuiltinDirectInvocationNotSupported extends ControlFlowException {
         public static final VarargsBuiltinDirectInvocationNotSupported INSTANCE = new VarargsBuiltinDirectInvocationNotSupported();

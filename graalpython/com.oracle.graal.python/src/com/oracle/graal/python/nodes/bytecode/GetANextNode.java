@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -91,14 +91,14 @@ public abstract class GetANextNode extends PNodeWithContext {
         Object getter = getANext.execute(frame, type, receiver);
         if (getter == PNone.NO_VALUE) {
             errorProfile.enter(inliningTarget);
-            throw raiseNoANext.raise(PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_ITERATION, receiver);
+            throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_ITERATION, receiver);
         }
         Object anext = callANext.executeObject(frame, getter, receiver);
         try {
             return getAwaitable.execute(frame, anext);
         } catch (PException e) {
             errorProfile.enter(inliningTarget);
-            throw raiseInvalidObject.raiseWithCause(PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, anext);
+            throw raiseInvalidObject.raiseWithCause(inliningTarget, PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, anext);
         }
     }
 }

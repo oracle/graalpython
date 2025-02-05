@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -124,12 +124,12 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
 
     @Specialization
     public static int doLongExact(Node inliningTarget, long object, PythonBuiltinClassType errorClass,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         int converted = (int) object;
         if (object == converted) {
             return converted;
         }
-        throw raiseNode.get(inliningTarget).raise(errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
+        throw raiseNode.raise(inliningTarget, errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
     }
 
     @Specialization
@@ -157,13 +157,13 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
         static int doObjectExact(VirtualFrame frame, Object object, PythonBuiltinClassType errorClass,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached PyNumberIndexNode indexNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached CastToJavaIntExactNode cast) {
             Object index = indexNode.execute(frame, inliningTarget, object);
             try {
                 return cast.execute(inliningTarget, index);
             } catch (PException pe) {
-                throw raiseNode.get(inliningTarget).raise(errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
+                throw raiseNode.raise(inliningTarget, errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
             } catch (CannotCastException cannotCastException) {
                 throw CompilerDirectives.shouldNotReachHere("PyNumberIndexNode didn't return a python integer");
             }

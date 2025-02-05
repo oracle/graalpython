@@ -189,7 +189,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         }
         Object egObj = PyObjectCallMethodObjArgs.executeUncached(orig, T_DERIVE, PFactory.createTuple(PythonLanguage.get(null), exceptions));
         if (!(egObj instanceof PBaseExceptionGroup eg)) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.DERIVE_MUST_RETURN_AN_INSTANCE_OF_BASE_EXCEPTION_GROUP);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DERIVE_MUST_RETURN_AN_INSTANCE_OF_BASE_EXCEPTION_GROUP);
         }
         Object tb = ExceptionNodes.GetTracebackNode.executeUncached(orig);
         if (tb instanceof PTraceback) {
@@ -230,12 +230,12 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
             for (int i = 0; i < storage.length(); i++) {
                 Object elem = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
                 if (!isExceptionTypeUncached(elem)) {
-                    throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES);
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES);
                 }
             }
             return MatcherType.BY_TYPE;
         }
-        throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES);
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES);
     }
 
     private static boolean isExceptionTypeUncached(Object value) {

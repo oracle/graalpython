@@ -111,6 +111,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PicklerNodes {
@@ -164,30 +165,21 @@ public final class PicklerNodes {
         @Child private HashingStorageIteratorNext hashingStorageItNext;
         @Child private HashingStorageIteratorKey hashingStorageItKey;
         @Child private HashingStorageIteratorValue hashingStorageItValue;
-        @Child private PRaiseNode raiseNode;
-
-        protected final PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                if (isAdoptable()) {
-                    raiseNode = insert(PRaiseNode.create());
-                } else {
-                    raiseNode = PRaiseNode.getUncached();
-                }
-            }
-            return raiseNode;
-        }
+        private final BranchProfile errorProfile = BranchProfile.create();
 
         protected PException raise(PythonBuiltinClassType type, TruffleString string) {
-            return getRaiseNode().raise(type, string);
+            errorProfile.enter();
+            return PRaiseNode.raiseStatic(this, type, string);
         }
 
         protected PException raise(PythonBuiltinClassType exceptionType) {
-            return getRaiseNode().raise(exceptionType);
+            errorProfile.enter();
+            return PRaiseNode.raiseStatic(this, exceptionType);
         }
 
         protected final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
-            return getRaiseNode().raise(type, format, arguments);
+            errorProfile.enter();
+            return PRaiseNode.raiseStatic(this, type, format, arguments);
         }
 
         protected TruffleString.FromByteArrayNode ensureTsFromByteArray() {

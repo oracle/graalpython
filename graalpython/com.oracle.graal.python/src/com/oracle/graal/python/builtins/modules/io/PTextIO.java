@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -424,12 +424,12 @@ public final class PTextIO extends PTextIOBase {
             return IntNodes.PyLongFromByteArray.executeUncached(buffer, true, false);
         }
 
-        public static CookieType parse(long v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode.Lazy raise) {
+        public static CookieType parse(long v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode raise) {
             byte[] buffer = IntBuiltins.ToBytesNode.fromLong(v, COOKIE_BUF_LEN, false, false, inliningTarget, overflow, raise);
             return parse(buffer);
         }
 
-        public static CookieType parse(PInt v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode.Lazy raise) {
+        public static CookieType parse(PInt v, Node inliningTarget, InlinedConditionProfile overflow, PRaiseNode raise) {
             byte[] buffer = IntBuiltins.ToBytesNode.fromBigInteger(v, COOKIE_BUF_LEN, false, false, inliningTarget, overflow, raise);
             return parse(buffer);
         }

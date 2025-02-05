@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.nodes.arrow.release_callback;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ARROW_SCHEMA_ALREADY_RELEASED;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -50,9 +53,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.ARROW_SCHEMA_ALREADY_RELEASED;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 @GenerateCached(false)
 @GenerateInline
 @GenerateUncached
@@ -62,9 +62,9 @@ public abstract class ArrowSchemaReleaseCallbackNode extends Node {
 
     @Specialization
     static void release(Node inliningTarget, ArrowSchema arrowSchema,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         if (arrowSchema.isReleased()) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ARROW_SCHEMA_ALREADY_RELEASED);
+            throw raiseNode.raise(inliningTarget, ValueError, ARROW_SCHEMA_ALREADY_RELEASED);
         }
         var unsafe = PythonContext.get(inliningTarget).getUnsafe();
         /*

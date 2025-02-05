@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -232,7 +232,7 @@ public abstract class HashingStorage {
                         @Shared @Cached PyObjectGetItem getItemNode,
                         @Cached FastConstructListNode createListNode,
                         @Cached LenNode seqLenNode,
-                        @Cached PRaiseNode.Lazy raise,
+                        @Cached PRaiseNode raise,
                         @Cached InlinedConditionProfile lengthTwoProfile,
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile) throws PException {
             Object it = getIter.execute(frame, inliningTarget, iterable);
@@ -248,7 +248,7 @@ public abstract class HashingStorage {
                     len = seqLenNode.execute(inliningTarget, element);
 
                     if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
-                        throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
+                        throw raise.raise(inliningTarget, ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
                     }
                     Object key = getItemNode.execute(frame, inliningTarget, element, 0);
                     Object value = getItemNode.execute(frame, inliningTarget, element, 1);
@@ -257,7 +257,7 @@ public abstract class HashingStorage {
             } catch (PException e) {
                 if (!lengthTwoProfile.profile(inliningTarget, len != 2) &&
                                 isTypeErrorProfile.profileException(inliningTarget, e, TypeError)) {
-                    throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
+                    throw raise.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
                 }
                 throw e;
             }

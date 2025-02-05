@@ -129,17 +129,17 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
                         @Cached LenNode lenNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         @Cached InlinedBranchProfile numreadLCProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int numread = (int) lenNode.execute(frame, values);
             if (numread == LINKCELLS) {
                 numreadLCProfile.enter(inliningTarget);
                 if (!(nxt instanceof PTeeDataObject)) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_S, "_tee_dataobject next link", "_tee_dataobject");
+                    throw raiseNode.raise(inliningTarget, ValueError, S_MUST_BE_S, "_tee_dataobject next link", "_tee_dataobject");
                 }
             } else if (numread > LINKCELLS) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS, LINKCELLS);
+                throw raiseNode.raise(inliningTarget, ValueError, TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS, LINKCELLS);
             } else if (!(nxt instanceof PNone)) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, TDATAOBJECT_SHOULDNT_HAVE_NEXT);
+                throw raiseNode.raise(inliningTarget, ValueError, TDATAOBJECT_SHOULDNT_HAVE_NEXT);
             }
             self.setIt(it);
             Object[] valuesArray = getInternalObjectArrayNode.execute(inliningTarget, values.getSequenceStorage());
@@ -155,8 +155,8 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isList(values)", "!isNone(values)"})
         static Object init(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);
         }
     }
 

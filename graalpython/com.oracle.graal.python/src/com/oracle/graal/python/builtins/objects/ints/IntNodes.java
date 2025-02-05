@@ -150,26 +150,26 @@ public final class IntNodes {
 
         @Specialization
         static byte[] doArbitraryBytesLong(Node inliningTarget, long value, int size, boolean bigEndian,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             try {
                 support.putBigInteger(bytes, 0, PInt.longToBigInteger(value), size);
             } catch (OverflowException oe) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, TOO_LARGE_TO_CONVERT, "int");
+                throw raiseNode.raise(inliningTarget, OverflowError, TOO_LARGE_TO_CONVERT, "int");
             }
             return bytes;
         }
 
         @Specialization
         static byte[] doPInt(Node inliningTarget, PInt value, int size, boolean bigEndian,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             try {
                 support.putBigInteger(bytes, 0, value.getValue(), size);
             } catch (OverflowException oe) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, TOO_LARGE_TO_CONVERT, "int");
+                throw raiseNode.raise(inliningTarget, OverflowError, TOO_LARGE_TO_CONVERT, "int");
             }
             return bytes;
         }
@@ -198,7 +198,7 @@ public final class IntNodes {
                         @Cached InlinedBranchProfile fastPath4,
                         @Cached InlinedBranchProfile fastPath8,
                         @Cached InlinedBranchProfile generic,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             NumericSupport support = littleEndian ? NumericSupport.littleEndian() : NumericSupport.bigEndian();
             if (signed) {
                 switch (data.length) {
@@ -230,7 +230,7 @@ public final class IntNodes {
                     return PFactory.createInt(PythonLanguage.get(inliningTarget), integer);
                 }
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
             }
         }
     }

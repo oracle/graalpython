@@ -102,9 +102,9 @@ public final class PythonCextCapsuleBuiltins {
         static PyCapsule doGeneric(Node inliningTarget, Object pointer, Object namePtr, Object destructor,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (interopLibrary.isNull(pointer)) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT);
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT);
             }
             PyCapsule capsule = PFactory.createCapsuleNativeName(language, pointer, interopLibrary.isNull(namePtr) ? null : namePtr);
             if (!interopLibrary.isNull(destructor)) {
@@ -155,20 +155,19 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         static Object doCapsule(Node inliningTarget, PyCapsule o, Object name,
                         @Cached PyCapsuleNameMatchesNode nameMatchesNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
             }
             if (!nameMatchesNode.execute(inliningTarget, name, o.getNamePtr())) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INCORRECT_NAME, "PyCapsule_GetPointer");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INCORRECT_NAME, "PyCapsule_GetPointer");
             }
             return o.getPointer();
         }
 
         @Fallback
-        static Object doError(Node inliningTarget, @SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
+        static Object doError(Node inliningTarget, @SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
 
@@ -178,17 +177,17 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         Object get(PyCapsule o,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
             }
             return o.getNamePtr() == null ? getNULL() : o.getNamePtr();
         }
 
         @Fallback
         static Object doit(@SuppressWarnings("unused") Object o,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
         }
     }
 
@@ -197,9 +196,9 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         Object doCapsule(PyCapsule o,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetDestructor");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetDestructor");
             }
             if (o.getDestructor() == null) {
                 return getNULL();
@@ -209,8 +208,8 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
 
@@ -219,9 +218,9 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         Object doCapsule(PyCapsule o,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetContext");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetContext");
             }
             if (o.getContext() == null) {
                 return getNULL();
@@ -231,8 +230,8 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
         }
     }
 
@@ -242,13 +241,13 @@ public final class PythonCextCapsuleBuiltins {
         static int doCapsule(PyCapsule o, Object pointer,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (interopLibrary.isNull(pointer)) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_NULL_POINTER, "PyCapsule_SetPointer");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_NULL_POINTER, "PyCapsule_SetPointer");
             }
 
             if (o.getPointer() == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
             }
 
             o.setPointer(pointer);
@@ -257,8 +256,8 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
         }
     }
 
@@ -268,9 +267,9 @@ public final class PythonCextCapsuleBuiltins {
         static int set(PyCapsule o, Object namePtr,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
             }
             o.setNamePtr(lib.isNull(namePtr) ? null : namePtr);
             return 0;
@@ -278,8 +277,8 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
         }
     }
 
@@ -289,9 +288,9 @@ public final class PythonCextCapsuleBuiltins {
         static int doCapsule(PyCapsule o, Object destructor,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
             }
             o.registerDestructor(lib.isNull(destructor) ? null : destructor);
             return 0;
@@ -299,8 +298,8 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
         }
     }
 
@@ -309,9 +308,9 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         static int doCapsule(PyCapsule o, Object context,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
+                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
             }
             o.setContext(context);
             return 0;
@@ -319,8 +318,8 @@ public final class PythonCextCapsuleBuiltins {
 
         @Fallback
         static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
         }
     }
 
@@ -335,7 +334,7 @@ public final class PythonCextCapsuleBuiltins {
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString name = (TruffleString) charPtrToPythonNode.execute(namePtr);
             TruffleString trace = name;
             Object object = null;
@@ -361,7 +360,7 @@ public final class PythonCextCapsuleBuiltins {
             if (capsule != null && PyCapsule_IsValid.doCapsule(capsule, namePtr, inliningTarget, nameMatchesNode) == 1) {
                 return capsule.getPointer();
             } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, name);
+                throw raiseNode.raise(inliningTarget, AttributeError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, name);
             }
         }
     }

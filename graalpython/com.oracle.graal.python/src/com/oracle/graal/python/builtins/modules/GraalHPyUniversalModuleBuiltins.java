@@ -188,7 +188,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object module;
 
             PythonContext context = PythonContext.get(inliningTarget);
@@ -199,7 +199,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                 module = GraalHPyContext.loadHPyModule(inliningTarget, context, name, file, spec, hmode);
             } catch (CannotCastException e) {
                 // thrown by getHPyModeFromEnviron if value is not a string
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_MODE_VALUE_MUST_BE_STRING);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.HPY_MODE_VALUE_MUST_BE_STRING);
             } catch (ApiInitException ie) {
                 throw ie.reraise(frame, inliningTarget, constructAndRaiseNode);
             } catch (ImportException ie) {

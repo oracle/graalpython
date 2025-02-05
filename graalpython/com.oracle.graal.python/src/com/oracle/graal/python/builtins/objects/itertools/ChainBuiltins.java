@@ -110,7 +110,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached InlinedBranchProfile nextExceptioProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             while (loopProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
                 if (self.getActive() == PNone.NONE) {
                     try {
@@ -130,7 +130,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                     self.setActive(PNone.NONE);
                 }
             }
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
     }
 
@@ -185,13 +185,13 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedBranchProfile len2Profile,
                         @Cached PyIterCheckNode iterCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!(state instanceof PTuple)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             int len = (int) lenNode.execute(frame, state);
             if (len < 1 || len > 2) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             Object source = getItemNode.execute(frame, state, 0);
             checkIterator(inliningTarget, iterCheckNode, source, raiseNode);
@@ -205,9 +205,9 @@ public final class ChainBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private static void checkIterator(Node inliningTarget, PyIterCheckNode iterCheckNode, Object obj, PRaiseNode.Lazy raiseNode) throws PException {
+        private static void checkIterator(Node inliningTarget, PyIterCheckNode iterCheckNode, Object obj, PRaiseNode raiseNode) throws PException {
             if (!iterCheckNode.execute(inliningTarget, obj)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
+                throw raiseNode.raise(inliningTarget, TypeError, ARGUMENTS_MUST_BE_ITERATORS);
             }
         }
     }

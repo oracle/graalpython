@@ -108,7 +108,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) { // "O|s:StreamWriter"
+                        @Cached PRaiseNode raiseNode) { // "O|s:StreamWriter"
             TruffleString errors = null;
             if (err != PNone.NO_VALUE) {
                 errors = castToStringNode.execute(inliningTarget, err);
@@ -118,7 +118,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CODEC_IS_UNEXPECTED_TYPE);
+                throw raiseNode.raise(inliningTarget, TypeError, CODEC_IS_UNEXPECTED_TYPE);
             }
 
             self.codec = ((MultibyteCodecObject) codec).codec;
@@ -185,8 +185,8 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
         // assuming !pySequenceCheck.execute(lines)
         @Fallback
         static Object writelines(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object lines,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
         }
     }
 

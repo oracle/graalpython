@@ -96,9 +96,9 @@ public final class ShakeDigestObjectBuiltins extends PythonBuiltins {
         static PBytes digest(DigestObject self, int length,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.getDigestLength() != length) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
             }
             return PFactory.createBytes(language, self.digest());
         }
@@ -117,9 +117,9 @@ public final class ShakeDigestObjectBuiltins extends PythonBuiltins {
         static TruffleString hexdigest(DigestObject self, int length,
                         @Bind("this") Node inliningTarget,
                         @Cached BytesNodes.ByteToHexNode toHexNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.getDigestLength() != length) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DEFAULT_DIGEST_LENGTHS);
             }
             byte[] digest = self.digest();
             return toHexNode.execute(inliningTarget, digest, digest.length, (byte) 0, 0);

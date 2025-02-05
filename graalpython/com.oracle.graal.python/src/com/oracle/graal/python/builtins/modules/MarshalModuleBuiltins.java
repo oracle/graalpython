@@ -162,7 +162,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached("createCallWriteNode()") LookupAndCallBinaryNode callNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
             Object savedState = IndirectCallContext.enter(frame, threadState, indirectCallData);
@@ -171,7 +171,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
-                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
+                throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             } finally {
                 IndirectCallContext.exit(frame, threadState, savedState);
             }
@@ -192,7 +192,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
             Object savedState = IndirectCallContext.enter(frame, threadState, indirectCallData);
@@ -201,7 +201,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
-                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
+                throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             } finally {
                 IndirectCallContext.exit(frame, threadState, savedState);
             }
@@ -222,17 +222,17 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object buffer = callNode.executeObject(frame, file, 0);
             if (!bufferLib.hasBuffer(buffer)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
             }
             try {
                 return Marshal.loadFile(context, file);
             } catch (NumberFormatException e) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
+                throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             }
         }
     }
@@ -248,13 +248,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return Marshal.load(context, bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } catch (NumberFormatException e) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
-                throw raiseNode.get(inliningTarget).raise(me.type, me.message, me.arguments);
+                throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
@@ -1348,7 +1348,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static byte[] serializeCodeUnit(PythonContext context, CodeUnit code) {
+    public static byte[] serializeCodeUnit(Node node, PythonContext context, CodeUnit code) {
         try {
             Marshal marshal = new Marshal(context, CURRENT_VERSION, null, null);
             marshal.writeCodeUnit(code);
@@ -1356,19 +1356,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         } catch (IOException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } catch (Marshal.MarshalError me) {
-            throw PRaiseNode.getUncached().raise(me.type, me.message, me.arguments);
+            throw PRaiseNode.raiseStatic(node, me.type, me.message, me.arguments);
         }
     }
 
     @TruffleBoundary
-    public static CodeUnit deserializeCodeUnit(PythonContext context, byte[] bytes) {
+    public static CodeUnit deserializeCodeUnit(Node node, PythonContext context, byte[] bytes) {
         try {
             Marshal marshal = new Marshal(context, bytes, bytes.length);
             return marshal.readCodeUnit();
         } catch (Marshal.MarshalError me) {
-            throw PRaiseNode.getUncached().raise(me.type, me.message, me.arguments);
+            throw PRaiseNode.raiseStatic(node, me.type, me.message, me.arguments);
         } catch (NumberFormatException e) {
-            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+            throw PRaiseNode.raiseStatic(node, ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
         }
     }
 }

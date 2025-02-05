@@ -45,6 +45,7 @@
 // Generated from Python.asdl by main_asdl_gen.py
 package com.oracle.graal.python.builtins.modules.ast;
 
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -69,8 +70,8 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 final class Obj2Sst extends Obj2SstBase {
 
-    Obj2Sst(AstState state) {
-        super(state);
+    Obj2Sst(Node node, AstState state) {
+        super(node, state);
     }
 
     ModTy obj2ModTy(Object obj) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,7 +110,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached CastToJavaIntExactNode toJavaIntExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             baseInitNode.execute(self, args);
             // PyArg_ParseTuple(args, "UOnnU"), TODO: add proper error messages
             self.setExceptionAttributes(new Object[]{
@@ -177,14 +177,14 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
                         int endPos,
                         TruffleString reason,
                         @Cached(inline = false) CallNode callNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object obj = callNode.execute(frame, UnicodeDecodeError, encoding, inputObject, startPos, endPos, reason);
             if (obj instanceof PBaseException exception) {
                 return exception;
             }
             // Shouldn't happen unless the user manually replaces the method, which is really
             // unexpected and shouldn't be permitted at all, but currently it is
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeDecodeError, obj);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeDecodeError, obj);
         }
 
         @Specialization(guards = "exceptionObject != null")
@@ -214,13 +214,13 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
                         @Cached(inline = false) BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object obj = attrNode.get(exceptionObject, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
             if (obj == null) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "object");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "object");
             }
             if (!isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_ATTRIBUTE_MUST_BE_BYTES, "object");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ATTRIBUTE_MUST_BE_BYTES, "object");
             }
             return obj;
         }
@@ -297,10 +297,10 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         static TruffleString doIt(Node inliningTarget, PBaseException exceptionObject,
                         @Cached(inline = false) BaseExceptionAttrNode attrNode,
                         @Cached CastToTruffleStringCheckedNode castToStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object obj = attrNode.get(exceptionObject, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY);
             if (obj == null) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "encoding");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ATTRIBUTE_NOT_SET, "encoding");
             }
             return castToStringNode.cast(inliningTarget, obj, ErrorMessages.S_ATTRIBUTE_MUST_BE_UNICODE, "encoding");
         }

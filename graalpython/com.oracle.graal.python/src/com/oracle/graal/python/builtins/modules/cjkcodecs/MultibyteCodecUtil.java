@@ -183,7 +183,7 @@ public class MultibyteCodecUtil {
                         @Cached(inline = true) CallErrorCallbackNode callErrorCallbackNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached EncodeNode encodeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             TruffleString reason = ILLEGAL_MULTIBYTE_SEQUENCE;
             int esize = e;
@@ -197,9 +197,9 @@ public class MultibyteCodecUtil {
                         esize = buf.getInpos();
                         break;
                     case MBERR_INTERNAL:
-                        throw raiseNode.get(inliningTarget).raise(RuntimeError, INTERNAL_CODEC_ERROR);
+                        throw raiseNode.raise(inliningTarget, RuntimeError, INTERNAL_CODEC_ERROR);
                     default:
-                        throw raiseNode.get(inliningTarget).raise(RuntimeError, UNKNOWN_RUNTIME_ERROR);
+                        throw raiseNode.raise(inliningTarget, RuntimeError, UNKNOWN_RUNTIME_ERROR);
                 }
             }
 
@@ -246,7 +246,7 @@ public class MultibyteCodecUtil {
             }
 
             if (errors == ERROR_STRICT) {
-                throw raiseNode.get(inliningTarget).raiseExceptionObject(buf.excobj);
+                throw raiseNode.raiseExceptionObject(inliningTarget, buf.excobj);
                 // PyCodec_StrictErrors(buf.excobj);
             }
 
@@ -271,7 +271,7 @@ public class MultibyteCodecUtil {
             }
 
             if (isError) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ENCODING_ERROR_HANDLER_MUST_RETURN);
+                throw raiseNode.raise(inliningTarget, TypeError, ENCODING_ERROR_HANDLER_MUST_RETURN);
             }
 
             PBytes retstr;
@@ -301,10 +301,10 @@ public class MultibyteCodecUtil {
                     newpos += buf.getInlen();
                 }
             } catch (PException exception) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
+                throw raiseNode.raise(inliningTarget, IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
             }
             if (newpos < 0 || newpos > buf.getInlen()) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
+                throw raiseNode.raise(inliningTarget, IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
             }
 
             buf.setInpos(newpos);
@@ -334,7 +334,7 @@ public class MultibyteCodecUtil {
                         @Cached PyLongAsIntNode asSizeNode,
                         @Cached CastToJavaStringNode toString,
                         @Cached(inline = true) CallErrorCallbackNode callErrorCallbackNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             TruffleString reason = ILLEGAL_MULTIBYTE_SEQUENCE;
             int esize = e;
@@ -349,9 +349,9 @@ public class MultibyteCodecUtil {
                         esize = buf.remaining();
                         break;
                     case MBERR_INTERNAL:
-                        throw raiseNode.get(inliningTarget).raise(RuntimeError, INTERNAL_CODEC_ERROR);
+                        throw raiseNode.raise(inliningTarget, RuntimeError, INTERNAL_CODEC_ERROR);
                     default:
-                        throw raiseNode.get(inliningTarget).raise(RuntimeError, UNKNOWN_RUNTIME_ERROR);
+                        throw raiseNode.raise(inliningTarget, RuntimeError, UNKNOWN_RUNTIME_ERROR);
                 }
             }
 
@@ -381,7 +381,7 @@ public class MultibyteCodecUtil {
             }
 
             if (errors == ERROR_STRICT) {
-                throw raiseNode.get(inliningTarget).raiseExceptionObject(buf.excobj);
+                throw raiseNode.raiseExceptionObject(inliningTarget, buf.excobj);
                 // PyCodec_StrictErrors(buf.excobj);
             }
 
@@ -404,7 +404,7 @@ public class MultibyteCodecUtil {
             }
 
             if (isError) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, DECODING_ERROR_HANDLER_MUST_RETURN);
+                throw raiseNode.raise(inliningTarget, TypeError, DECODING_ERROR_HANDLER_MUST_RETURN);
             }
 
             buf.writeStr(toString.execute(retuni));
@@ -416,10 +416,10 @@ public class MultibyteCodecUtil {
                     newpos += buf.getInpos();
                 }
             } catch (PException ee) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
+                throw raiseNode.raise(inliningTarget, IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
             }
             if (newpos > buf.getInSize()) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
+                throw raiseNode.raise(inliningTarget, IndexError, POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newpos);
             }
 
             buf.setInpos(newpos);
@@ -443,14 +443,14 @@ public class MultibyteCodecUtil {
         @Specialization
         static PBytes encode(VirtualFrame frame, Node inliningTarget, MultibyteCodec codec, MultibyteCodecState state, MultibyteEncodeBuffer buf, Object errors, int flags,
                         @Cached(inline = false) EncodeErrorNode encodeErrorNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             // if (buf.inlen == 0 && (flags & MBENC_RESET) == 0) {
             // return PFactory.createBytes(language, EMPTY_BYTE_ARRAY);
             // }
 
             if (buf.getInlen() > (MAXSIZE - 16) / 2) {
-                throw raiseNode.get(inliningTarget).raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             }
 
             while (!buf.isFull()) {

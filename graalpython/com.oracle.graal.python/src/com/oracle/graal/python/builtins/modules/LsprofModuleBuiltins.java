@@ -146,7 +146,7 @@ public final class LsprofModuleBuiltins extends PythonBuiltins {
                     return PFactory.createProfiler(context.getLanguage(), cls, TypeNodes.GetInstanceShape.executeUncached(cls), sampler);
                 }
             }
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
+            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
         }
     }
 }

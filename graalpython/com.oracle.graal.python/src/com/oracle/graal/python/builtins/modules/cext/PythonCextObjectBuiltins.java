@@ -433,7 +433,7 @@ public abstract class PythonCextObjectBuiltins {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptorNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!longCheckNode.execute(inliningTarget, obj)) {
                 Object posixSupport = PythonContext.get(inliningTarget).getPosixSupport();
                 if (eqNode.execute(T_JAVA, posixLib.getBackend(posixSupport), TS_ENCODING)) {
@@ -441,7 +441,7 @@ public abstract class PythonCextObjectBuiltins {
                      * For non Python 'int' objects, we refuse to hand out the fileno field when
                      * using the emulated Posix backend, because it is likely a fake.
                      */
-                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.S_NOT_SUPPORTED_ON_JAVA_POSIX_BACKEND, "PyObject_AsFileDescriptor");
+                    throw raiseNode.raise(inliningTarget, NotImplementedError, ErrorMessages.S_NOT_SUPPORTED_ON_JAVA_POSIX_BACKEND, "PyObject_AsFileDescriptor");
                 }
             }
             return asFileDescriptorNode.execute(null, inliningTarget, obj);
@@ -488,8 +488,8 @@ public abstract class PythonCextObjectBuiltins {
     abstract static class PyObject_HashNotImplemented extends CApiUnaryBuiltinNode {
         @Specialization
         static Object unhashable(Object obj,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, UNHASHABLE_TYPE_P, obj);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, UNHASHABLE_TYPE_P, obj);
         }
     }
 

@@ -69,7 +69,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -377,21 +376,21 @@ public class IONodes {
                         @Cached InlinedBranchProfile errProfile2,
                         @Cached InlinedBranchProfile errProfile3,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString mode;
             try {
                 mode = toString.execute(inliningTarget, modeObj);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
             IOMode m = new IOMode(mode, createCodePointIteratorNode, nextNode);
             if (m.hasNil) {
                 errProfile1.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(ValueError, EMBEDDED_NULL_CHARACTER);
+                throw raiseNode.raise(inliningTarget, ValueError, EMBEDDED_NULL_CHARACTER);
             }
             if (m.isInvalid) {
                 errProfile2.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_MODE_S, mode);
+                throw raiseNode.raise(inliningTarget, ValueError, INVALID_MODE_S, mode);
             }
             if (warnUniversal && m.universal) {
                 errProfile3.enter(inliningTarget);
@@ -431,11 +430,11 @@ public class IONodes {
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (indexCheckNode.execute(inliningTarget, nameobj)) {
                 int fd = asSizeNode.executeExact(frame, inliningTarget, nameobj);
                 if (fd < 0) {
-                    err(fd, raiseNode.get(inliningTarget));
+                    err(fd, raiseNode);
                 }
                 return fd;
             } else {
@@ -445,14 +444,14 @@ public class IONodes {
 
         @Specialization(guards = "fd < 0")
         static int err(int fd,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, OPENER_RETURNED_D, fd);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, OPENER_RETURNED_D, fd);
         }
 
         @Specialization(guards = "fd < 0")
         static int err(long fd,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, OPENER_RETURNED_D, fd);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, OPENER_RETURNED_D, fd);
         }
 
         @ClinicConverterFactory
@@ -524,11 +523,11 @@ public class IONodes {
         @Specialization(guards = "!isString(s)")
         static TruffleString str(Node inliningTarget, Object s,
                         @Cached CastToTruffleStringNode str,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return str.execute(inliningTarget, s);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
+                throw raiseNode.raise(inliningTarget, TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
             }
         }
     }

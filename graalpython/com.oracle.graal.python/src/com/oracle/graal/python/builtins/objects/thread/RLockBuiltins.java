@@ -123,10 +123,10 @@ public final class RLockBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile countProfile,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int count = self.getCount();
             if (countProfile.profile(inliningTarget, count == 0)) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.RuntimeError, ErrorMessages.CANNOT_RELEASE_UNAQUIRED_LOCK);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.RuntimeError, ErrorMessages.CANNOT_RELEASE_UNAQUIRED_LOCK);
             }
             PTuple retVal = PFactory.createTuple(language, new Object[]{count, self.getOwnerId()});
             self.releaseAll();

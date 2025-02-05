@@ -108,26 +108,27 @@ public final class AstBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyObjectSetAttrO setAttrNode,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PRaiseNode raiseNode) {
             Object fieldsObj = lookupAttrNode.execute(frame, inliningTarget, self, T__FIELDS);
             Object[] fields;
             if (fieldsObj == PNone.NO_VALUE) {
                 fields = EMPTY_OBJECT_ARRAY;
             } else {
                 if (!(fieldsObj instanceof PSequence)) {
-                    throw raise(TypeError, IS_NOT_A_SEQUENCE, fieldsObj);
+                    throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A_SEQUENCE, fieldsObj);
                 }
                 fields = getObjectArrayNode.execute(inliningTarget, fieldsObj);
             }
             if (fields.length < args.length) {
-                throw raise(TypeError, S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S, self, fields.length, fields.length == 1 ? "" : "s");
+                throw raiseNode.raise(inliningTarget, TypeError, S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S, self, fields.length, fields.length == 1 ? "" : "s");
             }
             for (int i = 0; i < args.length; ++i) {
                 setAttrNode.execute(frame, inliningTarget, self, fields[i], args[i]);
             }
             for (PKeyword kwArg : kwArgs) {
                 if (contains(fields, args.length, kwArg.getName(), equalNode)) {
-                    throw raise(TypeError, P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S, self, kwArg.getName());
+                    throw raiseNode.raise(inliningTarget, TypeError, P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S, self, kwArg.getName());
                 }
                 setAttrNode.execute(frame, inliningTarget, self, kwArg.getName(), kwArg.getValue());
             }
@@ -167,8 +168,8 @@ public final class AstBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(d)", "!isDict(d)"})
         @SuppressWarnings("unused")
         static Object setDict(PythonObject self, Object d,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, d);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, d);
         }
     }
 

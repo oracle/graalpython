@@ -206,8 +206,8 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object setDefaults(Object self, Object defaults,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___DEFAULTS__, "tuple");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, T___DEFAULTS__, "tuple");
         }
     }
 
@@ -238,7 +238,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
                 if (key instanceof PString) {
                     key = ((PString) key).getValueUncached();
                 } else if (!(key instanceof TruffleString)) {
-                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, key);
+                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, key);
                 }
                 keywords.add(new PKeyword((TruffleString) key, HashingStorageIteratorValue.executeUncached(storage, it)));
             }
@@ -275,8 +275,8 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doGeneric(Object object,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P, object);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P, object);
         }
     }
 
@@ -294,11 +294,11 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Specialization
         static Object setCode(PFunction self, PCode code,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int closureLength = self.getClosure() == null ? 0 : self.getClosure().length;
             int freeVarsLength = code.getFreeVars().length;
             if (closureLength != freeVarsLength) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.REQUIRES_CODE_OBJ, self.getName(), closureLength, freeVarsLength);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.REQUIRES_CODE_OBJ, self.getName(), closureLength, freeVarsLength);
             }
             self.setCode(code);
             return PNone.NONE;

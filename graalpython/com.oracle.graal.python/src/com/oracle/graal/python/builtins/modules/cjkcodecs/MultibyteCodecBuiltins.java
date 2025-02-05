@@ -142,12 +142,12 @@ public final class MultibyteCodecBuiltins extends PythonBuiltins {
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared @Cached TruffleString.EqualNode isEqual,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object ucvt = input;
             if (!unicodeCheck.execute(inliningTarget, input)) {
                 ucvt = strNode.execute(frame, inliningTarget, input);
                 if (!unicodeCheck.execute(inliningTarget, ucvt)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, COULDN_T_CONVERT_THE_OBJECT_TO_UNICODE);
+                    throw raiseNode.raise(inliningTarget, TypeError, COULDN_T_CONVERT_THE_OBJECT_TO_UNICODE);
                 }
             }
 

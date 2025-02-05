@@ -1026,7 +1026,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                 return (int) l;
             }
             errorBranch.enter(inliningTarget);
-            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
         }
 
         @Fallback
@@ -1165,7 +1165,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     Object result = executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]));
                     return PyObjectHashNode.avoidNegative1(cast.execute(inliningTarget, result));
                 } catch (CannotCastException e) {
-                    throw raiseNode.raise(TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "HashfuncWrapper", getDelegate());
                 }

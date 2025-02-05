@@ -104,7 +104,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
                     @Cached TpSlots.GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callIndex,
                     @Cached(inline = false) IsSubtypeNode isSubtype,
-                    @Cached PRaiseNode.Lazy raiseNode,
+                    @Cached PRaiseNode raiseNode,
                     @Cached PyLongCheckExactNode checkNode,
                     @Cached CheckIndexResultNotInt checkResult,
                     @Cached PyLongCopy copy) {
@@ -114,7 +114,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         }
         TpSlots slots = getSlots.execute(inliningTarget, type);
         if (slots.nb_index() == null) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
         }
         Object result = callIndex.execute(frame, inliningTarget, slots.nb_index(), object);
         if (checkNode.execute(inliningTarget, result)) {
@@ -138,11 +138,11 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtype,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PyLongCopy copy) {
             if (!isSubtype.execute(getClassNode.execute(inliningTarget, result), PythonBuiltinClassType.PInt)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
             }
             warnNode.warnFormat(frame, null, DeprecationWarning, 1,
                             ErrorMessages.WARN_P_RETURNED_NON_P, original, T___INDEX__, "int", result, "int");

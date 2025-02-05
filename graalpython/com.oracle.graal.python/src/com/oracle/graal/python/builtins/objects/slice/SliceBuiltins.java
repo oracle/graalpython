@@ -219,8 +219,8 @@ public final class SliceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isPNone(length)"})
         static PTuple lengthNone(@SuppressWarnings("unused") PSlice self, @SuppressWarnings("unused") Object length,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(ValueError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError);
         }
     }
 
@@ -230,8 +230,8 @@ public final class SliceBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public static long hash(PSlice self,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, PythonBuiltinClassType.PSlice);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, PythonBuiltinClassType.PSlice);
         }
     }
 

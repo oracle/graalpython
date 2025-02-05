@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -118,7 +118,7 @@ public abstract class MappingToKeywordsNode extends PNodeWithContext {
             try {
                 state.addKeyword(castToTruffleStringNode.execute(inliningTarget, key), value);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
             }
             return state;
         }

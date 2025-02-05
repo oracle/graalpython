@@ -277,13 +277,13 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object type = subType;
             Object[] parsedArgs = new Object[IDX_WRITTEN + 1];
             final Python3Core core = PythonContext.get(inliningTarget);
             if (!osErrorUseInit(frame, inliningTarget, core, type, getAttr)) {
                 if (kwds.length != 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
                 }
 
                 parsedArgs = osErrorParseArgs(args, inliningTarget, checkPositionalNode);
@@ -322,7 +322,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
                         @Cached PyArgCheckPositionalNode checkPositionalNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             final Object type = getClassNode.execute(inliningTarget, self);
             if (!osErrorUseInit(frame, inliningTarget, PythonContext.get(inliningTarget), type, getAttr)) {
                 // Everything already done in OSError_new
@@ -330,7 +330,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             }
 
             if (kwds.length != 0) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
             }
 
             Object[] parsedArgs = osErrorParseArgs(args, inliningTarget, checkPositionalNode);
@@ -411,8 +411,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         @Specialization(guards = "isInvalid(self)")
         @SuppressWarnings("unused")
         static Object generic(PBaseException self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.CHARACTERS_WRITTEN);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.CHARACTERS_WRITTEN);
         }
 
         @Specialization(guards = "!isInvalid(self)")

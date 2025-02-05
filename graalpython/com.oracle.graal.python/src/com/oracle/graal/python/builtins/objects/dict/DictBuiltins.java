@@ -179,7 +179,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "args.length > 1")
         Object doGeneric(@SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            throw raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "dict", 1, args.length);
+            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "dict", 1, args.length);
         }
     }
 
@@ -212,14 +212,14 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached InlinedConditionProfile hasKeyProfile,
                         @Cached HashingStorageDelItem delItem,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             var storage = getStorageNode.execute(inliningTarget, dict);
             Object retVal = delItem.executePop(frame, inliningTarget, storage, key, dict);
             if (hasKeyProfile.profile(inliningTarget, retVal != null)) {
                 return retVal;
             } else {
                 if (PGuards.isNoValue(defaultValue)) {
-                    throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
+                    throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
                 } else {
                     return defaultValue;
                 }
@@ -238,11 +238,11 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStoragePop popNode,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             var storage = getStorageNode.execute(inliningTarget, dict);
             Object[] result = popNode.execute(inliningTarget, storage, dict);
             if (result == null) {
-                throw raiseNode.get(inliningTarget).raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
+                throw raiseNode.raise(inliningTarget, KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");
             }
             return PFactory.createTuple(language, result);
         }
@@ -314,13 +314,13 @@ public final class DictBuiltins extends PythonBuiltins {
             var storage = getStorageNode.execute(inliningTarget, self);
             final Object result = getItem.execute(frame, inliningTarget, storage, key);
             if (notFoundProfile.profile(inliningTarget, result == null)) {
-                return handleMissing(frame, self, key, raiseNode);
+                return handleMissing(frame, inliningTarget, self, key, raiseNode);
             }
             return result;
         }
 
         @InliningCutoff
-        private Object handleMissing(VirtualFrame frame, Object self, Object key, PRaiseNode raiseNode) {
+        private Object handleMissing(VirtualFrame frame, Node inliningTarget, Object self, Object key, PRaiseNode raiseNode) {
             if (self instanceof PDict dict && !PGuards.isBuiltinDict(dict)) {
                 if (missing == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -328,7 +328,7 @@ public final class DictBuiltins extends PythonBuiltins {
                 }
                 return missing.execute(frame, dict, key);
             }
-            throw raiseNode.raise(KeyError, new Object[]{key});
+            throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
         }
     }
 
@@ -342,10 +342,10 @@ public final class DictBuiltins extends PythonBuiltins {
         static Object missing(VirtualFrame frame, Object self, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(Missing)") LookupAndCallBinaryNode callMissing,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object result = callMissing.executeObject(frame, self, key);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
-                throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
+                throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
             }
             return result;
         }
@@ -366,10 +366,10 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached HashingStorageDelItem delItem,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             var storage = getStorageNode.execute(inliningTarget, self);
             if (!delItem.execute(frame, inliningTarget, storage, key, self)) {
-                throw raiseNode.get(inliningTarget).raise(KeyError, new Object[]{key});
+                throw raiseNode.raise(inliningTarget, KeyError, new Object[]{key});
             }
         }
     }
@@ -550,8 +550,8 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(guards = "args.length > 1")
         @SuppressWarnings("unused")
         static Object error(Object self, Object[] args, PKeyword[] kwargs,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "update", 1, args.length);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "update", 1, args.length);
         }
 
     }

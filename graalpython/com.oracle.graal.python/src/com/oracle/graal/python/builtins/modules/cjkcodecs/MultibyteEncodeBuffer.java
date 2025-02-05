@@ -128,7 +128,7 @@ public class MultibyteEncodeBuffer {
             int orgsize = outputBuffer.capacity();
             int incsize = esize < (orgsize >> 1) ? (orgsize >> 1) | 1 : esize;
             if (orgsize > MAXSIZE - incsize) {
-                throw PRaiseNode.raiseUncached(raisingNode, MemoryError);
+                throw PRaiseNode.raiseStatic(raisingNode, MemoryError);
             }
             ByteBuffer newBuffer = ByteBuffer.allocate(incsize);
             outputBuffer.flip();

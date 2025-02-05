@@ -98,8 +98,8 @@ public class PData {
     }
 
     public abstract static class PDataBaseNode extends PNodeWithContext {
-        static PException raiseUnderflow(PData self, PRaiseNode raiseNode) {
-            return raiseNode.raise(PythonBuiltinClassType.UnpicklingError,
+        static PException raiseUnderflow(PData self, Node inliningTarget, PRaiseNode raiseNode) {
+            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnpicklingError,
                             self.mark ? ErrorMessages.PDATA_UNEXPECTED_MARK_FOUND : ErrorMessages.PDATA_UNPICKLING_STACK_UNDERFLOW);
         }
     }
@@ -112,9 +112,9 @@ public class PData {
         @Specialization
         static Object pop(PData self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.size <= self.fence) {
-                throw raiseUnderflow(self, raiseNode.get(inliningTarget));
+                throw raiseUnderflow(self, inliningTarget, raiseNode);
             }
             return self.data[--self.size];
         }
@@ -132,12 +132,12 @@ public class PData {
         @Specialization
         static void push(PData self, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.size == self.data.length) {
                 try {
                     self.grow();
                 } catch (OverflowException e) {
-                    throw raiseNode.get(inliningTarget).raiseOverflow();
+                    throw raiseNode.raiseOverflow(inliningTarget);
                 }
             }
             self.data[self.size++] = obj;
@@ -157,11 +157,11 @@ public class PData {
         static PTuple popTuple(PData self, int start,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int len, i, j;
 
             if (start < self.fence) {
-                throw raiseUnderflow(self, raiseNode.get(inliningTarget));
+                throw raiseUnderflow(self, inliningTarget, raiseNode);
             }
             len = self.size - start;
             Object[] items = new Object[len];

@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum UnaryArithmetic {
@@ -132,11 +133,12 @@ public enum UnaryArithmetic {
         static Supplier<NoAttributeHandler> createHandler(String operator) {
 
             return () -> new NoAttributeHandler() {
-                @Child private PRaiseNode raiseNode = PRaiseNode.create();
+                private final BranchProfile errorProfile = BranchProfile.create();
 
                 @Override
                 public Object execute(Object receiver) {
-                    throw raiseNode.raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "unary ", operator, receiver);
+                    errorProfile.enter();
+                    throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.BAD_OPERAND_FOR, "unary ", operator, receiver);
                 }
             };
         }

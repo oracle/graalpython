@@ -75,6 +75,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.CheckIsClosedNode;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.EnterBufferedNode;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.FlushAndRewindUnlockedNode;
@@ -141,7 +142,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @Cached PyObjectCallMethodObjArgs callMethodReadInto,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached InlinedConditionProfile osError,
-                        @Cached PRaiseNode.Lazy lazyRaiseNode) {
+                        @Cached PRaiseNode lazyRaiseNode) {
             PByteArray memobj = PFactory.createByteArray(language, new byte[len]);
             // TODO _PyIO_trap_eintr [GR-23297]
             Object res = callMethodReadInto.execute(frame, inliningTarget, self.getRaw(), T_READINTO, memobj);
@@ -153,10 +154,10 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             try {
                 n = asSizeNode.executeExact(frame, inliningTarget, res, ValueError);
             } catch (PException e) {
-                throw lazyRaiseNode.get(inliningTarget).raiseWithCause(OSError, e, ErrorMessages.RAW_READINTO_FAILED);
+                throw lazyRaiseNode.raiseWithCause(inliningTarget, OSError, e, ErrorMessages.RAW_READINTO_FAILED);
             }
             if (osError.profile(inliningTarget, n < 0 || n > len)) {
-                throw lazyRaiseNode.get(inliningTarget).raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
+                throw lazyRaiseNode.raise(inliningTarget, OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
             }
             if (n > 0 && self.getAbsPos() != -1) {
                 self.incAbsPos(n);
@@ -394,7 +395,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(inliningTarget, self);
@@ -418,7 +419,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 if (hasReadallProfile.profile(inliningTarget, readall != PNone.NO_VALUE)) {
                     Object tmp = dispatchGetattribute.executeObject(frame, readall, self.getRaw());
                     if (tmp != PNone.NONE && !(tmp instanceof PBytes)) {
-                        throw raiseNode.get(inliningTarget).raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
+                        throw raiseNode.raise(inliningTarget, TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
                     }
                     if (currentSize0Profile.profile(inliningTarget, currentSize != 0)) {
                         if (tmp != PNone.NONE) {
@@ -446,7 +447,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                     /* Read until EOF or until read() would block. */
                     Object r = callMethod.execute(frame, inliningTarget, self.getRaw(), T_READ);
                     if (r != PNone.NONE && !(r instanceof PBytes)) {
-                        throw raiseNode.get(inliningTarget).raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
+                        throw raiseNode.raise(inliningTarget, TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
                     }
                     if (r != PNone.NONE) {
                         dataLen = bufferLib.getBufferLength(r);
@@ -472,8 +473,8 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isOK()", "!isValidSize(size)"})
         static Object initError(VirtualFrame frame, PBuffered self, int size,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, MUST_BE_NON_NEG_OR_NEG_1);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_BE_NON_NEG_OR_NEG_1);
         }
     }
 
@@ -824,11 +825,11 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                         @Bind("this") Node inliningTarget,
                         @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             checkIsClosedNode.execute(frame, self);
             byte[] line = readlineNode.execute(frame, inliningTarget, self, -1);
             if (line.length == 0) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             return PFactory.createBytes(PythonLanguage.get(inliningTarget), line);
         }

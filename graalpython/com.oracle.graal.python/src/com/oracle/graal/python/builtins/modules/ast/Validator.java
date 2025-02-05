@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -93,13 +93,17 @@ import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 final class Validator implements SSTreeVisitor<Void> {
 
     private static final String[] FORBIDDEN_NAMES = {"None", "True", "False"};
 
-    private Validator() {
+    private final Node node;
+
+    private Validator(Node node) {
+        this.node = node;
     }
 
     /*-
@@ -107,9 +111,9 @@ final class Validator implements SSTreeVisitor<Void> {
     */
 
     // Equivalent of _PyAST_Validate - entry point of the validation
-    static void validateMod(ModTy mod) {
+    static void validateMod(Node node, ModTy mod) {
         // TODO recursion checks
-        mod.accept(new Validator());
+        mod.accept(new Validator(node));
     }
 
     @Override
@@ -754,7 +758,7 @@ final class Validator implements SSTreeVisitor<Void> {
         throw raiseValueError(ErrorMessages.PATTERNS_MAY_ONLY_MATCH_LITERALS_AND_ATTRIBUTE_LOOKUPS);
     }
 
-    private static void validateCapture(String name) {
+    private void validateCapture(String name) {
         if (name.equals("_")) {
             throw raiseValueError(ErrorMessages.CANT_CAPTURE_NAME_UNDERSCORE_IN_PATTERNS);
         }
@@ -1023,7 +1027,7 @@ final class Validator implements SSTreeVisitor<Void> {
     }
 
     // Equivalent of _validate_nonempty_seq
-    private static void validateNonEmptySeq(Object[] seq, TruffleString what, TruffleString owner) {
+    private void validateNonEmptySeq(Object[] seq, TruffleString what, TruffleString owner) {
         if (seqLen(seq) == 0) {
             throw raiseValueError(ErrorMessages.EMPTY_S_ON_S, what, owner);
         }
@@ -1049,7 +1053,7 @@ final class Validator implements SSTreeVisitor<Void> {
     }
 
     // Equivalent of validate_name
-    private static void validateName(String id) {
+    private void validateName(String id) {
         for (String f : FORBIDDEN_NAMES) {
             if (f.equals(id)) {
                 throw raiseValueError(ErrorMessages.IDENTIFIER_FIELD_CANT_REPRESENT_S_CONSTANT, f);
@@ -1062,11 +1066,11 @@ final class Validator implements SSTreeVisitor<Void> {
         // Already done in Obj2SstBase#obj2ConstantValue()
     }
 
-    private static PException raiseValueError(TruffleString format, Object... args) {
-        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, format, args);
+    private PException raiseValueError(TruffleString format, Object... args) {
+        throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ValueError, format, args);
     }
 
-    private static PException raiseTypeError(TruffleString format, Object... args) {
-        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, format, args);
+    private PException raiseTypeError(TruffleString format, Object... args) {
+        throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.TypeError, format, args);
     }
 }

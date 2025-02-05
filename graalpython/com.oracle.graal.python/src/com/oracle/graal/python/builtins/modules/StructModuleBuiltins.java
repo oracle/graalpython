@@ -262,8 +262,8 @@ public class StructModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isPBytes(format)", "!isPString(format)", "!isAsciiTruffleString(format, getCodeRangeNode)"})
         static PStruct fallback(@SuppressWarnings("unused") Object cls, Object format,
                         @SuppressWarnings("unused") @Shared @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(StructError, ARG_MUST_BE_STR_OR_BYTES, "Struct()", format);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, StructError, ARG_MUST_BE_STR_OR_BYTES, "Struct()", format);
         }
 
         protected static boolean isAsciiTruffleString(Object o, TruffleString.GetCodeRangeNode getCodeRangeNode) {
@@ -278,7 +278,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
             int num;
 
             if (containsNullCharacter(format)) {
-                throw PRaiseNode.raiseUncached(raisingNode, PythonBuiltinClassType.StructError, EMBEDDED_NULL_CHARACTER);
+                throw PRaiseNode.raiseStatic(raisingNode, PythonBuiltinClassType.StructError, EMBEDDED_NULL_CHARACTER);
             }
 
             char alignment = DEFAULT_ALIGNMENT;
@@ -301,12 +301,12 @@ public class StructModuleBuiltins extends PythonBuiltins {
                     num = c - '0';
                     while (++i < format.length && '0' <= (c = (char) format[i]) && c <= '9') {
                         if (num >= Integer.MAX_VALUE / 10 && (num > Integer.MAX_VALUE / 10 || (c - '0') > Integer.MAX_VALUE % 10)) {
-                            throw PRaiseNode.raiseUncached(raisingNode, StructError, ErrorMessages.STRUCT_SIZE_TOO_LONG);
+                            throw PRaiseNode.raiseStatic(raisingNode, StructError, ErrorMessages.STRUCT_SIZE_TOO_LONG);
                         }
                         num = num * 10 + (c - '0');
                     }
                     if (i == format.length) {
-                        throw PRaiseNode.raiseUncached(raisingNode, StructError, REPEAT_COUNT_WITHOUT_FMT);
+                        throw PRaiseNode.raiseStatic(raisingNode, StructError, REPEAT_COUNT_WITHOUT_FMT);
                     }
                 } else {
                     num = 1;
@@ -333,11 +333,11 @@ public class StructModuleBuiltins extends PythonBuiltins {
                 int itemSize = formatDef.size;
                 size = align(size, c, formatDef);
                 if (size == -1) {
-                    throw PRaiseNode.raiseUncached(raisingNode, StructError, ErrorMessages.STRUCT_SIZE_TOO_LONG);
+                    throw PRaiseNode.raiseStatic(raisingNode, StructError, ErrorMessages.STRUCT_SIZE_TOO_LONG);
                 }
 
                 if (num > (Integer.MAX_VALUE - size) / itemSize) {
-                    throw PRaiseNode.raiseUncached(raisingNode, StructError, ErrorMessages.STRUCT_SIZE_TOO_LONG);
+                    throw PRaiseNode.raiseStatic(raisingNode, StructError, ErrorMessages.STRUCT_SIZE_TOO_LONG);
                 }
                 size += num * itemSize;
             }
@@ -383,7 +383,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
             if (formatDef != null) {
                 return formatDef;
             }
-            throw PRaiseNode.raiseUncached(raisingNode, StructError, BAD_CHR_IN_STRUCT_FMT, format);
+            throw PRaiseNode.raiseStatic(raisingNode, StructError, BAD_CHR_IN_STRUCT_FMT, format);
         }
 
         private static boolean isAlignment(char alignment) {
