@@ -161,12 +161,6 @@ public abstract class AbstractPackagesTask extends DefaultTask {
     @Input
     public abstract Property<String> getPolyglotVersion();
 
-    @Input
-    protected String getOperatingSystem() {
-        // XXX what is this?
-        return System.getProperty("os.name");
-    }
-
     protected Set<String> calculateLauncherClasspath() {
         return getLauncherClasspath().getFiles().stream().map(File::getAbsolutePath).collect(Collectors.toUnmodifiableSet());
     }
