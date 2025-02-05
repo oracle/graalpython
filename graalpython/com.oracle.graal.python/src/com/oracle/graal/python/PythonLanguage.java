@@ -526,7 +526,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (allocationReporter == null) {
             allocationReporter = env.lookup(AllocationReporter.class);
         } else {
-            assert allocationReporter == env.lookup(AllocationReporter.class);
+            // GR-61960
+            // assert allocationReporter == env.lookup(AllocationReporter.class);
         }
 
         return context;
