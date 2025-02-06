@@ -75,13 +75,13 @@ void
 _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
                PyObject *traceback)
 {
-#if 0 // GraalPy change
     if (type == NULL) {
         assert(value == NULL);
         assert(traceback == NULL);
         _PyErr_SetRaisedException(tstate, NULL);
         return;
     }
+#if 0 // GraalPy change
     assert(PyExceptionClass_Check(type));
     if (value != NULL && type == (PyObject *)Py_TYPE(value)) {
         /* Already normalized */
@@ -855,8 +855,6 @@ PyErr_BadArgument(void)
 PyObject *
 _PyErr_NoMemory(PyThreadState *tstate)
 {
-#if 0 // GraalPy change
-#endif // GraalPy change
     _PyErr_SetNone(tstate, PyExc_MemoryError);
     return NULL;
 }

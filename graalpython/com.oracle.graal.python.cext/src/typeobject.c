@@ -1837,7 +1837,7 @@ subtype_traverse(PyObject *self, visitproc visit, void *arg)
     if (type->tp_dictoffset != base->tp_dictoffset) {
         assert(base->tp_dictoffset == 0);
         if (type->tp_flags & Py_TPFLAGS_MANAGED_DICT) {
-#if 0 // GraalPy change: we don't have inlined managed dict values
+#if 0 // GraalPy change: we don't have inlined managed dict values [GR-61995]
             assert(type->tp_dictoffset == -1);
             int err = _PyObject_VisitManagedDict(self, visit, arg);
             if (err) {
@@ -4103,7 +4103,7 @@ check_basicsize_includes_size_and_offsets(PyTypeObject* type)
                      type->tp_base->tp_name, type->tp_base->tp_basicsize);
         return 0;
     }
-#if 0 // GraalPy change: should be reverted once transitioned managed reports a valid weaklistoffset.
+#if 0 // GraalPy change: should be reverted once transitioned managed reports a valid weaklistoffset. [GR-61996]
     if (type->tp_weaklistoffset + (Py_ssize_t)sizeof(PyObject*) > max) {
         PyErr_Format(PyExc_TypeError,
                      "weaklist offset %d is out of bounds for type '%s' (tp_basicsize = %d)",
@@ -4279,7 +4279,7 @@ _PyType_FromMetaclass_impl(
         goto finally;
     }
 
-#if 0 // GraalPy change
+#if 0 // GraalPy change [GR-61997]
     /* If this is an immutable type, check if all bases are also immutable,
      * and (for now) fire a deprecation warning if not.
      * (This isn't necessary for static types: those can't have heap bases,
@@ -7629,7 +7629,7 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
         if (type_ready_inherit(type) < 0) {
             goto error;
         }
-#if 0 // GraalPy change
+#if 0 // GraalPy change [GR-61997]
         if (type_ready_preheader(type) < 0) {
             goto error;
         }

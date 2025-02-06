@@ -133,11 +133,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -1436,7 +1436,7 @@ public abstract class TypeNodes {
                     tSize -= SIZEOF_PY_OBJECT_PTR;
                 }
 
-                return tSize != bSize;
+                return tSize != bSize; // (mq) TODO: [GR-61996]
             }
 
             if (typeSlots != null && length(typeSlots) != 0) {
@@ -2377,14 +2377,17 @@ public abstract class TypeNodes {
             long weakListOffset = GetWeakListOffsetNode.executeUncached(base);
             long itemSize = GetItemSizeNode.executeUncached(base);
             if (ctx.addDict && itemSize != 0) {
+                // (mq) TODO: [GR-61996]
                 dictOffset = -SIZEOF_PY_OBJECT_PTR;
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
             if (ctx.addWeak) {
+                // (mq) TODO: [GR-61996]
                 weakListOffset = slotOffset;
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
             if (ctx.addDict && itemSize == 0) {
+                // (mq) TODO: [GR-61996]
                 long flags = GetTypeFlagsNode.executeUncached(pythonClass) | MANAGED_DICT;
                 SetTypeFlagsNode.executeUncached(pythonClass, flags);
                 /*

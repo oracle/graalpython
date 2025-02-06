@@ -1336,7 +1336,7 @@ _PyObject_GetDictPtr(PyObject *obj)
     }
     PyDictOrValues *dorv_ptr = _PyObject_DictOrValuesPointer(obj);
     if (_PyDictOrValues_IsValues(*dorv_ptr)) {
-#if 0 // GraalPy change: we don't have inlined managed dict values, so just use the common path
+#if 0 // GraalPy change: we don't have inlined managed dict values, so just use the common path [GR-61995]
         PyObject *dict = _PyObject_MakeDictFromInstanceAttributes(obj, _PyDictOrValues_GetValues(*dorv_ptr));
         if (dict == NULL) {
             PyErr_Clear();
@@ -1417,7 +1417,7 @@ _PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method)
     }
     PyObject *dict;
     if ((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT)) {
-#if 0 // GraalPy change: we don't have inlined dict values
+#if 0 // GraalPy change: we don't have inlined dict values [GR-61995]
         PyDictOrValues* dorv_ptr = _PyObject_DictOrValuesPointer(obj);
         if (_PyDictOrValues_IsValues(*dorv_ptr)) {
             PyDictValues *values = _PyDictOrValues_GetValues(*dorv_ptr);
@@ -1734,7 +1734,7 @@ PyObject_GenericSetDict(PyObject *obj, PyObject *value, void *context)
 {
     PyObject **dictptr = _PyObject_GetDictPtr(obj);
     if (dictptr == NULL) {
-#if 0 // GraalPy change: we don't have inlined dict values
+#if 0 // GraalPy change: we don't have inlined dict values [GR-61995]
         if (_PyType_HasFeature(Py_TYPE(obj), Py_TPFLAGS_MANAGED_DICT) &&
             _PyDictOrValues_IsValues(*_PyObject_DictOrValuesPointer(obj)))
 #else // GraalPy change
