@@ -183,7 +183,9 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.TypeVarBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -576,9 +578,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PTokenizerIter("TokenizerIter", "_tokenize"),
 
-    PTypeVar(J_TYPE_VAR, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEVAR_TYPE_M_FLAGS, TpSlots.createEmpty()),
+    PTypeVar(J_TYPE_VAR, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEVAR_TYPE_M_FLAGS, TypeVarBuiltins.SLOTS),
     PTypeVarTuple(J_TYPE_VAR_TUPLE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
-    PParamSpec(J_PARAM_SPEC, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, PARAMSPEC_TYPE_M_FLAGS, TpSlots.createEmpty()),
+    PParamSpec(J_PARAM_SPEC, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, PARAMSPEC_TYPE_M_FLAGS, ParamSpecBuiltins.SLOTS),
     PParamSpecArgs(J_PARAM_SPEC_ARGS, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
     PParamSpecKwargs(J_PARAM_SPEC_KWARGS, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT),
     PTypeAliasType(J_TYPE_ALIAS_TYPE, J__TYPING, J_TYPING, Flags.PUBLIC_DERIVED_WDICT, TYPEALIAS_TYPE_M_FLAGS, TypeAliasTypeBuiltins.SLOTS),
