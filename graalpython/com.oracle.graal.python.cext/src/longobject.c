@@ -14,9 +14,9 @@
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #endif // GraalPy change
 #include "pycore_long.h"          // _Py_SmallInts
-#if 0 // GraalPy change
 #include "pycore_object.h"        // _PyObject_Init()
 #include "pycore_runtime.h"       // _PY_NSMALLPOSINTS
+#if 0 // GraalPy change
 #include "pycore_structseq.h"     // _PyStructSequence_FiniBuiltin()
 #endif // GraalPy change
 

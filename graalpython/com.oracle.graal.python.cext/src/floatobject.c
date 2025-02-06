@@ -11,15 +11,19 @@
 
 #include "capi.h" // GraalPy change
 #include "Python.h"
-#if 0 // GraalPy change
 #include "pycore_dtoa.h"          // _Py_dg_dtoa()
 #include "pycore_floatobject.h"   // _PyFloat_FormatAdvancedWriter()
+#if 0 // GraalPy change
 #include "pycore_initconfig.h"    // _PyStatus_OK()
+#endif // GraalPy change
 #include "pycore_interp.h"        // _PyInterpreterState.float_state
+#if 0 // GraalPy change
 #include "pycore_long.h"          // _PyLong_GetOne()
 #include "pycore_object.h"        // _PyObject_Init()
 #include "pycore_pymath.h"        // _PY_SHORT_FLOAT_REPR
+#endif // GraalPy change
 #include "pycore_pystate.h"       // _PyInterpreterState_GET()
+#if 0 // GraalPy change
 #include "pycore_structseq.h"     // _PyStructSequence_FiniBuiltin()
 #endif // GraalPy change
 
@@ -1752,12 +1756,14 @@ float___getnewargs___impl(PyObject *self)
 #endif // GraalPy change
 
 /* this is for the benefit of the pack/unpack routines below */
+typedef enum _py_float_format_type float_format_type;
+#define unknown_format _py_float_format_unknown
+#define ieee_big_endian_format _py_float_format_ieee_big_endian
+#define ieee_little_endian_format _py_float_format_ieee_little_endian
 
-typedef enum {
-    unknown_format, ieee_big_endian_format, ieee_little_endian_format
-} float_format_type;
+#define float_format (_PyRuntime.float_state.float_format)
+#define double_format (_PyRuntime.float_state.double_format)
 
-static float_format_type double_format, float_format;
 
 #if 0 // GraalPy change
 /*[clinic input]
@@ -1960,8 +1966,8 @@ PyTypeObject PyFloat_Type = {
 };
 #endif // GraalPy change
 
-void
-_PyFloat_InitState(PyInterpreterState *interp)
+static void
+_init_global_state(void)
 {
     float_format_type detected_double_format, detected_float_format;
 
@@ -2012,7 +2018,6 @@ _PyFloat_InitState(PyInterpreterState *interp)
     float_format = detected_float_format;
 }
 
-#if 0 // GraalPy change
 void
 _PyFloat_InitState(PyInterpreterState *interp)
 {
@@ -2022,6 +2027,7 @@ _PyFloat_InitState(PyInterpreterState *interp)
     _init_global_state();
 }
 
+#if 0 // GraalPy change
 PyStatus
 _PyFloat_InitTypes(PyInterpreterState *interp)
 {

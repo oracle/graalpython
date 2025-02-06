@@ -1017,10 +1017,6 @@ class TestObject(unittest.TestCase):
                                              PyUnicode_IS_COMPACT_ASCII(op) ?                   \
                                                  ((PyASCIIObject*)(op))->length :               \
                                                  _PyUnicode_UTF8_LENGTH(op))
-                                        #define _PyUnicode_WSTR(op)                             \
-                                            (((PyASCIIObject*)(op))->wstr)
-                                        #define _PyUnicode_WSTR_LENGTH(op)                      \
-                                            (((PyCompactUnicodeObject*)(op))->wstr_length)
                                         #define _PyUnicode_LENGTH(op)                           \
                                             (((PyASCIIObject *)(op))->length)
                                         #define _PyUnicode_STATE(op)                            \
@@ -1111,12 +1107,9 @@ class TestObject(unittest.TestCase):
                                             _PyUnicode_STATE(unicode).ascii = is_ascii;
                                             if (is_ascii) {
                                                 ((char*)data)[size] = 0;
-                                                _PyUnicode_WSTR(unicode) = NULL;
                                             }
                                             else if (kind == PyUnicode_1BYTE_KIND) {
                                                 ((char*)data)[size] = 0;
-                                                _PyUnicode_WSTR(unicode) = NULL;
-                                                _PyUnicode_WSTR_LENGTH(unicode) = 0;
                                                 unicode->utf8 = NULL;
                                                 unicode->utf8_length = 0;
                                             }
@@ -1127,14 +1120,6 @@ class TestObject(unittest.TestCase):
                                                     ((Py_UCS2*)data)[size] = 0;
                                                 else /* kind == PyUnicode_4BYTE_KIND */
                                                     ((Py_UCS4*)data)[size] = 0;
-                                                if (is_sharing) {
-                                                    _PyUnicode_WSTR_LENGTH(unicode) = size;
-                                                    _PyUnicode_WSTR(unicode) = (wchar_t *)data;
-                                                }
-                                                else {
-                                                    _PyUnicode_WSTR_LENGTH(unicode) = 0;
-                                                    _PyUnicode_WSTR(unicode) = NULL;
-                                                }
                                             }
                                             return obj;
                                         }

@@ -21,22 +21,20 @@ struct _ceval_runtime_state;
 #  define Py_DEFAULT_RECURSION_LIMIT 1000
 #endif
 
-#if 0 // GraalPy change
 #include "pycore_interp.h"        // PyInterpreterState.eval_frame
-#endif // GraalPy change
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 
 
 #if 0 // GraalPy change
 extern void _Py_FinishPendingCalls(PyThreadState *tstate);
-extern void _PyEval_InitRuntimeState(struct _ceval_runtime_state *);
-extern void _PyEval_InitState(struct _ceval_state *, PyThread_type_lock);
+extern void _PyEval_InitState(PyInterpreterState *, PyThread_type_lock);
 extern void _PyEval_FiniState(struct _ceval_state *ceval);
 PyAPI_FUNC(void) _PyEval_SignalReceived(PyInterpreterState *interp);
 PyAPI_FUNC(int) _PyEval_AddPendingCall(
     PyInterpreterState *interp,
     int (*func)(void *),
-    void *arg);
+    void *arg,
+    int mainthreadonly);
 PyAPI_FUNC(void) _PyEval_SignalAsyncExc(PyInterpreterState *interp);
 #ifdef HAVE_FORK
 extern PyStatus _PyEval_ReInitThreads(PyThreadState *tstate);
@@ -92,6 +90,7 @@ extern _PyPerf_Callbacks _Py_perfmap_callbacks;
 static inline PyObject*
 _PyEval_EvalFrame(PyThreadState *tstate, struct _PyInterpreterFrame *frame, int throwflag)
 {
+    EVAL_CALL_STAT_INC(EVAL_CALL_TOTAL);
     if (tstate->interp->eval_frame == NULL) {
         return _PyEval_EvalFrameDefault(tstate, frame, throwflag);
     }
@@ -104,11 +103,13 @@ _PyEval_Vector(PyThreadState *tstate,
             PyObject* const* args, size_t argcount,
             PyObject *kwnames);
 
-extern int _PyEval_ThreadsInitialized(struct pyruntimestate *runtime);
-extern PyStatus _PyEval_InitGIL(PyThreadState *tstate);
+extern int _PyEval_ThreadsInitialized(void);
+extern PyStatus _PyEval_InitGIL(PyThreadState *tstate, int own_gil);
 extern void _PyEval_FiniGIL(PyInterpreterState *interp);
 
-extern void _PyEval_ReleaseLock(PyThreadState *tstate);
+extern void _PyEval_AcquireLock(PyThreadState *tstate);
+extern void _PyEval_ReleaseLock(PyInterpreterState *, PyThreadState *);
+extern PyThreadState * _PyThreadState_SwapNoGIL(PyThreadState *);
 
 extern void _PyEval_DeactivateOpCache(void);
 #endif // GraalPy change

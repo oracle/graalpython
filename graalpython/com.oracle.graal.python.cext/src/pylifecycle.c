@@ -38,6 +38,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#include "Python.h"
+
+#include "pycore_call.h"          // _PyObject_CallMethod()
+#include "pycore_ceval.h"         // _PyEval_FiniGIL()
+#include "pycore_fileutils.h"     // _Py_ResetForceASCII()
+#include "pycore_floatobject.h"   // _PyFloat_InitTypes()
+#include "pycore_long.h"          // _PyLong_InitTypes()
+#include "pycore_object.h"        // _PyDebug_PrintTotalRefs()
+#include "pycore_pyerrors.h"      // _PyErr_Occurred()
+#include "pycore_pymem.h"         // _PyObject_DebugMallocStats()
+#include "pycore_pystate.h"       // _PyThreadState_GET()
+#include "pycore_runtime.h"       // _Py_ID()
+#include "pycore_runtime_init.h"  // _PyRuntimeState_INIT
+#include "pycore_typeobject.h"    // _PyTypes_InitTypes()
+#include "pycore_unicodeobject.h" // _PyUnicode_InitTypes()
+
+
+#include <locale.h>               // setlocale()
+#include <stdlib.h>               // getenv()
+#ifdef HAVE_UNISTD_H
+#  include <unistd.h>             // isatty()
+#endif
+
 #include "capi.h"
 
 int Py_IsInitialized(void) {
@@ -55,3 +78,12 @@ void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
 	/* If the above upcall returns, then we just fall through to the 'abort' call. */
 	abort();
 }
+
+_PyRuntimeState _PyRuntime
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+__attribute__ ((section (".PyRuntime")))
+#endif
+= _PyRuntimeState_INIT(_PyRuntime);
+_Py_COMP_DIAG_POP
+
+static int runtime_initialized = 0;

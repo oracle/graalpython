@@ -36,6 +36,8 @@ might not be allowed in the current interpreter (i.e. os.fork() would fail).
 #define Py_RTFLAGS_EXEC (1UL << 16)
 
 
+PyAPI_FUNC(int) _PyInterpreterState_HasFeature(PyInterpreterState *interp,
+                                               unsigned long feature);
 
 
 /* private interpreter helpers */
@@ -189,8 +191,7 @@ struct _ts {
      */
     unsigned long native_thread_id;
 
-    int trash_delete_nesting;
-    PyObject *trash_delete_later;
+    struct _py_trashcan trash;
 
     /* Called when a thread state is deleted normally, but not when it
      * is destroyed after fork().

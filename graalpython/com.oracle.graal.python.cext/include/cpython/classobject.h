@@ -31,10 +31,28 @@ PyAPI_FUNC(PyObject *) PyMethod_New(PyObject *, PyObject *);
 PyAPI_FUNC(PyObject *) PyMethod_Function(PyObject *);
 PyAPI_FUNC(PyObject *) PyMethod_Self(PyObject *);
 
-/* Macros for direct access to these values. Type checks are *not*
-   done, so use with care. */
-#define PyMethod_GET_FUNCTION(meth) PyMethod_Function((PyObject*)(meth))
-#define PyMethod_GET_SELF(meth) PyMethod_Self((PyObject*)(meth))
+#define _PyMethod_CAST(meth) \
+    (assert(PyMethod_Check(meth)), _Py_CAST(PyMethodObject*, meth))
+
+/* Static inline functions for direct access to these values.
+   Type checks are *not* done, so use with care. */
+static inline PyObject* PyMethod_GET_FUNCTION(PyObject *meth) {
+#if 0 // GraalPy change
+    return _PyMethod_CAST(meth)->im_func;
+#else // GraalPy change
+    return PyMethod_Function((PyObject*)(meth));
+#endif // GraalPy change
+}
+#define PyMethod_GET_FUNCTION(meth) PyMethod_GET_FUNCTION(_PyObject_CAST(meth))
+
+static inline PyObject* PyMethod_GET_SELF(PyObject *meth) {
+#if 0 // GraalPy change
+    return _PyMethod_CAST(meth)->im_self;
+#else // GraalPy change
+    return PyMethod_Self((PyObject*)(meth));
+#endif // GraalPy change
+}
+#define PyMethod_GET_SELF(meth) PyMethod_GET_SELF(_PyObject_CAST(meth))
 
 typedef struct {
     PyObject_HEAD
@@ -48,9 +66,20 @@ PyAPI_DATA(PyTypeObject) PyInstanceMethod_Type;
 PyAPI_FUNC(PyObject *) PyInstanceMethod_New(PyObject *);
 PyAPI_FUNC(PyObject *) PyInstanceMethod_Function(PyObject *);
 
-/* Macros for direct access to these values. Type checks are *not*
-   done, so use with care. */
-#define PyInstanceMethod_GET_FUNCTION(meth) PyInstanceMethod_Function((PyObject*)(meth))
+#define _PyInstanceMethod_CAST(meth) \
+    (assert(PyInstanceMethod_Check(meth)), \
+     _Py_CAST(PyInstanceMethodObject*, meth))
+
+/* Static inline function for direct access to these values.
+   Type checks are *not* done, so use with care. */
+static inline PyObject* PyInstanceMethod_GET_FUNCTION(PyObject *meth) {
+#if 0 // GraalPy change
+    return _PyInstanceMethod_CAST(meth)->func;
+#else // GraalPy change
+    return PyInstanceMethod_Function((PyObject*)(meth));
+#endif // GraalPy change
+}
+#define PyInstanceMethod_GET_FUNCTION(meth) PyInstanceMethod_GET_FUNCTION(_PyObject_CAST(meth))
 
 #ifdef __cplusplus
 }
