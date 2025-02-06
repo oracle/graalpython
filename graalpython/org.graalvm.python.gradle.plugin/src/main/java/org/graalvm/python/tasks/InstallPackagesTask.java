@@ -71,7 +71,7 @@ public abstract class InstallPackagesTask extends AbstractPackagesTask {
         Path venvDirectory = getVenvDirectory();
         try {
             VFSUtils.createVenv(venvDirectory, getPackages().get(), getRequirementsPath(),
-                    INCONSISTENT_PACKAGES_ERROR, WRONG_PACKAGE_VERSION_FORMAT_ERROR, MISSING_REQUIREMENTS_FILE_WARNING, PACKAGES_LIST_CHANGED_ERROR,
+                    INCONSISTENT_PACKAGES_ERROR, WRONG_PACKAGE_VERSION_FORMAT_ERROR, PACKAGES_LIST_CHANGED_ERROR, MISSING_REQUIREMENTS_FILE_WARNING,
                     createLauncher(),  getPolyglotVersion().get(), getLog());
         } catch (IOException e) {
             throw new GradleException(String.format("failed to create python virtual environment in %s", venvDirectory), e);

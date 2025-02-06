@@ -72,7 +72,7 @@ public final class EmbeddingTestUtils {
             Launcher launcher = createLauncher(venvDir);
             if (requirements != null) {
                 VFSUtils.createVenv(venvDir, Arrays.asList(packages), requirements,
-                                inconsistentPackagesError, wrongPackageVersionError, missingRequirementsFileWarning, packagesListChangedError,
+                                inconsistentPackagesError, wrongPackageVersionError, packagesListChangedError, missingRequirementsFileWarning,
                                 launcher, graalPyVersion, log);
             } else {
                 VFSUtils.createVenv(venvDir, Arrays.asList(packages), launcher, graalPyVersion, log);

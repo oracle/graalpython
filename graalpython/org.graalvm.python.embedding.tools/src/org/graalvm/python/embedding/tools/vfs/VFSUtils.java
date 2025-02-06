@@ -281,19 +281,24 @@ public final class VFSUtils {
     }
 
     public static void createVenv(Path venvDirectory, List<String> packages, Path requirementsFile,
-                    String inconsistentPackagesError, String wrongPackageVersionFormatError, String missingRequirementsFileWarning, String packagesListChangedError,
+                    String inconsistentPackagesError, String wrongPackageVersionFormatError, String packagesListChangedError, String missingRequirementsFileWarning,
                     Launcher launcher, String graalPyVersion, BuildToolLog log) throws IOException {
         Objects.requireNonNull(venvDirectory);
         Objects.requireNonNull(packages);
         Objects.requireNonNull(launcher);
         Objects.requireNonNull(graalPyVersion);
         Objects.requireNonNull(log);
+        if (requirementsFile != null) {
+            Objects.requireNonNull(inconsistentPackagesError);
+            Objects.requireNonNull(wrongPackageVersionFormatError);
+            Objects.requireNonNull(packagesListChangedError);
+        }
 
         logVenvArgs(venvDirectory, packages, requirementsFile, launcher, graalPyVersion, log);
 
         List<String> pluginPackages = trim(packages);
         List<String> requirementsPackages = requirementsFile != null && Files.exists(requirementsFile) ? readPackagesFromFile(requirementsFile) : null;
-        if (!checkPackages(venvDirectory, pluginPackages, requirementsPackages, requirementsFile, inconsistentPackagesError, wrongPackageVersionFormatError, log)) {
+        if (!checkPackages(venvDirectory, pluginPackages, requirementsPackages, requirementsFile, inconsistentPackagesError, wrongPackageVersionFormatError, packagesListChangedError, log)) {
             return;
         }
 
@@ -301,7 +306,6 @@ public final class VFSUtils {
 
         boolean installed;
         if (requirementsPackages != null) {
-            checkPluginPackagesChanged(venvContents, pluginPackages, requirementsFile, packagesListChangedError, log);
             installed = install(venvDirectory, requirementsFile, requirementsPackages, log);
         } else {
             installed = install(venvDirectory, pluginPackages, venvContents, missingRequirementsFileWarning, log);
@@ -312,17 +316,63 @@ public final class VFSUtils {
     }
 
     /**
-     * checks if plugin packages are still the same as the packages previously used to generate the
-     * requirements file
+     * checks if package was removed since the last install
      */
-    private static void checkPluginPackagesChanged(VenvContents venvContents, List<String> pluginPackages, Path requirementsFile, String packagesListChangedError, BuildToolLog log)
+    private static void checkIfRemovedFromPluginPackages(Path venvDirectory, VenvContents venvContents, List<String> pluginPackages, Path requirementsFile, String packagesListChangedError,
+                    BuildToolLog log)
                     throws IOException {
-        if (packagesListChangedError != null && venvContents.packages != null &&
-                        venvContents.packages.size() != pluginPackages.size() && venvContents.packages.containsAll(pluginPackages)) {
+        if (venvContents == null) {
+            return;
+        }
+        if (packagesListChangedError != null && removedFromPluginPackages(venvDirectory, venvContents, pluginPackages)) {
             extendedError(log, String.format(packagesListChangedError, requirementsFile,
                             String.join(", ", pluginPackages.stream().sorted().toList()), String.join(", ", venvContents.packages.stream().sorted().toList())));
             throw new IOException("packages from plugin configuration changed");
         }
+    }
+
+    private static boolean removedFromPluginPackages(Path venvDirectory, VenvContents venvContents, List<String> pluginPackages) throws IOException {
+        if (venvContents == null || venvContents.packages == null) {
+            return false;
+        }
+        List<String> installedPackages = InstalledPackages.fromVenv(venvDirectory).packages;
+        return removedFromPluginPackages(venvDirectory, pluginPackages, venvContents.packages, installedPackages);
+    }
+
+    private static boolean removedFromPluginPackages(Path venvDirectory, List<String> pluginPackages, List<String> contentsPackages, List<String> installedPackages) {
+        for (String contentsPackage : contentsPackages) {
+            if (!pluginPackages.contains(contentsPackage)) {
+                // there is a previously installed package missing in the current plugin packages
+                // list
+                if (!contentsPackage.contains("==")) {
+                    // it has no version specified, so lets check if it isn't just requested with a
+                    // version
+                    String pkgAndVersion = getByName(contentsPackage, pluginPackages);
+                    if (pkgAndVersion != null) {
+                        // yes, a version was added to a package
+                        if (installedPackages.contains(pkgAndVersion)) {
+                            // and it happened to be already installed with the same version
+                            continue;
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String getByName(String name, List<String> packages) {
+        for (String p : packages) {
+            int idx = p.indexOf("==");
+            if (idx > -1) {
+                String n = p.split("==")[0];
+                if (n.equals(name)) {
+                    return p;
+                }
+            }
+        }
+        return null;
     }
 
     public static void freezePackages(Path venvDirectory, List<String> packages, Path requirementsFile, String requirementsHeader, String wrongPackageVersionFormatError, Launcher launcher,
@@ -355,13 +405,26 @@ public final class VFSUtils {
     }
 
     private static boolean checkPackages(Path venvDirectory, List<String> pluginPackages, List<String> requirementsPackages, Path requirementsFile, String inconsistentPackagesError,
-                    String wrongPackageVersionFormatError, BuildToolLog log) throws IOException {
+                    String wrongPackageVersionFormatError, String packagesListChangedError, BuildToolLog log) throws IOException {
+        VenvContents contents = null;
+        if (Files.exists(venvDirectory)) {
+            // get contents from prev install if such already present
+            contents = VenvContents.fromVenv(venvDirectory);
+        }
+
         if (requirementsPackages != null) {
             checkVersionFormat(pluginPackages, wrongPackageVersionFormatError, log);
             checkPluginPackagesInRequirementsFile(pluginPackages, requirementsPackages, requirementsFile, inconsistentPackagesError, log);
+            checkIfRemovedFromPluginPackages(venvDirectory, contents, pluginPackages, requirementsFile, packagesListChangedError, log);
             logPackages(requirementsPackages, requirementsFile, log);
             return needVenv(venvDirectory, requirementsPackages, log);
         } else {
+            if (removedFromPluginPackages(venvDirectory, contents, pluginPackages)) {
+                // a package was removed, and we do not know if it did not leave behind any
+                // transitive dependencies - rather create whole venv again to avoid it growing
+                info(log, "A package with unknown dependencies was removed since last install, setting up a clean venv");
+                delete(venvDirectory);
+            }
             logPackages(pluginPackages, null, log);
             return needVenv(venvDirectory, pluginPackages, log);
         }
@@ -409,15 +472,15 @@ public final class VFSUtils {
                 delete(venvDirectory);
             } else if (!graalPyVersion.equals(contents.graalPyVersion)) {
                 contents = null;
-                info(log, "Stale GraalPy venv, updating to %s", graalPyVersion);
+                info(log, "Stale GraalPy virtual environment, updating to %s", graalPyVersion);
                 delete(venvDirectory);
             }
         }
 
         if (!Files.exists(venvDirectory)) {
-                info(log, "Creating GraalPy %s venv", graalPyVersion);
-                runLauncher(launcherPath.toString(), log, "-m", "venv", venvDirectory.toString(), "--without-pip");
-                runVenvBin(venvDirectory, "graalpy", log, "-I", "-m", "ensurepip");
+            info(log, "Creating GraalPy %s virtual environment", graalPyVersion);
+            runLauncher(launcherPath.toString(), log, "-m", "venv", venvDirectory.toString(), "--without-pip");
+            runVenvBin(venvDirectory, "graalpy", log, "-I", "-m", "ensurepip");
         }
 
         if (contents == null) {

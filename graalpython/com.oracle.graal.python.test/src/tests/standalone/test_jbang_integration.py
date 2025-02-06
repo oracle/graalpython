@@ -340,8 +340,8 @@ def hello():
         out, result = run_cmd(command, cwd=work_dir)
 
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
-        self.assertTrue("Uninstalling ujson" in out, f"Expected text:\nUninstalling ujson")
-        self.assertFalse("Successfully installed termcolor" in out, f"Did not expect text:\nSuccessfully installed termcolor")
+        self.assertFalse("ujson" in out, f"Did not expect text:\n ujson")
+        self.assertTrue("Successfully installed termcolor" in out, f"Did not expect text:\nSuccessfully installed termcolor")
         self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")
 
         # add ujson in additional PIP comment

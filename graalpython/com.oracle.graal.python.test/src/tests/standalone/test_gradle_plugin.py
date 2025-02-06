@@ -48,7 +48,8 @@ from tests.standalone.util import TemporaryTestDirectory, Logger
 
 MISSING_FILE_WARNING = "Some python dependencies were installed in addition to packages declared in graalpy-gradle-plugin configuration"
 WRONG_PACKAGE_VERSION_FORMAT = "Some python packages in graalpy-gradle-plugin configuration have no exact version declared"
-PACKAGES_INCONSISTENT_ERROR = "some packages in graalpy-gradle-plugin configuration are either missing or have a different version"
+PACKAGES_INCONSISTENT_ERROR = "some packages in graalpy-gradle-plugin configuration are either missing in requirements file or have a different version"
+VENV_UPTODATE = "Virtual environment is up to date with requirements file, skipping install"
 
 def append(file, txt):
     with open(file, "a") as f:
@@ -250,7 +251,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             cmd = gradlew_cmd + ["build", "run"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("Python packages up to date, skipping install", out)
+            util.check_ouput(VENV_UPTODATE, out)
             util.check_ouput("hello java", out)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 
