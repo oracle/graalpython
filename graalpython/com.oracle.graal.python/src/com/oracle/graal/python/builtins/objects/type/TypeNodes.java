@@ -2006,7 +2006,7 @@ public abstract class TypeNodes {
                     } else {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classdictcell__");
                     }
-                    delItemNamespace.execute(inliningTarget, namespace, SpecialAttributeNames.T___CLASSDICTCELL__);
+                    delItemNamespace.execute(inliningTarget, namespace.getDictStorage(), SpecialAttributeNames.T___CLASSDICTCELL__, namespace);
                 }
 
                 SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode.execute(inliningTarget, newType), language);
