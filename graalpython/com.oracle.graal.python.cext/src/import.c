@@ -3947,7 +3947,6 @@ static struct PyModuleDef imp_module = {
     .m_methods = imp_methods,
     .m_slots = imp_slots,
 };
-#endif // GraalPy change
 
 PyMODINIT_FUNC
 PyInit__imp(void)
@@ -3959,6 +3958,8 @@ PyInit__imp(void)
     exit(-1);
 #endif // GraalPy change
 }
+
+#endif // GraalPy change
 
 #ifdef __cplusplus
 }
