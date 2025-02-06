@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PARAMETERS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TYPING_PREPARE_SUBST__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TYPING_SUBST__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
@@ -56,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -90,17 +93,11 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public abstract class GenericTypeNodes {
 
-    public static final String J___TYPING_SUBST__ = "__typing_subst__";
-    public static final TruffleString T___TYPING_SUBST__ = tsLiteral(J___TYPING_SUBST__);
-
     public static final String J___TYPING_UNPACKED_TUPLE_ARGS__ = "__typing_unpacked_tuple_args__";
     public static final TruffleString T___TYPING_UNPACKED_TUPLE_ARGS__ = tsLiteral(J___TYPING_UNPACKED_TUPLE_ARGS__);
 
     public static final String J___TYPING_IS_UNPACKED_TYPEVARTUPLE__ = "__typing_is_unpacked_typevartuple__";
     public static final TruffleString T___TYPING_IS_UNPACKED_TYPEVARTUPLE__ = tsLiteral(J___TYPING_IS_UNPACKED_TYPEVARTUPLE__);
-
-    public static final String J___TYPING_PREPARE_SUBST__ = "__typing_prepare_subst__";
-    public static final TruffleString T___TYPING_PREPARE_SUBST__ = tsLiteral(J___TYPING_PREPARE_SUBST__);
 
     @TruffleBoundary
     private static Object getItemUncached(SequenceStorage storage, int i) {
@@ -232,7 +229,7 @@ public abstract class GenericTypeNodes {
     }
 
     @TruffleBoundary
-    private static Object[] unpackArgs(Object item) {
+    private static PTuple unpackArgs(Object item) {
         List<Object> newargs = new ArrayList<>();
         if (item instanceof PTuple tuple) {
             SequenceStorage storage = tuple.getSequenceStorage();
@@ -242,7 +239,7 @@ public abstract class GenericTypeNodes {
         } else {
             unpackArgsInner(newargs, item);
         }
-        return newargs.toArray();
+        return PythonObjectFactory.getUncached().createTuple(newargs.toArray());
     }
 
     private static void unpackArgsInner(List<Object> newargs, Object item) {
@@ -269,7 +266,7 @@ public abstract class GenericTypeNodes {
         if (nparams == 0) {
             throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.S_IS_NOT_A_GENERIC_CLASS, PyObjectReprAsTruffleStringNode.executeUncached(self));
         }
-        Object[] argitems = unpackArgs(item);
+        item = unpackArgs(item);
         for (int i = 0; i < nparams; i++) {
             Object param = getItemUncached(paramsStorage, i);
             Object prepare = PyObjectLookupAttr.executeUncached(param, T___TYPING_PREPARE_SUBST__);
@@ -278,10 +275,20 @@ public abstract class GenericTypeNodes {
                 item = CallNode.executeUncached(prepare, self, itemarg);
             }
         }
-        if (argitems.length != nparams) {
+
+        int nitems;
+        Object[] argitems;
+        if (item instanceof PTuple t) {
+            argitems = GetInternalObjectArrayNode.executeUncached(t.getSequenceStorage());
+            nitems = t.getSequenceStorage().length();
+        } else {
+            argitems = new Object[]{item};
+            nitems = 1;
+        }
+        if (nitems != nparams) {
             throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.TOO_S_ARGUMENTS_FOR_S_ACTUAL_D_EXPECTED_D,
-                            argitems.length > nparams ? "many" : "few", PyObjectReprAsTruffleStringNode.executeUncached(self),
-                            argitems.length, nparams);
+                            nitems > nparams ? "many" : "few", PyObjectReprAsTruffleStringNode.executeUncached(self),
+                            nitems, nparams);
         }
         SequenceStorage argsStorage = args.getSequenceStorage();
         List<Object> newargs = new ArrayList<>(argsStorage.length());
@@ -319,13 +326,14 @@ public abstract class GenericTypeNodes {
                 Object arg = getItemUncached(subparamsStorage, i);
                 int foundIndex = tupleIndex(parameters, arg);
                 if (foundIndex >= 0) {
-                    Object param = arg;
+                    Object param = getItemUncached(parameters.getSequenceStorage(), foundIndex);
                     arg = argitems[foundIndex];
                     // TypeVarTuple
                     if (arg instanceof PTuple tuple1) {
                         Object paramType = GetClassNode.executeUncached(param);
                         if (LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Iter).execute(paramType) != PNone.NO_VALUE) {
                             listExtend(subargs, tuple1);
+                            continue;
                         }
                     }
                 }
@@ -362,7 +370,7 @@ public abstract class GenericTypeNodes {
 
         protected static boolean isUnionable(Node inliningTarget, PyObjectTypeCheck typeCheck, Object obj) {
             return obj == PNone.NONE || typeCheck.execute(inliningTarget, obj, PythonBuiltinClassType.PythonClass) || typeCheck.execute(inliningTarget, obj, PythonBuiltinClassType.PGenericAlias) ||
-                            typeCheck.execute(inliningTarget, obj, PythonBuiltinClassType.PUnionType);
+                            typeCheck.execute(inliningTarget, obj, PythonBuiltinClassType.PUnionType) || typeCheck.execute(inliningTarget, obj, PythonBuiltinClassType.PTypeAliasType);
         }
     }
 

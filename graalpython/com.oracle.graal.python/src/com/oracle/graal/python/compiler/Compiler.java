@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.compiler;
 
+import static com.oracle.graal.python.compiler.CompilationScope.AsyncFunction;
+import static com.oracle.graal.python.compiler.CompilationScope.Class;
+import static com.oracle.graal.python.compiler.CompilationScope.Function;
+import static com.oracle.graal.python.compiler.CompilationScope.Lambda;
+import static com.oracle.graal.python.compiler.CompilationScope.TypeParams;
 import static com.oracle.graal.python.compiler.OpCodes.ADD_TO_COLLECTION;
 import static com.oracle.graal.python.compiler.OpCodes.ASYNCGEN_WRAP;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_OP;
@@ -92,7 +97,6 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_BIGINT;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_BUILD_CLASS;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_BYTE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_BYTES;
-import static com.oracle.graal.python.compiler.OpCodes.LOAD_CLASSDEREF;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_CLOSURE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_COMPLEX;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_CONST;
@@ -102,8 +106,11 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_DOUBLE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_ELLIPSIS;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_FALSE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_FAST;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_FROM_DICT_OR_DEREF;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_FROM_DICT_OR_GLOBALS;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_GLOBAL;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_INT;
+import static com.oracle.graal.python.compiler.OpCodes.LOAD_LOCALS;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_LONG;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_METHOD;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_NAME;
@@ -111,7 +118,10 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_NONE;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_STRING;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
+import static com.oracle.graal.python.compiler.OpCodes.MAKE_GENERIC;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
+import static com.oracle.graal.python.compiler.OpCodes.MAKE_TYPE_ALIAS;
+import static com.oracle.graal.python.compiler.OpCodes.MAKE_TYPE_PARAM;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_CLASS;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_KEYS;
@@ -147,7 +157,9 @@ import static com.oracle.graal.python.compiler.OpCodes.UNPACK_EX;
 import static com.oracle.graal.python.compiler.OpCodes.UNPACK_SEQUENCE;
 import static com.oracle.graal.python.compiler.OpCodes.UNWRAP_EXC;
 import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.arrayCopyOf;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
@@ -163,6 +175,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
+import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.FutureFeature;
@@ -185,6 +198,7 @@ import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy.Constant;
+import com.oracle.graal.python.pegparser.sst.ExprTy.Tuple;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -195,6 +209,7 @@ import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
@@ -414,7 +429,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         enterScope(name, scopeType, node, 0, 0, 0, false, false, node.getSourceRange());
     }
 
-    private void enterScope(String name, CompilationScope scope, SSTNode node, ArgumentsTy args, SourceRange startLocation) {
+    private void enterScope(String name, CompilationScope scope, Object key, ArgumentsTy args, SourceRange startLocation) {
         int argc, pargc, kwargc;
         boolean splat, kwSplat;
         if (args == null) {
@@ -427,17 +442,42 @@ public class Compiler implements SSTreeVisitor<Void> {
             splat = args.varArg != null;
             kwSplat = args.kwArg != null;
         }
-        enterScope(name, scope, node, argc, pargc, kwargc, splat, kwSplat, startLocation);
+        enterScope(name, scope, key, argc, pargc, kwargc, splat, kwSplat, startLocation);
     }
 
-    private void enterScope(String name, CompilationScope scopeType, SSTNode node, int argc, int pargc, int kwargc,
+    private void enterScope(String name, CompilationScope scopeType, Object key, int argc, int pargc, int kwargc,
                     boolean hasSplat, boolean hasKwSplat, SourceRange startLocation) {
         if (unit != null) {
             stack.add(unit);
         }
-        unit = new CompilationUnit(scopeType, env.lookupScope(node), name, unit, stack.size(), argc, pargc, kwargc,
+
+        unit = new CompilationUnit(scopeType, env.lookupScope(key), name, getNewScopeQualName(name, scopeType), unit, argc, pargc, kwargc,
                         hasSplat, hasKwSplat, startLocation, futureFeatures);
         nestingLevel++;
+    }
+
+    private String getNewScopeQualName(String name, CompilationScope scopeType) {
+        CompilationUnit parent = unit;
+        int scopeDepth = stack.size();
+        if (scopeDepth > 1 && parent != null) {
+            if (parent.scopeType == TypeParams) {
+                parent = stack.get(scopeDepth - 2);
+                if (scopeDepth == 2) {
+                    return name;
+                }
+            }
+            if (!(EnumSet.of(Function, AsyncFunction, Class).contains(scopeType) &&
+                            parent.scope.getUseOfName(ScopeEnvironment.mangle(parent.privateName, name)).contains(Scope.DefUse.GlobalExplicit))) {
+                String base;
+                if (EnumSet.of(Function, AsyncFunction, Lambda).contains(parent.scopeType)) {
+                    base = parent.qualName + ".<locals>";
+                } else {
+                    base = parent.qualName;
+                }
+                return base + "." + name;
+            }
+        }
+        return name;
     }
 
     private void exitScope() {
@@ -555,7 +595,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private Void addOpName(OpCodes code, HashMap<String, Integer> dict, String name) {
-        String mangled = ScopeEnvironment.mangle(unit.privateName, name);
+        String mangled = ScopeEnvironment.maybeMangle(unit.privateName, unit.scope, name);
         addOpObject(code, dict, mangled);
         return null;
     }
@@ -568,7 +608,15 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void addDerefVariableOpcode(ExprContextTy ctx, int idx) {
         switch (ctx) {
             case Load:
-                addOp(unit.scope.isClass() ? LOAD_CLASSDEREF : LOAD_DEREF, idx);
+                if (unit.scope.isClass()) {
+                    addOp(LOAD_LOCALS);
+                    addOp(LOAD_FROM_DICT_OR_DEREF, idx);
+                } else if (unit.scope.canSeeClassScope()) {
+                    addOp(LOAD_DEREF, addObject(unit.freevars, "__classdict__"));
+                    addOp(LOAD_FROM_DICT_OR_DEREF, idx);
+                } else {
+                    addOp(LOAD_DEREF, idx);
+                }
                 break;
             case Store:
                 addOp(STORE_DEREF, idx);
@@ -593,10 +641,15 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private void addGlobalVariableOpcode(ExprContextTy ctx, int idx) {
+    private void addGlobalVariableOpcode(ExprContextTy ctx, int idx, boolean isImplicitScope) {
         switch (ctx) {
             case Load:
-                addOp(LOAD_GLOBAL, idx);
+                if (unit.scope.canSeeClassScope() && isImplicitScope) {
+                    addOp(LOAD_DEREF, addObject(unit.freevars, "__classdict__"));
+                    addOp(LOAD_FROM_DICT_OR_GLOBALS, idx);
+                } else {
+                    addOp(LOAD_GLOBAL, idx);
+                }
                 break;
             case Store:
                 addOp(STORE_GLOBAL, idx);
@@ -610,7 +663,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void addNameVariableOpcode(ExprContextTy ctx, int idx) {
         switch (ctx) {
             case Load:
-                addOp(LOAD_NAME, idx);
+                if (unit.scope.isClass()) {
+                    // TODO GR-61661 inlined comprehensions
+                    addOp(LOAD_NAME, idx);
+                } else {
+                    addOp(LOAD_NAME, idx);
+                }
                 break;
             case Store:
                 addOp(STORE_NAME, idx);
@@ -624,7 +682,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void addNameOp(String name, ExprContextTy ctx) {
         checkForbiddenName(name, ctx);
 
-        String mangled = ScopeEnvironment.mangle(unit.privateName, name);
+        String mangled = ScopeEnvironment.maybeMangle(unit.privateName, unit.scope, name);
         EnumSet<Scope.DefUse> uses = unit.scope.getUseOfName(mangled);
 
         if (uses != null) {
@@ -641,11 +699,11 @@ public class Compiler implements SSTreeVisitor<Void> {
                 }
             } else if (uses.contains(Scope.DefUse.GlobalImplicit)) {
                 if (unit.scope.isFunction()) {
-                    addGlobalVariableOpcode(ctx, addObject(unit.names, mangled));
+                    addGlobalVariableOpcode(ctx, addObject(unit.names, mangled), true);
                     return;
                 }
             } else if (uses.contains(Scope.DefUse.GlobalExplicit)) {
-                addGlobalVariableOpcode(ctx, addObject(unit.names, mangled));
+                addGlobalVariableOpcode(ctx, addObject(unit.names, mangled), false);
                 return;
             }
         }
@@ -954,7 +1012,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 String fv = tfv.toJavaStringUncached();
                 // special case for class scopes
                 int arg;
-                if (unit.scopeType == CompilationScope.Class && "__class__".equals(fv) || unit.scope.getUseOfName(fv).contains(Scope.DefUse.Cell)) {
+                if (unit.scopeType == CompilationScope.Class && ("__class__".equals(fv) || "__classdict__".equals(fv)) || unit.scope.getUseOfName(fv).contains(Scope.DefUse.Cell)) {
                     arg = unit.cellvars.get(fv);
                 } else {
                     arg = unit.freevars.get(fv);
@@ -1222,7 +1280,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (isAttributeLoad(func) && keywords.length == 0) {
                 ((ExprTy.Attribute) func).value.accept(this);
                 op = CALL_METHOD_VARARGS;
-                String mangled = ScopeEnvironment.mangle(unit.privateName, ((ExprTy.Attribute) func).attr);
+                String mangled = ScopeEnvironment.maybeMangle(unit.privateName, unit.scope, ((ExprTy.Attribute) func).attr);
                 opArg = addObject(unit.names, mangled);
                 addOp(LOAD_METHOD, opArg);
                 shortCall = args.length <= 3;
@@ -2108,7 +2166,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     node.annotation.accept(this);
                 }
                 addNameOp("__annotations__", ExprContextTy.Load);
-                String mangled = ScopeEnvironment.mangle(unit.privateName, name);
+                String mangled = ScopeEnvironment.maybeMangle(unit.privateName, unit.scope, name);
                 addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
                 addOp(STORE_SUBSCR);
             }
@@ -2268,7 +2326,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     // TODO temporary helper so that stuff that's not implemented can compile into stubs
     private Void emitNotImplemented(String what) {
-        addGlobalVariableOpcode(ExprContextTy.Load, addObject(unit.names, "NotImplementedError"));
+        addGlobalVariableOpcode(ExprContextTy.Load, addObject(unit.names, "NotImplementedError"), false);
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(what)));
         addOp(CALL_FUNCTION, 1);
         addOp(RAISE_VARARGS, 1);
@@ -2277,7 +2335,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.AsyncFunctionDef node) {
-        return visitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, true);
+        return visitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeParams, true);
     }
 
     @Override
@@ -2429,15 +2487,37 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (node.decoratorList != null && node.decoratorList.length > 0) {
             startLocation = node.decoratorList[0].getSourceRange();
         }
-
+        boolean isGeneric = node.typeParams != null && node.typeParams.length > 0;
+        if (isGeneric) {
+            String typeParamsName = "<generic parameters of " + node.name + ">";
+            enterScope(typeParamsName, CompilationScope.TypeParams, node.typeParams, null, startLocation);
+            unit.privateName = node.name;
+            visitTypeParams(node.typeParams);
+            addNameOp(".type_params", ExprContextTy.Store);
+        }
         enterScope(node.name, CompilationScope.Class, node, 0, 0, 0, false, false, startLocation);
         addNameOp("__name__", ExprContextTy.Load);
         addNameOp("__module__", ExprContextTy.Store);
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(unit.qualName)));
         addNameOp("__qualname__", ExprContextTy.Store);
 
+        if (isGeneric) {
+            addNameOp(".type_params", ExprContextTy.Load);
+            addNameOp(J___TYPE_PARAMS__, ExprContextTy.Store);
+        }
+        if (unit.scope.needsClassDict()) {
+            addOp(LOAD_LOCALS);
+            // We can't use addNameOp here because we need to generate a STORE_DEREF in a class
+            // namespace, addNameOp() won't do that by default.
+            addOp(STORE_DEREF, addObject(unit.cellvars, "__classdict__"));
+        }
+
         visitBody(node.body, false);
 
+        if (unit.scope.needsClassDict()) {
+            addOp(LOAD_CLOSURE, unit.cellvars.get("__classdict__"));
+            addNameOp("__classdictcell__", ExprContextTy.Store);
+        }
         if (unit.scope.needsClassClosure()) {
             int idx = unit.cellvars.get("__class__");
             addOp(LOAD_CLOSURE, idx);
@@ -2454,8 +2534,27 @@ public class Compiler implements SSTreeVisitor<Void> {
         makeClosure(co, 0);
         addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(node.name)));
 
-        callHelper(CALL_FUNCTION_VARARGS, 0, 2, node.bases, node.keywords);
-
+        if (isGeneric) {
+            addNameOp(".type_params", ExprContextTy.Load);
+            addOp(MAKE_GENERIC);
+            addNameOp(".generic_base", ExprContextTy.Store);
+            ExprTy.Name nameNode = new ExprTy.Name(".generic_base", ExprContextTy.Load, node.getSourceRange());
+            ExprTy[] bases;
+            if (node.bases == null) {
+                bases = new ExprTy[]{nameNode};
+            } else {
+                bases = arrayCopyOf(node.bases, node.bases.length + 1);
+                bases[bases.length - 1] = nameNode;
+            }
+            callHelper(CALL_FUNCTION_VARARGS, 0, 2, bases, node.keywords);
+            addOp(RETURN_VALUE);
+            CodeUnit code = unit.assemble();
+            exitScope();
+            makeClosure(code, 0);
+            addOp(CALL_FUNCTION, 0);
+        } else {
+            callHelper(CALL_FUNCTION_VARARGS, 0, 2, node.bases, node.keywords);
+        }
         applyDecorators(node.decoratorList);
 
         addNameOp(node.name, ExprContextTy.Store);
@@ -2518,10 +2617,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.FunctionDef node) {
-        return visitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, false);
+        return visitFunctionDef(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeParams, false);
     }
 
-    private Void visitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, boolean isAsync) {
+    private Void visitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, TypeParamTy[] typeParams, boolean isAsync) {
         setLocation(node);
         checkForbiddenArgs(args);
 
@@ -2533,9 +2632,30 @@ public class Compiler implements SSTreeVisitor<Void> {
             startLocation = decoratorList[0].getSourceRange();
         }
 
+        boolean isGeneric = typeParams != null && typeParams.length > 0;
+
         // visit defaults outside the function scope
         int makeFunctionFlags = collectDefaults(args);
 
+        int numTypeParamArgs = 0;
+        if (isGeneric) {
+            if ((makeFunctionFlags & OpCodes.MakeFunctionFlags.HAS_DEFAULTS) != 0) {
+                numTypeParamArgs++;
+            }
+            if ((makeFunctionFlags & OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS) != 0) {
+                numTypeParamArgs++;
+            }
+            String typeParamsName = "<generic parameters of " + name + ">";
+            enterScope(typeParamsName, CompilationScope.TypeParams, typeParams, numTypeParamArgs, 0, 0, false, false, startLocation);
+            visitTypeParams(typeParams);
+            if ((makeFunctionFlags & (OpCodes.MakeFunctionFlags.HAS_DEFAULTS | OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS)) != 0) {
+                addOp(LOAD_FAST, 0);
+            }
+            if ((makeFunctionFlags & (OpCodes.MakeFunctionFlags.HAS_DEFAULTS | OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS)) == (OpCodes.MakeFunctionFlags.HAS_DEFAULTS |
+                            OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS)) {
+                addOp(LOAD_FAST, 1);
+            }
+        }
         boolean hasAnnotations = visitAnnotations(args, returns);
         if (hasAnnotations) {
             makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_ANNOTATIONS;
@@ -2544,17 +2664,28 @@ public class Compiler implements SSTreeVisitor<Void> {
         CompilationScope scopeType = isAsync ? CompilationScope.AsyncFunction : CompilationScope.Function;
         enterScope(name, scopeType, node, args, startLocation);
 
-        CodeUnit code;
-        try {
-            TruffleString docString = getDocstring(body);
-            addObject(unit.constants, docString == null ? PNone.NONE : docString);
-            visitSequence(body);
-            code = unit.assemble();
-        } finally {
-            exitScope();
-        }
-
+        TruffleString docString = getDocstring(body);
+        addObject(unit.constants, docString == null ? PNone.NONE : docString);
+        visitSequence(body);
+        CodeUnit code = unit.assemble();
+        exitScope();
         makeClosure(code, makeFunctionFlags);
+
+        if (isGeneric) {
+            addOp(DUP_TOP);
+            addOp(ROT_THREE);
+            addOpName(STORE_ATTR, unit.names, J___TYPE_PARAMS__);
+            addOp(RETURN_VALUE);
+            CodeUnit typeParamsCode = unit.assemble();
+            exitScope();
+            makeClosure(typeParamsCode, 0);
+            if (numTypeParamArgs == 2) {
+                addOp(ROT_THREE);
+            } else if (numTypeParamArgs == 1) {
+                addOp(ROT_TWO);
+            }
+            addOp(CALL_FUNCTION, numTypeParamArgs);
+        }
 
         applyDecorators(decoratorList);
 
@@ -2569,6 +2700,19 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(CALL_FUNCTION, 1);
                 setLocation(savedLocation);
             }
+        }
+    }
+
+    private void visitTypeParams(TypeParamTy[] typeParams) {
+        boolean useList = typeParams.length > CollectionBits.KIND_MASK;
+        Collector typeParamCollector = new Collector(useList ? CollectionBits.KIND_LIST : CollectionBits.KIND_TUPLE);
+        for (TypeParamTy typeParam : typeParams) {
+            typeParam.accept(this);
+            typeParamCollector.appendItem();
+        }
+        typeParamCollector.finishCollection();
+        if (useList) {
+            addOp(TUPLE_FROM_LIST);
         }
     }
 
@@ -2601,7 +2745,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void visitArgAnnotation(Collector collector, String name, ExprTy annotation) {
         if (annotation != null) {
-            String mangled = ScopeEnvironment.mangle(unit.privateName, name);
+            String mangled = ScopeEnvironment.maybeMangle(unit.privateName, unit.scope, name);
             addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(mangled)));
             if (futureFeatures.contains(FutureFeature.ANNOTATIONS)) {
                 visitAnnexpr(annotation);
@@ -2636,12 +2780,14 @@ public class Compiler implements SSTreeVisitor<Void> {
                     ArgTy arg = args.kwOnlyArgs[i];
                     ExprTy def = args.kwDefaults[i];
                     if (def != null) {
-                        String mangled = ScopeEnvironment.mangle(unit.privateName, arg.arg);
+                        String mangled = ScopeEnvironment.maybeMangle(unit.privateName, unit.scope, arg.arg);
                         defs.add(new KeywordTy(mangled, def, arg.getSourceRange()));
                     }
                 }
-                collectKeywords(defs.toArray(KeywordTy[]::new), null);
-                makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS;
+                if (!defs.isEmpty()) {
+                    collectKeywords(defs.toArray(KeywordTy[]::new), null);
+                    makeFunctionFlags |= OpCodes.MakeFunctionFlags.HAS_KWONLY_DEFAULTS;
+                }
             }
         }
         return makeFunctionFlags;
@@ -3933,22 +4079,79 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(TypeAlias node) {
-        throw new IllegalStateException("Not implemented");
+        SourceRange savedLocation = setLocation(node);
+        try {
+            boolean isGeneric = node.typeParams != null && node.typeParams.length > 0;
+            String name = ((ExprTy.Name) node.name).id;
+            if (isGeneric) {
+                String typeParamsName = "<generic parameters of " + name + ">";
+                enterScope(typeParamsName, CompilationScope.TypeParams, node.typeParams, null, node.getSourceRange());
+            }
+            addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(name)));
+            if (isGeneric) {
+                visitTypeParams(node.typeParams);
+            } else {
+                addOp(LOAD_NONE);
+            }
+            enterScope(name, CompilationScope.Function, node);
+            // Make None the first constant, so the evaluate function can't have a docstring.
+            addObject(unit.constants, PNone.NONE);
+            node.value.accept(this);
+            addOp(RETURN_VALUE);
+            CodeUnit code = unit.assemble();
+            exitScope();
+            makeClosure(code, 0);
+            addOp(MAKE_TYPE_ALIAS);
+
+            if (isGeneric) {
+                addOp(RETURN_VALUE);
+                CodeUnit typeParamsCode = unit.assemble();
+                exitScope();
+                makeClosure(typeParamsCode, 0);
+                addOp(CALL_FUNCTION, 0);
+            }
+            addNameOp(name, ExprContextTy.Store);
+            return null;
+        } finally {
+            setLocation(savedLocation);
+        }
     }
 
     @Override
     public Void visit(TypeVar node) {
-        throw new IllegalStateException("Not implemented");
+        addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(node.name)));
+        if (node.bound != null) {
+            enterScope(node.name, CompilationScope.TypeParams, node);
+            node.bound.accept(this);
+            addOp(RETURN_VALUE);
+            CodeUnit code = unit.assemble();
+            exitScope();
+            makeClosure(code, 0);
+            addOp(MAKE_TYPE_PARAM, node.bound instanceof Tuple ? MakeTypeParamKind.TYPE_VAR_WITH_CONSTRAINTS : MakeTypeParamKind.TYPE_VAR_WITH_BOUND);
+        } else {
+            addOp(MAKE_TYPE_PARAM, MakeTypeParamKind.TYPE_VAR);
+        }
+        addOp(DUP_TOP);
+        addNameOp(node.name, ExprContextTy.Store);
+        return null;
     }
 
     @Override
     public Void visit(ParamSpec node) {
-        throw new IllegalStateException("Not implemented");
+        addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(node.name)));
+        addOp(MAKE_TYPE_PARAM, MakeTypeParamKind.PARAM_SPEC);
+        addOp(DUP_TOP);
+        addNameOp(node.name, ExprContextTy.Store);
+        return null;
     }
 
     @Override
     public Void visit(TypeVarTuple node) {
-        throw new IllegalStateException("Not implemented");
+        addOp(LOAD_STRING, addObject(unit.constants, toTruffleStringUncached(node.name)));
+        addOp(MAKE_TYPE_PARAM, MakeTypeParamKind.TYPE_VAR_TUPLE);
+        addOp(DUP_TOP);
+        addNameOp(node.name, ExprContextTy.Store);
+        return null;
     }
 
     // Equivalent of compiler_warn()

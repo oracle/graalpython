@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,6 +65,7 @@ import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_ITEMS;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_NAMES;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_TARGETS;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_T_MATCH_CASE;
+import static com.oracle.graal.python.nodes.ErrorMessages.TYPEALIAS_WITH_NON_NAME_NAME;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Del;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Load;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Store;
@@ -91,6 +92,7 @@ import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
@@ -154,6 +156,7 @@ final class Validator implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.FunctionDef node) {
         validateBody(node.body, T_C_FUNCTIONDEF);
+        validateTypeParams(node.typeParams);
         visit(node.args);
         validateExprs(node.decoratorList, Load, false);
         if (node.returns != null) {
@@ -165,6 +168,7 @@ final class Validator implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.ClassDef node) {
         validateBody(node.body, T_C_CLASSDEF);
+        validateTypeParams(node.typeParams);
         validateExprs(node.bases, Load, false);
         validateKeywords(node.keywords);
         validateExprs(node.decoratorList, Load, false);
@@ -380,6 +384,7 @@ final class Validator implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.AsyncFunctionDef node) {
         validateBody(node.body, T_C_ASYNCFUNCTIONDEF);
+        validateTypeParams(node.typeParams);
         visit(node.args);
         validateExprs(node.decoratorList, Load, false);
         if (node.returns != null) {
@@ -954,22 +959,34 @@ final class Validator implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(TypeAlias node) {
-        throw new IllegalStateException("not implemented");
+        if (!(node.name instanceof ExprTy.Name)) {
+            raiseTypeError(TYPEALIAS_WITH_NON_NAME_NAME);
+        }
+        validateExpr(node.name, Store);
+        validateTypeParams(node.typeParams);
+        validateExpr(node.value, Load);
+        return null;
     }
 
     @Override
     public Void visit(TypeVar node) {
-        throw new IllegalStateException("not implemented");
+        validateName(node.name);
+        if (node.bound != null) {
+            validateExpr(node.bound, Load);
+        }
+        return null;
     }
 
     @Override
     public Void visit(ParamSpec node) {
-        throw new IllegalStateException("not implemented");
+        validateName(node.name);
+        return null;
     }
 
     @Override
     public Void visit(TypeVarTuple node) {
-        throw new IllegalStateException("not implemented");
+        validateName(node.name);
+        return null;
     }
 
 /*-
@@ -1060,6 +1077,16 @@ final class Validator implements SSTreeVisitor<Void> {
         }
         for (ComprehensionTy comp : generators) {
             visit(comp);
+        }
+    }
+
+    // Equivalent of validate_type_params
+    private void validateTypeParams(TypeParamTy[] typeParams) {
+        if (typeParams == null) {
+            return;
+        }
+        for (TypeParamTy typeParam : typeParams) {
+            typeParam.accept(this);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,14 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.compiler;
+package com.oracle.graal.python.builtins.objects.typing;
 
-enum CompilationScope {
-    Module,
-    Class,
-    Function,
-    AsyncFunction,
-    Lambda,
-    Comprehension,
-    TypeParams;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
+
+public final class PTypeAliasType extends PythonBuiltinObject {
+
+    final TruffleString name;
+    final PTuple typeParams;
+    Object computeValue;
+    Object value;
+    final Object module;
+
+    public PTypeAliasType(Object cls, Shape instanceShape, TruffleString name, PTuple typeParams, Object computeValue, Object value, Object module) {
+        super(cls, instanceShape);
+        assert (value == null) != (computeValue == null);
+        this.name = name;
+        this.typeParams = typeParams;
+        this.computeValue = computeValue;
+        this.value = value;
+        this.module = module;
+    }
 }

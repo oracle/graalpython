@@ -284,6 +284,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
     private static final NodeSupplier<GetYieldFromIterNode> NODE_OBJECT_GET_YIELD_FROM_ITER = GetYieldFromIterNode::create;
     private static final GetYieldFromIterNode UNCACHED_OBJECT_GET_YIELD_FROM_ITER = GetYieldFromIterNode.getUncached();
+    private static final MakeTypeParamNode UNCACHED_MAKE_TYPE_PARAM = MakeTypeParamNode.getUncached();
+    private static final NodeSupplier<MakeTypeParamNode> NODE_MAKE_TYPE_PARAM = MakeTypeParamNode::create;
+    private static final MakeTypeAliasNode UNCACHED_MAKE_TYPE_ALIAS = MakeTypeAliasNode.getUncached();
+    private static final NodeSupplier<MakeTypeAliasNode> NODE_MAKE_TYPE_ALIAS = MakeTypeAliasNode::create;
+    private static final MakeGenericNode UNCACHED_MAKE_GENERIC = MakeGenericNode.getUncached();
+    private static final NodeSupplier<MakeGenericNode> NODE_MAKE_GENERIC = MakeGenericNode::create;
 
     private static final NodeSupplier<GetAwaitableNode> NODE_OBJECT_GET_AWAITABLE = GetAwaitableNode::create;
     private static final GetAwaitableNode UNCACHED_OBJECT_GET_AWAITABLE = GetAwaitableNode.getUncached();
@@ -369,6 +375,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PrintExprNode> NODE_PRINT_EXPR = PrintExprNode::create;
     private static final ReadFromLocalsNode UNCACHED_READ_FROM_LOCALS = ReadFromLocalsNode.getUncached();
     private static final NodeSupplier<ReadFromLocalsNode> NODE_READ_FROM_LOCALS = ReadFromLocalsNode::create;
+    private static final ReadFromDictOrGlobalsNode UNCACHED_READ_FROM_DICT_OR_GLOBALS = ReadFromDictOrGlobalsNode.getUncached();
+    private static final NodeSupplier<ReadFromDictOrGlobalsNode> NODE_READ_FROM_DICT_OR_GLOBALS = ReadFromDictOrGlobalsNode::create;
     private static final SetupAnnotationsNode UNCACHED_SETUP_ANNOTATIONS = SetupAnnotationsNode.getUncached();
     private static final NodeSupplier<SetupAnnotationsNode> NODE_SETUP_ANNOTATIONS = SetupAnnotationsNode::create;
     private static final GetSendValueNode UNCACHED_GET_SEND_VALUE = GetSendValueNode.getUncached();
@@ -1559,10 +1567,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeClosureFromStack(virtualFrame, stackTop, oparg);
                         break;
                     }
-                    case OpCodesConstants.LOAD_CLASSDEREF: {
+                    case OpCodesConstants.LOAD_LOCALS: {
+                        if (locals == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw PRaiseNode.getUncached().raise(SystemError, ErrorMessages.NO_LOCALS_FOUND);
+                        }
+                        virtualFrame.setObject(++stackTop, locals);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_FROM_DICT_OR_DEREF: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeLoadClassDeref(virtualFrame, localFrame, locals, stackTop, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
+                        stackTop = bytecodeLoadFromDictOrDeref(virtualFrame, localFrame, stackTop, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_FROM_DICT_OR_GLOBALS: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeLoadFromDictOrGlobals(virtualFrame, globals, stackTop, beginBci, localNames[oparg], localNodes, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_DEREF: {
@@ -2291,6 +2313,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bci++;
                         continue;
                     }
+                    case OpCodesConstants.MAKE_TYPE_PARAM: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeMakeTypeParam(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci, oparg);
+                        break;
+                    }
+                    case OpCodesConstants.MAKE_TYPE_ALIAS: {
+                        stackTop = bytecodeMakeTypeAlias(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
+                    case OpCodesConstants.MAKE_GENERIC: {
+                        stackTop = bytecodeMakeGeneric(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                        break;
+                    }
                     default:
                         throw raiseUnknownBytecodeError(bc);
                 }
@@ -2602,6 +2637,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CodeUnit codeUnit = (CodeUnit) localConsts;
         MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(localNodes, beginBci, codeUnit);
         return makeFunctionNode.execute(virtualFrame, globals, stackTop, flags);
+    }
+
+    private int bytecodeMakeTypeParam(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci, int kind) {
+        MakeTypeParamNode makeTypeParamNode = insertChildNode(localNodes, beginBci, UNCACHED_MAKE_TYPE_PARAM, MakeTypeParamNodeGen.class, NODE_MAKE_TYPE_PARAM, useCachedNodes);
+        return makeTypeParamNode.execute(virtualFrame, stackTop, kind);
+    }
+
+    private int bytecodeMakeTypeAlias(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        MakeTypeAliasNode makeTypeAliasNode = insertChildNode(localNodes, beginBci, UNCACHED_MAKE_TYPE_ALIAS, MakeTypeAliasNodeGen.class, NODE_MAKE_TYPE_ALIAS, useCachedNodes);
+        return makeTypeAliasNode.execute(virtualFrame, stackTop);
+    }
+
+    private int bytecodeMakeGeneric(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        MakeGenericNode makeGenericNode = insertChildNode(localNodes, beginBci, UNCACHED_MAKE_GENERIC, MakeGenericNodeGen.class, NODE_MAKE_GENERIC, useCachedNodes);
+        return makeGenericNode.execute(virtualFrame, stackTop);
     }
 
     @BytecodeInterpreterSwitch
@@ -4719,10 +4769,29 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
-        TruffleString varName = freevars[oparg - cellvars.length];
+    private int bytecodeLoadDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
+        PCell cell = (PCell) localFrame.getObject(cachedCelloffset + oparg);
+        Object value = cell.getRef();
+        if (value == null) {
+            raiseUnboundCell(localNodes, bci, oparg, useCachedNodes);
+        }
+        virtualFrame.setObject(++stackTop, value);
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeLoadFromDictOrDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
+        TruffleString varName;
+        if (oparg >= cellvars.length) {
+            varName = freevars[oparg - cellvars.length];
+        } else {
+            varName = cellvars[oparg];
+        }
+
         ReadFromLocalsNode readFromLocals = insertChildNode(localNodes, bci, UNCACHED_READ_FROM_LOCALS, ReadFromLocalsNodeGen.class, NODE_READ_FROM_LOCALS, useCachedNodes);
-        Object value = readFromLocals.executeCached(virtualFrame, locals, varName);
+        Object dict = virtualFrame.getObject(stackTop);
+        virtualFrame.setObject(stackTop--, null);
+        Object value = readFromLocals.executeCached(virtualFrame, dict, varName);
         if (value != PNone.NO_VALUE) {
             virtualFrame.setObject(++stackTop, value);
             return stackTop;
@@ -4732,14 +4801,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeLoadDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
-        PCell cell = (PCell) localFrame.getObject(cachedCelloffset + oparg);
-        Object value = cell.getRef();
-        if (value == null) {
-            raiseUnboundCell(localNodes, bci, oparg, useCachedNodes);
-        }
-        virtualFrame.setObject(++stackTop, value);
-        return stackTop;
+    private int bytecodeLoadFromDictOrGlobals(VirtualFrame virtualFrame, Object globals, int stackTop, int bci, TruffleString localName, Node[] localNodes, boolean useCachedNodes) {
+        ReadFromDictOrGlobalsNode read = insertChildNode(localNodes, bci, UNCACHED_READ_FROM_DICT_OR_GLOBALS, ReadFromDictOrGlobalsNodeGen.class, NODE_READ_FROM_DICT_OR_GLOBALS, useCachedNodes);
+        return read.execute(virtualFrame, stackTop, globals, localName);
     }
 
     @BytecodeInterpreterSwitch

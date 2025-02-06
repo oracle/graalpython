@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,10 +70,12 @@ import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 /**
  * Roughly plays the role of CPython's {@code symtable}.
@@ -94,13 +96,19 @@ public class ScopeEnvironment {
     private static final String NONLOCAL_ANNOT = "annotated name '%s' can't be nonlocal";
     private static final String IMPORT_STAR_WARNING = "import * only allowed at module level";
     private static final String NAMED_EXPR_COMP_IN_CLASS = "assignment expression within a comprehension cannot be used in a class body";
+    private static final String NAMED_EXPR_COMP_IN_TYPEPARAM = "assignment expression within a comprehension cannot be used within the definition of a generic";
+    private static final String NAMED_EXPR_COMP_IN_TYPEALIAS = "assignment expression within a comprehension cannot be used in a type alias";
+    private static final String NAMED_EXPR_COMP_IN_TYPEVAR_BOUND = "assignment expression within a comprehension cannot be used in a TypeVar bound";
     private static final String NAMED_EXPR_COMP_CONFLICT = "assignment expression cannot rebind comprehension iteration variable '%s'";
     private static final String NAMED_EXPR_COMP_INNER_LOOP_CONFLICT = "comprehension inner loop cannot rebind assignment expression target '%s'";
     private static final String NAMED_EXPR_COMP_ITER_EXPR = "assignment expression cannot be used in a comprehension iterable expression";
     private static final String DUPLICATE_ARGUMENT = "duplicate argument '%s' in function definition";
+    private static final String DUPLICATE_TYPE_PARAM = "duplicate type parameter '%s'";
 
     final Scope topScope;
-    final HashMap<SSTNode, Scope> blocks = new HashMap<>();
+    // Keys to the `blocks` map are either SSTNode objects or TypeParamTy[] in case of functions
+    // synthesized for implementation of Type Parameter Syntax.
+    final HashMap<Object, Scope> blocks = new HashMap<>();
     final ParserCallbacks parserCallbacks;
     final EnumSet<FutureFeature> futureFeatures;
 
@@ -117,7 +125,7 @@ public class ScopeEnvironment {
         moduleNode.accept(visitor);
 
         // Second pass
-        analyzeBlock(topScope, null, null, null);
+        analyzeBlock(topScope, null, null, null, null, null);
     }
 
     @Override
@@ -125,15 +133,17 @@ public class ScopeEnvironment {
         return "ScopeEnvironment\n" + topScope.toString(1);
     }
 
-    private void addScope(SSTNode node, Scope scope) {
-        blocks.put(node, scope);
+    private void addScope(Object key, Scope scope) {
+        assert key instanceof SSTNode || key instanceof TypeParamTy[];
+        blocks.put(key, scope);
     }
 
-    public Scope lookupScope(SSTNode node) {
-        return blocks.get(node);
+    public Scope lookupScope(Object key) {
+        assert key instanceof SSTNode || key instanceof TypeParamTy[];
+        return blocks.get(key);
     }
 
-    private void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global) {
+    private void analyzeBlock(Scope scope, HashSet<String> bound, HashSet<String> free, HashSet<String> global, HashSet<String> typeParams, Scope classEntry) {
         HashSet<String> local = new HashSet<>();
         HashMap<String, DefUse> scopes = new HashMap<>();
         HashSet<String> newGlobal = new HashSet<>();
@@ -150,11 +160,11 @@ public class ScopeEnvironment {
         }
 
         for (Entry<String, EnumSet<DefUse>> e : scope.symbols.entrySet()) {
-            analyzeName(scope, scopes, e.getKey(), e.getValue(), bound, local, free, global);
+            analyzeName(scope, scopes, e.getKey(), e.getValue(), bound, local, free, global, typeParams, classEntry);
         }
 
         if (scope.type != ScopeType.Class) {
-            if (scope.type == ScopeType.Function) {
+            if (scope.type.isFunctionLike()) {
                 newBound.addAll(local);
             }
             if (bound != null) {
@@ -165,15 +175,27 @@ public class ScopeEnvironment {
             }
         } else {
             newBound.add("__class__");
+            newBound.add("__classdict__");
         }
 
         HashSet<String> allFree = new HashSet<>();
         for (Scope s : scope.children) {
-            // inline the logic from CPython's analyze_child_block
+            Scope newClassEntry = null;
+            if (s.canSeeClassScope()) {
+                if (scope.type == ScopeType.Class) {
+                    newClassEntry = scope;
+                } else if (classEntry != null) {
+                    newClassEntry = classEntry;
+                }
+            }
             HashSet<String> tempBound = new HashSet<>(newBound);
             HashSet<String> tempFree = new HashSet<>(newFree);
             HashSet<String> tempGlobal = new HashSet<>(newGlobal);
-            analyzeBlock(s, tempBound, tempFree, tempGlobal);
+            HashSet<String> tempTypeParams = new HashSet<>();
+            if (typeParams != null) {
+                tempTypeParams.addAll(typeParams);
+            }
+            analyzeBlock(s, tempBound, tempFree, tempGlobal, tempTypeParams, newClassEntry);
             allFree.addAll(tempFree);
             if (s.flags.contains(ScopeFlags.HasFreeVars) || s.flags.contains(ScopeFlags.HasChildWithFreeVars)) {
                 scope.flags.add(ScopeFlags.HasChildWithFreeVars);
@@ -182,18 +204,13 @@ public class ScopeEnvironment {
 
         newFree.addAll(allFree);
 
-        switch (scope.type) {
-            case Function:
-                analyzeCells(scopes, newFree);
-                break;
-            case Class:
-                dropClassFree(scope, newFree);
-                break;
-            default:
-                break;
+        if (scope.type.isFunctionLike()) {
+            analyzeCells(scopes, newFree);
+        } else if (scope.type == ScopeType.Class) {
+            dropClassFree(scope, newFree);
         }
 
-        updateSymbols(scope.symbols, scopes, bound, newFree, scope.type == ScopeType.Class);
+        updateSymbols(scope.symbols, scopes, bound, newFree, scope.type == ScopeType.Class || scope.canSeeClassScope());
 
         if (free != null) {
             free.addAll(newFree);
@@ -201,7 +218,7 @@ public class ScopeEnvironment {
     }
 
     private void analyzeName(Scope scope, HashMap<String, DefUse> scopes, String name, EnumSet<DefUse> flags, HashSet<String> bound, HashSet<String> local, HashSet<String> free,
-                    HashSet<String> global) {
+                    HashSet<String> global, HashSet<String> typeParams, Scope classEntry) {
         if (flags.contains(DefUse.DefGlobal)) {
             if (flags.contains(DefUse.DefNonLocal)) {
                 throw parserCallbacks.onError(ErrorType.Syntax, scope.getDirective(name), "name '%s' is nonlocal and global", name);
@@ -213,11 +230,15 @@ public class ScopeEnvironment {
             if (bound != null) {
                 bound.remove(name);
             }
-        } else if (flags.contains(DefUse.DefNonLocal)) {
+            return;
+        }
+        if (flags.contains(DefUse.DefNonLocal)) {
             if (bound == null) {
                 throw parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, scope.getDirective(name), "nonlocal declaration not allowed at module level");
             } else if (!bound.contains(name)) {
                 throw parserCallbacks.onError(ErrorType.Syntax, scope.getDirective(name), "no binding for nonlocal '%s' found", name);
+            } else if (typeParams != null && typeParams.contains(name)) {
+                throw parserCallbacks.onError(ErrorType.Syntax, scope.getDirective(name), "nonlocal binding not allowed for type parameter '%s'", name);
             }
             scopes.put(name, DefUse.Free);
             scope.flags.add(ScopeFlags.HasFreeVars);
@@ -225,13 +246,43 @@ public class ScopeEnvironment {
                 // free is null in the module scope in which case we already reported an error above
                 free.add(name);
             }
-        } else if (!Collections.disjoint(flags, DefUse.DefBound)) {
+            return;
+        }
+        if (!Collections.disjoint(flags, DefUse.DefBound)) {
             scopes.put(name, DefUse.Local);
             local.add(name);
             if (global != null) {
                 global.remove(name);
             }
-        } else if (bound != null && bound.contains(name)) {
+            if (flags.contains(DefUse.DefTypeParam)) {
+                // typeParams is null in the module scope, but in that scope it is not possible to
+                // declare a type parameter
+                assert typeParams != null;
+                typeParams.add(name);
+            } else if (typeParams != null) {
+                typeParams.remove(name);
+            }
+            return;
+        }
+        // If we were passed classEntry (i.e., we're in an CanSeeClassScope scope)
+        // and the bound name is in that set, then the name is potentially bound both by
+        // the immediately enclosing class namespace, and also by an outer function namespace.
+        // In that case, we want the runtime name resolution to look at only the class
+        // namespace and the globals (not the namespace providing the bound).
+        // Similarly, if the name is explicitly global in the class namespace (through the
+        // global statement), we want to also treat it as a global in this scope.
+        if (classEntry != null) {
+            EnumSet<DefUse> classFlags = classEntry.getUseOfName(name);
+            if (classFlags.contains(DefUse.DefGlobal)) {
+                scopes.put(name, DefUse.GlobalExplicit);
+                return;
+            } else if (!Collections.disjoint(classFlags, DefUse.DefBound) && !classFlags.contains(DefUse.DefNonLocal)) {
+                scopes.put(name, DefUse.GlobalImplicit);
+                return;
+            }
+        }
+
+        if (bound != null && bound.contains(name)) {
             scopes.put(name, DefUse.Free);
             scope.flags.add(ScopeFlags.HasFreeVars);
             free.add(name);
@@ -263,6 +314,9 @@ public class ScopeEnvironment {
         if (free.remove("__class__")) {
             scope.flags.add(ScopeFlags.NeedsClassClosure);
         }
+        if (free.remove("__classdict__")) {
+            scope.flags.add(ScopeFlags.NeedsClassDict);
+        }
     }
 
     private static void updateSymbols(HashMap<String, EnumSet<DefUse>> symbols, HashMap<String, DefUse> scopes, HashSet<String> bound, HashSet<String> free, boolean isClass) {
@@ -277,13 +331,20 @@ public class ScopeEnvironment {
         for (String name : free) {
             EnumSet<DefUse> v = symbols.get(name);
             if (v != null) {
-                if (isClass && (v.contains(DefUse.DefGlobal) || !Collections.disjoint(v, DefUse.DefBound))) {
+                if (isClass) {
                     v.add(DefUse.DefFreeClass);
                 }
             } else if (bound == null || bound.contains(name)) {
                 symbols.put(name, EnumSet.of(DefUse.Free));
             }
         }
+    }
+
+    public static String maybeMangle(String className, Scope scope, String name) {
+        if (scope.mangledNames != null && !scope.mangledNames.contains(name)) {
+            return name;
+        }
+        return mangle(className, name);
     }
 
     public static String mangle(String className, String name) {
@@ -318,13 +379,17 @@ public class ScopeEnvironment {
         }
 
         private void enterBlock(String name, Scope.ScopeType type, SSTNode ast) {
-            Scope scope = new Scope(name, type, ast);
-            env.addScope(ast, scope);
+            enterBlock(name, type, ast.getSourceRange(), ast);
+        }
+
+        private void enterBlock(String name, Scope.ScopeType type, SourceRange sourceRange, Object key) {
+            Scope scope = new Scope(name, type, sourceRange);
+            env.addScope(key, scope);
             stack.push(scope);
             Scope prev = currentScope;
             if (prev != null) {
                 scope.comprehensionIterExpression = prev.comprehensionIterExpression;
-                if (prev.type == ScopeType.Function || prev.isNested()) {
+                if (prev.type.isFunctionLike() || prev.isNested()) {
                     scope.flags.add(ScopeFlags.IsNested);
                 }
             }
@@ -342,25 +407,35 @@ public class ScopeEnvironment {
             currentScope = stack.peek();
         }
 
-        private String mangle(String name) {
-            return ScopeEnvironment.mangle(currentClassName, name);
+        private String maybeMangle(String name) {
+            return ScopeEnvironment.maybeMangle(currentClassName, currentScope, name);
         }
 
         private void addDef(String name, DefUse flag, SSTNode node) {
-            addDef(name, flag, currentScope, node);
+            addDef(name, EnumSet.of(flag), node);
+        }
+
+        private void addDef(String name, EnumSet<DefUse> flags, SSTNode node) {
+            if (flags.contains(DefUse.DefTypeParam) && currentScope.mangledNames != null) {
+                currentScope.mangledNames.add(name);
+            }
+            addDefHelper(name, flags, currentScope, node);
         }
 
         private void addDef(String name, DefUse flag, Scope scope, SSTNode node) {
-            String mangled = mangle(name);
+            addDefHelper(name, EnumSet.of(flag), scope, node);
+        }
+
+        private void addDefHelper(String name, EnumSet<DefUse> newFlags, Scope scope, SSTNode node) {
+            String mangled = maybeMangle(name);
             EnumSet<DefUse> flags = scope.getUseOfName(mangled);
-            if (flags != null) {
-                if (flag == DefUse.DefParam && flags.contains(DefUse.DefParam)) {
-                    throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), DUPLICATE_ARGUMENT, mangled);
-                }
-                flags.add(flag);
-            } else {
-                flags = EnumSet.of(flag);
+            if (newFlags.contains(DefUse.DefParam) && flags.contains(DefUse.DefParam)) {
+                throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), DUPLICATE_ARGUMENT, name);
             }
+            if (newFlags.contains(DefUse.DefTypeParam) && flags.contains(DefUse.DefTypeParam)) {
+                throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), DUPLICATE_TYPE_PARAM, name);
+            }
+            flags.addAll(newFlags);
             if (scope.flags.contains(ScopeFlags.IsVisitingIterTarget)) {
                 if (flags.contains(DefUse.DefGlobal) || flags.contains(DefUse.DefNonLocal)) {
                     throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_INNER_LOOP_CONFLICT, mangled);
@@ -368,29 +443,56 @@ public class ScopeEnvironment {
                 flags.add(DefUse.DefCompIter);
             }
             scope.symbols.put(mangled, flags);
-            switch (flag) {
-                case DefParam:
-                    if (scope.varnames.contains(mangled)) {
-                        throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), "duplicate argument '%s' in function definition", mangled);
-                    }
-                    scope.varnames.add(mangled);
-
-                    break;
-                case DefGlobal:
-                    EnumSet<DefUse> globalFlags = globals.get(mangled);
-                    if (globalFlags != null) {
-                        globalFlags.add(flag);
-                    } else {
-                        globalFlags = EnumSet.of(flag);
-                    }
-                    globals.put(mangled, globalFlags);
-                    break;
-                default:
-                    break;
+            if (newFlags.contains(DefUse.DefParam)) {
+                if (scope.varnames.contains(mangled)) {
+                    throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), "duplicate argument '%s' in function definition", mangled);
+                }
+                scope.varnames.add(mangled);
+            } else if (newFlags.contains(DefUse.DefGlobal)) {
+                EnumSet<DefUse> globalFlags = globals.get(mangled);
+                if (globalFlags != null) {
+                    globalFlags.addAll(newFlags);
+                } else {
+                    globalFlags = newFlags;
+                }
+                globals.put(mangled, globalFlags);
             }
         }
 
+        private void enterTypeParamBlock(String name, boolean hasDefaults, boolean hasKwDefaults, SSTNode ast, TypeParamTy[] key) {
+            ScopeType currentType = currentScope.type;
+            enterBlock(name, ScopeType.TypeParam, ast.getSourceRange(), key);
+            if (currentType == ScopeType.Class) {
+                currentScope.flags.add(ScopeFlags.CanSeeClassScope);
+                addDef("__classdict__", DefUse.Use, ast);
+            }
+            if (ast instanceof StmtTy.ClassDef) {
+                addDef(".type_params", DefUse.DefLocal, ast);
+                addDef(".type_params", DefUse.Use, ast);
+                addDef(".generic_base", DefUse.DefLocal, ast);
+                addDef(".generic_base", DefUse.Use, ast);
+            }
+            if (hasDefaults) {
+                addDef(".defaults", DefUse.DefParam, ast);
+            }
+            if (hasKwDefaults) {
+                addDef(".kwdefaults", DefUse.DefParam, ast);
+            }
+        }
+
+        private static boolean hasKwOnlyDefaults(ArgTy[] kwOnlyArgs, ExprTy[] kwDefaults) {
+            for (int i = 0; i < kwOnlyArgs.length; i++) {
+                if (kwDefaults[i] != null) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void handleComprehension(ExprTy e, String scopeName, ComprehensionTy[] generators, ExprTy element, ExprTy value, Scope.ComprehensionType comprehensionType) {
+            if (currentScope.canSeeClassScope()) {
+                throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, e.getSourceRange(), "Cannot use comprehension in annotation scope within class scope");
+            }
             boolean isGenerator = e instanceof ExprTy.GeneratorExp;
             ComprehensionTy outermost = generators[0];
             currentScope.comprehensionIterExpression++;
@@ -449,8 +551,15 @@ public class ScopeEnvironment {
         }
 
         private void raiseIfAnnotationBlock(String name, ExprTy node) {
-            if (currentScope.type == ScopeType.Annotation) {
-                throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' can not be used within an annotation", name);
+            switch (currentScope.type) {
+                case Annotation:
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' can not be used within an annotation", name);
+                case TypeVarBound:
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' cannot be used within a TypeVar bound", name);
+                case TypeAlias:
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' cannot be used within a type alias", name);
+                case TypeParam:
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "'%s' cannot be used within the definition of a generic", name);
             }
         }
 
@@ -667,7 +776,7 @@ public class ScopeEnvironment {
         public Void visit(ExprTy.Name node) {
             addDef(node.id, node.context == ExprContextTy.Load ? DefUse.Use : DefUse.DefLocal, node);
             // Special-case super: it counts as a use of __class__
-            if (node.context == ExprContextTy.Load && currentScope.type == ScopeType.Function &&
+            if (node.context == ExprContextTy.Load && currentScope.type.isFunctionLike() &&
                             node.id.equals("super")) {
                 addDef("__class__", DefUse.Use, node);
             }
@@ -686,33 +795,42 @@ public class ScopeEnvironment {
                 for (Scope s : stack) {
                     // If we find a comprehension scope, check for conflict
                     if (s.flags.contains(ScopeFlags.IsComprehension)) {
-                        if (s.getUseOfName(targetName).contains(DefUse.DefCompIter)) {
+                        if (s.getUseOfName(maybeMangle(targetName)).contains(DefUse.DefCompIter)) {
                             throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_CONFLICT);
                         }
                         continue;
                     }
                     // If we find a FunctionBlock entry, add as GLOBAL/LOCAL or NONLOCAL/LOCAL
                     if (s.type == ScopeType.Function) {
-                        EnumSet<DefUse> uses = s.getUseOfName(targetName);
+                        EnumSet<DefUse> uses = s.getUseOfName(maybeMangle(targetName));
                         if (uses.contains(DefUse.DefGlobal)) {
                             addDef(targetName, DefUse.DefGlobal, node);
                         } else {
                             addDef(targetName, DefUse.DefNonLocal, node);
                         }
-                        currentScope.recordDirective(mangle(targetName), node.getSourceRange());
+                        currentScope.recordDirective(maybeMangle(targetName), node.getSourceRange());
                         addDef(targetName, DefUse.DefLocal, s, node);
                         break;
                     }
                     // If we find a ModuleBlock entry, add as GLOBAL
                     if (s.type == ScopeType.Module) {
                         addDef(targetName, DefUse.DefGlobal, node);
-                        currentScope.recordDirective(mangle(targetName), node.getSourceRange());
+                        currentScope.recordDirective(maybeMangle(targetName), node.getSourceRange());
                         addDef(targetName, DefUse.DefGlobal, s, node);
                         break;
                     }
-                    // Disallow usage in ClassBlock
+                    // Disallow usage in ClassBlock and type scopes
                     if (s.type == ScopeType.Class) {
                         throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_IN_CLASS);
+                    }
+                    if (s.type == ScopeType.TypeParam) {
+                        throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_IN_TYPEPARAM);
+                    }
+                    if (s.type == ScopeType.TypeAlias) {
+                        throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_IN_TYPEALIAS);
+                    }
+                    if (s.type == ScopeType.TypeVarBound) {
+                        throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, node.getSourceRange(), NAMED_EXPR_COMP_IN_TYPEVAR_BOUND);
                     }
                 }
             }
@@ -836,7 +954,7 @@ public class ScopeEnvironment {
         public Void visit(StmtTy.AnnAssign node) {
             if (node.target instanceof ExprTy.Name) {
                 ExprTy.Name name = (ExprTy.Name) node.target;
-                EnumSet<DefUse> cur = currentScope.getUseOfName(mangle(name.id));
+                EnumSet<DefUse> cur = currentScope.getUseOfName(maybeMangle(name.id));
                 if (cur != null && (cur.contains(DefUse.DefGlobal) || cur.contains(DefUse.DefNonLocal)) &&
                                 currentScope.symbols != globals &&
                                 node.isSimple) {
@@ -890,23 +1008,7 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.AsyncFunctionDef node) {
-            addDef(node.name, DefUse.DefLocal, node);
-            if (node.args != null) {
-                visitSequence(node.args.defaults);
-                visitSequence(node.args.kwDefaults);
-            }
-            visitAnnotations(node, node.args, node.returns);
-            visitSequence(node.decoratorList);
-            enterBlock(node.name, ScopeType.Function, node);
-            try {
-                currentScope.flags.add(ScopeFlags.IsCoroutine);
-                if (node.args != null) {
-                    node.args.accept(this);
-                }
-                visitSequence(node.body);
-            } finally {
-                exitBlock();
-            }
+            visitFunctionDef(node.name, node.args, node.body, node.decoratorList, node.returns, node.typeParams, true, node);
             return null;
         }
 
@@ -927,17 +1029,36 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.ClassDef node) {
             addDef(node.name, DefUse.DefLocal, node);
-            visitSequence(node.bases);
-            visitSequence(node.keywords);
             visitSequence(node.decoratorList);
             String tmp = currentClassName;
-            enterBlock(node.name, ScopeType.Class, node);
+            boolean isGeneric = node.typeParams != null && node.typeParams.length > 0;
+            if (isGeneric) {
+                enterTypeParamBlock(node.name, false, false, node, node.typeParams);
+            }
             try {
-                currentClassName = node.name;
-                visitSequence(node.body);
+                if (isGeneric) {
+                    currentClassName = node.name;
+                    currentScope.mangledNames = new HashSet<>();
+                    visitSequence(node.typeParams);
+                }
+                visitSequence(node.bases);
+                visitSequence(node.keywords);
+                enterBlock(node.name, ScopeType.Class, node);
+                try {
+                    currentClassName = node.name;
+                    if (isGeneric) {
+                        addDef("__type_params__", DefUse.DefLocal, node);
+                        addDef(".type_params", DefUse.Use, node);
+                    }
+                    visitSequence(node.body);
+                } finally {
+                    exitBlock();
+                }
             } finally {
+                if (isGeneric) {
+                    exitBlock();
+                }
                 currentClassName = tmp;
-                exitBlock();
             }
             return null;
         }
@@ -967,29 +1088,48 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(StmtTy.FunctionDef node) {
-            addDef(node.name, DefUse.DefLocal, node);
-            if (node.args != null) {
-                visitSequence(node.args.defaults);
-                visitSequence(node.args.kwDefaults);
-            }
-            visitAnnotations(node, node.args, node.returns);
-            visitSequence(node.decoratorList);
-            enterBlock(node.name, ScopeType.Function, node);
-            try {
-                if (node.args != null) {
-                    node.args.accept(this);
-                }
-                visitSequence(node.body);
-            } finally {
-                exitBlock();
-            }
+            visitFunctionDef(node.name, node.args, node.body, node.decoratorList, node.returns, node.typeParams, false, node);
             return null;
+        }
+
+        private void visitFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, TypeParamTy[] typeParams, boolean isAsync, StmtTy node) {
+            addDef(name, DefUse.DefLocal, node);
+            visitSequence(args.defaults);
+            visitSequence(args.kwDefaults);
+            visitSequence(decoratorList);
+            if (typeParams != null) {
+                enterTypeParamBlock(
+                                name,
+                                args.defaults.length > 0,
+                                hasKwOnlyDefaults(args.kwOnlyArgs, args.kwDefaults),
+                                node, typeParams);
+            }
+            try {
+                if (typeParams != null) {
+                    visitSequence(typeParams);
+                }
+                visitAnnotations(node, args, returns);
+                enterBlock(name, ScopeType.Function, node);
+                try {
+                    if (isAsync) {
+                        currentScope.flags.add(ScopeFlags.IsCoroutine);
+                    }
+                    args.accept(this);
+                    visitSequence(body);
+                } finally {
+                    exitBlock();
+                }
+            } finally {
+                if (typeParams != null) {
+                    exitBlock();
+                }
+            }
         }
 
         @Override
         public Void visit(StmtTy.Global node) {
             for (String n : node.names) {
-                String mangled = mangle(n);
+                String mangled = maybeMangle(n);
                 EnumSet<DefUse> cur = currentScope.getUseOfName(mangled);
                 if (cur != null) {
                     String msg = null;
@@ -1113,7 +1253,7 @@ public class ScopeEnvironment {
         @Override
         public Void visit(StmtTy.Nonlocal node) {
             for (String n : node.names) {
-                String mangled = mangle(n);
+                String mangled = maybeMangle(n);
                 EnumSet<DefUse> cur = currentScope.getUseOfName(n);
                 if (cur != null) {
                     String msg = null;
@@ -1241,22 +1381,64 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(TypeAlias node) {
-            throw new IllegalStateException("visit(TypeAlias node)");
+            node.name.accept(this);
+            String name = ((ExprTy.Name) node.name).id;
+            boolean isInClass = currentScope.type == ScopeType.Class;
+            boolean isGeneric = node.typeParams != null && node.typeParams.length > 0;
+            if (isGeneric) {
+                enterTypeParamBlock(name, false, false, node, node.typeParams);
+            }
+            try {
+                if (isGeneric) {
+                    visitSequence(node.typeParams);
+                }
+                enterBlock(name, ScopeType.TypeAlias, node);
+                try {
+                    if (isInClass) {
+                        currentScope.flags.add(ScopeFlags.CanSeeClassScope);
+                        addDef("__classdict__", DefUse.Use, node.value);
+                    }
+                    node.value.accept(this);
+                } finally {
+                    exitBlock();
+                }
+            } finally {
+                if (isGeneric) {
+                    exitBlock();
+                }
+            }
+            return null;
         }
 
         @Override
         public Void visit(TypeVar node) {
-            throw new IllegalStateException("visit(TypeVar node)");
+            addDef(node.name, EnumSet.of(DefUse.DefTypeParam, DefUse.DefLocal), node);
+            if (node.bound != null) {
+                boolean isInClass = currentScope.canSeeClassScope();
+                enterBlock(node.name, ScopeType.TypeVarBound, node);
+                try {
+                    if (isInClass) {
+                        currentScope.flags.add(ScopeFlags.CanSeeClassScope);
+                        addDef("__classdict__", DefUse.Use, node.bound);
+                    }
+                    node.bound.accept(this);
+                } finally {
+                    exitBlock();
+                }
+            }
+            return null;
         }
 
         @Override
         public Void visit(ParamSpec node) {
-            throw new IllegalStateException("visit(ParamSpec node)");
+            addDef(node.name, EnumSet.of(DefUse.DefTypeParam, DefUse.DefLocal), node);
+            return null;
         }
 
         @Override
         public Void visit(TypeVarTuple node) {
-            throw new IllegalStateException("visit(TypeVarTuple node)");
+            addDef(node.name, EnumSet.of(DefUse.DefTypeParam, DefUse.DefLocal), node);
+            return null;
         }
     }
 }

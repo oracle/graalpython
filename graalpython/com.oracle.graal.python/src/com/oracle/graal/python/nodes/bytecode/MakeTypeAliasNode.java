@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,14 +38,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.compiler;
+package com.oracle.graal.python.nodes.bytecode;
 
-enum CompilationScope {
-    Module,
-    Class,
-    Function,
-    AsyncFunction,
-    Lambda,
-    Comprehension,
-    TypeParams;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+
+@GenerateUncached
+public abstract class MakeTypeAliasNode extends PNodeWithContext {
+
+    public abstract int execute(VirtualFrame frame, int initialStackTop);
+
+    @Specialization
+    int makeTypeAlias(VirtualFrame frame, int initialStackTop,
+                    @Cached PythonObjectFactory factory) {
+        int stackTop = initialStackTop;
+
+        Object computeValue = frame.getObject(stackTop);
+        frame.setObject(stackTop--, null);
+        Object typeParams = frame.getObject(stackTop);
+        frame.setObject(stackTop--, null);
+        TruffleString name = (TruffleString) frame.getObject(stackTop);
+        frame.setObject(stackTop--, null);
+
+        PTypeAliasType result = factory.createTypeAliasType(PythonBuiltinClassType.PTypeAliasType, name, typeParams == PNone.NONE ? null : (PTuple) typeParams, computeValue, null, null);
+
+        frame.setObject(++stackTop, result);
+        return stackTop;
+    }
+
+    public static MakeTypeAliasNode create() {
+        return MakeTypeAliasNodeGen.create();
+    }
+
+    public static MakeTypeAliasNode getUncached() {
+        return MakeTypeAliasNodeGen.getUncached();
+    }
 }

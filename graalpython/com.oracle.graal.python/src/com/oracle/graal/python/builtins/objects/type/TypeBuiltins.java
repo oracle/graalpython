@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKREFOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
@@ -56,6 +57,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
@@ -1546,6 +1548,39 @@ public final class TypeBuiltins extends PythonBuiltins {
                 write.execute(self, T___ANNOTATIONS__, value);
             } catch (PException e) {
                 throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___ANNOTATIONS__, self);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = J___TYPE_PARAMS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class TypeParamsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(Object self, @SuppressWarnings("unused") Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached ReadAttributeFromObjectNode read,
+                        @Cached PythonObjectFactory.Lazy factory,
+                        @Cached IsBuiltinClassExactProfile isBuiltinClassProfile) {
+            if (isBuiltinClassProfile.profileClass(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
+                return factory.get(inliningTarget).createEmptyTuple();
+            }
+            Object typeParams = read.execute(self, T___TYPE_PARAMS__);
+            if (typeParams == NO_VALUE) {
+                return factory.get(inliningTarget).createEmptyTuple();
+            }
+            return typeParams;
+        }
+
+        @Fallback
+        static Object set(Object self, Object value,
+                        @Bind("this") Node inliningTarget,
+                        @Cached WriteAttributeToObjectNode write,
+                        @Cached PRaiseNode.Lazy raiseNode) {
+            try {
+                write.execute(self, T___TYPE_PARAMS__, value);
+            } catch (PException e) {
+                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___TYPE_PARAMS__, self);
             }
             return PNone.NONE;
         }
