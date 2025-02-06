@@ -69,7 +69,7 @@ public final class PythonCextCodeBuiltins {
 
     @CApiBuiltin(ret = PyCodeObjectTransfer, args = {Int, Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int, PyObject,
                     PyObject}, call = Direct)
-    abstract static class PyCode_NewWithPosOnlyArgs extends CApi18BuiltinNode {
+    abstract static class PyUnstable_Code_NewWithPosOnlyArgs extends CApi18BuiltinNode {
         @Specialization
         @TruffleBoundary
         public static Object codeNew(int argcount, int posonlyargcount, int kwonlyargcount, int nlocals, int stacksize, int flags, Object code, Object consts,

@@ -22,6 +22,7 @@ extern "C" {
 #if 0 // GraalPy change
 #include "pycore_runtime.h"       // _PyRuntime
 #endif
+#include "pycore_typeobject.h"      // struct types_runtime_state
 
 #define _PyObject_IMMORTAL_INIT(type) \
     { \
@@ -113,8 +114,9 @@ static inline void
 _PyObject_InitVar(PyVarObject *op, PyTypeObject *typeobj, Py_ssize_t size)
 {
     assert(op != NULL);
-    Py_SET_SIZE(op, size);
+    assert(typeobj != &PyLong_Type);
     _PyObject_Init((PyObject *)op, typeobj);
+    Py_SET_SIZE(op, size);
 }
 
 

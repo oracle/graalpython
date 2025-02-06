@@ -8,6 +8,38 @@
 #endif
 
 
+/*
+Runtime Feature Flags
+
+Each flag indicate whether or not a specific runtime feature
+is available in a given context.  For example, forking the process
+might not be allowed in the current interpreter (i.e. os.fork() would fail).
+*/
+
+/* Set if the interpreter share obmalloc runtime state
+   with the main interpreter. */
+#define Py_RTFLAGS_USE_MAIN_OBMALLOC (1UL << 5)
+
+/* Set if import should check a module for subinterpreter support. */
+#define Py_RTFLAGS_MULTI_INTERP_EXTENSIONS (1UL << 8)
+
+/* Set if threads are allowed. */
+#define Py_RTFLAGS_THREADS (1UL << 10)
+
+/* Set if daemon threads are allowed. */
+#define Py_RTFLAGS_DAEMON_THREADS (1UL << 11)
+
+/* Set if os.fork() is allowed. */
+#define Py_RTFLAGS_FORK (1UL << 15)
+
+/* Set if os.exec*() is allowed. */
+#define Py_RTFLAGS_EXEC (1UL << 16)
+
+
+
+
+/* private interpreter helpers */
+
 PyAPI_FUNC(int) _PyInterpreterState_RequiresIDRef(PyInterpreterState *);
 PyAPI_FUNC(void) _PyInterpreterState_RequireIDRef(PyInterpreterState *, int);
 
@@ -90,24 +122,42 @@ struct _ts {
     PyThreadState *next;
     PyInterpreterState *interp;
 
-    /* Has been initialized to a safe state.
+    struct {
+        /* Has been initialized to a safe state.
 
-       In order to be effective, this must be set to 0 during or right
-       after allocation. */
-    int _initialized;
+           In order to be effective, this must be set to 0 during or right
+           after allocation. */
+        unsigned int initialized:1;
 
-    /* Was this thread state statically allocated? */
-    int _static;
+        /* Has been bound to an OS thread. */
+        unsigned int bound:1;
+        /* Has been unbound from its OS thread. */
+        unsigned int unbound:1;
+        /* Has been bound aa current for the GILState API. */
+        unsigned int bound_gilstate:1;
+        /* Currently in use (maybe holds the GIL). */
+        unsigned int active:1;
 
-    int recursion_remaining;
-    int recursion_limit;
+        /* various stages of finalization */
+        unsigned int finalizing:1;
+        unsigned int cleared:1;
+        unsigned int finalized:1;
+
+        /* padding to align to 4 bytes */
+        unsigned int :24;
+    } _status;
+
+    int py_recursion_remaining;
+    int py_recursion_limit;
+
+    int c_recursion_remaining;
     int recursion_headroom; /* Allow 50 more calls to handle any errors. */
 
     /* 'tracing' keeps track of the execution depth when tracing/profiling.
        This is to prevent the actual trace/profile code from being recorded in
        the trace/profile. */
     int tracing;
-    int tracing_what; /* The event currently being traced, if any. */
+    int what_event; /* The event currently being monitored, if any. */
 
     /* Pointer to current _PyCFrame in the C stack frame of the currently,
      * or most recently, executing _PyEval_EvalFrameDefault. */
@@ -119,9 +169,7 @@ struct _ts {
     PyObject *c_traceobj;
 
     /* The exception currently being raised */
-    PyObject *curexc_type;
-    PyObject *curexc_value;
-    PyObject *curexc_traceback;
+    PyObject *current_exception;
 
     /* Pointer to the top of the exception stack for the exceptions
      * we may be currently handling.  (See _PyErr_StackItem above.)
@@ -215,6 +263,29 @@ struct _ts {
     struct _gc_runtime_state *gc;
 };
 
+/* WASI has limited call stack. Python's recursion limit depends on code
+   layout, optimization, and WASI runtime. Wasmtime can handle about 700
+   recursions, sometimes less. 500 is a more conservative limit. */
+#ifdef Py_DEBUG
+#  if defined(__wasi__)
+#    define C_RECURSION_LIMIT 150
+#  else
+#    define C_RECURSION_LIMIT 500
+#  endif
+#else
+#  if defined(__wasi__)
+#    define C_RECURSION_LIMIT 500
+#  elif defined(__s390x__)
+#    define C_RECURSION_LIMIT 800
+#  elif defined(_WIN32)
+#    define C_RECURSION_LIMIT 3000
+#  elif defined(_Py_ADDRESS_SANITIZER)
+#    define C_RECURSION_LIMIT 4000
+#  else
+     // This value is duplicated in Lib/test/support/__init__.py
+#    define C_RECURSION_LIMIT 10000
+#  endif
+#endif
 
 /* other API */
 
@@ -331,6 +402,9 @@ PyAPI_FUNC(const PyConfig*) _Py_GetConfig(void);
 // is necessary to pass safely between interpreters in the same process.
 typedef struct _xid _PyCrossInterpreterData;
 
+typedef PyObject *(*xid_newobjectfunc)(_PyCrossInterpreterData *);
+typedef void (*xid_freefunc)(void *);
+
 struct _xid {
     // data is the cross-interpreter-safe derivation of a Python object
     // (see _PyObject_GetCrossInterpreterData).  It will be NULL if the
@@ -357,7 +431,7 @@ struct _xid {
     // interpreter given the data.  The resulting object (a new
     // reference) will be equivalent to the original object.  This field
     // is required.
-    PyObject *(*new_object)(_PyCrossInterpreterData *);
+    xid_newobjectfunc new_object;
     // free is called when the data is released.  If it is NULL then
     // nothing will be done to free the data.  For some types this is
     // okay (e.g. bytes) and for those types this field should be set
@@ -367,18 +441,31 @@ struct _xid {
     // leak.  In that case, at the very least this field should be set
     // to PyMem_RawFree (the default if not explicitly set to NULL).
     // The call will happen with the original interpreter activated.
-    void (*free)(void *);
+    xid_freefunc free;
 };
+
+PyAPI_FUNC(void) _PyCrossInterpreterData_Init(
+        _PyCrossInterpreterData *data,
+        PyInterpreterState *interp, void *shared, PyObject *obj,
+        xid_newobjectfunc new_object);
+PyAPI_FUNC(int) _PyCrossInterpreterData_InitWithSize(
+        _PyCrossInterpreterData *,
+        PyInterpreterState *interp, const size_t, PyObject *,
+        xid_newobjectfunc);
+PyAPI_FUNC(void) _PyCrossInterpreterData_Clear(
+        PyInterpreterState *, _PyCrossInterpreterData *);
 
 PyAPI_FUNC(int) _PyObject_GetCrossInterpreterData(PyObject *, _PyCrossInterpreterData *);
 PyAPI_FUNC(PyObject *) _PyCrossInterpreterData_NewObject(_PyCrossInterpreterData *);
-PyAPI_FUNC(void) _PyCrossInterpreterData_Release(_PyCrossInterpreterData *);
+PyAPI_FUNC(int) _PyCrossInterpreterData_Release(_PyCrossInterpreterData *);
 
 PyAPI_FUNC(int) _PyObject_CheckCrossInterpreterData(PyObject *);
 
 /* cross-interpreter data registry */
 
-typedef int (*crossinterpdatafunc)(PyObject *, _PyCrossInterpreterData *);
+typedef int (*crossinterpdatafunc)(PyThreadState *tstate, PyObject *,
+                                   _PyCrossInterpreterData *);
 
 PyAPI_FUNC(int) _PyCrossInterpreterData_RegisterClass(PyTypeObject *, crossinterpdatafunc);
+PyAPI_FUNC(int) _PyCrossInterpreterData_UnregisterClass(PyTypeObject *);
 PyAPI_FUNC(crossinterpdatafunc) _PyCrossInterpreterData_Lookup(PyObject *);

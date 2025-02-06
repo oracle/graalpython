@@ -168,6 +168,7 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/_warnings.c": CopyFrom("Python/_warnings.c"),
     "graalpython/com.oracle.graal.python.cext/src/typeslots.inc": CopyFrom("Objects/typeslots.inc"),
     "graalpython/com.oracle.graal.python.cext/src/fileutils.c": CopyFrom("Python/fileutils.c"),
+    "graalpython/com.oracle.graal.python.cext/src/ceval.c": CopyFrom("Python/ceval.c"),
 
     "graalpython/com.oracle.graal.python.cext/src": CopyFromWithOverrides("Objects"),
 

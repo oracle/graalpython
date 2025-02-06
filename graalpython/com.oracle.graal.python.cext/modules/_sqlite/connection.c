@@ -30,6 +30,8 @@
 #include "prepare_protocol.h"
 #include "util.h"
 
+#include <stdbool.h>
+
 #if SQLITE_VERSION_NUMBER >= 3014000
 #define HAVE_TRACE_V2
 #endif
@@ -183,8 +185,9 @@ pysqlite_connection_init_impl(pysqlite_Connection *self, PyObject *database,
                               double timeout, int detect_types,
                               const char *isolation_level,
                               int check_same_thread, PyObject *factory,
-                              int cache_size, int uri)
-/*[clinic end generated code: output=839eb2fee4293bda input=b8ce63dc6f70a383]*/
+                              int cache_size, int uri,
+                              enum autocommit_mode autocommit)
+/*[clinic end generated code: output=cba057313ea7712f input=9b0ab6c12f674fa3]*/
 {
     if (PySys_Audit("sqlite3.connect", "O", database) < 0) {
         return -1;
@@ -1515,7 +1518,7 @@ pysqlite_connection_set_trace_callback_impl(pysqlite_Connection *self,
 /*[clinic input]
 _sqlite3.Connection.enable_load_extension as pysqlite_connection_enable_load_extension
 
-    enable as onoff: bool(accept={int})
+    enable as onoff: bool
     /
 
 Enable dynamic loading of SQLite extension modules.
@@ -1553,6 +1556,8 @@ _sqlite3.Connection.load_extension as pysqlite_connection_load_extension
 
     name as extension_name: str
     /
+    *
+    entrypoint: str(accept={str, NoneType}) = None
 
 Load SQLite extension module.
 [clinic start generated code]*/
@@ -1613,9 +1618,8 @@ static PyObject* pysqlite_connection_get_total_changes(pysqlite_Connection* self
 {
     if (!pysqlite_check_connection(self)) {
         return NULL;
-    } else {
-        return Py_BuildValue("i", sqlite3_total_changes(self->db));
     }
+    return PyLong_FromLong(sqlite3_total_changes(self->db));
 }
 
 static PyObject* pysqlite_connection_get_in_transaction(pysqlite_Connection* self, void* unused)

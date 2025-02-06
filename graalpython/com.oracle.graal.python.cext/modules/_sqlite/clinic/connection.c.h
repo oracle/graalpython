@@ -2,20 +2,50 @@
 preserve
 [clinic start generated code]*/
 
+#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+#  include "pycore_gc.h"            // PyGC_Head
+#  include "pycore_runtime.h"       // _Py_ID()
+#endif
+
+
 static int
 pysqlite_connection_init_impl(pysqlite_Connection *self, PyObject *database,
                               double timeout, int detect_types,
                               const char *isolation_level,
                               int check_same_thread, PyObject *factory,
-                              int cache_size, int uri);
+                              int cache_size, int uri,
+                              enum autocommit_mode autocommit);
 
 static int
 pysqlite_connection_init(PyObject *self, PyObject *args, PyObject *kwargs)
 {
     int return_value = -1;
-    static const char * const _keywords[] = {"database", "timeout", "detect_types", "isolation_level", "check_same_thread", "factory", "cached_statements", "uri", NULL};
-    static _PyArg_Parser _parser = {NULL, _keywords, "Connection", 0};
-    PyObject *argsbuf[8];
+    #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+
+    #define NUM_KEYWORDS 9
+    static struct {
+        PyGC_Head _this_is_not_used;
+        PyObject_VAR_HEAD
+        PyObject *ob_item[NUM_KEYWORDS];
+    } _kwtuple = {
+        .ob_base = PyVarObject_HEAD_INIT(&PyTuple_Type, NUM_KEYWORDS)
+        .ob_item = { &_Py_ID(database), &_Py_ID(timeout), &_Py_ID(detect_types), &_Py_ID(isolation_level), &_Py_ID(check_same_thread), &_Py_ID(factory), &_Py_ID(cached_statements), &_Py_ID(uri), &_Py_ID(autocommit), },
+    };
+    #undef NUM_KEYWORDS
+    #define KWTUPLE (&_kwtuple.ob_base.ob_base)
+
+    #else  // !Py_BUILD_CORE
+    #  define KWTUPLE NULL
+    #endif  // !Py_BUILD_CORE
+
+    static const char * const _keywords[] = {"database", "timeout", "detect_types", "isolation_level", "check_same_thread", "factory", "cached_statements", "uri", "autocommit", NULL};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "Connection",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
+    PyObject *argsbuf[9];
     PyObject * const *fastargs;
     Py_ssize_t nargs = PyTuple_GET_SIZE(args);
     Py_ssize_t noptargs = nargs + (kwargs ? PyDict_GET_SIZE(kwargs) : 0) - 1;
@@ -27,6 +57,7 @@ pysqlite_connection_init(PyObject *self, PyObject *args, PyObject *kwargs)
     PyObject *factory = (PyObject*)clinic_state()->ConnectionType;
     int cache_size = 128;
     int uri = 0;
+    enum autocommit_mode autocommit = LEGACY_TRANSACTION_CONTROL;
 
     fastargs = _PyArg_UnpackKeywords(PySequence_Fast_ITEMS(args), nargs, kwargs, NULL, &_parser, 1, 8, 0, argsbuf);
     if (!fastargs) {
@@ -69,8 +100,8 @@ pysqlite_connection_init(PyObject *self, PyObject *args, PyObject *kwargs)
         }
     }
     if (fastargs[4]) {
-        check_same_thread = _PyLong_AsInt(fastargs[4]);
-        if (check_same_thread == -1 && PyErr_Occurred()) {
+        check_same_thread = PyObject_IsTrue(fastargs[4]);
+        if (check_same_thread < 0) {
             goto exit;
         }
         if (!--noptargs) {
@@ -97,7 +128,7 @@ pysqlite_connection_init(PyObject *self, PyObject *args, PyObject *kwargs)
         goto exit;
     }
 skip_optional_pos:
-    return_value = pysqlite_connection_init_impl((pysqlite_Connection *)self, database, timeout, detect_types, isolation_level, check_same_thread, factory, cache_size, uri);
+    return_value = pysqlite_connection_init_impl((pysqlite_Connection *)self, database, timeout, detect_types, isolation_level, check_same_thread, factory, cache_size, uri, autocommit);
 
 exit:
     return return_value;
@@ -215,8 +246,8 @@ blobopen(pysqlite_Connection *self, PyObject *const *args, Py_ssize_t nargs, PyO
         goto skip_optional_kwonly;
     }
     if (args[3]) {
-        readonly = _PyLong_AsInt(args[3]);
-        if (readonly == -1 && PyErr_Occurred()) {
+        readonly = PyObject_IsTrue(args[3]);
+        if (readonly < 0) {
             goto exit;
         }
         if (!--noptargs) {
@@ -615,8 +646,8 @@ pysqlite_connection_enable_load_extension(pysqlite_Connection *self, PyObject *a
     PyObject *return_value = NULL;
     int onoff;
 
-    onoff = _PyLong_AsInt(arg);
-    if (onoff == -1 && PyErr_Occurred()) {
+    onoff = PyObject_IsTrue(arg);
+    if (onoff < 0) {
         goto exit;
     }
     return_value = pysqlite_connection_enable_load_extension_impl(self, onoff);
@@ -1236,4 +1267,4 @@ exit:
 #ifndef DESERIALIZE_METHODDEF
     #define DESERIALIZE_METHODDEF
 #endif /* !defined(DESERIALIZE_METHODDEF) */
-/*[clinic end generated code: output=67e5b3dbade4a15b input=a9049054013a1b77]*/
+/*[clinic end generated code: output=305d580e3eaa622d input=a9049054013a1b77]*/

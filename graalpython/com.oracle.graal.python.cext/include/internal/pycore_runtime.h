@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -36,15 +36,11 @@ struct _gilstate_runtime_state {
     /* bpo-26558: Flag to disable PyGILState_Check().
        If set to non-zero, PyGILState_Check() always return 1. */
     int check_enabled;
-    /* Assuming the current thread holds the GIL, this is the
-       PyThreadState for the current thread. */
-    _Py_atomic_address tstate_current;
     /* The single PyInterpreterState used by this process'
        GILState implementation
     */
     /* TODO: Given interp_main, it may be possible to kill this ref */
     PyInterpreterState *autoInterpreterState;
-    Py_tss_t autoTSSkey;
 };
 
 /* Runtime audit hook state */
@@ -94,8 +90,8 @@ typedef struct pyruntimestate {
            in the operation of the runtime.  It is also often the only
            interpreter. */
         PyInterpreterState *main;
-        /* _next_interp_id is an auto-numbered sequence of small
-           integers.  It gets initialized in _PyInterpreterState_Init(),
+        /* next_id is an auto-numbered sequence of small
+           integers.  It gets initialized in _PyInterpreterState_Enable(),
            which is called in Py_Initialize(), and used in
            PyInterpreterState_New().  A negative interpreter ID
            indicates an error occurred.  The main interpreter will
@@ -104,20 +100,43 @@ typedef struct pyruntimestate {
            using a Python int. */
         int64_t next_id;
     } interpreters;
-    // XXX Remove this field once we have a tp_* slot.
-    struct _xidregistry {
-        PyThread_type_lock mutex;
-        struct _xidregitem *head;
-    } xidregistry;
 
     unsigned long main_thread;
 
-#define NEXITFUNCS 32
-    void (*exitfuncs[NEXITFUNCS])(void);
-    int nexitfuncs;
+    /* ---------- IMPORTANT ---------------------------
+     The fields above this line are declared as early as
+     possible to facilitate out-of-process observability
+     tools. */
 
+    // XXX Remove this field once we have a tp_* slot.
+    struct _xidregistry xidregistry;
+
+    struct _pymem_allocators allocators;
+    struct _obmalloc_global_state obmalloc;
+    struct pyhash_runtime_state pyhash_state;
+    struct _time_runtime_state time;
+    struct _pythread_runtime_state threads;
+    struct _signals_runtime_state signals;
+
+    /* Used for the thread state bound to the current thread. */
+    Py_tss_t autoTSSkey;
+
+    /* Used instead of PyThreadState.trash when there is not current tstate. */
+    Py_tss_t trashTSSkey;
+
+    PyWideStringList orig_argv;
+
+    struct _parser_runtime_state parser;
+
+    struct _atexit_runtime_state atexit;
+
+    struct _import_runtime_state imports;
     struct _ceval_runtime_state ceval;
     struct _gilstate_runtime_state gilstate;
+    struct _getargs_runtime_state getargs;
+    struct _fileutils_state fileutils;
+    struct _faulthandler_runtime_state faulthandler;
+    struct _tracemalloc_runtime_state tracemalloc;
 
     PyPreConfig preconfig;
 

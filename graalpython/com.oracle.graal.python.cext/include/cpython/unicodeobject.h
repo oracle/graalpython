@@ -224,25 +224,20 @@ PyAPI_FUNC(int) _PyUnicode_CheckConsistency(
 #define SSTATE_NOT_INTERNED 0
 #define SSTATE_INTERNED_MORTAL 1
 #define SSTATE_INTERNED_IMMORTAL 2
+#define SSTATE_INTERNED_IMMORTAL_STATIC 3
 
 /* Use only if you know it's a string */
 PyAPI_FUNC(unsigned int) PyTruffleUnicode_CHECK_INTERNED(PyObject *op);
 static inline unsigned int PyUnicode_CHECK_INTERNED(PyObject *op) {
     return PyTruffleUnicode_CHECK_INTERNED(op);
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_CHECK_INTERNED(op) PyUnicode_CHECK_INTERNED(_PyObject_CAST(op))
-#endif
+#define PyUnicode_CHECK_INTERNED(op) PyUnicode_CHECK_INTERNED(_PyObject_CAST(op))
 
-/* Fast check to determine whether an object is ready. Equivalent to:
-   PyUnicode_IS_COMPACT(op) || _PyUnicodeObject_CAST(op)->data.any */
-PyAPI_FUNC(unsigned int) PyTruffleUnicode_IS_READY(PyObject *op);
-static inline unsigned int PyUnicode_IS_READY(PyObject *op) {
-    return PyTruffleUnicode_IS_READY(op);
+/* For backward compatibility */
+static inline unsigned int PyUnicode_IS_READY(PyObject* Py_UNUSED(op)) {
+    return 1;
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_IS_READY(op) PyUnicode_IS_READY(_PyObject_CAST(op))
-#endif
+#define PyUnicode_IS_READY(op) PyUnicode_IS_READY(_PyObject_CAST(op))
 
 /* Return true if the string contains only ASCII characters, or 0 if not. The
    string may be compact (PyUnicode_IS_COMPACT_ASCII) or not, but must be
@@ -251,9 +246,7 @@ PyAPI_FUNC(unsigned int) PyTruffleUnicode_IS_ASCII(PyObject *op);
 static inline unsigned int PyUnicode_IS_ASCII(PyObject *op) {
     return PyTruffleUnicode_IS_ASCII(op);
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_IS_ASCII(op) PyUnicode_IS_ASCII(_PyObject_CAST(op))
-#endif
+#define PyUnicode_IS_ASCII(op) PyUnicode_IS_ASCII(_PyObject_CAST(op))
 
 /* Return true if the string is compact or 0 if not.
    No type checks or Ready calls are performed. */
@@ -261,24 +254,16 @@ PyAPI_FUNC(unsigned int) PyTruffleUnicode_IS_COMPACT(PyObject *op);
 static inline unsigned int PyUnicode_IS_COMPACT(PyObject *op) {
     return PyTruffleUnicode_IS_COMPACT(op);
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_IS_COMPACT(op) PyUnicode_IS_COMPACT(_PyObject_CAST(op))
-#endif
+#define PyUnicode_IS_COMPACT(op) PyUnicode_IS_COMPACT(_PyObject_CAST(op))
 
 /* Return true if the string is a compact ASCII string (use PyASCIIObject
    structure), or 0 if not.  No type checks or Ready calls are performed. */
 static inline int PyUnicode_IS_COMPACT_ASCII(PyObject *op) {
     return (PyUnicode_IS_ASCII(op) && PyUnicode_IS_COMPACT(op));
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_IS_COMPACT_ASCII(op) PyUnicode_IS_COMPACT_ASCII(_PyObject_CAST(op))
-#endif
+#define PyUnicode_IS_COMPACT_ASCII(op) PyUnicode_IS_COMPACT_ASCII(_PyObject_CAST(op))
 
 enum PyUnicode_Kind {
-/* String contains only wstr byte characters.  This is only possible
-   when the string was created with a legacy API and _PyUnicode_Ready()
-   has not been called yet.  */
-    PyUnicode_WCHAR_KIND = 0,
 /* Return values of the PyUnicode_KIND() function: */
     PyUnicode_1BYTE_KIND = 1,
     PyUnicode_2BYTE_KIND = 2,
@@ -286,7 +271,12 @@ enum PyUnicode_Kind {
 };
 
 PyAPI_FUNC(int) _PyTruffleUnicode_KIND(PyObject*);
-/* Return one of the PyUnicode_*_KIND values defined above. */
+// PyUnicode_KIND(): Return one of the PyUnicode_*_KIND values defined above.
+//
+// gh-89653: Converting this macro to a static inline function would introduce
+// new compiler warnings on "kind < PyUnicode_KIND(str)" (compare signed and
+// unsigned numbers) where kind type is an int or on
+// "unsigned int kind = PyUnicode_KIND(str)" (cast signed to unsigned).
 #define PyUnicode_KIND(op) ((enum PyUnicode_Kind)_PyTruffleUnicode_KIND(_PyObject_CAST(op)))
 
 /* Return a void pointer to the raw unicode buffer. */
@@ -378,7 +368,11 @@ static inline Py_UCS4 PyUnicode_READ(int kind,
 static inline Py_UCS4 PyUnicode_READ_CHAR(PyObject *unicode, Py_ssize_t index)
 {
     int kind;
-    assert(PyUnicode_IS_READY(unicode));
+
+    assert(index >= 0);
+    // Tolerate reading the NUL character at str[len(str)]
+    assert(index <= PyUnicode_GET_LENGTH(unicode));
+
     kind = PyUnicode_KIND(unicode);
     if (kind == PyUnicode_1BYTE_KIND) {
         return PyUnicode_1BYTE_DATA(unicode)[index];
@@ -389,10 +383,8 @@ static inline Py_UCS4 PyUnicode_READ_CHAR(PyObject *unicode, Py_ssize_t index)
     assert(kind == PyUnicode_4BYTE_KIND);
     return PyUnicode_4BYTE_DATA(unicode)[index];
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_READ_CHAR(unicode, index) \
-       PyUnicode_READ_CHAR(_PyObject_CAST(unicode), (index))
-#endif
+#define PyUnicode_READ_CHAR(unicode, index) \
+    PyUnicode_READ_CHAR(_PyObject_CAST(unicode), (index))
 
 /* Return a maximum character value which is suitable for creating another
    string based on op.  This is always an approximation but more efficient
@@ -415,10 +407,8 @@ static inline Py_UCS4 PyUnicode_MAX_CHAR_VALUE(PyObject *op)
     assert(kind == PyUnicode_4BYTE_KIND);
     return 0x10ffffU;
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_MAX_CHAR_VALUE(op) \
-       PyUnicode_MAX_CHAR_VALUE(_PyObject_CAST(op))
-#endif
+#define PyUnicode_MAX_CHAR_VALUE(op) \
+    PyUnicode_MAX_CHAR_VALUE(_PyObject_CAST(op))
 
 /* === Public API ========================================================= */
 
@@ -432,31 +422,12 @@ PyAPI_FUNC(PyObject*) PyUnicode_New(
     Py_UCS4 maxchar             /* maximum code point value in the string */
     );
 
-/* Initializes the canonical string representation from the deprecated
-   wstr/Py_UNICODE representation. This function is used to convert Unicode
-   objects which were created using the old API to the new flexible format
-   introduced with PEP 393.
-
-   Don't call this function directly, use the public PyUnicode_READY() function
-   instead. */
-PyAPI_FUNC(int) _PyUnicode_Ready(
-    PyObject *unicode           /* Unicode object */
-    );
-
-/* PyUnicode_READY() does less work than _PyUnicode_Ready() in the best
-   case.  If the canonical representation is not yet set, it will still call
-   _PyUnicode_Ready().
-   Returns 0 on success and -1 on errors. */
-static inline int PyUnicode_READY(PyObject *op)
+/* For backward compatibility */
+static inline int PyUnicode_READY(PyObject* Py_UNUSED(op))
 {
-    if (PyUnicode_IS_READY(op)) {
-        return 0;
-    }
-    return _PyUnicode_Ready(op);
+    return 0;
 }
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000
-#  define PyUnicode_READY(op) PyUnicode_READY(_PyObject_CAST(op))
-#endif
+#define PyUnicode_READY(op) PyUnicode_READY(_PyObject_CAST(op))
 
 /* Get a copy of a Unicode string. */
 PyAPI_FUNC(PyObject*) _PyUnicode_Copy(
@@ -546,20 +517,6 @@ PyAPI_FUNC(Py_UCS4) _PyUnicode_FindMaxChar (
 
 /* --- Legacy deprecated API ---------------------------------------------- */
 
-/* Create a Unicode Object from the Py_UNICODE buffer u of the given
-   size.
-
-   u may be NULL which causes the contents to be undefined. It is the
-   user's responsibility to fill in the needed data afterwards. Note
-   that modifying the Unicode object contents after construction is
-   only allowed if u was set to NULL.
-
-   The buffer is copied into the new object. */
-Py_DEPRECATED(3.3) PyAPI_FUNC(PyObject*) PyUnicode_FromUnicode(
-    const Py_UNICODE *u,        /* Unicode buffer */
-    Py_ssize_t size             /* size of buffer */
-    );
-
 /* Return a read-only pointer to the Unicode object's internal
    Py_UNICODE buffer.
    If the wchar_t/Py_UNICODE representation is not yet available, this
@@ -573,17 +530,6 @@ Py_DEPRECATED(3.3) PyAPI_FUNC(Py_UNICODE *) PyUnicode_AsUnicode(
 PyAPI_FUNC(const Py_UNICODE *) _PyUnicode_AsUnicode(
     PyObject *unicode           /* Unicode object */
     );
-
-/* Return a read-only pointer to the Unicode object's internal
-   Py_UNICODE buffer and save the length at size.
-   If the wchar_t/Py_UNICODE representation is not yet available, this
-   function will calculate it. */
-
-Py_DEPRECATED(3.3) PyAPI_FUNC(Py_UNICODE *) PyUnicode_AsUnicodeAndSize(
-    PyObject *unicode,          /* Unicode object */
-    Py_ssize_t *size            /* location where to save the length */
-    );
-
 
 /* Fast access macros */
 
@@ -975,10 +921,6 @@ PyAPI_FUNC(Py_ssize_t) _PyUnicode_InsertThousandsGrouping(
 
 /* === Characters Type APIs =============================================== */
 
-/* Helper array used by Py_UNICODE_ISSPACE(). */
-
-PyAPI_DATA(const unsigned char) _Py_ascii_whitespace[];
-
 /* These should not be used directly. Use the Py_UNICODE_IS* and
    Py_UNICODE_TO* macros instead.
 
@@ -1085,6 +1027,9 @@ PyAPI_FUNC(int) _PyUnicode_IsPrintable(
 PyAPI_FUNC(int) _PyUnicode_IsAlpha(
     Py_UCS4 ch       /* Unicode character */
     );
+
+// Helper array used by Py_UNICODE_ISSPACE().
+PyAPI_DATA(const unsigned char) _Py_ascii_whitespace[];
 
 PyAPI_FUNC(PyObject*) _PyUnicode_FormatLong(PyObject *, int, int, int);
 

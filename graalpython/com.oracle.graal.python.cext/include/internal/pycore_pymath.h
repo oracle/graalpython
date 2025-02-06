@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -60,25 +60,6 @@ static inline void _Py_ADJUST_ERANGE2(double x, double y)
         errno = 0;
     }
 }
-
-// Return whether integral type *type* is signed or not.
-#define _Py_IntegralTypeSigned(type) \
-    ((type)(-1) < 0)
-
-// Return the maximum value of integral type *type*.
-#define _Py_IntegralTypeMax(type) \
-    ((_Py_IntegralTypeSigned(type)) ? (((((type)1 << (sizeof(type)*CHAR_BIT - 2)) - 1) << 1) + 1) : ~(type)0)
-
-// Return the minimum value of integral type *type*.
-#define _Py_IntegralTypeMin(type) \
-    ((_Py_IntegralTypeSigned(type)) ? -_Py_IntegralTypeMax(type) - 1 : 0)
-
-// Check whether *v* is in the range of integral type *type*. This is most
-// useful if *v* is floating-point, since demoting a floating-point *v* to an
-// integral type that cannot represent *v*'s integral part is undefined
-// behavior.
-#define _Py_InIntegralTypeRange(type, v) \
-    (_Py_IntegralTypeMin(type) <= v && v <= _Py_IntegralTypeMax(type))
 
 
 //--- HAVE_PY_SET_53BIT_PRECISION macro ------------------------------------

@@ -13,17 +13,6 @@
 #include "pycore_pyerrors.h"      // _PyErr_Occurred()
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 #include "pycore_tuple.h"         // _PyTuple_ITEMS()
-#include "frameobject.h"          // _PyFrame_New_NoTrack()
-
-
-static PyObject *const *
-_PyStack_UnpackDict(PyThreadState *tstate,
-                    PyObject *const *args, Py_ssize_t nargs,
-                    PyObject *kwargs, PyObject **p_kwnames);
-
-static void
-_PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
-                         PyObject *kwnames);
 
 
 static PyObject *
@@ -439,6 +428,7 @@ _PyFunction_Vectorcall(PyObject *func, PyObject* const* stack,
         return _PyEval_Vector(tstate, f, f->func_globals, stack, nargs, kwnames);
     }
 }
+#endif // GraalPy change
 
 /* --- More complex call functions -------------------------------- */
 
@@ -448,6 +438,7 @@ PyObject *
 PyEval_CallObjectWithKeywords(PyObject *callable,
                               PyObject *args, PyObject *kwargs)
 {
+#if 0 // GraalPy change
     PyThreadState *tstate = _PyThreadState_GET();
 #ifdef Py_DEBUG
     /* PyEval_CallObjectWithKeywords() must not be called with an exception
@@ -474,8 +465,10 @@ PyEval_CallObjectWithKeywords(PyObject *callable,
     else {
         return _PyObject_Call(tstate, callable, args, kwargs);
     }
-}
+#else // GraalPy change
+    return PyObject_Call(callable, args, kwargs);
 #endif // GraalPy change
+}
 
 
 PyObject *
@@ -965,7 +958,7 @@ _PyStack_AsDict(PyObject *const *values, PyObject *kwnames)
    The newly allocated argument vector supports PY_VECTORCALL_ARGUMENTS_OFFSET.
 
    When done, you must call _PyStack_UnpackDict_Free(stack, nargs, kwnames) */
-static PyObject *const *
+PyObject *const *
 _PyStack_UnpackDict(PyThreadState *tstate,
                     PyObject *const *args, Py_ssize_t nargs,
                     PyObject *kwargs, PyObject **p_kwnames)
@@ -1001,8 +994,7 @@ _PyStack_UnpackDict(PyThreadState *tstate,
 
     /* Copy positional arguments */
     for (Py_ssize_t i = 0; i < nargs; i++) {
-        Py_INCREF(args[i]);
-        stack[i] = args[i];
+        stack[i] = Py_NewRef(args[i]);
     }
 
     PyObject **kwstack = stack + nargs;
@@ -1014,10 +1006,8 @@ _PyStack_UnpackDict(PyThreadState *tstate,
     unsigned long keys_are_strings = Py_TPFLAGS_UNICODE_SUBCLASS;
     while (PyDict_Next(kwargs, &pos, &key, &value)) {
         keys_are_strings &= Py_TYPE(key)->tp_flags;
-        Py_INCREF(key);
-        Py_INCREF(value);
-        PyTuple_SET_ITEM(kwnames, i, key);
-        kwstack[i] = value;
+        PyTuple_SET_ITEM(kwnames, i, Py_NewRef(key));
+        kwstack[i] = Py_NewRef(value);
         i++;
     }
 
@@ -1037,7 +1027,7 @@ _PyStack_UnpackDict(PyThreadState *tstate,
     return stack;
 }
 
-static void
+void
 _PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
                          PyObject *kwnames)
 {
@@ -1045,6 +1035,20 @@ _PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
     for (Py_ssize_t i = 0; i < n; i++) {
         Py_DECREF(stack[i]);
     }
+    _PyStack_UnpackDict_FreeNoDecRef(stack, kwnames);
+}
+
+void
+_PyStack_UnpackDict_FreeNoDecRef(PyObject *const *stack, PyObject *kwnames)
+{
     PyMem_Free((PyObject **)stack - 1);
     Py_DECREF(kwnames);
+}
+
+// Export for the stable ABI
+#undef PyVectorcall_NARGS
+Py_ssize_t
+PyVectorcall_NARGS(size_t n)
+{
+    return _PyVectorcall_NARGS(n);
 }

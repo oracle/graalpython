@@ -93,7 +93,7 @@ mbuf_alloc(void)
 }
 
 static PyObject *
-_PyManagedBuffer_FromObject(PyObject *base)
+_PyManagedBuffer_FromObject(PyObject *base, int flags)
 {
     _PyManagedBufferObject *mbuf;
 
@@ -101,7 +101,7 @@ _PyManagedBuffer_FromObject(PyObject *base)
     if (mbuf == NULL)
         return NULL;
 
-    if (PyObject_GetBuffer(base, &mbuf->master, PyBUF_FULL_RO) < 0) {
+    if (PyObject_GetBuffer(base, &mbuf->master, flags) < 0) {
         mbuf->master.obj = NULL;
         Py_DECREF(mbuf);
         return NULL;
@@ -200,6 +200,20 @@ PyTypeObject _PyManagedBuffer_Type = {
         return -1;                                                \
     }
 
+#define CHECK_RESTRICTED(mv) \
+    if (((PyMemoryViewObject *)(mv))->flags & _Py_MEMORYVIEW_RESTRICTED) { \
+        PyErr_SetString(PyExc_ValueError,                                  \
+            "cannot create new view on restricted memoryview");            \
+        return NULL;                                                       \
+    }
+
+#define CHECK_RESTRICTED_INT(mv) \
+    if (((PyMemoryViewObject *)(mv))->flags & _Py_MEMORYVIEW_RESTRICTED) { \
+        PyErr_SetString(PyExc_ValueError,                                  \
+            "cannot create new view on restricted memoryview");            \
+        return -1;                                                       \
+    }
+
 /* See gh-92888. These macros signal that we need to check the memoryview
    again due to possible read after frees. */
 #define CHECK_RELEASED_AGAIN(mv) CHECK_RELEASED(mv)
@@ -257,7 +271,7 @@ PyTypeObject _PyManagedBuffer_Type = {
 /* Assumptions: ndim >= 1. The macro tests for a corner case that should
    perhaps be explicitly forbidden in the PEP. */
 #define HAVE_SUBOFFSETS_IN_LAST_DIM(view) \
-    (view->suboffsets && view->suboffsets[dest->ndim-1] >= 0)
+    (view->suboffsets && view->suboffsets[view->ndim-1] >= 0)
 
 static inline int
 last_dim_is_contiguous(const Py_buffer *dest, const Py_buffer *src)
@@ -770,22 +784,24 @@ PyMemoryView_FromBuffer(const Py_buffer *info)
 }
 
 #if 0 // GraalPy change
-/* Create a memoryview from an object that implements the buffer protocol.
+/* Create a memoryview from an object that implements the buffer protocol,
+   using the given flags.
    If the object is a memoryview, the new memoryview must be registered
    with the same managed buffer. Otherwise, a new managed buffer is created. */
-PyObject *
-PyMemoryView_FromObject(PyObject *v)
+static PyObject *
+PyMemoryView_FromObjectAndFlags(PyObject *v, int flags)
 {
     _PyManagedBufferObject *mbuf;
 
     if (PyMemoryView_Check(v)) {
         PyMemoryViewObject *mv = (PyMemoryViewObject *)v;
         CHECK_RELEASED(mv);
+        CHECK_RESTRICTED(mv);
         return mbuf_add_view(mv->mbuf, &mv->view);
     }
     else if (PyObject_CheckBuffer(v)) {
         PyObject *ret;
-        mbuf = (_PyManagedBufferObject *)_PyManagedBuffer_FromObject(v);
+        mbuf = (_PyManagedBufferObject *)_PyManagedBuffer_FromObject(v, flags);
         if (mbuf == NULL)
             return NULL;
         ret = mbuf_add_view(mbuf, NULL);
@@ -797,6 +813,38 @@ PyMemoryView_FromObject(PyObject *v)
         "memoryview: a bytes-like object is required, not '%.200s'",
         Py_TYPE(v)->tp_name);
     return NULL;
+}
+
+/* Create a memoryview from an object that implements the buffer protocol,
+   using the given flags.
+   If the object is a memoryview, the new memoryview must be registered
+   with the same managed buffer. Otherwise, a new managed buffer is created. */
+PyObject *
+_PyMemoryView_FromBufferProc(PyObject *v, int flags, getbufferproc bufferproc)
+{
+    _PyManagedBufferObject *mbuf = mbuf_alloc();
+    if (mbuf == NULL)
+        return NULL;
+
+    int res = bufferproc(v, &mbuf->master, flags);
+    if (res < 0) {
+        mbuf->master.obj = NULL;
+        Py_DECREF(mbuf);
+        return NULL;
+    }
+
+    PyObject *ret = mbuf_add_view(mbuf, NULL);
+    Py_DECREF(mbuf);
+    return ret;
+}
+
+/* Create a memoryview from an object that implements the buffer protocol.
+   If the object is a memoryview, the new memoryview must be registered
+   with the same managed buffer. Otherwise, a new managed buffer is created. */
+PyObject *
+PyMemoryView_FromObject(PyObject *v)
+{
+    return PyMemoryView_FromObjectAndFlags(v, PyBUF_FULL_RO);
 }
 
 /* Copy the format string from a base object that might vanish. */
@@ -844,7 +892,7 @@ memory_from_contiguous_copy(const Py_buffer *src, char order)
     if (bytes == NULL)
         return NULL;
 
-    mbuf = (_PyManagedBufferObject *)_PyManagedBuffer_FromObject(bytes);
+    mbuf = (_PyManagedBufferObject *)_PyManagedBuffer_FromObject(bytes, PyBUF_FULL_RO);
     Py_DECREF(bytes);
     if (mbuf == NULL)
         return NULL;
@@ -959,8 +1007,25 @@ memoryview_impl(PyTypeObject *type, PyObject *object)
 {
     return PyMemoryView_FromObject(object);
 }
-#endif // GraalPy change
 
+/*[clinic input]
+@classmethod
+memoryview._from_flags
+
+    object: object
+    flags: int
+
+Create a new memoryview object which references the given object.
+[clinic start generated code]*/
+
+static PyObject *
+memoryview__from_flags_impl(PyTypeObject *type, PyObject *object, int flags)
+/*[clinic end generated code: output=bf71f9906c266ee2 input=f5f82fd0e744356b]*/
+{
+    return PyMemoryView_FromObjectAndFlags(object, flags);
+}
+
+#endif // GraalPy change
 
 /****************************************************************************/
 /*                         Previously in abstract.c                         */
@@ -1020,32 +1085,19 @@ PyBuffer_ToContiguous(void *buf, const Py_buffer *src, Py_ssize_t len, char orde
 /* Inform the managed buffer that this particular memoryview will not access
    the underlying buffer again. If no other memoryviews are registered with
    the managed buffer, the underlying buffer is released instantly and
-   marked as inaccessible for both the memoryview and the managed buffer.
-
-   This function fails if the memoryview itself has exported buffers. */
-static int
+   marked as inaccessible for both the memoryview and the managed buffer. */
+static void
 _memory_release(PyMemoryViewObject *self)
 {
+    assert(self->exports == 0);
     if (self->flags & _Py_MEMORYVIEW_RELEASED)
-        return 0;
+        return;
 
-    if (self->exports == 0) {
-        self->flags |= _Py_MEMORYVIEW_RELEASED;
-        assert(self->mbuf->exports > 0);
-        if (--self->mbuf->exports == 0)
-            mbuf_release(self->mbuf);
-        return 0;
+    self->flags |= _Py_MEMORYVIEW_RELEASED;
+    assert(self->mbuf->exports > 0);
+    if (--self->mbuf->exports == 0) {
+        mbuf_release(self->mbuf);
     }
-    if (self->exports > 0) {
-        PyErr_Format(PyExc_BufferError,
-            "memoryview has %zd exported buffer%s", self->exports,
-            self->exports==1 ? "" : "s");
-        return -1;
-    }
-
-    PyErr_SetString(PyExc_SystemError,
-                    "_memory_release(): negative export count");
-    return -1;
 }
 
 /*[clinic input]
@@ -1058,9 +1110,21 @@ static PyObject *
 memoryview_release_impl(PyMemoryViewObject *self)
 /*[clinic end generated code: output=d0b7e3ba95b7fcb9 input=bc71d1d51f4a52f0]*/
 {
-    if (_memory_release(self) < 0)
+    if (self->exports == 0) {
+        _memory_release(self);
+        Py_RETURN_NONE;
+    }
+
+    if (self->exports > 0) {
+        PyErr_Format(PyExc_BufferError,
+            "memoryview has %zd exported buffer%s", self->exports,
+            self->exports==1 ? "" : "s");
         return NULL;
-    Py_RETURN_NONE;
+    }
+
+    PyErr_SetString(PyExc_SystemError,
+                    "memoryview: negative export count");
+    return NULL;
 }
 
 static void
@@ -1068,7 +1132,7 @@ memory_dealloc(PyMemoryViewObject *self)
 {
     assert(self->exports == 0);
     _PyObject_GC_UNTRACK(self);
-    (void)_memory_release(self);
+    _memory_release(self);
     Py_CLEAR(self->mbuf);
     if (self->weakreflist != NULL)
         PyObject_ClearWeakRefs((PyObject *) self);
@@ -1085,8 +1149,10 @@ memory_traverse(PyMemoryViewObject *self, visitproc visit, void *arg)
 static int
 memory_clear(PyMemoryViewObject *self)
 {
-    (void)_memory_release(self);
-    Py_CLEAR(self->mbuf);
+    if (self->exports == 0) {
+        _memory_release(self);
+        Py_CLEAR(self->mbuf);
+    }
     return 0;
 }
 
@@ -1094,8 +1160,7 @@ static PyObject *
 memory_enter(PyObject *self, PyObject *args)
 {
     CHECK_RELEASED(self);
-    Py_INCREF(self);
-    return self;
+    return Py_NewRef(self);
 }
 
 static PyObject *
@@ -1127,6 +1192,7 @@ get_native_fmtchar(char *result, const char *fmt)
     case 'n': case 'N': size = sizeof(Py_ssize_t); break;
     case 'f': size = sizeof(float); break;
     case 'd': size = sizeof(double); break;
+    case 'e': size = sizeof(float) / 2; break;
     case '?': size = sizeof(_Bool); break;
     case 'P': size = sizeof(void *); break;
     }
@@ -1170,6 +1236,7 @@ get_native_fmtstr(const char *fmt)
     case 'N': RETURN("N");
     case 'f': RETURN("f");
     case 'd': RETURN("d");
+    case 'e': RETURN("e");
     case '?': RETURN("?");
     case 'P': RETURN("P");
     }
@@ -1363,6 +1430,7 @@ memoryview_cast_impl(PyMemoryViewObject *self, PyObject *format,
     Py_ssize_t ndim = 1;
 
     CHECK_RELEASED(self);
+    CHECK_RESTRICTED(self);
 
     if (!MV_C_CONTIGUOUS(self->flags)) {
         PyErr_SetString(PyExc_TypeError,
@@ -1418,6 +1486,7 @@ memoryview_toreadonly_impl(PyMemoryViewObject *self)
 /*[clinic end generated code: output=2c7e056f04c99e62 input=dc06d20f19ba236f]*/
 {
     CHECK_RELEASED(self);
+    CHECK_RESTRICTED(self);
     /* Even if self is already readonly, we still need to create a new
      * object for .release() to work correctly.
      */
@@ -1441,6 +1510,7 @@ memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
     int baseflags = self->flags;
 
     CHECK_RELEASED_INT(self);
+    CHECK_RESTRICTED_INT(self);
 
     /* start with complete information */
     *view = *base;
@@ -1690,6 +1760,12 @@ unpack_single(PyMemoryViewObject *self, const char *ptr, const char *fmt)
 
     CHECK_RELEASED_AGAIN(self);
 
+#if PY_LITTLE_ENDIAN
+    int endian = 1;
+#else
+    int endian = 0;
+#endif
+
     switch (fmt[0]) {
 
     /* signed integers and fast path for 'B' */
@@ -1718,6 +1794,7 @@ unpack_single(PyMemoryViewObject *self, const char *ptr, const char *fmt)
     /* floats */
     case 'f': UNPACK_SINGLE(d, ptr, float); goto convert_double;
     case 'd': UNPACK_SINGLE(d, ptr, double); goto convert_double;
+    case 'e': d = PyFloat_Unpack2(ptr, endian); goto convert_double;
 
     /* bytes object */
     case 'c': goto convert_bytes;
@@ -1779,6 +1856,11 @@ pack_single(PyMemoryViewObject *self, char *ptr, PyObject *item, const char *fmt
     double d;
     void *p;
 
+#if PY_LITTLE_ENDIAN
+    int endian = 1;
+#else
+    int endian = 0;
+#endif
     switch (fmt[0]) {
     /* signed integers */
     case 'b': case 'h': case 'i': case 'l':
@@ -1855,7 +1937,7 @@ pack_single(PyMemoryViewObject *self, char *ptr, PyObject *item, const char *fmt
         break;
 
     /* floats */
-    case 'f': case 'd':
+    case 'f': case 'd': case 'e':
         d = PyFloat_AsDouble(item);
         if (d == -1.0 && PyErr_Occurred())
             goto err_occurred;
@@ -1863,8 +1945,13 @@ pack_single(PyMemoryViewObject *self, char *ptr, PyObject *item, const char *fmt
         if (fmt[0] == 'f') {
             PACK_SINGLE(ptr, d, float);
         }
-        else {
+        else if (fmt[0] == 'd') {
             PACK_SINGLE(ptr, d, double);
+        }
+        else {
+            if (PyFloat_Pack2(d, ptr, endian) < 0) {
+                goto err_occurred;
+            }
         }
         break;
 
@@ -1875,7 +1962,7 @@ pack_single(PyMemoryViewObject *self, char *ptr, PyObject *item, const char *fmt
             return -1; /* preserve original error */
         CHECK_RELEASED_INT_AGAIN(self);
         PACK_SINGLE(ptr, ld, _Bool);
-         break;
+        break;
 
     /* bytes object */
     case 'c':
@@ -1960,18 +2047,12 @@ unpacker_free(struct unpacker *x)
 static struct unpacker *
 struct_get_unpacker(const char *fmt, Py_ssize_t itemsize)
 {
-    PyObject *structmodule;     /* XXX cache these two */
-    PyObject *Struct = NULL;    /* XXX in globals?     */
+    PyObject *Struct = NULL;    /* XXX cache it in globals? */
     PyObject *structobj = NULL;
     PyObject *format = NULL;
     struct unpacker *x = NULL;
 
-    structmodule = PyImport_ImportModule("struct");
-    if (structmodule == NULL)
-        return NULL;
-
-    Struct = PyObject_GetAttrString(structmodule, "Struct");
-    Py_DECREF(structmodule);
+    Struct = _PyImport_GetModuleAttrString("struct", "Struct");
     if (Struct == NULL)
         return NULL;
 
@@ -2492,6 +2573,7 @@ memory_subscript(PyMemoryViewObject *self, PyObject *key)
         return memory_item(self, index);
     }
     else if (PySlice_Check(key)) {
+        CHECK_RESTRICTED(self);
         PyMemoryViewObject *sliced;
 
         sliced = (PyMemoryViewObject *)mbuf_add_view(self->mbuf, view);
@@ -2626,7 +2708,11 @@ static Py_ssize_t
 memory_length(PyMemoryViewObject *self)
 {
     CHECK_RELEASED_INT(self);
-    return self->view.ndim == 0 ? 1 : self->view.shape[0];
+    if (self->view.ndim == 0) {
+        PyErr_SetString(PyExc_TypeError, "0-dim memory has no length");
+        return -1;
+    }
+    return self->view.shape[0];
 }
 
 /* As mapping */
@@ -2745,6 +2831,17 @@ unpack_cmp(const char *p, const char *q, char fmt,
     /* XXX DBL_EPSILON? */
     case 'f': CMP_SINGLE(p, q, float); return equal;
     case 'd': CMP_SINGLE(p, q, double); return equal;
+    case 'e': {
+#if PY_LITTLE_ENDIAN
+        int endian = 1;
+#else
+        int endian = 0;
+#endif
+        /* Note: PyFloat_Unpack2 should never fail */
+        double u = PyFloat_Unpack2(p, endian);
+        double v = PyFloat_Unpack2(q, endian);
+        return (u == v);
+    }
 
     /* bytes object */
     case 'c': return *p == *q;
@@ -3153,6 +3250,7 @@ static PyMethodDef memory_methods[] = {
     MEMORYVIEW_TOLIST_METHODDEF
     MEMORYVIEW_CAST_METHODDEF
     MEMORYVIEW_TOREADONLY_METHODDEF
+    MEMORYVIEW__FROM_FLAGS_METHODDEF
     {"__enter__",   memory_enter, METH_NOARGS, NULL},
     {"__exit__",    memory_exit, METH_VARARGS, NULL},
     {NULL,          NULL}

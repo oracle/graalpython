@@ -13,6 +13,7 @@
 #include "pycore_ceval.h"         // _Py_EnterRecursiveCallTstate()
 #include "pycore_object.h"        // _Py_CheckSlotResult()
 #endif // GraalPy change
+#include "pycore_long.h"          // _Py_IsNegative
 #include "pycore_pyerrors.h"      // _PyErr_Occurred()
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 #if 0 // GraalPy change
@@ -1463,7 +1464,7 @@ PyNumber_AsSsize_t(PyObject *item, PyObject *err)
         /* Whether or not it is less than or equal to
            zero is determined by the sign of ob_size
         */
-        if (_PyLong_Sign(value) < 0)
+        if (_PyLong_IsNegative((PyLongObject *)value))
             result = PY_SSIZE_T_MIN;
         else
             result = PY_SSIZE_T_MAX;

@@ -547,39 +547,11 @@ class ThreadTests(BaseTestCase):
         self.assertTrue(t.daemon)
 
     @skip_unless_reliable_fork
-    def test_fork_at_exit(self):
-        # bpo-42350: Calling os.fork() after threading._shutdown() must
-        # not log an error.
-        code = textwrap.dedent("""
-            import atexit
-            import os
-            import sys
-            from test.support import wait_process
-
-            # Import the threading module to register its "at fork" callback
-            import threading
-
-            def exit_handler():
-                pid = os.fork()
-                if not pid:
-                    print("child process ok", file=sys.stderr, flush=True)
-                    # child process
-                else:
-                    wait_process(pid, exitcode=0)
-
-            # exit_handler() will be called after threading._shutdown()
-            atexit.register(exit_handler)
-        """)
-        _, out, err = assert_python_ok("-c", code)
-        self.assertEqual(out, b'')
-        self.assertEqual(err.rstrip(), b'child process ok')
-
-    @skip_unless_reliable_fork
     def test_dummy_thread_after_fork(self):
         # Issue #14308: a dummy thread in the active list doesn't mess up
         # the after-fork mechanism.
         code = """if 1:
-            import _thread, threading, os, time
+            import _thread, threading, os, time, warnings
 
             def background_thread(evt):
                 # Creates and registers the _DummyThread instance
@@ -958,16 +930,6 @@ class ThreadTests(BaseTestCase):
         with threading_helper.wait_threads_exit():
             threading.Thread(target=noop).start()
             # Thread.join() is not called
-
-    @unittest.skipUnless(Py_DEBUG, 'need debug build (Py_DEBUG)')
-    def test_debug_deprecation(self):
-        # bpo-44584: The PYTHONTHREADDEBUG environment variable is deprecated
-        rc, out, err = assert_python_ok("-Wdefault", "-c", "pass",
-                                        PYTHONTHREADDEBUG="1")
-        msg = (b'DeprecationWarning: The threading debug '
-               b'(PYTHONTHREADDEBUG environment variable) '
-               b'is deprecated and will be removed in Python 3.12')
-        self.assertIn(msg, err)
 
     def test_import_from_another_thread(self):
         # bpo-1596321: If the threading module is first import from a thread

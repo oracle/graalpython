@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2024, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1039,6 +1039,19 @@ EXPORT (HRESULT) KeepObject(IUnknown *punk)
 
 #endif
 
+#ifdef MS_WIN32
+
+// i38748: c stub for testing stack corruption
+// When executing a Python callback with a long and a long long
+
+typedef long(__stdcall *_test_i38748_funcType)(long, long long);
+
+EXPORT(long) _test_i38748_runCallback(_test_i38748_funcType callback, int a, int b) {
+    return callback(a, b);
+}
+
+#endif
+
 EXPORT(int)
 _testfunc_pylist_append(PyObject *list, PyObject *item)
 {
@@ -1046,6 +1059,7 @@ _testfunc_pylist_append(PyObject *list, PyObject *item)
 }
 
 static struct PyModuleDef_Slot _ctypes_test_slots[] = {
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
     {0, NULL}
 };
 
