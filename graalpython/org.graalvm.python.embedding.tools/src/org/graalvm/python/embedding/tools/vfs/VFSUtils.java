@@ -297,7 +297,7 @@ public final class VFSUtils {
             return;
         }
 
-        VenvContents venvContents = ensureVenv(venvDirectory, graalPyVersion, log, ensureLauncher(launcher, log));
+        VenvContents venvContents = ensureVenv(venvDirectory, graalPyVersion, launcher, log);
 
         boolean installed;
         if (requirementsPackages != null) {
@@ -398,7 +398,8 @@ public final class VFSUtils {
         }).toList();
     }
 
-    private static VenvContents ensureVenv(Path venvDirectory, String graalPyVersion, BuildToolLog log, Path launcherPath) throws IOException {
+    private static VenvContents ensureVenv(Path venvDirectory, String graalPyVersion, Launcher launcher, BuildToolLog log) throws IOException {
+        Path launcherPath = ensureLauncher(launcher, log);
         VenvContents contents = null;
         if (Files.exists(venvDirectory)) {
             checkVenvLauncher(venvDirectory, launcherPath, log);
@@ -414,9 +415,9 @@ public final class VFSUtils {
         }
 
         if (!Files.exists(venvDirectory)) {
-            info(log, "Creating GraalPy %s venv", graalPyVersion);
-            runLauncher(launcherPath.toString(), log, "-m", "venv", venvDirectory.toString(), "--without-pip");
-            runVenvBin(venvDirectory, "graalpy", log, "-I", "-m", "ensurepip");
+                info(log, "Creating GraalPy %s venv", graalPyVersion);
+                runLauncher(launcherPath.toString(), log, "-m", "venv", venvDirectory.toString(), "--without-pip");
+                runVenvBin(venvDirectory, "graalpy", log, "-I", "-m", "ensurepip");
         }
 
         if (contents == null) {
