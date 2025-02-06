@@ -32,8 +32,12 @@ def handle_signals(sig,frame):
 
 # a function that will be spawned as a separate thread.
 def send_signals():
-    os.kill(process_pid, signal.SIGUSR1)
-    os.kill(process_pid, signal.SIGUSR2)
+    # We use `raise_signal` rather than `kill` because:
+    #   * It verifies that a signal delivered to a background thread still has
+    #     its Python-level handler called on the main thread.
+    #   * It ensures the signal is handled before the thread exits.
+    signal.raise_signal(signal.SIGUSR1)
+    signal.raise_signal(signal.SIGUSR2)
     signalled_all.release()
 
 

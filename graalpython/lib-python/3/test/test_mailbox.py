@@ -9,6 +9,7 @@ import re
 import io
 import tempfile
 from test import support
+from test.support import import_helper
 from test.support import os_helper
 from test.support import socket_helper
 import unittest
@@ -31,7 +32,7 @@ class TestBase:
         # Inspect a mailbox.Message representation of the sample message
         self.assertIsInstance(msg, email.message.Message)
         self.assertIsInstance(msg, mailbox.Message)
-        for key, value in _sample_headers.items():
+        for key, value in _sample_headers:
             self.assertIn(value, msg.get_all(key))
         self.assertTrue(msg.is_multipart())
         self.assertEqual(len(msg.get_payload()), len(_sample_payloads))
@@ -981,6 +982,47 @@ class _TestSingleFile(TestMailbox):
 
         self.assertEqual(os.stat(self._path).st_mode, mode)
 
+    @unittest.skipUnless(hasattr(os, 'chown'), 'requires os.chown')
+    def test_ownership_after_flush(self):
+        # See issue gh-117467
+
+        pwd = import_helper.import_module('pwd')
+        grp = import_helper.import_module('grp')
+        st = os.stat(self._path)
+
+        for e in pwd.getpwall():
+            if e.pw_uid != st.st_uid:
+                other_uid = e.pw_uid
+                break
+        else:
+            self.skipTest("test needs more than one user")
+
+        for e in grp.getgrall():
+            if e.gr_gid != st.st_gid:
+                other_gid = e.gr_gid
+                break
+        else:
+            self.skipTest("test needs more than one group")
+
+        try:
+            os.chown(self._path, other_uid, other_gid)
+        except OSError:
+            self.skipTest('test needs root privilege')
+        # Change permissions as in test_permissions_after_flush.
+        mode = st.st_mode | 0o666
+        os.chmod(self._path, mode)
+
+        self._box.add(self._template % 0)
+        i = self._box.add(self._template % 1)
+        # Need to remove one message to make flush() create a new file
+        self._box.remove(i)
+        self._box.flush()
+
+        st = os.stat(self._path)
+        self.assertEqual(st.st_uid, other_uid)
+        self.assertEqual(st.st_gid, other_gid)
+        self.assertEqual(st.st_mode, mode)
+
 
 class _TestMboxMMDF(_TestSingleFile):
 
@@ -1027,12 +1069,14 @@ class _TestMboxMMDF(_TestSingleFile):
         # Add a string starting with 'From ' to the mailbox
         key = self._box.add('From foo@bar blah\nFrom: foo\n\n0\n')
         self.assertEqual(self._box[key].get_from(), 'foo@bar blah')
+        self.assertEqual(self._box[key].get_unixfrom(), 'From foo@bar blah')
         self.assertEqual(self._box[key].get_payload(), '0\n')
 
     def test_add_from_bytes(self):
         # Add a byte string starting with 'From ' to the mailbox
         key = self._box.add(b'From foo@bar blah\nFrom: foo\n\n0\n')
         self.assertEqual(self._box[key].get_from(), 'foo@bar blah')
+        self.assertEqual(self._box[key].get_unixfrom(), 'From foo@bar blah')
         self.assertEqual(self._box[key].get_payload(), '0\n')
 
     def test_add_mbox_or_mmdf_message(self):
@@ -1545,18 +1589,23 @@ class _TestMboxMMDFMessage:
         msg = mailbox.Message(_sample_message)
         msg.set_unixfrom('From foo@bar blah')
         msg = mailbox.mboxMessage(msg)
-        self.assertEqual(msg.get_from(), 'foo@bar blah', msg.get_from())
+        self.assertEqual(msg.get_from(), 'foo@bar blah')
+        self.assertEqual(msg.get_unixfrom(), 'From foo@bar blah')
 
     def test_from(self):
         # Get and set "From " line
         msg = mailbox.mboxMessage(_sample_message)
         self._check_from(msg)
+        self.assertIsNone(msg.get_unixfrom())
         msg.set_from('foo bar')
         self.assertEqual(msg.get_from(), 'foo bar')
+        self.assertIsNone(msg.get_unixfrom())
         msg.set_from('foo@bar', True)
         self._check_from(msg, 'foo@bar')
+        self.assertIsNone(msg.get_unixfrom())
         msg.set_from('blah@temp', time.localtime())
         self._check_from(msg, 'blah@temp')
+        self.assertIsNone(msg.get_unixfrom())
 
     def test_flags(self):
         # Use get_flags(), set_flags(), add_flag(), remove_flag()
@@ -1744,6 +1793,7 @@ class TestMessageConversion(TestBase, unittest.TestCase):
                 self.assertEqual(msg.get_flags(), result)
                 self.assertEqual(msg.get_from(), 'MAILER-DAEMON %s' %
                              time.asctime(time.gmtime(0.0)))
+                self.assertIsNone(msg.get_unixfrom())
             msg_maildir.set_subdir('cur')
             self.assertEqual(class_(msg_maildir).get_flags(), 'RODFA')
 
@@ -1792,10 +1842,12 @@ class TestMessageConversion(TestBase, unittest.TestCase):
             msg_mboxMMDF = class_(_sample_message)
             msg_mboxMMDF.set_flags('RODFA')
             msg_mboxMMDF.set_from('foo@bar')
+            self.assertIsNone(msg_mboxMMDF.get_unixfrom())
             for class2_ in (mailbox.mboxMessage, mailbox.MMDFMessage):
                 msg2 = class2_(msg_mboxMMDF)
                 self.assertEqual(msg2.get_flags(), 'RODFA')
                 self.assertEqual(msg2.get_from(), 'foo@bar')
+                self.assertIsNone(msg2.get_unixfrom())
 
     def test_mboxmmdf_to_mh(self):
         # Convert mboxMessage and MMDFMessage to MHMessage
@@ -2267,30 +2319,31 @@ H4sICM2D1UIAA3RleHQAC8nILFYAokSFktSKEoW0zJxUPa7wzJIMhZLyfIWczLzUYj0uAHTs
 
 _bytes_sample_message = _sample_message.encode('ascii')
 
-_sample_headers = {
-    "Return-Path":"<gkj@gregorykjohnson.com>",
-    "X-Original-To":"gkj+person@localhost",
-    "Delivered-To":"gkj+person@localhost",
-    "Received":"""from localhost (localhost [127.0.0.1])
+_sample_headers = [
+    ("Return-Path", "<gkj@gregorykjohnson.com>"),
+    ("X-Original-To", "gkj+person@localhost"),
+    ("Delivered-To", "gkj+person@localhost"),
+    ("Received", """from localhost (localhost [127.0.0.1])
         by andy.gregorykjohnson.com (Postfix) with ESMTP id 356ED9DD17
-        for <gkj+person@localhost>; Wed, 13 Jul 2005 17:23:16 -0400 (EDT)""",
-    "Delivered-To":"gkj@sundance.gregorykjohnson.com",
-    "Received":"""from localhost [127.0.0.1]
+        for <gkj+person@localhost>; Wed, 13 Jul 2005 17:23:16 -0400 (EDT)"""),
+    ("Delivered-To", "gkj@sundance.gregorykjohnson.com"),
+    ("Received", """from localhost [127.0.0.1]
         by localhost with POP3 (fetchmail-6.2.5)
-        for gkj+person@localhost (single-drop); Wed, 13 Jul 2005 17:23:16 -0400 (EDT)""",
-    "Received":"""from andy.gregorykjohnson.com (andy.gregorykjohnson.com [64.32.235.228])
+        for gkj+person@localhost (single-drop); Wed, 13 Jul 2005 17:23:16 -0400 (EDT)"""),
+    ("Received", """from andy.gregorykjohnson.com (andy.gregorykjohnson.com [64.32.235.228])
         by sundance.gregorykjohnson.com (Postfix) with ESMTP id 5B056316746
-        for <gkj@gregorykjohnson.com>; Wed, 13 Jul 2005 17:23:11 -0400 (EDT)""",
-    "Received":"""by andy.gregorykjohnson.com (Postfix, from userid 1000)
-        id 490CD9DD17; Wed, 13 Jul 2005 17:23:11 -0400 (EDT)""",
-    "Date":"Wed, 13 Jul 2005 17:23:11 -0400",
-    "From":""""Gregory K. Johnson" <gkj@gregorykjohnson.com>""",
-    "To":"gkj@gregorykjohnson.com",
-    "Subject":"Sample message",
-    "Mime-Version":"1.0",
-    "Content-Type":"""multipart/mixed; boundary="NMuMz9nt05w80d4+\"""",
-    "Content-Disposition":"inline",
-    "User-Agent": "Mutt/1.5.9i" }
+        for <gkj@gregorykjohnson.com>; Wed, 13 Jul 2005 17:23:11 -0400 (EDT)"""),
+    ("Received", """by andy.gregorykjohnson.com (Postfix, from userid 1000)
+        id 490CD9DD17; Wed, 13 Jul 2005 17:23:11 -0400 (EDT)"""),
+    ("Date", "Wed, 13 Jul 2005 17:23:11 -0400"),
+    ("From", """"Gregory K. Johnson" <gkj@gregorykjohnson.com>"""),
+    ("To", "gkj@gregorykjohnson.com"),
+    ("Subject", "Sample message"),
+    ("Mime-Version", "1.0"),
+    ("Content-Type", """multipart/mixed; boundary="NMuMz9nt05w80d4+\""""),
+    ("Content-Disposition", "inline"),
+    ("User-Agent", "Mutt/1.5.9i"),
+]
 
 _sample_payloads = ("""This is a sample message.
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,7 +81,12 @@ import com.oracle.graal.python.pegparser.sst.StmtTy.Delete;
 import com.oracle.graal.python.pegparser.sst.StmtTy.Expr;
 import com.oracle.graal.python.pegparser.sst.StmtTy.For;
 import com.oracle.graal.python.pegparser.sst.StmtTy.FunctionDef;
+import com.oracle.graal.python.pegparser.sst.StmtTy.TypeAlias;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy.TypeIgnore;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.ParamSpec;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVar;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
@@ -330,8 +335,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
                 double[] val = value.getComplex();
                 sb.append(String.format("%g%+gj", val[0], val[1]));
                 break;
-            case RAW:
-                appendEscapedString(sb, value.getRaw(String.class));
+            case CODEPOINTS:
+                appendEscapedString(sb, value.getCodePoints().toJavaString());
                 break;
             case ELLIPSIS:
             case NONE:
@@ -762,7 +767,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     @Override
     public String visit(AsyncFunctionDef node) {
-        return visitFunctionOrAsyncFunction(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeComment);
+        return visitFunctionOrAsyncFunction(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeComment, node.typeParams);
     }
 
     @Override
@@ -799,6 +804,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         appendNodes(sb, "Decorators", node.decoratorList);
         appendNodes(sb, "Bases", node.bases);
         appendNodes(sb, "Keywords", node.keywords);
+        appendNodes(sb, "TypeParams", node.typeParams);
         appendNewLineIndented(sb, "---- Class body of ").append(node.name).append(" ----");
         for (SSTNode stm : node.body) {
             appendNewLineIndented(sb, stm.accept(this));
@@ -847,10 +853,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     @Override
     public String visit(FunctionDef node) {
-        return visitFunctionOrAsyncFunction(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeComment);
+        return visitFunctionOrAsyncFunction(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeComment, node.typeParams);
     }
 
-    private String visitFunctionOrAsyncFunction(SSTNode node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment) {
+    private String visitFunctionOrAsyncFunction(SSTNode node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment, TypeParamTy[] typeParams) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         level++;
@@ -870,6 +876,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         if (typeComment != null) {
             appendNewLineIndented(sb, "Type Comment: ").append(typeComment);
         }
+        appendNodes(sb, "TypeParams", typeParams);
         appendNewLineIndented(sb, "---- Function body of ").append(name).append(" ----");
         for (SSTNode stm : body) {
             appendNewLineIndented(sb, stm.accept(this));
@@ -1164,7 +1171,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
-
     }
 
     @Override
@@ -1172,7 +1178,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
-
     }
 
     @Override
@@ -1180,6 +1185,48 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         return sb.toString();
+    }
 
+    @Override
+    public String visit(TypeAlias node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Name", node.name);
+        appendNodes(sb, "TypeParams", node.typeParams);
+        appendNode(sb, "Value", node.value);
+        level--;
+        return sb.toString();
+    }
+
+    @Override
+    public String visit(TypeVar node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        appendString(sb, "Name: ", node.name);
+        appendNode(sb, "Bound", node.bound);
+        level--;
+        return sb.toString();
+    }
+
+    @Override
+    public String visit(ParamSpec node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        appendString(sb, "Name: ", node.name);
+        level--;
+        return sb.toString();
+    }
+
+    @Override
+    public String visit(TypeVarTuple node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        appendString(sb, "Name: ", node.name);
+        level--;
+        return sb.toString();
     }
 }

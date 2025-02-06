@@ -113,6 +113,7 @@ TYPE_MAPPINGS = {
     "alias_ty**": "AliasTy[]",
     "arg_ty": "ArgTy",
     "arg_ty*": "ArgTy[]",
+    "arg_ty**": "ArgTy[]",
     "arguments_ty": "ArgumentsTy",
     "asdl_alias_seq*": "AliasTy[]",
     "asdl_arg_seq*": "ArgTy[]",
@@ -141,18 +142,26 @@ TYPE_MAPPINGS = {
     "mod_ty": "ModTy",
     "pattern_ty": "PatternTy",
     "pattern_ty*": "PatternTy[]",
+    "pattern_ty**": "PatternTy[]",
     "stmt_ty": "StmtTy",
     "stmt_ty*": "StmtTy[]",
     "stmt_ty**": "StmtTy[]",
     "withitem_ty": "WithItemTy",
     "withitem_ty*": "WithItemTy[]",
     "withitem_ty**": "WithItemTy[]",
+    "type_param_ty": "TypeParamTy",
+    "type_param_ty*": "TypeParamTy[]",
+    "type_param_ty**": "TypeParamTy[]",
+    "asdl_type_param_seq*": "TypeParamTy[]",
+    "asdl_type_param_seq**": "TypeParamTy[]",
+    "ResultTokenWithMetadata*": "ResultTokenWithMetadata",
 
     # Java return types here
     "boolean": "boolean",
     "int": "int",
     "Object": "Object",
     "Object*": "Object[]",
+    "Object**": "Object[]",
 }
 
 # Shortcuts in java actions
@@ -181,14 +190,14 @@ ACTION_MAPPINGS = {
     'CHECK_VERSION ( AugOperator* , 5 , "The \'@\' operator is" , _PyPegen_augoperator ( p , MatMult ) )': (1, 'checkVersion(5, "The \'@\' operator is", OperatorTy.MatMult)'),
     'CHECK_VERSION ( expr_ty , 5 , "Await expressions are" , _PyAST_Await ( a , EXTRA ) )': (1, 'checkVersion(5, "Await expressions are", factory.createAwait(a, $RANGE))'),
     'CHECK_VERSION ( expr_ty , 5 , "The \'@\' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )': (1, 'checkVersion(5, "The \'@\' operator is", factory.createBinaryOp(OperatorTy.MatMult, a, b, $RANGE))'),
-    'CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async functions are", factory.createAsyncFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, a, newTypeComment((Token) tc), $RANGE))'),
+    'CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA ) )': (1, 'checkVersion(5, "Async functions are", factory.createAsyncFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, a, newTypeComment((Token) tc), t, $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async for loops are", factory.createAsyncFor(t, ex, b, el, newTypeComment(tc), $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )': (1, 'checkVersion(5, "Async with statements are", factory.createAsyncWith(a, b, null, $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async with statements are", factory.createAsyncWith(a, b, newTypeComment(tc), $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotation syntax is" , _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) )': (1, 'checkVersion(6, "Variable annotation syntax is", factory.createAnnAssignment(setExprContext(a, ExprContextTy.Store), b, (ExprTy) c, true, $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )': (1, 'checkVersion(6, "Variable annotations syntax is", factory.createAnnAssignment(a, b, (ExprTy) c, false, $RANGE))'),
     'CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )': (1, 'checkVersion(6, "Async comprehensions are", factory.createComprehension(a, b, c, true, $RANGE))'),
-    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , a -> end_lineno , - 1 , "\':\' expected after dictionary key" )' : (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "\':\' expected after dictionary key")'),
+    'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , a -> end_lineno , - 1 , "\':\' expected after dictionary key" )' : (1, 'this.raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, a, "\':\' expected after dictionary key")'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.DEL_TARGETS,a)'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.FOR_TARGETS,a)'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )': (2, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.STAR_TARGETS,a)'),
@@ -206,7 +215,7 @@ ACTION_MAPPINGS = {
     '_PyAST_Call ( _PyPegen_dummy_name ( p ) , CHECK_NULL_ALLOWED ( asdl_expr_seq* , _PyPegen_seq_extract_starred_exprs ( p , a ) ) , CHECK_NULL_ALLOWED ( asdl_keyword_seq* , _PyPegen_seq_delete_starred_exprs ( p , a ) ) , EXTRA )': (1, 'factory.createCall(dummyName(), extractStarredExpressions(a), deleteStarredExpressions(a), $RANGE)'),
     '_PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA )': (2, 'factory.createCall(a, b != null ? ((ExprTy.Call) b).args : EMPTY_EXPR_ARRAY, b != null ? ((ExprTy.Call) b).keywords : EMPTY_KEYWORD_ARRAY, $RANGE)'),
     '_PyAST_Call ( a , CHECK ( asdl_expr_seq* , ( asdl_expr_seq* ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )': (2, 'factory.createCall(a, new ExprTy[] {b}, EMPTY_KEYWORD_ARRAY, $RANGE)'),
-    '_PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , EXTRA )': (1, 'factory.createClassDef(a, b, c, $RANGE)'),
+    '_PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , t , EXTRA )': (1, 'factory.createClassDef(a, b, c, t, $RANGE)'),
     '_PyAST_Compare ( a , CHECK ( asdl_int_seq* , _PyPegen_get_cmpops ( p , b ) ) , CHECK ( asdl_expr_seq* , _PyPegen_get_exprs ( p , b ) ) , EXTRA )': (1, 'factory.createComparison(a, b, $RANGE)'),
     '_PyAST_Constant ( Py_Ellipsis , NULL , EXTRA )': (1, 'factory.createEllipsis($LOC)'),
     '_PyAST_Constant ( Py_False , NULL , EXTRA )': (2, 'factory.createBooleanLiteral(false, $LOC)'),
@@ -222,7 +231,7 @@ ACTION_MAPPINGS = {
     '_PyAST_Expr ( y , EXTRA )': (1, 'factory.createExpression(y, $RANGE)'),
     '_PyAST_Expression ( a , p -> arena )': (1, 'factory.createExpressionModule(a, $RANGE)'),
     '_PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createFor(t, ex, b, el, newTypeComment(tc), $RANGE)'),
-    '_PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, (ExprTy) a, newTypeComment((Token) tc), $RANGE)'),
+    '_PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA )': (1, 'factory.createFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, (ExprTy) a, newTypeComment((Token) tc), t, $RANGE)'),
     '_PyAST_FunctionType ( a , b , p -> arena )': (1, 'factory.createFunctionType(a, b, $RANGE)'),
     '_PyAST_GeneratorExp ( a , b , EXTRA )': (1, 'factory.createGenerator(a, b, $RANGE)'),
     '_PyAST_Global ( CHECK ( asdl_identifier_seq* , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createGlobal(extractNames(a), $RANGE)'),
@@ -254,7 +263,7 @@ ACTION_MAPPINGS = {
     '_PyAST_Tuple ( CHECK ( asdl_expr_seq* , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )': (2, 'factory.createTuple(new ExprTy[] {a}, ExprContextTy.Load, $RANGE)'),
     '_PyAST_While ( a , b , c , EXTRA )': (1, 'factory.createWhile(a, b, c, $RANGE)'),
     '_PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createWith(a, b, newTypeComment(tc), $RANGE)'),
-    'CHECK_VERSION ( stmt_ty , 9 , "Parenthesized context managers are" , _PyAST_With ( a , b , NULL , EXTRA ) )': (1, 'checkVersion(9, "Parenthesized context managers are", factory.createWith(a, b, null, $RANGE))'),
+    '_PyAST_With ( a , b , NULL , EXTRA )': (1, 'factory.createWith(a, b, null, $RANGE)'),
     '_PyAST_Yield ( a , EXTRA )': (1, 'factory.createYield(a, false, $RANGE)'),
     '_PyAST_YieldFrom ( a , EXTRA )': (1, 'factory.createYield(a, true, $RANGE)'),
     '_PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )': (2, 'factory.createAlias(((ExprTy.Name) a).id, b == null ? null : ((ExprTy.Name) b).id, $RANGE)'),
@@ -270,7 +279,6 @@ ACTION_MAPPINGS = {
     '_PyPegen_check_legacy_stmt ( p , a ) ? NULL : p -> tokens [p -> mark - 1] -> level == 0 ? NULL : RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , b , "invalid syntax. Perhaps you forgot a comma?" )': (1, 'checkLegacyStmt(a) ? null : peekToken(mark() - 1).level == 0 ? null : this.raiseSyntaxErrorKnownRange(a, b, "invalid syntax. Perhaps you forgot a comma?")'),
     '_PyPegen_class_def_decorators ( p , a , b )': (1, 'factory.createClassDef(b, a, $RANGE)'),
     '_PyPegen_collect_call_seqs ( p , a , b , EXTRA )': (1, 'this.collectCallSequences(a, b, $RANGE)'),
-    '_PyPegen_concatenate_strings ( p , a )': (1, 'this.concatenateStrings(a)'),
     '_PyPegen_function_def_decorators ( p , d , f )': (1, 'factory.createFunctionDefWithDecorators(f,d)'),
     '_PyPegen_interactive_exit ( p )': (1, 'interactiveExit()'),
     '_PyPegen_join_names_with_dot ( p , a , b )': (1, 'this.joinNamesWithDot(a,b)'),
@@ -297,11 +305,12 @@ ACTION_MAPPINGS = {
     '_PyPegen_star_etc ( p , NULL , NULL , a )': (2, 'new StarEtc(null,null,a)'),
     '_PyPegen_star_etc ( p , NULL , b , c )': (2, 'new StarEtc(null,b,c)'),
     '_PyPegen_star_etc ( p , a , b , c )': (3, 'new StarEtc(a,b,c)'),
-    'a': (34, 'a'),
+    'a': (35, 'a'),
     'args': (1, 'args'),
     'b': (2, 'b'),
     'c': (6, 'c'),
     'd': (3, 'd'),
+    'e': (1, 'e'),
     'f': (1, 'f'),
     'guard': (1, 'guard'),
     'k': (1, 'k'),
@@ -344,6 +353,26 @@ ACTION_MAPPINGS = {
     '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq* , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq* , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq* , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, patterns, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
     '_PyPegen_key_pattern_pair ( p , arg , value )': (1, 'new KeyPatternPair(arg, value)'),
     'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )': (1, 'raiseSyntaxErrorKnownRange(a[0], a[a.length - 1], "positional patterns follow keyword patterns")'),
+
+    # Type alias/type params
+    'CHECK_VERSION ( stmt_ty , 12 , "Type statement is" , _PyAST_TypeAlias ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , n , Store ) ) , t , b , EXTRA ) )': (1, 'checkVersion(12, "Type statement is", factory.createTypeAlias(setExprContext(n, ExprContextTy.Store), t, b, $RANGE))'),
+    'CHECK_VERSION ( asdl_type_param_seq* , 12 , "Type parameter lists are" , t )': (1, 'checkVersion(12, "Type parameter lists are", t)'),
+    '_PyAST_TypeVar ( a -> v . Name . id , b , EXTRA )': (1, 'factory.createTypeVar(((ExprTy.Name) a).id, b, $RANGE)'),
+    'RAISE_SYNTAX_ERROR_STARTING_FROM ( colon , e -> kind == Tuple_kind ? "cannot use constraints with TypeVarTuple" : "cannot use bound with TypeVarTuple" )': (1, 'this.raiseSyntaxErrorStartingFrom(colon, e instanceof ExprTy.Tuple ? "cannot use constraints with TypeVarTuple" : "cannot use bound with TypeVarTuple")'),
+    '_PyAST_TypeVarTuple ( a -> v . Name . id , EXTRA )': (1, 'factory.createTypeVarTuple(((ExprTy.Name) a).id, $RANGE)'),
+    'RAISE_SYNTAX_ERROR_STARTING_FROM ( colon , e -> kind == Tuple_kind ? "cannot use constraints with ParamSpec" : "cannot use bound with ParamSpec" )': (1, 'this.raiseSyntaxErrorStartingFrom(colon, e instanceof ExprTy.Tuple ? "cannot use constraints with ParamSpec" : "cannot use bound with ParamSpec")'),
+    '_PyAST_ParamSpec ( a -> v . Name . id , EXTRA )': (1, 'factory.createParamSpec(((ExprTy.Name) a).id, $RANGE)'),
+
+    # f-strings
+    '_PyPegen_constant_from_token ( p , t )': (1, 'constantFromToken(t)'),
+    '_PyPegen_constant_from_string ( p , s )': (1, 'constantFromString(s)'),
+    '_PyPegen_decoded_constant_from_token ( p , t )': (1, 'decodedConstantFromToken(t)'),
+    '_PyPegen_formatted_value ( p , a , debug_expr , conversion , format , rbrace , EXTRA )': (1, 'formattedValue(a, debug_expr, conversion, format, rbrace, $RANGE)'),
+    '_PyPegen_check_fstring_conversion ( p , conv_token , conv )': (1, 'checkFstringConversion(conv_token, conv)'),
+    '_PyPegen_setup_full_format_spec ( p , colon , ( asdl_expr_seq* ) spec , EXTRA )': (1, 'setupFullFormatSpec(colon, spec, $RANGE)'),
+    '_PyPegen_joined_str ( p , a , ( asdl_expr_seq* ) b , c )': (1, 'joinedStr(a, b, c)'),
+    '_PyPegen_concatenate_strings ( p , a , EXTRA )': (1, 'this.concatenateStrings(a, $RANGE)'),
+    'PyErr_Occurred ( ) ? NULL : RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN ( "f-string: expecting \'=\', or \'!\', or \':\', or \'}\'" )': (1, '')
 }
 
 # Maps pattern to (n, replacement), where:
@@ -363,13 +392,15 @@ ACTION_MAPPINGS_RE = {
     r'_PyAST_UnaryOp \( (\w+) , (\w+) , EXTRA \)': (6, 'factory.createUnaryOp(UnaryOpTy.\\1, \\2, $RANGE)'),
     r'_PyPegen_augoperator \( p , (\w+) \)': (12, 'OperatorTy.\\1'),
     r'_PyPegen_cmpop_expr_pair \( p , (\w+) , a \)': (10, 'new CmpopExprPair(CmpOpTy.\\1, a)'),
-    r'RAISE_SYNTAX_ERROR \( "(.+)" \)': (16, 'this.raiseSyntaxError("\\1")'),
-    r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" \)': (35, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2")'),
-    r'RAISE_SYNTAX_ERROR_KNOWN_RANGE \( (\w+) , (\w+) , "(.+)" \)': (9, 'this.raiseSyntaxErrorKnownRange(\\1, \\2, "\\3")'),
+    r'RAISE_SYNTAX_ERROR \( "(.+)" \)': (17, 'this.raiseSyntaxError("\\1")'),
+    r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" \)': (38, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2")'),
+    r'RAISE_SYNTAX_ERROR_KNOWN_RANGE \( (\w+) , (\w+) , "(.+)" \)': (13, 'this.raiseSyntaxErrorKnownRange(\\1, \\2, "\\3")'),
     r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" , _PyPegen_get_expr_name \( \1 \) \)': (4, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2", getExprName(\\1))'),
-    r'RAISE_SYNTAX_ERROR_STARTING_FROM \( (\w+) , "(.+)" \)': (3, 'this.raiseSyntaxErrorStartingFrom(\\1, "\\2")'),
+    r'RAISE_SYNTAX_ERROR_STARTING_FROM \( (\w+) , "(.+)" \)': (5, 'this.raiseSyntaxErrorStartingFrom(\\1, "\\2")'),
     r'RAISE_INDENTATION_ERROR \( "(.+)" \)': (1, 'this.raiseIndentationError("\\1")'),
     r'RAISE_INDENTATION_ERROR \( "(.+)" , (\w+) -> lineno \)': (16, 'this.raiseIndentationError("\\1", \\2.getSourceRange().startLine)'),
+    'RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN \( "(.+)" \)': (3, 'raiseSyntaxErrorOnNextToken("\\1")'),
+    r'PyErr_Occurred \( \) \? NULL : RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN \( "(.+)" \)': (4, 'raiseSyntaxErrorOnNextToken("\\1")'),
 }
 
 LICENSE = '''/*
@@ -437,8 +468,6 @@ TRAILER = '''
                 return eval_rule();
             case FUNCTION_TYPE:
                 return func_type_rule();
-            case FSTRING:
-                return fstring_rule();
         }
         return result;
     }
@@ -916,14 +945,14 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
-        self.print("public %s(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
+        self.print("public %s(String source, SourceRange sourceRange, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(source, sourceRange, stringFactory, errorCb, startRule, flags, featureVersion);")
+            self.print("super(source, sourceRange, parserCb, startRule, flags, featureVersion);")
         self.print("}")
         self.print()
-        self.print("public %s(String source, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
+        self.print("public %s(String source, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(source, null, stringFactory, errorCb, startRule, flags, featureVersion);")
+            self.print("super(source, null, parserCb, startRule, flags, featureVersion);")
         self.print("}")
         # we don't need the C declarations, so straight to the rule functions as in c_generator
         for rulename, rule in list(self.all_rules.items()):
@@ -1029,7 +1058,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print(f"private {result_type} {node.name}_raw()")
 
     def _should_memoize(self, node: Rule) -> bool:
-        return not node.left_recursive
+        return node.memo and not node.left_recursive
 
     def _handle_default_rule_body(self, node: Rule, rhs: Rhs, result_type: str) -> None:
         memoize = self._should_memoize(node)

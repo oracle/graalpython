@@ -146,6 +146,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
+import com.oracle.graal.python.builtins.objects.itertools.PBatched;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
@@ -1435,6 +1436,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PZipLongest(cls, getShape(cls)));
     }
 
+    public final PBatched createBatched(Object cls) {
+        return trace(new PBatched(cls, getShape(cls)));
+    }
+
     public final PTextIO createTextIO(Object clazz) {
         return trace(new PTextIO(clazz, getShape(clazz)));
     }
@@ -1713,8 +1718,8 @@ public abstract class PythonObjectFactory extends Node {
                         new PStructUnpackIterator(PythonBuiltinClassType.PStructUnpackIterator, getShape(PythonBuiltinClassType.PStructUnpackIterator), struct, buffer));
     }
 
-    public final PTokenizerIter createTokenizerIter(Object cls, String sourceString) {
-        return trace(new PTokenizerIter(cls, getShape(cls), sourceString));
+    public final PTokenizerIter createTokenizerIter(Object cls, Supplier<int[]> inputSupplier, boolean extraTokens) {
+        return trace(new PTokenizerIter(cls, getShape(cls), inputSupplier, extraTokens));
     }
 
     @GenerateInline

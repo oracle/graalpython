@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -107,12 +107,12 @@ public class LambdaInFunctionTests extends ParserTestBase {
 
     @Test
     public void positionalOnlyArg01() throws Exception {
-        checkSyntaxErrorMessage("lambda a, b = 5, /, c: None", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("lambda a, b = 5, /, c: None", "parameter without a default follows parameter with a default");
     }
 
     @Test
     public void positionalOnlyArg02() throws Exception {
-        checkSyntaxErrorMessage("lambda a = 5, b, /, c: None", "non-default argument follows default argument");
+        checkSyntaxErrorMessage("lambda a = 5, b, /, c: None", "parameter without a default follows parameter with a default");
     }
 
     @Test

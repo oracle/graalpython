@@ -367,7 +367,7 @@ _PyObject_IS_GC(PyObject *obj)
 static inline size_t
 _PyType_PreHeaderSize(PyTypeObject *tp)
 {
-    // GraalPy change: we put only one pointer for dict, we don't store it inlined
+    // GraalPy change: we put only one pointer for dict, we don't store it inlined [GR-61996]
     return _PyType_IS_GC(tp) * sizeof(PyGC_Head) +
         _PyType_HasFeature(tp, Py_TPFLAGS_PREHEADER) * /* 2 * */ sizeof(PyObject *);
 }

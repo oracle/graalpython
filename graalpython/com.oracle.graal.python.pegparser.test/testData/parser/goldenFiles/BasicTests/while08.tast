@@ -28,4 +28,4 @@ Module[1:0-8:15]
             Call[8:2-8:15]
                 Target: Name[8:2-8:7] Value: "print"
                 Args:
-                    RAW[8:8-8:14] Value: "done"
+                    CODEPOINTS[8:8-8:14] Value: "done"

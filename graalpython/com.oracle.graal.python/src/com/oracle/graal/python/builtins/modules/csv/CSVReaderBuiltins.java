@@ -209,6 +209,9 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         self.state = IN_QUOTED_FIELD;
                     } else if (codePoint == dialect.escapeCharCodePoint) {
                         /* possible escaped character */
+                        if (dialect.quoting == QUOTE_NONNUMERIC) {
+                            self.numericField = true;
+                        }
                         self.state = ESCAPED_CHAR;
                     } else if (codePoint == SPACE_CODEPOINT && dialect.skipInitialSpace) {
                         /* ignore space at start of field */

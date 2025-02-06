@@ -36,16 +36,16 @@ Module[1:0-9:41]
                         Call[5:8-5:34]
                             Target: Name[5:8-5:13] Value: "print"
                             Args:
-                                RAW[5:14-5:33] Value: "division by zero!"
+                                CODEPOINTS[5:14-5:33] Value: "division by zero!"
             Finally:
                 Call[9:8-9:41]
                     Target: Name[9:8-9:13] Value: "print"
                     Args:
-                        RAW[9:14-9:40] Value: "executing finally clause"
+                        CODEPOINTS[9:14-9:40] Value: "executing finally clause"
             Else:
                 Call[7:8-7:34]
                     Target: Name[7:8-7:13] Value: "print"
                     Args:
-                        RAW[7:14-7:25] Value: "result is"
+                        CODEPOINTS[7:14-7:25] Value: "result is"
                         Name[7:27-7:33] Value: "result"
         ---- End of divide function ----

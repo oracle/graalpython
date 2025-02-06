@@ -440,6 +440,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_VALUE_NAN = tsLiteral("Invalid value NaN (not a number)");
     public static final TruffleString IS_NOT_SUBTYPE_OF = tsLiteral("%s.__new__(%N): %N is not a subtype of %s");
     public static final TruffleString IS_NOT_TYPE_OBJ = tsLiteral("%s is not a type object (%p)");
+    public static final TruffleString N_MUST_BE_AT_LEAST_ONE = tsLiteral("n must be at least one");
     public static final TruffleString ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE = tsLiteral("isinstance() arg 2 must be a type or tuple of types (was: %s)");
     public static final TruffleString ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = tsLiteral("issubclass() arg 2 must be a class or tuple of classes");
     public static final TruffleString ITER_V_MUST_BE_CALLABLE = tsLiteral("iter(v, w): v must be callable");
@@ -473,6 +474,7 @@ public abstract class ErrorMessages {
     public static final TruffleString MATCH_MAPPING_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYS_AS_PATTERNS = tsLiteral("MatchMapping doesn't have the same number of keys as patterns");
     public static final TruffleString MATCH_OR_REQUIRES_AT_LEAST_2_PATTERNS = tsLiteral("MatchOr requires at least 2 patterns");
     public static final TruffleString MATCH_SINGLETON_CAN_ONLY_CONTAIN_TRUE_FALSE_AND_NONE = tsLiteral("MatchSingleton can only contain True, False and None");
+    public static final TruffleString INPUTS_ARE_NOT_THE_SAME_LENGTH = tsLiteral("Inputs are not the same length");
     public static final TruffleString MATH_DOMAIN_ERROR = tsLiteral("math domain error");
     public static final TruffleString MATH_RANGE_ERROR = tsLiteral("math range error");
     public static final TruffleString MAX_MARSHAL_STACK_DEPTH = tsLiteral("Maximum marshal stack depth");
@@ -717,6 +719,7 @@ public abstract class ErrorMessages {
     public static final TruffleString TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes exactly %d arguments (%d given)");
     public static final TruffleString S_TAKES_NO_KEYWORD_ARGS = tsLiteral("%s takes no keyword arguments");
     public static final TruffleString P_TAKES_NO_KEYWORD_ARGS = tsLiteral("%p takes no keyword arguments");
+    public static final TruffleString STEPS_MUST_BE_A_NON_NEGATIVE_INTEGER = tsLiteral("steps must be a non-negative integer");
     public static final TruffleString THROW_THIRD_ARG_MUST_BE_TRACEBACK = tsLiteral("throw() third argument must be a traceback object");
     public static final TruffleString TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = tsLiteral("_tee_dataobject should not have more than %s links");
     public static final TruffleString TDATAOBJECT_SHOULDNT_HAVE_NEXT = tsLiteral("_tee_dataobject shouldn't have a next if not full");
@@ -1328,12 +1331,13 @@ public abstract class ErrorMessages {
     public static final TruffleString LINETERMINATOR_MUST_BE_SET = tsLiteral("lineterminator must be set");
     public static final TruffleString BAD_QUOTING_VALUE = tsLiteral("bad \"quoting\" value");
     public static final TruffleString S_EXPECTED_AFTER_S = tsLiteral("'%s' expected after '%s'");
-    public static final TruffleString NEWLINE_IN_UNQOUTED_FIELD = tsLiteral("new-line character seen in unquoted field - do you need to open the file in universal-newline mode?");
+    public static final TruffleString NEWLINE_IN_UNQOUTED_FIELD = tsLiteral("new-line character seen in unquoted field - do you need to open the file with newline=''?");
     public static final TruffleString LARGER_THAN_FIELD_SIZE_LIMIT = tsLiteral("field larger than field limit (%d)");
     public static final TruffleString UNEXPECTED_END_OF_DATA = tsLiteral("unexpected end of data");
     public static final TruffleString WRONG_ITERATOR_RETURN_TYPE = tsLiteral("iterator should return strings, not %.200s (the file should be opened in text mode)");
     public static final TruffleString EXPECTED_ITERABLE_NOT_S = tsLiteral("iterable expected, not %.200s");
     public static final TruffleString EMPTY_FIELD_RECORD_MUST_BE_QUOTED = tsLiteral("single empty field record must be quoted");
+    public static final TruffleString DELIMITER_IS_A_SPACE_AND_SKIPINITIALSPACE_IS_TRUE = tsLiteral("empty field must be quoted if delimiter is a space and skipinitialspace is true");
     public static final TruffleString ESCAPE_WITHOUT_ESCAPECHAR = tsLiteral("need to escape, but no escapechar set");
     public static final TruffleString S_MUST_HAVE_WRITE_METHOD = tsLiteral("%s must have \"write\" method");
 

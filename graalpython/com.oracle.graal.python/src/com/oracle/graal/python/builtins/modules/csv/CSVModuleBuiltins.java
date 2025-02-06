@@ -674,6 +674,11 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                     "        csv.QUOTE_NONNUMERIC means that quotes are always placed around\n" +
                     "            fields which do not parse as integers or floating point\n" +
                     "            numbers.\n" +
+                    "        csv.QUOTE_STRINGS means that quotes are always placed around\n" +
+                    "            fields which are strings.  Note that the Python value None\n" +
+                    "            is not a string.\n" +
+                    "        csv.QUOTE_NOTNULL means that quotes are only placed around fields\n" +
+                    "            that are not the Python value None.\n" +
                     "        csv.QUOTE_NONE means that quotes are never placed around fields.\n" +
                     "    * escapechar - specifies a one-character string used to escape\n" +
                     "        the delimiter when quoting is set to QUOTE_NONE.\n" +

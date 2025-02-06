@@ -15,8 +15,8 @@ Module[1:0-1:48]
             Iterator: 
                 Tuple[1:17-1:26]
                     Values:
-                        RAW[1:18-1:21] Value: "a"
-                        RAW[1:22-1:25] Value: "b"
+                        CODEPOINTS[1:18-1:21] Value: "a"
+                        CODEPOINTS[1:22-1:25] Value: "b"
         ComprehensionTy[1:27-1:47]
             Target: Name[1:31-1:32] Value: "s" Store
             Iterator: 

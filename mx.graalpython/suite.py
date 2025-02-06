@@ -10,7 +10,7 @@ suite = {
     "versionConflictResolution": "latest",
 
     "version": "25.0.0",
-    "graalpython:pythonVersion": "3.11.7",
+    "graalpython:pythonVersion": "3.12.8",
     "release": False,
     "groupId": "org.graalvm.python",
     "url": "http://www.graalvm.org/python",
@@ -273,6 +273,7 @@ suite = {
             "buildDependencies": [
                 "com.oracle.graal.python.pegparser.generator",
             ],
+            "checkstyle": "com.oracle.graal.python",
         },
 
         "com.oracle.graal.python.pegparser.test": {

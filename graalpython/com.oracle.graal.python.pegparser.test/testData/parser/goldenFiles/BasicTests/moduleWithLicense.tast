@@ -8,8 +8,8 @@ print("module A")
 Output:
 -------
 Module[3:0-4:17]
-    RAW[3:0-3:18] Value: "MODULE A DOC"
+    CODEPOINTS[3:0-3:18] Value: "MODULE A DOC"
     Call[4:0-4:17]
         Target: Name[4:0-4:5] Value: "print"
         Args:
-            RAW[4:6-4:16] Value: "module A"
+            CODEPOINTS[4:6-4:16] Value: "module A"

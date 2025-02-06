@@ -302,4 +302,16 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             throw raiseNode.raiseSystemExit(PNone.NONE);
         }
     }
+
+    @Builtin(name = "daemon_threads_allowed", minNumOfPositionalArgs = 0, doc = "daemon_threads_allowed()\n" +
+                    "\n" +
+                    "Return True if daemon threads are allowed in the current interpreter,\n" +
+                    "and False otherwise.\n")
+    @GenerateNodeFactory
+    public abstract static class DaemonThreadsAllowedNode extends PythonBuiltinNode {
+        @Specialization
+        public static boolean daemonAllowed() {
+            return true;
+        }
+    }
 }

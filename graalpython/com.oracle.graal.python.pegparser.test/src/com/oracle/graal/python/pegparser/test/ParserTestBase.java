@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.pegparser.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -50,24 +51,23 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.CharBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
-import com.oracle.graal.python.pegparser.ErrorCallback;
-import com.oracle.graal.python.pegparser.FutureFeature;
-import com.oracle.graal.python.pegparser.InputType;
-import com.oracle.graal.python.pegparser.Parser;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
 import com.oracle.graal.python.pegparser.AbstractParser.Flags;
+import com.oracle.graal.python.pegparser.FutureFeature;
+import com.oracle.graal.python.pegparser.InputType;
+import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.test.TestParserCallbacksImpl.ParserErrorWrapperException;
 import com.oracle.graal.python.pegparser.test.sst.SSTTreePrinterVisitor;
-import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public class ParserTestBase {
     private static final int FEATURE_VERSION = 10;
@@ -81,7 +81,7 @@ public class ParserTestBase {
 
     private static final boolean REGENERATE_TREE = false;
 
-    protected TestErrorCallbackImpl errorCallback;
+    protected TestParserCallbacksImpl errorCallback = new TestParserCallbacksImpl();
 
     @Rule public TestName name = new TestName();
 
@@ -99,33 +99,32 @@ public class ParserTestBase {
 
     @SuppressWarnings("unused")
     public ModTy parse(String src, String moduleName, InputType inputType, boolean interactiveTerminal) {
-        errorCallback = new TestErrorCallbackImpl();
         EnumSet<Flags> flags = EnumSet.noneOf(Flags.class);
         if (interactiveTerminal) {
             flags.add(Flags.INTERACTIVE_TERMINAL);
         }
-        Parser parser = new Parser(src, new DefaultStringFactoryImpl(), errorCallback, inputType, flags, FEATURE_VERSION);
+        Parser parser = new Parser(src, errorCallback, inputType, flags, FEATURE_VERSION);
         return (ModTy) parser.parse();
     }
 
+    private TestParserCallbacksImpl.Error expectError(String source, InputType inputType, EnumSet<FutureFeature> futureFeatures) {
+        return assertThrows(ParserErrorWrapperException.class, () -> {
+            ModTy node = parse(source, getFileName(), inputType);
+            if (node != null) {
+                ScopeEnvironment.analyze(node, errorCallback, futureFeatures);
+            }
+        }).getError();
+    }
+
     public void checkSyntaxError(String source) {
-        ModTy node = parse(source, getFileName(), InputType.FILE);
-        if (node != null) {
-            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
-        }
-        assertTrue("Expected Error.", errorCallback.hasErrors());
-        assertSame("Expected SyntaxError", errorCallback.getErrors().get(0).getType(), ErrorCallback.ErrorType.Syntax);
+        TestParserCallbacksImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
+        assertSame("Expected SyntaxError", error.type(), ParserCallbacks.ErrorType.Syntax);
     }
 
     public void checkSyntaxErrorMessageContains(String source, String expectedMessage) {
-        ModTy node = parse(source, getFileName(), InputType.FILE);
-        if (node != null) {
-            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
-        }
-        assertTrue("Expected Error.", errorCallback.hasErrors());
-        TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
-        assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Syntax);
-        assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + error.getMessage() + "\"", error.getMessage().contains(expectedMessage));
+        TestParserCallbacksImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
+        assertSame("Expected SyntaxError not " + error.type(), error.type(), ParserCallbacks.ErrorType.Syntax);
+        assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + error.message() + "\"", error.message().contains(expectedMessage));
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage) {
@@ -141,14 +140,9 @@ public class ParserTestBase {
     }
 
     public void checkSyntaxErrorMessage(String source, String expectedMessage, InputType inputType, EnumSet<FutureFeature> futureFeatures) {
-        ModTy node = parse(source, getFileName(), inputType);
-        if (node != null) {
-            ScopeEnvironment.analyze(node, errorCallback, futureFeatures);
-        }
-        assertTrue("Expected Error.", errorCallback.hasErrors());
-        TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
-        assertSame("Expected SyntaxError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Syntax);
-        assertEquals(expectedMessage, error.getMessage());
+        TestParserCallbacksImpl.Error error = expectError(source, inputType, futureFeatures);
+        assertSame("Expected SyntaxError not " + error.type(), error.type(), ParserCallbacks.ErrorType.Syntax);
+        assertEquals(expectedMessage, error.message());
     }
 
     public void checkDeprecationWarning(String source, String expectedMessage) {
@@ -157,27 +151,18 @@ public class ParserTestBase {
             ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
         }
         assertTrue("Expected a DeprecationWarning.", errorCallback.hasWarnings());
-        assertEquals(expectedMessage, errorCallback.getWarnings().get(0).getMessage());
+        assertEquals(expectedMessage, errorCallback.getWarnings().get(0).message());
     }
 
     public void checkIndentationError(String source) {
-        ModTy node = parse(source, getFileName(), InputType.FILE);
-        if (node != null) {
-            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
-        }
-        assertTrue("Expected Error.", errorCallback.hasErrors());
-        assertSame("Expected IndentationError", errorCallback.getErrors().get(0).getType(), ErrorCallback.ErrorType.Indentation);
+        TestParserCallbacksImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
+        assertSame("Expected IndentationError", error.type(), ParserCallbacks.ErrorType.Indentation);
     }
 
     public void checkIndentationErrorMessage(String source, String expectedMessage) {
-        ModTy node = parse(source, getFileName(), InputType.FILE);
-        if (node != null) {
-            ScopeEnvironment.analyze(node, errorCallback, EMPTY_FUTURE);
-        }
-        assertTrue("Expected Error.", errorCallback.hasErrors());
-        TestErrorCallbackImpl.Error error = errorCallback.getErrors().get(0);
-        assertSame("Expected IndentationError not " + error.getType(), error.getType(), ErrorCallback.ErrorType.Indentation);
-        assertEquals(expectedMessage, error.getMessage());
+        TestParserCallbacksImpl.Error error = expectError(source, InputType.FILE, EMPTY_FUTURE);
+        assertSame("Expected IndentationError not " + error.type(), error.type(), ParserCallbacks.ErrorType.Indentation);
+        assertEquals(expectedMessage, error.message());
     }
 
     public void checkTreeFromFile(File testFile, boolean goldenFileNextToTestFile) throws Exception {
@@ -212,27 +197,9 @@ public class ParserTestBase {
         assertDescriptionMatches(tree, goldenFile);
     }
 
-    public void checkError(String source, String... expectedErrors) {
-        ArrayList<String> errors = new ArrayList<>();
-        ErrorCallback errorCb = new ErrorCallback() {
-            @Override
-            public void onError(ErrorCallback.ErrorType type, SourceRange sourceRange, String message) {
-                errors.add(String.format("%s[%d:%d-%d:%d]:%s", type.name(), sourceRange.startLine, sourceRange.startColumn, sourceRange.endLine, sourceRange.endColumn, message));
-            }
-
-            @Override
-            public void onWarning(WarningType warningType, SourceRange sourceRange, String message) {
-                fail("Unexpected " + warningType + " warning");
-            }
-
-            @Override
-            public void reportIncompleteSource(int line) {
-                fail("Unexpected call to reportIncompleteSource");
-            }
-        };
-        Parser parser = new Parser(source, new DefaultStringFactoryImpl(), errorCb, InputType.FILE, EnumSet.noneOf(Flags.class), FEATURE_VERSION);
-        parser.parse();
-        assertEquals(Arrays.asList(expectedErrors), errors);
+    public void checkError(String source, String expectedError) {
+        Parser parser = new Parser(source, errorCallback, InputType.FILE, EnumSet.noneOf(Flags.class), FEATURE_VERSION);
+        assertThrows(expectedError, ParserErrorWrapperException.class, parser::parse);
     }
 
     public void checkScopeResult(String source, InputType inputType) throws Exception {
@@ -254,12 +221,6 @@ public class ParserTestBase {
             }
         }
     }
-
-// public void checkSSTNodeOffsets(SSTNode node) {
-// SSTCheckOffsetVisitor checker = new SSTCheckOffsetVisitor(node);
-// boolean result = node.accept(checker);
-// assertTrue(checker.getMessage(), result);
-// }
 
     protected String printTreeToString(String source, SSTNode node) {
         SSTTreePrinterVisitor visitor = new SSTTreePrinterVisitor();
@@ -411,12 +372,6 @@ public class ParserTestBase {
         return lineSeparator;
     }
 
-// public void checkScopeAndTree(String source, PythonParser.ParserMode mode) throws Exception {
-// checkScopeResult(source, mode);
-// checkSSTNodeOffsets(lastSST);
-// checkTreeResult(source, mode);
-// }
-//
     public void checkScopeAndTree(String source) throws Exception {
         checkScopeAndTree(source, InputType.FILE);
     }
@@ -428,12 +383,5 @@ public class ParserTestBase {
 
     public void checkTreeResult(String source) throws Exception {
         checkTreeResult(source, InputType.FILE);
-// checkSSTNodeOffsets(lastSST);
     }
-
-// public void checkScopeAndTreeFromFile(File testFile) throws Exception {
-// checkScopeFromFile(testFile, true);
-// checkSSTNodeOffsets(lastSST);
-// checkTreeFromFile(testFile, true);
-// }
 }

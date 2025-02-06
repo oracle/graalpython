@@ -46,7 +46,9 @@ public enum QuoteStyle {
     QUOTE_MINIMAL,
     QUOTE_ALL,
     QUOTE_NONNUMERIC,
-    QUOTE_NONE;
+    QUOTE_NONE,
+    QUOTE_STRINGS,
+    QUOTE_NOTNULL;
 
     @CompilationFinal(dimensions = 1) private static final QuoteStyle[] VALUES = values();
 

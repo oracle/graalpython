@@ -29,10 +29,10 @@ Module[1:0-8:6]
                 Call[4:6-4:41]
                     Target: Name[4:6-4:11] Value: "print"
                     Args:
-                        RAW[4:12-4:25] Value: "inner_inner"
+                        CODEPOINTS[4:12-4:25] Value: "inner_inner"
                     KWArgs:
                         KeywordTy[4:27-4:40]
-                            end: RAW[4:31-4:40] Value: " haha\n"
+                            end: CODEPOINTS[4:31-4:40] Value: " haha\n"
                 Call[5:6-5:16]
                     Target: Name[5:6-5:11] Value: "print"
                     Args:
@@ -44,7 +44,7 @@ Module[1:0-8:6]
         Call[7:2-7:17]
             Target: Name[7:2-7:7] Value: "inner"
             Args:
-                RAW[7:8-7:16] Value: " baf\n"
+                CODEPOINTS[7:8-7:16] Value: " baf\n"
         ---- End of test function ----
     Call[8:0-8:6]
         Target: Name[8:0-8:4] Value: "test"

@@ -60,8 +60,9 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy[] decoratorList;   // nullable
         public final ExprTy returns;   // nullable
         public final Object typeComment;   // nullable
+        public final TypeParamTy[] typeParams;   // nullable
 
-        public FunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment, SourceRange sourceRange) {
+        public FunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment, TypeParamTy[] typeParams, SourceRange sourceRange) {
             super(sourceRange);
             assert name != null;
             this.name = name;
@@ -71,6 +72,7 @@ public abstract class StmtTy extends SSTNode {
             this.decoratorList = decoratorList;
             this.returns = returns;
             this.typeComment = typeComment;
+            this.typeParams = typeParams;
         }
 
         @Override
@@ -86,8 +88,9 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy[] decoratorList;   // nullable
         public final ExprTy returns;   // nullable
         public final Object typeComment;   // nullable
+        public final TypeParamTy[] typeParams;   // nullable
 
-        public AsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment, SourceRange sourceRange) {
+        public AsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment, TypeParamTy[] typeParams, SourceRange sourceRange) {
             super(sourceRange);
             assert name != null;
             this.name = name;
@@ -97,6 +100,7 @@ public abstract class StmtTy extends SSTNode {
             this.decoratorList = decoratorList;
             this.returns = returns;
             this.typeComment = typeComment;
+            this.typeParams = typeParams;
         }
 
         @Override
@@ -111,8 +115,9 @@ public abstract class StmtTy extends SSTNode {
         public final KeywordTy[] keywords;   // nullable
         public final StmtTy[] body;   // nullable
         public final ExprTy[] decoratorList;   // nullable
+        public final TypeParamTy[] typeParams;   // nullable
 
-        public ClassDef(String name, ExprTy[] bases, KeywordTy[] keywords, StmtTy[] body, ExprTy[] decoratorList, SourceRange sourceRange) {
+        public ClassDef(String name, ExprTy[] bases, KeywordTy[] keywords, StmtTy[] body, ExprTy[] decoratorList, TypeParamTy[] typeParams, SourceRange sourceRange) {
             super(sourceRange);
             assert name != null;
             this.name = name;
@@ -120,6 +125,7 @@ public abstract class StmtTy extends SSTNode {
             this.keywords = keywords;
             this.body = body;
             this.decoratorList = decoratorList;
+            this.typeParams = typeParams;
         }
 
         @Override
@@ -167,6 +173,26 @@ public abstract class StmtTy extends SSTNode {
             assert value != null;
             this.value = value;
             this.typeComment = typeComment;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static final class TypeAlias extends StmtTy {
+        public final ExprTy name;
+        public final TypeParamTy[] typeParams;   // nullable
+        public final ExprTy value;
+
+        public TypeAlias(ExprTy name, TypeParamTy[] typeParams, ExprTy value, SourceRange sourceRange) {
+            super(sourceRange);
+            assert name != null;
+            this.name = name;
+            this.typeParams = typeParams;
+            assert value != null;
+            this.value = value;
         }
 
         @Override

@@ -65,6 +65,7 @@ import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 final class Obj2Sst extends Obj2SstBase {
@@ -145,6 +146,9 @@ final class Obj2Sst extends Obj2SstBase {
         if (isInstanceOf(obj, state.clsAssign)) {
             return obj2Assign(obj, sourceRange);
         }
+        if (isInstanceOf(obj, state.clsTypeAlias)) {
+            return obj2TypeAlias(obj, sourceRange);
+        }
         if (isInstanceOf(obj, state.clsAugAssign)) {
             return obj2AugAssign(obj, sourceRange);
         }
@@ -218,7 +222,8 @@ final class Obj2Sst extends Obj2SstBase {
         ExprTy[] decoratorList = lookupAndConvertSequence(obj, AstState.T_F_DECORATOR_LIST, AstState.T_C_FUNCTIONDEF, this::obj2ExprTy, ExprTy[]::new);
         ExprTy returns = lookupAndConvert(obj, AstState.T_F_RETURNS, AstState.T_C_FUNCTIONDEF, this::obj2ExprTy, false);
         Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_FUNCTIONDEF, this::obj2string, false);
-        return new StmtTy.FunctionDef(name, args, body, decoratorList, returns, typeComment, sourceRange);
+        TypeParamTy[] typeParams = lookupAndConvertSequence(obj, AstState.T_F_TYPE_PARAMS, AstState.T_C_FUNCTIONDEF, this::obj2TypeParamTy, TypeParamTy[]::new);
+        return new StmtTy.FunctionDef(name, args, body, decoratorList, returns, typeComment, typeParams, sourceRange);
     }
 
     StmtTy.AsyncFunctionDef obj2AsyncFunctionDef(Object obj, SourceRange sourceRange) {
@@ -228,7 +233,8 @@ final class Obj2Sst extends Obj2SstBase {
         ExprTy[] decoratorList = lookupAndConvertSequence(obj, AstState.T_F_DECORATOR_LIST, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2ExprTy, ExprTy[]::new);
         ExprTy returns = lookupAndConvert(obj, AstState.T_F_RETURNS, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2ExprTy, false);
         Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2string, false);
-        return new StmtTy.AsyncFunctionDef(name, args, body, decoratorList, returns, typeComment, sourceRange);
+        TypeParamTy[] typeParams = lookupAndConvertSequence(obj, AstState.T_F_TYPE_PARAMS, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2TypeParamTy, TypeParamTy[]::new);
+        return new StmtTy.AsyncFunctionDef(name, args, body, decoratorList, returns, typeComment, typeParams, sourceRange);
     }
 
     StmtTy.ClassDef obj2ClassDef(Object obj, SourceRange sourceRange) {
@@ -237,7 +243,8 @@ final class Obj2Sst extends Obj2SstBase {
         KeywordTy[] keywords = lookupAndConvertSequence(obj, AstState.T_F_KEYWORDS, AstState.T_C_CLASSDEF, this::obj2KeywordTy, KeywordTy[]::new);
         StmtTy[] body = lookupAndConvertSequence(obj, AstState.T_F_BODY, AstState.T_C_CLASSDEF, this::obj2StmtTy, StmtTy[]::new);
         ExprTy[] decoratorList = lookupAndConvertSequence(obj, AstState.T_F_DECORATOR_LIST, AstState.T_C_CLASSDEF, this::obj2ExprTy, ExprTy[]::new);
-        return new StmtTy.ClassDef(name, bases, keywords, body, decoratorList, sourceRange);
+        TypeParamTy[] typeParams = lookupAndConvertSequence(obj, AstState.T_F_TYPE_PARAMS, AstState.T_C_CLASSDEF, this::obj2TypeParamTy, TypeParamTy[]::new);
+        return new StmtTy.ClassDef(name, bases, keywords, body, decoratorList, typeParams, sourceRange);
     }
 
     StmtTy.Return obj2Return(Object obj, SourceRange sourceRange) {
@@ -255,6 +262,13 @@ final class Obj2Sst extends Obj2SstBase {
         ExprTy value = lookupAndConvert(obj, AstState.T_F_VALUE, AstState.T_C_ASSIGN, this::obj2ExprTy, true);
         Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASSIGN, this::obj2string, false);
         return new StmtTy.Assign(targets, value, typeComment, sourceRange);
+    }
+
+    StmtTy.TypeAlias obj2TypeAlias(Object obj, SourceRange sourceRange) {
+        ExprTy name = lookupAndConvert(obj, AstState.T_F_NAME, AstState.T_C_TYPEALIAS, this::obj2ExprTy, true);
+        TypeParamTy[] typeParams = lookupAndConvertSequence(obj, AstState.T_F_TYPE_PARAMS, AstState.T_C_TYPEALIAS, this::obj2TypeParamTy, TypeParamTy[]::new);
+        ExprTy value = lookupAndConvert(obj, AstState.T_F_VALUE, AstState.T_C_TYPEALIAS, this::obj2ExprTy, true);
+        return new StmtTy.TypeAlias(name, typeParams, value, sourceRange);
     }
 
     StmtTy.AugAssign obj2AugAssign(Object obj, SourceRange sourceRange) {
@@ -955,5 +969,42 @@ final class Obj2Sst extends Obj2SstBase {
         Object tag = lookupAndConvert(obj, AstState.T_F_TAG, AstState.T_C_TYPEIGNORE, this::obj2string, true);
         SourceRange sourceRange = SourceRange.ARTIFICIAL_RANGE;
         return new TypeIgnoreTy.TypeIgnore(lineNo, tag, sourceRange);
+    }
+
+    TypeParamTy obj2TypeParamTy(Object obj) {
+        if (obj == PNone.NONE) {
+            return null;
+        }
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_TYPE_PARAM, true);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_TYPE_PARAM, true);
+        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_TYPE_PARAM, true);
+        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_TYPE_PARAM, true);
+        SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
+        if (isInstanceOf(obj, state.clsTypeVar)) {
+            return obj2TypeVar(obj, sourceRange);
+        }
+        if (isInstanceOf(obj, state.clsParamSpec)) {
+            return obj2ParamSpec(obj, sourceRange);
+        }
+        if (isInstanceOf(obj, state.clsTypeVarTuple)) {
+            return obj2TypeVarTuple(obj, sourceRange);
+        }
+        throw unexpectedNodeType(AstState.T_T_TYPE_PARAM, obj);
+    }
+
+    TypeParamTy.TypeVar obj2TypeVar(Object obj, SourceRange sourceRange) {
+        String name = lookupAndConvert(obj, AstState.T_F_NAME, AstState.T_C_TYPEVAR, this::obj2identifier, true);
+        ExprTy bound = lookupAndConvert(obj, AstState.T_F_BOUND, AstState.T_C_TYPEVAR, this::obj2ExprTy, false);
+        return new TypeParamTy.TypeVar(name, bound, sourceRange);
+    }
+
+    TypeParamTy.ParamSpec obj2ParamSpec(Object obj, SourceRange sourceRange) {
+        String name = lookupAndConvert(obj, AstState.T_F_NAME, AstState.T_C_PARAMSPEC, this::obj2identifier, true);
+        return new TypeParamTy.ParamSpec(name, sourceRange);
+    }
+
+    TypeParamTy.TypeVarTuple obj2TypeVarTuple(Object obj, SourceRange sourceRange) {
+        String name = lookupAndConvert(obj, AstState.T_F_NAME, AstState.T_C_TYPEVARTUPLE, this::obj2identifier, true);
+        return new TypeParamTy.TypeVarTuple(name, sourceRange);
     }
 }

@@ -66,6 +66,7 @@ import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 
 final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
 
@@ -114,6 +115,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         o.setAttribute(AstState.T_F_DECORATOR_LIST, seq2List(node.decoratorList));
         o.setAttribute(AstState.T_F_RETURNS, visitNullable(node.returns));
         o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_PARAMS, seq2List(node.typeParams));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -127,6 +129,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         o.setAttribute(AstState.T_F_DECORATOR_LIST, seq2List(node.decoratorList));
         o.setAttribute(AstState.T_F_RETURNS, visitNullable(node.returns));
         o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_PARAMS, seq2List(node.typeParams));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -139,6 +142,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         o.setAttribute(AstState.T_F_KEYWORDS, seq2List(node.keywords));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_DECORATOR_LIST, seq2List(node.decoratorList));
+        o.setAttribute(AstState.T_F_TYPE_PARAMS, seq2List(node.typeParams));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -165,6 +169,16 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         o.setAttribute(AstState.T_F_TARGETS, seq2List(node.targets));
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
+        fillSourceRangeAttributes(o, node.getSourceRange());
+        return o;
+    }
+
+    @Override
+    public Object visit(StmtTy.TypeAlias node) {
+        PythonObject o = factory.createPythonObject(state.clsTypeAlias);
+        o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
+        o.setAttribute(AstState.T_F_TYPE_PARAMS, seq2List(node.typeParams));
+        o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -866,6 +880,31 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         PythonObject o = factory.createPythonObject(state.clsTypeIgnore);
         o.setAttribute(AstState.T_F_LINENO, visitNonNull(node.lineNo));
         o.setAttribute(AstState.T_F_TAG, visitNonNullStringOrByteArray(node.tag));
+        return o;
+    }
+
+    @Override
+    public Object visit(TypeParamTy.TypeVar node) {
+        PythonObject o = factory.createPythonObject(state.clsTypeVar);
+        o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
+        o.setAttribute(AstState.T_F_BOUND, visitNullable(node.bound));
+        fillSourceRangeAttributes(o, node.getSourceRange());
+        return o;
+    }
+
+    @Override
+    public Object visit(TypeParamTy.ParamSpec node) {
+        PythonObject o = factory.createPythonObject(state.clsParamSpec);
+        o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
+        fillSourceRangeAttributes(o, node.getSourceRange());
+        return o;
+    }
+
+    @Override
+    public Object visit(TypeParamTy.TypeVarTuple node) {
+        PythonObject o = factory.createPythonObject(state.clsTypeVarTuple);
+        o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
+        fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
 }

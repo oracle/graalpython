@@ -78,6 +78,8 @@ public interface SSTreeVisitor<T> {
 
     T visit(StmtTy.Assign node);
 
+    T visit(StmtTy.TypeAlias node);
+
     T visit(StmtTy.AugAssign node);
 
     T visit(StmtTy.AnnAssign node);
@@ -207,4 +209,10 @@ public interface SSTreeVisitor<T> {
     T visit(PatternTy.MatchOr node);
 
     T visit(TypeIgnoreTy.TypeIgnore node);
+
+    T visit(TypeParamTy.TypeVar node);
+
+    T visit(TypeParamTy.ParamSpec node);
+
+    T visit(TypeParamTy.TypeVarTuple node);
 }
