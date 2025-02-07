@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -384,7 +384,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                 Object spec = getSpecNode.execute(frame, inliningTarget, mod, SpecialAttributeNames.T___SPEC__);
                 if (hasSpec.profile(inliningTarget, spec != PNone.NO_VALUE)) {
                     Object initializing = getInitNode.execute(frame, inliningTarget, spec, T__INITIALIZING);
-                    return isTrue.execute(frame, inliningTarget, initializing);
+                    return isTrue.execute(frame, initializing);
                 } else {
                     return false;
                 }

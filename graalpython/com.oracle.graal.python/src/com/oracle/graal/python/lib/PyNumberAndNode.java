@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -58,22 +59,15 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 public abstract class PyNumberAndNode extends BinaryOpNode {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
+    public abstract Object execute(VirtualFrame frame, Object v, Object w);
 
     @Override
     public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right);
+        return execute(frame, left, right);
     }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
-        return execute(frame, this, v, w);
-    }
-
-    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
 
     @Specialization
     public static int op(int left, int right) {
@@ -86,7 +80,9 @@ public abstract class PyNumberAndNode extends BinaryOpNode {
     }
 
     @Fallback
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w,
+    @InliningCutoff
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getVClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,

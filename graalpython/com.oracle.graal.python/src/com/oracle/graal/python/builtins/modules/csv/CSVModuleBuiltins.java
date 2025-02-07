@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -494,13 +494,13 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
                         PyObjectIsTrueNode isTrueNode, PyLongCheckExactNode pyLongCheckExactNode, PyLongAsIntNode pyLongAsIntNode, PRaiseNode.Lazy raiseNode) {
             TruffleString delimiter = getChar(inliningTarget, T_ATTR_DELIMITER, delimiterObj, T_COMMA, false);
-            boolean doubleQuote = getBoolean(frame, inliningTarget, doublequoteObj, true, isTrueNode);
+            boolean doubleQuote = getBoolean(frame, doublequoteObj, true, isTrueNode);
             TruffleString escapeChar = getChar(inliningTarget, T_ATTR_ESCAPECHAR, escapecharObj, T_NOT_SET, true);
             TruffleString lineTerminator = getString(inliningTarget, T_ATTR_LINETERMINATOR, lineterminatorObj, T_CRLF);
             TruffleString quoteChar = getChar(inliningTarget, T_ATTR_QUOTECHAR, quotecharObj, T_DOUBLE_QUOTE, true);
             QuoteStyle quoting = getQuotingValue(frame, inliningTarget, T_ATTR_QUOTING, quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode, raiseNode);
-            boolean skipInitialSpace = getBoolean(frame, inliningTarget, skipinitialspaceObj, false, isTrueNode);
-            boolean strict = getBoolean(frame, inliningTarget, strictObj, false, isTrueNode);
+            boolean skipInitialSpace = getBoolean(frame, skipinitialspaceObj, false, isTrueNode);
+            boolean strict = getBoolean(frame, strictObj, false, isTrueNode);
             if (quotecharObj == PNone.NONE && quotingObj == PNone.NO_VALUE) {
                 quoting = QUOTE_NONE;
             }
@@ -570,12 +570,12 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             return charValue;
         }
 
-        private static boolean getBoolean(VirtualFrame frame, Node inliningTarget, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
+        private static boolean getBoolean(VirtualFrame frame, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
             if (valueObj == PNone.NO_VALUE) {
                 return defaultValue;
             }
 
-            return isTrueNode.execute(frame, inliningTarget, valueObj);
+            return isTrueNode.execute(frame, valueObj);
         }
 
         @TruffleBoundary

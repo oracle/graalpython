@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -180,7 +180,7 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PRaiseNode.Lazy raiseNode) {
             Object res = getAttr.execute(frame, inliningTarget, self.getBuffer(), T_CLOSED);
-            if (isTrueNode.execute(frame, inliningTarget, res)) {
+            if (isTrueNode.execute(frame, res)) {
                 error(self, raiseNode.get(inliningTarget));
             }
         }
@@ -750,7 +750,7 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached(inline = false) PythonObjectFactory factory) {
             Object res = callMethodReadable.execute(frame, inliningTarget, self.getBuffer(), T_READABLE);
-            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, inliningTarget, res))) {
+            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
                 return;
             }
             Object decoder = makeIncrementalcodecNode.execute(frame, codecInfo, errors, T_INCREMENTALDECODER);
@@ -780,7 +780,7 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PyObjectCallMethodObjArgs callMethodWritable) {
             Object res = callMethodWritable.execute(frame, inliningTarget, self.getBuffer(), T_WRITABLE);
-            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, inliningTarget, res))) {
+            if (isTrueProfile.profile(inliningTarget, !isTrueNode.execute(frame, res))) {
                 return;
             }
             self.setEncoder(null);
@@ -885,7 +885,7 @@ public abstract class TextIOWrapperNodes {
             }
 
             Object res = callMethodSeekable.execute(frame, inliningTarget, buffer, T_SEEKABLE);
-            self.setTelling(isTrueNode.execute(frame, inliningTarget, res));
+            self.setTelling(isTrueNode.execute(frame, res));
             self.setSeekable(self.isTelling());
 
             self.setHasRead1(lookup.execute(frame, inliningTarget, buffer, T_READ1) != PNone.NO_VALUE);

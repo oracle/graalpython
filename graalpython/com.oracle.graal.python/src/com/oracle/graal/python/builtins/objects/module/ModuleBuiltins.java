@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStr
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -84,7 +85,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -269,7 +269,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
                             @Cached ReadAttributeFromObjectNode readGetattr,
                             @Cached InlinedConditionProfile customGetAttr,
                             @Cached CallNode callNode,
-                            @Cached CoerceToBooleanNode.YesNode castToBooleanNode,
+                            @Cached PyObjectIsTrueNode castToBooleanNode,
                             @Cached CastToTruffleStringNode castNameToStringNode,
                             @Cached PRaiseNode.Lazy raiseNode) {
                 e.expect(inliningTarget, PythonBuiltinClassType.AttributeError, isAttrError);
@@ -288,7 +288,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
                         Object moduleSpec = readGetattr.execute(self, T___SPEC__);
                         if (moduleSpec != PNone.NO_VALUE) {
                             Object isInitializing = readGetattr.execute(moduleSpec, T__INITIALIZING);
-                            if (isInitializing != PNone.NO_VALUE && castToBooleanNode.executeBoolean(frame, inliningTarget, isInitializing)) {
+                            if (isInitializing != PNone.NO_VALUE && castToBooleanNode.execute(frame, isInitializing)) {
                                 throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
                             }
                         }

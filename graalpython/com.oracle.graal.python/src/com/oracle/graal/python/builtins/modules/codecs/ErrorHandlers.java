@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -871,7 +871,7 @@ public final class ErrorHandlers {
         }
 
         @Fallback
-        static DecodingErrorHandlerResult doOther(Node inliningTarget, @SuppressWarnings("unused") Object result,
+        static DecodingErrorHandlerResult doOther(@SuppressWarnings("unused") Object result,
                         @Cached(inline = false) PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
         }
@@ -949,7 +949,7 @@ public final class ErrorHandlers {
         }
 
         @Fallback
-        static EncodingErrorHandlerResult doOther(Node inliningTarget, @SuppressWarnings("unused") Object result,
+        static EncodingErrorHandlerResult doOther(@SuppressWarnings("unused") Object result,
                         @Cached(inline = false) PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
         }

@@ -332,12 +332,12 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             if (isPNone(lineBufferingObj)) {
                 lineBuffering = self.isLineBuffering();
             } else {
-                lineBuffering = isTrueNode.execute(frame, inliningTarget, lineBufferingObj);
+                lineBuffering = isTrueNode.execute(frame, lineBufferingObj);
             }
             if (isPNone(writeThroughObj)) {
                 writeThrough = self.isWriteThrough();
             } else {
-                writeThrough = isTrueNode.execute(frame, inliningTarget, writeThroughObj);
+                writeThrough = isTrueNode.execute(frame, writeThroughObj);
             }
             callMethod.execute(frame, inliningTarget, self, T_FLUSH);
             self.setB2cratio(0);
@@ -568,7 +568,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PyErrChainExceptions chainExceptions) {
             Object res = closedNode.execute(frame, self);
-            if (isTrueNode.execute(frame, inliningTarget, res)) {
+            if (isTrueNode.execute(frame, res)) {
                 return PNone.NONE;
             } else {
                 if (self.isFinalizing()) {

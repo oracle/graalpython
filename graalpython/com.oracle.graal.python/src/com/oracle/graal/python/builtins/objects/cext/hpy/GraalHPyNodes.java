@@ -2990,14 +2990,14 @@ public abstract class GraalHPyNodes {
                             new Object[]{err, PythonBuiltinClassType.PBaseException},
                             readAttr, callNode);
             Object e = err;
-            if (isTrueNode.execute(null, inliningTarget, isInstance)) {
+            if (isTrueNode.execute(null, isInstance)) {
                 isBaseExceptionProfile.enter(inliningTarget);
                 e = getClassNode.execute(inliningTarget, err);
             }
             if (isExceptionProfile.profile(inliningTarget,
                             isExceptionClass(context, inliningTarget, e, isTypeNode, readAttr, callNode, isTrueNode) &&
                                             isExceptionClass(context, inliningTarget, exc, isTypeNode, readAttr, callNode, isTrueNode))) {
-                return isSubClass(context, inliningTarget, e, exc, readAttr, callNode, isTrueNode) ? 1 : 0;
+                return isSubClass(context, e, exc, readAttr, callNode, isTrueNode) ? 1 : 0;
             } else {
                 return isNode.execute(exc, e) ? 1 : 0;
             }
@@ -3007,11 +3007,11 @@ public abstract class GraalHPyNodes {
             return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PTuple);
         }
 
-        static boolean isSubClass(GraalHPyContext graalHPyContext, Node inliningTarget, Object derived, Object cls,
+        static boolean isSubClass(GraalHPyContext graalHPyContext, Object derived, Object cls,
                         ReadAttributeFromObjectNode readAttr,
                         CallNode callNode,
                         PyObjectIsTrueNode isTrueNode) {
-            return isTrueNode.execute(null, inliningTarget, callBuiltinFunction(graalHPyContext,
+            return isTrueNode.execute(null, callBuiltinFunction(graalHPyContext,
                             BuiltinNames.T_ISSUBCLASS,
                             new Object[]{derived, cls}, readAttr, callNode));
 
@@ -3022,7 +3022,7 @@ public abstract class GraalHPyNodes {
                         ReadAttributeFromObjectNode readAttr,
                         CallNode callNode,
                         PyObjectIsTrueNode isTrueNode) {
-            return isTypeNode.execute(inliningTarget, obj) && isSubClass(nativeContext, inliningTarget, obj, PythonBuiltinClassType.PBaseException, readAttr, callNode, isTrueNode);
+            return isTypeNode.execute(inliningTarget, obj) && isSubClass(nativeContext, obj, PythonBuiltinClassType.PBaseException, readAttr, callNode, isTrueNode);
         }
     }
 

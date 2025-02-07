@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -365,7 +365,7 @@ public final class StructNodes {
                 getLongNode.execute(frame, value, formatCode.isUnsigned());
                 packLong(formatCode, formatAlignment, getLongNode.execute(frame, value, formatCode.isUnsigned()), buffer, offset, inliningTarget, numericSupport, profileSigned, raiseNode);
             } else if (isFmtBoolean(formatCode)) {
-                packBoolean(formatCode, formatAlignment, isTrueNode.execute(frame, inliningTarget, value), buffer, offset);
+                packBoolean(formatCode, formatAlignment, isTrueNode.execute(frame, value), buffer, offset);
             } else if (isFmtBytes(formatCode)) {
                 if (!isBytes(value)) {
                     throw raiseNode.get(inliningTarget).raise(StructError, ARG_FOR_N_MUST_BE, formatCode.formatDef.format, "bytes");

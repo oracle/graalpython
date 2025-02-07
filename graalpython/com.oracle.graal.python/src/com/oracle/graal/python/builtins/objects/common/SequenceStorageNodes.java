@@ -93,6 +93,7 @@ import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -102,7 +103,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -1882,7 +1882,7 @@ public abstract class SequenceStorageNodes {
 
     public abstract static class CmpNode extends SequenceStorageBaseNode {
         @Child private BinaryComparisonNode cmpOp;
-        @Child private CoerceToBooleanNode castToBooleanNode;
+        @Child private PyObjectIsTrueNode castToBooleanNode;
 
         protected CmpNode(BinaryComparisonNode cmpOp) {
             this.cmpOp = cmpOp;
@@ -2021,9 +2021,9 @@ public abstract class SequenceStorageNodes {
         private boolean castToBoolean(VirtualFrame frame, Object value) {
             if (castToBooleanNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CoerceToBooleanNode.createIfTrueNode());
+                castToBooleanNode = insert(PyObjectIsTrueNode.create());
             }
-            return castToBooleanNode.executeBooleanCached(frame, value);
+            return castToBooleanNode.execute(frame, value);
         }
 
         @NeverDefault

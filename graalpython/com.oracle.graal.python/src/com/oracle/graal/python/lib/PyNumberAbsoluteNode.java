@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -59,7 +60,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 public abstract class PyNumberAbsoluteNode extends UnaryOpNode {
     protected static final int INT_MIN_VALUE = Integer.MIN_VALUE;
     protected static final long LONG_MIN_VALUE = Long.MIN_VALUE;
@@ -86,7 +87,8 @@ public abstract class PyNumberAbsoluteNode extends UnaryOpNode {
 
     @Fallback
     @InliningCutoff
-    static Object doObject(VirtualFrame frame, Node inliningTarget, Object object,
+    static Object doObject(VirtualFrame frame, Object object,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,

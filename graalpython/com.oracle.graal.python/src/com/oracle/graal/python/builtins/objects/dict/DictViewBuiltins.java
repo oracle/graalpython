@@ -84,11 +84,11 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -300,7 +300,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
     protected abstract static class ContainedInNode extends PNodeWithContext {
         @Child private GetNextNode next;
         @Child private LookupAndCallBinaryNode contains;
-        @Child private CoerceToBooleanNode cast;
+        @Child private PyObjectIsTrueNode cast;
         private final boolean checkAll;
 
         public ContainedInNode(boolean checkAll) {
@@ -323,10 +323,10 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return contains;
         }
 
-        private CoerceToBooleanNode getCast() {
+        private PyObjectIsTrueNode getCast() {
             if (cast == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                cast = insert(CoerceToBooleanNode.createIfTrueNode());
+                cast = insert(PyObjectIsTrueNode.create());
             }
             return cast;
         }
@@ -345,7 +345,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             try {
                 while (loopConditionProfile.profile(inliningTarget, checkAll && ok || !checkAll && !ok)) {
                     Object item = getNext().execute(frame, iterator);
-                    ok = getCast().executeBooleanCached(frame, getContains().executeObject(frame, other, item));
+                    ok = getCast().execute(frame, getContains().executeObject(frame, other, item));
                     i++;
                 }
             } catch (PException e) {

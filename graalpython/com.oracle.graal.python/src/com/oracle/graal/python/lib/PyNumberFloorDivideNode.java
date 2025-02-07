@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -59,31 +60,22 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 public abstract class PyNumberFloorDivideNode extends BinaryOpNode {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
+    public abstract Object execute(VirtualFrame frame, Object v, Object w);
 
     @Override
     public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right);
+        return execute(frame, left, right);
     }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
-        return execute(frame, this, v, w);
-    }
-
-    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
      * in IntBuiltins, FloatBuiltins, ...
      */
     @Specialization(rewriteOn = OverflowException.class)
-    static int doII(int left, int right) throws OverflowException {
+    public static int doII(int left, int right) throws OverflowException {
         if (right == 0 || (left == Integer.MIN_VALUE && right == -1)) {
             throw OverflowException.INSTANCE;
         }
@@ -91,7 +83,7 @@ public abstract class PyNumberFloorDivideNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static long doLL(long left, long right) throws OverflowException {
+    public static long doLL(long left, long right) throws OverflowException {
         if (right == 0 || (left == Long.MIN_VALUE && right == -1)) {
             throw OverflowException.INSTANCE;
         }
@@ -99,17 +91,17 @@ public abstract class PyNumberFloorDivideNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static double doID(int left, double right) throws OverflowException {
+    public static double doID(int left, double right) throws OverflowException {
         return doDD(left, right);
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static double doDI(double left, int right) throws OverflowException {
+    public static double doDI(double left, int right) throws OverflowException {
         return doDD(left, right);
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static double doDD(double left, double right) throws OverflowException {
+    public static double doDD(double left, double right) throws OverflowException {
         if (right == 0.0) {
             throw OverflowException.INSTANCE;
         }
@@ -117,7 +109,8 @@ public abstract class PyNumberFloorDivideNode extends BinaryOpNode {
     }
 
     @Fallback
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w,
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getVClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,

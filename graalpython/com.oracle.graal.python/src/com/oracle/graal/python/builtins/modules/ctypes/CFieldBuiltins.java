@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -473,7 +473,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PointerNodes.WriteShortNode writeShortNode) {
             short val;
-            if (!isTrueNode.execute(frame, inliningTarget, value)) {
+            if (!isTrueNode.execute(frame, value)) {
                 val = VARIANT_FALSE;
             } else {
                 val = VARIANT_TRUE;
@@ -487,7 +487,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectIsTrueNode isTrueNode,
                         @Shared @Cached PointerNodes.WriteByteNode writeByteNode) {
-            byte val = (byte) (isTrueNode.execute(frame, inliningTarget, value) ? 1 : 0);
+            byte val = (byte) (isTrueNode.execute(frame, value) ? 1 : 0);
             writeByteNode.execute(inliningTarget, ptr, val);
             return PNone.NONE;
         }

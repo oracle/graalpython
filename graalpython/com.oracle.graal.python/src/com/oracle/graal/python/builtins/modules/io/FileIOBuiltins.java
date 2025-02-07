@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1118,9 +1118,8 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(v)")
         static Object doit(VirtualFrame frame, PFileIO self, Object v,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            self.setFinalizing(isTrueNode.execute(frame, inliningTarget, v));
+            self.setFinalizing(isTrueNode.execute(frame, v));
             return PNone.NONE;
         }
     }

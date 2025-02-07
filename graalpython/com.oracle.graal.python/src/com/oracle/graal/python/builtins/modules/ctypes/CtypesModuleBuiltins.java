@@ -1368,7 +1368,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"restype != null", "!isNone(restype)", "dict == null"}, limit = "1")
         static Object callResType(VirtualFrame frame, Object restype, @SuppressWarnings("unused") FFIType rtype, Object result, @SuppressWarnings("unused") Object checker,
-                        @Bind("this") Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @CachedLibrary("result") InteropLibrary ilib,
                         @SuppressWarnings("unused") @Exclusive @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @SuppressWarnings("unused") @Bind("getStgDict(inliningTarget, restype, pyTypeStgDictNode)") StgDictObject dict,

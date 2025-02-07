@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -25,11 +25,11 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -188,11 +188,10 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CoerceToBooleanNode.YesNode castStrict,
+                        @Cached PyObjectIsTrueNode castStrict,
                         @Cached PythonObjectFactory factory) {
 
-            boolean strict = castStrict.executeBoolean(frame, inliningTarget, getStrict.execute(frame, context));
+            boolean strict = castStrict.execute(frame, getStrict.execute(frame, context));
             Object objectHook = getObjectHook.execute(frame, context);
             Object objectPairsHook = getObjectPairsHook.execute(frame, context);
             Object parseFloat = getParseFloat.execute(frame, context);

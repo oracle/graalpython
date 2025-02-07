@@ -1347,9 +1347,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization
         public static boolean bool(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrue) {
-            return isTrue.execute(frame, inliningTarget, obj);
+            return isTrue.execute(frame, obj);
         }
     }
 
@@ -1952,7 +1951,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Shared @Cached PythonObjectFactory factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (profile.profile(inliningTarget, eqNode.execute(kw[0].getName(), T_STRICT, TS_ENCODING))) {
-                return zip(frame, inliningTarget, cls, args, isTrueNode.execute(frame, inliningTarget, kw[0].getValue()), getIter, factory);
+                return zip(frame, inliningTarget, cls, args, isTrueNode.execute(frame, kw[0].getValue()), getIter, factory);
             }
             throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S, kw[0].getName(), T_ZIP);
         }

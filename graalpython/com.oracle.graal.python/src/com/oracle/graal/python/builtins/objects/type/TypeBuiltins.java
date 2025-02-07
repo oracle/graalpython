@@ -1407,7 +1407,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (!isSameTypeNode.execute(inliningTarget, self, PythonBuiltinClassType.PythonClass)) {
                 writeAttributeToObjectNode.execute(self, T___ABSTRACTMETHODS__, value);
-                self.setAbstractClass(isTrueNode.execute(frame, inliningTarget, value));
+                self.setAbstractClass(isTrueNode.execute(frame, value));
                 return PNone.NONE;
             }
             throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);

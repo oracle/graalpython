@@ -100,6 +100,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -110,7 +111,6 @@ import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -397,7 +397,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
         static boolean cmpItems(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op, BinaryComparisonNode compareNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
+                        @Exclusive @Cached PyObjectIsTrueNode coerceToBooleanNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
@@ -405,7 +405,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 Object leftValue = getLeft.execute(inliningTarget, left, i);
                 Object rightValue = getRight.execute(inliningTarget, right, i);
                 if (!eqNode.compare(frame, inliningTarget, leftValue, rightValue)) {
-                    return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
+                    return coerceToBooleanNode.execute(frame, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
             return op.cmpResultToBool(left.getLength() - right.getLength());
@@ -414,7 +414,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         // Separate specialization for float/double is needed because of NaN comparisons
         @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
         static boolean cmpDoubles(VirtualFrame frame, Node inliningTarget, PArray left, PArray right, ComparisonOp op, BinaryComparisonNode compareNode,
-                        @Exclusive @Cached CoerceToBooleanNode.YesNode coerceToBooleanNode,
+                        @Exclusive @Cached PyObjectIsTrueNode coerceToBooleanNode,
                         @Exclusive @Cached ArrayNodes.GetValueNode getLeft,
                         @Exclusive @Cached ArrayNodes.GetValueNode getRight) {
             int commonLength = Math.min(left.getLength(), right.getLength());
@@ -422,7 +422,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
                 double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
-                    return coerceToBooleanNode.executeBoolean(frame, inliningTarget, compareNode.executeObject(frame, leftValue, rightValue));
+                    return coerceToBooleanNode.execute(frame, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
             return op.cmpResultToBool(left.getLength() - right.getLength());

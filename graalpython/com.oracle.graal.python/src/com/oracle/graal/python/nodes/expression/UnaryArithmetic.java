@@ -163,7 +163,7 @@ public enum UnaryArithmetic {
         protected abstract Object execute(VirtualFrame frame, Object value);
 
         @Specialization
-        public Object doGeneric(VirtualFrame frame, Object arg,
+        public static Object doGeneric(VirtualFrame frame, Object arg,
                         @Cached("createCallNode()") LookupAndCallUnaryNode callNode) {
             return callNode.executeObject(frame, arg);
         }

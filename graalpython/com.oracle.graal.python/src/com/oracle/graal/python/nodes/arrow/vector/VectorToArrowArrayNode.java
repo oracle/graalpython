@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.arrow.vector;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.POINTER_SIZE;
+
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -52,8 +54,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.POINTER_SIZE;
 
 @GenerateCached(false)
 @GenerateInline
@@ -90,7 +90,7 @@ public abstract class VectorToArrowArrayNode extends PNodeWithContext {
     }
 
     @Fallback
-    static ArrowArray doError(Node inliningTarget, Object object) {
+    static ArrowArray doError(Object object) {
         throw CompilerDirectives.shouldNotReachHere();
     }
 }

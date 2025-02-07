@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -103,6 +103,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSl
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
+import com.oracle.graal.python.lib.PyObjectIsNotTrueNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -120,7 +122,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -316,14 +317,13 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object self, Object other,
-                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "Eq") LookupAndCallBinaryNode eqNode,
-                        @Cached("createIfFalseNode()") CoerceToBooleanNode ifFalseNode) {
+                        @Cached PyObjectIsNotTrueNode ifFalseNode) {
             Object result = eqNode.executeObject(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
-            return ifFalseNode.executeBoolean(frame, inliningTarget, result);
+            return ifFalseNode.execute(frame, result);
         }
     }
 
@@ -693,17 +693,17 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("op") int cachedOp,
                         @Cached("createOp(op)") BinaryComparisonNode node,
-                        @Cached CoerceToBooleanNode.YesNode castToBooleanNode) {
+                        @Cached PyObjectIsTrueNode castToBooleanNode) {
             if (!seenNonBoolean) {
                 try {
                     return node.executeBool(frame, left, right);
                 } catch (UnexpectedResultException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     seenNonBoolean = true;
-                    return castToBooleanNode.executeBoolean(frame, inliningTarget, e.getResult());
+                    return castToBooleanNode.execute(frame, e.getResult());
                 }
             } else {
-                return castToBooleanNode.executeBoolean(frame, inliningTarget, node.executeObject(frame, left, right));
+                return castToBooleanNode.execute(frame, node.executeObject(frame, left, right));
             }
         }
     }
