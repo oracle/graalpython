@@ -117,7 +117,9 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
         boolean wasTimeout = false;
         for (Future<?> future : futures) {
             try {
-                future.get(2, TimeUnit.MINUTES);
+                // Under coverage, some of these tests are almost 10x slower,
+                // so we go with a 15min timeout
+                future.get(15, TimeUnit.MINUTES);
             } catch (TimeoutException e) {
                 wasTimeout = true;
             }
