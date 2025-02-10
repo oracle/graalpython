@@ -44,6 +44,8 @@ import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_ALL;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_MINIMAL;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NOTNULL;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_STRINGS;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.StringLiterals.J_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
@@ -146,6 +148,8 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("QUOTE_ALL", QUOTE_ALL.ordinal());
         addBuiltinConstant("QUOTE_NONNUMERIC", QUOTE_NONNUMERIC.ordinal());
         addBuiltinConstant("QUOTE_NONE", QUOTE_NONE.ordinal());
+        addBuiltinConstant("QUOTE_STRINGS", QUOTE_STRINGS.ordinal());
+        addBuiltinConstant("QUOTE_NOTNULL", QUOTE_NOTNULL.ordinal());
         addBuiltinConstant(T__DIALECTS, core.factory().createDict());
         super.initialize(core);
     }

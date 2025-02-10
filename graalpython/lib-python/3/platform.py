@@ -1111,7 +1111,7 @@ def _sys_version(sys_version=None):
     elif "Graal" in sys_version:
         # GraalVM
         name = "GraalVM"
-        match = _sys_version_parser.match(sys_version)
+        match = sys_version_parser.match(sys_version)
         if match is None:
             raise ValueError("failed to parse GraalVM sys.version: %s" %
                              repr(sys_version))
