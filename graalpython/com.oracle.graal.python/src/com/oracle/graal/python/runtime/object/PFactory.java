@@ -259,28 +259,25 @@ public final class PFactory {
     private PFactory() {
     }
 
-    private static <T> T create(PythonLanguage language, Supplier<T> constructor) {
+    private static <T> T trace(PythonLanguage language, T newInstance) {
         AllocationReporter reporter = language.getAllocationReporter();
         if (reporter.isActive()) {
-            return createWithTrace(constructor, reporter);
-        } else {
-            return constructor.get();
+            doTrace(newInstance, reporter);
         }
+        return newInstance;
     }
 
     @InliningCutoff
-    private static <T> T createWithTrace(Supplier<T> constructor, AllocationReporter reporter) {
+    private static <T> void doTrace(T newInstance, AllocationReporter reporter) {
         reporter.onEnter(null, 0, AllocationReporter.SIZE_UNKNOWN);
-        T allocatedObject = constructor.get();
-        reporter.onReturnValue(allocatedObject, 0, AllocationReporter.SIZE_UNKNOWN);
-        return allocatedObject;
+        reporter.onReturnValue(newInstance, 0, AllocationReporter.SIZE_UNKNOWN);
     }
 
     /*
      * Python objects
      */
     public static PythonObject createPythonObject(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> (new PythonObject(cls, shape)));
+        return trace(language, new PythonObject(cls, shape));
     }
 
     /**
@@ -288,15 +285,15 @@ public final class PFactory {
      * shape had been cached, due to the additional shape lookup.
      */
     public static PythonObject createPythonHPyObject(PythonLanguage language, Object cls, Shape shape, Object hpyNativeSpace) {
-        return create(language, () -> new PythonHPyObject(cls, shape, hpyNativeSpace));
+        return trace(language, new PythonHPyObject(cls, shape, hpyNativeSpace));
     }
 
     public static PythonNativeVoidPtr createNativeVoidPtr(PythonLanguage language, Object obj) {
-        return create(language, () -> new PythonNativeVoidPtr(obj));
+        return trace(language, new PythonNativeVoidPtr(obj));
     }
 
     public static PythonNativeVoidPtr createNativeVoidPtr(PythonLanguage language, Object obj, long nativePtr) {
-        return create(language, () -> new PythonNativeVoidPtr(obj, nativePtr));
+        return trace(language, new PythonNativeVoidPtr(obj, nativePtr));
     }
 
     public static SuperObject createSuperObject(PythonLanguage language) {
@@ -304,7 +301,7 @@ public final class PFactory {
     }
 
     public static SuperObject createSuperObject(PythonLanguage language, Object self, Shape shape) {
-        return create(language, () -> new SuperObject(self, shape));
+        return trace(language, new SuperObject(self, shape));
     }
 
     public static PInt createInt(PythonLanguage language, long value) {
@@ -325,7 +322,7 @@ public final class PFactory {
     }
 
     public static PInt createInt(PythonLanguage language, Object cls, Shape shape, BigInteger value) {
-        return create(language, () -> new PInt(cls, shape, value));
+        return trace(language, new PInt(cls, shape, value));
     }
 
     public static PFloat createFloat(PythonLanguage language, double value) {
@@ -333,7 +330,7 @@ public final class PFactory {
     }
 
     public static PFloat createFloat(PythonLanguage language, Object cls, Shape shape, double value) {
-        return create(language, () -> new PFloat(cls, shape, value));
+        return trace(language, new PFloat(cls, shape, value));
     }
 
     public static PString createString(PythonLanguage language, TruffleString string) {
@@ -341,7 +338,7 @@ public final class PFactory {
     }
 
     public static PString createString(PythonLanguage language, Object cls, Shape shape, TruffleString string) {
-        return create(language, () -> new PString(cls, shape, string));
+        return trace(language, new PString(cls, shape, string));
     }
 
     public static PString createString(PythonLanguage language, NativeCharSequence string) {
@@ -349,7 +346,7 @@ public final class PFactory {
     }
 
     public static PString createString(PythonLanguage language, Object cls, Shape shape, NativeCharSequence string) {
-        return create(language, () -> new PString(cls, shape, string));
+        return trace(language, new PString(cls, shape, string));
     }
 
     public static PBytes createEmptyBytes(PythonLanguage language) {
@@ -377,7 +374,7 @@ public final class PFactory {
     }
 
     public static PBytes createBytes(PythonLanguage language, Object cls, Shape shape, SequenceStorage storage) {
-        return create(language, () -> new PBytes(cls, shape, storage));
+        return trace(language, new PBytes(cls, shape, storage));
     }
 
     public static PTuple createEmptyTuple(PythonLanguage language) {
@@ -401,7 +398,7 @@ public final class PFactory {
     }
 
     public static PTuple createTuple(PythonLanguage language, Object cls, Shape shape, SequenceStorage store) {
-        return create(language, () -> new PTuple(cls, shape, store));
+        return trace(language, new PTuple(cls, shape, store));
     }
 
     public static PTuple createStructSeq(PythonLanguage language, BuiltinTypeDescriptor desc, Object... values) {
@@ -414,11 +411,11 @@ public final class PFactory {
     }
 
     public static PTupleGetter createTupleGetter(PythonLanguage language, Object cls, Shape shape, int index, Object doc) {
-        return create(language, () -> new PTupleGetter(cls, shape, index, doc));
+        return trace(language, new PTupleGetter(cls, shape, index, doc));
     }
 
     public static PComplex createComplex(PythonLanguage language, Object cls, Shape shape, double real, double imag) {
-        return create(language, () -> new PComplex(cls, shape, real, imag));
+        return trace(language, new PComplex(cls, shape, real, imag));
     }
 
     public static PComplex createComplex(PythonLanguage language, double real, double imag) {
@@ -426,31 +423,31 @@ public final class PFactory {
     }
 
     public static PIntRange createIntRange(PythonLanguage language, int stop) {
-        return create(language, () -> new PIntRange(language, 0, stop, 1, stop));
+        return trace(language, new PIntRange(language, 0, stop, 1, stop));
     }
 
     public static PIntRange createIntRange(PythonLanguage language, int start, int stop, int step, int len) {
-        return create(language, () -> new PIntRange(language, start, stop, step, len));
+        return trace(language, new PIntRange(language, start, stop, step, len));
     }
 
     public static PBigRange createBigRange(PythonLanguage language, PInt start, PInt stop, PInt step, PInt len) {
-        return create(language, () -> new PBigRange(language, start, stop, step, len));
+        return trace(language, new PBigRange(language, start, stop, step, len));
     }
 
     public static PIntSlice createIntSlice(PythonLanguage language, int start, int stop, int step) {
-        return create(language, () -> new PIntSlice(language, start, stop, step));
+        return trace(language, new PIntSlice(language, start, stop, step));
     }
 
     public static PIntSlice createIntSlice(PythonLanguage language, int start, int stop, int step, boolean isStartNone, boolean isStepNone) {
-        return create(language, () -> new PIntSlice(language, start, stop, step, isStartNone, isStepNone));
+        return trace(language, new PIntSlice(language, start, stop, step, isStartNone, isStepNone));
     }
 
     public static PObjectSlice createObjectSlice(PythonLanguage language, Object start, Object stop, Object step) {
-        return create(language, () -> new PObjectSlice(language, start, stop, step));
+        return trace(language, new PObjectSlice(language, start, stop, step));
     }
 
     public static PRandom createRandom(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PRandom(cls, shape));
+        return trace(language, new PRandom(cls, shape));
     }
 
     /*
@@ -461,11 +458,11 @@ public final class PFactory {
      * Only to be used during context creation
      */
     public static PythonModule createPythonModule(PythonLanguage language, TruffleString name) {
-        return create(language, () -> PythonModule.createInternal(name));
+        return trace(language, PythonModule.createInternal(name));
     }
 
     public static PythonModule createPythonModule(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PythonModule(cls, shape));
+        return trace(language, new PythonModule(cls, shape));
     }
 
     public static PythonClass createPythonClassAndFixupSlots(PythonLanguage language, TruffleString name, Object base, PythonAbstractClass[] bases) {
@@ -473,7 +470,7 @@ public final class PFactory {
     }
 
     public static PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, Shape metaclassShape, TruffleString name, Object base, PythonAbstractClass[] bases) {
-        PythonClass result = create(language, () -> new PythonClass(language, metaclass, metaclassShape, name, base, bases));
+        PythonClass result = trace(language, new PythonClass(language, metaclass, metaclassShape, name, base, bases));
         // Fixup tp slots
         MroSequenceStorage mro = GetMroStorageNode.executeUncached(result);
         SpecialMethodSlot.initializeSpecialMethodSlots(result, mro, language);
@@ -486,27 +483,27 @@ public final class PFactory {
     public static PythonClass createPythonClass(PythonLanguage language, Object metaclass, Shape metaclassShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] bases) {
         // Note: called from type ctor, which itself will invoke setupSpecialMethodSlots at the
         // right point
-        return create(language, () -> new PythonClass(language, metaclass, metaclassShape, name, invokeMro, base, bases));
+        return trace(language, new PythonClass(language, metaclass, metaclassShape, name, invokeMro, base, bases));
     }
 
     public static PMemoryView createMemoryView(PythonLanguage language, PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
                     int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return create(language, () -> new PMemoryView(cls, cls.getInstanceShape(language), context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize, format, formatString,
+        return trace(language, new PMemoryView(cls, cls.getInstanceShape(language), context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize, format, formatString,
                         ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
     public static PMemoryView createMemoryViewForManagedObject(PythonLanguage language, Object buffer, Object owner, int itemsize, int length, boolean readonly, TruffleString format,
                     TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return create(language, () -> new PMemoryView(cls, cls.getInstanceShape(language), null, null, buffer, owner, length, readonly, itemsize,
+        return trace(language, new PMemoryView(cls, cls.getInstanceShape(language), null, null, buffer, owner, length, readonly, itemsize,
                         BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, 1, null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
                         PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN));
     }
 
     public static PMethod createMethod(PythonLanguage language, Object cls, Shape shape, Object self, Object function) {
-        return create(language, () -> new PMethod(cls, shape, self, function));
+        return trace(language, new PMethod(cls, shape, self, function));
     }
 
     public static PMethod createMethod(PythonLanguage language, Object self, Object function) {
@@ -518,11 +515,11 @@ public final class PFactory {
     }
 
     public static PBuiltinMethod createBuiltinMethod(PythonLanguage language, Object cls, Shape shape, Object self, PBuiltinFunction function) {
-        return create(language, () -> new PBuiltinMethod(cls, shape, self, function, null));
+        return trace(language, new PBuiltinMethod(cls, shape, self, function, null));
     }
 
     public static PBuiltinMethod createBuiltinMethod(PythonLanguage language, Object self, PBuiltinFunction function, Object classObject) {
-        return create(language, () -> new PBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, PythonBuiltinClassType.PBuiltinMethod.getInstanceShape(language), self, function, classObject));
+        return trace(language, new PBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, PythonBuiltinClassType.PBuiltinMethod.getInstanceShape(language), self, function, classObject));
     }
 
     public static PBuiltinMethod createBuiltinMethod(PythonLanguage language, Object self, PBuiltinFunction function) {
@@ -530,82 +527,80 @@ public final class PFactory {
     }
 
     public static PFunction createFunction(PythonLanguage language, TruffleString name, PCode code, PythonObject globals, PCell[] closure) {
-        return create(language, () -> new PFunction(language, name, name, code, globals, closure));
+        return trace(language, new PFunction(language, name, name, code, globals, closure));
     }
 
     public static PFunction createFunction(PythonLanguage language, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        return create(language, () -> new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure));
+        return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
     public static PFunction createFunction(PythonLanguage language, TruffleString name, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
-        return create(language, () -> new PFunction(language, name, name, code, globals, defaultValues, kwDefaultValues, closure));
+        return trace(language, new PFunction(language, name, name, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
     public static PFunction createFunction(PythonLanguage language, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure,
                     Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        return create(language, () -> new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure,
+        return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure,
                         codeStableAssumption, defaultsStableAssumption));
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
-        return create(language, () -> new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
+        return trace(language, new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget));
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
-        return create(language, () -> new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags,
+        return trace(language, new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags,
                         callTarget));
     }
 
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget, TpSlot slot,
                     PExternalFunctionWrapper slotWrapper) {
-        return create(language, () -> new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type,
+        return trace(language, new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type,
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget, slot, slotWrapper));
     }
 
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        return create(language,
-                        () -> new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
-                                        callTarget, slot, slotWrapper));
+        return trace(language, new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
+                        callTarget, slot, slotWrapper));
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, PBuiltinFunction function, Object klass) {
         PythonBuiltinClassType type = (PythonBuiltinClassType) function.getInitialPythonClass();
-        return create(language, () -> new PBuiltinFunction(type, type.getInstanceShape(language), function.getName(), klass,
+        return trace(language, new PBuiltinFunction(type, type.getInstanceShape(language), function.getName(), klass,
                         function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget(),
                         function.getSlot(), function.getSlotWrapper()));
     }
 
     public static GetSetDescriptor createGetSetDescriptor(PythonLanguage language, Object get, Object set, TruffleString name, Object type) {
-        return create(language, () -> new GetSetDescriptor(language, get, set, name, type));
+        return trace(language, new GetSetDescriptor(language, get, set, name, type));
     }
 
     public static GetSetDescriptor createGetSetDescriptor(PythonLanguage language, Object get, Object set, TruffleString name, Object type, boolean allowsDelete) {
-        return create(language, () -> new GetSetDescriptor(language, get, set, name, type, allowsDelete));
+        return trace(language, new GetSetDescriptor(language, get, set, name, type, allowsDelete));
     }
 
     public static GetSetDescriptor createMemberDescriptor(PythonLanguage language, Object get, Object set, TruffleString name, Object type) {
-        return create(language,
-                        () -> new GetSetDescriptor(PythonBuiltinClassType.MemberDescriptor, PythonBuiltinClassType.MemberDescriptor.getInstanceShape(language), get, set, name, type, set != null));
+        return trace(language, new GetSetDescriptor(PythonBuiltinClassType.MemberDescriptor, PythonBuiltinClassType.MemberDescriptor.getInstanceShape(language), get, set, name, type, set != null));
     }
 
     public static IndexedSlotDescriptor createIndexedSlotDescriptor(PythonLanguage language, TruffleString name, int index, Object type) {
-        return create(language, () -> new IndexedSlotDescriptor(language, name, index, type));
+        return trace(language, new IndexedSlotDescriptor(language, name, index, type));
     }
 
     public static PDecoratedMethod createClassmethod(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PDecoratedMethod(cls, shape));
+        return trace(language, new PDecoratedMethod(cls, shape));
     }
 
     public static PDecoratedMethod createClassmethodFromCallableObj(PythonLanguage language, Object callable) {
-        return create(language, () -> new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PClassmethod.getInstanceShape(language), callable));
+        return trace(language, new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PClassmethod.getInstanceShape(language), callable));
     }
 
     public static PDecoratedMethod createBuiltinClassmethodFromCallableObj(PythonLanguage language, Object callable) {
-        return create(language, () -> new PDecoratedMethod(PythonBuiltinClassType.PBuiltinClassMethod, PythonBuiltinClassType.PBuiltinClassMethod.getInstanceShape(language), callable));
+        return trace(language, new PDecoratedMethod(PythonBuiltinClassType.PBuiltinClassMethod, PythonBuiltinClassType.PBuiltinClassMethod.getInstanceShape(language), callable));
     }
 
     public static PDecoratedMethod createInstancemethod(PythonLanguage language) {
@@ -613,7 +608,7 @@ public final class PFactory {
     }
 
     public static PDecoratedMethod createInstancemethod(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PDecoratedMethod(cls, shape));
+        return trace(language, new PDecoratedMethod(cls, shape));
     }
 
     public static PDecoratedMethod createStaticmethod(PythonLanguage language) {
@@ -621,7 +616,7 @@ public final class PFactory {
     }
 
     public static PDecoratedMethod createStaticmethod(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PDecoratedMethod(cls, shape));
+        return trace(language, new PDecoratedMethod(cls, shape));
     }
 
     public static PDecoratedMethod createStaticmethodFromCallableObj(PythonLanguage language, Object callable) {
@@ -636,7 +631,7 @@ public final class PFactory {
         } else {
             func = callable;
         }
-        return create(language, () -> new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(language), func));
+        return trace(language, new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(language), func));
     }
 
     /*
@@ -668,7 +663,7 @@ public final class PFactory {
     }
 
     public static PList createList(PythonLanguage language, Object cls, Shape shape, SequenceStorage storage, PList.ListOrigin origin) {
-        return create(language, () -> new PList(cls, shape, storage, origin));
+        return trace(language, new PList(cls, shape, storage, origin));
     }
 
     public static PSet createSet(PythonLanguage language) {
@@ -684,7 +679,7 @@ public final class PFactory {
     }
 
     public static PSet createSet(PythonLanguage language, Object cls, Shape shape, HashingStorage storage) {
-        return create(language, () -> new PSet(cls, shape, storage));
+        return trace(language, new PSet(cls, shape, storage));
     }
 
     public static PFrozenSet createFrozenSet(PythonLanguage language) {
@@ -696,7 +691,7 @@ public final class PFactory {
     }
 
     public static PFrozenSet createFrozenSet(PythonLanguage language, Object cls, Shape shape, HashingStorage storage) {
-        return create(language, () -> new PFrozenSet(cls, shape, storage));
+        return trace(language, new PFrozenSet(cls, shape, storage));
     }
 
     public static PDict createDict(PythonLanguage language) {
@@ -712,31 +707,31 @@ public final class PFactory {
     }
 
     public static PDict createDict(PythonLanguage language, Object cls, Shape shape, HashingStorage storage) {
-        return create(language, () -> new PDict(cls, shape, storage));
+        return trace(language, new PDict(cls, shape, storage));
     }
 
     public static POrderedDict createOrderedDict(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new POrderedDict(cls, shape));
+        return trace(language, new POrderedDict(cls, shape));
     }
 
     public static PDictKeysView createOrderedDictKeys(PythonLanguage language, POrderedDict dict) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictKeys;
-        return create(language, () -> new PDictKeysView(cls, cls.getInstanceShape(language), dict));
+        return trace(language, new PDictKeysView(cls, cls.getInstanceShape(language), dict));
     }
 
     public static PDictValuesView createOrderedDictValues(PythonLanguage language, POrderedDict dict) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictValues;
-        return create(language, () -> new PDictValuesView(cls, cls.getInstanceShape(language), dict));
+        return trace(language, new PDictValuesView(cls, cls.getInstanceShape(language), dict));
     }
 
     public static PDictItemsView createOrderedDictItems(PythonLanguage language, POrderedDict dict) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictItems;
-        return create(language, () -> new PDictItemsView(cls, cls.getInstanceShape(language), dict));
+        return trace(language, new PDictItemsView(cls, cls.getInstanceShape(language), dict));
     }
 
     public static POrderedDictIterator createOrderedDictIterator(PythonLanguage language, POrderedDict dict, POrderedDictIterator.IteratorType type, boolean reversed) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.POrderedDictIterator;
-        return create(language, () -> new POrderedDictIterator(cls, cls.getInstanceShape(language), dict, type, reversed));
+        return trace(language, new POrderedDictIterator(cls, cls.getInstanceShape(language), dict, type, reversed));
     }
 
     public static PDict createDictFromMap(PythonLanguage language, LinkedHashMap<String, Object> map) {
@@ -767,19 +762,19 @@ public final class PFactory {
     }
 
     public static PSimpleNamespace createSimpleNamespace(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PSimpleNamespace(cls, shape));
+        return trace(language, new PSimpleNamespace(cls, shape));
     }
 
     public static PKeyWrapper createKeyWrapper(PythonLanguage language, Object cmp) {
-        return create(language, () -> new PKeyWrapper(PythonBuiltinClassType.PKeyWrapper, PythonBuiltinClassType.PKeyWrapper.getInstanceShape(language), cmp));
+        return trace(language, new PKeyWrapper(PythonBuiltinClassType.PKeyWrapper, PythonBuiltinClassType.PKeyWrapper.getInstanceShape(language), cmp));
     }
 
     public static PPartial createPartial(PythonLanguage language, Object cls, Shape shape, Object function, Object[] args, PDict kwDict) {
-        return create(language, () -> new PPartial(cls, shape, function, args, kwDict));
+        return trace(language, new PPartial(cls, shape, function, args, kwDict));
     }
 
     public static LruCacheObject createLruCacheObject(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new LruCacheObject(cls, shape));
+        return trace(language, new LruCacheObject(cls, shape));
     }
 
     public static PDefaultDict createDefaultDict(PythonLanguage language, Object cls, Shape shape) {
@@ -787,7 +782,7 @@ public final class PFactory {
     }
 
     public static PDefaultDict createDefaultDict(PythonLanguage language, Object cls, Shape shape, Object defaultFactory) {
-        return create(language, () -> new PDefaultDict(cls, shape, defaultFactory));
+        return trace(language, new PDefaultDict(cls, shape, defaultFactory));
     }
 
     public static PDefaultDict createDefaultDict(PythonLanguage language, Object defaultFactory, HashingStorage storage) {
@@ -795,31 +790,31 @@ public final class PFactory {
     }
 
     public static PDefaultDict createDefaultDict(PythonLanguage language, Object cls, Shape shape, Object defaultFactory, HashingStorage storage) {
-        return create(language, () -> new PDefaultDict(cls, shape, storage, defaultFactory));
+        return trace(language, new PDefaultDict(cls, shape, storage, defaultFactory));
     }
 
     public static PDictView createDictKeysView(PythonLanguage language, PHashingCollection dict) {
-        return create(language, () -> new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.getInstanceShape(language), dict));
+        return trace(language, new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.getInstanceShape(language), dict));
     }
 
     public static PDictView createDictKeysView(PythonLanguage language, Object dict, ForeignHashingStorage foreignHashingStorage) {
-        return create(language, () -> new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.getInstanceShape(language), dict, foreignHashingStorage));
+        return trace(language, new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.getInstanceShape(language), dict, foreignHashingStorage));
     }
 
     public static PDictView createDictValuesView(PythonLanguage language, PHashingCollection dict) {
-        return create(language, () -> new PDictValuesView(PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDictValuesView.getInstanceShape(language), dict));
+        return trace(language, new PDictValuesView(PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDictValuesView.getInstanceShape(language), dict));
     }
 
     public static PDictView createDictValuesView(PythonLanguage language, Object dict, ForeignHashingStorage foreignHashingStorage) {
-        return create(language, () -> new PDictValuesView(PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDictValuesView.getInstanceShape(language), dict, foreignHashingStorage));
+        return trace(language, new PDictValuesView(PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDictValuesView.getInstanceShape(language), dict, foreignHashingStorage));
     }
 
     public static PDictView createDictItemsView(PythonLanguage language, PHashingCollection dict) {
-        return create(language, () -> new PDictItemsView(PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictItemsView.getInstanceShape(language), dict));
+        return trace(language, new PDictItemsView(PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictItemsView.getInstanceShape(language), dict));
     }
 
     public static PDictView createDictItemsView(PythonLanguage language, Object dict, ForeignHashingStorage foreignHashingStorage) {
-        return create(language, () -> new PDictItemsView(PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictItemsView.getInstanceShape(language), dict, foreignHashingStorage));
+        return trace(language, new PDictItemsView(PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictItemsView.getInstanceShape(language), dict, foreignHashingStorage));
     }
 
     /*
@@ -827,24 +822,24 @@ public final class PFactory {
      */
 
     public static PGenerator createGenerator(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return create(language, () -> PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
+        return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
     }
 
     public static PGenerator createIterableCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets,
                     Object[] arguments) {
-        return create(language, () -> PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator, true));
+        return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator, true));
     }
 
     public static PGenerator createCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return create(language, () -> PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
+        return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
     }
 
     public static PCoroutineWrapper createCoroutineWrapper(PythonLanguage language, PGenerator generator) {
-        return create(language, () -> new PCoroutineWrapper(language, generator));
+        return trace(language, new PCoroutineWrapper(language, generator));
     }
 
     public static PAsyncGen createAsyncGenerator(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return create(language, () -> PAsyncGen.create(language, name, qualname, rootNode, callTargets, arguments));
+        return trace(language, PAsyncGen.create(language, name, qualname, rootNode, callTargets, arguments));
     }
 
     public static PMappingproxy createMappingproxy(PythonLanguage language, Object object) {
@@ -852,15 +847,15 @@ public final class PFactory {
     }
 
     public static PMappingproxy createMappingproxy(PythonLanguage language, Object cls, Shape shape, Object object) {
-        return create(language, () -> new PMappingproxy(cls, shape, object));
+        return trace(language, new PMappingproxy(cls, shape, object));
     }
 
     public static PReferenceType createReferenceType(PythonLanguage language, Object cls, Shape shape, Object object, Object callback, ReferenceQueue<Object> queue) {
-        return create(language, () -> new PReferenceType(cls, shape, object, callback, queue));
+        return trace(language, new PReferenceType(cls, shape, object, callback, queue));
     }
 
     public static PCell createCell(PythonLanguage language, Assumption effectivelyFinal) {
-        return create(language, () -> new PCell(effectivelyFinal));
+        return trace(language, new PCell(effectivelyFinal));
     }
 
     /*
@@ -868,23 +863,23 @@ public final class PFactory {
      */
 
     public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, MaterializedFrame locals) {
-        return create(language, () -> new PFrame(language, frameInfo, location, locals));
+        return trace(language, new PFrame(language, frameInfo, location, locals));
     }
 
     public static PFrame createPFrame(PythonLanguage language, Object threadState, PCode code, PythonObject globals, Object localsDict) {
-        return create(language, () -> new PFrame(language, threadState, code, globals, localsDict));
+        return trace(language, new PFrame(language, threadState, code, globals, localsDict));
     }
 
     public static PTraceback createTraceback(PythonLanguage language, PFrame frame, int lineno, PTraceback next) {
-        return create(language, () -> new PTraceback(language, frame, lineno, -1, next));
+        return trace(language, new PTraceback(language, frame, lineno, -1, next));
     }
 
     public static PTraceback createTracebackWithLasti(PythonLanguage language, PFrame frame, int lineno, int lasti, PTraceback next) {
-        return create(language, () -> new PTraceback(language, frame, lineno, lasti, next));
+        return trace(language, new PTraceback(language, frame, lineno, lasti, next));
     }
 
     public static PTraceback createTraceback(PythonLanguage language, LazyTraceback tb) {
-        return create(language, () -> new PTraceback(language, tb));
+        return trace(language, new PTraceback(language, tb));
     }
 
     public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, PTuple args) {
@@ -900,7 +895,7 @@ public final class PFactory {
     }
 
     public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, Object[] data, PTuple args) {
-        return create(language, () -> new PBaseException(cls, shape, data, args));
+        return trace(language, new PBaseException(cls, shape, data, args));
     }
 
     /*
@@ -923,23 +918,23 @@ public final class PFactory {
 
     public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape, Object[] data, TruffleString format, Object[] args) {
         assert format != null;
-        return create(language, () -> new PBaseException(cls, shape, data, format, args));
+        return trace(language, new PBaseException(cls, shape, data, format, args));
     }
 
     public static PBaseException createBaseException(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PBaseException(cls, shape, null));
+        return trace(language, new PBaseException(cls, shape, null));
     }
 
     public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type) {
-        return create(language, () -> new PBaseException(type, type.getInstanceShape(language), null));
+        return trace(language, new PBaseException(type, type.getInstanceShape(language), null));
     }
 
     public static PBaseException createBaseException(PythonLanguage language, PythonBuiltinClassType type, TruffleString format) {
-        return create(language, () -> new PBaseException(type, type.getInstanceShape(language), null, format, EMPTY_OBJECT_ARRAY));
+        return trace(language, new PBaseException(type, type.getInstanceShape(language), null, format, EMPTY_OBJECT_ARRAY));
     }
 
     public static PBaseExceptionGroup createBaseExceptionGroup(PythonLanguage language, Object cls, Shape shape, TruffleString message, Object[] exceptions, Object[] args) {
-        return create(language, () -> new PBaseExceptionGroup(cls, shape, message, exceptions, createTuple(language, args)));
+        return trace(language, new PBaseExceptionGroup(cls, shape, message, exceptions, createTuple(language, args)));
     }
 
     /*
@@ -948,7 +943,7 @@ public final class PFactory {
 
     public static PArray createArray(PythonLanguage language, Object cls, Shape shape, TruffleString formatString, BufferFormat format) {
         assert format != null;
-        return create(language, () -> new PArray(cls, shape, formatString, format));
+        return trace(language, new PArray(cls, shape, formatString, format));
     }
 
     public static PArray createArray(PythonLanguage language, TruffleString formatString, BufferFormat format, int length) throws OverflowException {
@@ -958,7 +953,7 @@ public final class PFactory {
     public static PArray createArray(PythonLanguage language, Object cls, Shape shape, TruffleString formatString, BufferFormat format, int length) throws OverflowException {
         assert format != null;
         int byteSize = PythonUtils.multiplyExact(length, format.bytesize);
-        return create(language, () -> new PArray(cls, shape, formatString, format, byteSize));
+        return trace(language, new PArray(cls, shape, formatString, format, byteSize));
     }
 
     public static PByteArray createByteArray(PythonLanguage language, byte[] array) {
@@ -982,7 +977,7 @@ public final class PFactory {
     }
 
     public static PByteArray createByteArray(PythonLanguage language, Object cls, Shape shape, SequenceStorage storage) {
-        return create(language, () -> new PByteArray(cls, shape, storage));
+        return trace(language, new PByteArray(cls, shape, storage));
     }
 
     /*
@@ -990,31 +985,31 @@ public final class PFactory {
      */
 
     public static PStringIterator createStringIterator(PythonLanguage language, TruffleString str) {
-        return create(language, () -> new PStringIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), str));
+        return trace(language, new PStringIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), str));
     }
 
     public static PStringReverseIterator createStringReverseIterator(PythonLanguage language, Object cls, Shape shape, TruffleString str) {
-        return create(language, () -> new PStringReverseIterator(cls, shape, str));
+        return trace(language, new PStringReverseIterator(cls, shape, str));
     }
 
     public static PIntegerSequenceIterator createIntegerSequenceIterator(PythonLanguage language, IntSequenceStorage storage, Object list) {
-        return create(language, () -> new PIntegerSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), storage, list));
+        return trace(language, new PIntegerSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), storage, list));
     }
 
     public static PLongSequenceIterator createLongSequenceIterator(PythonLanguage language, LongSequenceStorage storage, Object list) {
-        return create(language, () -> new PLongSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), storage, list));
+        return trace(language, new PLongSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), storage, list));
     }
 
     public static PDoubleSequenceIterator createDoubleSequenceIterator(PythonLanguage language, DoubleSequenceStorage storage, Object list) {
-        return create(language, () -> new PDoubleSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), storage, list));
+        return trace(language, new PDoubleSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), storage, list));
     }
 
     public static PObjectSequenceIterator createObjectSequenceIterator(PythonLanguage language, ObjectSequenceStorage storage, Object list) {
-        return create(language, () -> new PObjectSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), storage, list));
+        return trace(language, new PObjectSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), storage, list));
     }
 
     public static PSequenceIterator createSequenceIterator(PythonLanguage language, Object sequence) {
-        return create(language, () -> new PSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), sequence));
+        return trace(language, new PSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), sequence));
     }
 
     public static PSequenceReverseIterator createSequenceReverseIterator(PythonLanguage language, Object sequence, int lengthHint) {
@@ -1022,7 +1017,7 @@ public final class PFactory {
     }
 
     public static PSequenceReverseIterator createSequenceReverseIterator(PythonLanguage language, Object cls, Shape shape, Object sequence, int lengthHint) {
-        return create(language, () -> new PSequenceReverseIterator(cls, shape, sequence, lengthHint));
+        return trace(language, new PSequenceReverseIterator(cls, shape, sequence, lengthHint));
     }
 
     public static PIntRangeIterator createIntRangeIterator(PythonLanguage language, PIntRange fastRange) {
@@ -1030,11 +1025,11 @@ public final class PFactory {
     }
 
     public static PIntRangeIterator createIntRangeIterator(PythonLanguage language, int start, int stop, int step, int len) {
-        return create(language, () -> new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), start, stop, step, len));
+        return trace(language, new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), start, stop, step, len));
     }
 
     public static PBigRangeIterator createBigRangeIterator(PythonLanguage language, PInt start, PInt stop, PInt step, PInt len) {
-        return create(language, () -> new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), start, stop, step, len));
+        return trace(language, new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), start, stop, step, len));
     }
 
     public static PBigRangeIterator createBigRangeIterator(PythonLanguage language, PBigRange longRange) {
@@ -1046,58 +1041,58 @@ public final class PFactory {
     }
 
     public static PArrayIterator createArrayIterator(PythonLanguage language, PArray array) {
-        return create(language, () -> new PArrayIterator(PythonBuiltinClassType.PArrayIterator, PythonBuiltinClassType.PArrayIterator.getInstanceShape(language), array));
+        return trace(language, new PArrayIterator(PythonBuiltinClassType.PArrayIterator, PythonBuiltinClassType.PArrayIterator.getInstanceShape(language), array));
     }
 
     public static PBaseSetIterator createBaseSetIterator(PythonLanguage language, PBaseSet set, HashingStorageNodes.HashingStorageIterator iterator, int initialSize) {
-        return create(language, () -> new PBaseSetIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), set, iterator, initialSize));
+        return trace(language, new PBaseSetIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(language), set, iterator, initialSize));
     }
 
     public static PDictItemIterator createDictItemIterator(PythonLanguage language, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
-        return create(language, () -> new PDictItemIterator(PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictItemIterator.getInstanceShape(language), iterator, hashingStorage,
+        return trace(language, new PDictItemIterator(PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictItemIterator.getInstanceShape(language), iterator, hashingStorage,
                         initialSize));
     }
 
     public static PDictKeyIterator createDictKeyIterator(PythonLanguage language, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
-        return create(language,
-                        () -> new PDictKeyIterator(PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictKeyIterator.getInstanceShape(language), iterator, hashingStorage, initialSize));
+        return trace(language,
+                        new PDictKeyIterator(PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictKeyIterator.getInstanceShape(language), iterator, hashingStorage, initialSize));
     }
 
     public static PDictValueIterator createDictValueIterator(PythonLanguage language, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
-        return create(language, () -> new PDictValueIterator(PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictValueIterator.getInstanceShape(language), iterator, hashingStorage,
+        return trace(language, new PDictValueIterator(PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictValueIterator.getInstanceShape(language), iterator, hashingStorage,
                         initialSize));
     }
 
     public static Object createSentinelIterator(PythonLanguage language, Object callable, Object sentinel) {
-        return create(language, () -> new PSentinelIterator(PythonBuiltinClassType.PSentinelIterator, PythonBuiltinClassType.PSentinelIterator.getInstanceShape(language), callable, sentinel));
+        return trace(language, new PSentinelIterator(PythonBuiltinClassType.PSentinelIterator, PythonBuiltinClassType.PSentinelIterator.getInstanceShape(language), callable, sentinel));
     }
 
     public static PEnumerate createEnumerate(PythonLanguage language, Object cls, Shape shape, Object iterator, long start) {
-        return create(language, () -> new PEnumerate(cls, shape, iterator, start));
+        return trace(language, new PEnumerate(cls, shape, iterator, start));
     }
 
     public static PEnumerate createEnumerate(PythonLanguage language, Object cls, Shape shape, Object iterator, PInt start) {
-        return create(language, () -> new PEnumerate(cls, shape, iterator, start));
+        return trace(language, new PEnumerate(cls, shape, iterator, start));
     }
 
     public static PMap createMap(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PMap(cls, shape));
+        return trace(language, new PMap(cls, shape));
     }
 
     public static PZip createZip(PythonLanguage language, Object cls, Shape shape, Object[] iterables, boolean strict) {
-        return create(language, () -> new PZip(cls, shape, iterables, strict));
+        return trace(language, new PZip(cls, shape, iterables, strict));
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget ct) {
-        return create(language, () -> new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct));
+        return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct));
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget ct, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
-        return create(language, () -> new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, flags, firstlineno, linetable, filename));
+        return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, flags, firstlineno, linetable, filename));
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
-        return create(language, () -> new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature, codeUnit));
+        return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature, codeUnit));
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, int nlocals,
@@ -1106,13 +1101,13 @@ public final class PFactory {
                     TruffleString[] freevars, TruffleString[] cellvars,
                     TruffleString filename, TruffleString name, TruffleString qualname,
                     int firstlineno, byte[] linetable) {
-        return create(language, () -> new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature,
+        return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature,
                         nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
                         filename, name, qualname, firstlineno, linetable));
     }
 
     public static PCode createCode(PythonLanguage language, Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
-        return create(language, () -> new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), createCode, flags, firstlineno, lnotab, filename));
+        return trace(language, new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), createCode, flags, firstlineno, lnotab, filename));
     }
 
     /*
@@ -1120,7 +1115,7 @@ public final class PFactory {
      */
 
     public static PSocket createSocket(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PSocket(cls, shape));
+        return trace(language, new PSocket(cls, shape));
     }
 
     /*
@@ -1128,7 +1123,7 @@ public final class PFactory {
      */
 
     public static PThreadLocal createThreadLocal(PythonLanguage language, Object cls, Shape shape, Object[] args, PKeyword[] kwArgs) {
-        return create(language, () -> new PThreadLocal(cls, shape, args, kwArgs));
+        return trace(language, new PThreadLocal(cls, shape, args, kwArgs));
     }
 
     public static PLock createLock(PythonLanguage language) {
@@ -1136,11 +1131,11 @@ public final class PFactory {
     }
 
     public static PLock createLock(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PLock(cls, shape));
+        return trace(language, new PLock(cls, shape));
     }
 
     public static PRLock createRLock(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PRLock(cls, shape));
+        return trace(language, new PRLock(cls, shape));
     }
 
     public static PThread createPythonThread(PythonLanguage language, Thread thread) {
@@ -1148,11 +1143,11 @@ public final class PFactory {
     }
 
     public static PThread createPythonThread(PythonLanguage language, Object cls, Shape shape, Thread thread) {
-        return create(language, () -> new PThread(cls, shape, thread));
+        return trace(language, new PThread(cls, shape, thread));
     }
 
     public static PSemLock createSemLock(PythonLanguage language, Object cls, Shape shape, long handle, int kind, int maxValue, TruffleString name) {
-        return create(language, () -> new PSemLock(cls, shape, handle, kind, maxValue, name));
+        return trace(language, new PSemLock(cls, shape, handle, kind, maxValue, name));
     }
 
     public static PGraalPySemLock createGraalPySemLock(PythonLanguage language, TruffleString name, int kind, Semaphore sharedSemaphore) {
@@ -1160,24 +1155,24 @@ public final class PFactory {
     }
 
     public static PGraalPySemLock createGraalPySemLock(PythonLanguage language, Object cls, Shape shape, TruffleString name, int kind, Semaphore sharedSemaphore) {
-        return create(language, () -> new PGraalPySemLock(cls, shape, name, kind, sharedSemaphore));
+        return trace(language, new PGraalPySemLock(cls, shape, name, kind, sharedSemaphore));
     }
 
     public static PScandirIterator createScandirIterator(PythonLanguage language, PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {
-        return create(language,
-                        () -> new PScandirIterator(PythonBuiltinClassType.PScandirIterator, PythonBuiltinClassType.PScandirIterator.getInstanceShape(language), context, dirStream, path, needsRewind));
+        return trace(language,
+                        new PScandirIterator(PythonBuiltinClassType.PScandirIterator, PythonBuiltinClassType.PScandirIterator.getInstanceShape(language), context, dirStream, path, needsRewind));
     }
 
     public static PDirEntry createDirEntry(PythonLanguage language, Object dirEntryData, PosixFileHandle path) {
-        return create(language, () -> new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(language), dirEntryData, path));
+        return trace(language, new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(language), dirEntryData, path));
     }
 
     public static PEncodingMap createEncodingMap(PythonLanguage language, int count2, int count3, byte[] level1, byte[] level23) {
-        return create(language, () -> new PEncodingMap(PythonBuiltinClassType.PEncodingMap, PythonBuiltinClassType.PEncodingMap.getInstanceShape(language), count2, count3, level1, level23));
+        return trace(language, new PEncodingMap(PythonBuiltinClassType.PEncodingMap, PythonBuiltinClassType.PEncodingMap.getInstanceShape(language), count2, count3, level1, level23));
     }
 
     public static PMMap createMMap(PythonLanguage language, PythonContext context, Object cls, Shape shape, Object mmapHandle, int fd, long length, int access) {
-        return create(language, () -> new PMMap(cls, shape, context, mmapHandle, fd, length, access));
+        return trace(language, new PMMap(cls, shape, context, mmapHandle, fd, length, access));
     }
 
     public static BZ2Object.BZ2Compressor createBZ2Compressor(PythonLanguage language) {
@@ -1185,7 +1180,7 @@ public final class PFactory {
     }
 
     public static BZ2Object.BZ2Compressor createBZ2Compressor(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> BZ2Object.createCompressor(cls, shape));
+        return trace(language, BZ2Object.createCompressor(cls, shape));
     }
 
     public static BZ2Object.BZ2Decompressor createBZ2Decompressor(PythonLanguage language) {
@@ -1193,7 +1188,7 @@ public final class PFactory {
     }
 
     public static BZ2Object.BZ2Decompressor createBZ2Decompressor(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> BZ2Object.createDecompressor(cls, shape));
+        return trace(language, BZ2Object.createDecompressor(cls, shape));
     }
 
     public static ZLibCompObject createJavaZLibCompObjectCompress(PythonLanguage language, Object stream, int level, int wbits, int strategy, byte[] zdict) {
@@ -1201,7 +1196,7 @@ public final class PFactory {
     }
 
     public static ZLibCompObject createJavaZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object stream, int level, int wbits, int strategy, byte[] zdict) {
-        return create(language, () -> ZLibCompObject.createJava(cls, shape, stream, level, wbits, strategy, zdict));
+        return trace(language, ZLibCompObject.createJava(cls, shape, stream, level, wbits, strategy, zdict));
     }
 
     public static ZLibCompObject createJavaZLibCompObjectDecompress(PythonLanguage language, Object stream, int wbits, byte[] zdict) {
@@ -1209,7 +1204,7 @@ public final class PFactory {
     }
 
     public static ZLibCompObject createJavaZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object stream, int wbits, byte[] zdict) {
-        return create(language, () -> ZLibCompObject.createJava(cls, shape, stream, wbits, zdict));
+        return trace(language, ZLibCompObject.createJava(cls, shape, stream, wbits, zdict));
     }
 
     public static ZLibCompObject createNativeZLibCompObjectCompress(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
@@ -1221,15 +1216,15 @@ public final class PFactory {
     }
 
     public static ZLibCompObject createNativeZLibCompObject(PythonLanguage language, Object cls, Shape shape, Object zst, NFIZlibSupport zlibSupport) {
-        return create(language, () -> ZLibCompObject.createNative(cls, shape, zst, zlibSupport));
+        return trace(language, ZLibCompObject.createNative(cls, shape, zst, zlibSupport));
     }
 
     public static LZMAObject.LZMADecompressor createLZMADecompressor(PythonLanguage language, Object cls, Shape shape, boolean isNative) {
-        return create(language, () -> LZMAObject.createDecompressor(cls, shape, isNative));
+        return trace(language, LZMAObject.createDecompressor(cls, shape, isNative));
     }
 
     public static LZMAObject.LZMACompressor createLZMACompressor(PythonLanguage language, Object cls, Shape shape, boolean isNative) {
-        return create(language, () -> LZMAObject.createCompressor(cls, shape, isNative));
+        return trace(language, LZMAObject.createCompressor(cls, shape, isNative));
     }
 
     public static CSVReader createCSVReader(PythonLanguage language, Object inputIter, CSVDialect dialect) {
@@ -1237,7 +1232,7 @@ public final class PFactory {
     }
 
     public static CSVReader createCSVReader(PythonLanguage language, Object cls, Shape shape, Object inputIter, CSVDialect dialect) {
-        return create(language, () -> new CSVReader(cls, shape, inputIter, dialect));
+        return trace(language, new CSVReader(cls, shape, inputIter, dialect));
     }
 
     public static CSVWriter createCSVWriter(PythonLanguage language, Object write, CSVDialect dialect) {
@@ -1245,16 +1240,14 @@ public final class PFactory {
     }
 
     public static CSVWriter createCSVWriter(PythonLanguage language, Object cls, Shape shape, Object write, CSVDialect dialect) {
-        return create(language, () -> new CSVWriter(cls, shape, write, dialect));
+        return trace(language, new CSVWriter(cls, shape, write, dialect));
     }
 
     public static CSVDialect createCSVDialect(PythonLanguage language, Object cls, Shape shape, TruffleString delimiter, int delimiterCodePoint, boolean doubleQuote, TruffleString escapeChar,
                     int escapeCharCodePoint,
                     TruffleString lineTerminator, TruffleString quoteChar, int quoteCharCodePoint, QuoteStyle quoting, boolean skipInitialSpace, boolean strict) {
-        return create(language,
-                        () -> new CSVDialect(cls, shape, delimiter, delimiterCodePoint, doubleQuote, escapeChar, escapeCharCodePoint, lineTerminator, quoteChar, quoteCharCodePoint,
-                                        quoting,
-                                        skipInitialSpace, strict));
+        return trace(language, new CSVDialect(cls, shape, delimiter, delimiterCodePoint, doubleQuote, escapeChar, escapeCharCodePoint, lineTerminator, quoteChar, quoteCharCodePoint, quoting,
+                        skipInitialSpace, strict));
     }
 
     public static PFileIO createFileIO(PythonLanguage language) {
@@ -1262,7 +1255,7 @@ public final class PFactory {
     }
 
     public static PFileIO createFileIO(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PFileIO(cls, shape));
+        return trace(language, new PFileIO(cls, shape));
     }
 
     public static PChain createChain(PythonLanguage language) {
@@ -1270,31 +1263,31 @@ public final class PFactory {
     }
 
     public static PChain createChain(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PChain(cls, shape));
+        return trace(language, new PChain(cls, shape));
     }
 
     public static PCount createCount(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PCount(cls, shape));
+        return trace(language, new PCount(cls, shape));
     }
 
     public static PIslice createIslice(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PIslice(cls, shape));
+        return trace(language, new PIslice(cls, shape));
     }
 
     public static PPairwise createPairwise(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PPairwise(cls, shape));
+        return trace(language, new PPairwise(cls, shape));
     }
 
     public static PPermutations createPermutations(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PPermutations(cls, shape));
+        return trace(language, new PPermutations(cls, shape));
     }
 
     public static PProduct createProduct(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PProduct(cls, shape));
+        return trace(language, new PProduct(cls, shape));
     }
 
     public static PRepeat createRepeat(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PRepeat(cls, shape));
+        return trace(language, new PRepeat(cls, shape));
     }
 
     public static PAccumulate createAccumulate(PythonLanguage language) {
@@ -1302,63 +1295,63 @@ public final class PFactory {
     }
 
     public static PAccumulate createAccumulate(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PAccumulate(cls, shape));
+        return trace(language, new PAccumulate(cls, shape));
     }
 
     public static PDropwhile createDropwhile(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PDropwhile(cls, shape));
+        return trace(language, new PDropwhile(cls, shape));
     }
 
     public static PCombinations createCombinations(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PCombinations(cls, shape));
+        return trace(language, new PCombinations(cls, shape));
     }
 
     public static PCombinationsWithReplacement createCombinationsWithReplacement(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PCombinationsWithReplacement(cls, shape));
+        return trace(language, new PCombinationsWithReplacement(cls, shape));
     }
 
     public static PCompress createCompress(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PCompress(cls, shape));
+        return trace(language, new PCompress(cls, shape));
     }
 
     public static PCycle createCycle(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PCycle(cls, shape));
+        return trace(language, new PCycle(cls, shape));
     }
 
     public static PFilterfalse createFilterfalse(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PFilterfalse(cls, shape));
+        return trace(language, new PFilterfalse(cls, shape));
     }
 
     public static PGroupBy createGroupBy(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PGroupBy(cls, shape));
+        return trace(language, new PGroupBy(cls, shape));
     }
 
     public static PGrouper createGrouper(PythonLanguage language, PGroupBy parent, Object tgtKey) {
-        return create(language, () -> new PGrouper(parent, tgtKey, PythonBuiltinClassType.PGrouper, PythonBuiltinClassType.PGrouper.getInstanceShape(language)));
+        return trace(language, new PGrouper(parent, tgtKey, PythonBuiltinClassType.PGrouper, PythonBuiltinClassType.PGrouper.getInstanceShape(language)));
     }
 
     public static PTee createTee(PythonLanguage language, PTeeDataObject dataObj, int index) {
-        return create(language, () -> new PTee(dataObj, index, PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(language)));
+        return trace(language, new PTee(dataObj, index, PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(language)));
     }
 
     public static PStarmap createStarmap(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PStarmap(cls, shape));
+        return trace(language, new PStarmap(cls, shape));
     }
 
     public static PTakewhile createTakewhile(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PTakewhile(cls, shape));
+        return trace(language, new PTakewhile(cls, shape));
     }
 
     public static PTeeDataObject createTeeDataObject(PythonLanguage language) {
-        return create(language, () -> new PTeeDataObject(PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(language)));
+        return trace(language, new PTeeDataObject(PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(language)));
     }
 
     public static PTeeDataObject createTeeDataObject(PythonLanguage language, Object it) {
-        return create(language, () -> new PTeeDataObject(it, PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(language)));
+        return trace(language, new PTeeDataObject(it, PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(language)));
     }
 
     public static PZipLongest createZipLongest(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PZipLongest(cls, shape));
+        return trace(language, new PZipLongest(cls, shape));
     }
 
     public static PTextIO createTextIO(PythonLanguage language) {
@@ -1366,15 +1359,15 @@ public final class PFactory {
     }
 
     public static PTextIO createTextIO(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PTextIO(cls, shape));
+        return trace(language, new PTextIO(cls, shape));
     }
 
     public static PStringIO createStringIO(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PStringIO(cls, shape));
+        return trace(language, new PStringIO(cls, shape));
     }
 
     public static PBytesIO createBytesIO(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PBytesIO(cls, shape));
+        return trace(language, new PBytesIO(cls, shape));
     }
 
     public static PBytesIOBuffer createBytesIOBuf(PythonLanguage language, PBytesIO source) {
@@ -1382,7 +1375,7 @@ public final class PFactory {
     }
 
     public static PBytesIOBuffer createBytesIOBuf(PythonLanguage language, Object cls, Shape shape, PBytesIO source) {
-        return create(language, () -> new PBytesIOBuffer(cls, shape, source));
+        return trace(language, new PBytesIOBuffer(cls, shape, source));
     }
 
     public static PNLDecoder createNLDecoder(PythonLanguage language) {
@@ -1390,7 +1383,7 @@ public final class PFactory {
     }
 
     public static PNLDecoder createNLDecoder(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PNLDecoder(cls, shape));
+        return trace(language, new PNLDecoder(cls, shape));
     }
 
     public static PBuffered createBufferedReader(PythonLanguage language) {
@@ -1398,7 +1391,7 @@ public final class PFactory {
     }
 
     public static PBuffered createBufferedReader(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PBuffered(cls, shape, true, false));
+        return trace(language, new PBuffered(cls, shape, true, false));
     }
 
     public static PBuffered createBufferedWriter(PythonLanguage language) {
@@ -1406,7 +1399,7 @@ public final class PFactory {
     }
 
     public static PBuffered createBufferedWriter(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PBuffered(cls, shape, false, true));
+        return trace(language, new PBuffered(cls, shape, false, true));
     }
 
     public static PBuffered createBufferedRandom(PythonLanguage language) {
@@ -1414,15 +1407,15 @@ public final class PFactory {
     }
 
     public static PBuffered createBufferedRandom(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PBuffered(cls, shape, true, true));
+        return trace(language, new PBuffered(cls, shape, true, true));
     }
 
     public static PRWPair createRWPair(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PRWPair(cls, shape));
+        return trace(language, new PRWPair(cls, shape));
     }
 
     public static PyCArgObject createCArgObject(PythonLanguage language) {
-        return create(language, () -> new PyCArgObject(PythonBuiltinClassType.CArgObject, PythonBuiltinClassType.CArgObject.getInstanceShape(language)));
+        return trace(language, new PyCArgObject(PythonBuiltinClassType.CArgObject, PythonBuiltinClassType.CArgObject.getInstanceShape(language)));
     }
 
     public static CThunkObject createCThunkObject(PythonLanguage language, int nArgs) {
@@ -1430,17 +1423,17 @@ public final class PFactory {
     }
 
     public static CThunkObject createCThunkObject(PythonLanguage language, Object cls, Shape shape, int nArgs) {
-        return create(language, () -> new CThunkObject(cls, shape, nArgs));
+        return trace(language, new CThunkObject(cls, shape, nArgs));
     }
 
     // Don't use directly, use CtypesNodes.CreateCDataObjectNode
     public static CDataObject createCDataObject(PythonLanguage language, Object cls, Shape shape, Pointer b_ptr, int b_size, boolean b_needsfree) {
-        return create(language, () -> new CDataObject(cls, shape, b_ptr, b_size, b_needsfree));
+        return trace(language, new CDataObject(cls, shape, b_ptr, b_size, b_needsfree));
     }
 
     // Don't use directly, use CtypesNodes.CreateCDataObjectNode
     public static PyCFuncPtrObject createPyCFuncPtrObject(PythonLanguage language, Object cls, Shape shape, Pointer b_ptr, int b_size, boolean b_needsfree) {
-        return create(language, () -> new PyCFuncPtrObject(cls, shape, b_ptr, b_size, b_needsfree));
+        return trace(language, new PyCFuncPtrObject(cls, shape, b_ptr, b_size, b_needsfree));
     }
 
     public static CFieldObject createCFieldObject(PythonLanguage language) {
@@ -1448,7 +1441,7 @@ public final class PFactory {
     }
 
     public static CFieldObject createCFieldObject(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new CFieldObject(cls, shape));
+        return trace(language, new CFieldObject(cls, shape));
     }
 
     public static StgDictObject createStgDictObject(PythonLanguage language) {
@@ -1456,11 +1449,11 @@ public final class PFactory {
     }
 
     public static StgDictObject createStgDictObject(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new StgDictObject(cls, shape));
+        return trace(language, new StgDictObject(cls, shape));
     }
 
     public static PSSLContext createSSLContext(PythonLanguage language, Object cls, Shape shape, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {
-        return create(language, () -> new PSSLContext(cls, shape, method, verifyFlags, checkHostname, verifyMode, context));
+        return trace(language, new PSSLContext(cls, shape, method, verifyFlags, checkHostname, verifyMode, context));
     }
 
     public static PSSLSocket createSSLSocket(PythonLanguage language, PSSLContext context, SSLEngine engine, PSocket socket) {
@@ -1468,7 +1461,7 @@ public final class PFactory {
     }
 
     public static PSSLSocket createSSLSocket(PythonLanguage language, Object cls, Shape shape, PSSLContext context, SSLEngine engine, PSocket socket) {
-        return create(language, () -> new PSSLSocket(cls, shape, context, engine, socket, createMemoryBIO(language), createMemoryBIO(language), createMemoryBIO(language)));
+        return trace(language, new PSSLSocket(cls, shape, context, engine, socket, createMemoryBIO(language), createMemoryBIO(language), createMemoryBIO(language)));
     }
 
     public static PSSLSocket createSSLSocket(PythonLanguage language, PSSLContext context, SSLEngine engine, PMemoryBIO inbound, PMemoryBIO outbound) {
@@ -1476,23 +1469,23 @@ public final class PFactory {
     }
 
     public static PSSLSocket createSSLSocket(PythonLanguage language, Object cls, Shape shape, PSSLContext context, SSLEngine engine, PMemoryBIO inbound, PMemoryBIO outbound) {
-        return create(language, () -> new PSSLSocket(cls, shape, context, engine, null, inbound, outbound, createMemoryBIO(language)));
+        return trace(language, new PSSLSocket(cls, shape, context, engine, null, inbound, outbound, createMemoryBIO(language)));
     }
 
     public static PMemoryBIO createMemoryBIO(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PMemoryBIO(cls, shape));
+        return trace(language, new PMemoryBIO(cls, shape));
     }
 
     public static PMemoryBIO createMemoryBIO(PythonLanguage language) {
-        return create(language, () -> new PMemoryBIO(PythonBuiltinClassType.PMemoryBIO, PythonBuiltinClassType.PMemoryBIO.getInstanceShape(language)));
+        return trace(language, new PMemoryBIO(PythonBuiltinClassType.PMemoryBIO, PythonBuiltinClassType.PMemoryBIO.getInstanceShape(language)));
     }
 
     public static PProperty createProperty(PythonLanguage language) {
-        return create(language, () -> new PProperty(PythonBuiltinClassType.PProperty, PythonBuiltinClassType.PProperty.getInstanceShape(language)));
+        return trace(language, new PProperty(PythonBuiltinClassType.PProperty, PythonBuiltinClassType.PProperty.getInstanceShape(language)));
     }
 
     public static PProperty createProperty(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PProperty(cls, shape));
+        return trace(language, new PProperty(cls, shape));
     }
 
     // JSON
@@ -1501,54 +1494,54 @@ public final class PFactory {
     @TruffleBoundary
     public static PJSONScanner createJSONScanner(PythonLanguage language, Object cls, Shape shape, boolean strict, Object objectHook, Object objectPairsHook, Object parseFloat, Object parseInt,
                     Object parseConstant) {
-        return create(language, () -> new PJSONScanner(cls, shape, strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant));
+        return trace(language, new PJSONScanner(cls, shape, strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant));
     }
 
     @TruffleBoundary
     public static PJSONEncoder createJSONEncoder(PythonLanguage language, Object cls, Shape shape, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator,
                     TruffleString itemSeparator,
                     boolean sortKeys, boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
-        return create(language, () -> new PJSONEncoder(cls, shape, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode));
+        return trace(language, new PJSONEncoder(cls, shape, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode));
     }
 
     public static PDeque createDeque(PythonLanguage language) {
-        return create(language, () -> new PDeque(PythonBuiltinClassType.PDeque, PythonBuiltinClassType.PDeque.getInstanceShape(language)));
+        return trace(language, new PDeque(PythonBuiltinClassType.PDeque, PythonBuiltinClassType.PDeque.getInstanceShape(language)));
     }
 
     public static PDeque createDeque(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PDeque(cls, shape));
+        return trace(language, new PDeque(cls, shape));
     }
 
     public static PDequeIter createDequeIter(PythonLanguage language, PDeque deque) {
-        return create(language, () -> new PDequeIter(PythonBuiltinClassType.PDequeIter, PythonBuiltinClassType.PDequeIter.getInstanceShape(language), deque, false));
+        return trace(language, new PDequeIter(PythonBuiltinClassType.PDequeIter, PythonBuiltinClassType.PDequeIter.getInstanceShape(language), deque, false));
     }
 
     public static PDequeIter createDequeRevIter(PythonLanguage language, PDeque deque) {
-        return create(language, () -> new PDequeIter(PythonBuiltinClassType.PDequeRevIter, PythonBuiltinClassType.PDequeRevIter.getInstanceShape(language), deque, true));
+        return trace(language, new PDequeIter(PythonBuiltinClassType.PDequeRevIter, PythonBuiltinClassType.PDequeRevIter.getInstanceShape(language), deque, true));
     }
 
     public static PSimpleQueue createSimpleQueue(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PSimpleQueue(cls, shape));
+        return trace(language, new PSimpleQueue(cls, shape));
     }
 
     public static PContextVar createContextVar(PythonLanguage language, TruffleString name, Object def) {
-        return create(language, () -> new PContextVar(PythonBuiltinClassType.ContextVar, PythonBuiltinClassType.ContextVar.getInstanceShape(language), name, def));
+        return trace(language, new PContextVar(PythonBuiltinClassType.ContextVar, PythonBuiltinClassType.ContextVar.getInstanceShape(language), name, def));
     }
 
     public static PContextVarsContext createContextVarsContext(PythonLanguage language) {
-        return create(language, () -> new PContextVarsContext(PythonBuiltinClassType.ContextVarsContext, PythonBuiltinClassType.ContextVarsContext.getInstanceShape(language)));
+        return trace(language, new PContextVarsContext(PythonBuiltinClassType.ContextVarsContext, PythonBuiltinClassType.ContextVarsContext.getInstanceShape(language)));
     }
 
     public static PContextIterator createContextIterator(PythonLanguage language, PContextVarsContext ctx, PContextIterator.ItemKind kind) {
-        return create(language, () -> new PContextIterator(PythonBuiltinClassType.ContextIterator, PythonBuiltinClassType.ContextIterator.getInstanceShape(language), ctx, kind));
+        return trace(language, new PContextIterator(PythonBuiltinClassType.ContextIterator, PythonBuiltinClassType.ContextIterator.getInstanceShape(language), ctx, kind));
     }
 
     public static PContextVarsContext copyContextVarsContext(PythonLanguage language, PContextVarsContext original) {
-        return create(language, () -> new PContextVarsContext(original, PythonBuiltinClassType.ContextVarsContext, PythonBuiltinClassType.ContextVarsContext.getInstanceShape(language)));
+        return trace(language, new PContextVarsContext(original, PythonBuiltinClassType.ContextVarsContext, PythonBuiltinClassType.ContextVarsContext.getInstanceShape(language)));
     }
 
     public static PContextVarsToken createContextVarsToken(PythonLanguage language, PContextVar var, Object oldValue) {
-        return create(language, () -> new PContextVarsToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, PythonBuiltinClassType.ContextVarsToken.getInstanceShape(language)));
+        return trace(language, new PContextVarsToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, PythonBuiltinClassType.ContextVarsToken.getInstanceShape(language)));
     }
 
     public static PGenericAlias createGenericAlias(PythonLanguage language, Object cls, Shape shape, Object origin, Object arguments, boolean starred) {
@@ -1558,7 +1551,7 @@ public final class PFactory {
         } else {
             argumentsTuple = createTuple(language, new Object[]{arguments});
         }
-        return create(language, () -> new PGenericAlias(cls, shape, origin, argumentsTuple, starred));
+        return trace(language, new PGenericAlias(cls, shape, origin, argumentsTuple, starred));
     }
 
     public static PGenericAlias createGenericAlias(PythonLanguage language, Object origin, Object arguments, boolean starred) {
@@ -1570,15 +1563,15 @@ public final class PFactory {
     }
 
     public static PGenericAliasIterator createGenericAliasIterator(PythonLanguage language, PGenericAlias object) {
-        return create(language, () -> new PGenericAliasIterator(PythonBuiltinClassType.PGenericAliasIterator, PythonBuiltinClassType.PGenericAliasIterator.getInstanceShape(language), object));
+        return trace(language, new PGenericAliasIterator(PythonBuiltinClassType.PGenericAliasIterator, PythonBuiltinClassType.PGenericAliasIterator.getInstanceShape(language), object));
     }
 
     public static PUnionType createUnionType(PythonLanguage language, Object[] args) {
-        return create(language, () -> new PUnionType(PythonBuiltinClassType.PUnionType, PythonBuiltinClassType.PUnionType.getInstanceShape(language), createTuple(language, args)));
+        return trace(language, new PUnionType(PythonBuiltinClassType.PUnionType, PythonBuiltinClassType.PUnionType.getInstanceShape(language), createTuple(language, args)));
     }
 
     public static DigestObject createDigestObject(PythonLanguage language, PythonBuiltinClassType type, String name, Object digest) {
-        return create(language, () -> DigestObject.create(type, type.getInstanceShape(language), name, digest));
+        return trace(language, DigestObject.create(type, type.getInstanceShape(language), name, digest));
     }
 
     public static PyCapsule createCapsuleNativeName(PythonLanguage language, Object pointer, Object name) {
@@ -1590,23 +1583,23 @@ public final class PFactory {
     }
 
     public static PyCapsule createCapsule(PythonLanguage language, PyCapsule.CapsuleData data) {
-        return create(language, () -> new PyCapsule(language, data));
+        return trace(language, new PyCapsule(language, data));
     }
 
     public static MultibyteIncrementalDecoderObject createMultibyteIncrementalDecoderObject(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new MultibyteIncrementalDecoderObject(cls, shape));
+        return trace(language, new MultibyteIncrementalDecoderObject(cls, shape));
     }
 
     public static MultibyteIncrementalEncoderObject createMultibyteIncrementalEncoderObject(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new MultibyteIncrementalEncoderObject(cls, shape));
+        return trace(language, new MultibyteIncrementalEncoderObject(cls, shape));
     }
 
     public static MultibyteStreamReaderObject createMultibyteStreamReaderObject(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new MultibyteStreamReaderObject(cls, shape));
+        return trace(language, new MultibyteStreamReaderObject(cls, shape));
     }
 
     public static MultibyteStreamWriterObject createMultibyteStreamWriterObject(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new MultibyteStreamWriterObject(cls, shape));
+        return trace(language, new MultibyteStreamWriterObject(cls, shape));
     }
 
     public static MultibyteCodecObject createMultibyteCodecObject(PythonLanguage language, MultibyteCodec codec) {
@@ -1614,19 +1607,19 @@ public final class PFactory {
     }
 
     public static MultibyteCodecObject createMultibyteCodecObject(PythonLanguage language, Object cls, Shape shape, MultibyteCodec codec) {
-        return create(language, () -> new MultibyteCodecObject(cls, shape, codec));
+        return trace(language, new MultibyteCodecObject(cls, shape, codec));
     }
 
     public static PAsyncGenASend createAsyncGeneratorASend(PythonLanguage language, PAsyncGen receiver, Object message) {
-        return create(language, () -> new PAsyncGenASend(language, receiver, message));
+        return trace(language, new PAsyncGenASend(language, receiver, message));
     }
 
     public static PAsyncGenAThrow createAsyncGeneratorAThrow(PythonLanguage language, PAsyncGen receiver, Object arg1, Object arg2, Object arg3) {
-        return create(language, () -> new PAsyncGenAThrow(language, receiver, arg1, arg2, arg3));
+        return trace(language, new PAsyncGenAThrow(language, receiver, arg1, arg2, arg3));
     }
 
     public static PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(PythonLanguage language, Object wrapped) {
-        return create(language, () -> new PAsyncGenWrappedValue(language, wrapped));
+        return trace(language, new PAsyncGenWrappedValue(language, wrapped));
     }
 
     // pickle
@@ -1636,7 +1629,7 @@ public final class PFactory {
     }
 
     public static PPickleBuffer createPickleBuffer(PythonLanguage language, Object view, Object cls, Shape shape) {
-        return create(language, () -> new PPickleBuffer(cls, shape, view));
+        return trace(language, new PPickleBuffer(cls, shape, view));
     }
 
     public static PPickler createPickler(PythonLanguage language) {
@@ -1644,7 +1637,7 @@ public final class PFactory {
     }
 
     public static PPickler createPickler(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PPickler(cls, shape));
+        return trace(language, new PPickler(cls, shape));
     }
 
     public static PUnpickler createUnpickler(PythonLanguage language) {
@@ -1652,7 +1645,7 @@ public final class PFactory {
     }
 
     public static PUnpickler createUnpickler(PythonLanguage language, Object cls, Shape shape) {
-        return create(language, () -> new PUnpickler(cls, shape));
+        return trace(language, new PUnpickler(cls, shape));
     }
 
     public static PPicklerMemoProxy createPicklerMemoProxy(PythonLanguage language, PPickler pickler) {
@@ -1660,7 +1653,7 @@ public final class PFactory {
     }
 
     public static PPicklerMemoProxy createPicklerMemoProxy(PythonLanguage language, PPickler pickler, Object cls, Shape shape) {
-        return create(language, () -> new PPicklerMemoProxy(cls, shape, pickler));
+        return trace(language, new PPicklerMemoProxy(cls, shape, pickler));
     }
 
     public static PUnpicklerMemoProxy createUnpicklerMemoProxy(PythonLanguage language, PUnpickler unpickler) {
@@ -1668,15 +1661,15 @@ public final class PFactory {
     }
 
     public static PUnpicklerMemoProxy createUnpicklerMemoProxy(PythonLanguage language, PUnpickler unpickler, Object cls, Shape shape) {
-        return create(language, () -> new PUnpicklerMemoProxy(cls, shape, unpickler));
+        return trace(language, new PUnpicklerMemoProxy(cls, shape, unpickler));
     }
 
     public static PStruct createStruct(PythonLanguage language, PStruct.StructInfo structInfo) {
-        return create(language, () -> new PStruct(PythonBuiltinClassType.PStruct, PythonBuiltinClassType.PStruct.getInstanceShape(language), structInfo));
+        return trace(language, new PStruct(PythonBuiltinClassType.PStruct, PythonBuiltinClassType.PStruct.getInstanceShape(language), structInfo));
     }
 
     public static PStructUnpackIterator createStructUnpackIterator(PythonLanguage language, PStruct struct, Object buffer) {
-        return create(language, () -> new PStructUnpackIterator(PythonBuiltinClassType.PStructUnpackIterator, PythonBuiltinClassType.PStructUnpackIterator.getInstanceShape(language), struct, buffer));
+        return trace(language, new PStructUnpackIterator(PythonBuiltinClassType.PStructUnpackIterator, PythonBuiltinClassType.PStructUnpackIterator.getInstanceShape(language), struct, buffer));
     }
 
     public static PTokenizerIter createTokenizerIter(PythonLanguage language, String sourceString) {
@@ -1684,10 +1677,10 @@ public final class PFactory {
     }
 
     public static PTokenizerIter createTokenizerIter(PythonLanguage language, Object cls, Shape shape, String sourceString) {
-        return create(language, () -> new PTokenizerIter(cls, shape, sourceString));
+        return trace(language, new PTokenizerIter(cls, shape, sourceString));
     }
 
     public static Profiler createProfiler(PythonLanguage language, Object cls, Shape shape, CPUSampler sampler) {
-        return create(language, () -> new Profiler(cls, shape, sampler));
+        return trace(language, new Profiler(cls, shape, sampler));
     }
 }
