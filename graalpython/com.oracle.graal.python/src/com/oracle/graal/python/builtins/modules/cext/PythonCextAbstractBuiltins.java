@@ -109,6 +109,7 @@ import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -132,7 +133,6 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -452,16 +452,10 @@ public final class PythonCextAbstractBuiltins {
         @Child private LookupAndCallTernaryNode callNode;
 
         @Specialization
-        Object doGeneric(Object o1, Object o2, Object o3) {
-            return ensureCallNode().execute(null, o1, o2, o3);
-        }
-
-        private LookupAndCallTernaryNode ensureCallNode() {
-            if (callNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(TernaryArithmetic.Pow.create());
-            }
-            return callNode;
+        Object doGeneric(Object o1, Object o2, Object o3,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberPowerNode powerNode) {
+            return powerNode.execute(null, inliningTarget, o1, o2, o3);
         }
     }
 

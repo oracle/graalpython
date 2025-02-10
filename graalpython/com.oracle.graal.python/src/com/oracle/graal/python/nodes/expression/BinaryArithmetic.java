@@ -58,6 +58,7 @@ import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyNumberRemainderNode;
 import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
@@ -92,7 +93,7 @@ public enum BinaryArithmetic {
     Or(PyNumberOrNode::create),
     Xor(PyNumberXorNode::create),
     MatMul(PyNumberMatrixMultiplyNode::create),
-    Pow(BinaryArithmeticFactory.PowNodeGen::create),
+    Pow(PyNumberPowerNode::create),
     DivMod(PyNumberDivmodNode::create);
 
     interface CreateBinaryOp {
@@ -177,18 +178,6 @@ public enum BinaryArithmetic {
             return LookupAndCallBinaryNode.createReversible(slot, slot.getReverse(), handler);
         }
 
-    }
-
-    public abstract static class PowNode extends BinaryArithmeticNode {
-
-        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("** or pow()");
-
-        @Specialization
-        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        // TODO: ternary_op is not implemented (GR-<2????>)
-                        @Cached("createCallNode(Pow, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
-            return callNode.executeObject(frame, left, right);
-        }
     }
 
     public abstract static class GenericBinaryArithmeticNode extends BinaryArithmeticNode {

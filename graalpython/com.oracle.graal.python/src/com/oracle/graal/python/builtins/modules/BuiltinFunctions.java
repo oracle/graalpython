@@ -171,6 +171,7 @@ import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDir;
@@ -211,14 +212,10 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -2119,26 +2116,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_POW, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 0, parameterNames = {"base", "exp", "mod"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonTernaryBuiltinNode {
-        @NeverDefault
-        static BinaryOpNode binaryPow() {
-            return BinaryArithmetic.Pow.create();
-        }
-
-        @NeverDefault
-        static LookupAndCallTernaryNode ternaryPow() {
-            return TernaryArithmetic.Pow.create();
-        }
 
         @Specialization
-        Object binary(VirtualFrame frame, Object x, Object y, @SuppressWarnings("unused") PNone z,
-                        @Cached("binaryPow()") BinaryOpNode powNode) {
-            return powNode.executeObject(frame, x, y);
-        }
-
-        @Specialization(guards = "!isPNone(z)")
         Object ternary(VirtualFrame frame, Object x, Object y, Object z,
-                        @Cached("ternaryPow()") LookupAndCallTernaryNode powNode) {
-            return powNode.execute(frame, x, y, z);
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberPowerNode power) {
+            return power.execute(frame, inliningTarget, x, y, z);
         }
     }
 

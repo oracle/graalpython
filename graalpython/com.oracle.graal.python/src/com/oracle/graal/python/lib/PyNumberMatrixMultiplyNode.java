@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
@@ -82,7 +82,7 @@ public abstract class PyNumberMatrixMultiplyNode extends BinaryOpNode {
         TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_matrix_multiply();
         TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_matrix_multiply();
         if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, BinaryOpSlot.NB_MATRIX_MULTIPLY);
+            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_MATRIX_MULTIPLY);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }

@@ -52,9 +52,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
@@ -524,14 +522,11 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
-    @Builtin(name = J___POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Slot(value = SlotKind.nb_power, isComplex = true)
     @GenerateNodeFactory
     abstract static class PowerNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        @InliningCutoff
         static Object doGeneric(Object leftObj, Object rightObj, @SuppressWarnings("unused") PNone mod,
                         @Bind("this") Node inliningTarget,
                         @Cached ToComplexValueNode toComplexLeft,

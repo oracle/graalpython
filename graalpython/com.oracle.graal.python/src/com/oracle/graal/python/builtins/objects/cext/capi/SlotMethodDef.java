@@ -55,7 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNu
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_subtract;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_true_divide;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_xor;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_power;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_number;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_call;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_hash;
@@ -85,7 +84,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__;
@@ -94,7 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinaryF
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.HashfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TernaryFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.CallFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncLegacyWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
@@ -103,7 +101,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum SlotMethodDef {
-    TP_CALL(PyTypeObject__tp_call, T___CALL__, TernaryFunctionWrapper::new),
+    TP_CALL(PyTypeObject__tp_call, T___CALL__, CallFunctionWrapper::new),
     TP_HASH(PyTypeObject__tp_hash, T___HASH__, HashfuncWrapper::new),
     TP_INIT(PyTypeObject__tp_init, T___INIT__, InitWrapper::new),
     TP_ITER(PyTypeObject__tp_iter, T___ITER__, PyProcsWrapper.UnaryFuncLegacyWrapper::new),
@@ -116,7 +114,7 @@ public enum SlotMethodDef {
     AM_AITER(PyAsyncMethods__am_aiter, T___AITER__, UnaryFuncLegacyWrapper::new, MethodsFlags.AM_AITER),
     AM_ANEXT(PyAsyncMethods__am_anext, T___ANEXT__, PyProcsWrapper.UnaryFuncLegacyWrapper::new, MethodsFlags.AM_ANEXT),
     // (mq) AM_SEND is an internal function and mostly called from within AWAIT, AITER, ANEXT.
-    /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, TernaryFunctionWrapper::new, MethodsFlags.AM_SEND), */
+    /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, CallFunctionWrapper::new, MethodsFlags.AM_SEND), */
 
     NB_INPLACE_ADD(PyNumberMethods__nb_inplace_add, T___IADD__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_ADD),
     NB_INPLACE_AND(PyNumberMethods__nb_inplace_and, T___IAND__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_AND),
@@ -124,13 +122,12 @@ public enum SlotMethodDef {
     NB_INPLACE_LSHIFT(PyNumberMethods__nb_inplace_lshift, T___ILSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_LSHIFT),
     NB_INPLACE_MULTIPLY(PyNumberMethods__nb_inplace_multiply, T___IMUL__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_MULTIPLY),
     NB_INPLACE_OR(PyNumberMethods__nb_inplace_or, T___IOR__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_OR),
-    NB_INPLACE_POWER(PyNumberMethods__nb_inplace_power, T___IPOW__, TernaryFunctionWrapper::new, MethodsFlags.NB_INPLACE_POWER),
+    NB_INPLACE_POWER(PyNumberMethods__nb_inplace_power, T___IPOW__, CallFunctionWrapper::new, MethodsFlags.NB_INPLACE_POWER),
     NB_INPLACE_REMAINDER(PyNumberMethods__nb_inplace_remainder, T___IMOD__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_REMAINDER),
     NB_INPLACE_RSHIFT(PyNumberMethods__nb_inplace_rshift, T___IRSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_RSHIFT),
     NB_INPLACE_SUBTRACT(PyNumberMethods__nb_inplace_subtract, T___ISUB__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_SUBTRACT),
     NB_INPLACE_TRUE_DIVIDE(PyNumberMethods__nb_inplace_true_divide, T___ITRUEDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_TRUE_DIVIDE),
-    NB_INPLACE_XOR(PyNumberMethods__nb_inplace_xor, T___IXOR__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_XOR),
-    NB_POWER(PyNumberMethods__nb_power, T___POW__, TernaryFunctionWrapper::new, MethodsFlags.NB_POWER);
+    NB_INPLACE_XOR(PyNumberMethods__nb_inplace_xor, T___IXOR__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_XOR);
 
     public final TruffleString methodName;
     public final Function<Object, PyProcsWrapper> wrapperFactory;
@@ -174,8 +171,7 @@ public enum SlotMethodDef {
                         NB_INPLACE_RSHIFT,
                         NB_INPLACE_SUBTRACT,
                         NB_INPLACE_TRUE_DIVIDE,
-                        NB_INPLACE_XOR,
-                        NB_POWER);
+                        NB_INPLACE_XOR);
     }
 
     private static void initGroup(CFields typeField, SlotMethodDef... slots) {

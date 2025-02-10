@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_ANEX
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.AM_AWAIT;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_ADD;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_INPLACE_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.NB_POWER;
 import static com.oracle.graal.python.builtins.objects.type.MethodsFlags.SQ_CONTAINS;
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHODS_FLAGS;
@@ -78,11 +77,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET_NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUBCLASSCHECK__;
@@ -194,8 +191,6 @@ public enum SpecialMethodSlot {
     Gt(T___GT__),
     Ge(T___GE__),
 
-    Pow(T___POW__, NB_POWER),
-    RPow(T___RPOW__, NB_POWER),
     Round(T___ROUND__),
 
     IAdd(T___IADD__, NB_INPLACE_ADD),
@@ -250,7 +245,6 @@ public enum SpecialMethodSlot {
     }
 
     static {
-        Pow.reverse = RPow;
         assert checkFind();
         assert checkReverseSlots();
     }
@@ -874,16 +868,6 @@ public enum SpecialMethodSlot {
             case 'r' * 26 + 'o':    // ro
                 if (eqNode.execute(name, T___ROUND__, TS_ENCODING)) {
                     return Round;
-                }
-                break;
-            case 'p' * 26 + 'o':    // po
-                if (eqNode.execute(name, T___POW__, TS_ENCODING)) {
-                    return Pow;
-                }
-                break;
-            case 'r' * 26 + 'p':    // rp
-                if (eqNode.execute(name, T___RPOW__, TS_ENCODING)) {
-                    return RPow;
                 }
                 break;
             case 'i' * 26 + 'a':    // ia

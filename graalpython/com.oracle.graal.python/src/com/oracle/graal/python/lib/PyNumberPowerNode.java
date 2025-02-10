@@ -41,73 +41,69 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(false)
-public abstract class PyNumberXorNode extends BinaryOpNode {
-    public abstract Object execute(VirtualFrame frame, Object v, Object w);
+@GenerateInline(inlineByDefault = true)
+@GenerateUncached
+public abstract class PyNumberPowerNode extends BinaryOpNode {
+
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z);
 
     @Override
     public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return execute(frame, left, right);
+        return executeCached(frame, left, right, PNone.NONE);
+    }
+
+    public final Object executeCached(VirtualFrame frame, Object v, Object w, Object z) {
+        return execute(frame, this, v, w, z);
     }
 
     @Specialization
-    public static int op(int left, int right) {
-        return left ^ right;
-    }
-
-    @Specialization
-    public static long op(long left, long right) {
-        return left ^ right;
-    }
-
-    @Fallback
-    public static Object doIt(VirtualFrame frame, Object v, Object w,
-                    @Bind Node inliningTarget,
+    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z,
                     @Cached GetClassNode getVClass,
+                    @Cached GetClassNode getWClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,
-                    @Cached GetClassNode getWClass,
-                    @Cached CallBinaryOp1Node callBinaryOp1Node,
-                    @Cached Lazy raiseNode) {
+                    @Cached CallTernaryOpNode callTernaryOpNode,
+                    @Cached PRaiseNode.Lazy raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
-        TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_xor();
-        TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_xor();
-        if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_XOR);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
+        TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_power();
+        TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_power();
+        Object result = callTernaryOpNode.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, z);
+        if (result != PNotImplemented.NOT_IMPLEMENTED) {
+            return result;
         }
-        return raiseNotSupported(inliningTarget, v, w, raiseNode);
+        return raiseNotSupported(inliningTarget, v, w, z, raiseNode);
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Lazy raiseNode) {
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "^", v, w);
+    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Object z, PRaiseNode.Lazy raiseNode) {
+        if (z == PNone.NONE) {
+            return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "** or pow()", v, w);
+        } else {
+            return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, "** or pow()", v, w, z);
+        }
     }
 
     @NeverDefault
-    public static PyNumberXorNode create() {
-        return PyNumberXorNodeGen.create();
+    public static PyNumberPowerNode create() {
+        return PyNumberPowerNodeGen.create();
     }
 }
