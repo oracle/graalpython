@@ -509,7 +509,7 @@ public final class VFSUtils {
         if (needsUpdate) {
             List<String> installedPackages = InstalledPackages.fromVenv(venvDirectory).freeze(log);
             if (missingRequirementsFileWarning != null && !Boolean.getBoolean("graalpy.vfs.skipMissingRequirementsWarning")) {
-                if (installedPackages.size() != newPackages.size()) {
+                if (installedPackages.size() > newPackages.size()) {
                     missingRequirementsWarning(log, missingRequirementsFileWarning);
                 }
             }
