@@ -62,8 +62,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -435,8 +433,8 @@ public final class GraalHPyJNIContext extends GraalHPyNativeContext {
     }
 
     @SuppressWarnings("restricted")
-    public static void loadJNIBackend() {
-        if (!(ImageInfo.inImageBuildtimeCode() || jniBackendLoaded)) {
+    public void loadJNIBackend() {
+        if (!getContext().getEnv().isPreInitialization() && !jniBackendLoaded) {
             String pythonJNIPath;
             pythonJNIPath = getJNILibrary();
             try {

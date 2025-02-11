@@ -57,8 +57,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -164,7 +162,8 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        if (PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).equalsUncached(T_JAVA, TS_ENCODING)) {
+        var context = core.getContext();
+        if (PosixSupportLibrary.getUncached().getBackend(context.getPosixSupport()).equalsUncached(T_JAVA, TS_ENCODING)) {
             for (EmulatedSignal signal : EmulatedSignal.values()) {
                 if (signalModule.getAttribute(signal.name) == PNone.NO_VALUE) {
                     moduleData.signals.put(signal.name(), signal.number);
@@ -173,7 +172,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        core.getContext().registerAsyncAction(() -> {
+        context.registerAsyncAction(() -> {
             SignalTriggerAction poll = moduleData.signalQueue.poll();
             if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
                 try {
@@ -188,7 +187,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             return poll;
         });
 
-        if (!ImageInfo.inImageBuildtimeCode() && core.getContext().getOption(PythonOptions.InstallSignalHandlers)) {
+        if (!context.getEnv().isPreInitialization() && context.getOption(PythonOptions.InstallSignalHandlers)) {
             Object defaultSigintHandler = signalModule.getAttribute(T_DEFAULT_INT_HANDLER);
             assert defaultSigintHandler != PNone.NO_VALUE;
             SignalNode.signal(null, new Signal("INT").getNumber(), defaultSigintHandler, moduleData);

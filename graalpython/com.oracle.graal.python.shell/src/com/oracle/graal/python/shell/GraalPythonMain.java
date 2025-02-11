@@ -411,7 +411,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
-        if (!ImageInfo.inImageCode()) {
+        if (!isAOT()) {
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
                 if (arg.equals("-ea")) {
                     addRelaunchArg("--vm.ea");
@@ -623,7 +623,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
 
         // This should only be reached if this main is directly executed via Java.
-        if (!ImageInfo.inImageCode()) {
+        if (!isAOT()) {
             StringBuilder sb = new StringBuilder();
             ArrayList<String> exec_list = new ArrayList<>();
             sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");

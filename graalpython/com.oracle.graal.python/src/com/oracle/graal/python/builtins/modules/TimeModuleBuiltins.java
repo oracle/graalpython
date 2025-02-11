@@ -49,8 +49,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -96,6 +94,7 @@ import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -476,7 +475,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getProcesTime() {
-            return !ImageInfo.inImageCode() ? (ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime()) / 1000_000_000.0 : 0;
+            return !TruffleOptions.AOT ? (ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime()) / 1000_000_000.0 : 0;
         }
     }
 
@@ -486,7 +485,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getProcesNsTime() {
-            return !ImageInfo.inImageCode() ? ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() : 0;
+            return !TruffleOptions.AOT ? ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() : 0;
         }
     }
 

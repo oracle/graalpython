@@ -60,8 +60,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -214,11 +212,12 @@ public class StructSequence {
 
     /**
      * Very similar to {@code PyStructSequence_Desc} but already specific to a built-in type. Used
-     * for built-in structseq objects.
+     * for built-in structseq objects. All BuiltinTypeDescriptor instances should be kept in
+     * {@code static final} fields to ensure there is a finite number of them, see
+     * {@link PythonLanguage#getOrCreateStructSequenceCallTargets(Descriptor, Function)}.
      */
     public static final class BuiltinTypeDescriptor extends Descriptor {
         public final PythonBuiltinClassType type;
-        private final boolean initializedInBuildTime = ImageInfo.inImageBuildtimeCode();
 
         public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
             super(docString == null ? null : toTruffleStringUncached(docString), inSequence, toTruffleStringArrayUncached(fieldNames), toTruffleStringArrayUncached(fieldDocStrings), allowInstances);
@@ -248,10 +247,6 @@ public class StructSequence {
         @Override
         public int hashCode() {
             return Objects.hash(super.hashCode(), type);
-        }
-
-        public boolean wasInitializedAtBuildTime() {
-            return initializedInBuildTime;
         }
     }
 

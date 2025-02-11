@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -53,8 +54,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -316,10 +315,11 @@ public class AsyncHandler {
      * regular intervals to run on a separate thread, or if it will be polled. The caller needs to
      * ensure that the AsyncAction passed into this method does not block in the latter case.
      */
-    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // context.get() is never null here
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // incorrect warning
     void registerAction(Supplier<AsyncAction> actionSupplier) {
         CompilerAsserts.neverPartOfCompilation();
-        if (ImageInfo.inImageBuildtimeCode() || context.get().getOption(PythonOptions.NoAsyncActions)) {
+        var context = Objects.requireNonNull(this.context.get());
+        if (context.getEnv().isPreInitialization() || context.getOption(PythonOptions.NoAsyncActions)) {
             return;
         }
         if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {

@@ -67,7 +67,7 @@ public class Py2BinLauncher {
             .allowAllAccess(true)
             .arguments("python", Stream.concat(Stream.of(getProgramName()), Stream.of(args)).toArray(String[]::new))
             .option("python.RunViaLauncher", "true");
-        if(ImageInfo.inImageRuntimeCode()) {
+        if (ImageInfo.inImageRuntimeCode()) {
             builder.option("engine.WarnInterpreterOnly", "false");
         }
         try (var context = builder.build()) {

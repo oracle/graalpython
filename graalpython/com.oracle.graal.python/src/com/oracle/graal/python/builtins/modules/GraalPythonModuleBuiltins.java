@@ -83,8 +83,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -179,6 +177,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -222,7 +221,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        addBuiltinConstant("is_native", ImageInfo.inImageCode());
+        addBuiltinConstant("is_native", TruffleOptions.AOT);
         PythonContext ctx = core.getContext();
         TruffleString encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
         TruffleString standardStreamEncoding = null;
@@ -257,11 +256,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         PythonContext context = core.getContext();
         PythonModule mod = core.lookupBuiltinModule(T___GRAALPYTHON__);
         PythonLanguage language = context.getLanguage();
-        if (!ImageInfo.inImageBuildtimeCode()) {
+        if (!context.getEnv().isPreInitialization()) {
             mod.setAttribute(tsLiteral("home"), context.getLanguageHome());
         }
-        mod.setAttribute(tsLiteral("in_image_buildtime"), ImageInfo.inImageBuildtimeCode());
-        mod.setAttribute(tsLiteral("in_image"), ImageInfo.inImageCode());
+        mod.setAttribute(tsLiteral("in_preinitialization"), context.getEnv().isPreInitialization());
         TruffleString coreHome = context.getCoreHome();
         TruffleString stdlibHome = context.getStdlibHome();
         TruffleString capiHome = context.getCAPIHome();
@@ -324,8 +322,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
              * other paths through pymain_run_python are handled in GraalPythonMain and the path
              * prepending is done in PythonLanguage in those other cases
              */
-            assert !ImageInfo.inImageBuildtimeCode();
             PythonContext context = getContext();
+            assert !context.getEnv().isPreInitialization();
             TruffleString inputFilePath = context.getOption(PythonOptions.InputFilePath);
             PythonModule sysModule = context.getSysModule();
             boolean needsMainImporter = !inputFilePath.isEmpty() && getImporter(sysModule, inputFilePath);
@@ -864,11 +862,11 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
-            if (ImageInfo.inImageBuildtimeCode()) {
+            if (getContext(inliningTarget).getEnv().isPreInitialization()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new UnsupportedOperationException(ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM.toJavaStringUncached());
             }
-            if (ImageInfo.inImageRuntimeCode()) {
+            if (TruffleOptions.AOT) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
             }

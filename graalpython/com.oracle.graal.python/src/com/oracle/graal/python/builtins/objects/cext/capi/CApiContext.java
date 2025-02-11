@@ -70,7 +70,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
-import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
@@ -363,8 +362,7 @@ public final class CApiContext extends CExtContext {
             if (!CApiContext.nativeSymbolCacheSingleContextUsed && context.getLanguage().isSingleContext()) {
                 assert CApiContext.nativeSymbolCacheSingleContext == null;
 
-                // we cannot be in built-time code because this is using pre-initialized contexts
-                assert !ImageInfo.inImageBuildtimeCode();
+                assert !context.getEnv().isPreInitialization();
 
                 // this is the first context accessing the static symbol cache
                 CApiContext.nativeSymbolCacheSingleContext = this.nativeSymbolCache;
@@ -851,7 +849,7 @@ public final class CApiContext extends CExtContext {
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH") // context.get() is never null here
     void runBackgroundGCTask(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
-        if (ImageInfo.inImageBuildtimeCode() //
+        if (context.getEnv().isPreInitialization() //
                         || context.getOption(PythonOptions.NoAsyncActions) //
                         || !PythonOptions.AUTOMATIC_ASYNC_ACTIONS //
                         || !context.getOption(PythonOptions.BackgroundGCTask)) {

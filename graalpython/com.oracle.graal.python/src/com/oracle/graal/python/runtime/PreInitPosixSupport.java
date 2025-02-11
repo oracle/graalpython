@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,8 +45,6 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
@@ -72,14 +70,16 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(PosixSupportLibrary.class)
-public class ImageBuildtimePosixSupport extends PosixSupport {
+public class PreInitPosixSupport extends PosixSupport {
 
     protected final PosixSupport nativePosixSupport;
     private PosixSupport emulatedPosixSupport;
     private HashSet<Integer> emulatedFds;
     private IdentityHashMap<Object, Object> emulatedDirStreams;
+    private boolean inPreInitialization;
 
-    public ImageBuildtimePosixSupport(PosixSupport nativePosixSupport, PosixSupport emulatedPosixSupport) {
+    public PreInitPosixSupport(Env env, PosixSupport nativePosixSupport, PosixSupport emulatedPosixSupport) {
+        this.inPreInitialization = env.isPreInitialization();
         this.nativePosixSupport = nativePosixSupport;
         this.emulatedPosixSupport = emulatedPosixSupport;
         if (emulatedPosixSupport != null) {
@@ -90,12 +90,13 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @Override
     public void setEnv(Env env) {
-        assert !ImageInfo.inImageBuildtimeCode();
+        assert !env.isPreInitialization();
+        this.inPreInitialization = env.isPreInitialization();
         nativePosixSupport.setEnv(env);
     }
 
     public void checkLeakingResources() {
-        assert ImageInfo.inImageBuildtimeCode();
+        assert inPreInitialization;
         if (!emulatedFds.isEmpty()) {
             throw shouldNotReachHere("Emulated fds leaked into the image");
         }
@@ -107,9 +108,9 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
         emulatedDirStreams = null;
     }
 
-    private static void checkNotInImageBuildtime() {
-        if (ImageInfo.inImageBuildtimeCode()) {
-            throw shouldNotReachHere("Posix call not expected during image buildtime");
+    private void checkNotInPreInitialization() {
+        if (inPreInitialization) {
+            throw shouldNotReachHere("Posix call not expected during pre-initialization");
         }
     }
 
@@ -151,34 +152,34 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     final TruffleString getBackend(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getBackend(nativePosixSupport);
     }
 
     @ExportMessage
     final TruffleString strerror(int errorCode,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.strerror(nativePosixSupport, errorCode);
     }
 
     @ExportMessage
     final long getpid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getpid(nativePosixSupport);
     }
 
     @ExportMessage
     final int umask(int mask,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.umask(nativePosixSupport, mask);
     }
 
     @ExportMessage
     final int openat(int dirFd, Object pathname, int flags, int mode,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return addFd(PosixSupportLibrary.getUncached().openat(emulatedPosixSupport, dirFd, pathname, flags, mode));
         }
         return nativeLib.openat(nativePosixSupport, dirFd, pathname, flags, mode);
@@ -187,7 +188,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final int close(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().close(emulatedPosixSupport, removeFd(fd));
         }
         return nativeLib.close(nativePosixSupport, fd);
@@ -196,7 +197,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final Buffer read(int fd, long length,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().read(emulatedPosixSupport, fd, length);
         }
         return nativeLib.read(nativePosixSupport, fd, length);
@@ -205,35 +206,35 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final long write(int fd, Buffer data,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.write(nativePosixSupport, fd, data);
     }
 
     @ExportMessage
     final int dup(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.dup(nativePosixSupport, fd);
     }
 
     @ExportMessage
     final int dup2(int fd, int fd2, boolean inheritable,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.dup2(nativePosixSupport, fd, fd2, inheritable);
     }
 
     @ExportMessage
     final boolean getInheritable(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getInheritable(nativePosixSupport, fd);
     }
 
     @ExportMessage
     final void setInheritable(int fd, boolean inheritable,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             PosixSupportLibrary.getUncached().setInheritable(emulatedPosixSupport, fd, inheritable);
             return;
         }
@@ -242,21 +243,21 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     final int[] pipe(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.pipe(nativePosixSupport);
     }
 
     @ExportMessage
     final SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.select(nativePosixSupport, readfds, writefds, errorfds, timeout);
     }
 
     @ExportMessage
     final long lseek(int fd, long offset, int how,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().lseek(emulatedPosixSupport, fd, offset, how);
         }
         return nativeLib.lseek(nativePosixSupport, fd, offset, how);
@@ -265,63 +266,63 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final void ftruncate(int fd, long length,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.ftruncate(nativePosixSupport, fd, length);
     }
 
     @ExportMessage
     final void truncate(Object path, long length,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.truncate(nativePosixSupport, path, length);
     }
 
     @ExportMessage
     final void fsync(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.fsync(nativePosixSupport, fd);
     }
 
     @ExportMessage
     final void flock(int fd, int operation,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.flock(nativePosixSupport, fd, operation);
     }
 
     @ExportMessage
     final void fcntlLock(int fd, boolean blocking, int lockType, int whence, long start, long length,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.fcntlLock(nativePosixSupport, fd, blocking, lockType, whence, start, length);
     }
 
     @ExportMessage
     final boolean getBlocking(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getBlocking(nativePosixSupport, fd);
     }
 
     @ExportMessage
     final void setBlocking(int fd, boolean blocking,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.setBlocking(nativePosixSupport, fd, blocking);
     }
 
     @ExportMessage
     final int[] getTerminalSize(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getTerminalSize(nativePosixSupport, fd);
     }
 
     @ExportMessage
     final long[] fstatat(int dirFd, Object pathname, boolean followSymlinks,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().fstatat(emulatedPosixSupport, dirFd, pathname, followSymlinks);
         }
         return nativeLib.fstatat(nativePosixSupport, dirFd, pathname, followSymlinks);
@@ -330,7 +331,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final long[] fstat(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().fstat(emulatedPosixSupport, fd);
         }
         return nativeLib.fstat(nativePosixSupport, fd);
@@ -339,7 +340,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final long[] statvfs(Object path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().statvfs(emulatedPosixSupport, path);
         }
         return nativeLib.statvfs(nativePosixSupport, path);
@@ -348,7 +349,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final long[] fstatvfs(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().fstatvfs(emulatedPosixSupport, fd);
         }
         return nativeLib.fstatvfs(nativePosixSupport, fd);
@@ -356,69 +357,69 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     final Object[] uname(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.uname(nativePosixSupport);
     }
 
     @ExportMessage
     final void unlinkat(int dirFd, Object pathname, boolean rmdir,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.unlinkat(nativePosixSupport, dirFd, pathname, rmdir);
     }
 
     @ExportMessage
     final void linkat(int oldFdDir, Object oldPath, int newFdDir, Object newPath, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.linkat(nativePosixSupport, oldFdDir, oldPath, newFdDir, newPath, flags);
     }
 
     @ExportMessage
     final void symlinkat(Object target, int linkpathDirFd, Object linkpath,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.symlinkat(nativePosixSupport, target, linkpathDirFd, linkpath);
     }
 
     @ExportMessage
     final void mkdirat(int dirFd, Object pathname, int mode,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.mkdirat(nativePosixSupport, dirFd, pathname, mode);
     }
 
     @ExportMessage
     final Object getcwd(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getcwd(nativePosixSupport);
     }
 
     @ExportMessage
     final void chdir(Object path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.chdir(nativePosixSupport, path);
     }
 
     @ExportMessage
     final void fchdir(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.fchdir(nativePosixSupport, fd);
     }
 
     @ExportMessage
     final boolean isatty(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.isatty(nativePosixSupport, fd);
     }
 
     @ExportMessage
     final Object opendir(Object path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return addDirStream(PosixSupportLibrary.getUncached().opendir(emulatedPosixSupport, path));
         }
         return nativeLib.opendir(nativePosixSupport, path);
@@ -427,14 +428,14 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final Object fdopendir(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.fdopendir(nativePosixSupport, fd);
     }
 
     @ExportMessage
     final void closedir(Object dirStream,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             PosixSupportLibrary.getUncached().closedir(emulatedPosixSupport, removeDirStream(dirStream));
             return;
         }
@@ -444,7 +445,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final Object readdir(Object dirStream,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().readdir(emulatedPosixSupport, dirStream);
         }
         return nativeLib.readdir(nativePosixSupport, dirStream);
@@ -453,7 +454,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final void rewinddir(Object dirStream,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             PosixSupportLibrary.getUncached().rewinddir(emulatedPosixSupport, dirStream);
         }
         nativeLib.rewinddir(nativePosixSupport, dirStream);
@@ -462,7 +463,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final Object dirEntryGetName(Object dirEntry,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().dirEntryGetName(emulatedPosixSupport, dirEntry);
         }
         return nativeLib.dirEntryGetName(nativePosixSupport, dirEntry);
@@ -471,292 +472,292 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final Object dirEntryGetPath(Object dirEntry, Object scandirPath,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.dirEntryGetPath(nativePosixSupport, dirEntry, scandirPath);
     }
 
     @ExportMessage
     final long dirEntryGetInode(Object dirEntry,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.dirEntryGetInode(nativePosixSupport, dirEntry);
     }
 
     @ExportMessage
     final int dirEntryGetType(Object dirEntry,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.dirEntryGetType(nativePosixSupport, dirEntry);
     }
 
     @ExportMessage
     final void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.utimensat(nativePosixSupport, dirFd, pathname, timespec, followSymlinks);
     }
 
     @ExportMessage
     final void futimens(int fd, long[] timespec,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.futimens(nativePosixSupport, fd, timespec);
     }
 
     @ExportMessage
     final void futimes(int fd, Timeval[] timeval,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.futimes(nativePosixSupport, fd, timeval);
     }
 
     @ExportMessage
     final void lutimes(Object filename, Timeval[] timeval,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.lutimes(nativePosixSupport, filename, timeval);
     }
 
     @ExportMessage
     final void utimes(Object filename, Timeval[] timeval,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.utimes(nativePosixSupport, filename, timeval);
     }
 
     @ExportMessage
     final void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.renameat(nativePosixSupport, oldDirFd, oldPath, newDirFd, newPath);
     }
 
     @ExportMessage
     final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.faccessat(nativePosixSupport, dirFd, path, mode, effectiveIds, followSymlinks);
     }
 
     @ExportMessage
     final void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.fchmodat(nativePosixSupport, dirFd, path, mode, followSymlinks);
     }
 
     @ExportMessage
     final void fchmod(int fd, int mode,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.fchmod(nativePosixSupport, fd, mode);
     }
 
     @ExportMessage
     final void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.fchownat(nativePosixSupport, dirFd, path, owner, group, followSymlinks);
     }
 
     @ExportMessage
     final void fchown(int fd, long owner, long group,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.fchown(nativePosixSupport, fd, owner, group);
     }
 
     @ExportMessage
     final Object readlinkat(int dirFd, Object path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.readlinkat(nativePosixSupport, dirFd, path);
     }
 
     @ExportMessage
     final void kill(long pid, int signal,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.kill(nativePosixSupport, pid, signal);
     }
 
     @ExportMessage
     final void killpg(long pgid, int signal,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.killpg(nativePosixSupport, pgid, signal);
     }
 
     @ExportMessage
     final long[] waitpid(long pid, int options,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.waitpid(nativePosixSupport, pid, options);
     }
 
     @ExportMessage
     final void abort(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.abort(nativePosixSupport);
     }
 
     @ExportMessage
     final boolean wcoredump(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.wcoredump(nativePosixSupport, status);
     }
 
     @ExportMessage
     final boolean wifcontinued(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.wifcontinued(nativePosixSupport, status);
     }
 
     @ExportMessage
     final boolean wifstopped(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.wifstopped(nativePosixSupport, status);
     }
 
     @ExportMessage
     final boolean wifsignaled(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.wifsignaled(nativePosixSupport, status);
     }
 
     @ExportMessage
     final boolean wifexited(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.wifexited(nativePosixSupport, status);
     }
 
     @ExportMessage
     final int wexitstatus(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.wexitstatus(nativePosixSupport, status);
     }
 
     @ExportMessage
     final int wtermsig(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.wtermsig(nativePosixSupport, status);
     }
 
     @ExportMessage
     final int wstopsig(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.wstopsig(nativePosixSupport, status);
     }
 
     @ExportMessage
     final long getuid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getuid(nativePosixSupport);
     }
 
     @ExportMessage
     final long geteuid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.geteuid(nativePosixSupport);
     }
 
     @ExportMessage
     final long getgid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getgid(nativePosixSupport);
     }
 
     @ExportMessage
     final long getegid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getegid(nativePosixSupport);
     }
 
     @ExportMessage
     final long getppid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getppid(nativePosixSupport);
     }
 
     @ExportMessage
     final long getpgid(long pid,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getpgid(nativePosixSupport, pid);
     }
 
     @ExportMessage
     final void setpgid(long pid, long pgid,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.setpgid(nativePosixSupport, pid, pgid);
     }
 
     @ExportMessage
     final long getpgrp(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getpgrp(nativePosixSupport);
     }
 
     @ExportMessage
     final long getsid(long pid,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getsid(nativePosixSupport, pid);
     }
 
     @ExportMessage
     final long setsid(
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.setsid(nativePosixSupport);
     }
 
     @ExportMessage
     final long[] getgroups(
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getgroups(nativePosixSupport);
     }
 
     @ExportMessage
     final RusageResult getrusage(int who,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getrusage(nativePosixSupport, who);
     }
 
     @ExportMessage
     final OpenPtyResult openpty(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.openpty(nativePosixSupport);
     }
 
     @ExportMessage
     final TruffleString ctermid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.ctermid(nativePosixSupport);
     }
 
     @ExportMessage
     final void setenv(Object name, Object value, boolean overwrite,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.setenv(nativePosixSupport, name, value, overwrite);
     }
 
     @ExportMessage
     final void unsetenv(Object name,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.unsetenv(nativePosixSupport, name);
     }
 
@@ -764,7 +765,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.forkExec(nativePosixSupport, executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd, errPipeWriteFd,
                         closeFds, restoreSignals, callSetsid, fdsToKeep);
     }
@@ -772,63 +773,63 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final void execv(Object pathname, Object[] args,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.execv(nativePosixSupport, pathname, args);
     }
 
     @ExportMessage
     final int system(Object command,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.system(nativePosixSupport, command);
     }
 
     @ExportMessage
     final Object mmap(long length, int prot, int flags, int fd, long offset,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.mmap(nativePosixSupport, length, prot, flags, fd, offset);
     }
 
     @ExportMessage
     final byte mmapReadByte(Object mmap, long index,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.mmapReadByte(nativePosixSupport, mmap, index);
     }
 
     @ExportMessage
     final void mmapWriteByte(Object mmap, long index, byte value,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.mmapWriteByte(nativePosixSupport, mmap, index, value);
     }
 
     @ExportMessage
     final int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.mmapReadBytes(nativePosixSupport, mmap, index, bytes, length);
     }
 
     @ExportMessage
     final void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.mmapWriteBytes(nativePosixSupport, mmap, index, bytes, length);
     }
 
     @ExportMessage
     final void mmapFlush(Object mmap, long offset, long length,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.mmapFlush(nativePosixSupport, mmap, offset, length);
     }
 
     @ExportMessage
     final void mmapUnmap(Object mmap, long length,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.mmapUnmap(nativePosixSupport, mmap, length);
     }
 
@@ -836,21 +837,21 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @SuppressWarnings("static-method")
     final long mmapGetPointer(Object mmap,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.mmapGetPointer(nativePosixSupport, mmap);
     }
 
     @ExportMessage
     public PwdResult getpwuid(long uid,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getpwuid(nativePosixSupport, uid);
     }
 
     @ExportMessage
     public PwdResult getpwnam(Object name,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getpwnam(nativePosixSupport, name);
     }
 
@@ -861,265 +862,265 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     public PwdResult[] getpwentries(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getpwentries(nativePosixSupport);
     }
 
     @ExportMessage
     final int ioctlBytes(int fd, long request, byte[] arg,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.ioctlBytes(nativePosixSupport, fd, request, arg);
     }
 
     @ExportMessage
     final int ioctlInt(int fd, long request, int arg,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.ioctlInt(nativePosixSupport, fd, request, arg);
     }
 
     @ExportMessage
     final int socket(int domain, int type, int protocol,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.socket(nativePosixSupport, domain, type, protocol);
     }
 
     @ExportMessage
     final AcceptResult accept(int sockfd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.accept(nativePosixSupport, sockfd);
     }
 
     @ExportMessage
     final void bind(int sockfd, UniversalSockAddr addr,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.bind(nativePosixSupport, sockfd, addr);
     }
 
     @ExportMessage
     final void connect(int sockfd, UniversalSockAddr addr,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.connect(nativePosixSupport, sockfd, addr);
     }
 
     @ExportMessage
     final void listen(int sockfd, int backlog,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.listen(nativePosixSupport, sockfd, backlog);
     }
 
     @ExportMessage
     final UniversalSockAddr getpeername(int sockfd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getpeername(nativePosixSupport, sockfd);
     }
 
     @ExportMessage
     final UniversalSockAddr getsockname(int sockfd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getsockname(nativePosixSupport, sockfd);
     }
 
     @ExportMessage
     final int send(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.send(nativePosixSupport, sockfd, buf, offset, len, flags);
     }
 
     @ExportMessage
     final int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.sendto(nativePosixSupport, sockfd, buf, offset, len, flags, destAddr);
     }
 
     @ExportMessage
     final int recv(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.recv(nativePosixSupport, sockfd, buf, offset, len, flags);
     }
 
     @ExportMessage
     final RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.recvfrom(nativePosixSupport, sockfd, buf, offset, len, flags);
     }
 
     @ExportMessage
     final void shutdown(int sockfd, int how,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.shutdown(nativePosixSupport, sockfd, how);
     }
 
     @ExportMessage
     final int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getsockopt(nativePosixSupport, sockfd, level, optname, optval, optlen);
     }
 
     @ExportMessage
     final void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         nativeLib.setsockopt(nativePosixSupport, sockfd, level, optname, optval, optlen);
     }
 
     @ExportMessage
     final int inet_addr(Object src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.inet_addr(nativePosixSupport, src);
     }
 
     @ExportMessage
     final int inet_aton(Object src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws InvalidAddressException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.inet_aton(nativePosixSupport, src);
     }
 
     @ExportMessage
     final Object inet_ntoa(int address,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.inet_ntoa(nativePosixSupport, address);
     }
 
     @ExportMessage
     final byte[] inet_pton(int family, Object src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException, InvalidAddressException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.inet_pton(nativePosixSupport, family, src);
     }
 
     @ExportMessage
     final Object inet_ntop(int family, byte[] src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.inet_ntop(nativePosixSupport, family, src);
     }
 
     @ExportMessage
     final Object gethostname(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.gethostname(nativePosixSupport);
     }
 
     @ExportMessage
     final Object[] getnameinfo(UniversalSockAddr addr, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws GetAddrInfoException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getnameinfo(nativePosixSupport, addr, flags);
     }
 
     @ExportMessage
     final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws GetAddrInfoException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.getaddrinfo(nativePosixSupport, node, service, family, sockType, protocol, flags);
     }
 
     @ExportMessage
     final TruffleString crypt(TruffleString word, TruffleString salt,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.crypt(nativePosixSupport, word, salt);
     }
 
     @ExportMessage
     final long semOpen(Object name, int openFlags, int mode, int value,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return lib.semOpen(nativePosixSupport, name, openFlags, mode, value);
     }
 
     @ExportMessage
     final void semClose(long handle,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         lib.semClose(nativePosixSupport, handle);
     }
 
     @ExportMessage
     final void semUnlink(Object name,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         lib.semUnlink(nativePosixSupport, name);
     }
 
     @ExportMessage
     final int semGetValue(long handle,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return lib.semGetValue(nativePosixSupport, handle);
     }
 
     @ExportMessage
     final void semPost(long handle,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         lib.semPost(nativePosixSupport, handle);
     }
 
     @ExportMessage
     final void semWait(long handle,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         lib.semWait(nativePosixSupport, handle);
     }
 
     @ExportMessage
     final boolean semTryWait(long handle,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return lib.semTryWait(nativePosixSupport, handle);
     }
 
     @ExportMessage
     final boolean semTimedWait(long handle, long deadlineNs,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return lib.semTimedWait(nativePosixSupport, handle, deadlineNs);
     }
 
     @ExportMessage
     final UniversalSockAddr createUniversalSockAddrInet4(Inet4SockAddr src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.createUniversalSockAddrInet4(nativePosixSupport, src);
     }
 
     @ExportMessage
     final UniversalSockAddr createUniversalSockAddrInet6(Inet6SockAddr src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.createUniversalSockAddrInet6(nativePosixSupport, src);
     }
 
     @ExportMessage
     final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws InvalidUnixSocketPathException {
-        checkNotInImageBuildtime();
+        checkNotInPreInitialization();
         return nativeLib.createUniversalSockAddrUnix(nativePosixSupport, src);
     }
 
     @ExportMessage
     final Object createPathFromString(TruffleString path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().createPathFromString(emulatedPosixSupport, path);
         }
         return nativeLib.createPathFromString(nativePosixSupport, path);
@@ -1128,7 +1129,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final Object createPathFromBytes(byte[] path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().createPathFromBytes(emulatedPosixSupport, path);
         }
         return nativeLib.createPathFromBytes(nativePosixSupport, path);
@@ -1137,7 +1138,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final TruffleString getPathAsString(Object path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().getPathAsString(emulatedPosixSupport, path);
         }
         return nativeLib.getPathAsString(nativePosixSupport, path);
@@ -1146,7 +1147,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final Buffer getPathAsBytes(Object path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (inPreInitialization) {
             return PosixSupportLibrary.getUncached().getPathAsBytes(emulatedPosixSupport, path);
         }
         return nativeLib.getPathAsBytes(nativePosixSupport, path);
