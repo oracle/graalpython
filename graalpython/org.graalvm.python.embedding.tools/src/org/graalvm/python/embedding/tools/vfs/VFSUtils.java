@@ -478,7 +478,7 @@ public final class VFSUtils {
         }
 
         if (!Files.exists(venvDirectory)) {
-            info(log, "Creating GraalPy %s virtual environment", graalPyVersion);
+            info(log, "Creating GraalPy %s venv", graalPyVersion);
             runLauncher(launcherPath.toString(), log, "-m", "venv", venvDirectory.toString(), "--without-pip");
             runVenvBin(venvDirectory, "graalpy", log, "-I", "-m", "ensurepip");
         }
@@ -565,7 +565,7 @@ public final class VFSUtils {
         StringBuilder sb = new StringBuilder();
         for (String pkg : packages) {
             if (!checkValidPackageVersion(pkg)) {
-                sb.append(!sb.isEmpty() ? ", " : "").append("'").append(pkg).append("'");
+                sb.append(!sb.isEmpty() ? ", " : "").append(pkg);
             }
         }
         if (!sb.isEmpty()) {
