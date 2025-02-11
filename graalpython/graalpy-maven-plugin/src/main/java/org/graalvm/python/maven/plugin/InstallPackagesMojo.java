@@ -52,7 +52,7 @@ import java.nio.file.Path;
 @Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
                 requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
                 requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
-public class ManageResourcesMojo extends AbstractGraalPyMojo {
+public class InstallPackagesMojo extends AbstractGraalPyMojo {
 
     public void execute() throws MojoExecutionException {
         preExec(true);
@@ -69,7 +69,7 @@ public class ManageResourcesMojo extends AbstractGraalPyMojo {
         MavenDelegateLog log = new MavenDelegateLog(getLog());
         Path requirements = getRequirementsFile();
         try {
-            VFSUtils.createVenv(venvDirectory, packages, requirements, INCONSISTENT_PACKAGES_ERROR, WRONG_PACKAGE_VERSION_FORMAT_ERROR, PACKAGES_LIST_CHANGED_ERROR, MISSING_REQUIREMENTS_FILE_WARNING, createLauncher(), getGraalPyVersion(project), log);
+            VFSUtils.createVenv(venvDirectory, packages, requirements, NEW_PACKAGE_OR_VERSION_ERROR, WRONG_PACKAGE_VERSION_FORMAT_ERROR, PACKAGE_REMOVED_ERROR, MISSING_REQUIREMENTS_FILE_WARNING, createLauncher(), getGraalPyVersion(project), log);
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }
