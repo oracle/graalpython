@@ -281,7 +281,7 @@ public final class VFSUtils {
     }
 
     public static void createVenv(Path venvDirectory, List<String> packages, Path requirementsFile,
-                    String inconsistentPackagesError, String wrongPackageVersionFormatError, String packagesListChangedError, String missingRequirementsFileWarning,
+                    String newPackageOrVersionError, String wrongPackageVersionFormatError, String packagesListChangedError, String missingRequirementsFileWarning,
                     Launcher launcher, String graalPyVersion, BuildToolLog log) throws IOException {
         Objects.requireNonNull(venvDirectory);
         Objects.requireNonNull(packages);
@@ -289,7 +289,7 @@ public final class VFSUtils {
         Objects.requireNonNull(graalPyVersion);
         Objects.requireNonNull(log);
         if (requirementsFile != null) {
-            Objects.requireNonNull(inconsistentPackagesError);
+            Objects.requireNonNull(newPackageOrVersionError);
             Objects.requireNonNull(wrongPackageVersionFormatError);
             Objects.requireNonNull(packagesListChangedError);
         }
@@ -298,7 +298,7 @@ public final class VFSUtils {
 
         List<String> pluginPackages = trim(packages);
         List<String> requirementsPackages = requirementsFile != null && Files.exists(requirementsFile) ? readPackagesFromFile(requirementsFile) : null;
-        if (!checkPackages(venvDirectory, pluginPackages, requirementsPackages, requirementsFile, inconsistentPackagesError, wrongPackageVersionFormatError, packagesListChangedError, log)) {
+        if (!checkPackages(venvDirectory, pluginPackages, requirementsPackages, requirementsFile, newPackageOrVersionError, wrongPackageVersionFormatError, packagesListChangedError, log)) {
             return;
         }
 
@@ -336,17 +336,17 @@ public final class VFSUtils {
             return false;
         }
         List<String> installedPackages = InstalledPackages.fromVenv(venvDirectory).packages;
-        return removedFromPluginPackages(venvDirectory, pluginPackages, venvContents.packages, installedPackages);
+        return removedFromPluginPackages(pluginPackages, venvContents.packages, installedPackages);
     }
 
-    private static boolean removedFromPluginPackages(Path venvDirectory, List<String> pluginPackages, List<String> contentsPackages, List<String> installedPackages) {
+    private static boolean removedFromPluginPackages(List<String> pluginPackages, List<String> contentsPackages, List<String> installedPackages) {
         for (String contentsPackage : contentsPackages) {
             if (!pluginPackages.contains(contentsPackage)) {
-                // there is a previously installed package missing in the current plugin packages
-                // list
+                // a previously installed package is missing
+                // in the current plugin packages list
                 if (!contentsPackage.contains("==")) {
-                    // it has no version specified, so lets check if it isn't just requested with a
-                    // version
+                    // it has no version specified,
+                    // lets check if it isn't just requested with a different version
                     String pkgAndVersion = getByName(contentsPackage, pluginPackages);
                     if (pkgAndVersion != null) {
                         // yes, a version was added to a package
@@ -404,7 +404,7 @@ public final class VFSUtils {
         }
     }
 
-    private static boolean checkPackages(Path venvDirectory, List<String> pluginPackages, List<String> requirementsPackages, Path requirementsFile, String inconsistentPackagesError,
+    private static boolean checkPackages(Path venvDirectory, List<String> pluginPackages, List<String> requirementsPackages, Path requirementsFile, String newPackageOrVersionError,
                     String wrongPackageVersionFormatError, String packagesListChangedError, BuildToolLog log) throws IOException {
         VenvContents contents = null;
         if (Files.exists(venvDirectory)) {
@@ -414,7 +414,7 @@ public final class VFSUtils {
 
         if (requirementsPackages != null) {
             checkVersionFormat(pluginPackages, wrongPackageVersionFormatError, log);
-            checkPluginPackagesInRequirementsFile(pluginPackages, requirementsPackages, requirementsFile, inconsistentPackagesError, log);
+            checkPluginPackagesInRequirementsFile(pluginPackages, requirementsPackages, requirementsFile, newPackageOrVersionError, log);
             checkIfRemovedFromPluginPackages(venvDirectory, contents, pluginPackages, requirementsFile, packagesListChangedError, log);
             logPackages(requirementsPackages, requirementsFile, log);
             return needVenv(venvDirectory, requirementsPackages, log);
@@ -594,19 +594,20 @@ public final class VFSUtils {
     /**
      * check that there are no plugin packages missing in requirements file
      */
-    private static void checkPluginPackagesInRequirementsFile(List<String> packages, List<String> requiredPackages, Path requirementsFile, String inconsistentPackagesError, BuildToolLog log)
+    private static void checkPluginPackagesInRequirementsFile(List<String> pluginPackages, List<String> requirementsPackages, Path requirementsFile, String newPackageOrVersionError, BuildToolLog log)
                     throws IOException {
-        if (packages.isEmpty()) {
+        if (pluginPackages.isEmpty()) {
             return;
         }
 
-        Map<String, String> requiredPackagesMap = requiredPackages.stream().filter(p -> p.contains("==")).map(p -> p.split("==")).collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
+        Map<String, String> requirementsPackagesMap = requirementsPackages.stream().filter(p -> p.contains("==")).map(p -> p.split("==")).collect(
+                        Collectors.toMap(parts -> parts[0], parts -> parts[1]));
         List<String> inconsistent = new ArrayList<>();
-        for (String pkg : packages) {
+        for (String pkg : pluginPackages) {
             String[] s = pkg.split("==");
             String pName = s[0];
             String pVersion = s[1];
-            String rVersion = requiredPackagesMap.get(pName);
+            String rVersion = requirementsPackagesMap.get(pName);
             if (rVersion != null && rVersion.startsWith(pVersion)) {
                 continue;
             }
@@ -614,12 +615,12 @@ public final class VFSUtils {
         }
 
         if (!inconsistent.isEmpty()) {
-            inconsistentPackagesError(log, inconsistentPackagesError, requirementsFile, String.join(", ", inconsistent));
+            newPackageOrVersionError(log, newPackageOrVersionError, requirementsFile, String.join(", ", inconsistent));
         }
     }
 
-    private static void inconsistentPackagesError(BuildToolLog log, String inconsistentPackagesError, Object... args) throws IOException {
-        extendedError(log, String.format(inconsistentPackagesError, args) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
+    private static void newPackageOrVersionError(BuildToolLog log, String newPackageOrVersionError, Object... args) throws IOException {
+        extendedError(log, String.format(newPackageOrVersionError, args) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
         throw new IOException("inconsistent packages");
     }
 
