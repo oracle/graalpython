@@ -26,7 +26,6 @@
 package com.oracle.graal.python.nodes.frame;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -35,13 +34,9 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectGetItem;
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -58,7 +53,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
@@ -201,67 +195,6 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
         @Specialization
         static ReadGlobalOrBuiltinNode doIt(@Cached(inline = false) ReadGlobalOrBuiltinNode node) {
             return node;
-        }
-    }
-}
-
-@GenerateUncached
-@SuppressWarnings("truffle-inlining")       // footprint reduction 40 -> 21
-abstract class ReadBuiltinNode extends PNodeWithContext {
-    public abstract Object execute(TruffleString attributeId);
-
-    // TODO: (tfel) Think about how we can globally catch writes to the builtin
-    // module so we can treat anything read from it as constant here.
-    @Specialization(guards = "isSingleContext(this)")
-    Object returnBuiltinFromConstantModule(TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
-                    @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
-                    @SuppressWarnings("unused") @Cached("getBuiltins()") PythonModule builtins) {
-        return readBuiltinFromModule(attributeId, raiseNode, inliningTarget, isBuiltinProfile, builtins, readFromBuiltinsNode);
-    }
-
-    @InliningCutoff
-    private static PException raiseNameNotDefined(Node inliningTarget, PRaiseNode raiseNode, TruffleString attributeId) {
-        throw raiseNode.raise(inliningTarget, NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
-    }
-
-    @InliningCutoff
-    @Specialization(replaces = "returnBuiltinFromConstantModule")
-    Object returnBuiltin(TruffleString attributeId,
-                    @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
-                    @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
-                    @Exclusive @Cached InlinedConditionProfile ctxInitializedProfile) {
-        PythonModule builtins = getBuiltins(inliningTarget, ctxInitializedProfile);
-        return returnBuiltinFromConstantModule(attributeId, inliningTarget, raiseNode, isBuiltinProfile, readFromBuiltinsNode, builtins);
-    }
-
-    private static Object readBuiltinFromModule(TruffleString attributeId, PRaiseNode raiseNode, Node inliningTarget,
-                    InlinedConditionProfile isBuiltinProfile, PythonModule builtins,
-                    ReadAttributeFromObjectNode readFromBuiltinsNode) {
-        Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
-        if (isBuiltinProfile.profile(inliningTarget, builtin != PNone.NO_VALUE)) {
-            return builtin;
-        } else {
-            throw raiseNameNotDefined(inliningTarget, raiseNode, attributeId);
-        }
-    }
-
-    @NeverDefault
-    protected PythonModule getBuiltins() {
-        CompilerAsserts.neverPartOfCompilation();
-        return getBuiltins(null, InlinedConditionProfile.getUncached());
-    }
-
-    protected PythonModule getBuiltins(Node inliningTarget, InlinedConditionProfile ctxInitializedProfile) {
-        PythonContext context = PythonContext.get(this);
-        if (ctxInitializedProfile.profile(inliningTarget, context.isInitialized())) {
-            return context.getBuiltins();
-        } else {
-            return context.lookupBuiltinModule(BuiltinNames.T_BUILTINS);
         }
     }
 }

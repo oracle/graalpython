@@ -93,6 +93,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ARRAY_INDICES_MUST_BE_INTS = tsLiteral("array indices must be integers");
     public static final TruffleString AST_IDENTIFIER_MUST_BE_OF_TYPE_STR = tsLiteral("AST identifier must be of type str");
     public static final TruffleString AST_STRING_MUST_BE_OF_TYPE_STR = tsLiteral("AST string must be of type str");
+    public static final TruffleString AST_NODE_COLUMN_RANGE_FOR_LINE_RANGE_IS_NOT_VALID = tsLiteral("AST node column range (%d, %d) for line range (%d, %d) is not valid");
+    public static final TruffleString AST_NODE_LINE_RANGE_IS_NOT_VALID = tsLiteral("AST node line range (%d, %d) is not valid");
     public static final TruffleString ATTEMPTING_READ_FROM_OFFSET_D = tsLiteral("Attempting to read from offset %d but object '%s' has no associated native space.");
     public static final TruffleString ATTEMPTING_WRITE_OFFSET_D = tsLiteral("Attempting to write to offset %d but object '%s' has no associated native space.");
     public static final TruffleString ATTEMP_TO_RELEASE_RECURSIVE_LOCK = tsLiteral("attempt to release recursive lock not owned by thread");
@@ -204,7 +206,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_SPECIFY_C_WITH_C = tsLiteral("Cannot specify '%c' with '%c'.");
     public static final TruffleString CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC = tsLiteral("Cannot subclass an instance of ParamSpec");
     public static final TruffleString CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC_ARGS = tsLiteral("Cannot subclass an instance of ParamSpecArgs");
-    public static final TruffleString CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC_KWARGS = tsLiteral("Cannot subclass an instance of ParamSpecKwArgs");
+    public static final TruffleString CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC_KWARGS = tsLiteral("Cannot subclass an instance of ParamSpecKwargs");
     public static final TruffleString CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVAR = tsLiteral("Cannot subclass an instance of TypeVar");
     public static final TruffleString CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVARTUPLE = tsLiteral("Cannot subclass an instance of TypeVarTuple");
     public static final TruffleString CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = tsLiteral("%s: cannot use fd and follow_symlinks together");
@@ -465,6 +467,7 @@ public abstract class ErrorMessages {
     public static final TruffleString LENGTH_HINT_SHOULD_RETURN_MT_ZERO = tsLiteral("__length_hint__() should return >= 0");
     public static final TruffleString LEVEL_MUST_BE_AT_LEAST_ZERO = tsLiteral("level must be >= 0");
     public static final TruffleString LIBRARY_VERSION_MISMATCH = tsLiteral("library version mismatch");
+    public static final TruffleString LINE_COLUMN_IS_NOT_A_VALID_RANGE = tsLiteral("line %d, column %d-%d is not a valid range");
     public static final TruffleString LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = tsLiteral("list assignment index out of range");
     public static final TruffleString LIST_INDEX_OUT_OF_RANGE = tsLiteral("list index out of range");
     public static final TruffleString LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = tsLiteral("local variable '%s' referenced before assignment");

@@ -199,6 +199,8 @@ import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadBuiltinNode;
+import com.oracle.graal.python.nodes.frame.ReadBuiltinNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
@@ -316,10 +318,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final GetAwaitableNode UNCACHED_OBJECT_GET_AWAITABLE = GetAwaitableNode.getUncached();
     private static final NodeSupplier<PyObjectSetAttr> NODE_OBJECT_SET_ATTR = PyObjectSetAttr::create;
     private static final PyObjectSetAttr UNCACHED_OBJECT_SET_ATTR = PyObjectSetAttr.getUncached();
-    private static final NodeSupplier<ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS = () -> ReadGlobalOrBuiltinNode.create();
+    private static final NodeSupplier<ReadBuiltinNode> NODE_READ_BUILTIN_BUILD_CLASS = () -> ReadBuiltinNode.create();
     private static final NodeSupplier<ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN = ReadGlobalOrBuiltinNode::create;
     private static final NodeSupplier<ReadNameNode> NODE_READ_NAME = ReadNameNode::create;
     private static final NodeSupplier<WriteNameNode> NODE_WRITE_NAME = WriteNameNode::create;
+    private static final ReadBuiltinNode UNCACHED_READ_BUILTIN = ReadBuiltinNode.getUncached();
     private static final ReadGlobalOrBuiltinNode UNCACHED_READ_GLOBAL_OR_BUILTIN = ReadGlobalOrBuiltinNode.getUncached();
     private static final NodeSupplier<PyObjectSetItem> NODE_OBJECT_SET_ITEM = PyObjectSetItem::create;
     private static final PyObjectSetItem UNCACHED_OBJECT_SET_ITEM = PyObjectSetItem.getUncached();
@@ -1881,7 +1884,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.LOAD_BUILD_CLASS: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        bytecodeLoadBuildClass(virtualFrame, useCachedNodes, globals, ++stackTop, localNodes, beginBci);
+                        bytecodeLoadBuildClass(virtualFrame, useCachedNodes, ++stackTop, localNodes, beginBci);
                         break;
                     }
                     case OpCodesConstants.LOAD_ASSERTION_ERROR: {
@@ -2727,10 +2730,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private void bytecodeLoadBuildClass(VirtualFrame virtualFrame, boolean useCachedNodes, Object globals, int stackTop, Node[] localNodes, int beginBci) {
-        ReadGlobalOrBuiltinNode read = insertChildNode(localNodes, beginBci, UNCACHED_READ_GLOBAL_OR_BUILTIN, ReadGlobalOrBuiltinNodeGen.class, NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS,
-                        useCachedNodes);
-        virtualFrame.setObject(stackTop, read.read(virtualFrame, globals, T___BUILD_CLASS__));
+    private void bytecodeLoadBuildClass(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
+        ReadBuiltinNode read = insertChildNode(localNodes, beginBci, UNCACHED_READ_BUILTIN, ReadBuiltinNodeGen.class, NODE_READ_BUILTIN_BUILD_CLASS, useCachedNodes);
+        virtualFrame.setObject(stackTop, read.execute(T___BUILD_CLASS__));
     }
 
     @BytecodeInterpreterSwitch

@@ -115,6 +115,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -813,6 +814,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode dirNode,
+                        @Cached ConstructListNode constructListNode,
                         @Bind PythonLanguage language) {
             PSet names = PFactory.createSet(language);
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
@@ -824,7 +826,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             if (klass != PNone.NO_VALUE) {
                 callNode.execute(frame, updateCallable, dirNode.execute(frame, klass));
             }
-            return names;
+            return constructListNode.execute(frame, names);
         }
     }
 

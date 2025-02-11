@@ -154,6 +154,7 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes;
+import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
@@ -1442,16 +1443,17 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Override
-        public abstract PSet execute(VirtualFrame frame, Object klass);
+        public abstract PList execute(VirtualFrame frame, Object klass);
 
         @Specialization
-        static PSet dir(VirtualFrame frame, Object klass,
+        static PList dir(VirtualFrame frame, Object klass,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode) {
-            return dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode);
+                        @Cached("createGetAttrNode()") GetFixedAttributeNode getBasesNode,
+                        @Cached ConstructListNode constructListNode) {
+            return constructListNode.execute(frame, dir(frame, inliningTarget, klass, lookupAttrNode, callNode, getBasesNode, toArrayNode));
         }
 
         private static PSet dir(VirtualFrame frame, Node inliningTarget, Object klass, PyObjectLookupAttr lookupAttrNode, com.oracle.graal.python.nodes.call.CallNode callNode,

@@ -131,12 +131,9 @@ abstract class Obj2SstBase {
         return conversion.convert(tmp);
     }
 
-    int lookupAndConvertInt(Object obj, TruffleString attrName, TruffleString nodeName, boolean required) {
+    int lookupAndConvertInt(Object obj, TruffleString attrName, TruffleString nodeName) {
         Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            if (!required) {
-                return 0;
-            }
             if (tmp == PNone.NO_VALUE) {
                 throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
             }
@@ -146,12 +143,17 @@ abstract class Obj2SstBase {
         return obj2int(tmp);
     }
 
-    boolean lookupAndConvertBoolean(Object obj, TruffleString attrName, TruffleString nodeName, boolean required) {
+    int lookupAndConvertIntOpt(Object obj, TruffleString attrName, @SuppressWarnings("unused") TruffleString nodeName, int defaultValue) {
         Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            if (!required) {
-                return false;
-            }
+            return defaultValue;
+        }
+        return obj2int(tmp);
+    }
+
+    boolean lookupAndConvertBoolean(Object obj, TruffleString attrName, TruffleString nodeName) {
+        Object tmp = lookupAttr(obj, attrName);
+        if (tmp instanceof PNone) {
             if (tmp == PNone.NO_VALUE) {
                 throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
             }
@@ -164,7 +166,7 @@ abstract class Obj2SstBase {
     <T> T[] lookupAndConvertSequence(Object obj, TruffleString attrName, TruffleString nodeName, Conversion<T> conversion, IntFunction<T[]> arrayFactory) {
         Object tmp = lookupAttr(obj, attrName);
         if (tmp instanceof PNone) {
-            throw raiseTypeError(REQUIRED_FIELD_S_MISSING_FROM_S, attrName, nodeName);
+            return arrayFactory.apply(0);
         }
         if (!(tmp instanceof PList)) {
             throw raiseTypeError(S_FIELD_S_MUST_BE_A_LIST_NOT_P, nodeName, attrName, tmp);

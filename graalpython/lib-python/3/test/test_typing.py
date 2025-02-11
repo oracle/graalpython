@@ -51,7 +51,9 @@ from test.typinganndata import ann_module695, mod_generics_cache, _typed_dict_he
 
 
 CANNOT_SUBCLASS_TYPE = 'Cannot subclass special typing classes'
-NOT_A_BASE_TYPE = "type 'typing.%s' is not an acceptable base type"
+# Begin Truffle change
+NOT_A_BASE_TYPE = "type '%s' is not an acceptable base type"
+# End Truffle change
 CANNOT_SUBCLASS_INSTANCE = 'Cannot subclass an instance of %s'
 
 

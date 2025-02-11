@@ -326,6 +326,12 @@ class Obj2Sst2Generator(Generator):
     PACKAGE = AST_PACKAGE
     CLASS_NAME = 'Obj2Sst'
 
+
+    attribute_special_defaults = {
+        "end_lineno": "lineNo",
+        "end_col_offset": "colOffset",
+    }
+
     def visit_module(self, module: model.Module):
         with self.create_emitter() as emitter:
             self.emit_imports(module, emitter)
@@ -406,8 +412,10 @@ class Obj2Sst2Generator(Generator):
             arguments.append(f'{f.type.java}::new')
             suffix = 'Sequence'
         elif f.type.java in ('int', 'boolean'):
-            arguments.append('false' if f.is_optional else 'true')
             suffix = f.type.java.capitalize()
+            if f.is_optional:
+                suffix += "Opt"
+                arguments.append(Obj2Sst2Generator.attribute_special_defaults.get(f.name.python, "0"))
         else:
             arguments.append(f'this::{f.convertor}')
             arguments.append('false' if f.is_optional else 'true')

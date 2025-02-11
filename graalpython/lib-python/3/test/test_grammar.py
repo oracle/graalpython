@@ -1487,8 +1487,11 @@ class GrammarTests(unittest.TestCase):
         check('1 is x', '"is" with \'int\' literal')
         check('x is y is 1', '"is" with \'int\' literal')
         check('x is not 1', '"is not" with \'int\' literal')
-        check('x is not (1, 2)', '"is not" with \'tuple\' literal')
-        check('(1, 2) is not x', '"is not" with \'tuple\' literal')
+        # Begin Truffle change
+        # these rely on cpython's constant folding
+        # check('x is not (1, 2)', '"is not" with \'tuple\' literal')
+        # check('(1, 2) is not x', '"is not" with \'tuple\' literal')
+        # End Truffle change
 
         check('None is 1', '"is" with \'int\' literal')
         check('1 is None', '"is" with \'int\' literal')

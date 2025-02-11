@@ -124,10 +124,10 @@ final class Obj2Sst extends Obj2SstBase {
         if (obj == PNone.NONE) {
             return null;
         }
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_STMT, true);
-        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_STMT, true);
-        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_STMT, false);
-        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_STMT, false);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_STMT);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_STMT);
+        int endLineno = lookupAndConvertIntOpt(obj, AstState.T_F_END_LINENO, AstState.T_T_STMT, lineNo);
+        int endColOffset = lookupAndConvertIntOpt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_STMT, colOffset);
         SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
         if (isInstanceOf(obj, state.clsFunctionDef)) {
             return obj2FunctionDef(obj, sourceRange);
@@ -283,7 +283,7 @@ final class Obj2Sst extends Obj2SstBase {
         ExprTy target = lookupAndConvert(obj, AstState.T_F_TARGET, AstState.T_C_ANNASSIGN, this::obj2ExprTy, true);
         ExprTy annotation = lookupAndConvert(obj, AstState.T_F_ANNOTATION, AstState.T_C_ANNASSIGN, this::obj2ExprTy, true);
         ExprTy value = lookupAndConvert(obj, AstState.T_F_VALUE, AstState.T_C_ANNASSIGN, this::obj2ExprTy, false);
-        boolean isSimple = lookupAndConvertBoolean(obj, AstState.T_F_SIMPLE, AstState.T_C_ANNASSIGN, true);
+        boolean isSimple = lookupAndConvertBoolean(obj, AstState.T_F_SIMPLE, AstState.T_C_ANNASSIGN);
         return new StmtTy.AnnAssign(target, annotation, value, isSimple, sourceRange);
     }
 
@@ -375,7 +375,7 @@ final class Obj2Sst extends Obj2SstBase {
     StmtTy.ImportFrom obj2ImportFrom(Object obj, SourceRange sourceRange) {
         String module = lookupAndConvert(obj, AstState.T_F_MODULE, AstState.T_C_IMPORTFROM, this::obj2identifier, false);
         AliasTy[] names = lookupAndConvertSequence(obj, AstState.T_F_NAMES, AstState.T_C_IMPORTFROM, this::obj2AliasTy, AliasTy[]::new);
-        int level = lookupAndConvertInt(obj, AstState.T_F_LEVEL, AstState.T_C_IMPORTFROM, false);
+        int level = lookupAndConvertIntOpt(obj, AstState.T_F_LEVEL, AstState.T_C_IMPORTFROM, 0);
         return new StmtTy.ImportFrom(module, names, level, sourceRange);
     }
 
@@ -410,10 +410,10 @@ final class Obj2Sst extends Obj2SstBase {
         if (obj == PNone.NONE) {
             return null;
         }
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_EXPR, true);
-        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_EXPR, true);
-        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_EXPR, false);
-        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_EXPR, false);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_EXPR);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_EXPR);
+        int endLineno = lookupAndConvertIntOpt(obj, AstState.T_F_END_LINENO, AstState.T_T_EXPR, lineNo);
+        int endColOffset = lookupAndConvertIntOpt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_EXPR, colOffset);
         SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
         if (isInstanceOf(obj, state.clsBoolOp)) {
             return obj2BoolOp(obj, sourceRange);
@@ -604,7 +604,7 @@ final class Obj2Sst extends Obj2SstBase {
 
     ExprTy.FormattedValue obj2FormattedValue(Object obj, SourceRange sourceRange) {
         ExprTy value = lookupAndConvert(obj, AstState.T_F_VALUE, AstState.T_C_FORMATTEDVALUE, this::obj2ExprTy, true);
-        int conversion = lookupAndConvertInt(obj, AstState.T_F_CONVERSION, AstState.T_C_FORMATTEDVALUE, true);
+        int conversion = lookupAndConvertInt(obj, AstState.T_F_CONVERSION, AstState.T_C_FORMATTEDVALUE);
         ExprTy formatSpec = lookupAndConvert(obj, AstState.T_F_FORMAT_SPEC, AstState.T_C_FORMATTEDVALUE, this::obj2ExprTy, false);
         return new ExprTy.FormattedValue(value, conversion, formatSpec, sourceRange);
     }
@@ -785,7 +785,7 @@ final class Obj2Sst extends Obj2SstBase {
         ExprTy target = lookupAndConvert(obj, AstState.T_F_TARGET, AstState.T_T_COMPREHENSION, this::obj2ExprTy, true);
         ExprTy iter = lookupAndConvert(obj, AstState.T_F_ITER, AstState.T_T_COMPREHENSION, this::obj2ExprTy, true);
         ExprTy[] ifs = lookupAndConvertSequence(obj, AstState.T_F_IFS, AstState.T_T_COMPREHENSION, this::obj2ExprTy, ExprTy[]::new);
-        boolean isAsync = lookupAndConvertBoolean(obj, AstState.T_F_IS_ASYNC, AstState.T_T_COMPREHENSION, true);
+        boolean isAsync = lookupAndConvertBoolean(obj, AstState.T_F_IS_ASYNC, AstState.T_T_COMPREHENSION);
         SourceRange sourceRange = SourceRange.ARTIFICIAL_RANGE;
         return new ComprehensionTy(target, iter, ifs, isAsync, sourceRange);
     }
@@ -794,10 +794,10 @@ final class Obj2Sst extends Obj2SstBase {
         if (obj == PNone.NONE) {
             return null;
         }
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_EXCEPTHANDLER, true);
-        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_EXCEPTHANDLER, true);
-        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_EXCEPTHANDLER, false);
-        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_EXCEPTHANDLER, false);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_EXCEPTHANDLER);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_EXCEPTHANDLER);
+        int endLineno = lookupAndConvertIntOpt(obj, AstState.T_F_END_LINENO, AstState.T_T_EXCEPTHANDLER, lineNo);
+        int endColOffset = lookupAndConvertIntOpt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_EXCEPTHANDLER, colOffset);
         SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
         if (isInstanceOf(obj, state.clsExceptHandler)) {
             return obj2ExceptHandler(obj, sourceRange);
@@ -828,10 +828,10 @@ final class Obj2Sst extends Obj2SstBase {
         String arg = lookupAndConvert(obj, AstState.T_F_ARG, AstState.T_T_ARG, this::obj2identifier, true);
         ExprTy annotation = lookupAndConvert(obj, AstState.T_F_ANNOTATION, AstState.T_T_ARG, this::obj2ExprTy, false);
         Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_T_ARG, this::obj2string, false);
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_ARG, true);
-        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_ARG, true);
-        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_ARG, false);
-        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_ARG, false);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_ARG);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_ARG);
+        int endLineno = lookupAndConvertIntOpt(obj, AstState.T_F_END_LINENO, AstState.T_T_ARG, lineNo);
+        int endColOffset = lookupAndConvertIntOpt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_ARG, colOffset);
         SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
         return new ArgTy(arg, annotation, typeComment, sourceRange);
     }
@@ -839,10 +839,10 @@ final class Obj2Sst extends Obj2SstBase {
     KeywordTy obj2KeywordTy(Object obj) {
         String arg = lookupAndConvert(obj, AstState.T_F_ARG, AstState.T_T_KEYWORD, this::obj2identifier, false);
         ExprTy value = lookupAndConvert(obj, AstState.T_F_VALUE, AstState.T_T_KEYWORD, this::obj2ExprTy, true);
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_KEYWORD, true);
-        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_KEYWORD, true);
-        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_KEYWORD, false);
-        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_KEYWORD, false);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_KEYWORD);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_KEYWORD);
+        int endLineno = lookupAndConvertIntOpt(obj, AstState.T_F_END_LINENO, AstState.T_T_KEYWORD, lineNo);
+        int endColOffset = lookupAndConvertIntOpt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_KEYWORD, colOffset);
         SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
         return new KeywordTy(arg, value, sourceRange);
     }
@@ -850,10 +850,10 @@ final class Obj2Sst extends Obj2SstBase {
     AliasTy obj2AliasTy(Object obj) {
         String name = lookupAndConvert(obj, AstState.T_F_NAME, AstState.T_T_ALIAS, this::obj2identifier, true);
         String asName = lookupAndConvert(obj, AstState.T_F_ASNAME, AstState.T_T_ALIAS, this::obj2identifier, false);
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_ALIAS, true);
-        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_ALIAS, true);
-        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_ALIAS, false);
-        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_ALIAS, false);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_ALIAS);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_ALIAS);
+        int endLineno = lookupAndConvertIntOpt(obj, AstState.T_F_END_LINENO, AstState.T_T_ALIAS, lineNo);
+        int endColOffset = lookupAndConvertIntOpt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_ALIAS, colOffset);
         SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
         return new AliasTy(name, asName, sourceRange);
     }
@@ -877,10 +877,10 @@ final class Obj2Sst extends Obj2SstBase {
         if (obj == PNone.NONE) {
             return null;
         }
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_PATTERN, true);
-        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_PATTERN, true);
-        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_PATTERN, true);
-        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_PATTERN, true);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_PATTERN);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_PATTERN);
+        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_PATTERN);
+        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_PATTERN);
         SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
         if (isInstanceOf(obj, state.clsMatchValue)) {
             return obj2MatchValue(obj, sourceRange);
@@ -966,7 +966,7 @@ final class Obj2Sst extends Obj2SstBase {
     }
 
     TypeIgnoreTy.TypeIgnore obj2TypeIgnore(Object obj) {
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_C_TYPEIGNORE, true);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_C_TYPEIGNORE);
         Object tag = lookupAndConvert(obj, AstState.T_F_TAG, AstState.T_C_TYPEIGNORE, this::obj2string, true);
         SourceRange sourceRange = SourceRange.ARTIFICIAL_RANGE;
         return new TypeIgnoreTy.TypeIgnore(lineNo, tag, sourceRange);
@@ -976,10 +976,10 @@ final class Obj2Sst extends Obj2SstBase {
         if (obj == PNone.NONE) {
             return null;
         }
-        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_TYPE_PARAM, true);
-        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_TYPE_PARAM, true);
-        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_TYPE_PARAM, true);
-        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_TYPE_PARAM, true);
+        int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_TYPE_PARAM);
+        int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_TYPE_PARAM);
+        int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_TYPE_PARAM);
+        int endColOffset = lookupAndConvertInt(obj, AstState.T_F_END_COL_OFFSET, AstState.T_T_TYPE_PARAM);
         SourceRange sourceRange = new SourceRange(lineNo, colOffset, endLineno, endColOffset);
         if (isInstanceOf(obj, state.clsTypeVar)) {
             return obj2TypeVar(obj, sourceRange);

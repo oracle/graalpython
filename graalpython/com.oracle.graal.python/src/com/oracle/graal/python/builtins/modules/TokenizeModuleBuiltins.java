@@ -163,12 +163,14 @@ public final class TokenizeModuleBuiltins extends PythonBuiltins {
                 }
                 PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
                 byte[] bytes;
+                int len;
                 try {
                     bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    len = bufferLib.getBufferLength(buffer);
                 } finally {
                     bufferLib.release(buffer);
                 }
-                String line = charset.decode(ByteBuffer.wrap(bytes)).toString();
+                String line = charset.decode(ByteBuffer.wrap(bytes, 0, len)).toString();
                 return getCodePoints(TruffleString.fromJavaStringUncached(line, TS_ENCODING));
             };
             return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);

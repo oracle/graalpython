@@ -4159,17 +4159,21 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void checkCompare(ExprTy.Compare node) {
-        boolean left = checkIsArg(node.left);
+        ExprTy leftExpr = node.left;
+        boolean left = checkIsArg(leftExpr);
         int n = node.ops == null ? 0 : node.ops.length;
         for (int i = 0; i < n; ++i) {
             CmpOpTy op = node.ops[i];
-            boolean right = checkIsArg(node.comparators[i]);
+            ExprTy rightExpr = node.comparators[i];
+            boolean right = checkIsArg(rightExpr);
             if (op == CmpOpTy.Is || op == CmpOpTy.IsNot) {
                 if (!right || !left) {
-                    warn(node, op == CmpOpTy.Is ? "\"is\" with a literal. Did you mean \"==\"?" : "\"is not\" with a literal. Did you mean \"!=\"?");
+                    ExprTy literal = !left ? leftExpr : rightExpr;
+                    warn(node, op == CmpOpTy.Is ? "\"is\" with '%s' literal. Did you mean \"==\"?" : "\"is not\" with '%s' literal. Did you mean \"!=\"?", inferType(literal).getName());
                 }
             }
             left = right;
+            leftExpr = rightExpr;
         }
     }
 
