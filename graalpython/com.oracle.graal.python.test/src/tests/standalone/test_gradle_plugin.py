@@ -677,11 +677,11 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
         cls.build_file_name = "build.gradle.kts"
         cls.settings_file_name = "settings.gradle.kts"
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    @unittest.skipUnless(util.is_gradle_plugin_long_running_test_enabled, "ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_gradle_generated_app(self):
         self.check_gradle_generated_app(community=True)
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    @unittest.skipUnless(util.is_gradle_plugin_long_running_test_enabled, "ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
         self.check_gradle_generated_app_external_resources()
 
@@ -701,7 +701,7 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
     def test_gradle_empty_packages(self):
         self.check_gradle_empty_packages()
 
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    @unittest.skipUnless(util.is_gradle_plugin_long_running_test_enabled, "ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_gradle_namespaced_vfs(self):
         self.check_gradle_namespaced_vfs()
 
