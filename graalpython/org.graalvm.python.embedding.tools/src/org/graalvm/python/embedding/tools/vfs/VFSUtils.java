@@ -90,8 +90,6 @@ public final class VFSUtils {
 
     private static final String GRAALPY_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain";
 
-    private static final String FOR_MORE_INFO_REFERENCE_MSG = "For more information, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools";
-
     public static void writeNativeImageConfig(Path metaInfRoot, String pluginId) throws IOException {
         writeNativeImageConfig(metaInfRoot, pluginId, VFS_ROOT);
     }
@@ -422,7 +420,7 @@ public final class VFSUtils {
             if (removedFromPluginPackages(venvDirectory, contents, pluginPackages)) {
                 // a package was removed, and we do not know if it did not leave behind any
                 // transitive dependencies - rather create whole venv again to avoid it growing
-                info(log, "A package with unknown dependencies was removed since last install, setting up a clean venv");
+                info(log, "A package with transitive dependencies was removed since last install, setting up a clean venv");
                 delete(venvDirectory);
             }
             logPackages(pluginPackages, null, log);
@@ -445,9 +443,14 @@ public final class VFSUtils {
 
     private static void logPackages(List<String> packages, Path requirementsFile, BuildToolLog log) {
         if (requirementsFile != null) {
-            info(log, "There is %s python package(s) in requirements file: %s", packages.size(), requirementsFile);
+            info(log, "Got %s python package(s) in requirements file: %s", packages.size(), requirementsFile);
         } else {
-            info(log, "There is %s python package(s) in GraalPy plugin configuration", packages.size());
+            info(log, "Got %s python package(s) in GraalPy plugin configuration", packages.size());
+        }
+        if (log.isDebugEnabled()) {
+            for (String pkg : packages) {
+                log.debug("    " + pkg);
+            }
         }
     }
 
@@ -520,7 +523,7 @@ public final class VFSUtils {
 
     private static void missingRequirementsWarning(BuildToolLog log, String missingRequirementsFileWarning) {
         if (log.isWarningEnabled()) {
-            String txt = missingRequirementsFileWarning + "\n" + FOR_MORE_INFO_REFERENCE_MSG + "\n";
+            String txt = missingRequirementsFileWarning + "\n";
             for (String t : txt.split("\n")) {
                 log.warning(t);
             }
@@ -587,7 +590,7 @@ public final class VFSUtils {
     }
 
     private static void wrongPackageVersionError(BuildToolLog log, String wrongPackageVersionFormatError, String pkgs) throws IOException {
-        extendedError(log, String.format(wrongPackageVersionFormatError, pkgs) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
+        extendedError(log, String.format(wrongPackageVersionFormatError, pkgs) + "\n");
         throw new IOException("invalid package format: " + pkgs);
     }
 
@@ -620,7 +623,7 @@ public final class VFSUtils {
     }
 
     private static void newPackageOrVersionError(BuildToolLog log, String newPackageOrVersionError, Object... args) throws IOException {
-        extendedError(log, String.format(newPackageOrVersionError, args) + "\n" + FOR_MORE_INFO_REFERENCE_MSG);
+        extendedError(log, String.format(newPackageOrVersionError, args) + "\n");
         throw new IOException("inconsistent packages");
     }
 

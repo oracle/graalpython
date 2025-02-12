@@ -94,19 +94,28 @@ public abstract class AbstractPackagesTask extends DefaultTask {
         WARNING: Additional python dependencies were installed besides the packages declared in graalpy-gradle-plugin configuration.
         
         WARNING: It is highly recommended to freeze python dependencies by running the gradle task 'graalpyFreezeInstalledPackages'.
+        
+        For more information, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
+        
         """;
 
     protected static final String WRONG_PACKAGE_VERSION_FORMAT_ERROR = """
         Some python packages in graalpy-gradle-plugin configuration have no exact version declared: %s
         
-        When using the graalpy-gradle-plugin together with a python requirements file, it is necessary to declare python packages in format [package_name]==[version].                               
+        When using the graalpy-gradle-plugin together with a python requirements file, it is necessary to declare python packages in format [package_name]==[version].
+        
+        For more information, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
+                                       
         """;
 
     protected static final String NEW_PACKAGE_OR_VERSION_ERROR = """                    
         Install of python packages is based on requirements file %s,
-        but some packages in graalpy-gradle-plugin configuration are either missing in requirements file or have a different version: %s.
+        but some packages in graalpy-gradle-plugin configuration are either missing in the requirements file or have a different version: %s.
          
         The requirements file has to be refreshed by running the gradle task 'graalpyFreezeInstalledPackages'.
+        
+        For more information, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
+        
         """;
 
     protected static final String PACKAGE_REMOVED_ERROR = """
@@ -116,7 +125,10 @@ public abstract class AbstractPackagesTask extends DefaultTask {
         Packages currently declared in graalpy-gradle-plugin configuration: %s
         Packages which were used to generate the requirements file: %s
          
-        The requirements file has to be refreshed by running the gradle task 'graalpyFreezeInstalledPackages'.        
+        The requirements file has to be refreshed by running the gradle task 'graalpyFreezeInstalledPackages'.
+        
+        For more information, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
+               
         """;
 
     /** @see #getOutput() */
