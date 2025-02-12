@@ -2642,3 +2642,5 @@ else:
     # appropriate to maintain a single module level docstring and
     # remove the following line.
     from _datetime import __doc__
+
+import _polyglot_datetime # GraalPy change: register interop behavior on datetime as soon as datetime is defined
