@@ -61,19 +61,19 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PRootNode extends RootNode {
     private final ConditionProfile frameEscaped = ConditionProfile.create();
 
-    @CompilationFinal private Assumption dontNeedCallerFrame = createCallerFrameAssumption();
+    @CompilationFinal private transient Assumption dontNeedCallerFrame = createCallerFrameAssumption();
 
     /**
      * Flag indicating if some child node of this root node (or a callee) eventually needs the
      * exception state. Hence, the caller of this root node should provide the exception state in
      * the arguments.
      */
-    @CompilationFinal private Assumption dontNeedExceptionState = createExceptionStateAssumption();
+    @CompilationFinal private transient Assumption dontNeedExceptionState = createExceptionStateAssumption();
 
-    private int nodeCount = -1;
+    private transient int nodeCount = -1;
 
     // contains the code of this root node in marshaled/serialized form
-    private byte[] code;
+    private transient byte[] code;
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
