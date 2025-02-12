@@ -1202,10 +1202,11 @@ public final class IntBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared("leftIsZero") @Cached InlinedConditionProfile leftIsZero,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            if (leftIsZero.profile(inliningTarget, left.isZero())) {
+            double leftDouble = PInt.doubleValueWithOverflow(this, left.getValue());
+            if (leftIsZero.profile(inliningTarget, leftDouble == 0.0)) {
                 throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
-            return TrueDivNode.op(this, BigInteger.ONE, op(left.getValue(), -right));
+            return Math.pow(leftDouble, right);
         }
 
         @Specialization
@@ -1358,14 +1359,13 @@ public final class IntBuiltins extends PythonBuiltins {
                     // we'll raise unless left is one of the shortcut values
                     return op(left, Long.MAX_VALUE);
                 }
-            } else if (left.signum() == 0) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             } else {
-                try {
-                    return Math.pow(left.longValueExact(), right.longValueExact());
-                } catch (ArithmeticException e) {
-                    return Math.pow(left.doubleValue(), right.doubleValue());
+                double leftDouble = PInt.doubleValueWithOverflow(this, left);
+                double rightDouble = PInt.doubleValueWithOverflow(this, right);
+                if (leftDouble == 0.0) {
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
                 }
+                return Math.pow(leftDouble, rightDouble);
             }
         }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,8 @@ import unittest
 import sys
 
 import array
+
+from tests.util import assert_raises
 
 BIG_NUMBER = 99999937497465632974931
 
@@ -116,6 +118,28 @@ def test_boolean2int():
 def test_bigint_mul():
     assert 99999937497465632974931 * 1223432423545234234123123 == 122343165886896325043539375228725106116626429513
     assert 99999937497465632974931 * (2**100) == 126764980791447734004805377032945185921379990352429056
+
+
+def test_pow():
+    assert 2 ** 10 == 1024
+    assert type(2 ** -1) is float
+    assert 2 ** -1 == 0.5
+    assert_raises(ValueError, pow, 2, 2, 0)
+
+    assert pow(2, 10, 1) == 0
+    assert pow(2, 10, 3) == 1
+    assert pow(2, 10, -3) == -2
+
+    assert 18446744073709551616 ** 2 == 340282366920938463463374607431768211456
+    assert type(18446744073709551616 ** -1) is float
+    assert 18446744073709551616 ** -1 == 5.421010862427522e-20
+    assert_raises(OverflowError, pow, 2**80000, -1)
+    assert_raises(OverflowError, pow, 2**80000, -(2**64))
+    assert_raises(ZeroDivisionError, pow, 0, -18446744073709551616)
+
+    assert_raises(ValueError, pow, 18446744073709551616, 2, 0)
+    assert pow(18446744073709551616, 2, 7) == 4
+    assert pow(18446744073709551616, 2, -3) == -2
 
 
 def test_int_from_custom():
