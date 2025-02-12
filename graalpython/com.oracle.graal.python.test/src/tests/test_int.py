@@ -800,6 +800,7 @@ class ToBytesTests(unittest.TestCase):
 
     def test_SpecialCases(self):
         self.assertEqual((0).to_bytes(0, 'big'), b'')
+        self.assertEqual((-1).to_bytes(0, 'big', signed=True), b'')
         self.assertEqual((1).to_bytes(5, 'big'), b'\x00\x00\x00\x00\x01')
         self.assertEqual((0).to_bytes(5, 'big'), b'\x00\x00\x00\x00\x00')
         self.assertEqual((-1).to_bytes(5, 'big', signed=True),

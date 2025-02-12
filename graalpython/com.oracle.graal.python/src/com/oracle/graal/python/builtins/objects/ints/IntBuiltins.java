@@ -2651,7 +2651,7 @@ public final class IntBuiltins extends PythonBuiltins {
                 index += delta;
             }
 
-            if (overflowProfile.profile(inliningTarget, !signed && number != 0 || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
+            if (overflowProfile.profile(inliningTarget, !signed && number != 0 || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0 && self != -1))) {
                 throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.MESSAGE_INT_TO_BIG);
             }
 
