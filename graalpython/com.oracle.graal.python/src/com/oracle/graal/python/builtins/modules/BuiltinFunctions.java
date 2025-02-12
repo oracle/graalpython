@@ -109,6 +109,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
@@ -1078,6 +1079,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 if (featureVersion < 7) {
                     compilerFlags.add(AbstractParser.Flags.ASYNC_HACKS);
+                }
+                if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
+                    PythonLanguage.LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
                 }
                 Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
