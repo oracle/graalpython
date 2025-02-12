@@ -601,7 +601,7 @@ public final class IntBuiltins extends PythonBuiltins {
          */
         @TruffleBoundary
         private static double op(Node raisingNode, BigInteger a, BigInteger b) {
-            final int precisionOfDouble = 17;
+            final int precisionOfDouble = 18;
             if (fitsIntoDouble(a) && fitsIntoDouble(b)) {
                 return a.doubleValue() / b.doubleValue();
             }
