@@ -134,11 +134,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -2109,7 +2109,7 @@ public abstract class TypeNodes {
                         @Cached HashingStorageIteratorKeyHash hashingStorageItKeyHash,
                         @Cached HashingStorageIteratorValue hashingStorageItValue,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached InstancesOfTypeHaveDictNode hasDictNode,
+                        @Cached GetDictOffsetNode dictOffsetNode,
                         @Cached InstancesOfTypeHaveWeakrefsNode hasWeakrefsNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached GetIndexedSlotsCountNode getIndexedSlotsCountNode,
@@ -2189,7 +2189,7 @@ public abstract class TypeNodes {
             }
 
             // may_add_dict = base->tp_dictoffset == 0
-            ctx.mayAddDict = !hasDictNode.execute(base);
+            ctx.mayAddDict = dictOffsetNode.execute(inliningTarget, base) == 0;
             // may_add_weak = base->tp_weaklistoffset == 0 && base->tp_itemsize == 0
             boolean hasItemSize = getItemSize.execute(inliningTarget, base) != 0;
             ctx.mayAddWeak = !hasWeakrefsNode.execute(inliningTarget, base) && !hasItemSize;
