@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -54,8 +55,8 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -101,8 +102,8 @@ public final class TokenBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

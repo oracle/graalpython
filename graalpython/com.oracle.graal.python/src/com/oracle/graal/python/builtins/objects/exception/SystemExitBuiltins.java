@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -51,7 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -65,7 +66,7 @@ public final class SystemExitBuiltins extends PythonBuiltins {
         return SystemExitBuiltinsFactory.getFactories();
     }
 
-    public static final BaseExceptionAttrNode.StorageFactory SYSTEM_EXIT_ATTR_FACTORY = (args, factory) -> {
+    public static final BaseExceptionAttrNode.StorageFactory SYSTEM_EXIT_ATTR_FACTORY = (args) -> {
         Object code;
         switch (args.length) {
             case 0:
@@ -75,7 +76,7 @@ public final class SystemExitBuiltins extends PythonBuiltins {
                 code = args[0];
                 break;
             default:
-                code = factory.createTuple(args);
+                code = PFactory.createTuple(PythonLanguage.get(null), args);
         }
         return new Object[]{code};
     };
@@ -85,10 +86,9 @@ public final class SystemExitBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
         static Object initNoArgs(PBaseException self, Object[] args,
-                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            self.setExceptionAttributes(SYSTEM_EXIT_ATTR_FACTORY.create(args, factory));
+            self.setExceptionAttributes(SYSTEM_EXIT_ATTR_FACTORY.create(args));
             return PNone.NONE;
         }
     }

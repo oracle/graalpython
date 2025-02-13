@@ -43,6 +43,7 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.S
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -112,7 +113,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.native_memory.NativeBuffer;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
@@ -180,12 +181,12 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object doIt(Node inliningTarget, SequenceStorage self, int index, TruffleString errorMessage,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             return getItem(inliningTarget, self, index, errorMessage, raiseNode, getItemNode);
         }
 
-        private static Object getItem(Node inliningTarget, SequenceStorage storage, int index, TruffleString errorMessage, PRaiseNode.Lazy raiseNode, GetItemScalarNode getItemNode) {
+        private static Object getItem(Node inliningTarget, SequenceStorage storage, int index, TruffleString errorMessage, PRaiseNode raiseNode, GetItemScalarNode getItemNode) {
             checkBounds(inliningTarget, raiseNode, errorMessage, index, storage.length());
             return getItemNode.execute(inliningTarget, storage, index);
         }
@@ -193,7 +194,7 @@ public abstract class SequenceStorageNodes {
 
     @FunctionalInterface
     public interface StorageWrapperFactory {
-        Object create(PythonObjectFactory factory, SequenceStorage newStorage);
+        Object create(PythonLanguage language, SequenceStorage newStorage);
     }
 
     @GenerateInline
@@ -215,10 +216,10 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "!isPSlice(idx)")
         static Object doNonSlice(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, Object idx,
-                        TruffleString indexBoundsErrorMessage, StorageWrapperFactory wrapperFactory,
+                        TruffleString indexBoundsErrorMessage, @SuppressWarnings("unused") StorageWrapperFactory wrapperFactory,
                         @Cached PyNumberAsSizeNode numberAsSizeNode,
                         @Cached InlinedConditionProfile negativeIndexProfile,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             int index = numberAsSizeNode.executeExact(frame, inliningTarget, idx, PythonBuiltinClassType.IndexError);
             if (negativeIndexProfile.profile(inliningTarget, index < 0)) {
@@ -229,15 +230,15 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object doSlice(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, PSlice slice,
-                        @SuppressWarnings("unused") TruffleString indexBoundsErrorMessage, StorageWrapperFactory wrapperFactory,
-                        @Cached(inline = false) PythonObjectFactory factory,
+                        TruffleString indexBoundsErrorMessage, StorageWrapperFactory wrapperFactory,
+                        @Bind PythonLanguage language,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached(inline = false) ComputeIndices compute,
                         @Cached(inline = false) GetItemSliceNode getItemSliceNode,
                         @Cached LenOfRangeNode sliceLen) {
             SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, slice), storage.length());
             SequenceStorage newStorage = getItemSliceNode.execute(storage, info.start, info.stop, info.step, sliceLen.len(inliningTarget, info));
-            return wrapperFactory.create(factory, newStorage);
+            return wrapperFactory.create(language, newStorage);
         }
     }
 
@@ -404,9 +405,9 @@ public abstract class SequenceStorageNodes {
 
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
-        private final BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod;
+        private final BiFunction<SequenceStorage, PythonLanguage, Object> factoryMethod;
 
-        public GetItemNode(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
+        public GetItemNode(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonLanguage, Object> factoryMethod) {
             super(normalizeIndexNode);
             this.factoryMethod = factoryMethod;
         }
@@ -462,13 +463,12 @@ public abstract class SequenceStorageNodes {
         @SuppressWarnings("truffle-static-method")
         protected Object doSlice(VirtualFrame frame, SequenceStorage storage, PSlice slice,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {
             SliceInfo info = compute.execute(frame, sliceCast.execute(inliningTarget, slice), storage.length());
             if (factoryMethod != null) {
-                return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, sliceLen.len(inliningTarget, info)), factory);
+                return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, sliceLen.len(inliningTarget, info)), PythonLanguage.get(inliningTarget));
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
@@ -506,18 +506,18 @@ public abstract class SequenceStorageNodes {
         }
 
         @NeverDefault
-        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod) {
+        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, BiFunction<SequenceStorage, PythonLanguage, Object> factoryMethod) {
             return GetItemNodeGen.create(normalizeIndexNode, factoryMethod);
         }
 
         @NeverDefault
         public static SequenceStorageNodes.GetItemNode createForList() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, l) -> PFactory.createList(l, s));
         }
 
         @NeverDefault
         public static SequenceStorageNodes.GetItemNode createForTuple() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, l) -> PFactory.createTuple(l, s));
         }
     }
 
@@ -1749,7 +1749,7 @@ public abstract class SequenceStorageNodes {
             } else {
                 /*- Assign slice */
                 if (wrongLength.profile(inliningTarget, needed != slicelen)) {
-                    raiseNode.raise(ValueError, ErrorMessages.ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE, needed, slicelen);
+                    raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE, needed, slicelen);
                 }
                 for (int cur = start, i = 0; i < slicelen; cur += step, i++) {
                     setLeftItemNode.execute(inliningTarget, self, cur, getRightItemNode.execute(inliningTarget, data, i));
@@ -1814,7 +1814,7 @@ public abstract class SequenceStorageNodes {
                 ensureCapacityNode.execute(inliningTarget, self, len + growth);
 
                 if (memoryError.profile(inliningTarget, len > Integer.MAX_VALUE - growth)) {
-                    throw raiseNode.raise(MemoryError);
+                    throw raiseNode.raise(inliningTarget, MemoryError);
                 }
 
                 len += growth;
@@ -2197,7 +2197,7 @@ public abstract class SequenceStorageNodes {
             try {
                 return copyNode.execute(inliningTarget, right);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             }
         }
 
@@ -2209,7 +2209,7 @@ public abstract class SequenceStorageNodes {
             try {
                 return copyNode.execute(inliningTarget, left);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             }
         }
 
@@ -2354,14 +2354,14 @@ public abstract class SequenceStorageNodes {
                 destlen = PythonUtils.addExact(len1, len2);
                 if (errorForOverflow == OverflowError && shouldOverflow.profile(inliningTarget, destlen >= SysModuleBuiltins.MAXSIZE)) {
                     // cpython raises an overflow error when this happens
-                    throw raiseNode.raise(OverflowError);
+                    throw raiseNode.raise(inliningTarget, OverflowError);
                 }
                 SequenceStorage generalized = generalizeStore(createEmpty(createEmptyNode, inliningTarget, left, right, destlen), right);
                 return doConcat(generalized, left, right);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
@@ -2547,95 +2547,102 @@ public abstract class SequenceStorageNodes {
         /* special but common case: something like '[False] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
         BoolSequenceStorage doBoolSingleElement(BoolSequenceStorage s, int times,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 boolean[] repeated = new boolean[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getBoolItemNormalized(0));
                 return new BoolSequenceStorage(repeated);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
         /* special but common case: something like '["\x00"] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
         ByteSequenceStorage doByteSingleElement(ByteSequenceStorage s, int times,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 byte[] repeated = new byte[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getByteItemNormalized(0));
                 return new ByteSequenceStorage(repeated);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
         /* special but common case: something like '[0] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
         IntSequenceStorage doIntSingleElement(IntSequenceStorage s, int times,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 int[] repeated = new int[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getIntItemNormalized(0));
                 return new IntSequenceStorage(repeated);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
         /* special but common case: something like '[0L] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
         LongSequenceStorage doLongSingleElement(LongSequenceStorage s, int times,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 long[] repeated = new long[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getLongItemNormalized(0));
                 return new LongSequenceStorage(repeated);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
         /* special but common case: something like '[0.0] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
         DoubleSequenceStorage doDoubleSingleElement(DoubleSequenceStorage s, int times,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 double[] repeated = new double[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getDoubleItemNormalized(0));
                 return new DoubleSequenceStorage(repeated);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
         /* special but common case: something like '[None] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
         ObjectSequenceStorage doObjectSingleElement(ObjectSequenceStorage s, int times,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 Object[] repeated = new Object[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getObjectItemNormalized(0));
                 return new ObjectSequenceStorage(repeated);
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
         @Specialization(limit = "MAX_BASIC_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
         SequenceStorage doArrayBasedManaged(ArrayBasedSequenceStorage s, int times,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode,
                         @Cached("s.getClass()") Class<? extends ArrayBasedSequenceStorage> cachedClass) {
             try {
@@ -2649,9 +2656,9 @@ public abstract class SequenceStorageNodes {
                 repeated.setNewLength(newLength);
                 return repeated;
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
@@ -2683,9 +2690,9 @@ public abstract class SequenceStorageNodes {
                 repeated.setNewLength(newLen);
                 return repeated;
             } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             } catch (OverflowException e) {
-                throw raiseNode.raise(errorForOverflow);
+                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
         }
 
@@ -2697,7 +2704,7 @@ public abstract class SequenceStorageNodes {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (!indexCheckNode.execute(inliningTarget, times)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, times);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, times);
             }
             int i = asSizeNode.executeExact(frame, inliningTarget, times);
             if (recursive == null) {
@@ -2843,7 +2850,7 @@ public abstract class SequenceStorageNodes {
                 return s;
             }
 
-            throw raiseNode.raise(TypeError, getErrorMessage());
+            throw raiseNode.raise(inliningTarget, TypeError, getErrorMessage());
         }
 
         protected TruffleString getErrorMessage() {
@@ -3226,7 +3233,7 @@ public abstract class SequenceStorageNodes {
                             @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
                             @Shared @Cached CStructAccess.AllocateNode alloc,
                             @Shared @Cached CStructAccess.FreeNode free,
-                            @Shared @Cached PRaiseNode.Lazy raiseNode,
+                            @Shared @Cached PRaiseNode raiseNode,
                             @Cached CStructAccess.ReadByteNode read,
                             @Cached CStructAccess.WriteByteNode write) {
                 int oldCapacity = s.getCapacity();
@@ -3235,7 +3242,7 @@ public abstract class SequenceStorageNodes {
                     Object oldMem = s.getPtr();
                     Object newMem = alloc.alloc(newCapacity);
                     if (lib.isNull(newMem)) {
-                        throw raiseNode.get(inliningTarget).raise(MemoryError);
+                        throw raiseNode.raise(inliningTarget, MemoryError);
                     }
                     // TODO: turn this into a memcpy
                     for (long i = 0; i < oldCapacity; i++) {
@@ -3253,7 +3260,7 @@ public abstract class SequenceStorageNodes {
                             @Shared @CachedLibrary(limit = "2") InteropLibrary lib,
                             @Shared @Cached CStructAccess.AllocateNode alloc,
                             @Shared @Cached CStructAccess.FreeNode free,
-                            @Shared @Cached PRaiseNode.Lazy raiseNode,
+                            @Shared @Cached PRaiseNode raiseNode,
                             @Cached CStructAccess.ReadPointerNode read,
                             @Cached CStructAccess.WritePointerNode write) {
                 int oldCapacity = s.getCapacity();
@@ -3263,7 +3270,7 @@ public abstract class SequenceStorageNodes {
                     long bytes = newCapacity * 8;
                     Object newMem = alloc.alloc(bytes);
                     if (lib.isNull(newMem)) {
-                        throw raiseNode.get(inliningTarget).raise(MemoryError);
+                        throw raiseNode.raise(inliningTarget, MemoryError);
                     }
                     // TODO: turn this into a memcpy
                     for (long i = 0; i < oldCapacity; i++) {

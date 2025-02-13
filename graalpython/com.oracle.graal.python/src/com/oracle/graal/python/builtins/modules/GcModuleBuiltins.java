@@ -29,6 +29,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -65,7 +66,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -105,7 +106,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("DEBUG_UNCOLLECTABLE", DEBUG_UNCOLLECTABLE);
         addBuiltinConstant("DEBUG_SAVEALL", DEBUG_SAVEALL);
         addBuiltinConstant("DEBUG_LEAK", DEBUG_LEAK);
-        addBuiltinConstant(CALLBACKS, core.factory().createList());
+        addBuiltinConstant(CALLBACKS, PFactory.createList(core.getLanguage()));
         super.initialize(core);
     }
 
@@ -127,7 +128,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectGetIter getIter,
                         @Cached(neverDefault = true) PyIterNextNode next,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached CallBinaryMethodNode call,
                         @Cached GilNode gil,
                         @Cached GetThreadStateNode getThreadStateNode,
@@ -141,7 +142,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             long res = 0;
             if (cb != null) {
                 phase = START;
-                info = factory.createDict(new PKeyword[]{
+                info = PFactory.createDict(language, new PKeyword[]{
                                 new PKeyword(GENERATION, 2),
                                 new PKeyword(COLLECTED, 0),
                                 new PKeyword(UNCOLLECTABLE, 0),
@@ -161,7 +162,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             }
             if (phase != null) {
                 phase = STOP;
-                info = factory.createDict(new PKeyword[]{
+                info = PFactory.createDict(language, new PKeyword[]{
                                 new PKeyword(GENERATION, 2),
                                 new PKeyword(COLLECTED, freedMemory),
                                 new PKeyword(UNCOLLECTABLE, 0),
@@ -287,7 +288,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                     count += cc;
                 }
             }
-            return PythonContext.get(null).factory().createTuple(new Object[]{count, 0, 0});
+            return PFactory.createTuple(PythonLanguage.get(null), new Object[]{count, 0, 0});
         }
     }
 
@@ -313,7 +314,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         static PList getReferents(@SuppressWarnings("unused") Object objects) {
             // TODO: this is just a dummy implementation; for native objects, this should actually
             // use 'tp_traverse'
-            return PythonContext.get(null).factory().createList();
+            return PFactory.createList(PythonLanguage.get(null));
         }
     }
 
@@ -324,7 +325,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static PList doGeneric(@SuppressWarnings("unused") Object objects) {
             // dummy implementation
-            return PythonContext.get(null).factory().createList();
+            return PFactory.createList(PythonLanguage.get(null));
         }
     }
 }

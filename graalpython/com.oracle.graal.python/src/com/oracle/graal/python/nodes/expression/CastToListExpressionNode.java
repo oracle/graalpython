@@ -64,11 +64,10 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -98,7 +97,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Specialization(guards = {"isBuiltinTuple(v)", "cachedLength == getLength(v)", "cachedLength < 32"}, limit = "2")
         @ExplodeLoop
         static PList starredTupleCachedLength(PTuple v,
-                        @Exclusive @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached("getLength(v)") int cachedLength,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage s = v.getSequenceStorage();
@@ -106,15 +105,15 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             for (int i = 0; i < cachedLength; i++) {
                 array[i] = getItemNode.execute(s, i);
             }
-            return factory.createList(array);
+            return PFactory.createList(language, array);
         }
 
         @Specialization(replaces = "starredTupleCachedLength", guards = "isBuiltinTuple(v)")
         static PList starredTuple(PTuple v,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory.createList(getObjectArrayNode.execute(inliningTarget, v).clone());
+            return PFactory.createList(language, getObjectArrayNode.execute(inliningTarget, v).clone());
         }
 
         @Specialization(guards = "isBuiltinList(v)")
@@ -151,7 +150,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                 return constructListNode.execute(frame, v);
             } catch (PException e) {
                 e.expectAttributeError(inliningTarget, attrProfile);
-                throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
+                throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }

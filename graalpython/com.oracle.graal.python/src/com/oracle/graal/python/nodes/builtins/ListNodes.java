@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVa
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -54,10 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.AppendNodeGen;
@@ -65,9 +63,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNode
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -79,12 +75,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -96,8 +90,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /** See the docs on {@link com.oracle.graal.python.builtins.objects.list.ListBuiltins}. */
 public abstract class ListNodes {
@@ -127,9 +119,8 @@ public abstract class ListNodes {
         }
 
         @Fallback
-        static SequenceStorage doFallback(Node inliningTarget, Object seq,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "list", seq);
+        static SequenceStorage doFallback(Node inliningTarget, Object seq) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "list", seq);
         }
     }
 
@@ -203,68 +194,35 @@ public abstract class ListNodes {
     }
 
     @GenerateUncached
-    @ImportStatic({PGuards.class, PythonOptions.class})
     @GenerateInline(false) // footprint reduction 40 -> 21
     public abstract static class ConstructListNode extends PNodeWithContext {
 
-        public final PList execute(Frame frame, Object value) {
-            return execute(frame, PythonBuiltinClassType.PList, value);
-        }
-
-        protected abstract PList execute(Frame frame, Object cls, Object value);
-
-        @Specialization
-        static PList listString(Object cls, TruffleString arg,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
-                        @Shared @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            return factory.createList(cls, StringUtils.toCharacterArray(arg, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode));
-        }
-
-        @Specialization
-        static PList listString(Object cls, PString arg,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Shared @Cached TruffleStringIterator.NextNode nextNode,
-                        @Shared @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            return listString(cls, castToStringNode.execute(inliningTarget, arg), factory, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
-        }
+        public abstract PList execute(Frame frame, Object value);
 
         @Specialization(guards = "isNoValue(none)")
-        static PList none(Object cls, @SuppressWarnings("unused") PNone none,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createList(cls);
+        static PList none(@SuppressWarnings("unused") PNone none,
+                        @Bind PythonLanguage language) {
+            return PFactory.createList(language);
         }
 
         @Specialization(guards = "isBuiltinList(list)")
         // Don't use PSequence, that might copy storages that we don't allow for lists
-        static PList fromList(Object cls, PList list,
+        static PList fromList(PList list,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
-            return factory.createList(cls, copyNode.execute(inliningTarget, list.getSequenceStorage()));
+            return PFactory.createList(language, copyNode.execute(inliningTarget, list.getSequenceStorage()));
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
-        static PList listIterable(VirtualFrame frame, Object cls, Object iterable,
+        @Specialization(guards = "!isNoValue(iterable)")
+        static PList listIterable(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached SequenceStorageNodes.CreateStorageFromIteratorNode createStorageFromIteratorNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object iterObj = getIter.execute(frame, inliningTarget, iterable);
             SequenceStorage storage = createStorageFromIteratorNode.execute(frame, iterObj);
-            return factory.createList(cls, storage);
-        }
-
-        @Fallback
-        static PList listObject(@SuppressWarnings("unused") Object cls, Object value) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw CompilerDirectives.shouldNotReachHere("list does not support iterable object " + value);
+            return PFactory.createList(language, storage);
         }
 
         @NeverDefault
@@ -292,7 +250,7 @@ public abstract class ListNodes {
         @Fallback
         protected PSequence doGeneric(VirtualFrame frame, Object value,
                         @Cached(inline = false) ConstructListNode constructListNode) {
-            return constructListNode.execute(frame, PythonBuiltinClassType.PList, value);
+            return constructListNode.execute(frame, value);
         }
 
     }

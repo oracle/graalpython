@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.ErrorMessages.FOREIGN_OBJ_ISNT_REVERSE_ITERABLE;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.CachedHashingStorageGetItemNodeGen;
@@ -97,9 +100,6 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.FOREIGN_OBJ_ISNT_REVERSE_ITERABLE;
 
 public class HashingStorageNodes {
 
@@ -908,9 +908,9 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorageIterator foreign(@SuppressWarnings("unused") ForeignHashingStorage self,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             // InteropLibrary does not provide a reverse HashEntriesIterator
-            throw raiseNode.raise(TypeError, FOREIGN_OBJ_ISNT_REVERSE_ITERABLE);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FOREIGN_OBJ_ISNT_REVERSE_ITERABLE);
         }
     }
 
@@ -1039,9 +1039,9 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "it.isReverse")
         static boolean foreignReverse(@SuppressWarnings("unused") ForeignHashingStorage self, HashingStorageIterator it,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             // InteropLibrary does not provide a reverse HashEntriesIterator
-            throw raiseNode.raise(TypeError, FOREIGN_OBJ_ISNT_REVERSE_ITERABLE);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FOREIGN_OBJ_ISNT_REVERSE_ITERABLE);
         }
     }
 

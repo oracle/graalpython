@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,19 +74,19 @@ public abstract class PyUnicodeReadCharNode extends PNodeWithContext {
                     @Cached CastToTruffleStringNode castToStringNode,
                     @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         try {
             TruffleString s = castToStringNode.execute(inliningTarget, type);
             int index = PInt.intValueExact(lindex);
             // avoid StringIndexOutOfBoundsException
             if (index < 0 || index >= codePointLengthNode.execute(s, TS_ENCODING)) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
             return codePointAtIndexNode.execute(s, index, TS_ENCODING);
         } catch (CannotCastException e) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+            throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
         }
     }
 }

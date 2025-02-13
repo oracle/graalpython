@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1902,7 +1902,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 cryptLibrary = InvokeNativeFunction.loadLibrary(this, PythonOS.getPythonOS() != PythonOS.PLATFORM_DARWIN ? "libcrypt.so" : null);
             } catch (Throwable e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(invokeNode, PythonBuiltinClassType.SystemError, ErrorMessages.UNABLE_TO_LOAD_LIBCRYPT);
+                throw PRaiseNode.raiseStatic(invokeNode, PythonBuiltinClassType.SystemError, ErrorMessages.UNABLE_TO_LOAD_LIBCRYPT);
             }
         }
         PosixNativeFunction function = PosixNativeFunction.crypt;

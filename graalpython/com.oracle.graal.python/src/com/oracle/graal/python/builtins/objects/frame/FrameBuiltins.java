@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,7 +60,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
@@ -110,8 +111,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, PFrame self);
 
         @Specialization
-        Object get(VirtualFrame curFrame, PFrame self,
-                        @Cached PythonObjectFactory factory) {
+        Object get(VirtualFrame curFrame, PFrame self) {
             PythonObject globals = self.getGlobals();
             if (globals instanceof PythonModule) {
                 if (getDictNode == null) {
@@ -120,7 +120,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 }
                 return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
             } else {
-                return globals != null ? globals : factory.createDict();
+                return globals != null ? globals : PFactory.createDict(PythonLanguage.get(this));
             }
         }
 
@@ -156,8 +156,8 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object delete(VirtualFrame frame, PFrame self, DescriptorDeleteMarker ignored,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Cached.Exclusive PRaiseNode.Lazy raise) {
-            raise.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
+                        @Cached @Cached.Exclusive PRaiseNode raise) {
+            raise.raise(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
             return PNone.NONE;
         }
 
@@ -187,7 +187,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached @Cached.Exclusive InlinedConditionProfile isCurrentFrameProfile,
                         @Cached @Cached.Exclusive MaterializeFrameNode materializeNode,
-                        @Cached @Cached.Exclusive PRaiseNode.Lazy raise,
+                        @Cached @Cached.Exclusive PRaiseNode raise,
                         @Cached PyLongCheckExactNode isLong,
                         @Cached PyLongAsLongAndOverflowNode toLong) {
             syncLocationIfNeeded(frame, self, this, inliningTarget, isCurrentFrameProfile, materializeNode);
@@ -198,17 +198,17 @@ public final class FrameBuiltins extends PythonBuiltins {
                         if (lineno <= Integer.MAX_VALUE && lineno >= Integer.MIN_VALUE) {
                             self.setJumpDestLine((int) lineno);
                         } else {
-                            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
+                            throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
                         }
                     } catch (OverflowException e) {
-                        throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
+                        throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_OUT_OF_RANGE);
                     }
                 } else {
-                    throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER);
+                    throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER);
                 }
             } else {
                 PythonContext context = getContext();
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT,
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT,
                                 context.getThreadState(context.getLanguage(inliningTarget)).getTracingWhat().pythonName);
             }
             return PNone.NONE;
@@ -261,7 +261,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             try {
                 self.setTraceLine(cast.execute(inliningTarget, v));
             } catch (CannotCastException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_VALUE_MUST_BE_BOOL);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_VALUE_MUST_BE_BOOL);
             }
             return PNone.NONE;
         }
@@ -274,10 +274,10 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         static PCode get(PFrame self,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             RootCallTarget ct = self.getTarget();
             assert ct != null;
-            return factory.createCode(ct);
+            return PFactory.createCode(language, ct);
         }
 
         @NeverDefault

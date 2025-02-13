@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,14 +97,13 @@ public abstract class PyLongAsDoubleNode extends PNodeWithContext {
     static double doNative(Node inliningTarget, @SuppressWarnings("unused") PythonAbstractNativeObject self,
                     @SuppressWarnings("unused") @Cached PyLongCheckNode check) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET);
+        throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.CASTING_A_NATIVE_INT_OBJECT_IS_NOT_IMPLEMENTED_YET);
     }
 
     @Fallback
     @InliningCutoff
     @SuppressWarnings("unused")
-    static double fallback(Node inliningTarget, Object object,
-                    @Cached(inline = false) PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+    static double fallback(Node inliningTarget, Object object) {
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
     }
 }

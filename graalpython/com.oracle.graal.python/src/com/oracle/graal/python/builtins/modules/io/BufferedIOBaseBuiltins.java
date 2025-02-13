@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,8 +100,8 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         static Object detach(@SuppressWarnings("unused") Object self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(IOUnsupportedOperation, T_DETACH);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_DETACH);
         }
     }
 
@@ -115,8 +115,8 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object read(Object self, Object args,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(IOUnsupportedOperation, T_READ);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_READ);
         }
     }
 
@@ -130,8 +130,8 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object read1(Object self, Object args,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(IOUnsupportedOperation, T_READ1);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_READ1);
         }
     }
 
@@ -153,18 +153,18 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached InlinedConditionProfile isBytes,
                         @Cached InlinedConditionProfile oversize,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 Object data = callMethod.execute(frame, inliningTarget, self, getMethodName(), len);
                 if (isBytes.profile(inliningTarget, !(data instanceof PBytes))) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, S_SHOULD_RETURN_BYTES, "read()");
+                    throw raiseNode.raise(inliningTarget, ValueError, S_SHOULD_RETURN_BYTES, "read()");
                 }
                 // Directly using data as buffer because CPython also accesses the underlying memory
                 // of the bytes object
                 int dataLen = bufferLib.getBufferLength(data);
                 if (oversize.profile(inliningTarget, dataLen > len)) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, S_RETURNED_TOO_MUCH_DATA, "read()", len, dataLen);
+                    throw raiseNode.raise(inliningTarget, ValueError, S_RETURNED_TOO_MUCH_DATA, "read()", len, dataLen);
                 }
                 bufferLib.readIntoBuffer(data, 0, buffer, 0, dataLen, bufferLib);
                 return dataLen;
@@ -219,8 +219,8 @@ public final class BufferedIOBaseBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object write(Object self, Object args,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(IOUnsupportedOperation, T_WRITE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_WRITE);
         }
     }
 }

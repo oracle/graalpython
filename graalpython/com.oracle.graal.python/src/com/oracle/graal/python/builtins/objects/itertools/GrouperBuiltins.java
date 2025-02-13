@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -62,10 +63,9 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -104,11 +104,11 @@ public final class GrouperBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile currValueMarkerProfile,
                         @Cached InlinedBranchProfile currValueTgtProfile,
                         @Cached InlinedConditionProfile hasFuncProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PGroupBy gbo = self.getParent();
             if (gbo.getCurrGrouper() != self) {
                 currGrouperProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             if (gbo.getCurrValue() == null) {
                 currValueMarkerProfile.enter(inliningTarget);
@@ -116,7 +116,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
             }
             if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
                 currValueTgtProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             Object r = gbo.getCurrValue();
             gbo.setCurrValue(null);
@@ -131,21 +131,21 @@ public final class GrouperBuiltins extends PythonBuiltins {
         static Object reduce(PGrouper self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory.createTuple(new Object[]{self.getParent(), self.getTgtKey()});
-            return factory.createTuple(new Object[]{type, tuple});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{self.getParent(), self.getTgtKey()});
+            return PFactory.createTuple(language, new Object[]{type, tuple});
         }
 
         @Specialization(guards = "!currValueIsSelf(self)")
         Object reduceCurrNotSelf(VirtualFrame frame, @SuppressWarnings("unused") PGrouper self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PythonModule builtins = getContext().getCore().lookupBuiltinModule(BuiltinNames.T_BUILTINS);
             Object iterCallable = getAttrNode.execute(frame, inliningTarget, builtins, T_ITER);
             // return Py_BuildValue("N(())", _PyEval_GetBuiltinId(&PyId_iter));
-            return factory.createTuple(new Object[]{iterCallable, factory.createTuple(new Object[]{factory.createEmptyTuple()})});
+            return PFactory.createTuple(language, new Object[]{iterCallable, PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language)})});
         }
 
         protected boolean currValueIsSelf(PGrouper self) {

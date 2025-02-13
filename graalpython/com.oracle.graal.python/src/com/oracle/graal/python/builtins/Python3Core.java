@@ -59,9 +59,6 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.foreign.ForeignExecutableBuiltins;
-import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuiltins;
-import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -264,6 +261,9 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignAbstractClassBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignExecutableBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
@@ -384,7 +384,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -396,6 +396,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -842,7 +843,6 @@ public abstract class Python3Core {
     private volatile boolean initialized;
 
     private final PythonLanguage language;
-    @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
     public Python3Core(PythonLanguage language, boolean isNativeSupportAllowed, boolean socketIOAllowed) {
         this.language = language;
@@ -906,11 +906,12 @@ public abstract class Python3Core {
      *            multi-context mode. Can be null.
      */
     public final PythonLanguage getLanguage(Node node) {
-        if (CompilerDirectives.inCompiledCode() && node != null && CompilerDirectives.isPartialEvaluationConstant(node) && node.getRootNode() != null) {
-            // This will make it PE-constant in multi-context mode
-            return PythonLanguage.get(node);
+        // The condition is always true in the interpreter
+        if (CompilerDirectives.isPartialEvaluationConstant(language)) {
+            return language;
         }
-        return language;
+        // This will make it PE-constant in multi-context mode
+        return PythonLanguage.get(node);
     }
 
     /**
@@ -924,7 +925,6 @@ public abstract class Python3Core {
      * Load the core library and prepare all builtin classes and modules.
      */
     public final void initialize(PythonContext context) {
-        objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter(), context.getLanguage());
         initializeJavaCore();
         initializeImportlib();
         context.applyModuleOptions();
@@ -1216,9 +1216,11 @@ public abstract class Python3Core {
             }
         }
         // now initialize well-known objects
-        pyTrue = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
-        pyFalse = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
-        pyNaN = factory().createFloat(Double.NaN);
+        PythonBuiltinClassType booleanType = PythonBuiltinClassType.Boolean;
+        Shape booleanShape = booleanType.getInstanceShape(getLanguage());
+        pyTrue = PFactory.createInt(getLanguage(), booleanType, booleanShape, BigInteger.ONE);
+        pyFalse = PFactory.createInt(getLanguage(), booleanType, booleanShape, BigInteger.ZERO);
+        pyNaN = PFactory.createFloat(getLanguage(), Double.NaN);
     }
 
     private void populateBuiltins() {
@@ -1247,7 +1249,7 @@ public abstract class Python3Core {
         for (PythonBuiltinClassType klass : PythonBuiltinClassType.VALUES) {
             wrapped.clear();
             TpSlots.addOperatorsToBuiltin(wrapped, this, klass);
-            PythonBuiltins.addFunctionsToModuleObject(wrapped, lookupType(klass), factory());
+            PythonBuiltins.addFunctionsToModuleObject(wrapped, lookupType(klass), getLanguage());
         }
 
         // core machinery
@@ -1269,7 +1271,7 @@ public abstract class Python3Core {
     private PythonModule createModule(TruffleString name, PythonBuiltins moduleBuiltins) {
         PythonModule mod = builtinModules.get(name);
         if (mod == null) {
-            mod = factory().createPythonModule(name);
+            mod = PFactory.createPythonModule(getLanguage(), name);
             if (moduleBuiltins != null) {
                 mod.setBuiltins(moduleBuiltins);
             }
@@ -1280,7 +1282,7 @@ public abstract class Python3Core {
 
     private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtinsForObj) {
         builtinsForObj.addConstantsToModuleObject(obj);
-        builtinsForObj.addFunctionsToModuleObject(obj, objectFactory);
+        builtinsForObj.addFunctionsToModuleObject(obj, getLanguage());
     }
 
     @TruffleBoundary
@@ -1306,7 +1308,7 @@ public abstract class Python3Core {
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
-            mod = factory().createPythonModule(T___ANONYMOUS__);
+            mod = PFactory.createPythonModule(getLanguage(), T___ANONYMOUS__);
         }
         loadFile(s, prefix, mod);
     }
@@ -1322,10 +1324,6 @@ public abstract class Python3Core {
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
-    }
-
-    public final PythonObjectSlowPathFactory factory() {
-        return objectFactory;
     }
 
     public final PInt getTrue() {

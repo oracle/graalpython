@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -139,12 +139,12 @@ public final class DictReprBuiltin extends PythonBuiltins {
             protected static TruffleString getReprString(Node inliningTarget, Object obj, ReprState s,
                             LookupAndCallUnaryDynamicNode reprNode,
                             CastToTruffleStringNode castStr,
-                            PRaiseNode.Lazy raiseNode) {
+                            PRaiseNode raiseNode) {
                 Object reprObj = s == null || obj != s.self ? reprNode.executeObject(obj, T___REPR__) : T_ELLIPSIS_IN_BRACES;
                 try {
                     return castStr.execute(inliningTarget, reprObj);
                 } catch (CannotCastException e) {
-                    throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprObj);
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprObj);
                 }
             }
 
@@ -165,7 +165,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Bind("this") Node inliningTarget,
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToTruffleStringNode castStr,
-                            @Cached PRaiseNode.Lazy raiseNode,
+                            @Cached PRaiseNode raiseNode,
                             @Cached InlinedConditionProfile lengthCheck,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
@@ -186,7 +186,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Bind("this") Node inliningTarget,
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToTruffleStringNode castStr,
-                            @Cached PRaiseNode.Lazy raiseNode,
+                            @Cached PRaiseNode raiseNode,
                             @Cached InlinedConditionProfile lengthCheck,
                             @Cached HashingStorageIteratorValue itValue,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
@@ -208,7 +208,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStr,
-                            @Cached PRaiseNode.Lazy raiseNode,
+                            @Cached PRaiseNode raiseNode,
                             @Cached InlinedConditionProfile lengthCheck,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorValue itValue,
@@ -236,7 +236,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStr,
-                            @Cached PRaiseNode.Lazy raiseNode,
+                            @Cached PRaiseNode raiseNode,
                             @Cached InlinedConditionProfile lengthCheck,
                             @Cached HashingStorageIteratorKey itKey,
                             @Cached HashingStorageIteratorValue itValue,

@@ -72,7 +72,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.exception.PythonInterruptedException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -219,7 +219,7 @@ public final class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private void handleJavaException(Throwable e) {
-        PException pe = ExceptionUtils.wrapJavaExceptionIfApplicable(this, e, PythonObjectFactory.getUncached());
+        PException pe = ExceptionUtils.wrapJavaExceptionIfApplicable(this, e);
         if (pe != null) {
             throw handlePythonException(pe);
         }
@@ -308,9 +308,10 @@ public final class TopLevelExceptionHandler extends RootNode {
         }
         PythonContext pythonContext = getContext();
         PythonModule mainModule = null;
+        PythonLanguage language = getPythonLanguage();
         if (source.isInternal()) {
             // internal sources are not run in the main module
-            PArguments.setGlobals(arguments, pythonContext.factory().createDict());
+            PArguments.setGlobals(arguments, PFactory.createDict(language));
         } else {
             mainModule = pythonContext.getMainModule();
             PDict mainDict = GetOrCreateDictNode.executeUncached(mainModule);
@@ -318,7 +319,7 @@ public final class TopLevelExceptionHandler extends RootNode {
             PArguments.setSpecialArgument(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        Object state = IndirectCalleeContext.enterIndirect(getPythonLanguage(), pythonContext, arguments);
+        Object state = IndirectCalleeContext.enterIndirect(language, pythonContext, arguments);
         try {
             Object result = innerCallTarget.call(arguments);
             if (mainModule != null && result == PNone.NONE && !source.isInteractive()) {
@@ -327,7 +328,7 @@ public final class TopLevelExceptionHandler extends RootNode {
                 return result;
             }
         } finally {
-            IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, state);
+            IndirectCalleeContext.exit(language, pythonContext, state);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,9 +45,10 @@ import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT;
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -149,26 +150,26 @@ public final class IntNodes {
 
         @Specialization
         static byte[] doArbitraryBytesLong(Node inliningTarget, long value, int size, boolean bigEndian,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             try {
                 support.putBigInteger(bytes, 0, PInt.longToBigInteger(value), size);
             } catch (OverflowException oe) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, TOO_LARGE_TO_CONVERT, "int");
+                throw raiseNode.raise(inliningTarget, OverflowError, TOO_LARGE_TO_CONVERT, "int");
             }
             return bytes;
         }
 
         @Specialization
         static byte[] doPInt(Node inliningTarget, PInt value, int size, boolean bigEndian,
-                        @Shared("raiseNode") @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             try {
                 support.putBigInteger(bytes, 0, value.getValue(), size);
             } catch (OverflowException oe) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, TOO_LARGE_TO_CONVERT, "int");
+                throw raiseNode.raise(inliningTarget, OverflowError, TOO_LARGE_TO_CONVERT, "int");
             }
             return bytes;
         }
@@ -197,8 +198,7 @@ public final class IntNodes {
                         @Cached InlinedBranchProfile fastPath4,
                         @Cached InlinedBranchProfile fastPath8,
                         @Cached InlinedBranchProfile generic,
-                        @Cached(inline = false) PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             NumericSupport support = littleEndian ? NumericSupport.littleEndian() : NumericSupport.bigEndian();
             if (signed) {
                 switch (data.length) {
@@ -227,10 +227,10 @@ public final class IntNodes {
                     long longValue = PInt.longValue(integer);
                     return PInt.isIntRange(longValue) ? (int) longValue : longValue;
                 } else {
-                    return factory.createInt(integer);
+                    return PFactory.createInt(PythonLanguage.get(inliningTarget), integer);
                 }
             } catch (OverflowException e) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
             }
         }
     }

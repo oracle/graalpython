@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -35,12 +35,14 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 @SuppressWarnings("truffle-abstract-export")
@@ -99,9 +101,10 @@ public final class PBytes extends PBytesLike {
 
     @ExportMessage
     Object acquire(int flags,
+                    @Bind("$node") Node inliningTarget,
                     @Cached PRaiseNode raiseNode) {
         if ((flags & BufferFlags.PyBUF_WRITABLE) != 0) {
-            throw raiseNode.raise(BufferError, ErrorMessages.OBJ_IS_NOT_WRITABLE);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.OBJ_IS_NOT_WRITABLE);
         }
         return this;
     }

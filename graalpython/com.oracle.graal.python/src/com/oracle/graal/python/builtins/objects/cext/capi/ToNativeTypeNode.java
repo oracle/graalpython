@@ -55,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -101,7 +102,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -204,7 +205,7 @@ public abstract class ToNativeTypeNode {
         GetTypeFlagsNode getTypeFlagsNode = GetTypeFlagsNodeGen.getUncached();
 
         PythonContext ctx = PythonContext.get(null);
-        PythonObjectFactory factory = ctx.factory();
+        PythonLanguage language = ctx.getLanguage();
         Object nullValue = ctx.getNativeNull();
 
         // make this object immortal
@@ -331,11 +332,11 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, HiddenAttr.FREE));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, HiddenAttr.CLEAR));
         if (clazz.basesTuple == null) {
-            clazz.basesTuple = factory.createTuple(GetBaseClassesNode.executeUncached(clazz));
+            clazz.basesTuple = PFactory.createTuple(language, GetBaseClassesNode.executeUncached(clazz));
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_bases, toNative.execute(clazz.basesTuple));
         if (clazz.mroStore == null) {
-            clazz.mroStore = factory.createTuple(GetMroStorageNode.executeUncached(clazz));
+            clazz.mroStore = PFactory.createTuple(language, GetMroStorageNode.executeUncached(clazz));
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_mro, toNative.execute(clazz.mroStore));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_cache, nullValue);

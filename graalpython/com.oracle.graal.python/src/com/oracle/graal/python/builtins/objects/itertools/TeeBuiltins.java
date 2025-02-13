@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,13 +56,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
@@ -75,7 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -105,13 +105,13 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @Cached("createCopyNode()") LookupAndCallUnaryNode copyNode,
                         @Cached InlinedConditionProfile isTeeInstanceProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             if (isTeeInstanceProfile.profile(inliningTarget, it instanceof PTee)) {
                 return copyNode.executeObject(frame, it);
             } else {
-                PTeeDataObject dataObj = factory.createTeeDataObject(it);
-                return factory.createTee(dataObj, 0);
+                PTeeDataObject dataObj = PFactory.createTeeDataObject(language, it);
+                return PFactory.createTee(language, dataObj, 0);
             }
         }
 
@@ -126,8 +126,8 @@ public final class TeeBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object copy(PTee self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTee(self.getDataobj(), self.getIndex());
+                        @Bind PythonLanguage language) {
+            return PFactory.createTee(language, self.getDataobj(), self.getIndex());
         }
     }
 
@@ -148,7 +148,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         static Object next(VirtualFrame frame, PTee self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached BuiltinFunctions.NextNode nextNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
             self.setIndex(self.getIndex() + 1);
             return value;
@@ -158,9 +158,9 @@ public final class TeeBuiltins extends PythonBuiltins {
         static Object nextNext(VirtualFrame frame, PTee self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached PythonObjectFactory factory,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            self.setDataObj(self.getDataobj().jumplink(factory));
+                        @Bind PythonLanguage language,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            self.setDataObj(self.getDataobj().jumplink(language));
             Object value = self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
             self.setIndex(1);
             return value;
@@ -170,25 +170,23 @@ public final class TeeBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        abstract Object execute(VirtualFrame frame, PythonObject self);
 
         @Specialization
         static Object reduce(PTee self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClass,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // return type(self), ((),), (self.dataobj, self.index)
             Object type = getClass.execute(inliningTarget, self);
-            PTuple tuple1 = factory.createTuple(new Object[]{factory.createEmptyTuple()});
-            PTuple tuple2 = factory.createTuple(new Object[]{self.getDataobj(), self.getIndex()});
-            return factory.createTuple(new Object[]{type, tuple1, tuple2});
+            PTuple tuple1 = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language)});
+            PTuple tuple2 = PFactory.createTuple(language, new Object[]{self.getDataobj(), self.getIndex()});
+            return PFactory.createTuple(language, new Object[]{type, tuple1, tuple2});
         }
     }
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
-        abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
 
         @Specialization
         static Object setState(VirtualFrame frame, PTee self, Object state,
@@ -196,14 +194,14 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Cached LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached CastToJavaIntLossyNode castToIntNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 2) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "2-tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object dataObject = getItemNode.execute(frame, state, 0);
             if (!(dataObject instanceof PTeeDataObject)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "_tee_dataobject");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "_tee_dataobject");
             }
             self.setDataObj((PTeeDataObject) dataObject);
             Object secondElement = getItemNode.execute(frame, state, 1);
@@ -211,10 +209,10 @@ public final class TeeBuiltins extends PythonBuiltins {
             try {
                 index = castToIntNode.execute(inliningTarget, secondElement);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
+                throw raiseNode.raise(inliningTarget, TypeError, INTEGER_REQUIRED_GOT, secondElement);
             }
             if (index < 0 || index > LINKCELLS) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, INDEX_OUT_OF_RANGE);
+                throw raiseNode.raise(inliningTarget, ValueError, INDEX_OUT_OF_RANGE);
             }
             self.setIndex(index);
             return PNone.NONE;

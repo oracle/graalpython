@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,10 +52,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.test.PythonTests;
 
 public class DirFdConversionNodeTests extends ConversionNodeTests {
@@ -108,20 +109,20 @@ public class DirFdConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void pintFitsInt() {
-        Assert.assertEquals(42, call(factory().createInt(BigInteger.valueOf(42))));
+        Assert.assertEquals(42, call(PFactory.createInt(PythonLanguage.get(null), BigInteger.valueOf(42))));
     }
 
     @Test
     public void pintTooBig() {
         expectPythonMessage("OverflowError: fd is greater than maximum", () -> {
-            call(factory().createInt(BigInteger.ONE.shiftLeft(100)));
+            call(PFactory.createInt(PythonLanguage.get(null), BigInteger.ONE.shiftLeft(100)));
         });
     }
 
     @Test
     public void pintTooSmall() {
         expectPythonMessage("OverflowError: fd is less than minimum", () -> {
-            call(factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
+            call(PFactory.createInt(PythonLanguage.get(null), BigInteger.ONE.shiftLeft(100).negate()));
         });
     }
 
@@ -160,10 +161,6 @@ public class DirFdConversionNodeTests extends ConversionNodeTests {
         Object result = call(arg, PosixModuleBuiltinsFactory.DirFdConversionNodeGen.create());
         MatcherAssert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
         return (int) result;
-    }
-
-    private static PythonObjectFactory factory() {
-        return PythonObjectFactory.getUncached();
     }
 
     private static Object evalValue(String source) {

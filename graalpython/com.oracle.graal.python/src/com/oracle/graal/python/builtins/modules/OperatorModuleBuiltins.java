@@ -142,14 +142,14 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 String leftString = cast.execute(left);
                 String rightString = cast.execute(right);
                 return tscmp(leftString, rightString);
             } catch (CannotCastException e) {
                 if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
                 }
                 Object savedState = IndirectCallContext.enter(frame, indirectCallData);
                 Object leftBuffer = bufferAcquireLib.acquireReadonly(left);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.TimeUtils.SEC_TO_NS;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -74,7 +75,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.IntArrayBuilder;
@@ -132,8 +133,8 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile notSelectableBranch,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             ObjAndFDList readFDs = seq2set(frame, inliningTarget, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
             ObjAndFDList writeFDs = seq2set(frame, inliningTarget, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
             ObjAndFDList xFDs = seq2set(frame, inliningTarget, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode, raiseNode);
@@ -143,7 +144,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 isNotNoneTimeout.enter(inliningTarget);
                 timeoutval = TimeUtils.pyTimeAsTimeval(pyTimeFromObjectNode.execute(frame, inliningTarget, timeout, RoundType.TIMEOUT, SEC_TO_NS));
                 if (timeoutval.getSeconds() < 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
                 }
             }
 
@@ -161,18 +162,18 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 // GraalPython hack: if one of the channels is not selectable (can happen only in
                 // the emulated mode), we just return everything.
                 notSelectableBranch.enter(inliningTarget);
-                return factory.createTuple(new Object[]{rlist, wlist, xlist});
+                return PFactory.createTuple(language, new Object[]{rlist, wlist, xlist});
             }
-            return factory.createTuple(new PList[]{
-                            toList(result.getReadFds(), readFDs, factory),
-                            toList(result.getWriteFds(), writeFDs, factory),
-                            toList(result.getErrorFds(), xFDs, factory)});
+            return PFactory.createTuple(language, new PList[]{
+                            toList(result.getReadFds(), readFDs, language),
+                            toList(result.getWriteFds(), writeFDs, language),
+                            toList(result.getErrorFds(), xFDs, language)});
         }
 
         /**
          * Also maps the returned FDs back to their original Python level objects.
          */
-        private static PList toList(boolean[] result, ObjAndFDList fds, PythonObjectFactory factory) {
+        private static PList toList(boolean[] result, ObjAndFDList fds, PythonLanguage language) {
             Object[] resultObjs = new Object[result.length];
             int resultObjsIdx = 0;
             for (int i = 0; i < fds.fds.length; i++) {
@@ -180,12 +181,12 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                     resultObjs[resultObjsIdx++] = fds.objects[i];
                 }
             }
-            return factory.createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
+            return PFactory.createList(language, PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
         private static ObjAndFDList seq2set(VirtualFrame frame, Node inliningTarget, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor,
                         PyObjectGetItem callGetItemNode,
-                        FastConstructListNode constructListNode, PRaiseNode.Lazy raiseNode) {
+                        FastConstructListNode constructListNode, PRaiseNode raiseNode) {
             // We cannot assume any size of those two arrays, because the sequence may change as a
             // side effect of the invocation of fileno. We also need to call PyObjectSizeNode
             // repeatedly in the loop condition
@@ -197,7 +198,7 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 objects.add(pythonObject);
                 int fd = asFileDescriptor.execute(frame, inliningTarget, pythonObject);
                 if (fd >= FD_SETSIZE.value) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
                 }
                 fds.add(fd);
             }

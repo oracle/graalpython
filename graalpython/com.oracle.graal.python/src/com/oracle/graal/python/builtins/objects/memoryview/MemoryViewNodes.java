@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -103,7 +103,7 @@ public class MemoryViewNodes {
              * reference counting.
              */
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(node, IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
+            throw PRaiseNode.raiseStatic(node, IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
         }
     }
 
@@ -158,7 +158,7 @@ public class MemoryViewNodes {
         @Fallback
         @SuppressWarnings("unused")
         static Object notImplemented(Node inliningTarget, BufferFormat format, TruffleString formatStr, Object buffer, int offset) {
-            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
     }
 
@@ -172,19 +172,19 @@ public class MemoryViewNodes {
         static void pack(VirtualFrame frame, Node inliningTarget, BufferFormat format, TruffleString formatStr, Object value, Object buffer, int offset,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached BufferStorageNodes.PackValueNode packValueNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 packValueNode.execute(frame, inliningTarget, format, value, buffer, offset);
             } catch (PException e) {
                 e.expect(inliningTarget, OverflowError, errorProfile);
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
             }
         }
 
         @Fallback
         @SuppressWarnings("unused")
         static void notImplemented(Node inliningTarget, BufferFormat format, TruffleString formatStr, Object object, Object buffer, int offset) {
-            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
     }
 
@@ -340,7 +340,7 @@ public class MemoryViewNodes {
 
         public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, int index);
 
-        private void lookupDimension(Node inliningTarget, PMemoryView self, MemoryPointer ptr, int dim, int initialIndex, InlinedConditionProfile hasSuboffsetsProfile, PRaiseNode.Lazy raiseNode) {
+        private void lookupDimension(Node inliningTarget, PMemoryView self, MemoryPointer ptr, int dim, int initialIndex, InlinedConditionProfile hasSuboffsetsProfile, PRaiseNode raiseNode) {
             int index = initialIndex;
             int[] shape = self.getBufferShape();
             int nitems = shape[dim];
@@ -348,7 +348,7 @@ public class MemoryViewNodes {
                 index += nitems;
             }
             if (index < 0 || index >= nitems) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
             }
 
             ptr.offset += self.getBufferStrides()[dim] * index;
@@ -367,17 +367,17 @@ public class MemoryViewNodes {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (hasOneDimensionProfile.profile(inliningTarget, self.getDimensions() == 1)) {
                 MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
                 lookupDimension(inliningTarget, self, ptr, 0, index, hasSuboffsetsProfile, raiseNode);
                 return ptr;
             }
             if (self.getDimensions() == 0) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             } else {
                 // CPython doesn't implement this either, as of 3.8
-                throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+                throw raiseNode.raise(inliningTarget, NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
             }
         }
 
@@ -391,7 +391,7 @@ public class MemoryViewNodes {
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(inliningTarget, indices);
             checkTupleLength(inliningTarget, indicesStorage, cachedDimensions, raiseNode);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
@@ -410,7 +410,7 @@ public class MemoryViewNodes {
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(inliningTarget, indices);
             int ndim = self.getDimensions();
             checkTupleLength(inliningTarget, indicesStorage, ndim, raiseNode);
@@ -429,30 +429,30 @@ public class MemoryViewNodes {
                         @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             final int index = convertIndex(frame, inliningTarget, indexCheckNode, indexObj, raiseNode);
             return resolveInt(self, index, inliningTarget, hasOneDimensionProfile, hasSuboffsetsProfile, raiseNode);
         }
 
-        private static void checkTupleLength(Node inliningTarget, SequenceStorage indicesStorage, int ndim, PRaiseNode.Lazy raiseNode) {
+        private static void checkTupleLength(Node inliningTarget, SequenceStorage indicesStorage, int ndim, PRaiseNode raiseNode) {
             int length = indicesStorage.length();
             if (length == ndim) {
                 return;
             }
             // Error cases
             if (ndim == 0) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             } else if (length > ndim) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
             } else {
                 // CPython doesn't implement this either, as of 3.8
-                throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
+                throw raiseNode.raise(inliningTarget, NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
             }
         }
 
-        private int convertIndex(VirtualFrame frame, Node inliningTarget, PyIndexCheckNode indexCheckNode, Object indexObj, PRaiseNode.Lazy raiseNode) {
+        private int convertIndex(VirtualFrame frame, Node inliningTarget, PyIndexCheckNode indexCheckNode, Object indexObj, PRaiseNode raiseNode) {
             if (!indexCheckNode.execute(inliningTarget, indexObj)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
             }
             return getAsSizeNode().executeExact(frame, inliningTarget, indexObj, IndexError);
         }
@@ -486,7 +486,7 @@ public class MemoryViewNodes {
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Shared @Cached ReadBytesAtNode readBytesAtNode,
                         @Shared @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (cachedDimensions == 0) {
@@ -502,7 +502,7 @@ public class MemoryViewNodes {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached ReadBytesAtNode readBytesAtNode,
                         @Shared @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (self.getDimensions() == 0) {
@@ -596,8 +596,9 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "self.getReference() == null")
         static void releaseSimple(PMemoryView self,
+                        @Bind("this") Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
-            self.checkExports(raiseNode);
+            self.checkExports(inliningTarget, raiseNode);
             self.setReleased();
         }
 
@@ -607,7 +608,7 @@ public class MemoryViewNodes {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached ReleaseBufferNode releaseNode,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
-            self.checkExports(raiseNode);
+            self.checkExports(inliningTarget, raiseNode);
             if (self.checkShouldReleaseBuffer()) {
                 releaseNode.execute(frame, inliningTarget, indirectCallData, self.getLifecycleManager());
             }

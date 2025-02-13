@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.US_ASCII;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerReference;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
@@ -73,9 +75,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -313,7 +316,7 @@ public class CtypesNodes {
 
         @Specialization
         static CDataObject PyCData_FromBaseObj(Node inliningTarget, Object type, CDataObject base, int index, Pointer adr,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached StgDictBuiltins.PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CreateCDataObjectNode createCDataObjectNode,
                         @Cached PyCDataMallocBufferNode mallocBufferNode,
@@ -344,12 +347,13 @@ public class CtypesNodes {
         @Specialization
         static CDataObject doCreate(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree,
                         @Cached(inline = false) IsSubtypeNode isSubtypeNode,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Bind PythonLanguage language) {
             CDataObject result;
             if (isSubtypeNode.execute(type, PyCFuncPtr)) {
-                result = factory.createPyCFuncPtrObject(type, pointer, size, needsfree);
+                result = PFactory.createPyCFuncPtrObject(language, type, getInstanceShape.execute(type), pointer, size, needsfree);
             } else {
-                result = factory.createCDataObject(type, pointer, size, needsfree);
+                result = PFactory.createCDataObject(language, type, getInstanceShape.execute(type), pointer, size, needsfree);
             }
             if (needsfree) {
                 new PointerReference(result, pointer, PythonContext.get(inliningTarget).getSharedFinalizer());

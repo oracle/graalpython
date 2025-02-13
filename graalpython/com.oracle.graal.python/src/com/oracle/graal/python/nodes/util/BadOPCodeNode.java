@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,7 @@ public class BadOPCodeNode extends PRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.UNKNOWN_OPCODE);
+        throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.UNKNOWN_OPCODE);
     }
 
     @Override

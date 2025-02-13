@@ -60,6 +60,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.nio.ByteOrder;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
@@ -91,7 +92,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -257,8 +258,8 @@ public final class ErrorHandlers {
             return !isDecode(inliningTarget, o, pyObjectTypeCheck) && !isEncode(inliningTarget, o, pyObjectTypeCheck) && !isTranslate(inliningTarget, o, pyObjectTypeCheck);
         }
 
-        static PException wrongExceptionType(Object o, PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DONT_KNOW_HOW_TO_HANDLE_P_IN_ERROR_CALLBACK, o);
+        static PException wrongExceptionType(Node inliningTarget, Object o) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DONT_KNOW_HOW_TO_HANDLE_P_IN_ERROR_CALLBACK, o);
         }
     }
 
@@ -267,14 +268,14 @@ public final class ErrorHandlers {
     abstract static class StrictErrorHandlerNode extends ErrorHandlerBaseNode {
         @Specialization
         static Object doException(PBaseException exception,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseExceptionObject(exception);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
         }
 
         @Fallback
         static Object doFallback(@SuppressWarnings("unused") Object o,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CODEC_MUST_PASS_EXCEPTION_INSTANCE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CODEC_MUST_PASS_EXCEPTION_INSTANCE);
         }
     }
 
@@ -284,27 +285,26 @@ public final class ErrorHandlers {
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PyUnicodeDecodeErrorGetEndNode getEndNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[]{T_EMPTY_STRING, getEndNode.execute(inliningTarget, exception)});
+                        @Cached PyUnicodeDecodeErrorGetEndNode getEndNode) {
+            return PFactory.createTuple(language, new Object[]{T_EMPTY_STRING, getEndNode.execute(inliningTarget, exception)});
         }
 
         @Specialization(guards = "isEncodeOrTranslate(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncodeOrTranslateException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[]{T_EMPTY_STRING, getEndNode.execute(inliningTarget, exception)});
+                        @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode) {
+            return PFactory.createTuple(language, new Object[]{T_EMPTY_STRING, getEndNode.execute(inliningTarget, exception)});
         }
 
         @Specialization(guards = "isNeither(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PRaiseNode raiseNode) {
-            throw wrongExceptionType(o, raiseNode);
+                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
+            throw wrongExceptionType(inliningTarget, o);
         }
     }
 
@@ -317,35 +317,34 @@ public final class ErrorHandlers {
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PyUnicodeDecodeErrorGetEndNode getEndNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[]{T_REPLACEMENT, getEndNode.execute(inliningTarget, exception)});
+                        @Cached PyUnicodeDecodeErrorGetEndNode getEndNode) {
+            return PFactory.createTuple(language, new Object[]{T_REPLACEMENT, getEndNode.execute(inliningTarget, exception)});
         }
 
         @Specialization(guards = "isEncodeOrTranslate(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncodeOrTranslateException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
-                        @Cached TruffleString.RepeatNode repeatNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Cached TruffleString.RepeatNode repeatNode) {
             TruffleString replacement = isEncode(inliningTarget, exception, pyObjectTypeCheck) ? T_QUESTIONMARK : T_REPLACEMENT;
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             int n = end - start;
             // CPython raises SystemError for negative values, we return an empty string
             TruffleString result = n < 1 ? T_EMPTY_STRING : repeatNode.execute(replacement, n, TS_ENCODING);
-            return factory.createTuple(new Object[]{result, end});
+            return PFactory.createTuple(language, new Object[]{result, end});
         }
 
         @Specialization(guards = "isNeither(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PRaiseNode raiseNode) {
-            throw wrongExceptionType(o, raiseNode);
+                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
+            throw wrongExceptionType(inliningTarget, o);
         }
     }
 
@@ -356,14 +355,14 @@ public final class ErrorHandlers {
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncode(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             TruffleString src = getObjectNode.execute(inliningTarget, exception);
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
@@ -377,15 +376,14 @@ public final class ErrorHandlers {
                 pos = appendXmlCharRefReplacement(replacement, pos, codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT));
             }
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
-            return factory.createTuple(new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
+            return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
         }
 
         @Specialization(guards = "!isEncode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PRaiseNode raiseNode) {
-            throw wrongExceptionType(o, raiseNode);
+                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
+            throw wrongExceptionType(inliningTarget, o);
         }
     }
 
@@ -396,6 +394,7 @@ public final class ErrorHandlers {
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecodeException(VirtualFrame frame, PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
@@ -404,13 +403,12 @@ public final class ErrorHandlers {
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                         @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             Object object = getObjectNode.execute(inliningTarget, exception);
             if (start >= end) {
-                return factory.createTuple(new Object[]{T_EMPTY_STRING, end});
+                return PFactory.createTuple(language, new Object[]{T_EMPTY_STRING, end});
             }
             byte[] replacement = new byte[4 * (end - start)];
             int pos = 0;
@@ -424,25 +422,25 @@ public final class ErrorHandlers {
                 accessLib.release(srcBuf, frame, indirectCallData);
             }
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
-            return factory.createTuple(new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
+            return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
         }
 
         @Specialization(guards = "isEncodeOrTranslate(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncodeOrTranslateException(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             TruffleString src = getObjectNode.execute(inliningTarget, exception);
             if (start >= end) {
-                return factory.createTuple(new Object[]{T_EMPTY_STRING, end});
+                return PFactory.createTuple(language, new Object[]{T_EMPTY_STRING, end});
             }
             int len = 0;
             for (int i = start; i < end; ++i) {
@@ -462,15 +460,14 @@ public final class ErrorHandlers {
                 pos = BytesUtils.unicodeNonAsciiEscape(cp, pos, replacement, true);
             }
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
-            return factory.createTuple(new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
+            return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
         }
 
         @Specialization(guards = "isNeither(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PRaiseNode raiseNode) {
-            throw wrongExceptionType(o, raiseNode);
+                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
+            throw wrongExceptionType(inliningTarget, o);
         }
     }
 
@@ -481,6 +478,7 @@ public final class ErrorHandlers {
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncode(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
@@ -491,13 +489,12 @@ public final class ErrorHandlers {
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleString src = getObjectNode.execute(inliningTarget, exception);
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             if (start >= end) {
-                return factory.createTuple(new Object[]{T_EMPTY_STRING, start});
+                return PFactory.createTuple(language, new Object[]{T_EMPTY_STRING, start});
             }
             TruffleStringBuilder tsb = TruffleStringBuilder.create(TS_ENCODING);
             byte[] buf = new byte[1 + 1 + 8];  // \UNNNNNNNN
@@ -515,15 +512,14 @@ public final class ErrorHandlers {
                     appendStringNode.execute(tsb, switchEncodingNode.execute(fromByteArrayNode.execute(buf, 0, len, Encoding.US_ASCII, true), TS_ENCODING));
                 }
             }
-            return factory.createTuple(new Object[]{toStringNode.execute(tsb), end});
+            return PFactory.createTuple(language, new Object[]{toStringNode.execute(tsb), end});
         }
 
         @Specialization(guards = "!isEncode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PRaiseNode raiseNode) {
-            throw wrongExceptionType(o, raiseNode);
+                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
+            throw wrongExceptionType(inliningTarget, o);
         }
     }
 
@@ -534,6 +530,7 @@ public final class ErrorHandlers {
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncode(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
@@ -541,35 +538,35 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeErrorGetEncodingNode getEncodingNode,
                         @Exclusive @Cached GetStandardEncodingNode getStandardEncodingNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             TruffleString src = getObjectNode.execute(inliningTarget, exception);
             TruffleString encodingName = getEncodingNode.execute(inliningTarget, exception);
             StandardEncoding encoding = getStandardEncodingNode.execute(inliningTarget, encodingName);
             if (encoding == StandardEncoding.UNKNOWN) {
-                throw raiseNode.get(inliningTarget).raiseExceptionObject(exception);
+                throw raiseNode.raiseExceptionObject(inliningTarget, exception);
             }
             if (start >= end) {
-                return factory.createTuple(new Object[]{factory.createBytes(new byte[0]), end});
+                return PFactory.createTuple(language, new Object[]{PFactory.createBytes(language, new byte[0]), end});
             }
             byte[] result = new byte[encoding.byteLength * (end - start)];
             int pos = 0;
             for (int i = start; i < end; ++i) {
                 int cp = codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
                 if (!isSurrogate(cp)) {
-                    throw raiseNode.get(inliningTarget).raiseExceptionObject(exception);
+                    throw raiseNode.raiseExceptionObject(inliningTarget, exception);
                 }
                 encodeCodepoint(encoding, result, pos, cp);
                 pos += encoding.byteLength;
             }
-            return factory.createTuple(new Object[]{factory.createBytes(result), end});
+            return PFactory.createTuple(language, new Object[]{PFactory.createBytes(language, result), end});
         }
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecode(VirtualFrame frame, PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
@@ -580,15 +577,14 @@ public final class ErrorHandlers {
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             getEndNode.execute(inliningTarget, exception);  // called for side effects only
             Object object = getObjectNode.execute(inliningTarget, exception);
             TruffleString encodingName = getEncodingNode.execute(inliningTarget, exception);
             StandardEncoding encoding = getStandardEncodingNode.execute(inliningTarget, encodingName);
             if (encoding == StandardEncoding.UNKNOWN) {
-                throw raiseNode.get(inliningTarget).raiseExceptionObject(exception);
+                throw raiseNode.raiseExceptionObject(inliningTarget, exception);
             }
             Object srcBuf = acquireLib.acquireReadonly(object, frame, indirectCallData);
             try {
@@ -598,9 +594,9 @@ public final class ErrorHandlers {
                     cp = decodeCodepoint(encoding, accessLib.getInternalOrCopiedByteArray(srcBuf), start);
                 }
                 if (!isSurrogate(cp)) {
-                    throw raiseNode.get(inliningTarget).raiseExceptionObject(exception);
+                    throw raiseNode.raiseExceptionObject(inliningTarget, exception);
                 }
-                return factory.createTuple(new Object[]{fromCodePointNode.execute(cp, TS_ENCODING, true), start + encoding.byteLength});
+                return PFactory.createTuple(language, new Object[]{fromCodePointNode.execute(cp, TS_ENCODING, true), start + encoding.byteLength});
             } finally {
                 accessLib.release(srcBuf, frame, indirectCallData);
             }
@@ -609,9 +605,8 @@ public final class ErrorHandlers {
         @Specialization(guards = "!isEncodeOrDecode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PRaiseNode raiseNode) {
-            throw wrongExceptionType(o, raiseNode);
+                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
+            throw wrongExceptionType(inliningTarget, o);
         }
 
         private static void encodeCodepoint(StandardEncoding encoding, byte[] result, int pos, int cp) {
@@ -671,34 +666,35 @@ public final class ErrorHandlers {
         @Specialization(guards = "isEncode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doEncode(PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             TruffleString src = getObjectNode.execute(inliningTarget, exception);
             if (start >= end) {
-                return factory.createTuple(new Object[]{factory.createBytes(new byte[0]), end});
+                return PFactory.createTuple(language, new Object[]{PFactory.createBytes(language, new byte[0]), end});
             }
             byte[] result = new byte[end - start];
             int pos = 0;
             for (int i = start; i < end; ++i) {
                 int cp = codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
                 if (cp < 0xdc80 || cp > 0xdcff) {
-                    throw raiseNode.get(inliningTarget).raiseExceptionObject(exception);
+                    throw raiseNode.raiseExceptionObject(inliningTarget, exception);
                 }
                 result[pos++] = (byte) (cp - 0xdc00);
             }
-            return factory.createTuple(new Object[]{factory.createBytes(result), end});
+            return PFactory.createTuple(language, new Object[]{PFactory.createBytes(language, result), end});
         }
 
         @Specialization(guards = "isDecode(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
         static Object doDecode(VirtualFrame frame, PBaseException exception,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
@@ -708,8 +704,7 @@ public final class ErrorHandlers {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             Object object = getObjectNode.execute(inliningTarget, exception);
@@ -727,9 +722,9 @@ public final class ErrorHandlers {
                     consumed++;
                 }
                 if (consumed == 0) {
-                    throw raiseNode.get(inliningTarget).raiseExceptionObject(exception);
+                    throw raiseNode.raiseExceptionObject(inliningTarget, exception);
                 }
-                return factory.createTuple(new Object[]{toStringNode.execute(tsb), start + consumed});
+                return PFactory.createTuple(language, new Object[]{toStringNode.execute(tsb), start + consumed});
             } finally {
                 accessLib.release(srcBuf, frame, indirectCallData);
             }
@@ -738,9 +733,8 @@ public final class ErrorHandlers {
         @Specialization(guards = "!isEncodeOrDecode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
         static Object doFallback(Object o,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
-                        @Cached PRaiseNode raiseNode) {
-            throw wrongExceptionType(o, raiseNode);
+                        @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck) {
+            throw wrongExceptionType(inliningTarget, o);
         }
     }
 
@@ -860,9 +854,9 @@ public final class ErrorHandlers {
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached CastToTruffleStringCheckedNode castToTruffleStringCheckedNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (lenNode.execute(inliningTarget, result) != 2) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
             }
             Object[] array = getObjectArrayNode.execute(inliningTarget, result);
             TruffleString str = castToTruffleStringCheckedNode.cast(inliningTarget, array[0], ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
@@ -871,9 +865,8 @@ public final class ErrorHandlers {
         }
 
         @Fallback
-        static DecodingErrorHandlerResult doOther(@SuppressWarnings("unused") Object result,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
+        static DecodingErrorHandlerResult doOther(Node inliningTarget, @SuppressWarnings("unused") Object result) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
         }
     }
 
@@ -894,7 +887,7 @@ public final class ErrorHandlers {
                         @Cached ParseDecodingErrorHandlerResultNode parseResultNode,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
             cache.exceptionObject = makeDecodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
@@ -931,9 +924,9 @@ public final class ErrorHandlers {
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         @Cached PyBytesCheckNode pyBytesCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (lenNode.execute(inliningTarget, result) != 2) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
             Object[] array = getObjectArrayNode.execute(inliningTarget, result);
             boolean isUnicode;
@@ -942,16 +935,15 @@ public final class ErrorHandlers {
             } else if (pyBytesCheckNode.execute(inliningTarget, array[0])) {
                 isUnicode = false;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
             int pos = castToJavaIntExactNode.execute(inliningTarget, array[1]);
             return new EncodingErrorHandlerResult(array[0], pos, isUnicode);
         }
 
         @Fallback
-        static EncodingErrorHandlerResult doOther(@SuppressWarnings("unused") Object result,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
+        static EncodingErrorHandlerResult doOther(Node inliningTarget, @SuppressWarnings("unused") Object result) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
         }
     }
 
@@ -971,7 +963,7 @@ public final class ErrorHandlers {
                         @Cached(inline = false) CallNode callNode,
                         @Cached ParseEncodingErrorHandlerResultNode parseResultNode,
                         @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
             int len = codePointLengthNode.execute(srcObj, TS_ENCODING);
             cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
@@ -992,18 +984,18 @@ public final class ErrorHandlers {
         @Specialization
         static void doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString encoding, TruffleString srcObj, int startPos, int endPos, TruffleString reason,
                         @Cached MakeEncodeExceptionNode makeEncodeExceptionNode,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             raiseNode.raiseExceptionObject(cache.exceptionObject);
         }
     }
 
-    private static int adjustAndCheckPos(int newPos, int len, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+    private static int adjustAndCheckPos(int newPos, int len, Node inliningTarget, PRaiseNode raiseNode) {
         if (newPos < 0) {
             newPos += len;
         }
         if (newPos < 0 || newPos > len) {
-            throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newPos);
+            throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS, newPos);
         }
         return newPos;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,11 +47,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -83,18 +85,18 @@ public abstract class PyLongFromDoubleNode extends Node {
 
     @Specialization(guards = {"!fitLong(value)", "isFinite(value)"})
     static Object doFinite(double value,
-                    @Cached(inline = false) PythonObjectFactory factory) {
-        return factory.createInt(toBigInteger(value));
+                    @Bind PythonLanguage language) {
+        return PFactory.createInt(language, toBigInteger(value));
     }
 
     @Specialization(guards = "!isFinite(value)")
-    static Object doInfinite(double value,
-                    @Cached(inline = false) PRaiseNode raiseNode) {
+    static Object doInfinite(Node inliningTarget, double value,
+                    @Cached PRaiseNode raiseNode) {
         if (Double.isNaN(value)) {
-            throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER);
         }
         assert Double.isInfinite(value);
-        throw raiseNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_FLOAT_INFINITY_TO_INTEGER);
+        throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_CONVERT_FLOAT_INFINITY_TO_INTEGER);
     }
 
     @TruffleBoundary

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -91,13 +91,16 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 abstract class Obj2SstBase {
 
     final AstState state;
+    private final Node node;
 
-    protected Obj2SstBase(AstState state) {
+    protected Obj2SstBase(Node node, AstState state) {
+        this.node = node;
         this.state = state;
     }
 
@@ -305,7 +308,7 @@ abstract class Obj2SstBase {
         throw raiseTypeError(ErrorMessages.GOT_AN_INVALID_TYPE_IN_CONSTANT, obj);
     }
 
-    static PException unexpectedNodeType(TruffleString expected, Object obj) {
+    protected PException unexpectedNodeType(TruffleString expected, Object obj) {
         throw raiseTypeError(EXPECTED_SOME_SORT_OF_S_BUT_GOT_S, expected, repr(obj));
     }
 
@@ -317,15 +320,15 @@ abstract class Obj2SstBase {
         return PyObjectReprAsTruffleStringNode.executeUncached(o);
     }
 
-    private static PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
-        throw PRaiseNode.getUncached().raise(type, format, arguments);
+    private PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
+        throw PRaiseNode.raiseStatic(node, type, format, arguments);
     }
 
-    static PException raiseTypeError(TruffleString format, Object... arguments) {
+    protected PException raiseTypeError(TruffleString format, Object... arguments) {
         throw raise(PythonBuiltinClassType.TypeError, format, arguments);
     }
 
-    private static PException raiseValueError(TruffleString format, Object... arguments) {
+    protected PException raiseValueError(TruffleString format, Object... arguments) {
         throw raise(PythonBuiltinClassType.ValueError, format, arguments);
     }
 }

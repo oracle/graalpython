@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -141,7 +141,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getNormalizer(form) == null")
         TruffleString invalidForm(@SuppressWarnings("unused") TruffleString form, @SuppressWarnings("unused") TruffleString unistr) {
-            throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
+            throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
         }
 
         @TruffleBoundary
@@ -173,7 +173,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "getNormalizer(form) == null")
         TruffleString invalidForm(@SuppressWarnings("unused") TruffleString form, @SuppressWarnings("unused") TruffleString unistr) {
-            throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
+            throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.INVALID_NORMALIZATION_FORM);
         }
 
         @Override
@@ -192,11 +192,11 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         static Object name(int cp, Object defaultValue,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             String result = getUnicodeName(cp);
             if (result == null) {
                 if (defaultValue == PNone.NO_VALUE) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NO_SUCH_NAME);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NO_SUCH_NAME);
                 }
                 return defaultValue;
             }

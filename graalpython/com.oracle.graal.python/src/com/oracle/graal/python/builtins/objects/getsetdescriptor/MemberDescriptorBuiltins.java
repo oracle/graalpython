@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -109,10 +110,10 @@ public final class MemberDescriptorBuiltins extends PythonBuiltins {
         Object doGeneric(GetSetDescriptor descr,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached GetIdNode getIdNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object getattr = readAttributeFromObjectNode.execute(getContext().getBuiltins(), BuiltinNames.T_GETATTR);
             Object id = getIdNode.execute(getattr);
-            return factory.createTuple(new Object[]{id, factory.createTuple(new Object[]{descr.getType(), descr.getName()})});
+            return PFactory.createTuple(language, new Object[]{id, PFactory.createTuple(language, new Object[]{descr.getType(), descr.getName()})});
         }
     }
 

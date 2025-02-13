@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,7 +82,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -120,15 +120,15 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached SetDictNode setDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             /*
              * create the new instance (which is a class, since we are a metatype!)
              */
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
             Object length_attr = lookupAttrLength.execute(frame, inliningTarget, result, T__LENGTH_);
             if (length_attr == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE);
+                throw raiseNode.raise(inliningTarget, AttributeError, CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE);
             }
 
             int length;
@@ -136,26 +136,26 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
                 length = asSizeNode.executeExact(frame, inliningTarget, length_attr);
             } catch (PException e) {
                 if (e.expectTypeOrOverflowError(inliningTarget, profile)) {
-                    throw raiseNode.get(inliningTarget).raise(OverflowError, THE_LENGTH_ATTRIBUTE_IS_TOO_LARGE);
+                    throw raiseNode.raise(inliningTarget, OverflowError, THE_LENGTH_ATTRIBUTE_IS_TOO_LARGE);
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER);
+                    throw raiseNode.raise(inliningTarget, TypeError, THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER);
                 }
             }
 
             if (length < 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE);
+                throw raiseNode.raise(inliningTarget, ValueError, THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE);
             }
 
             Object type_attr = lookupAttrType.execute(frame, inliningTarget, result, T__TYPE_);
             if (type_attr == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
+                throw raiseNode.raise(inliningTarget, AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
 
-            StgDictObject stgdict = factory.createStgDictObject(PythonBuiltinClassType.StgDict);
+            StgDictObject stgdict = PFactory.createStgDictObject(language);
 
             StgDictObject itemdict = pyTypeStgDictNode.execute(inliningTarget, type_attr);
             if (itemdict == null) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
+                throw raiseNode.raise(inliningTarget, TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
             }
 
             assert itemdict.format != null;
@@ -171,7 +171,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
 
             int itemsize = itemdict.size;
             if (itemsize != 0 && length > Integer.MAX_VALUE / itemsize) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ARRAY_TOO_LARGE);
+                throw raiseNode.raise(inliningTarget, OverflowError, ARRAY_TOO_LARGE);
             }
 
             int itemalign = itemdict.align;
@@ -193,7 +193,7 @@ public final class PyCArrayTypeBuiltins extends PythonBuiltins {
             /* replace the class dict by our updated spam dict */
             PDict resDict = getDict.execute(result);
             if (resDict == null) {
-                resDict = factory.createDictFixedStorage((PythonObject) result);
+                resDict = PFactory.createDictFixedStorage(language, (PythonObject) result);
             }
             addAllToOtherNode.execute(frame, inliningTarget, resDict.getDictStorage(), stgdict);
             setDict.execute(inliningTarget, (PythonObject) result, stgdict);

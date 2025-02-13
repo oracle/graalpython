@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -407,6 +407,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @ExplodeLoop
         static PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall, int adjustCount,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached TruffleString.EqualNode equalNode,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
@@ -418,11 +419,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
             boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !equalNode.execute(signature.getParameterIds()[0], T_SELF, TS_ENCODING));
             TruffleString name = signature.getRaiseErrorName().isEmpty() ? getName(callable) : signature.getRaiseErrorName();
-            throw raiseTooManyArguments(name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
+            throw raiseTooManyArguments(inliningTarget, name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
         @Specialization(replaces = "doCached")
         static PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
+                        @Bind("this") Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached TruffleString.EqualNode equalNode) {
             int kwonly_given = 0;
@@ -433,14 +435,14 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
             boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !equalNode.execute(signature.getParameterIds()[0], T_SELF, TS_ENCODING));
             TruffleString name = signature.getRaiseErrorName().isEmpty() ? getName(callable) : signature.getRaiseErrorName();
-            throw raiseTooManyArguments(name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
+            throw raiseTooManyArguments(inliningTarget, name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
-        private static PException raiseTooManyArguments(TruffleString name, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
+        private static PException raiseTooManyArguments(Node inliningTarget, TruffleString name, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
             String forgotSelfMsg = forgotSelf ? ". Did you forget 'self' in the function definition?" : "";
             if (ndefaults > 0) {
                 if (kwonly_given == 0) {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S,
+                    throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S,
                                     name,
                                     co_argcount - ndefaults,
                                     co_argcount,
@@ -449,7 +451,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                                     avail == 1 ? "was" : "were",
                                     forgotSelfMsg);
                 } else {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_POS_ARG_S,
+                    throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_POS_ARG_S,
                                     name,
                                     co_argcount - ndefaults,
                                     co_argcount,
@@ -462,7 +464,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             } else {
                 if (kwonly_given == 0) {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_GIVEN_S,
+                    throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_GIVEN_S,
                                     name,
                                     co_argcount - ndefaults,
                                     co_argcount == 1 ? "" : "s",
@@ -470,7 +472,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                                     avail == 1 ? "was" : "were",
                                     forgotSelfMsg);
                 } else {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S,
+                    throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S,
                                     name,
                                     co_argcount,
                                     co_argcount == 1 ? "" : "s",
@@ -501,10 +503,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Bind("getSelf(scope_w)") Object self,
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) IsSubtypeNode isSubtypeMRONode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!isSubtypeMRONode.execute(getClassNode.execute(inliningTarget, self), callable.getEnclosingType())) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCR_S_FOR_P_OBJ_DOESNT_APPLY_TO_P,
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DESCR_S_FOR_P_OBJ_DOESNT_APPLY_TO_P,
                                 callable.getName(), callable.getEnclosingType(), self);
             }
         }
@@ -623,7 +625,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
+                            throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
                         }
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
@@ -679,7 +681,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
+                            throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
                         }
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
@@ -709,13 +711,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, TruffleString lastWrongKeyword,
                         List<TruffleString> posArgOnlyPassedAsKeywordNames, Node inliningTarget, InlinedBranchProfile posArgOnlyPassedAsKeywordProfile, PRaiseNode raise) {
             if (tooManyKeywords == 1) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), lastWrongKeyword);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), lastWrongKeyword);
             } else if (tooManyKeywords > 1) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), tooManyKeywords);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), tooManyKeywords);
             } else if (posArgOnlyPassedAsKeywordNames != null) {
                 posArgOnlyPassedAsKeywordProfile.enter(inliningTarget);
                 TruffleString names = joinUncached(T_COMMA_SPACE, posArgOnlyPassedAsKeywordNames);
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), names);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), names);
             } else if (unusedKeywords != null) {
                 PArguments.setKeywordArguments(arguments, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
             }
@@ -771,8 +773,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     protected abstract static class FillBaseNode extends PNodeWithContext {
 
-        protected static PException raiseMissing(Object callable, TruffleString[] missingNames, int missingCnt, TruffleString type, PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_S,
+        protected static PException raiseMissing(Node inliningTarget, Object callable, TruffleString[] missingNames, int missingCnt, TruffleString type, PRaiseNode raise) {
+            throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_S,
                             getName(callable),
                             missingCnt,
                             type,
@@ -849,7 +851,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
+                throw raiseMissing(inliningTarget, callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
             }
         }
 
@@ -873,7 +875,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
+                throw raiseMissing(inliningTarget, callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
             }
         }
     }
@@ -904,7 +906,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         static void doCached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount,
                         @SuppressWarnings("unused") int co_kwonlyargcount,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raise,
+                        @Exclusive @Cached PRaiseNode raise,
                         @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
                         @Cached("co_argcount") int cachedArgcount,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgcount,
@@ -925,14 +927,14 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise.get(inliningTarget));
+                throw raiseMissing(inliningTarget, callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
             }
         }
 
         @Specialization(replaces = "doCached")
         static void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raise,
+                        @Exclusive @Cached PRaiseNode raise,
                         @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
                         @Exclusive @Cached InlinedConditionProfile missingProfile) {
             TruffleString[] missingNames = new TruffleString[co_kwonlyargcount];
@@ -951,7 +953,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(inliningTarget, missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise.get(inliningTarget));
+                throw raiseMissing(inliningTarget, callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
             }
         }
     }

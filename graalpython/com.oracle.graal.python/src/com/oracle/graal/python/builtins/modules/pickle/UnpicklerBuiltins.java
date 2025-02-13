@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -76,7 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -112,7 +113,7 @@ public class UnpicklerBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             self.setInputStream(frame, inliningTarget, raiseNode, lookup, file);
             self.setInputEncoding(encoding, errors);
             self.setBuffers(frame, inliningTarget, getIter, buffers);
@@ -131,9 +132,9 @@ public class UnpicklerBuiltins extends PythonBuiltins {
         static Object load(VirtualFrame frame, PUnpickler self,
                         @Bind("this") Node inliningTarget,
                         @Cached PUnpickler.LoadNode loadNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.getRead() == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.INIT_CALLED_WITH, "Unpickler", self);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnpicklingError, ErrorMessages.INIT_CALLED_WITH, "Unpickler", self);
             }
             return loadNode.execute(frame, self);
         }
@@ -162,25 +163,25 @@ public class UnpicklerBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PUnpickler self, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             final Object persFunc = self.getPersFunc();
             if (persFunc == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, T_METHOD_PERSISTENT_LOAD);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, T_METHOD_PERSISTENT_LOAD);
             }
-            return PickleUtils.reconstructMethod(factory, persFunc, self.getPersFuncSelf());
+            return PickleUtils.reconstructMethod(language, persFunc, self.getPersFuncSelf());
         }
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object set(PUnpickler self, Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyCallableCheckNode callableCheck,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (PGuards.isDeleteMarker(obj)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATRIBUTE_DELETION_NOT_SUPPORTED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATRIBUTE_DELETION_NOT_SUPPORTED);
             }
             if (!callableCheck.execute(inliningTarget, obj)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_MUST_BE_A_CALLABLE, T_METHOD_PERSISTENT_LOAD, "one argument");
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_MUST_BE_A_CALLABLE, T_METHOD_PERSISTENT_LOAD, "one argument");
             }
             self.setPersFuncSelf(null);
             self.setPersFunc(obj);
@@ -193,8 +194,8 @@ public class UnpicklerBuiltins extends PythonBuiltins {
     public abstract static class UnpicklerMemoNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         static Object get(PUnpickler self, @SuppressWarnings("unused") PNone none,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createUnpicklerMemoProxy(self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createUnpicklerMemoProxy(language, self);
         }
 
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})
@@ -206,7 +207,7 @@ public class UnpicklerBuiltins extends PythonBuiltins {
                         @Cached HashingStorageIteratorNext storageIterNext,
                         @Cached HashingStorageIteratorKey storageIterKey,
                         @Cached HashingStorageIteratorValue storageIterValue,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (obj instanceof PUnpicklerMemoProxy) {
                 final PUnpickler unpickler = ((PUnpicklerMemoProxy) obj).getUnpickler();
                 self.setMemo(unpickler.getMemoCopy());
@@ -218,16 +219,16 @@ public class UnpicklerBuiltins extends PythonBuiltins {
                     Object key = storageIterKey.execute(inliningTarget, dictStorage, it);
                     Object value = storageIterValue.execute(inliningTarget, dictStorage, it);
                     if (!PGuards.canBeInteger(key)) {
-                        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.MEMO_KEY_MUST_BE_INT);
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MEMO_KEY_MUST_BE_INT);
                     }
                     final int idx = asSizeNode.executeExact(frame, inliningTarget, key);
                     if (idx < 0) {
-                        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.MEMO_KEY_MUST_BE_POS_INT);
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.MEMO_KEY_MUST_BE_POS_INT);
                     }
                     self.memoPut(idx, value);
                 }
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_MUST_BE_A_OR_B_NOT_C, "memo", "UnpicklerMemoProxy", "dict", obj);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_MUST_BE_A_OR_B_NOT_C, "memo", "UnpicklerMemoProxy", "dict", obj);
             }
             return PNone.NONE;
         }

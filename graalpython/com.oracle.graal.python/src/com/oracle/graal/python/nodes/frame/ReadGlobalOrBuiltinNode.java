@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -215,7 +215,7 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
     @Specialization(guards = "isSingleContext(this)")
     Object returnBuiltinFromConstantModule(TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
                     @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
                     @SuppressWarnings("unused") @Cached("getBuiltins()") PythonModule builtins) {
@@ -223,15 +223,15 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
     }
 
     @InliningCutoff
-    private static PException raiseNameNotDefined(PRaiseNode raiseNode, TruffleString attributeId) {
-        throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
+    private static PException raiseNameNotDefined(Node inliningTarget, PRaiseNode raiseNode, TruffleString attributeId) {
+        throw raiseNode.raise(inliningTarget, NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
     }
 
     @InliningCutoff
     @Specialization(replaces = "returnBuiltinFromConstantModule")
     Object returnBuiltin(TruffleString attributeId,
                     @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
                     @Shared @Cached ReadAttributeFromObjectNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedConditionProfile ctxInitializedProfile) {
@@ -239,14 +239,14 @@ abstract class ReadBuiltinNode extends PNodeWithContext {
         return returnBuiltinFromConstantModule(attributeId, inliningTarget, raiseNode, isBuiltinProfile, readFromBuiltinsNode, builtins);
     }
 
-    private static Object readBuiltinFromModule(TruffleString attributeId, PRaiseNode.Lazy raiseNode, Node inliningTarget,
+    private static Object readBuiltinFromModule(TruffleString attributeId, PRaiseNode raiseNode, Node inliningTarget,
                     InlinedConditionProfile isBuiltinProfile, PythonModule builtins,
                     ReadAttributeFromObjectNode readFromBuiltinsNode) {
         Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
         if (isBuiltinProfile.profile(inliningTarget, builtin != PNone.NO_VALUE)) {
             return builtin;
         } else {
-            throw raiseNameNotDefined(raiseNode.get(inliningTarget), attributeId);
+            throw raiseNameNotDefined(inliningTarget, raiseNode, attributeId);
         }
     }
 

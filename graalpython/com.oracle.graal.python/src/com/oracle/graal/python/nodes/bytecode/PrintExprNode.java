@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,7 +74,7 @@ public abstract class PrintExprNode extends PNodeWithContext {
         Object displayhook = lookupAttr.execute(frame, inliningTarget, sysModule, BuiltinNames.T_DISPLAYHOOK);
         if (displayhook == PNone.NO_VALUE) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.LOST_SYSDISPLAYHOOK);
+            throw PRaiseNode.raiseStatic(this, RuntimeError, ErrorMessages.LOST_SYSDISPLAYHOOK);
         }
         callNode.execute(frame, displayhook, object);
     }

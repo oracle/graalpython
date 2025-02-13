@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -88,7 +89,7 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -259,9 +260,10 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached HiddenAttr.ReadNode readWeaklistNode,
                         @Cached HiddenAttr.WriteNode writeWeakListNode,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
+                        @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached HiddenAttr.ReadNode readQueueNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object obj = object;
             if (object instanceof PythonBuiltinClassType tobj) {
                 obj = PythonContext.get(inliningTarget).getCore().lookupType(tobj);
@@ -273,7 +275,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                 allowed = type.getWeaklistoffset() != 0;
             }
             if (!allowed) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, obj);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, obj);
             }
             assert obj instanceof PythonAbstractObject;
             Object wr = readWeaklistNode.execute(inliningTarget, (PythonAbstractObject) obj, WEAKLIST, null);
@@ -281,7 +283,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                 return (PReferenceType) wr; // is must be a PReferenceType instance.
             }
 
-            PReferenceType ref = factory.createReferenceType(cls, obj, null, getWeakReferenceQueue(inliningTarget, readQueueNode));
+            PReferenceType ref = PFactory.createReferenceType(language, cls, getInstanceShape.execute(cls), obj, null, getWeakReferenceQueue(inliningTarget, readQueueNode));
             writeWeakListNode.execute(inliningTarget, (PythonAbstractObject) obj, WEAKLIST, ref);
             return ref;
         }
@@ -290,8 +292,9 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         static PReferenceType refTypeWithCallback(Object cls, Object object, Object callback,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached HiddenAttr.ReadNode readQueueNode,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createReferenceType(cls, object, callback, getWeakReferenceQueue(inliningTarget, readQueueNode));
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createReferenceType(language, cls, getInstanceShape.execute(cls), object, callback, getWeakReferenceQueue(inliningTarget, readQueueNode));
         }
 
         @Specialization
@@ -301,9 +304,10 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinClassExactProfile profile,
                         @Cached GetMroNode getMroNode,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached HiddenAttr.ReadNode readQueueNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object actualCallback = callback instanceof PNone ? null : callback;
             Object clazz = getClassNode.execute(inliningTarget, pythonObject);
 
@@ -335,16 +339,16 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             }
             if (allowed) {
                 CApiTransitions.addNativeWeakRef(getContext(), pythonObject);
-                return factory.createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue(inliningTarget, readQueueNode));
+                return PFactory.createReferenceType(language, cls, getInstanceShape.execute(cls), pythonObject, actualCallback, getWeakReferenceQueue(inliningTarget, readQueueNode));
             } else {
-                return refType(cls, pythonObject, actualCallback, raiseNode.get(inliningTarget));
+                return refType(cls, pythonObject, actualCallback, raiseNode);
             }
         }
 
         @Fallback
         static PReferenceType refType(@SuppressWarnings("unused") Object cls, Object object, @SuppressWarnings("unused") Object callback,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CREATE_WEAK_REFERENCE_TO, object);
         }
 
         @SuppressWarnings("unchecked")

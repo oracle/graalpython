@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -55,7 +56,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -90,10 +91,9 @@ public abstract class PrepareExceptionNode extends Node {
 
     @Specialization(guards = {"check.execute(inliningTarget, exc)", "!isPNone(value)"})
     static Object doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
-                    @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
+                    @Bind("this") Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
     @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isPTuple(value)"}, limit = "1")
@@ -106,7 +106,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type, isSubtypeNode, raiseNode);
+        checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         if (isInstanceProfile.profile(inliningTarget, isInstanceNode.executeWith(frame, value, type))) {
             return value;
         } else {
@@ -127,7 +127,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type, isSubtypeNode, raiseNode);
+        checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         Object instance = callConstructor.execute(frame, type);
         if (check.execute(inliningTarget, instance)) {
             return instance;
@@ -145,7 +145,7 @@ public abstract class PrepareExceptionNode extends Node {
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Shared @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
-        checkExceptionClass(type, isSubtypeNode, raiseNode);
+        checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
         Object[] args = getObjectArrayNode.execute(inliningTarget, value);
         Object instance = callConstructor.execute(frame, type, args);
         if (check.execute(inliningTarget, instance)) {
@@ -158,9 +158,8 @@ public abstract class PrepareExceptionNode extends Node {
     @Specialization(guards = "fallbackGuard(type, inliningTarget, isTypeNode)", limit = "1")
     static Object doError(Object type, @SuppressWarnings("unused") Object value,
                     @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
-                    @Shared @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
+                    @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode) {
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
     }
 
     static boolean fallbackGuard(Object type, Node inliningTarget, IsTypeNode isTypeNode) {
@@ -172,12 +171,12 @@ public abstract class PrepareExceptionNode extends Node {
          * Instead of throwing the exception here, we replace the created exception with it. This is
          * done to match CPython's behavior of `generator.throw`
          */
-        return PythonObjectFactory.getUncached().createBaseException(TypeError, ErrorMessages.CALLING_N_SHOULD_HAVE_RETURNED_AN_INSTANCE_OF_BASE_EXCEPTION_NOT_P, new Object[]{type, instance});
+        return PFactory.createBaseException(PythonLanguage.get(null), TypeError, ErrorMessages.CALLING_N_SHOULD_HAVE_RETURNED_AN_INSTANCE_OF_BASE_EXCEPTION_NOT_P, new Object[]{type, instance});
     }
 
-    private static void checkExceptionClass(Object type, IsSubtypeNode isSubtypeNode, PRaiseNode raiseNode) {
+    private static void checkExceptionClass(Node inliningTarget, Object type, IsSubtypeNode isSubtypeNode, PRaiseNode raiseNode) {
         if (!isSubtypeNode.execute(type, PythonBuiltinClassType.PBaseException)) {
-            throw raiseNode.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX, type);
         }
     }
 }

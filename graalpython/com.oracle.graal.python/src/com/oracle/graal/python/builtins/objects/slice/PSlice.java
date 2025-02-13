@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -110,7 +110,7 @@ public abstract class PSlice extends PythonBuiltinObject {
     protected static void checkNegative(int length) {
         if (length < 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+            throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
     }
 
@@ -142,7 +142,7 @@ public abstract class PSlice extends PythonBuiltinObject {
             stepIsNegative = pySign(step) < 0;
             if (pySign(step) == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
 

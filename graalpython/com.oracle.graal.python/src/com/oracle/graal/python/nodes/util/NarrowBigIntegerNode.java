@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,9 +42,10 @@ package com.oracle.graal.python.nodes.util;
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -72,14 +73,13 @@ public abstract class NarrowBigIntegerNode extends PNodeWithContext {
     @Specialization(guards = "x.signum() != 0")
     static Object narrowBigInteger(Node inliningTarget, BigInteger x,
                     @Cached InlinedConditionProfile fitsIntProfile,
-                    @Cached InlinedConditionProfile fitsLongProfile,
-                    @Cached(inline = false) PythonObjectFactory factory) {
+                    @Cached InlinedConditionProfile fitsLongProfile) {
         if (fitsIntProfile.profile(inliningTarget, PInt.fitsIn(x, PInt.MIN_INT, PInt.MAX_INT))) {
             return PInt.intValue(x);
         }
         if (fitsLongProfile.profile(inliningTarget, PInt.fitsIn(x, PInt.MIN_LONG, PInt.MAX_LONG))) {
             return PInt.longValue(x);
         }
-        return factory.createInt(x);
+        return PFactory.createInt(PythonLanguage.get(inliningTarget), x);
     }
 }

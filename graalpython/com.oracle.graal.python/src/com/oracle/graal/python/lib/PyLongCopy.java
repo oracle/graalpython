@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -96,8 +97,8 @@ public abstract class PyLongCopy extends Node {
 
     @Specialization(guards = "!isBuiltinPInt(obj)", replaces = "doPIntOverridenNarrowLong")
     static PInt doPIntOverriden(PInt obj,
-                    @Cached(inline = false) PythonObjectFactory factory) {
-        return factory.createInt(obj.getValue());
+                    @Bind PythonLanguage language) {
+        return PFactory.createInt(language, obj.getValue());
     }
 
     @Specialization

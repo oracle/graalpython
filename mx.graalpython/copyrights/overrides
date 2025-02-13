@@ -708,7 +708,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatti
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/InternalFormat.java,jython.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/StringFormatProcessor.java,jython.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/TextFormatter.java,jython.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/object/PythonObjectFactory.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/object/PFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/PSequence.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/BoolSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/ByteSequenceStorage.java,zippy.copyright

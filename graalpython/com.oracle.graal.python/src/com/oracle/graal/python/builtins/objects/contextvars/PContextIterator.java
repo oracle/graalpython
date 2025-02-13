@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
@@ -51,14 +52,14 @@ public final class PContextIterator extends PythonBuiltinObject {
         VALUES,
         ITEMS;
 
-        public Object apply(Hamt.Entry item, PythonObjectFactory factory) {
+        public Object apply(Hamt.Entry item, PythonLanguage language) {
             switch (this) {
                 case KEYS:
                     return item.key;
                 case VALUES:
                     return item.value;
                 case ITEMS:
-                    return factory.createTuple(new Object[]{item.key, item.value});
+                    return PFactory.createTuple(language, new Object[]{item.key, item.value});
                 default:
                     throw CompilerDirectives.shouldNotReachHere("null ItemKind in PHamtIterator");
             }
@@ -76,8 +77,8 @@ public final class PContextIterator extends PythonBuiltinObject {
     }
 
     // can return null
-    public Object next(PythonObjectFactory factory) {
+    public Object next(PythonLanguage language) {
         Hamt.Entry item = it.next();
-        return item == null ? null : kind.apply(item, factory);
+        return item == null ? null : kind.apply(item, language);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,6 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public final class WrapTpNew extends SlotWrapper {
     @Child private IsTypeNode isType;
     @Child private IsSubtypeNode isSubtype;
-    @Child private PRaiseNode raiseNode;
     @Child private LookupAttributeInMRONode lookupNewNode;
     @CompilationFinal private ValueProfile builtinProfile;
     @CompilationFinal private byte state = 0;
@@ -106,7 +105,7 @@ public final class WrapTpNew extends SlotWrapper {
                     reportPolymorphicSpecialize();
                     state |= NOT_CLASS_STATE;
                 }
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.NEW_X_ISNT_TYPE_OBJ, owner.getName(), cls);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_X_ISNT_TYPE_OBJ, owner.getName(), cls);
             }
             if (isSubtype == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -119,7 +118,7 @@ public final class WrapTpNew extends SlotWrapper {
                     reportPolymorphicSpecialize();
                     state |= NOT_SUBTP_STATE;
                 }
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError,
                                 ErrorMessages.IS_NOT_SUBTYPE_OF,
                                 owner.getName(), cls, cls, owner.getName());
             }
@@ -145,7 +144,7 @@ public final class WrapTpNew extends SlotWrapper {
                             reportPolymorphicSpecialize();
                             state |= IS_UNSAFE_STATE;
                         }
-                        throw getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner.getName(), cls, cls);
+                        throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner.getName(), cls, cls);
                     }
                 }
                 // we explicitly allow non-Java functions to pass here, since a PythonBuiltinClass
@@ -176,13 +175,5 @@ public final class WrapTpNew extends SlotWrapper {
     @TruffleBoundary
     private static final Class<? extends PythonBuiltinBaseNode> getFactoryNodeClassUncached(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
         return factory.getNodeClass();
-    }
-
-    private PRaiseNode getRaiseNode() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        return raiseNode;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,10 +52,11 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = J__TRACEMALLOC)
 public final class TracemallocModuleBuiltins extends PythonBuiltins {
@@ -75,8 +76,8 @@ public final class TracemallocModuleBuiltins extends PythonBuiltins {
     abstract static class GetObjectTracebackNode extends PythonBuiltinNode {
         @Specialization
         static Object getObjectTraceback(Object obj,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.NotImplementedError);
         }
     }
 
@@ -85,8 +86,8 @@ public final class TracemallocModuleBuiltins extends PythonBuiltins {
     abstract static class GetTracesNode extends PythonBuiltinNode {
         @Specialization
         static Object getTraces(
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.NotImplementedError);
         }
     }
 }

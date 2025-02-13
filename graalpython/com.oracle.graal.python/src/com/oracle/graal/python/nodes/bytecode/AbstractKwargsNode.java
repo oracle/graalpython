@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,16 +49,17 @@ import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public class AbstractKwargsNode extends PNodeWithContext {
-    protected static PException handleNonMapping(VirtualFrame frame, PRaiseNode raise, int stackTop, NonMappingException e) {
+    protected static PException handleNonMapping(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, int stackTop, NonMappingException e) {
         Object functionName = AbstractKwargsNode.getFunctionName(frame, stackTop);
-        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
+        throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
     }
 
-    protected static PException handleSameKey(VirtualFrame frame, PRaiseNode raise, int stackTop, SameDictKeyException e) {
+    protected static PException handleSameKey(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, int stackTop, SameDictKeyException e) {
         Object functionName = AbstractKwargsNode.getFunctionName(frame, stackTop);
-        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, e.getKey());
+        throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, e.getKey());
     }
 
     private static Object getFunctionName(VirtualFrame frame, int stackTop) {

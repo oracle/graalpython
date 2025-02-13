@@ -58,6 +58,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentIndex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -98,7 +99,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -135,33 +136,37 @@ public abstract class BytesNodes {
     @GenerateCached(false)
     public abstract static class CreateBytesNode extends Node {
 
-        public final PBytesLike execute(Node inliningTarget, PythonObjectFactory factory, Object basedOn, byte[] bytes) {
-            return execute(inliningTarget, factory, basedOn, new ByteSequenceStorage(bytes));
+        public final PBytesLike execute(Node inliningTarget, Object basedOn, byte[] bytes) {
+            return execute(inliningTarget, basedOn, new ByteSequenceStorage(bytes));
         }
 
-        public abstract PBytesLike execute(Node inliningTarget, PythonObjectFactory factory, Object basedOn, SequenceStorage bytes);
+        public abstract PBytesLike execute(Node inliningTarget, Object basedOn, SequenceStorage bytes);
 
         @Specialization
-        static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, SequenceStorage bytes) {
-            return factory.createBytes(bytes);
+        static PBytesLike bytes(@SuppressWarnings("unused") PBytes basedOn, SequenceStorage bytes,
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, bytes);
         }
 
         @Specialization
-        static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, SequenceStorage bytes) {
-            return factory.createByteArray(bytes);
+        static PBytesLike bytearray(@SuppressWarnings("unused") PByteArray basedOn, SequenceStorage bytes,
+                        @Bind PythonLanguage language) {
+            return PFactory.createByteArray(language, bytes);
         }
 
         @Specialization(guards = "checkBytes.execute(inliningTarget, basedOn)")
-        static PBytesLike bytes(@SuppressWarnings("unused") Node inliningTarget, PythonObjectFactory factory, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
-                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes) {
-            return factory.createBytes(bytes);
+        static PBytesLike bytes(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
+                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes,
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, bytes);
         }
 
         @Specialization(guards = "!checkBytes.execute(inliningTarget, basedOn)")
-        static PBytesLike bytearray(@SuppressWarnings("unused") Node inliningTarget, PythonObjectFactory factory, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
-                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes) {
+        static PBytesLike bytearray(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") Object basedOn, SequenceStorage bytes,
+                        @SuppressWarnings("unused") @Shared @Cached PyBytesCheckNode checkBytes,
+                        @Bind PythonLanguage language) {
             assert PyByteArrayCheckNode.executeUncached(basedOn);
-            return factory.createByteArray(bytes);
+            return PFactory.createByteArray(language, bytes);
         }
     }
 
@@ -247,12 +252,12 @@ public abstract class BytesNodes {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object buffer;
             try {
                 buffer = bufferAcquireLib.acquireReadonly(object, frame, indirectCallData);
             } catch (PException e) {
-                throw raiseNode.get(inliningTarget).raise(errorType, errorMessageFormat, object);
+                throw raiseNode.raise(inliningTarget, errorType, errorMessageFormat, object);
             }
             try {
                 return bufferLib.getCopiedByteArray(buffer);
@@ -282,12 +287,12 @@ public abstract class BytesNodes {
         static byte[] doBuffer(Node inliningTarget, Object object,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object buffer;
             try {
                 buffer = bufferAcquireLib.acquireReadonly(object);
             } catch (PException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_BYTESLIKE_GOT_P, object);
+                throw raiseNode.raise(inliningTarget, TypeError, EXPECTED_BYTESLIKE_GOT_P, object);
             }
             try {
                 return bufferLib.getCopiedByteArray(buffer);
@@ -523,8 +528,8 @@ public abstract class BytesNodes {
 
         @Fallback
         Object doOthers(@SuppressWarnings("unused") VirtualFrame frame, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className, argNum, PythonBuiltinClassType.PString, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className, argNum, PythonBuiltinClassType.PString, value);
         }
 
         @ClinicConverterFactory
@@ -555,7 +560,7 @@ public abstract class BytesNodes {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (bufferAcquireLib.hasBuffer(object)) {
                 // TODO PyBUF_FULL_RO
                 Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, indirectCallData);
@@ -572,7 +577,7 @@ public abstract class BytesNodes {
                     e.expect(inliningTarget, TypeError, errorProfile);
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object, "bytes");
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object, "bytes");
         }
     }
 
@@ -600,18 +605,18 @@ public abstract class BytesNodes {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached(inline = false) BytesFromObject bytesFromObject,
                         // Exclusive as a workaround for GR-44836
-                        @Cached @Exclusive PRaiseNode.Lazy raiseNode) {
+                        @Cached @Exclusive PRaiseNode raiseNode) {
             if (indexCheckNode.execute(inliningTarget, source)) {
                 try {
                     int size = asSizeNode.executeExact(frame, inliningTarget, source);
                     if (size < 0) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
+                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEGATIVE_COUNT);
                     }
                     try {
                         return new byte[size];
                     } catch (OutOfMemoryError error) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw raiseNode.get(inliningTarget).raise(MemoryError);
+                        throw raiseNode.raise(inliningTarget, MemoryError);
                     }
                 } catch (PException e) {
                     e.expect(inliningTarget, TypeError, errorProfile);
@@ -638,18 +643,18 @@ public abstract class BytesNodes {
         @Specialization(guards = "isString(source)")
         @SuppressWarnings("unused")
         static byte[] fromString(Node inliningTarget, Object source, PNone encoding, Object errors,
-                        @Cached @Shared PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
+                        @Cached @Shared PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         public static byte[] error(Node inliningTarget, Object source, Object encoding, Object errors,
-                        @Cached @Shared PRaiseNode.Lazy raiseNode) {
+                        @Cached @Shared PRaiseNode raiseNode) {
             if (PGuards.isNone(encoding)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ENCODING_ARG_WO_STRING);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ENCODING_ARG_WO_STRING);
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG);
         }
     }
 
@@ -681,7 +686,7 @@ public abstract class BytesNodes {
                         @Shared @Cached InlinedConditionProfile earlyExit,
                         @Shared @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
             }
@@ -689,7 +694,7 @@ public abstract class BytesNodes {
             /* How many sep characters we'll be inserting. */
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
             if (arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen) {
-                throw raiseNode.get(inliningTarget).raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             }
 
             resultlen += arglen * 2;
@@ -723,7 +728,7 @@ public abstract class BytesNodes {
                         @Shared @Cached InlinedConditionProfile earlyExit,
                         @Shared @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Shared @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
             }
@@ -731,7 +736,7 @@ public abstract class BytesNodes {
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
 
             if (arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen) {
-                throw raiseNode.get(inliningTarget).raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             }
 
             resultlen += arglen * 2;
@@ -879,7 +884,7 @@ public abstract class BytesNodes {
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             TruffleString ascii = switchEncodingNode.execute(str, Encoding.US_ASCII);
             InternalByteArray iba = getInternalByteArrayNode.execute(ascii, Encoding.US_ASCII);
             byte[] bytes = new byte[iba.getLength() / 2];
@@ -892,13 +897,13 @@ public abstract class BytesNodes {
                 }
                 int top = BytesUtils.digitValue(c);
                 if (top >= 16 || top < 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
                 }
 
                 c = i + 1 < iba.getEnd() ? strchar[++i] : 0;
                 int bottom = BytesUtils.digitValue(c);
                 if (bottom >= 16 || bottom < 0) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
                 }
 
                 bytes[n++] = (byte) ((top << 4) | bottom);
@@ -915,12 +920,12 @@ public abstract class BytesNodes {
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
             int i = 0;
             while (it.hasNext()) {
                 if (nextNode.execute(it) > 127) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
                 }
                 ++i;
             }
@@ -1001,9 +1006,9 @@ public abstract class BytesNodes {
     @GenerateCached(false)
     public abstract static class BaseTranslateNode extends PythonBuiltinNode {
 
-        static void checkLengthOfTable(Node inliningTarget, byte[] table, InlinedConditionProfile isLenTable256Profile, PRaiseNode.Lazy raiseNode) {
+        static void checkLengthOfTable(Node inliningTarget, byte[] table, InlinedConditionProfile isLenTable256Profile, PRaiseNode raiseNode) {
             if (isLenTable256Profile.profile(inliningTarget, table.length != 256)) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.TRANS_TABLE_MUST_BE_256);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.TRANS_TABLE_MUST_BE_256);
             }
         }
 

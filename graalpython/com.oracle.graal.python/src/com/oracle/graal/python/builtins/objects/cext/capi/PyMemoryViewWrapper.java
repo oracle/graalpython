@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,7 +92,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     @TruffleBoundary
     private static Object allocate(PMemoryView object) {
         if (object.isReleased()) {
-            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
+            throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }
         GetElementPtrNode getElementNode = GetElementPtrNode.getUncached();
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();

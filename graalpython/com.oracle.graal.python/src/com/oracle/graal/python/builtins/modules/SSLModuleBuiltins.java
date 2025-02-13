@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,7 +98,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
@@ -220,9 +220,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         loadDefaults();
         PythonModule module = core.lookupBuiltinModule(T__SSL);
-        PythonObjectFactory factory = core.factory();
         module.setAttribute(tsLiteral("OPENSSL_VERSION_NUMBER"), 0);
-        PTuple versionInfo = factory.createTuple(new int[]{0, 0, 0, 0, 0});
+        PTuple versionInfo = PFactory.createTuple(core.getLanguage(), new int[]{0, 0, 0, 0, 0});
         module.setAttribute(tsLiteral("OPENSSL_VERSION_INFO"), versionInfo);
         module.setAttribute(tsLiteral("OPENSSL_VERSION"), toTruffleStringUncached("GraalVM JSSE"));
         module.setAttribute(tsLiteral("_DEFAULT_CIPHERS"), T_DEFAULT_CIPHER_STRING);
@@ -310,15 +309,15 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         static Object txt2obj(TruffleString txt, boolean name,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             // TODO implement properly
             if (equalNode.execute(T_OID_TLS_SERVER, txt, TS_ENCODING)) {
-                return factory.createTuple(new Object[]{129, T_SERVER_AUTH, T_TLS_WEB_SERVER_AUTHENTICATION, txt});
+                return PFactory.createTuple(language, new Object[]{129, T_SERVER_AUTH, T_TLS_WEB_SERVER_AUTHENTICATION, txt});
             } else if (equalNode.execute(T_OID_TLS_CLIENT, txt, TS_ENCODING)) {
-                return factory.createTuple(new Object[]{130, T_CLIENT_AUTH, T_TLS_WEB_CLIENT_AUTHENTICATION, txt});
+                return PFactory.createTuple(language, new Object[]{130, T_CLIENT_AUTH, T_TLS_WEB_CLIENT_AUTHENTICATION, txt});
             }
-            throw raiseNode.get(inliningTarget).raise(NotImplementedError);
+            throw raiseNode.raise(inliningTarget, NotImplementedError);
         }
 
         @Override
@@ -333,8 +332,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object nid2obj(Object nid,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -343,8 +342,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class RandStatusNode extends PythonBuiltinNode {
         @Specialization
         static Object randStatus(
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -354,8 +353,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randAdd(Object string, Object entropy,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -365,8 +364,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randBytes(Object n,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -376,8 +375,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object randPseudoBytes(Object n,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 
@@ -389,11 +388,11 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getDefaultPaths(
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // there is no default location given by graalpython
             // in case the env variables SSL_CERT_FILE or SSL_CERT_DIR
             // are provided, ssl.py#get_default_verify_paths will take care of it
-            return factory.createTuple(new Object[]{T_SSL_CERT_FILE, T_EMPTY_STRING, T_SSL_CERT_DIR, T_EMPTY_STRING});
+            return PFactory.createTuple(language, new Object[]{T_SSL_CERT_FILE, T_EMPTY_STRING, T_SSL_CERT_DIR, T_EMPTY_STRING});
         }
     }
 
@@ -409,8 +408,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object fail(TruffleString argument,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PermissionError);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PermissionError);
         }
     }
 
@@ -438,7 +437,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
                 if (!(cert instanceof X509Certificate)) {
                     throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate(getContext().factory(), (X509Certificate) certs.get(0));
+                return CertUtils.decodeCertificate((X509Certificate) certs.get(0), PythonLanguage.get(null));
             } catch (IOException | DecoderException ex) {
                 throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_CANT_OPEN_FILE_S, ex.toString());
             } catch (CertificateException | CRLException ex) {

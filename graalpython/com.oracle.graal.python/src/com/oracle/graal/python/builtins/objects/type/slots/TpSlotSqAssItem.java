@@ -314,7 +314,7 @@ public final class TpSlotSqAssItem {
 
         @Specialization(guards = "!isNoValue(value)")
         static void callPythonSimpleSet(VirtualFrame frame, Node inliningTarget, TpSlotSqAssItemPython slot, Object self, int key, Object value,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached TernaryPythonSlotDispatcherNode callPythonFun) {
             Object callable = slot.getSetitem();
             if (callable == null) {
@@ -326,7 +326,7 @@ public final class TpSlotSqAssItem {
         @Specialization(guards = "isNoValue(value)")
         @InliningCutoff
         static void callPythonSimpleDel(VirtualFrame frame, Node inliningTarget, TpSlotSqAssItemPython slot, Object self, int key, @SuppressWarnings("unused") Object value,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached BinaryPythonSlotDispatcherNode callPythonFun) {
             Object callable = slot.getDelitem();
             if (callable == null) {
@@ -336,8 +336,8 @@ public final class TpSlotSqAssItem {
         }
 
         @InliningCutoff
-        private static PException raiseAttributeError(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString attrName) {
-            return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, attrName);
+        private static PException raiseAttributeError(Node inliningTarget, PRaiseNode raiseNode, TruffleString attrName) {
+            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, attrName);
         }
 
         @Specialization(replaces = "callCachedBuiltin")

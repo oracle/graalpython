@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -86,8 +87,8 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
     @Fallback
     @InliningCutoff
     static int size(Object obj,
-                    @Cached(inline = false) PRaiseNode raiseNode) {
-        throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, "PyTuple_Size");
+                    @Bind("this") Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, "PyTuple_Size");
     }
 
     protected boolean isTupleSubtype(Object obj, Node inliningTarget, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {

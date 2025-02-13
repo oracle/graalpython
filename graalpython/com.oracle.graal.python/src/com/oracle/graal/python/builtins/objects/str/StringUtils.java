@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,10 +49,10 @@ import java.util.List;
 import java.util.Locale;
 
 import org.graalvm.nativeimage.ImageInfo;
-
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacterCategory;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
+
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -71,11 +71,6 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 import com.oracle.truffle.regex.chardata.UnicodeCharacterAliases;
 
 public final class StringUtils {
-
-    /**
-     * The maximum length of the source string when creating a sing-codepoint substring.
-     */
-    public static final int LAZY_CODEPOINT_THRESHOLD = 20;
 
     public enum StripKind {
         LEFT,
@@ -153,24 +148,6 @@ public final class StringUtils {
         }
     }
 
-    public static boolean isUnicodeLineBreak(char ch) {
-        switch (ch) {
-            case 0x000A:
-            case 0x000B:
-            case 0x000C:
-            case 0x000D:
-            case 0x001C:
-            case 0x001D:
-            case 0x001E:
-            case 0x0085:
-            case 0x2028:
-            case 0x2029:
-                return true;
-            default:
-                return false;
-        }
-    }
-
     public static boolean isSpace(int ch) {
         if (ch < 128) {
             return ASCII_WHITESPACE[ch] == 1;
@@ -239,19 +216,6 @@ public final class StringUtils {
         }
 
         return substringNode.execute(str, i, j - i, TS_ENCODING, false);
-    }
-
-    public static Object[] toCharacterArray(TruffleString arg, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                    TruffleStringIterator.NextNode nextNode, TruffleString.FromCodePointNode fromCodePointNode) {
-        Object[] values = new Object[codePointLengthNode.execute(arg, TS_ENCODING)];
-        TruffleStringIterator it = createCodePointIteratorNode.execute(arg, TS_ENCODING);
-        int i = 0;
-        while (it.hasNext()) {
-            // TODO: GR-37219: use SubstringNode with lazy=true?
-            int codePoint = nextNode.execute(it);
-            values[i++] = fromCodePointNode.execute(codePoint, TS_ENCODING, true);
-        }
-        return values;
     }
 
     @TruffleBoundary

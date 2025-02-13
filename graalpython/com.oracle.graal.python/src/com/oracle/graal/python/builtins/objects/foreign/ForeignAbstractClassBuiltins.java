@@ -26,6 +26,12 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
+
+import java.util.List;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -34,9 +40,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -44,11 +50,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-
-import java.util.List;
-
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 
 /*
  * NOTE: We are not using IndirectCallContext here in this file
@@ -68,8 +69,8 @@ public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
     abstract static class BasesNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getBases(Object self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+                        @Bind PythonLanguage language) {
+            return PFactory.createEmptyTuple(language);
         }
     }
 

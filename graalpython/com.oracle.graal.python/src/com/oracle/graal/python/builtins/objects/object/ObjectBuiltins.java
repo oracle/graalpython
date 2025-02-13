@@ -64,6 +64,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
@@ -111,7 +112,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -142,7 +142,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -196,16 +196,16 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigmentNode,
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Cached SetClassNode setClassNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, value)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
             }
             Object type = getClassNode.execute(inliningTarget, self);
             boolean bothModuleSubtypes = isModuleProfile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonModule) &&
                             isModuleProfile.profileClass(inliningTarget, value, PythonBuiltinClassType.PythonModule);
             boolean bothMutable = (getTypeFlagsNode.execute(type) & TypeFlags.IMMUTABLETYPE) == 0 && (getTypeFlagsNode.execute(value) & TypeFlags.IMMUTABLETYPE) == 0;
             if (!bothModuleSubtypes && !bothMutable) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
             checkCompatibleForAssigmentNode.execute(frame, type, value);
@@ -262,15 +262,15 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached(parameters = "Init") LookupCallableSlotInMRONode lookupInit,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNew,
                         @Cached TypeNodes.CheckCallableIsSpecificBuiltinNode checkSlotIs,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(inliningTarget, self);
                 if (!checkSlotIs.execute(inliningTarget, lookupInit.execute(type), ObjectBuiltinsFactory.InitNodeFactory.getInstance())) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
                 if (checkSlotIs.execute(inliningTarget, lookupNew.execute(type), BuiltinConstructorsFactory.ObjectNodeFactory.getInstance())) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
             }
             return PNone.NONE;
@@ -394,7 +394,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached("create(cachedKey)") LookupAttributeInMRONode lookup,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type);
             return fullLookup(frame, inliningTarget, object, cachedKey, type, descr, getSlotsNode, raiseNode);
@@ -408,12 +408,12 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetClassNode getClassNode,
                         @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             Object type = getClassNode.execute(inliningTarget, object);
@@ -421,7 +421,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
             return fullLookup(frame, inliningTarget, object, key, type, descr, getSlotsNode, raiseNode);
         }
 
-        private Object fullLookup(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, Object descr, GetObjectSlotsNode getSlotsNode, Lazy raiseNode) {
+        private Object fullLookup(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, Object descr, GetObjectSlotsNode getSlotsNode, PRaiseNode raiseNode) {
             boolean hasDescr = descr != PNone.NO_VALUE;
             if (hasDescr && (profileFlags & HAS_DESCR) == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -455,7 +455,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     return dispatch(frame, object, type, descr, descrGetSlot);
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
         private Object readAttribute(Object object, TruffleString key) {
@@ -607,8 +607,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)", "!isDeleteMarker(mapping)"})
         static Object dict(@SuppressWarnings("unused") Object self, Object mapping,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
 
         @Specialization(guards = "isFallback(self, mapping, inliningTarget, getClassNode, otherBuiltinClassProfile, isBuiltinClassProfile)", limit = "1")
@@ -617,9 +617,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached IsOtherBuiltinClassProfile otherBuiltinClassProfile,
                         @Exclusive @Cached IsBuiltinClassExactProfile isBuiltinClassProfile,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, "__dict__");
+                        @Exclusive @Cached GetClassNode getClassNode) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, "__dict__");
         }
 
         static boolean isFallback(Object self, Object mapping, Node inliningTarget,
@@ -651,8 +650,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!formatString.isEmpty()")
         static Object format(Object self, @SuppressWarnings("unused") TruffleString formatString,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT, self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT, self);
         }
 
         @Specialization(guards = "formatString.isEmpty()")
@@ -815,8 +814,8 @@ public final class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached com.oracle.graal.python.builtins.objects.type.TypeBuiltins.DirNode dirNode,
-                        @Cached PythonObjectFactory factory) {
-            PSet names = factory.createSet();
+                        @Bind PythonLanguage language) {
+            PSet names = PFactory.createSet(language);
             Object updateCallable = lookupAttrNode.execute(frame, inliningTarget, names, T_UPDATE);
             Object ns = lookupAttrNode.execute(frame, inliningTarget, obj, T___DICT__);
             if (isSubtypeNode.execute(frame, getClassNode.execute(inliningTarget, ns), PythonBuiltinClassType.PDict)) {

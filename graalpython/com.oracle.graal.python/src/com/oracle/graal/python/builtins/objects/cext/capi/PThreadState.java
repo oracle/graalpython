@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.exception.GetUnreifiedExceptionN
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -108,7 +109,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
         PythonContext pythonContext = PythonContext.get(null);
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict == null) {
-            threadStateDict = pythonContext.factory().createDict();
+            threadStateDict = PFactory.createDict(pythonContext.getLanguage());
             threadState.setDict(threadStateDict);
         }
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));

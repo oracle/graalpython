@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -63,8 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -92,9 +92,8 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return internStrings(inliningTarget, self.getFreeVars(), internStringNode, factory);
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(inliningTarget, self.getFreeVars(), internStringNode);
         }
     }
 
@@ -104,9 +103,8 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return internStrings(inliningTarget, self.getCellVars(), internStringNode, factory);
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(inliningTarget, self.getCellVars(), internStringNode);
         }
     }
 
@@ -215,8 +213,8 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Cached PythonObjectFactory factory) {
-            return self.co_code(factory);
+                        @Bind PythonLanguage language) {
+            return self.co_code(language);
         }
     }
 
@@ -226,9 +224,8 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return internStrings(inliningTarget, self.getConstants(), internStringNode, factory);
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(inliningTarget, self.getConstants(), internStringNode);
         }
     }
 
@@ -238,9 +235,8 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return internStrings(inliningTarget, self.getNames(), internStringNode, factory);
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(inliningTarget, self.getNames(), internStringNode);
         }
     }
 
@@ -250,9 +246,8 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         static Object get(PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InternStringNode internStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return internStrings(inliningTarget, self.getVarnames(), internStringNode, factory);
+                        @Cached InternStringNode internStringNode) {
+            return internStrings(inliningTarget, self.getVarnames(), internStringNode);
         }
     }
 
@@ -263,13 +258,13 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetLineTableNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             byte[] linetable = self.getLinetable();
             if (linetable == null) {
                 // TODO: this is for the moment undefined (see co_code)
                 linetable = PythonUtils.EMPTY_BYTE_ARRAY;
             }
-            return factory.createBytes(linetable);
+            return PFactory.createBytes(language, linetable);
         }
     }
 
@@ -279,9 +274,9 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object get(PCode self,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // We store our exception table together with the bytecode, not in this field
-            return factory.createEmptyBytes();
+            return PFactory.createEmptyBytes(language);
         }
     }
 
@@ -296,7 +291,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static Object lines(PCode self) {
-            PythonObjectFactory factory = PythonContext.get(null).factory();
+            PythonLanguage language = PythonLanguage.get(null);
             PTuple tuple;
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
@@ -308,15 +303,15 @@ public final class CodeBuiltins extends PythonBuiltins {
                     co.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
                         int nextStart = bci + op.length();
                         if (map.startLineMap[bci] != data.line || nextStart == co.code.length) {
-                            lines.add(factory.createTuple(new int[]{data.start, nextStart, data.line}));
+                            lines.add(PFactory.createTuple(language, new int[]{data.start, nextStart, data.line}));
                             data.line = map.startLineMap[bci];
                             data.start = nextStart;
                         }
                     });
                 }
-                tuple = factory.createTuple(lines.toArray());
+                tuple = PFactory.createTuple(language, lines.toArray());
             } else {
-                tuple = factory.createEmptyTuple();
+                tuple = PFactory.createEmptyTuple(language);
             }
             return PyObjectGetIter.executeUncached(tuple);
         }
@@ -329,7 +324,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object positions(PCode self) {
-            PythonObjectFactory factory = PythonContext.get(null).factory();
+            PythonLanguage language = PythonLanguage.get(null);
             PTuple tuple;
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
@@ -338,13 +333,13 @@ public final class CodeBuiltins extends PythonBuiltins {
                 if (map != null && map.startLineMap.length > 0) {
                     byte[] bytecode = co.code;
                     for (int i = 0; i < bytecode.length;) {
-                        lines.add(factory.createTuple(new int[]{map.startLineMap[i], map.endLineMap[i], map.startColumnMap[i], map.endColumnMap[i]}));
+                        lines.add(PFactory.createTuple(language, new int[]{map.startLineMap[i], map.endLineMap[i], map.startColumnMap[i], map.endColumnMap[i]}));
                         i += OpCodes.fromOpCode(bytecode[i]).length();
                     }
                 }
-                tuple = factory.createTuple(lines.toArray());
+                tuple = PFactory.createTuple(language, lines.toArray());
             } else {
-                tuple = factory.createEmptyTuple();
+                tuple = PFactory.createEmptyTuple(language);
             }
             return PyObjectGetIter.executeUncached(tuple);
         }
@@ -405,17 +400,17 @@ public final class CodeBuiltins extends PythonBuiltins {
         @Specialization
         static long hash(VirtualFrame frame, PCode self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectHashNode hashNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached PyObjectHashNode hashNode) {
             long h, h0, h1, h2, h3, h4, h5, h6;
 
             h0 = hashNode.execute(frame, inliningTarget, self.co_name());
-            h1 = hashNode.execute(frame, inliningTarget, self.co_code(factory));
-            h2 = hashNode.execute(frame, inliningTarget, self.co_consts(factory));
-            h3 = hashNode.execute(frame, inliningTarget, self.co_names(factory));
-            h4 = hashNode.execute(frame, inliningTarget, self.co_varnames(factory));
-            h5 = hashNode.execute(frame, inliningTarget, self.co_freevars(factory));
-            h6 = hashNode.execute(frame, inliningTarget, self.co_cellvars(factory));
+            h1 = hashNode.execute(frame, inliningTarget, self.co_code(language));
+            h2 = hashNode.execute(frame, inliningTarget, self.co_consts(language));
+            h3 = hashNode.execute(frame, inliningTarget, self.co_names(language));
+            h4 = hashNode.execute(frame, inliningTarget, self.co_varnames(language));
+            h5 = hashNode.execute(frame, inliningTarget, self.co_freevars(language));
+            h6 = hashNode.execute(frame, inliningTarget, self.co_cellvars(language));
 
             h = h0 ^ h1 ^ h2 ^ h3 ^ h4 ^ h5 ^ h6 ^
                             self.co_argcount() ^ self.co_posonlyargcount() ^ self.co_kwonlyargcount() ^
@@ -509,9 +504,10 @@ public final class CodeBuiltins extends PythonBuiltins {
         return false;
     }
 
-    private static PTuple internStrings(Node inliningTarget, Object[] values, InternStringNode internStringNode, PythonObjectFactory factory) {
+    private static PTuple internStrings(Node inliningTarget, Object[] values, InternStringNode internStringNode) {
+        PythonLanguage language = PythonLanguage.get(inliningTarget);
         if (values == null) {
-            return factory.createEmptyTuple();
+            return PFactory.createEmptyTuple(language);
         }
         Object[] result;
         if (!hasStrings(values)) {
@@ -526,6 +522,6 @@ public final class CodeBuiltins extends PythonBuiltins {
                 }
             }
         }
-        return factory.createTuple(result);
+        return PFactory.createTuple(language, result);
     }
 }

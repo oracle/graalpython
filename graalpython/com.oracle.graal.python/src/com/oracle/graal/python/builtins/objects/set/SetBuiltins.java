@@ -36,6 +36,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -75,7 +76,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -136,8 +137,8 @@ public final class SetBuiltins extends PythonBuiltins {
 
         @Fallback
         static PNone fail(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object self, Object iterable,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, iterable);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, iterable);
         }
     }
 
@@ -149,8 +150,8 @@ public final class SetBuiltins extends PythonBuiltins {
         static PSet doSet(PSet self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createSet(copyNode.execute(inliningTarget, self.getDictStorage()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createSet(language, copyNode.execute(inliningTarget, self.getDictStorage()));
         }
     }
 
@@ -209,12 +210,12 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Shared @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = addAllToOther.execute(frame, inliningTarget, getSetStorageNode.execute(frame, inliningTarget, args[i]), result);
             }
-            return factory.createSet(result);
+            return PFactory.createSet(language, result);
         }
 
         @Specialization(replaces = "doCached")
@@ -223,12 +224,12 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Shared @Cached HashingStorageAddAllToOther addAllToOther,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = addAllToOther.execute(frame, inliningTarget, getSetStorageNode.execute(frame, inliningTarget, args[i]), result);
             }
-            return factory.createSet(result);
+            return PFactory.createSet(language, result);
         }
     }
 
@@ -405,10 +406,9 @@ public final class SetBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(other)")
         Object doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self, @SuppressWarnings("unused") PNone other,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached HashingStorageCopy copyNode) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
-            return createResult(self, result, factory);
+            return createResult(self, result);
         }
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
@@ -417,13 +417,12 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached("args.length") int len,
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageIntersect intersectNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached HashingStorageIntersect intersectNode) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = intersectNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, args[i]));
             }
-            return createResult(self, result, factory);
+            return createResult(self, result);
         }
 
         @Specialization(replaces = "doCached")
@@ -431,13 +430,12 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
-                        @Shared @Cached HashingStorageIntersect intersectNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared @Cached HashingStorageIntersect intersectNode) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = intersectNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, args[i]));
             }
-            return createResult(self, result, factory);
+            return createResult(self, result);
         }
 
         static boolean isOther(Object arg) {
@@ -450,14 +448,14 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Shared @Cached GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Shared @Cached HashingStorageIntersect intersectNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             result = intersectNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, other));
-            return createResult(self, result, factory);
+            return PFactory.createSet(language, result);
         }
 
-        protected Object createResult(PSet self, HashingStorage result, PythonObjectFactory factory) {
-            return factory.createSet(result);
+        protected Object createResult(PSet self, HashingStorage result) {
+            return PFactory.createSet(PythonLanguage.get(this), result);
         }
     }
 
@@ -465,8 +463,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic({SpecialMethodNames.class})
     public abstract static class IntersectUpdateNode extends IntersectNode {
-        @Override
-        protected Object createResult(PSet self, HashingStorage result, PythonObjectFactory factory) {
+        protected Object createResult(PSet self, HashingStorage result) {
             // In order to be compatible w.r.t. __eq__ calls we cannot reuse self storage
             self.setDictStorage(result);
             return PNone.NONE;
@@ -501,9 +498,9 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetSetStorageNode getHashingStorage,
                         @Cached HashingStorageXor xorNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage result = xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorage.execute(frame, inliningTarget, other));
-            return factory.createSet(result);
+            return PFactory.createSet(language, result);
         }
     }
 
@@ -584,8 +581,8 @@ public final class SetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(other)")
         static PSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self, @SuppressWarnings("unused") PNone other,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createSet(self.getDictStorage());
+                        @Bind PythonLanguage language) {
+            return PFactory.createSet(language, self.getDictStorage());
         }
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
@@ -595,12 +592,12 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Shared @Cached HashingCollectionNodes.GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Shared @Cached HashingStorageDiff diffNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = diffNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, args[i]));
             }
-            return factory.createSet(result);
+            return PFactory.createSet(language, result);
         }
 
         @Specialization(replaces = "doCached")
@@ -609,12 +606,12 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Shared @Cached GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Shared @Cached HashingStorageDiff diffNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage result = copyNode.execute(inliningTarget, self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = diffNode.execute(frame, inliningTarget, result, getSetStorageNode.execute(frame, inliningTarget, args[i]));
             }
-            return factory.createSet(result);
+            return PFactory.createSet(language, result);
         }
 
         static boolean isOther(Object arg) {
@@ -626,9 +623,9 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetSetStorageNode getSetStorageNode,
                         @Shared @Cached HashingStorageDiff diffNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage result = diffNode.execute(frame, inliningTarget, self.getDictStorage(), getSetStorageNode.execute(frame, inliningTarget, other));
-            return factory.createSet(result);
+            return PFactory.createSet(language, result);
         }
     }
 
@@ -687,9 +684,9 @@ public final class SetBuiltins extends PythonBuiltins {
         static Object remove(VirtualFrame frame, PSet self, Object key,
                         @Bind("this") Node inliningTarget,
                         @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!discardNode.execute(frame, self, key)) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, new Object[]{key});
+                throw raiseNode.raise(inliningTarget, PythonErrorType.KeyError, new Object[]{key});
             }
             return PNone.NONE;
         }
@@ -713,12 +710,12 @@ public final class SetBuiltins extends PythonBuiltins {
         static Object remove(PSet self,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStoragePop popNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object[] result = popNode.execute(inliningTarget, self.getDictStorage(), self);
             if (result != null) {
                 return result[0];
             }
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,16 +25,17 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class ReadVarArgsNode extends ReadArgumentNode {
-    @Child private PythonObjectFactory factory;
+    private final boolean isBuiltin;
 
     ReadVarArgsNode(boolean isBuiltin) {
-        factory = isBuiltin ? null : PythonObjectFactory.create();
+        this.isBuiltin = isBuiltin;
     }
 
     public static ReadVarArgsNode create() {
@@ -56,11 +57,11 @@ public abstract class ReadVarArgsNode extends ReadArgumentNode {
         if (isBuiltin()) {
             return varArgs;
         } else {
-            return factory.createTuple(varArgs);
+            return PFactory.createTuple(PythonLanguage.get(this), varArgs);
         }
     }
 
     public boolean isBuiltin() {
-        return factory == null;
+        return isBuiltin;
     }
 }

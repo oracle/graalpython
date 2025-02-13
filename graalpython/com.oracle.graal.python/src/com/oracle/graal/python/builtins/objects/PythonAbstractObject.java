@@ -153,7 +153,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -291,7 +291,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Cached GetObjectSlotsNode getSlotsNode,
                     @Exclusive @Cached PySequenceCheckNode sequenceCheck,
                     @Exclusive @Cached GilNode gil) {
@@ -406,7 +406,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
@@ -441,7 +441,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
@@ -471,7 +471,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
@@ -503,7 +503,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -533,7 +533,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached PySequenceSizeNode sequenceSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -659,7 +659,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Cached PyCallableCheckNode callableCheck,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
@@ -852,7 +852,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -878,7 +878,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                     // GR-44020: make shared:
@@ -893,7 +893,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 Object value = getValue.execute(inliningTarget, behavior, method, this);
                 if (value instanceof PTuple tuple) {
                     if (pyTupleSizeNode.execute(inliningTarget, tuple) != 3) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_A_S_TUPLE, "return value", "3");
+                        throw raiseNode.raise(inliningTarget, ValueError, S_MUST_BE_A_S_TUPLE, "return value", "3");
                     }
                     SequenceStorage storage = tuple.getSequenceStorage();
                     int year = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 0), raiseNode);
@@ -902,10 +902,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     try {
                         return createLocalDate(year, month, day);
                     } catch (Exception e) {
-                        throw raiseNode.get(inliningTarget).raise(SystemError, e);
+                        throw raiseNode.raise(inliningTarget, SystemError, e);
                     }
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
+                    throw raiseNode.raise(inliningTarget, TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
                 }
 
             } else {
@@ -925,7 +925,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -951,7 +951,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                     // GR-44020: make shared:
@@ -966,7 +966,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 Object value = getValue.execute(inliningTarget, behavior, method, this);
                 if (value instanceof PTuple tuple) {
                     if (pyTupleSizeNode.execute(inliningTarget, tuple) != 4) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_A_S_TUPLE, "return value", "4");
+                        throw raiseNode.raise(inliningTarget, ValueError, S_MUST_BE_A_S_TUPLE, "return value", "4");
                     }
                     SequenceStorage storage = tuple.getSequenceStorage();
                     int hour = castToIntNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 0), raiseNode);
@@ -976,10 +976,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     try {
                         return createLocalTime(hour, min, sec, micro);
                     } catch (Exception e) {
-                        throw raiseNode.get(inliningTarget).raise(SystemError, e);
+                        throw raiseNode.raise(inliningTarget, SystemError, e);
                     }
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
+                    throw raiseNode.raise(inliningTarget, TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
                 }
             } else {
                 throw UnsupportedMessageException.create();
@@ -999,7 +999,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1025,7 +1025,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
@@ -1045,10 +1045,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                             return createZoneId(utcDeltaInSeconds);
                         }
                     } catch (Exception e) {
-                        throw raiseNode.get(inliningTarget).raise(SystemError, e);
+                        throw raiseNode.raise(inliningTarget, SystemError, e);
                     }
                 } catch (CannotCastException cce) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "str or int", value);
+                    throw raiseNode.raise(inliningTarget, TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "str or int", value);
                 }
             } else {
                 throw UnsupportedMessageException.create();
@@ -1087,7 +1087,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1113,7 +1113,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode castToLongNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                     // GR-44020: make shared:
@@ -1128,7 +1128,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 Object value = getValue.execute(inliningTarget, behavior, method, this);
                 if (value instanceof PTuple tuple) {
                     if (pyTupleSizeNode.execute(inliningTarget, tuple) != 2) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, S_MUST_BE_A_S_TUPLE, "return value", "2");
+                        throw raiseNode.raise(inliningTarget, ValueError, S_MUST_BE_A_S_TUPLE, "return value", "2");
                     }
                     SequenceStorage storage = tuple.getSequenceStorage();
                     long sec = castToLongNode.executeWithThrowSystemError(inliningTarget, getItemNode.execute(inliningTarget, storage, 0), raiseNode);
@@ -1136,10 +1136,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     try {
                         return createDuration(sec, nano);
                     } catch (Exception e) {
-                        throw raiseNode.get(inliningTarget).raise(SystemError, e);
+                        throw raiseNode.raise(inliningTarget, SystemError, e);
                     }
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
+                    throw raiseNode.raise(inliningTarget, TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "return value", "tuple", value);
                 }
             } else {
                 throw UnsupportedMessageException.create();
@@ -1592,7 +1592,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object getMetaParents(
                     @Bind("$node") Node inliningTarget,
-                    @Exclusive @Cached PythonObjectFactory factory,
                     @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Exclusive @Cached TypeNodes.GetBaseClassesNode getBaseClassNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
@@ -1601,7 +1600,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (isTypeNode.execute(inliningTarget, this)) {
                 var bases = getBaseClassNode.execute(inliningTarget, this);
                 if (bases.length > 0) {
-                    return factory.createTuple(bases);
+                    return PFactory.createTuple(PythonLanguage.get(inliningTarget), bases);
                 }
             }
             throw UnsupportedMessageException.create();
@@ -1673,7 +1672,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                     // GR-44020: make shared:
@@ -1728,7 +1727,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
                     @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext,
                     // GR-44020: make shared:
@@ -1756,7 +1755,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Cached GetNextNode getNextNode,
                     @Exclusive @Cached IsBuiltinObjectProfile exceptionProfile,
                     @Exclusive @Cached GilNode gil,
@@ -1831,7 +1830,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1856,7 +1855,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1881,7 +1880,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1906,7 +1905,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1931,7 +1930,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1956,7 +1955,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1981,7 +1980,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -2006,7 +2005,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -2031,7 +2030,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -2056,7 +2055,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -2081,7 +2080,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2106,7 +2105,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaByteNode toByteNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2131,7 +2130,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaShortNode toShortNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2156,7 +2155,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2181,7 +2180,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2206,7 +2205,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2231,7 +2230,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaDoubleNode toDoubleNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2278,7 +2277,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     @Cached CastToJavaStringNode toStringNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2303,7 +2302,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -2329,7 +2328,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaLongExactNode toLongNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -2443,7 +2442,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -2469,7 +2468,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -2515,7 +2514,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2541,7 +2540,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("getBehavior") @Cached GetInteropBehaviorNode getBehavior,
                     @Shared("getValue") @Cached GetInteropBehaviorValueNode getValue,
                     // GR-44020: make shared:
@@ -2612,7 +2611,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2628,7 +2627,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2645,7 +2644,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2661,7 +2660,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2678,7 +2677,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2694,7 +2693,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2711,7 +2710,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2727,7 +2726,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2744,7 +2743,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2761,7 +2760,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2778,7 +2777,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2795,7 +2794,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             int offset = toIntNode.executeWithThrow(inliningTarget, byteOffset, raiseNode, PythonBuiltinClassType.OverflowError);
@@ -2812,7 +2811,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached CastToJavaIntExactNode toIntNode,
                     // GR-44020: make shared:
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) throws UnsupportedMessageException, InvalidBufferOffsetException {
         if (bufferLib.isBuffer(this)) {
             if (length < 0 || (destination.length - destinationOffset > length)) {

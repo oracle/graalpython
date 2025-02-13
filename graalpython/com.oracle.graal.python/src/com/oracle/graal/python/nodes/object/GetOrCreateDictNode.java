@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,14 +42,16 @@ package com.oracle.graal.python.nodes.object;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -81,11 +83,11 @@ public abstract class GetOrCreateDictNode extends PNodeWithContext {
                     @Shared("getDict") @Cached(inline = false) GetDictIfExistsNode getDictIfExistsNode,
                     @Cached SetDictNode setDictNode,
                     @Cached InlinedBranchProfile createDict,
-                    @Cached(inline = false) PythonObjectFactory factory) {
+                    @Bind PythonLanguage language) {
         PDict dict = getDictIfExistsNode.execute(object);
         if (dict == null) {
             createDict.enter(inliningTarget);
-            dict = factory.createDictFixedStorage(object);
+            dict = PFactory.createDictFixedStorage(language, object);
             setDictNode.execute(inliningTarget, object, dict);
         }
         return dict;
@@ -97,7 +99,7 @@ public abstract class GetOrCreateDictNode extends PNodeWithContext {
         PDict dict = getDict.execute(object);
         if (dict == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.UNABLE_SET_DICT_OF_OBJ, object);
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.UNABLE_SET_DICT_OF_OBJ, object);
         }
         return dict;
     }

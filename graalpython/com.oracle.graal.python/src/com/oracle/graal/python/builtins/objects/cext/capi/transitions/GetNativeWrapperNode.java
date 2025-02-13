@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -61,7 +62,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -88,9 +89,9 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     @Specialization
     static PythonAbstractObjectNativeWrapper doString(TruffleString str,
                     @Bind("this") Node inliningTarget,
-                    @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Exclusive @Cached InlinedConditionProfile noWrapperProfile) {
-        return PythonObjectNativeWrapper.wrap(factory.createString(str), inliningTarget, noWrapperProfile);
+        return PythonObjectNativeWrapper.wrap(PFactory.createString(language, str), inliningTarget, noWrapperProfile);
     }
 
     @Specialization

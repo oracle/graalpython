@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -38,6 +38,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,7 +56,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -70,12 +71,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
 public final class GeneratorBuiltins extends PythonBuiltins {
 
-    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode.Lazy raiseNode) {
+    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode raiseNode) {
         if (self.isFinished()) {
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
         if (self.isRunning()) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
         }
     }
 
@@ -145,7 +146,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
         static Object next(VirtualFrame frame, PGenerator self,
                         @Bind("this") Node inliningTarget,
                         @Cached CommonGeneratorBuiltins.ResumeGeneratorNode resumeGeneratorNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             checkResumable(inliningTarget, self, raiseNode);
             return resumeGeneratorNode.execute(frame, inliningTarget, self, null);
         }
@@ -157,9 +158,8 @@ public final class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         static Object getCode(PGenerator self,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile hasCodeProfile,
-                        @Cached PythonObjectFactory.Lazy factory) {
-            return self.getOrCreateCode(inliningTarget, hasCodeProfile, factory);
+                        @Cached InlinedConditionProfile hasCodeProfile) {
+            return self.getOrCreateCode(inliningTarget, hasCodeProfile);
         }
     }
 
@@ -173,8 +173,8 @@ public final class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         static Object setRunning(@SuppressWarnings("unused") PGenerator self, @SuppressWarnings("unused") Object obj,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, "gi_running", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, "gi_running", self);
         }
     }
 
@@ -182,14 +182,13 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFrameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object getFrame(PGenerator self,
-                        @Cached PythonObjectFactory factory) {
+        static Object getFrame(PGenerator self) {
             if (self.isFinished()) {
                 return PNone.NONE;
             } else {
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 Node location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
-                PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory);
+                PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 int bci = self.getBci();
                 frame.setBci(bci);
@@ -233,8 +232,8 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

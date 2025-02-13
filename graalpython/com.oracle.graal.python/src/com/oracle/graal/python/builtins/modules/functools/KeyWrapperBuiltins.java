@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -63,14 +64,16 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PKeyWrapper)
 public final class KeyWrapperBuiltins extends PythonBuiltins {
@@ -119,8 +122,8 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static boolean fallback(Object self, Object other,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
         }
     }
 
@@ -174,8 +177,8 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
     public abstract static class KWCallNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object call(PKeyWrapper self, Object obj,
-                        @Cached PythonObjectFactory factory) {
-            final PKeyWrapper keyWrapper = factory.createKeyWrapper(self.getCmp());
+                        @Bind PythonLanguage language) {
+            final PKeyWrapper keyWrapper = PFactory.createKeyWrapper(language, self.getCmp());
             keyWrapper.setObject(obj);
             return keyWrapper;
         }

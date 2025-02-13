@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyCAccess.AllocateNode;
@@ -86,6 +87,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ArityException;
@@ -222,11 +224,11 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
             CompilerDirectives.transferToInterpreter();
             PythonContext context = PythonContext.get(null);
             context.ensureGilAfterFailure();
-            PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
+            PBaseException newException = PFactory.createBaseException(context.getLanguage(), RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
             throw ExceptionUtils.wrapJavaException(soe, null, newException);
         }
         if (t instanceof OutOfMemoryError oome) {
-            PBaseException newException = PythonContext.get(null).factory().createBaseException(MemoryError);
+            PBaseException newException = PFactory.createBaseException(PythonLanguage.get(null), MemoryError);
             throw ExceptionUtils.wrapJavaException(oome, null, newException);
         }
         // everything else: log and convert to PException (SystemError)
@@ -237,7 +239,7 @@ public abstract class GraalHPyNativeContext implements TruffleObject {
         out.println("should not throw exceptions apart from PException");
         t.printStackTrace(out);
         out.flush();
-        throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
+        throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
     }
 
     public abstract AllocateNode createAllocateNode();

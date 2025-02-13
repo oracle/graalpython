@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,7 +68,7 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -527,31 +527,28 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static Object convertConstantToPythonSpace(RootNode rootNode, Object o) {
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        if (o instanceof CodeUnit) {
-            CodeUnit code = ((CodeUnit) o);
-            PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(PythonLanguage.get(rootNode), code, getSourceSection(rootNode).getSource());
-            return factory.createCode(bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code);
+        PythonLanguage language = PythonLanguage.get(null);
+        if (o instanceof CodeUnit code) {
+            PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(language, code, getSourceSection(rootNode).getSource());
+            return PFactory.createCode(language, bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code);
         } else if (o instanceof BigInteger) {
-            return factory.createInt((BigInteger) o);
+            return PFactory.createInt(language, (BigInteger) o);
         } else if (o instanceof int[]) {
-            return factory.createTuple((int[]) o);
+            return PFactory.createTuple(language, (int[]) o);
         } else if (o instanceof long[]) {
-            return factory.createTuple(new LongSequenceStorage((long[]) o));
+            return PFactory.createTuple(language, new LongSequenceStorage((long[]) o));
         } else if (o instanceof double[]) {
-            return factory.createTuple(new DoubleSequenceStorage((double[]) o));
+            return PFactory.createTuple(language, new DoubleSequenceStorage((double[]) o));
         } else if (o instanceof boolean[]) {
-            return factory.createTuple(new BoolSequenceStorage((boolean[]) o));
+            return PFactory.createTuple(language, new BoolSequenceStorage((boolean[]) o));
         } else if (o instanceof byte[]) {
-            return factory.createBytes((byte[]) o);
-        } else if (o instanceof TruffleString[]) {
-            TruffleString[] strings = (TruffleString[]) o;
+            return PFactory.createBytes(language, (byte[]) o);
+        } else if (o instanceof TruffleString[] strings) {
             Object[] array = new Object[strings.length];
             System.arraycopy(strings, 0, array, 0, strings.length);
-            return factory.createTuple(array);
-        } else if (o instanceof Object[]) {
-            Object[] objects = (Object[]) o;
-            return factory.createTuple(objects.clone());
+            return PFactory.createTuple(language, array);
+        } else if (o instanceof Object[] objects) {
+            return PFactory.createTuple(language, objects.clone());
         }
         // Ensure no conversion is missing
         assert !IsForeignObjectNode.executeUncached(o) : o;
@@ -709,20 +706,20 @@ public final class PCode extends PythonBuiltinObject {
         return J_EMPTY_STRING;
     }
 
-    private static PTuple createTuple(Object[] array, PythonObjectFactory factory) {
+    private static PTuple createTuple(PythonLanguage language, Object[] array) {
         Object[] data = array;
         if (data == null) {
             data = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
-        return factory.createTuple(data);
+        return PFactory.createTuple(language, data);
     }
 
-    private static PBytes createBytes(byte[] array, PythonObjectFactory factory) {
+    private static PBytes createBytes(byte[] array, PythonLanguage language) {
         byte[] bytes = array;
         if (bytes == null) {
             bytes = PythonUtils.EMPTY_BYTE_ARRAY;
         }
-        return factory.createBytes(bytes);
+        return PFactory.createBytes(language, bytes);
     }
 
     public TruffleString co_name() {
@@ -743,32 +740,32 @@ public final class PCode extends PythonBuiltinObject {
         return fName;
     }
 
-    public PBytes co_code(PythonObjectFactory factory) {
-        return createBytes(this.getCodestring(), factory);
+    public PBytes co_code(PythonLanguage language) {
+        return createBytes(this.getCodestring(), language);
     }
 
-    public PBytes co_lnotab(PythonObjectFactory factory) {
-        return createBytes(this.getLinetable(), factory);
+    public PBytes co_lnotab(PythonLanguage language) {
+        return createBytes(this.getLinetable(), language);
     }
 
-    public PTuple co_consts(PythonObjectFactory factory) {
-        return createTuple(this.getConstants(), factory);
+    public PTuple co_consts(PythonLanguage language) {
+        return createTuple(language, this.getConstants());
     }
 
-    public PTuple co_names(PythonObjectFactory factory) {
-        return createTuple(this.getNames(), factory);
+    public PTuple co_names(PythonLanguage language) {
+        return createTuple(language, this.getNames());
     }
 
-    public PTuple co_varnames(PythonObjectFactory factory) {
-        return createTuple(this.getVarnames(), factory);
+    public PTuple co_varnames(PythonLanguage language) {
+        return createTuple(language, this.getVarnames());
     }
 
-    public PTuple co_freevars(PythonObjectFactory factory) {
-        return createTuple(this.getFreeVars(), factory);
+    public PTuple co_freevars(PythonLanguage language) {
+        return createTuple(language, this.getFreeVars());
     }
 
-    public PTuple co_cellvars(PythonObjectFactory factory) {
-        return createTuple(this.getCellVars(), factory);
+    public PTuple co_cellvars(PythonLanguage language) {
+        return createTuple(language, this.getCellVars());
     }
 
     public int co_argcount() {

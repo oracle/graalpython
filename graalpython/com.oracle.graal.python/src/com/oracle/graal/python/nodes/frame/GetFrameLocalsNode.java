@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
@@ -49,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -64,6 +65,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -86,14 +88,15 @@ public abstract class GetFrameLocalsNode extends Node {
     }
 
     @Specialization(guards = "!pyFrame.hasCustomLocals()")
-    static Object doLoop(PFrame pyFrame,
-                    @Cached(inline = false) PythonObjectFactory factory,
+    static Object doLoop(Node inliningTarget, PFrame pyFrame,
+                    @Cached InlinedBranchProfile create,
                     @Cached(inline = false) CopyLocalsToDict copyLocalsToDict) {
         MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null
         PDict localsDict = (PDict) pyFrame.getLocalsDict();
         if (localsDict == null) {
-            localsDict = factory.createDict();
+            create.enter(inliningTarget);
+            localsDict = PFactory.createDict(PythonLanguage.get(inliningTarget));
             pyFrame.setLocalsDict(localsDict);
         }
         copyLocalsToDict.execute(locals, localsDict);

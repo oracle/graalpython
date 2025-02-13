@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -93,7 +92,7 @@ public abstract class PyNumberRshiftNode extends BinaryOpNode {
                     @Cached GetCachedTpSlotsNode getWSlots,
                     @Cached GetClassNode getWClass,
                     @Cached CallBinaryOp1Node callBinaryOp1Node,
-                    @Cached Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_rshift();
@@ -108,17 +107,17 @@ public abstract class PyNumberRshiftNode extends BinaryOpNode {
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Lazy raiseNode) {
+    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
         if (v instanceof PBuiltinMethod) {
             handlePossiblePrint(inliningTarget, v, w);
         }
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, ">>", v, w);
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, ">>", v, w);
     }
 
     @TruffleBoundary
     private static void handlePossiblePrint(Node inliningTarget, Object v, Object w) {
         if (v instanceof PBuiltinMethod method && method.getBuiltinFunction().getName().equalsUncached(T_PRINT, TS_ENCODING)) {
-            throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT, ">>", v, w);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT, ">>", v, w);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -51,6 +52,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -64,7 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -105,8 +107,8 @@ public final class RepeatBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() == 0")
         static Object nextZero(PRepeat self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
         }
 
         @Specialization(guards = "self.getCnt() < 0")
@@ -126,8 +128,8 @@ public final class RepeatBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() < 0")
         static Object hintNeg(PRepeat self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, LEN_OF_UNSIZED_OBJECT);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, LEN_OF_UNSIZED_OBJECT);
         }
     }
 
@@ -139,7 +141,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile negativeCountProfile,
                         @Cached GetClassNode getClass,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClass.execute(inliningTarget, self);
             Object[] tupleElements;
             if (negativeCountProfile.profile(inliningTarget, self.getCnt() < 0)) {
@@ -147,8 +149,8 @@ public final class RepeatBuiltins extends PythonBuiltins {
             } else {
                 tupleElements = new Object[]{self.getElement(), self.getCnt()};
             }
-            PTuple tuple = factory.createTuple(tupleElements);
-            return factory.createTuple(new Object[]{type, tuple});
+            PTuple tuple = PFactory.createTuple(language, tupleElements);
+            return PFactory.createTuple(language, new Object[]{type, tuple});
         }
     }
 

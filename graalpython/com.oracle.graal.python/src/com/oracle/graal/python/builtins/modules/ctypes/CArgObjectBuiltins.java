@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,7 +56,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -162,9 +163,9 @@ public final class CArgObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         static PyCArgObject paramFunc(CDataObject self, StgDictObject stgDict,
-                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-            PyCArgObject parg = factory.createCArgObject();
+            PyCArgObject parg = PFactory.createCArgObject(language);
             switch (stgDict.paramfunc) {
                 // Corresponds to PyCArrayType_paramfunc
                 case PyCArrayTypeParamFunc -> {

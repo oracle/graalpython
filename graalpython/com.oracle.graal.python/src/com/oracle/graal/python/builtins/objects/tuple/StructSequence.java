@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -104,10 +104,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -262,16 +260,11 @@ public class StructSequence {
 
     @TruffleBoundary
     public static void initType(Python3Core core, BuiltinTypeDescriptor desc) {
-        initType(core.factory(), core.getLanguage(), core.lookupType(desc.type), desc);
+        initType(core.getLanguage(), core.lookupType(desc.type), desc);
     }
 
     @TruffleBoundary
     public static void initType(PythonLanguage language, Object klass, Descriptor desc) {
-        initType(PythonContext.get(null).factory(), language, klass, desc);
-    }
-
-    @TruffleBoundary
-    public static void initType(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc) {
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
 
         long flags = TypeNodes.GetTypeFlagsNode.executeUncached(klass);
@@ -285,7 +278,7 @@ public class StructSequence {
         for (int idx = 0; idx < desc.fieldNames.length; ++idx) {
             if (desc.fieldNames[idx] != null) {
                 TruffleString doc = desc.fieldDocStrings == null ? null : desc.fieldDocStrings[idx];
-                createMember(factory, language, klass, desc.fieldNames[idx], doc, idx);
+                createMember(language, klass, desc.fieldNames[idx], doc, idx);
             } else {
                 unnamedFields++;
             }
@@ -298,8 +291,8 @@ public class StructSequence {
                                         createBuiltinCallTarget(language, desc, NewNode.class, NewNodeGen::create, false) : //
                                         createBuiltinCallTarget(language, desc, DisabledNewNode.class, ignore -> DisabledNewNodeGen.create(), false)));
 
-        createMethod(factory, klass, ReprNode.class, callTargets.reprBuiltin);
-        createMethod(factory, klass, ReduceNode.class, callTargets.reduceBuiltin);
+        createMethod(klass, ReprNode.class, callTargets.reprBuiltin);
+        createMethod(klass, ReduceNode.class, callTargets.reduceBuiltin);
 
         WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
         /*
@@ -315,7 +308,7 @@ public class StructSequence {
 
         if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, T___NEW__) == PNone.NO_VALUE) {
             Builtin builtin = NewNode.class.getAnnotation(Builtin.class);
-            PythonUtils.createConstructor(factory, klass, builtin, callTargets.newBuiltin);
+            PythonUtils.createConstructor(klass, builtin, callTargets.newBuiltin);
         }
         if ((flags & TypeFlags.IMMUTABLETYPE) != 0) {
             // Restore flags
@@ -329,19 +322,19 @@ public class StructSequence {
         return new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<T>(nodeFactory.apply(descriptor)), declaresExplicitSelf).getCallTarget();
     }
 
-    private static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
+    private static void createMember(PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
         RootCallTarget callTarget = language.createStructSeqIndexedMemberAccessCachedCallTarget((l) -> new GetStructMemberNode(l, idx), idx);
-        PBuiltinFunction getter = factory.createBuiltinFunction(name, klass, 0, 0, callTarget);
-        GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
+        PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, klass, 0, 0, callTarget);
+        GetSetDescriptor callable = PFactory.createGetSetDescriptor(language, getter, null, name, klass, false);
         if (doc != null) {
             callable.setAttribute(T___DOC__, doc);
         }
         WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
     }
 
-    private static void createMethod(PythonObjectSlowPathFactory factory, Object klass, Class<? extends PythonBuiltinBaseNode> nodeClass, RootCallTarget callTarget) {
+    private static void createMethod(Object klass, Class<? extends PythonBuiltinBaseNode> nodeClass, RootCallTarget callTarget) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        PythonUtils.createMethod(factory, klass, builtin, callTarget, PythonBuiltinClassType.PTuple, 0);
+        PythonUtils.createMethod(klass, builtin, callTarget, PythonBuiltinClassType.PTuple, 0);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
@@ -360,7 +353,7 @@ public class StructSequence {
         @Specialization
         @SuppressWarnings("unused")
         Object error(Object cls, Object[] arguments, PKeyword[] keywords) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, StructSequence.getTpName(cls));
+            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, StructSequence.getTpName(cls));
         }
     }
 
@@ -389,14 +382,15 @@ public class StructSequence {
                         @Exclusive @Cached IsBuiltinObjectProfile notASequenceProfile,
                         @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
                         @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile, raiseNode);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile, raiseNode);
             for (int i = src.length; i < dst.length; ++i) {
                 dst[i] = PNone.NONE;
             }
-            return factory.createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
+            return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(dst, inSequence));
         }
 
         @Specialization
@@ -409,8 +403,9 @@ public class StructSequence {
                         @Exclusive @Cached InlinedBranchProfile wrongLenProfile,
                         @Exclusive @Cached InlinedBranchProfile needsReallocProfile,
                         @Cached HashingStorageGetItem getItem,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             Object[] src = sequenceToArray(frame, inliningTarget, sequence, fastConstructListNode, toArrayNode, notASequenceProfile, raiseNode);
             Object[] dst = processSequence(inliningTarget, cls, src, wrongLenProfile, needsReallocProfile, raiseNode);
             HashingStorage hs = dict.getDictStorage();
@@ -418,29 +413,29 @@ public class StructSequence {
                 Object o = getItem.execute(inliningTarget, hs, fieldNames[i]);
                 dst[i] = o == null ? PNone.NONE : o;
             }
-            return factory.createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
+            return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(dst, inSequence));
         }
 
         @Specialization(guards = {"!isNoValue(dict)", "!isDict(dict)"})
         @SuppressWarnings("unused")
         static PTuple doDictError(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
         }
 
         private static Object[] sequenceToArray(VirtualFrame frame, Node inliningTarget, Object sequence, FastConstructListNode fastConstructListNode,
-                        ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile, PRaiseNode.Lazy raiseNode) {
+                        ToArrayNode toArrayNode, IsBuiltinObjectProfile notASequenceProfile, PRaiseNode raiseNode) {
             PSequence seq;
             try {
                 seq = fastConstructListNode.execute(frame, inliningTarget, sequence);
             } catch (PException e) {
                 e.expect(inliningTarget, TypeError, notASequenceProfile);
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);
             }
             return toArrayNode.execute(inliningTarget, seq.getSequenceStorage());
         }
 
-        private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile, PRaiseNode.Lazy raiseNode) {
+        private Object[] processSequence(Node inliningTarget, Object cls, Object[] src, InlinedBranchProfile wrongLenProfile, InlinedBranchProfile needsReallocProfile, PRaiseNode raiseNode) {
             int len = src.length;
             int minLen = inSequence;
             int maxLen = fieldNames.length;
@@ -448,12 +443,12 @@ public class StructSequence {
             if (len < minLen || len > maxLen) {
                 wrongLenProfile.enter(inliningTarget);
                 if (minLen == maxLen) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 }
                 if (len < minLen) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 } else {    // len > maxLen
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
                 }
             }
 
@@ -483,25 +478,25 @@ public class StructSequence {
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached GetClassNode getClass,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
             Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalObjectArray();
             assert data.length == fieldNames.length;
             PTuple seq;
             PDict dict;
             if (fieldNames.length == inSequence) {
-                seq = factory.createTuple(data);
-                dict = factory.createDict();
+                seq = PFactory.createTuple(language, data);
+                dict = PFactory.createDict(language);
             } else {
                 HashingStorage storage = EconomicMapStorage.create(fieldNames.length - inSequence);
                 for (int i = inSequence; i < fieldNames.length; ++i) {
                     storage = setHashingStorageItem.execute(inliningTarget, storage, fieldNames[i], data[i]);
                 }
-                seq = factory.createTuple(Arrays.copyOf(data, inSequence));
-                dict = factory.createDict(storage);
+                seq = PFactory.createTuple(language, Arrays.copyOf(data, inSequence));
+                dict = PFactory.createDict(language, storage);
             }
-            PTuple seqDictPair = factory.createTuple(new Object[]{seq, dict});
-            return factory.createTuple(new Object[]{getClass.execute(inliningTarget, self), seqDictPair});
+            PTuple seqDictPair = PFactory.createTuple(language, new Object[]{seq, dict});
+            return PFactory.createTuple(language, new Object[]{getClass.execute(inliningTarget, self), seqDictPair});
         }
     }
 

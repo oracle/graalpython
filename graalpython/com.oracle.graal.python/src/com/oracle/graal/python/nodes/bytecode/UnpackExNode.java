@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -54,14 +55,13 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -82,8 +82,8 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    @Bind PythonLanguage language,
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(countBefore);
         CompilerAsserts.partialEvaluationConstant(countAfter);
         int resultStackTop = initialStackTop + countBefore + 1 + countAfter;
@@ -92,10 +92,10 @@ public abstract class UnpackExNode extends PNodeWithContext {
         int len = storage.length();
         int starLen = len - countBefore - countAfter;
         if (starLen < 0) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
         }
         stackTop = moveItemsToStack(frame, inliningTarget, storage, stackTop, 0, countBefore, getItemNode);
-        PList starList = factory.createList(getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
+        PList starList = PFactory.createList(language, getItemSliceNode.execute(storage, countBefore, countBefore + starLen, 1, starLen));
         frame.setObject(stackTop--, starList);
         moveItemsToStack(frame, inliningTarget, storage, stackTop, len - countAfter, countAfter, getItemNode);
         return resultStackTop;
@@ -111,8 +111,8 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Cached ListNodes.ConstructListNode constructListNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    @Bind PythonLanguage language,
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(countBefore);
         CompilerAsserts.partialEvaluationConstant(countAfter);
         int resultStackTop = initialStackTop + countBefore + 1 + countAfter;
@@ -122,20 +122,20 @@ public abstract class UnpackExNode extends PNodeWithContext {
             iterator = getIter.execute(frame, inliningTarget, collection);
         } catch (PException e) {
             e.expectTypeError(inliningTarget, notIterableProfile);
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
         stackTop = moveItemsToStack(frame, inliningTarget, iterator, stackTop, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
         PList starAndAfter = constructListNode.execute(frame, iterator);
         SequenceStorage storage = starAndAfter.getSequenceStorage();
         int lenAfter = storage.length();
         if (lenAfter < countAfter) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
         }
         if (countAfter == 0) {
             frame.setObject(stackTop, starAndAfter);
         } else {
             int starLen = lenAfter - countAfter;
-            PList starList = factory.createList(getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
+            PList starList = PFactory.createList(language, getItemSliceNode.execute(storage, 0, starLen, 1, starLen));
             frame.setObject(stackTop--, starList);
             moveItemsToStack(frame, inliningTarget, storage, stackTop, starLen, countAfter, getItemNode);
         }
@@ -144,7 +144,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
 
     @ExplodeLoop
     private static int moveItemsToStack(VirtualFrame frame, Node inliningTarget, Object iterator, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
-                    IsBuiltinObjectProfile stopIterationProfile, PRaiseNode.Lazy raiseNode) {
+                    IsBuiltinObjectProfile stopIterationProfile, PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
@@ -153,7 +153,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
                 frame.setObject(stackTop--, item);
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, stopIterationProfile);
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
             }
         }
         return stackTop;

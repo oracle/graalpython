@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,12 +53,13 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -83,7 +84,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
 
     @Specialization
     int makeFunction(VirtualFrame frame, Object globals, int initialStackTop, int flags,
-                    @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
         int stackTop = initialStackTop;
 
@@ -95,10 +96,10 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
                  * We cannot initialize the cached code in create, because that may be called
                  * without langauge context when materializing nodes for instrumentation
                  */
-                cachedCode = codeObj = factory.createCode(callTarget, signature, code);
+                cachedCode = codeObj = PFactory.createCode(language, callTarget, signature, code);
             } else {
                 // In multi-context mode we have to create the code for every execution
-                codeObj = factory.createCode(callTarget, signature, code);
+                codeObj = PFactory.createCode(language, callTarget, signature, code);
             }
         }
 
@@ -133,7 +134,8 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
             codeStableAssumption = Truffle.getRuntime().createAssumption();
             defaultsStableAssumption = Truffle.getRuntime().createAssumption();
         }
-        PFunction function = factory.createFunction(code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption, defaultsStableAssumption);
+        PFunction function = PFactory.createFunction(language, code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption,
+                        defaultsStableAssumption);
 
         if (annotations != null) {
             writeAttrNode.execute(function, T___ANNOTATIONS__, annotations);

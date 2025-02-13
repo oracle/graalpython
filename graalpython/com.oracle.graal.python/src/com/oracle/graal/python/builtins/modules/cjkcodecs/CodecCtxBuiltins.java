@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,13 +97,13 @@ public final class CodecCtxBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             if (value == PNone.NONE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, CANNOT_DELETE);
+                throw raiseNode.raise(inliningTarget, AttributeError, CANNOT_DELETE);
             }
             if (!unicodeCheckNode.execute(inliningTarget, value)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ERRORS_MUST_BE_A_STRING);
+                throw raiseNode.raise(inliningTarget, TypeError, ERRORS_MUST_BE_A_STRING);
             }
 
             TruffleString str = castToStringNode.execute(inliningTarget, value);

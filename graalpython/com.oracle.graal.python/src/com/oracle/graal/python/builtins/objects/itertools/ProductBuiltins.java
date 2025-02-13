@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -61,12 +62,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -101,14 +101,14 @@ public final class ProductBuiltins extends PythonBuiltins {
         static Object next(PProduct self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object[] lst = new Object[self.getGears().length];
             loopProfile.profileCounted(inliningTarget, lst.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < lst.length); i++) {
                 lst[i] = self.getGears()[i][0];
             }
             self.setLst(lst);
-            return factory.createTuple(lst);
+            return PFactory.createTuple(language, lst);
         }
 
         @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
@@ -119,8 +119,8 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile wasStoppedProfile,
                         @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached InlinedBranchProfile doneProfile,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             Object[][] gears = self.getGears();
             int x = gears.length - 1;
             if (gearsProfile.profile(inliningTarget, x >= 0)) {
@@ -140,20 +140,20 @@ public final class ProductBuiltins extends PythonBuiltins {
 
             if (self.isStopped()) {
                 wasStoppedProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
 
             // the existing lst array can be changed in a following next call
             Object[] ret = new Object[self.getLst().length];
             PythonUtils.arraycopy(self.getLst(), 0, ret, 0, ret.length);
-            return factory.createTuple(ret);
+            return PFactory.createTuple(language, ret);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
         static Object nextStopped(PProduct self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         private static void rotatePreviousGear(Node inliningTarget, PProduct self, InlinedLoopConditionProfile loopProfile, InlinedBranchProfile doneProfile) {
@@ -198,26 +198,26 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile stoppedProfile,
                         @Cached InlinedConditionProfile noLstProfile,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
             if (stoppedProfile.profile(inliningTarget, self.isStopped())) {
-                PTuple empty = factory.createEmptyTuple();
-                return factory.createTuple(new Object[]{type, factory.createTuple(new Object[]{empty})});
+                PTuple empty = PFactory.createEmptyTuple(language);
+                return PFactory.createTuple(language, new Object[]{type, PFactory.createTuple(language, new Object[]{empty})});
             }
-            PTuple gearTuples = createGearTuple(self, factory);
+            PTuple gearTuples = createGearTuple(self, language);
             if (noLstProfile.profile(inliningTarget, self.getLst() == null)) {
-                return factory.createTuple(new Object[]{type, gearTuples});
+                return PFactory.createTuple(language, new Object[]{type, gearTuples});
             }
-            PTuple indicesTuple = factory.createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getIndices().length));
-            return factory.createTuple(new Object[]{type, gearTuples, indicesTuple});
+            PTuple indicesTuple = PFactory.createTuple(language, PythonUtils.arrayCopyOf(self.getIndices(), self.getIndices().length));
+            return PFactory.createTuple(language, new Object[]{type, gearTuples, indicesTuple});
         }
 
-        private static PTuple createGearTuple(PProduct self, PythonObjectFactory factory) {
+        private static PTuple createGearTuple(PProduct self, PythonLanguage language) {
             PList[] lists = new PList[self.getGears().length];
             for (int i = 0; i < lists.length; i++) {
-                lists[i] = factory.createList(self.getGears()[i]);
+                lists[i] = PFactory.createList(language, self.getGears()[i]);
             }
-            return factory.createTuple(lists);
+            return PFactory.createTuple(language, lists);
         }
     }
 

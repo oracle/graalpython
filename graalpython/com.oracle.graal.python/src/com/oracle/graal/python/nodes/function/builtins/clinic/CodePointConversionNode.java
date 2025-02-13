@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,7 +87,7 @@ public abstract class CodePointConversionNode extends ArgumentCastNode {
                     @Cached CastToTruffleStringNode castToStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         try {
             TruffleString str = castToStringNode.execute(inliningTarget, value);
             if (codePointLengthNode.execute(str, TS_ENCODING) == 1) {
@@ -96,7 +96,7 @@ public abstract class CodePointConversionNode extends ArgumentCastNode {
         } catch (CannotCastException ex) {
             // handled below
         }
-        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
+        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
     }
 
     @ClinicConverterFactory

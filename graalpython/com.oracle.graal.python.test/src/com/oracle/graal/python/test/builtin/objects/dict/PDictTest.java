@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,11 +48,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -82,7 +83,7 @@ public class PDictTest {
 
     @Test
     public void economicMapStorageTransition() {
-        PDict dict = PythonObjectFactory.getUncached().createDict();
+        PDict dict = PFactory.createDict(PythonLanguage.get(null));
         dict.setItem(ts("key1"), 42);
         dict.setItem(11, ts("abc"));
         assertTrue(dict.getDictStorage() instanceof EconomicMapStorage);
@@ -91,7 +92,7 @@ public class PDictTest {
 
     @Test
     public void economicMapStorageSet() {
-        PDict dict = PythonObjectFactory.getUncached().createDict();
+        PDict dict = PFactory.createDict(PythonLanguage.get(null));
         dict.setItem(11, ts("abc"));
         assertTrue(dict.getDictStorage() instanceof EconomicMapStorage);
 
@@ -103,7 +104,7 @@ public class PDictTest {
 
     @Test
     public void economicMapStorageDel() {
-        PDict dict = PythonObjectFactory.getUncached().createDict();
+        PDict dict = PFactory.createDict(PythonLanguage.get(null));
         dict.setItem(11, ts("abc"));
         dict.setItem(ts("key1"), 42);
         dict.setItem(ts("key2"), 24);

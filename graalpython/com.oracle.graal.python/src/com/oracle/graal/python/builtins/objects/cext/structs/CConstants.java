@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,7 +90,7 @@ public enum CConstants {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             resolve();
             if (intValue == -1) {
-                throw PRaiseNode.raiseUncached(null, SystemError, INTERNAL_INT_OVERFLOW);
+                throw PRaiseNode.raiseStatic(null, SystemError, INTERNAL_INT_OVERFLOW);
             }
             return intValue;
         }
@@ -104,10 +104,10 @@ public enum CConstants {
         for (CConstants constant : VALUES) {
             constant.longValue = constants[constant.ordinal()];
             if (constant.longValue == -1) {
-                throw PRaiseNode.raiseUncached(null, SystemError, toTruffleStringUncached("internal limitation - cannot extract constants with value '-1'"));
+                throw PRaiseNode.raiseStatic(null, SystemError, toTruffleStringUncached("internal limitation - cannot extract constants with value '-1'"));
             }
             if ((constant.longValue & 0xFFFF0000L) == 0xDEAD0000L) {
-                throw PRaiseNode.raiseUncached(null, SystemError, toTruffleStringUncached("marker value reached, regenerate C code (mx python-capi)"));
+                throw PRaiseNode.raiseStatic(null, SystemError, toTruffleStringUncached("marker value reached, regenerate C code (mx python-capi)"));
             }
             if (constant.longValue == (int) constant.longValue) {
                 constant.intValue = (int) constant.longValue;

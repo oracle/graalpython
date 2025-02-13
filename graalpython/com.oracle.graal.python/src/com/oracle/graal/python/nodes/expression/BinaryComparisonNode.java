@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -49,20 +49,18 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class BinaryComparisonNode extends BinaryOpNode {
 
     private abstract static class ErrorNode extends BinaryComparisonNode {
-        @Child private PRaiseNode raiseNode;
+        private final BranchProfile notSupportedProfile = BranchProfile.create();
 
         protected final RuntimeException noSupported(Object left, Object right) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, operator(), left, right);
+            notSupportedProfile.enter();
+            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, operator(), left, right);
         }
 
         protected abstract String operator();

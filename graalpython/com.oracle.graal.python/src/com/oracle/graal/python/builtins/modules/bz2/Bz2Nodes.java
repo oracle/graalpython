@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -112,12 +112,12 @@ public class Bz2Nodes {
                         @Bind("this") Node inliningTarget,
                         @Cached NativeLibrary.InvokeNativeFunction compress,
                         @Cached GetOutputNativeBufferNode getBuffer,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             Object inGuest = context.getEnv().asGuestValue(bytes);
             int err = bz2Support.compress(self.getBzs(), inGuest, len, action, INITIAL_BUFFER_SIZE, compress);
             if (err != BZ_OK) {
-                errorHandling(err, raiseNode.get(inliningTarget));
+                errorHandling(inliningTarget, err, raiseNode);
             }
             return getBuffer.execute(inliningTarget, self.getBzs(), context);
         }
@@ -236,7 +236,7 @@ public class Bz2Nodes {
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached InlinedConditionProfile errProfile,
                         @Cached InlinedBranchProfile ofProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             Object inGuest = self.getNextInGuest(context);
@@ -249,12 +249,12 @@ public class Bz2Nodes {
                 self.setBzsAvailInReal(bzsAvailInReal);
             } catch (OverflowException of) {
                 ofProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
+                throw raiseNode.raise(inliningTarget, SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
             }
             if (err == BZ_STREAM_END) {
                 self.setEOF();
             } else if (errProfile.profile(inliningTarget, err != BZ_OK)) {
-                errorHandling(err, raiseNode.get(inliningTarget));
+                errorHandling(inliningTarget, err, raiseNode);
             }
             return getBuffer.execute(inliningTarget, self.getBzs(), context);
         }
@@ -271,14 +271,14 @@ public class Bz2Nodes {
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction getBufferSize,
                         @Cached(inline = false) NativeLibrary.InvokeNativeFunction getBuffer,
                         @Cached InlinedBranchProfile ofProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             int size;
             try {
                 size = PInt.intValueExact(bz2Support.getOutputBufferSize(bzst, getBufferSize));
             } catch (OverflowException of) {
                 ofProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
+                throw raiseNode.raise(inliningTarget, SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
             }
             if (size == 0) {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
@@ -291,25 +291,25 @@ public class Bz2Nodes {
         }
     }
 
-    protected static void errorHandling(int bzerror, PRaiseNode raise) {
+    protected static void errorHandling(Node inliningTarget, int bzerror, PRaiseNode raise) {
         switch (bzerror) {
             case BZ_PARAM_ERROR:
-                throw raise.raise(ValueError, INVALID_PARAMETERS_PASSED_TO_LIBBZIP2);
+                throw raise.raise(inliningTarget, ValueError, INVALID_PARAMETERS_PASSED_TO_LIBBZIP2);
             case BZ_MEM_ERROR:
-                throw raise.raise(MemoryError);
+                throw raise.raise(inliningTarget, MemoryError);
             case BZ_DATA_ERROR:
             case BZ_DATA_ERROR_MAGIC:
-                throw raise.raise(OSError, INVALID_DATA_STREAM);
+                throw raise.raise(inliningTarget, OSError, INVALID_DATA_STREAM);
             case BZ_IO_ERROR:
-                throw raise.raise(OSError, UNKNOWN_IO_ERROR);
+                throw raise.raise(inliningTarget, OSError, UNKNOWN_IO_ERROR);
             case BZ_UNEXPECTED_EOF:
-                throw raise.raise(EOFError, COMPRESSED_FILE_ENDED_BEFORE_EOS);
+                throw raise.raise(inliningTarget, EOFError, COMPRESSED_FILE_ENDED_BEFORE_EOS);
             case BZ_SEQUENCE_ERROR:
-                throw raise.raise(RuntimeError, INVALID_SEQUENCE_OF_COMMANDS);
+                throw raise.raise(inliningTarget, RuntimeError, INVALID_SEQUENCE_OF_COMMANDS);
             case BZ_CONFIG_ERROR:
-                throw raise.raise(ValueError, LIBBZIP2_WAS_NOT_COMPILED_CORRECTLY);
+                throw raise.raise(inliningTarget, ValueError, LIBBZIP2_WAS_NOT_COMPILED_CORRECTLY);
             default:
-                throw raise.raise(OSError, UNRECOGNIZED_ERROR_FROM_LIBBZIP2_D, bzerror);
+                throw raise.raise(inliningTarget, OSError, UNRECOGNIZED_ERROR_FROM_LIBBZIP2_D, bzerror);
         }
     }
 }

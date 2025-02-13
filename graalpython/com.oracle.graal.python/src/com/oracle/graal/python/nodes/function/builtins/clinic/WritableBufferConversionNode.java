@@ -72,11 +72,11 @@ public abstract class WritableBufferConversionNode extends ArgumentCastNode {
                     @Bind PythonContext context,
                     @Cached("createFor(this)") IndirectCallData indirectCallData,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         try {
             return acquireLib.acquireWritable(value, frame, context, context.getLanguage(inliningTarget), indirectCallData);
         } catch (PException e) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, builtinName, value);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, builtinName, value);
         }
     }
 

@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
 
 import java.util.logging.Level;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
@@ -110,7 +111,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -135,8 +136,9 @@ public final class PythonCextDictBuiltins {
     abstract static class PyDict_New extends CApiNullaryBuiltinNode {
 
         @Specialization
-        static Object run(@Cached PythonObjectFactory factory) {
-            return factory.createDict();
+        static Object run(
+                        @Bind PythonLanguage language) {
+            return PFactory.createDict(language);
         }
     }
 
@@ -288,8 +290,8 @@ public final class PythonCextDictBuiltins {
         static Object copy(PDict dict,
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDict(copyNode.execute(inliningTarget, dict.getDictStorage()));
+                        @Bind PythonLanguage language) {
+            return PFactory.createDict(language, copyNode.execute(inliningTarget, dict.getDictStorage()));
         }
 
         @Fallback
@@ -328,9 +330,9 @@ public final class PythonCextDictBuiltins {
 
         @Specialization(guards = "!isDict(obj)")
         static Object getItem(Object obj, @SuppressWarnings("unused") Object key,
-                        @Cached StrNode strNode,
-                        @Cached PRaiseNode raiseNode) {
-            return raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
+                        @Bind("this") Node inliningTarget,
+                        @Cached StrNode strNode) {
+            return PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }
 
         protected boolean isDict(Object obj) {
@@ -392,10 +394,10 @@ public final class PythonCextDictBuiltins {
                         @Cached CastToJavaLongExactNode castToLong,
                         @Cached SetItemNode setItemNode,
                         @Cached InlinedBranchProfile wrongHashProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (hashNode.execute(null, inliningTarget, key) != castToLong.execute(inliningTarget, givenHash)) {
                 wrongHashProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AssertionError, HASH_MISMATCH);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AssertionError, HASH_MISMATCH);
             }
             setItemNode.execute(null, inliningTarget, dict, key, value);
             return 0;
@@ -488,8 +490,8 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static Object keys(PDict dict,
                         @Cached ConstructListNode listNode,
-                        @Cached PythonObjectFactory factory) {
-            return listNode.execute(null, factory.createDictKeysView(dict));
+                        @Bind PythonLanguage language) {
+            return listNode.execute(null, PFactory.createDictKeysView(language, dict));
         }
 
         @Fallback
@@ -503,8 +505,8 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static Object values(PDict dict,
                         @Cached ConstructListNode listNode,
-                        @Cached PythonObjectFactory factory) {
-            return listNode.execute(null, factory.createDictValuesView(dict));
+                        @Bind PythonLanguage language) {
+            return listNode.execute(null, PFactory.createDictValuesView(language, dict));
         }
 
         @Fallback
@@ -522,10 +524,10 @@ public final class PythonCextDictBuiltins {
                         @Cached PyObjectLookupAttr lookupKeys,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Shared @Cached CallNode callNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // lookup "keys" to raise the right error:
             if (lookupKeys.execute(null, inliningTarget, b, T_KEYS) == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
+                throw raiseNode.raise(inliningTarget, AttributeError, OBJ_P_HAS_NO_ATTR_S, b, T_KEYS);
             }
             Object updateCallable = lookupAttr.execute(null, inliningTarget, a, T_UPDATE);
             callNode.executeWithoutFrame(updateCallable, new Object[]{b});

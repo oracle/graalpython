@@ -40,11 +40,12 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -65,10 +66,10 @@ public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keys,
                     @Bind("this") Node inliningTarget,
                     @Cached("keys.length") int keysLength,
-                    @Shared @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Shared @Cached DictNodes.UpdateNode updateNode,
                     @Shared @Cached PyDictDelItem delItem) {
-        PDict rest = factory.createDict();
+        PDict rest = PFactory.createDict(language);
         updateNode.execute(frame, rest, subject);
         deleteKeys(frame, inliningTarget, keys, keysLength, delItem, rest);
         return rest;
@@ -85,10 +86,10 @@ public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     @Specialization(guards = "keys.length > 32")
     static PDict copy(VirtualFrame frame, Object subject, Object[] keys,
                     @Bind("this") Node inliningTarget,
-                    @Shared @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Shared @Cached DictNodes.UpdateNode updateNode,
                     @Shared @Cached PyDictDelItem delItem) {
-        PDict rest = factory.createDict();
+        PDict rest = PFactory.createDict(language);
         updateNode.execute(frame, rest, subject);
         for (int i = 0; i < keys.length; i++) {
             delItem.execute(frame, inliningTarget, rest, keys[i]);

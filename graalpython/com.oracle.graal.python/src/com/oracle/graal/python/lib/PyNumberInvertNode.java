@@ -80,13 +80,13 @@ public abstract class PyNumberInvertNode extends UnaryOpNode {
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlots.execute(inliningTarget, type);
         if (slots.nb_invert() != null) {
             return callSlot.execute(frame, inliningTarget, slots.nb_invert(), object);
         }
-        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_OPERAND_FOR, "unary", "~", object);
+        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_OPERAND_FOR, "unary", "~", object);
     }
 
     @NeverDefault

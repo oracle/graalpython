@@ -160,7 +160,9 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.arrow.ArrowSupport;
@@ -170,7 +172,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.locale.PythonLocale;
 import com.oracle.graal.python.runtime.object.IDUtils;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
@@ -525,7 +527,7 @@ public final class PythonContext extends Python3Core {
 
         public PContextVarsContext getContextVarsContext() {
             if (contextVarsContext == null) {
-                contextVarsContext = PythonObjectFactory.getUncached().createContextVarsContext();
+                contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(null));
             }
             return contextVarsContext;
         }
@@ -1672,21 +1674,16 @@ public final class PythonContext extends Python3Core {
                     Object[] paths = SequenceStorageNodes.CopyInternalArrayNode.executeUncached(((PList) path).getSequenceStorage());
                     for (int i = 0; i < paths.length; i++) {
                         Object pathElement = paths[i];
-                        TruffleString strPath;
-                        if (pathElement instanceof PString) {
-                            strPath = ((PString) pathElement).getValueUncached();
-                        } else if (isJavaString(pathElement)) {
-                            strPath = toTruffleStringUncached((String) pathElement);
-                        } else if (pathElement instanceof TruffleString) {
-                            strPath = (TruffleString) pathElement;
-                        } else {
-                            continue;
-                        }
-                        if (strPath.regionEqualsUncached(0, from, 0, from.codePointLengthUncached(TS_ENCODING), TS_ENCODING)) {
-                            paths[i] = StringReplaceNode.getUncached().execute(strPath, from, to, -1);
+                        try {
+                            TruffleString strPath = CastToTruffleStringNode.executeUncached(pathElement);
+                            if (strPath.regionEqualsUncached(0, from, 0, from.codePointLengthUncached(TS_ENCODING), TS_ENCODING)) {
+                                paths[i] = StringReplaceNode.getUncached().execute(strPath, from, to, -1);
+                            }
+                        } catch (CannotCastException e) {
+                            // ignore
                         }
                     }
-                    ((PythonModule) v).setAttribute(SpecialAttributeNames.T___PATH__, factory().createList(paths));
+                    ((PythonModule) v).setAttribute(SpecialAttributeNames.T___PATH__, PFactory.createList(PythonLanguage.get(null), paths));
                 }
 
                 // Update module.__file__
@@ -1722,10 +1719,10 @@ public final class PythonContext extends Python3Core {
             nativeLZMA = NFILZMASupport.createNative(this, "");
         }
 
-        mainModule = factory().createPythonModule(T___MAIN__);
+        mainModule = PFactory.createPythonModule(getLanguage(), T___MAIN__);
         mainModule.setAttribute(T___BUILTINS__, getBuiltins());
-        mainModule.setAttribute(T___ANNOTATIONS__, factory().createDict());
-        SetDictNode.executeUncached(mainModule, factory().createDictFixedStorage(mainModule));
+        mainModule.setAttribute(T___ANNOTATIONS__, PFactory.createDict(getLanguage()));
+        SetDictNode.executeUncached(mainModule, PFactory.createDictFixedStorage(getLanguage(), mainModule));
         getSysModules().setItem(T___MAIN__, mainModule);
 
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -2740,13 +2737,13 @@ public final class PythonContext extends Python3Core {
 
     public void ensureLLVMLanguage(Node nodeForRaise) {
         if (!env.getInternalLanguages().containsKey(J_LLVM_LANGUAGE)) {
-            throw PRaiseNode.raiseUncached(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.LLVM_NOT_AVAILABLE);
+            throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.LLVM_NOT_AVAILABLE);
         }
     }
 
     public void ensureNFILanguage(Node nodeForRaise, String optionName, String optionValue) {
         if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
-            throw PRaiseNode.raiseUncached(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, optionName, optionValue);
+            throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, optionName, optionValue);
         }
     }
 

@@ -54,6 +54,7 @@ import java.math.RoundingMode;
 import java.nio.ByteOrder;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Slot;
@@ -95,7 +96,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -114,6 +115,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
@@ -135,13 +137,13 @@ public final class FloatBuiltins extends PythonBuiltins {
         try {
             return cast.execute(inliningTarget, obj);
         } catch (CannotCastException e) {
-            throw raiseWrongSelf(obj);
+            throw raiseWrongSelf(inliningTarget, obj);
         }
     }
 
     @InliningCutoff
-    private static PException raiseWrongSelf(Object obj) {
-        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "float", obj);
+    private static PException raiseWrongSelf(Node inliningTarget, Object obj) {
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "float", obj);
     }
 
     @GenerateCached(false)
@@ -164,7 +166,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateCached(false)
     abstract static class AbstractNumericBinaryBuiltin extends BinaryOpBuiltinNode {
 
-        @Child private PRaiseNode raiseNode;
+        private final BranchProfile errorProfile = BranchProfile.create();
 
         protected abstract Object op(double a, double b);
 
@@ -196,15 +198,8 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         void raiseDivisionByZero(boolean cond) {
             if (cond) {
-                if (raiseNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (isAdoptable()) {
-                        raiseNode = insert(PRaiseNode.create());
-                    } else {
-                        raiseNode = PRaiseNode.getUncached();
-                    }
-                }
-                throw raiseNode.raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
             }
         }
     }
@@ -359,7 +354,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         static double doDI(double left, int right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return doOperation(inliningTarget, left, right, raiseNode);
         }
 
@@ -367,7 +362,7 @@ public final class FloatBuiltins extends PythonBuiltins {
          * The special cases we need to deal with always return 1, so 0 means no special case, not a
          * result.
          */
-        private static double doSpecialCases(Node inliningTarget, double left, double right, PRaiseNode.Lazy raiseNode) {
+        private static double doSpecialCases(Node inliningTarget, double left, double right, PRaiseNode raiseNode) {
             // see cpython://Objects/floatobject.c#float_pow for special cases
             if (Double.isNaN(right) && left == 1) {
                 // 1**nan = 1, unlike on Java
@@ -379,12 +374,12 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
             if (left == 0 && right < 0 && Double.isFinite(right)) {
                 // 0**w is an error if w is finite and negative, unlike Java
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
             return 0;
         }
 
-        private static double doOperation(Node inliningTarget, double left, double right, PRaiseNode.Lazy raiseNode) {
+        private static double doOperation(Node inliningTarget, double left, double right, PRaiseNode raiseNode) {
             if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
@@ -396,15 +391,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         static double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberPowerNode powerNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
+                        @Shared @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
             if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Negative numbers raised to fractional powers become complex.
-                PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                throw new UnexpectedResultException(powerNode.execute(frame, inliningTarget, factory.createComplex(left, 0), factory.createComplex(right, 0), none));
+                PythonLanguage language = PythonLanguage.get(inliningTarget);
+                throw new UnexpectedResultException(powerNode.execute(frame, inliningTarget, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none));
             }
             return Math.pow(left, right);
         }
@@ -414,15 +409,14 @@ public final class FloatBuiltins extends PythonBuiltins {
         static Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyNumberPowerNode powerNode,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 // Negative numbers raised to fractional powers become complex.
-                PythonObjectFactory pof = factory.get(inliningTarget);
-                return powerNode.execute(frame, inliningTarget, pof.createComplex(left, 0), pof.createComplex(right, 0), none);
+                PythonLanguage language = PythonLanguage.get(inliningTarget);
+                return powerNode.execute(frame, inliningTarget, PFactory.createComplex(language, left, 0), PFactory.createComplex(language, right, 0), none);
             }
             return Math.pow(left, right);
         }
@@ -433,10 +427,9 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Shared @Cached PyNumberPowerNode powerNode,
-                        @Exclusive @Cached PythonObjectFactory.Lazy factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (!(mod instanceof PNone)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
             }
 
             double leftDouble, rightDouble;
@@ -446,7 +439,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, powerNode, factory, raiseNode);
+            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, powerNode, raiseNode);
         }
 
         public static PowNode create() {
@@ -467,12 +460,12 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.nb_divmod, isComplex = true)
     @GenerateNodeFactory
     abstract static class DivModNode extends AbstractNumericBinaryBuiltin {
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
         @Override
         protected PTuple op(double left, double right) {
             raiseDivisionByZero(right == 0);
-            return factory.createTuple(new Object[]{Math.floor(left / right), ModNode.mod(left, right)});
+            PythonLanguage language = PythonLanguage.get(this);
+            return PFactory.createTuple(language, new Object[]{Math.floor(left / right), ModNode.mod(left, right)});
         }
     }
 
@@ -496,7 +489,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             String str = arg.trim().toLowerCase();
 
             if (str.isEmpty()) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
             } else if (str.equals("inf") || str.equals("infinity") || str.equals("+inf") || str.equals("+infinity")) {
                 return Double.POSITIVE_INFINITY;
             } else if (str.equals("-inf") || str.equals("-infinity")) {
@@ -513,7 +506,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
 
             if (str.isEmpty()) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
             }
 
             if (!str.startsWith("0x")) {
@@ -531,12 +524,12 @@ public final class FloatBuiltins extends PythonBuiltins {
             try {
                 double result = Double.parseDouble(str);
                 if (Double.isInfinite(result)) {
-                    throw PRaiseNode.raiseUncached(this, PythonErrorType.OverflowError, ErrorMessages.HEX_VALUE_TOO_LARGE_AS_FLOAT);
+                    throw PRaiseNode.raiseStatic(this, PythonErrorType.OverflowError, ErrorMessages.HEX_VALUE_TOO_LARGE_AS_FLOAT);
                 }
 
                 return result;
             } catch (NumberFormatException ex) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.ValueError, ErrorMessages.INVALID_STRING);
             }
         }
 
@@ -557,8 +550,8 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static double fromhex(Object object, Object arg,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
     }
 
@@ -676,14 +669,14 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         static double round(double x, int n,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (Double.isNaN(x) || Double.isInfinite(x) || x == 0.0) {
                 // nans, infinities and zeros round to themselves
                 return x;
             }
             double d = op(x, n);
             if (Double.isInfinite(d)) {
-                throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.ROUNDED_VALUE_TOO_LARGE);
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.ROUNDED_VALUE_TOO_LARGE);
             }
             return d;
         }
@@ -693,29 +686,29 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             return round(castToDoubleChecked(inliningTarget, x, cast), asSizeNode.executeLossy(frame, inliningTarget, n), inliningTarget, raiseNode);
         }
 
         @Specialization
         static Object round(Object xObj, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
                         @Cached InlinedConditionProfile isLongProfile,
-                        @Cached PythonObjectFactory.Lazy factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             double x = castToDoubleChecked(inliningTarget, xObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(x))) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }
             if (infProfile.profile(inliningTarget, Double.isInfinite(x))) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
+                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
             }
             double result = round(x, 0, inliningTarget, raiseNode);
             if (isLongProfile.profile(inliningTarget, result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
-                return factory.get(inliningTarget).createInt(toBigInteger(result));
+                return PFactory.createInt(language, toBigInteger(result));
             } else {
                 return (long) result;
             }
@@ -963,17 +956,17 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         static PTuple get(Object selfObj,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             double self = castToDoubleChecked(inliningTarget, selfObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(self))) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
+                throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
             }
             if (infProfile.profile(inliningTarget, Double.isInfinite(self))) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "Infinity");
+                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "Infinity");
             }
 
             // At the first time find mantissa and exponent. This is functionality of
@@ -1007,11 +1000,11 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
 
             // count the ratio
-            return factory.createTuple(countIt(mantissa, exponent));
+            return PFactory.createTuple(language, countIt(language, mantissa, exponent));
         }
 
         @TruffleBoundary
-        private static Object[] countIt(double mantissa, int exponent) {
+        private static Object[] countIt(PythonLanguage language, double mantissa, int exponent) {
             double m = mantissa;
             int e = exponent;
             for (int i = 0; i < 300 && Double.compare(m, Math.floor(m)) != 0; i++) {
@@ -1030,8 +1023,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (numerator.bitLength() < Long.SIZE && denominator.bitLength() < Long.SIZE) {
                 return new Object[]{numerator.longValue(), denominator.longValue()};
             }
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return new Object[]{factory.createInt(numerator), factory.createInt(denominator)};
+            return new Object[]{PFactory.createInt(language, numerator), PFactory.createInt(language, denominator)};
         }
     }
 
@@ -1075,8 +1067,8 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         static TruffleString getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object typeStr,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.ValueError, ErrorMessages.ARG_D_MUST_BE_S_OR_S, "__getformat__()", 1, "double", "float");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ARG_D_MUST_BE_S_OR_S, "__getformat__()", 1, "double", "float");
         }
 
         @Override
@@ -1097,11 +1089,10 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetNewArgsNode extends AbstractNumericUnaryBuiltin {
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-
         @Override
         protected Object op(double self) {
-            return factory.createTuple(new Object[]{factory.createFloat(self)});
+            PythonLanguage language = PythonLanguage.get(this);
+            return PFactory.createTuple(language, new Object[]{PFactory.createFloat(language, self)});
         }
     }
 }

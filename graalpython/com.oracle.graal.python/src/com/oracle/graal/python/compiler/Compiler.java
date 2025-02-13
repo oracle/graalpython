@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -196,7 +196,6 @@ import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.memory.ByteArraySupport;
@@ -3138,7 +3137,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern keys may only match literals and attribute lookups");
                 }
                 assert constantValue != null;
-                Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue, PythonObjectFactory.getUncached());
+                Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue);
                 for (Object o : seen) {
                     // need python like equal - e.g. 1 equals True
                     if (PyObjectRichCompareBool.EqNode.compareUncached(o, pythonValue)) {

@@ -101,7 +101,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -121,6 +121,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class HPyExternalFunctionNodes {
@@ -160,14 +161,10 @@ public abstract class HPyExternalFunctionNodes {
      * @param name The name of the method.
      * @param callable The native function pointer.
      * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
-     * @param factory Just an instance of {@link PythonObjectFactory} to create the function object.
-     *            We could also use the uncached version but this way, the allocations are reported
-     *            for the caller.
      * @return A {@link PBuiltinFunction} that accepts the given signature.
      */
     @TruffleBoundary
-    static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPyFuncSignature signature, TruffleString name, Object callable, Object enclosingType,
-                    PythonObjectFactory factory) {
+    static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPyFuncSignature signature, TruffleString name, Object callable, Object enclosingType) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         RootCallTarget callTarget = language.createCachedCallTarget(l -> createRootNode(l, signature, name), signature, name, true);
 
@@ -180,7 +177,7 @@ public abstract class HPyExternalFunctionNodes {
             defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
         int flags = HPyFuncSignature.getFlags(signature);
-        return factory.createBuiltinFunction(name, enclosingType, defaults, createKwDefaults(callable, context), flags, callTarget);
+        return PFactory.createBuiltinFunction(language, name, enclosingType, defaults, createKwDefaults(callable, context), flags, callTarget);
     }
 
     private static PRootNode createRootNode(PythonLanguage language, HPyFuncSignature signature, TruffleString name) {
@@ -230,13 +227,11 @@ public abstract class HPyExternalFunctionNodes {
      * @param name The name of the method.
      * @param callable The native function pointer.
      * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
-     * @param factory Just an instance of {@link PythonObjectFactory} to create the function object.
      * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot wrapper.
      */
     @TruffleBoundary
     public static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPySlotWrapper wrapper, TpSlotHPyNative slot, PExternalFunctionWrapper legacySlotWrapper,
-                    TruffleString name, Object callable, Object enclosingType,
-                    PythonObjectFactory factory) {
+                    TruffleString name, Object callable, Object enclosingType) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         RootCallTarget callTarget = language.createCachedCallTarget(l -> createSlotRootNode(l, wrapper, name), wrapper, name);
         Object[] defaults;
@@ -257,7 +252,7 @@ public abstract class HPyExternalFunctionNodes {
             kwDefaults = createKwDefaults(callable, context);
 
         }
-        return factory.createWrapperDescriptor(name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, legacySlotWrapper);
+        return PFactory.createWrapperDescriptor(language, name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, legacySlotWrapper);
     }
 
     private static PRootNode createSlotRootNode(PythonLanguage language, HPySlotWrapper wrapper, TruffleString name) {
@@ -371,6 +366,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Specialization(limit = "1")
         Object doIt(VirtualFrame frame, TruffleString name, Object callable, GraalHPyContext hPyContext, Object[] arguments,
+                        @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
@@ -391,9 +387,9 @@ public abstract class HPyExternalFunctionNodes {
             try {
                 return checkFunctionResultNode.execute(pythonThreadState, name, lib.execute(callable, convertedArguments));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
             } catch (ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
@@ -625,7 +621,6 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private PythonObjectFactory factory;
 
         @TruffleBoundary
         public HPyMethKeywordsRoot(PythonLanguage language, TruffleString name) {
@@ -685,11 +680,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         private PTuple getKwnamesTuple(TruffleString[] kwnames) {
-            if (factory == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                factory = insert(PythonObjectFactory.create());
-            }
-            return factory.createTuple(kwnames);
+            return PFactory.createTuple(PythonLanguage.get(this), kwnames);
         }
 
         @Override
@@ -937,7 +928,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadVarArgsNode readVarargsNode;
-        @Child private PRaiseNode raiseNode;
+        private final BranchProfile errorProfile = BranchProfile.create();
 
         public HPyMethObjObjArgProcRoot(PythonLanguage language, TruffleString name) {
             super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
@@ -951,18 +942,10 @@ public abstract class HPyExternalFunctionNodes {
             } else if (varargs.length == 1) {
                 return new Object[]{getSelf(frame), getArg1(frame), varargs[0]};
             } else {
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError,
                                 ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S,
                                 getName(), 2, 3, "s", 1 + varargs.length, "were", "");
             }
-        }
-
-        private PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
         }
 
         private Object[] getVarargs(VirtualFrame frame) {
@@ -1146,7 +1129,7 @@ public abstract class HPyExternalFunctionNodes {
         static Object doObject(PythonThreadState pythonThreadState, TruffleString name, Object value,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary("value") InteropLibrary lib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode,
+                        @Shared @Cached PRaiseNode raiseNode,
                         @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             if (lib.fitsInLong(value)) {
                 try {
@@ -1157,7 +1140,7 @@ public abstract class HPyExternalFunctionNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.FUNC_S_DIDNT_RETURN_INT, name);
+            throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.FUNC_S_DIDNT_RETURN_INT, name);
         }
     }
 
@@ -1352,8 +1335,7 @@ public abstract class HPyExternalFunctionNodes {
             PythonContext pythonContext = hpyContext.getContext();
             PythonLanguage lang = pythonContext.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorGetterRootNode(l, propertyName), HPyGetSetDescriptorGetterRootNode.class, propertyName);
-            PythonObjectFactory factory = pythonContext.getCore().factory();
-            return factory.createBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
+            return PFactory.createBuiltinFunction(lang, propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
         }
     }
 
@@ -1384,23 +1366,21 @@ public abstract class HPyExternalFunctionNodes {
             Object nativeSpacePtr = getNativeSpacePointerNode.executeCached(objects[0]);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.ATTEMPTING_GETTER_NO_NATIVE_SPACE);
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.ATTEMPTING_GETTER_NO_NATIVE_SPACE);
             }
             objects[0] = new PythonAbstractNativeObject(nativeSpacePtr);
             return objects;
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createLegacyFunction(GraalHPyContext context, PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
-            PythonContext pythonContext = context.getContext();
-            PythonObjectFactory factory = pythonContext.factory();
+        public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
             RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorGetterRoot(l, propertyName, PExternalFunctionWrapper.GETTER),
                             HPyLegacyGetSetDescriptorGetterRoot.class, propertyName);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
             target = EnsureExecutableNode.executeUncached(target, PExternalFunctionWrapper.GETTER);
-            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
+            return PFactory.createBuiltinFunction(lang, propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
 
@@ -1440,8 +1420,7 @@ public abstract class HPyExternalFunctionNodes {
             PythonContext pythonContext = hpyContext.getContext();
             PythonLanguage lang = pythonContext.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorSetterRootNode(l, propertyName), HPyGetSetDescriptorSetterRootNode.class, propertyName);
-            PythonObjectFactory factory = pythonContext.factory();
-            return factory.createBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
+            return PFactory.createBuiltinFunction(lang, propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), 0, callTarget);
         }
 
     }
@@ -1469,23 +1448,21 @@ public abstract class HPyExternalFunctionNodes {
             Object nativeSpacePtr = getNativeSpacePointerNode.executeCached(objects[0]);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.ATTEMPTING_SETTER_NO_NATIVE_SPACE);
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.ATTEMPTING_SETTER_NO_NATIVE_SPACE);
             }
             objects[0] = new PythonAbstractNativeObject(nativeSpacePtr);
             return objects;
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createLegacyFunction(GraalHPyContext context, PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
-            PythonContext pythonContext = context.getContext();
-            PythonObjectFactory factory = pythonContext.factory();
+        public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, TruffleString propertyName, Object target, Object closure) {
             RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorSetterRoot(l, propertyName, PExternalFunctionWrapper.SETTER),
                             HPyLegacyGetSetDescriptorSetterRoot.class, propertyName);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
             target = EnsureExecutableNode.executeUncached(target, PExternalFunctionWrapper.SETTER);
-            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
+            return PFactory.createBuiltinFunction(lang, propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), 0, rootCallTarget);
         }
     }
 
@@ -1776,7 +1753,6 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private PythonObjectFactory factory;
 
         @TruffleBoundary
         public HPyMethCallRoot(PythonLanguage language, TruffleString name) {
@@ -1795,7 +1771,7 @@ public abstract class HPyExternalFunctionNodes {
                 callable = null;
             }
             if (callable == null) {
-                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.HPY_OBJECT_DOES_NOT_SUPPORT_CALL, self);
+                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.HPY_OBJECT_DOES_NOT_SUPPORT_CALL, self);
             }
 
             getCalleeContext().enter(frame);
@@ -1860,11 +1836,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         private PTuple getKwnamesTuple(TruffleString[] kwnames) {
-            if (factory == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                factory = insert(PythonObjectFactory.create());
-            }
-            return factory.createTuple(kwnames);
+            return PFactory.createTuple(PythonLanguage.get(this), kwnames);
         }
 
         @Override

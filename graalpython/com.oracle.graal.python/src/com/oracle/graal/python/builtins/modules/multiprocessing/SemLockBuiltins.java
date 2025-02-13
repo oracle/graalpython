@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -71,7 +73,7 @@ import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -205,11 +207,11 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             if (self.getKind() == PSemLock.RECURSIVE_MUTEX) {
                 if (!self.isMine()) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
                 }
                 if (self.getCount() > 1) {
                     self.decreaseCount();
@@ -221,7 +223,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                     try {
                         sval = posixLib.semGetValue(posixSupport, self.getHandle());
                         if (sval >= self.getMaxValue()) {
-                            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
+                            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
                         }
                     } catch (UnsupportedPosixFeatureException e) {
                         /* We will only check properly the maxvalue == 1 case */
@@ -229,7 +231,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                             if (posixLib.semTryWait(posixSupport, self.getHandle())) {
                                 /* it was not locked so undo wait and raise */
                                 posixLib.semPost(posixSupport, self.getHandle());
-                                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
+                                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SEMAPHORE_RELEASED_TOO_MANY_TIMES);
                             }
                         }
                     }
@@ -294,7 +296,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int sval = posixLib.semGetValue(posixSupport, self.getHandle());
                 /*
@@ -309,7 +311,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } catch (UnsupportedPosixFeatureException e) {
                 // Not available on Darwin
-                throw raiseNode.get(inliningTarget).raise(NotImplementedError);
+                throw raiseNode.raise(inliningTarget, NotImplementedError);
             }
         }
     }
@@ -362,7 +364,8 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
-                        @Cached PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object posixName = posixLib.createPathFromString(posixSupport, name);
             long handle;
@@ -371,7 +374,7 @@ public class SemLockBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
-            return factory.createSemLock(cls, handle, kind, maxValue, name);
+            return PFactory.createSemLock(language, cls, getInstanceShape.execute(cls), handle, kind, maxValue, name);
         }
 
         @Override

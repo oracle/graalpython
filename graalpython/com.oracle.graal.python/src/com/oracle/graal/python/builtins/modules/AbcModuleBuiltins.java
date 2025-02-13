@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,7 +105,7 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
                 if ((val & COLLECTION_FLAGS) == COLLECTION_FLAGS) {
-                    throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING);
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING);
                 }
                 long tpFlags = TypeNodes.GetTypeFlagsNode.getUncached().execute(object);
                 tpFlags |= (val & COLLECTION_FLAGS);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,6 +61,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -126,7 +127,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -185,22 +186,6 @@ public abstract class ExternalFunctionNodes {
     public static PKeyword[] createKwDefaults(Object callable, Object closure) {
         assert InteropLibrary.getUncached().isExecutable(callable);
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
-    }
-
-    public static Object tryGetHiddenCallable(PBuiltinFunction function) {
-        if (function.getFunctionRootNode() instanceof MethodDescriptorRoot) {
-            return getHiddenCallable(function.getKwDefaults());
-        }
-        return null;
-    }
-
-    public static Object getHiddenCallable(PKeyword[] kwDefaults) {
-        if (kwDefaults.length >= KEYWORDS_HIDDEN_CALLABLE.length) {
-            PKeyword kwDefault = kwDefaults[0];
-            assert KW_CALLABLE.equalsUncached(kwDefault.getName(), TS_ENCODING) : "invalid keyword defaults";
-            return kwDefault.getValue();
-        }
-        throw CompilerDirectives.shouldNotReachHere();
     }
 
     public abstract static class FinishArgNode extends PNodeWithContext {
@@ -627,9 +612,9 @@ public abstract class ExternalFunctionNodes {
         }
 
         public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, int sig,
-                        PythonLanguage language, PythonObjectFactory factory, boolean doArgAndResultConversion) {
+                        PythonLanguage language, boolean doArgAndResultConversion) {
             return createWrapperFunction(name, callable, enclosingType, flags, PExternalFunctionWrapper.fromValue(sig),
-                            language, factory, doArgAndResultConversion);
+                            language, doArgAndResultConversion);
         }
 
         /**
@@ -644,14 +629,12 @@ public abstract class ExternalFunctionNodes {
          *            {@link RootCallTarget}, and (3) a {@link BuiltinMethodDescriptor}.
          * @param enclosingType The type the function belongs to (needed for checking of
          *            {@code self}).
-         * @param factory Just an instance of {@link PythonObjectFactory} to create the function
-         *            object.
          * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot
          *         wrapper.
          */
         @TruffleBoundary
         public static PBuiltinFunction createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language,
-                        PythonObjectFactory factory, boolean doArgAndResultConversion) {
+                        boolean doArgAndResultConversion) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
             assert !isClosurePointer(PythonContext.get(null), callable, InteropLibrary.getUncached(callable));
             if (flags < 0) {
@@ -718,24 +701,23 @@ public abstract class ExternalFunctionNodes {
                 case FASTCALL:
                 case FASTCALL_WITH_KEYWORDS:
                 case METHOD:
-                    return factory.createBuiltinFunction(name, type, defaults, kwDefaults, flags, callTarget);
+                    return PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
             }
-            return factory.createWrapperDescriptor(name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
+            return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
         }
 
         /**
-         * {@link #createWrapperFunction(TruffleString, Object, Object, int, PExternalFunctionWrapper, PythonLanguage, PythonObjectFactory, boolean)}.
+         * {@link #createWrapperFunction(TruffleString, Object, Object, int, PExternalFunctionWrapper, PythonLanguage, boolean)}.
          */
         @TruffleBoundary
-        public static PBuiltinFunction createWrapperFunction(TruffleString name, TpSlotCExtNative slot, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language,
-                        PythonObjectFactory factory) {
+        public static PBuiltinFunction createWrapperFunction(TruffleString name, TpSlotCExtNative slot, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language) {
             RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, true, false);
             if (callTarget == null) {
                 return null;
             }
             var kwDefaults = ExternalFunctionNodes.createKwDefaults(slot.getCallable());
             Object[] defaults = PBuiltinFunction.generateDefaults(sig.numDefaults);
-            return factory.createWrapperDescriptor(name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, sig);
+            return PFactory.createWrapperDescriptor(language, name, enclosingType, defaults, kwDefaults, 0, callTarget, slot, sig);
         }
 
         private static boolean isClosurePointer(PythonContext context, Object callable, InteropLibrary lib) {
@@ -879,10 +861,10 @@ public abstract class ExternalFunctionNodes {
                 return lib.execute(callable, cArguments);
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
             } catch (ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } catch (Throwable exception) {
                 /*
                  * Always re-acquire the GIL here. This is necessary because it could happen that C
@@ -1129,7 +1111,6 @@ public abstract class ExternalFunctionNodes {
 
     public static final class MethKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self"), true, true);
-        @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
@@ -1143,7 +1124,6 @@ public abstract class ExternalFunctionNodes {
 
         public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
@@ -1155,7 +1135,8 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-            return new Object[]{self, createArgsTupleNode.execute(factory, args, seenNativeArgsTupleStorage), factory.createDict(kwargs)};
+            PythonLanguage language = getLanguage(PythonLanguage.class);
+            return new Object[]{self, createArgsTupleNode.execute(language, args, seenNativeArgsTupleStorage), PFactory.createDict(language, kwargs)};
         }
 
         @Override
@@ -1177,7 +1158,6 @@ public abstract class ExternalFunctionNodes {
 
     public static final class MethVarargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, 1, tsArray("self"), true, true);
-        @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
         @Child private ReleaseNativeSequenceStorageNode freeNode;
@@ -1190,7 +1170,6 @@ public abstract class ExternalFunctionNodes {
 
         public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
             this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
@@ -1200,7 +1179,7 @@ public abstract class ExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
-            return new Object[]{self, createArgsTupleNode.execute(factory, args, seenNativeArgsTupleStorage)};
+            return new Object[]{self, createArgsTupleNode.execute(getLanguage(PythonLanguage.class), args, seenNativeArgsTupleStorage)};
         }
 
         @Override
@@ -1358,7 +1337,6 @@ public abstract class ExternalFunctionNodes {
 
     public static final class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self"), true, true);
-        @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
@@ -1368,7 +1346,6 @@ public abstract class ExternalFunctionNodes {
 
         public MethFastcallWithKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
         }
@@ -1388,7 +1365,7 @@ public abstract class ExternalFunctionNodes {
                     fastcallKwnames[i] = kwargs[i].getName();
                     fastcallArgs[args.length + i] = kwargs[i].getValue();
                 }
-                kwnamesTuple = factory.createTuple(fastcallKwnames);
+                kwnamesTuple = PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames);
             }
             return new Object[]{self, new CPyObjectArrayWrapper(fastcallArgs), args.length, kwnamesTuple};
         }
@@ -1410,7 +1387,6 @@ public abstract class ExternalFunctionNodes {
 
     public static final class MethMethodRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self", "cls"), true, true);
-        @Child private PythonObjectFactory factory;
         @Child private ReadIndexedArgumentNode readClsNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -1421,7 +1397,6 @@ public abstract class ExternalFunctionNodes {
 
         public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.factory = PythonObjectFactory.create();
             this.readClsNode = ReadIndexedArgumentNode.create(1);
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
@@ -1440,7 +1415,7 @@ public abstract class ExternalFunctionNodes {
                 fastcallKwnames[i] = kwargs[i].getName();
                 fastcallArgs[args.length + i] = kwargs[i].getValue();
             }
-            return new Object[]{self, cls, new CPyObjectArrayWrapper(fastcallArgs), args.length, factory.createTuple(fastcallKwnames)};
+            return new Object[]{self, cls, new CPyObjectArrayWrapper(fastcallArgs), args.length, PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames)};
         }
 
         @Override
@@ -2183,43 +2158,43 @@ public abstract class ExternalFunctionNodes {
      */
     @GenerateInline(false)
     abstract static class CreateArgsTupleNode extends Node {
-        public abstract PTuple execute(PythonObjectFactory factory, Object[] args, boolean eagerNative);
+        public abstract PTuple execute(PythonLanguage language, Object[] args, boolean eagerNative);
 
         @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "!eagerNative"}, limit = "1")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
-        static PTuple doCachedLen(PythonObjectFactory factory, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
+        static PTuple doCachedLen(PythonLanguage language, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
                         @Cached("args.length") int cachedLen,
                         @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes) {
 
             for (int i = 0; i < cachedLen; i++) {
-                args[i] = materializePrimitiveNodes[i].execute(factory, args[i]);
+                args[i] = materializePrimitiveNodes[i].execute(language, args[i]);
             }
-            return factory.createTuple(args);
+            return PFactory.createTuple(language, args);
         }
 
         @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "eagerNative"}, limit = "1", replaces = "doCachedLen")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
-        static PTuple doCachedLenEagerNative(PythonObjectFactory factory, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
+        static PTuple doCachedLenEagerNative(PythonLanguage language, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
                         @Bind("this") Node inliningTarget,
                         @Cached("args.length") int cachedLen,
                         @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes,
                         @Exclusive @Cached StorageToNativeNode storageToNativeNode) {
 
             for (int i = 0; i < cachedLen; i++) {
-                args[i] = materializePrimitiveNodes[i].execute(factory, args[i]);
+                args[i] = materializePrimitiveNodes[i].execute(language, args[i]);
             }
-            return factory.createTuple(storageToNativeNode.execute(inliningTarget, args, cachedLen, true));
+            return PFactory.createTuple(language, storageToNativeNode.execute(inliningTarget, args, cachedLen, true));
         }
 
         @Specialization(replaces = {"doCachedLen", "doCachedLenEagerNative"})
-        static PTuple doGeneric(PythonObjectFactory factory, Object[] args, boolean eagerNative,
+        static PTuple doGeneric(PythonLanguage language, Object[] args, boolean eagerNative,
                         @Bind("this") Node inliningTarget,
                         @Cached MaterializePrimitiveNode materializePrimitiveNode,
                         @Exclusive @Cached StorageToNativeNode storageToNativeNode) {
 
             int n = args.length;
             for (int i = 0; i < n; i++) {
-                args[i] = materializePrimitiveNode.execute(factory, args[i]);
+                args[i] = materializePrimitiveNode.execute(language, args[i]);
             }
             SequenceStorage storage;
             if (eagerNative) {
@@ -2227,7 +2202,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 storage = new ObjectSequenceStorage(args);
             }
-            return factory.createTuple(storage);
+            return PFactory.createTuple(language, storage);
         }
 
         static MaterializePrimitiveNode[] createMaterializeNodes(int length) {
@@ -2236,14 +2211,6 @@ public abstract class ExternalFunctionNodes {
                 materializePrimitiveNodes[i] = MaterializePrimitiveNodeGen.create();
             }
             return materializePrimitiveNodes;
-        }
-
-        static PythonToNativeNode[] createPythonToNativeNodes(int length) {
-            PythonToNativeNode[] pythonToNativeNodes = new PythonToNativeNode[length];
-            for (int i = 0; i < length; i++) {
-                pythonToNativeNodes[i] = PythonToNativeNodeGen.create();
-            }
-            return pythonToNativeNodes;
         }
     }
 
@@ -2292,37 +2259,33 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     abstract static class MaterializePrimitiveNode extends Node {
 
-        public abstract Object execute(PythonObjectFactory factory, Object object);
+        public abstract Object execute(PythonLanguage language, Object object);
 
         // NOTE: Booleans don't need to be materialized because they are singletons.
 
         @Specialization
-        static PInt doInteger(PythonObjectFactory factory, int i) {
-            return factory.createInt(i);
+        static PInt doInteger(PythonLanguage language, int i) {
+            return PFactory.createInt(language, i);
         }
 
         @Specialization(replaces = "doInteger")
-        static PInt doLong(PythonObjectFactory factory, long l) {
-            return factory.createInt(l);
+        static PInt doLong(PythonLanguage language, long l) {
+            return PFactory.createInt(language, l);
         }
 
         @Specialization
-        static PFloat doDouble(PythonObjectFactory factory, double d) {
-            return factory.createFloat(d);
+        static PFloat doDouble(PythonLanguage language, double d) {
+            return PFactory.createFloat(language, d);
         }
 
         @Specialization
-        static PString doString(PythonObjectFactory factory, TruffleString s) {
-            return factory.createString(s);
+        static PString doString(PythonLanguage language, TruffleString s) {
+            return PFactory.createString(language, s);
         }
 
-        @Specialization(guards = "!needsMaterialization(object)")
-        static Object doObject(@SuppressWarnings("unused") PythonObjectFactory factory, Object object) {
+        @Fallback
+        static Object doObject(@SuppressWarnings("unused") PythonLanguage language, Object object) {
             return object;
-        }
-
-        static boolean needsMaterialization(Object object) {
-            return object instanceof Integer || object instanceof Long || PGuards.isDouble(object) || object instanceof TruffleString;
         }
     }
 
@@ -2456,7 +2419,7 @@ public abstract class ExternalFunctionNodes {
                 AbstractTruffleException currentException = state.getCurrentException();
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == null) {
-                    throw raiseNode.raiseStopIteration();
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
                 } else {
                     throw clearCurrentExceptionNode.getCurrentExceptionForReraise(inliningTarget, state);
                 }
@@ -2596,7 +2559,7 @@ public abstract class ExternalFunctionNodes {
                 }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(inliningTarget, SystemError, ErrorMessages.FUNC_DIDNT_RETURN_INT, name);
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.FUNC_DIDNT_RETURN_INT, name);
         }
     }
 }

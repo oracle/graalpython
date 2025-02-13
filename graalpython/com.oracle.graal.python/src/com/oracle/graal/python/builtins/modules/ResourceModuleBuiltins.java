@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -62,7 +63,8 @@ import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RusageResult;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -159,22 +161,23 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PTuple getruusage(VirtualFrame frame, int who,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            PosixSupport posixSupport = PosixSupport.get(inliningTarget);
+                        @Cached PRaiseNode raiseNode) {
+            PosixSupport posixSupport = context.getPosixSupport();
             RusageResult rusage;
             try {
                 rusage = posixLib.getrusage(posixSupport, who);
             } catch (PosixException e) {
                 if (e.getErrorCode() == OSErrorEnum.EINVAL.getNumber()) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.RUSAGE_INVALID_WHO);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.RUSAGE_INVALID_WHO);
                 } else {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             }
 
-            return PythonObjectFactory.getUncached().createStructSeq(STRUCT_RUSAGE_DESC,
+            return PFactory.createStructSeq(context.getLanguage(inliningTarget), STRUCT_RUSAGE_DESC,
                             rusage.ru_utime(), rusage.ru_stime(),
                             rusage.ru_maxrss(), rusage.ru_ixrss(), rusage.ru_idrss(), rusage.ru_isrss(),
                             rusage.ru_minflt(), rusage.ru_majflt(), rusage.ru_nswap(), rusage.ru_inblock(), rusage.ru_oublock(),
@@ -196,9 +199,9 @@ public final class ResourceModuleBuiltins extends PythonBuiltins {
     abstract static class GetRLimitNode extends PythonBuiltinNode {
         @Specialization
         static PTuple getPageSize(@SuppressWarnings("unused") int which,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             // dummy implementation - report "unrestricted" for everything
-            return factory.createTuple(new Object[]{RLIM_INFINITY, RLIM_INFINITY});
+            return PFactory.createTuple(language, new Object[]{RLIM_INFINITY, RLIM_INFINITY});
         }
     }
 }

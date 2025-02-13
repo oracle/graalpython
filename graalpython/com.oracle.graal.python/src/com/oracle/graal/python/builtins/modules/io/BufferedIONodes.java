@@ -109,10 +109,10 @@ public class BufferedIONodes {
         @Specialization
         boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached IsClosedNode isClosedNode) {
             if (isClosedNode.execute(frame, inliningTarget, self)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, messageFmt, method);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, messageFmt, method);
             }
             return false;
         }
@@ -155,11 +155,11 @@ public class BufferedIONodes {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             assert self.isOK();
             Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_SEEKABLE);
             if (!isTrue.execute(frame, res)) {
-                throw raiseNode.get(inliningTarget).raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
+                throw raiseNode.raise(inliningTarget, IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
             }
             return true;
         }
@@ -181,7 +181,7 @@ public class BufferedIONodes {
 
         @Specialization
         static long toLong(VirtualFrame frame, Node inliningTarget, Object number, PythonBuiltinClassType err,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongExactNode cast,
                         @Cached IsBuiltinObjectProfile errorProfile) {
@@ -190,7 +190,7 @@ public class BufferedIONodes {
                 return cast.execute(inliningTarget, index);
             } catch (PException e) {
                 e.expect(inliningTarget, OverflowError, errorProfile);
-                throw raiseNode.get(inliningTarget).raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
+                throw raiseNode.raise(inliningTarget, err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -218,12 +218,12 @@ public class BufferedIONodes {
          */
         @Specialization
         static long bufferedRawTell(VirtualFrame frame, Node inliningTarget, PBuffered self,
-                        @Cached PRaiseNode.Lazy lazyRaiseNode,
+                        @Cached PRaiseNode lazyRaiseNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached AsOffNumberNode asOffNumberNode) {
             long n = tell(frame, inliningTarget, self.getRaw(), callMethod, asOffNumberNode);
             if (n < 0) {
-                throw lazyRaiseNode.get(inliningTarget).raise(OSError, IO_STREAM_INVALID_POS, n);
+                throw lazyRaiseNode.raise(inliningTarget, OSError, IO_STREAM_INVALID_POS, n);
             }
             self.setAbsPos(n);
             return n;
@@ -278,13 +278,13 @@ public class BufferedIONodes {
         @Specialization
         static long bufferedRawSeek(VirtualFrame frame, PBuffered self, long target, int whence,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raise,
+                        @Cached PRaiseNode raise,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached AsOffNumberNode asOffNumberNode) {
             Object res = callMethod.execute(frame, inliningTarget, self.getRaw(), T_SEEK, target, whence);
             long n = asOffNumberNode.execute(frame, inliningTarget, res, ValueError);
             if (n < 0) {
-                raise.get(inliningTarget).raise(OSError, IO_STREAM_INVALID_POS, n);
+                raise.raise(inliningTarget, OSError, IO_STREAM_INVALID_POS, n);
             }
             self.setAbsPos(n);
             return n;
@@ -456,7 +456,7 @@ public class BufferedIONodes {
 
         @Specialization(guards = {"!self.isOwn()", "getContext().isFinalizing()"})
         static void finalizing(Node inliningTarget, PBuffered self,
-                        @Shared @Cached PRaiseNode.Lazy lazyRaise) {
+                        @Shared @Cached PRaiseNode lazyRaise) {
             /*
              * When finalizing, we don't want a deadlock to happen with daemon threads abruptly shut
              * down while they owned the lock. Therefore, only wait for a grace period (1 s.). Note
@@ -464,14 +464,14 @@ public class BufferedIONodes {
              * written threaded I/O code.
              */
             if (!self.getLock().acquireTimeout(inliningTarget, (long) 1e3)) {
-                throw lazyRaise.get(inliningTarget).raise(SystemError, SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS);
+                throw lazyRaise.raise(inliningTarget, SystemError, SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS);
             }
         }
 
         @Specialization(guards = "self.isOwn()")
         static void error(Node inliningTarget, PBuffered self,
-                        @Shared @Cached PRaiseNode.Lazy lazyRaise) {
-            throw lazyRaise.get(inliningTarget).raise(RuntimeError, REENTRANT_CALL_INSIDE_P, self);
+                        @Shared @Cached PRaiseNode lazyRaise) {
+            throw lazyRaise.raise(inliningTarget, RuntimeError, REENTRANT_CALL_INSIDE_P, self);
         }
     }
 }

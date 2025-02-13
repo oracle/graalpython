@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -202,7 +202,7 @@ public abstract class PythonBufferAcquireLibrary extends Library {
         try {
             return acquireWritable(receiver);
         } catch (PException e) {
-            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, callerName, receiver);
+            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, callerName, receiver);
         } finally {
             IndirectCallContext.exit(frame, indirectCallData, savedState);
         }
@@ -225,7 +225,7 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      */
     @Abstract
     public Object acquire(Object receiver, int flags) {
-        throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, receiver);
+        throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, receiver);
     }
 
     /**

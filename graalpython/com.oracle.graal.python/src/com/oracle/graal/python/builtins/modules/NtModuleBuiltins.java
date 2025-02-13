@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -65,7 +66,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -123,12 +124,12 @@ public final class NtModuleBuiltins extends PythonBuiltins {
         Object splitroot(PosixPath path) {
             // TODO should call WINAPI PathCchSkipRoot
 
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PythonLanguage language = PythonLanguage.get(null);
             TruffleString pathString = PosixSupportLibrary.getUncached().getPathAsString(getPosixSupport(), path.value);
             int len = pathString.codePointLengthUncached(TS_ENCODING);
             int index = pathString.indexOfCodePointUncached(':', 0, len, TS_ENCODING);
             if (index <= 0) {
-                return factory.createTuple(new Object[]{T_EMPTY_STRING, pathString});
+                return PFactory.createTuple(language, new Object[]{T_EMPTY_STRING, pathString});
             } else {
                 index++;
                 int first = pathString.codePointAtIndexUncached(index, TS_ENCODING);
@@ -137,7 +138,7 @@ public final class NtModuleBuiltins extends PythonBuiltins {
                 }
                 TruffleString root = pathString.substringUncached(0, index, TS_ENCODING, false);
                 TruffleString rest = pathString.substringUncached(index, len - index, TS_ENCODING, false);
-                return factory.createTuple(new Object[]{root, rest});
+                return PFactory.createTuple(language, new Object[]{root, rest});
             }
         }
 

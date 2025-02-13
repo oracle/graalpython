@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,6 +73,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -82,11 +83,12 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -242,6 +244,7 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "err == Z_VERSION_ERROR")
         static void doVersionError(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             /*
@@ -249,11 +252,12 @@ public class ZlibNodes {
              * first, before looking at comp->zst.msg.
              */
             deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-            throw raise.raise(ZLibError, ERROR_D_S_S, err, msg, LIBRARY_VERSION_MISMATCH);
+            throw raise.raise(inliningTarget, ZLibError, ERROR_D_S_S, err, msg, LIBRARY_VERSION_MISMATCH);
         }
 
         @Specialization(guards = "err != Z_VERSION_ERROR")
         static void doError(Object zst, int err, TruffleString msg, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Exclusive @Cached NativeLibrary.InvokeNativeFunction hasStreamErrorMsg,
@@ -276,9 +280,9 @@ public class ZlibNodes {
             }
             deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
             if (zmsg == null) {
-                throw raise.raise(ZLibError, ERROR_D_S, err, msg);
+                throw raise.raise(inliningTarget, ZLibError, ERROR_D_S, err, msg);
             } else {
-                throw raise.raise(ZLibError, ERROR_D_S_S, err, msg, zmsg);
+                throw raise.raise(inliningTarget, ZLibError, ERROR_D_S_S, err, msg, zmsg);
             }
         }
     }
@@ -292,68 +296,72 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == DEFLATE_INIT_ERROR")
         static void deflateInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, OUT_OF_MEMORY_WHILE_S_DATA, "compressing");
+                throw raise.raise(inliningTarget, MemoryError, OUT_OF_MEMORY_WHILE_S_DATA, "compressing");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
+                throw raise.raise(inliningTarget, ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_S_DATA, "compressing"), zlibSupport, deallocate);
         }
 
         @Specialization(guards = "function == DEFLATE_OBJ_ERROR")
         static void deflateObjInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "compression");
+                throw raise.raise(inliningTarget, MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "compression");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INVALID_INITIALIZATION_OPTION);
+                throw raise.raise(inliningTarget, ValueError, INVALID_INITIALIZATION_OPTION);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_CREATING_S_OBJECT, "compression"), zlibSupport, deallocate);
         }
 
         @Specialization(guards = "function == DEFLATE_COPY_ERROR")
         static void deflateCopyError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "compression");
+                throw raise.raise(inliningTarget, MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "compression");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INCONSISTENT_STREAM_STATE);
+                throw raise.raise(inliningTarget, ValueError, INCONSISTENT_STREAM_STATE);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_COPYING_S_OBJECT, "compression"), zlibSupport, deallocate);
         }
 
         @Specialization(guards = "function == INFLATE_COPY_ERROR")
         static void inflateCopyError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "decompression");
+                throw raise.raise(inliningTarget, MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "decompression");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INCONSISTENT_STREAM_STATE);
+                throw raise.raise(inliningTarget, ValueError, INCONSISTENT_STREAM_STATE);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_COPYING_S_OBJECT, "compression"), zlibSupport, deallocate);
         }
@@ -361,25 +369,27 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "function == DEFLATE_DICT_ERROR")
         static void deflateDictError(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INVALID_DICTIONARY);
+                throw raise.raise(inliningTarget, ValueError, INVALID_DICTIONARY);
             }
-            throw raise.raise(ValueError, ErrorMessages.DEFLATED_SET_DICT);
+            throw raise.raise(inliningTarget, ValueError, ErrorMessages.DEFLATED_SET_DICT);
 
         }
 
         @Specialization(guards = "function == INFLATE_INIT_ERROR")
         static void inflateInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, OUT_OF_MEMORY_WHILE_S_DATA, "decompressing");
+                throw raise.raise(inliningTarget, MemoryError, OUT_OF_MEMORY_WHILE_S_DATA, "decompressing");
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_PREPARING_TO_S_DATA, "decompress"), zlibSupport, deallocate);
 
@@ -387,17 +397,18 @@ public class ZlibNodes {
 
         @Specialization(guards = "function == INFLATE_OBJ_ERROR")
         static void inflateObjInitError(Object zst, @SuppressWarnings("unused") int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("r") @Cached PRaiseNode raise,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("err") @Cached ZlibNativeErrorMsg zlibError,
                         @Shared("format") @Cached SimpleTruffleStringFormatNode formatNode) {
             if (err == Z_MEM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "decompression");
+                throw raise.raise(inliningTarget, MemoryError, CANT_ALLOCATE_MEMORY_FOR_S_OBJECT, "decompression");
             }
             if (err == Z_STREAM_ERROR) {
                 deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-                throw raise.raise(ValueError, INVALID_INITIALIZATION_OPTION);
+                throw raise.raise(inliningTarget, ValueError, INVALID_INITIALIZATION_OPTION);
             }
             zlibError.execute(zst, err, formatNode.format(WHILE_CREATING_S_OBJECT, "decompression"), zlibSupport, deallocate);
         }
@@ -451,16 +462,17 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "function == MEMORY_ERROR")
         static void memError(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate,
+                        @Bind("this") Node inliningTarget,
                         @Shared("d") @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Shared("r") @Cached PRaiseNode raise) {
             deallocateStream(zst, zlibSupport, deallocateStream, deallocate);
-            throw raise.raise(MemoryError);
+            throw raise.raise(inliningTarget, MemoryError);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         void fallback(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate) {
-            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.UNHANDLED_ERROR);
+            throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.UNHANDLED_ERROR);
         }
     }
 
@@ -469,10 +481,10 @@ public class ZlibNodes {
     @GenerateCached(false)
     public abstract static class NativeDeallocation extends PNodeWithContext {
 
-        public abstract void execute(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, PythonObjectFactory factory, boolean isCompressObj);
+        public abstract void execute(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, boolean isCompressObj);
 
         @Specialization(guards = "isCompressObj")
-        static void doCompressObj(ZLibCompObject.NativeZlibCompObject self, PythonContext context, @SuppressWarnings("unused") PythonObjectFactory factory,
+        static void doCompressObj(ZLibCompObject.NativeZlibCompObject self, PythonContext context,
                         @SuppressWarnings("unused") boolean isCompressObj,
                         @Shared @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream) {
             context.getNFIZlibSupport().deallocateStream(self.getZst(), deallocateStream);
@@ -481,15 +493,16 @@ public class ZlibNodes {
         }
 
         @Specialization(guards = "!isCompressObj")
-        static void doDecompressObj(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context, PythonObjectFactory factory,
+        static void doDecompressObj(Node inliningTarget, ZLibCompObject.NativeZlibCompObject self, PythonContext context,
                         @SuppressWarnings("unused") boolean isCompressObj,
                         @Cached GetNativeBufferNode getUnusedDataBuffer,
                         @Cached GetNativeBufferNode getUnconsumedBuffer,
                         @Shared @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream) {
             byte[] unusedData = getUnusedDataBuffer.getUnusedDataBuffer(inliningTarget, self.getZst(), context);
-            self.setUnusedData(factory.createBytes(unusedData));
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            self.setUnusedData(PFactory.createBytes(language, unusedData));
             byte[] unconsumed = getUnconsumedBuffer.getUnconsumedTailBuffer(inliningTarget, self.getZst(), context);
-            self.setUnconsumedTail(factory.createBytes(unconsumed));
+            self.setUnconsumedTail(PFactory.createBytes(language, unconsumed));
             context.getNFIZlibSupport().deallocateStream(self.getZst(), deallocateStream);
             self.setEof(true);
             self.markReleased();
@@ -582,11 +595,11 @@ public class ZlibNodes {
                             // we inflate again with a dictionary
                             bytesWritten = inflater.inflate(result, 0, len);
                         } else {
-                            throw PRaiseNode.raiseUncached(nodeForRaise, ZLibError, WHILE_SETTING_ZDICT);
+                            throw PRaiseNode.raiseStatic(nodeForRaise, ZLibError, WHILE_SETTING_ZDICT);
                         }
                     }
                 } catch (DataFormatException e) {
-                    throw PRaiseNode.raiseUncached(nodeForRaise, ZLibError, e);
+                    throw PRaiseNode.raiseStatic(nodeForRaise, ZLibError, e);
                 }
                 baos.write(result, 0, bytesWritten);
             }
@@ -594,35 +607,36 @@ public class ZlibNodes {
         }
 
         public static byte[] execute(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int length, int maxLength, int bufSize,
-                        Node nodeForRaise, PythonObjectFactory factory, BytesNodes.ToBytesNode toBytesNode) {
+                        Node inliningTarget, BytesNodes.ToBytesNode toBytesNode) {
             Inflater inflater = (Inflater) self.stream;
-            byte[] result = createByteArray(self, inflater, bytes, length, maxLength, bufSize, nodeForRaise);
+            byte[] result = createByteArray(self, inflater, bytes, length, maxLength, bufSize, inliningTarget);
             self.setEof(isFinished(inflater));
             byte[] unusedDataBytes = toBytesNode.execute(frame, self.getUnusedData());
             int unconsumedTailLen = self.getUnconsumedTail().getSequenceStorage().length();
-            saveUnconsumedInput(self, bytes, length, unusedDataBytes, unconsumedTailLen, factory);
+            saveUnconsumedInput(self, bytes, length, unusedDataBytes, unconsumedTailLen, inliningTarget);
             return result;
         }
 
         private static void saveUnconsumedInput(ZLibCompObject.JavaZlibCompObject self, byte[] data, int length,
-                        byte[] unusedDataBytes, int unconsumedTailLen, PythonObjectFactory factory) {
+                        byte[] unusedDataBytes, int unconsumedTailLen, Node inliningTarget) {
             Inflater inflater = (Inflater) self.stream;
             int unusedLen = getRemaining(inflater);
             byte[] tail = PythonUtils.arrayCopyOfRange(data, length - unusedLen, length);
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
             if (self.isEof()) {
                 if (unconsumedTailLen > 0) {
-                    self.setUnconsumedTail(factory.createEmptyBytes());
+                    self.setUnconsumedTail(PFactory.createEmptyBytes(language));
                 }
                 if (unusedDataBytes.length > 0 && tail.length > 0) {
                     byte[] newUnusedData = new byte[unusedDataBytes.length + tail.length];
                     PythonUtils.arraycopy(unusedDataBytes, 0, newUnusedData, 0, unusedDataBytes.length);
                     PythonUtils.arraycopy(tail, 0, newUnusedData, unusedDataBytes.length, tail.length);
-                    self.setUnusedData(factory.createBytes(newUnusedData));
+                    self.setUnusedData(PFactory.createBytes(language, newUnusedData));
                 } else if (tail.length > 0) {
-                    self.setUnusedData(factory.createBytes(tail));
+                    self.setUnusedData(PFactory.createBytes(language, tail));
                 }
             } else {
-                self.setUnconsumedTail(factory.createBytes(tail));
+                self.setUnconsumedTail(PFactory.createBytes(language, tail));
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -74,7 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -107,26 +108,27 @@ public final class AstBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyObjectSetAttrO setAttrNode,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PRaiseNode raiseNode) {
             Object fieldsObj = lookupAttrNode.execute(frame, inliningTarget, self, T__FIELDS);
             Object[] fields;
             if (fieldsObj == PNone.NO_VALUE) {
                 fields = EMPTY_OBJECT_ARRAY;
             } else {
                 if (!(fieldsObj instanceof PSequence)) {
-                    throw raise(TypeError, IS_NOT_A_SEQUENCE, fieldsObj);
+                    throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A_SEQUENCE, fieldsObj);
                 }
                 fields = getObjectArrayNode.execute(inliningTarget, fieldsObj);
             }
             if (fields.length < args.length) {
-                throw raise(TypeError, S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S, self, fields.length, fields.length == 1 ? "" : "s");
+                throw raiseNode.raise(inliningTarget, TypeError, S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S, self, fields.length, fields.length == 1 ? "" : "s");
             }
             for (int i = 0; i < args.length; ++i) {
                 setAttrNode.execute(frame, inliningTarget, self, fields[i], args[i]);
             }
             for (PKeyword kwArg : kwArgs) {
                 if (contains(fields, args.length, kwArg.getName(), equalNode)) {
-                    throw raise(TypeError, P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S, self, kwArg.getName());
+                    throw raiseNode.raise(inliningTarget, TypeError, P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S, self, kwArg.getName());
                 }
                 setAttrNode.execute(frame, inliningTarget, self, kwArg.getName(), kwArg.getValue());
             }
@@ -166,8 +168,8 @@ public final class AstBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(d)", "!isDict(d)"})
         @SuppressWarnings("unused")
         static Object setDict(PythonObject self, Object d,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, d);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, d);
         }
     }
 
@@ -180,10 +182,10 @@ public final class AstBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object dict = lookupAttr.execute(frame, inliningTarget, self, T___DICT__);
-            return factory.createTuple(new Object[]{clazz, factory.createTuple(EMPTY_OBJECT_ARRAY), dict});
+            return PFactory.createTuple(language, new Object[]{clazz, PFactory.createTuple(language, EMPTY_OBJECT_ARRAY), dict});
         }
     }
 }

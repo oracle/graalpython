@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -77,7 +78,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -115,8 +116,8 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "!checkCallableNode.execute(this, callable)")
         static PNone noCallble(@SuppressWarnings("unused") PDecoratedMethod self, Object callable,
                         @Shared("checkCallable") @SuppressWarnings("unused") @Cached PyCallableCheckNode checkCallableNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, callable);
         }
     }
 
@@ -183,12 +184,11 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGeneric(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object cls,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedConditionProfile objIsNoneProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached InlinedConditionProfile objIsNoneProfile) {
             if (objIsNoneProfile.profile(inliningTarget, obj == PNone.NO_VALUE)) {
                 return self.getCallable();
             }
-            return factory.createMethod(obj, self.getCallable());
+            return PFactory.createMethod(PythonLanguage.get(inliningTarget), obj, self.getCallable());
         }
     }
 

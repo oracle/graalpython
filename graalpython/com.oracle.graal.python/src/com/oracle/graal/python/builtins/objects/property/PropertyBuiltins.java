@@ -50,6 +50,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMET
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -81,7 +82,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassP
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -156,7 +157,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         @SuppressWarnings("unused")
         static Object doSet(PProperty self, Object value,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             /*
              * That's a bit unfortunate: if we define 'isGetter = true' and 'isSetter = false' then
              * this will use a GetSetDescriptor which has a slightly different error message for
@@ -164,7 +165,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
              * with expected message. This should be fixed by distinguishing between getset and
              * member descriptors.
              */
-            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
         }
     }
 
@@ -256,7 +257,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
 
             // shortcut: create new property object directly
             if (IsBuiltinClassProfile.profileClassSlowPath(type, PythonBuiltinClassType.PProperty)) {
-                PProperty copy = PythonObjectFactory.getUncached().createProperty();
+                PProperty copy = PFactory.createProperty(PythonLanguage.get(null));
                 PropertyInitNode.doGeneric(copy, get, set, del, doc);
                 return copy;
             }
@@ -313,9 +314,9 @@ public final class PropertyBuiltins extends PythonBuiltins {
             TruffleString qualName = getQualNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, obj));
             if (self.getPropertyName() != null) {
                 TruffleString propertyName = reprNode.execute(frame, inliningTarget, self.getPropertyName());
-                throw raiseNode.raise(AttributeError, ErrorMessages.PROPERTY_S_OF_S_OBJECT_HAS_NO_S, propertyName, qualName, what);
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.PROPERTY_S_OF_S_OBJECT_HAS_NO_S, propertyName, qualName, what);
             } else {
-                throw raiseNode.raise(AttributeError, ErrorMessages.PROPERTY_OF_S_OBJECT_HAS_NO_S, qualName, what);
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.PROPERTY_OF_S_OBJECT_HAS_NO_S, qualName, what);
             }
         }
     }

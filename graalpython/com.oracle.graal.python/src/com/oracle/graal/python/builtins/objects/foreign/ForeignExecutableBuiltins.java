@@ -76,7 +76,7 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             try {
@@ -89,7 +89,7 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
                     IndirectCallContext.exit(frame, language, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }

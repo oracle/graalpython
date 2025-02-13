@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,8 +94,8 @@ public final class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization
         static Object setDict(PythonObject self, @SuppressWarnings("unused") Object d,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTR_DICT_IS_NOT_WRITABLE, self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AssertionError, ErrorMessages.ATTR_DICT_IS_NOT_WRITABLE, self);
         }
     }
 }

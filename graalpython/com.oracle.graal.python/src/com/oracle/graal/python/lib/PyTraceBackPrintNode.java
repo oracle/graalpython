@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.MAXSIZE
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_TRACEBACKLIMIT;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NEWLINE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -55,6 +56,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonFileDetector;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
@@ -73,7 +76,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -229,9 +232,9 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         return (i > 0) ? name.substringUncached(i + 1, len - i - 1, TS_ENCODING, true) : name;
     }
 
-    public PCode getCode(VirtualFrame frame, PythonObjectFactory factory, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, PTraceback tb) {
+    public PCode getCode(VirtualFrame frame, PythonLanguage language, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, PTraceback tb) {
         final PFrame pFrame = getTbFrameNode.execute(frame, tb);
-        return factory.createCode(pFrame.getTarget());
+        return PFactory.createCode(language, pFrame.getTarget());
     }
 
     protected PTraceback getNextTb(Node inliningTarget, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode, PTraceback traceback) {
@@ -333,7 +336,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         return (st > 0 ? sequence.subSequence(st, len) : sequence).toString();
     }
 
-    private void printInternal(VirtualFrame frame, Node inliningTarget, PythonObjectFactory factory, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
+    private void printInternal(VirtualFrame frame, Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
                     TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode, Object out, PTraceback traceback, long limit,
                     TruffleString.EqualNode equalNode) {
         int depth = 0;
@@ -351,8 +354,9 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
             depth--;
             tb = getNextTb(inliningTarget, materializeStNode, tb);
         }
+        PythonLanguage language = PythonLanguage.get(inliningTarget);
         while (tb != null) {
-            final PCode code = getCode(frame, factory, getTbFrameNode, tb);
+            final PCode code = getCode(frame, language, getTbFrameNode, tb);
             if (lastFile == null ||
                             !equalNode.execute(code.getFilename(), lastFile, TS_ENCODING) ||
                             lastLine == -1 || tb.getLineno() != lastLine ||
@@ -383,7 +387,6 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
                     @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                    @Cached PythonObjectFactory factory,
                     @Cached TruffleString.EqualNode equalNode) {
         long limit = TRACEBACK_LIMIT;
         final Object limitv = objectReadAttr(sys, T_TRACEBACKLIMIT);
@@ -394,14 +397,14 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
             }
         }
         fileWriteString(frame, out, "Traceback (most recent call last):\n");
-        printInternal(frame, inliningTarget, factory, getTbFrameNode, materializeStNode, out, tb, limit, equalNode);
+        printInternal(frame, inliningTarget, getTbFrameNode, materializeStNode, out, tb, limit, equalNode);
     }
 
     @Specialization(guards = "!isPTraceback(tb)")
     @SuppressWarnings("unused")
     public void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raiseBadInternalCall();
+                    @Bind("this") Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
 
     @NeverDefault

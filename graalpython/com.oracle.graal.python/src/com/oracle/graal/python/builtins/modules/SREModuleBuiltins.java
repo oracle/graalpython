@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import java.util.Objects;
 
 import org.graalvm.collections.EconomicMap;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -88,7 +89,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -194,7 +195,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         private static final int FLAG_ASCII = 256;
 
         @TruffleBoundary
-        public TRegexCache(Object pattern, int flags) {
+        public TRegexCache(Node node, Object pattern, int flags) {
             this.originalPattern = pattern;
             String patternStr;
             boolean binary = true;
@@ -206,7 +207,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 try {
                     buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(pattern);
                 } catch (PException e) {
-                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.EXPECTED_STR_OR_BYTESLIKE_OBJ);
+                    throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.EXPECTED_STR_OR_BYTESLIKE_OBJ);
                 }
                 PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
                 try {
@@ -382,7 +383,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public Object compile(PythonContext context, PythonMethod method, boolean mustAdvance, TruffleString locale) {
+        public Object compile(Node node, PythonContext context, PythonMethod method, boolean mustAdvance, TruffleString locale) {
             String encoding = isBinary() ? ENCODING_LATIN_1 : ENCODING_UTF_32;
             String options = getTRegexOptions(encoding, method, mustAdvance, locale);
             InteropLibrary lib = InteropLibrary.getUncached();
@@ -396,7 +397,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                     regexp = compiledRegex;
                 }
             } catch (RuntimeException e) {
-                throw handleCompilationError(e, lib, context);
+                throw handleCompilationError(node, e, lib, context);
             }
             if (isLocaleSensitive()) {
                 setLocaleSensitiveRegexp(method, mustAdvance, locale, regexp);
@@ -406,7 +407,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             return regexp;
         }
 
-        private RuntimeException handleCompilationError(RuntimeException e, InteropLibrary lib, PythonContext context) {
+        private RuntimeException handleCompilationError(Node node, RuntimeException e, InteropLibrary lib, PythonContext context) {
             try {
                 if (lib.isException(e)) {
                     if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
@@ -415,14 +416,14 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                                         reason.equalsUncached(T_VALUE_ERROR_LOCALE_FLAG_STR_PATTERN, TS_ENCODING) ||
                                         reason.equalsUncached(T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE, TS_ENCODING) ||
                                         reason.equalsUncached(T_VALUE_ERROR_ASCII_LOCALE_INCOMPATIBLE, TS_ENCODING)) {
-                            return PRaiseNode.getUncached().raise(ValueError, reason);
+                            return PRaiseNode.raiseStatic(node, ValueError, reason);
                         } else {
                             SourceSection sourceSection = lib.getSourceLocation(e);
                             int position = sourceSection.getCharIndex();
                             PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
                             Object errorConstructor = PyObjectLookupAttr.executeUncached(module, T_ERROR);
                             PBaseException exception = (PBaseException) CallNode.executeUncached(errorConstructor, reason, originalPattern, position);
-                            return PRaiseNode.getUncached().raiseExceptionObject(exception);
+                            return PRaiseNode.raiseExceptionObject(node, exception);
                         }
                     }
                 }
@@ -471,7 +472,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached PyLongAsIntNode flagsToIntNode,
                         @Cached HiddenAttr.WriteNode writeCacheNode) {
             int flagsStr = flagsToIntNode.execute(frame, inliningTarget, flags);
-            TRegexCache tRegexCache = new TRegexCache(pattern, flagsStr);
+            TRegexCache tRegexCache = new TRegexCache(inliningTarget, pattern, flagsStr);
             writeCacheNode.execute(inliningTarget, patternObject, HiddenAttr.TREGEX_CACHE, tRegexCache);
             return PNone.NONE;
         }
@@ -513,7 +514,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             if (tRegex != null) {
                 return tRegex;
             } else {
-                return tRegexCache.compile(getContext(), method, mustAdvance, null);
+                return tRegexCache.compile(this, getContext(), method, mustAdvance, null);
             }
         }
 
@@ -532,7 +533,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             if (tRegex != null) {
                 return tRegex;
             } else {
-                return tRegexCache.compile(getContext(), method, mustAdvance, locale);
+                return tRegexCache.compile(this, getContext(), method, mustAdvance, locale);
             }
         }
 
@@ -565,24 +566,24 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached BuiltinFunctions.IsInstanceNode isBytesNode,
                         @Cached InlinedConditionProfile unsupportedInputTypeProfile,
                         @Cached InlinedConditionProfile unexpectedInputTypeProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             boolean isString = (boolean) isStringNode.execute(frame, input, PythonBuiltinClassType.PString);
             boolean isBytes = !isString && (boolean) isBytesNode.execute(frame, input, supportedBinaryInputTypes);
             if (unsupportedInputTypeProfile.profile(inliningTarget, !isString && !isBytes)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, T_UNSUPPORTED_INPUT_TYPE);
+                throw raiseNode.raise(inliningTarget, TypeError, T_UNSUPPORTED_INPUT_TYPE);
             }
             if (unexpectedInputTypeProfile.profile(inliningTarget, expectBytes != isBytes)) {
                 if (expectBytes) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, T_UNEXPECTED_STR);
+                    throw raiseNode.raise(inliningTarget, TypeError, T_UNEXPECTED_STR);
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, T_UNEXPECTED_BYTES);
+                    throw raiseNode.raise(inliningTarget, TypeError, T_UNEXPECTED_BYTES);
                 }
             }
         }
 
         @NeverDefault
         protected PTuple getSupportedBinaryInputTypes() {
-            return PythonObjectFactory.getUncached().createTuple(new Object[]{PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PMMap,
+            return PFactory.createTuple(PythonLanguage.get(null), new Object[]{PythonBuiltinClassType.PBytes, PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PMMap,
                             PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PArray});
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,15 +67,15 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateCached
 public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
 
-    public final int executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
+    public final int executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode raiseNode) {
         return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
     }
 
-    public final int executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
+    public final int executeWithThrow(Node inliningTarget, Object x, PRaiseNode raiseNode, PythonBuiltinClassType errType) {
         try {
             return execute(inliningTarget, x);
         } catch (CannotCastException cce) {
-            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "an int", x);
+            throw raiseNode.raise(inliningTarget, errType, MUST_BE_S_NOT_P, "an int", x);
         }
     }
 
@@ -117,21 +117,21 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
 
     @Specialization(replaces = "longToInt")
     static int longToIntOverflow(Node inliningTarget, long x,
-                    @Shared("raise") @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
         try {
             return PInt.intValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 
     @Specialization(replaces = "pIntToInt")
     static int pIntToIntOverflow(Node inliningTarget, PInt x,
-                    @Shared("raise") @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
         try {
             return x.intValueExact();
         } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 }

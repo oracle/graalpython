@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -64,7 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -105,14 +106,14 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile eqProfile,
                         @Cached InlinedConditionProfile hasFuncProfile,
                         @Cached InlinedLoopConditionProfile loopConditionProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             self.setCurrGrouper(null);
             while (loopConditionProfile.profile(inliningTarget, doGroupByStep(frame, inliningTarget, self, eqProfile, eqNode))) {
                 self.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
             }
             self.setTgtKey(self.getCurrKey());
-            PGrouper grouper = factory.createGrouper(self, self.getTgtKey());
-            return factory.createTuple(new Object[]{self.getCurrKey(), grouper});
+            PGrouper grouper = PFactory.createGrouper(language, self, self.getTgtKey());
+            return PFactory.createTuple(language, new Object[]{self.getCurrKey(), grouper});
         }
 
         private static boolean doGroupByStep(VirtualFrame frame, Node inliningTarget, PGroupBy self, InlinedBranchProfile eqProfile, PyObjectRichCompareBool.EqNode eqNode) {
@@ -139,18 +140,18 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile noKeyFuncProfile,
                         @Cached InlinedConditionProfile noValuesProfile,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object keyFunc = self.getKeyFunc();
             if (noKeyFuncProfile.profile(inliningTarget, keyFunc == null)) {
                 keyFunc = PNone.NONE;
             }
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple1 = factory.createTuple(new Object[]{self.getIt(), keyFunc});
+            PTuple tuple1 = PFactory.createTuple(language, new Object[]{self.getIt(), keyFunc});
             if (noValuesProfile.profile(inliningTarget, !valuesSet(self))) {
-                return factory.createTuple(new Object[]{type, tuple1});
+                return PFactory.createTuple(language, new Object[]{type, tuple1});
             }
-            PTuple tuple2 = factory.createTuple(new Object[]{self.getCurrValue(), self.getTgtKey(), self.getCurrKey()});
-            return factory.createTuple(new Object[]{type, tuple1, tuple2});
+            PTuple tuple2 = PFactory.createTuple(language, new Object[]{self.getCurrValue(), self.getTgtKey(), self.getCurrKey()});
+            return PFactory.createTuple(language, new Object[]{type, tuple1, tuple2});
         }
 
         private static boolean valuesSet(PGroupBy self) {
@@ -167,9 +168,9 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 3) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "3-tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "3-tuple");
             }
 
             Object currValue = getItemNode.execute(frame, state, 0);

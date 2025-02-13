@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -56,7 +57,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -78,10 +78,10 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateCached(false)
     public abstract static class BufferedReaderInit extends Node {
 
-        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize);
 
         @Specialization
-        static void doInit(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
+        static void doInit(VirtualFrame frame, Node inliningTarget, PBuffered self, Object raw, int bufferSize,
                         @Cached IOBaseBuiltins.CheckBoolMethodHelperNode checkReadableNode,
                         @Cached BufferedInitNode bufferedInitNode,
                         @Cached GetPythonObjectClassNode getSelfClass,
@@ -90,17 +90,17 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
             self.setDetached(false);
             checkReadableNode.checkReadable(frame, inliningTarget, raw);
             self.setRaw(raw, isFileIO(self, raw, PBufferedReader, inliningTarget, getSelfClass, getRawClass));
-            bufferedInitNode.execute(frame, inliningTarget, self, bufferSize, factory);
+            bufferedInitNode.execute(frame, inliningTarget, self, bufferSize);
             self.resetRead();
             self.setOK(true);
         }
 
-        public static void internalInit(PBuffered self, PFileIO raw, int bufferSize, PythonObjectFactory factory,
+        public static void internalInit(PBuffered self, PFileIO raw, int bufferSize, PythonLanguage language,
                         Object posixSupport,
                         PosixSupportLibrary posixLib) {
             self.setDetached(false);
             self.setRaw(raw, true);
-            BufferedInitNode.internalInit(self, bufferSize, factory, posixSupport, posixLib);
+            BufferedInitNode.internalInit(self, bufferSize, language, posixSupport, posixLib);
             self.resetRead();
             self.setOK(true);
         }
@@ -114,10 +114,9 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
         static Object doIt(VirtualFrame frame, PBuffered self, Object raw, Object bufferSize,
                         @Bind("this") Node inliningTarget,
                         @Cached InitBufferSizeNode initBufferSizeNode,
-                        @Cached BufferedReaderInit init,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached BufferedReaderInit init) {
             int size = initBufferSizeNode.execute(frame, inliningTarget, bufferSize);
-            init.execute(frame, inliningTarget, self, raw, size, factory);
+            init.execute(frame, inliningTarget, self, raw, size);
             return PNone.NONE;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,10 +47,12 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonBufferAcquireLibrary.class)
@@ -80,6 +82,7 @@ public final class PPickleBuffer extends PythonBuiltinObject {
 
     @ExportMessage
     Object acquire(int flags,
+                    @Bind("$node") Node inliningTarget,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                     @Cached PRaiseNode raise) {
@@ -88,7 +91,7 @@ public final class PPickleBuffer extends PythonBuiltinObject {
             owner = bufferLib.getOwner(view);
         }
         if (owner == null) {
-            throw raise.raise(ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
+            throw raise.raise(inliningTarget, ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
         }
         return acquireLib.acquire(owner, flags);
     }

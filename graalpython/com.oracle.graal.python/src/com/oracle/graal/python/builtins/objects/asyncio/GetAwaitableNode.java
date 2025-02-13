@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,24 +69,24 @@ public abstract class GetAwaitableNode extends Node {
     @Specialization
     public static Object doGenerator(PGenerator generator,
                     @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode.Lazy raise,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseReusedCoro) {
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached PRaiseNode raiseReusedCoro) {
         if (generator.isCoroutine()) {
             if (generator.getYieldFrom() != null) {
-                throw raiseReusedCoro.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CORO_ALREADY_AWAITED);
+                throw raiseReusedCoro.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CORO_ALREADY_AWAITED);
             } else {
                 return generator;
             }
         } else {
-            throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, "generator");
+            throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, "generator");
         }
     }
 
     @Specialization
     public static Object doGeneric(Frame frame, Object awaitable,
                     @Bind("this") Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNoAwait,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNotIter,
+                    @Exclusive @Cached PRaiseNode raiseNoAwait,
+                    @Exclusive @Cached PRaiseNode raiseNotIter,
                     @Cached(parameters = "Await") LookupSpecialMethodSlotNode findAwait,
                     @Cached TypeNodes.GetNameNode getName,
                     @Cached GetClassNode getAwaitableType,
@@ -96,7 +96,7 @@ public abstract class GetAwaitableNode extends Node {
         Object type = getAwaitableType.execute(inliningTarget, awaitable);
         Object getter = findAwait.execute(frame, type, awaitable);
         if (getter == PNone.NO_VALUE) {
-            throw raiseNoAwait.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, getName.execute(inliningTarget, type));
+            throw raiseNoAwait.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, getName.execute(inliningTarget, type));
         }
         Object iterator = callAwait.executeObject(getter, awaitable);
         if (iterCheck.execute(inliningTarget, iterator)) {
@@ -104,9 +104,9 @@ public abstract class GetAwaitableNode extends Node {
         }
         Object itType = getIteratorType.execute(inliningTarget, iterator);
         if (itType == PythonBuiltinClassType.PCoroutine) {
-            throw raiseNotIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
+            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
         } else {
-            throw raiseNotIter.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, getName.execute(inliningTarget, itType));
+            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, getName.execute(inliningTarget, itType));
         }
     }
 

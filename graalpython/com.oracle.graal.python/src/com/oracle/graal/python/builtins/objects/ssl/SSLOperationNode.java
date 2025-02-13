@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -177,7 +177,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                     @Cached(inline = false) GilNode gil,
                     @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                     @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         assert socket.getSocket() != null;
         prepare(socket);
         TimeoutHelper timeoutHelper = null;
@@ -270,7 +270,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
             } catch (SSLException e) {
                 throw handleSSLException(e);
             } catch (OverflowException | OutOfMemoryError node) {
-                throw raiseNode.get(inliningTarget).raise(MemoryError);
+                throw raiseNode.raise(inliningTarget, MemoryError);
             }
             PythonContext.triggerAsyncActions(inliningTarget);
         }
@@ -279,7 +279,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
     @Specialization(guards = "socket.getSocket() == null")
     static void doMemory(VirtualFrame frame, Node inliningTarget, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
                     @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         prepare(socket);
         SSLOperationStatus status;
         try {
@@ -312,7 +312,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
         } catch (SSLException e) {
             throw handleSSLException(e);
         } catch (OverflowException | OutOfMemoryError node) {
-            throw raiseNode.get(inliningTarget).raise(MemoryError);
+            throw raiseNode.raise(inliningTarget, MemoryError);
         }
     }
 

@@ -83,7 +83,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ByteArrayBuilder;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -120,11 +120,10 @@ public final class CharmapNodes {
                         @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached(inline = false) HashingStorageSetItem setItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached PRaiseNode raiseNode) {
             int len = Math.min(codePointLengthNode.execute(map, TS_ENCODING), 256);
             if (len == 0) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
             byte[] level1 = new byte[32];
             byte[] level2 = new byte[512];
@@ -134,12 +133,12 @@ public final class CharmapNodes {
             Arrays.fill(level1, (byte) 0xFF);
             Arrays.fill(level2, (byte) 0xFF);
             if (codePointAtIndexNode.execute(map, 0, TS_ENCODING, ErrorHandling.BEST_EFFORT) != 0) {
-                return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode, factory);
+                return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode);
             }
             for (int i = 1; i < len; ++i) {
                 int cp = codePointAtIndexNode.execute(map, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
                 if (cp == 0 || cp > 0xFFFF) {
-                    return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode, factory);
+                    return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode);
                 }
                 if (cp == 0xFFFE) {
                     continue;
@@ -154,7 +153,7 @@ public final class CharmapNodes {
                 }
             }
             if (count2 >= 0xFF || count3 >= 0xFF) {
-                return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode, factory);
+                return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode);
             }
 
             byte[] level23 = new byte[16 * count2 + 128 * count3];
@@ -176,17 +175,16 @@ public final class CharmapNodes {
                 int i3 = 128 * (level23[i2] & 0xFF) + o3;
                 level23[l3Start + i3] = (byte) i;
             }
-            return factory.createEncodingMap(count2, count3, level1, level23);
+            return PFactory.createEncodingMap(PythonLanguage.get(inliningTarget), count2, count3, level1, level23);
         }
 
-        private static Object doDict(VirtualFrame frame, Node inliningTarget, TruffleString map, int len, TruffleString.CodePointAtIndexNode codePointAtIndexNode, HashingStorageSetItem setItemNode,
-                        PythonObjectFactory factory) {
+        private static Object doDict(VirtualFrame frame, Node inliningTarget, TruffleString map, int len, TruffleString.CodePointAtIndexNode codePointAtIndexNode, HashingStorageSetItem setItemNode) {
             HashingStorage store = PDict.createNewStorage(len);
             for (int i = 0; i < len; ++i) {
                 int cp = codePointAtIndexNode.execute(map, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
                 store = setItemNode.execute(frame, inliningTarget, store, cp, i);
             }
-            return factory.createDict(store);
+            return PFactory.createDict(PythonLanguage.get(inliningTarget), store);
         }
     }
 
@@ -198,9 +196,9 @@ public final class CharmapNodes {
 
         @Specialization
         static byte[] doLatin1(TruffleString src, TruffleString errors, PNone mapping,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             // TODO latin1
-            throw raiseNode.raise(NotImplementedError, toTruffleStringUncached("latin1"));
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("latin1"));
         }
 
         @Fallback
@@ -330,7 +328,7 @@ public final class CharmapNodes {
                         @Cached PyLongCheckNode pyLongCheckNode,
                         @Cached PyLongAsLongNode pyLongAsLongNode,
                         @Cached PyBytesCheckNode pyBytesCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object item;
             try {
                 item = pyObjectGetItemNode.execute(frame, inliningTarget, mapping, cp);
@@ -344,14 +342,14 @@ public final class CharmapNodes {
             if (pyLongCheckNode.execute(inliningTarget, item)) {
                 long value = pyLongAsLongNode.execute(frame, inliningTarget, item);
                 if (value < 0 || value > 255) {
-                    raiseNode.get(inliningTarget).raise(TypeError, CHARACTER_MAPPING_MUST_BE_IN_RANGE_256);
+                    raiseNode.raise(inliningTarget, TypeError, CHARACTER_MAPPING_MUST_BE_IN_RANGE_256);
                 }
                 return value;
             }
             if (pyBytesCheckNode.execute(inliningTarget, item)) {
                 return item;
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, CHARACTER_MAPPING_MUST_RETURN_INT_BYTES_OR_NONE_NOT_P, item);
+            throw raiseNode.raise(inliningTarget, TypeError, CHARACTER_MAPPING_MUST_RETURN_INT_BYTES_OR_NONE_NOT_P, item);
         }
     }
 
@@ -465,7 +463,7 @@ public final class CharmapNodes {
                         @Cached InlinedConditionProfile longValuesProfile,
                         @Cached InlinedConditionProfile strValuesProfile,
                         @Cached InlinedConditionProfile errProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // equivalent of charmap_decode_mapping
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -503,7 +501,7 @@ public final class CharmapNodes {
                                 break;
                             }
                             if (value < 0 || value > Character.MAX_CODE_POINT) {
-                                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, PInt.toHexString(Character.MAX_CODE_POINT + 1));
+                                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, PInt.toHexString(Character.MAX_CODE_POINT + 1));
                             } else {
                                 appendCodePointNode.execute(tsb, (int) value, 1, true);
                             }
@@ -520,7 +518,7 @@ public final class CharmapNodes {
                                 appendStringNode.execute(tsb, castToTruffleStringNode.execute(inliningTarget, item));
                             }
                         } else {
-                            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);
+                            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);
                         }
                     }
                 } finally {

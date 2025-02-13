@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.ComplexNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -122,7 +123,7 @@ public final class PythonCextComplexBuiltins {
                         @Cached CallNode callNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString name;
             if (isComplexSubtypeProfile.profile(inliningTarget, isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode))) {
                 name = T_REAL;
@@ -132,7 +133,7 @@ public final class PythonCextComplexBuiltins {
             try {
                 return callNode.executeWithoutFrame(getAttr.execute(null, inliningTarget, obj, name));
             } catch (PException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError);
+                throw raiseNode.raise(inliningTarget, TypeError);
             }
         }
     }
@@ -173,8 +174,8 @@ public final class PythonCextComplexBuiltins {
 
         @Specialization
         static PComplex asDouble(double r, double i,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createComplex(r, i);
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, r, i);
         }
     }
 }

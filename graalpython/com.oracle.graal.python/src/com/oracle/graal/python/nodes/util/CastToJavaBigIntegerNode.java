@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,7 +101,7 @@ public abstract class CastToJavaBigIntegerNode extends Node {
 
     @Specialization
     protected static BigInteger generic(Node inliningTarget, Object x,
-                    @Cached PRaiseNode.Lazy raise,
+                    @Cached PRaiseNode raise,
                     @Cached(inline = false) CastToJavaBigIntegerNode rec,
                     @Cached GetClassNode getClassNode,
                     @Cached PyIndexCheckNode indexCheckNode,
@@ -109,6 +109,6 @@ public abstract class CastToJavaBigIntegerNode extends Node {
         if (indexCheckNode.execute(inliningTarget, x)) {
             return rec.execute(null, indexNode.execute(null, inliningTarget, x));
         }
-        throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, getClassNode.execute(inliningTarget, x));
+        throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, getClassNode.execute(inliningTarget, x));
     }
 }

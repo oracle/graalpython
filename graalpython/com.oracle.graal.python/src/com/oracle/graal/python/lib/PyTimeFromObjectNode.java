@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,10 +82,10 @@ public abstract class PyTimeFromObjectNode extends PNodeWithContext {
 
     @Specialization
     static long doDouble(Node inliningTarget, double d, RoundType round, long unitToNs,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         // Implements _PyTime_FromDouble, rounding mode (HALF_UP) is hard-coded for now
         if (Double.isNaN(d)) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_VALUE_NAN);
+            throw raiseNode.raise(inliningTarget, ValueError, INVALID_VALUE_NAN);
         }
 
         double value = d * unitToNs;
@@ -102,25 +102,25 @@ public abstract class PyTimeFromObjectNode extends PNodeWithContext {
                 break;
         }
         if (value < Long.MIN_VALUE || value > Long.MAX_VALUE) {
-            throw raiseTimeOverflow(raiseNode.get(inliningTarget));
+            throw raiseTimeOverflow(inliningTarget, raiseNode);
         }
         return (long) value;
     }
 
     @Specialization
     static long doLong(Node inliningTarget, long l, @SuppressWarnings("unused") RoundType round, long unitToNs,
-                    @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                    @Shared @Cached PRaiseNode raiseNode) {
         try {
             return PythonUtils.multiplyExact(l, unitToNs);
         } catch (OverflowException e) {
-            throw raiseTimeOverflow(raiseNode.get(inliningTarget));
+            throw raiseTimeOverflow(inliningTarget, raiseNode);
         }
     }
 
     @Specialization
     static long doOther(VirtualFrame frame, Node inliningTarget, Object value, RoundType round, long unitToNs,
                     @Cached CastToJavaDoubleNode castToDouble,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Cached PyLongAsLongAndOverflowNode asLongNode) {
         try {
             return doDouble(inliningTarget, castToDouble.execute(inliningTarget, value), round, unitToNs, raiseNode);
@@ -128,12 +128,12 @@ public abstract class PyTimeFromObjectNode extends PNodeWithContext {
             try {
                 return doLong(inliningTarget, asLongNode.execute(frame, inliningTarget, value), round, unitToNs, raiseNode);
             } catch (OverflowException e1) {
-                throw raiseTimeOverflow(raiseNode.get(inliningTarget));
+                throw raiseTimeOverflow(inliningTarget, raiseNode);
             }
         }
     }
 
-    private static PException raiseTimeOverflow(PRaiseNode raise) {
-        throw raise.raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT_TO, "timestamp", "long");
+    private static PException raiseTimeOverflow(Node inliningTarget, PRaiseNode raise) {
+        throw raise.raise(inliningTarget, PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT_TO, "timestamp", "long");
     }
 }

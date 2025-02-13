@@ -1,12 +1,12 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.builtins.objects.struct;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_P_OBJECTS;
 import static com.oracle.graal.python.builtins.objects.struct.StructBuiltins.unpackInternal;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_P_OBJECTS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
@@ -14,6 +14,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -26,7 +27,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -48,8 +49,8 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
     protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         static Object createNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, CANNOT_CREATE_P_OBJECTS, type);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_CREATE_P_OBJECTS, type);
         }
     }
 
@@ -81,8 +82,8 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isExhausted()")
         static Object nextExhausted(@SuppressWarnings("unused") PStructUnpackIterator self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.StopIteration);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         @Specialization(guards = "!self.isExhausted()", limit = "3")
@@ -91,8 +92,8 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             final PStruct struct = self.getStruct();
             final Object buffer = self.getBuffer();
             final int bufferLen = bufferLib.getBufferLength(buffer);
@@ -100,7 +101,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
             if (struct == null || self.index >= bufferLen) {
                 self.setExhausted();
                 bufferLib.release(buffer, frame, indirectCallData);
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.StopIteration);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
 
             assert self.index + struct.getSize() <= bufferLen;
@@ -117,7 +118,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
             }
 
             // TODO: GR-54860 handle buffers directly in unpack
-            Object result = factory.createTuple(unpackInternal(struct, unpackValueNode, bytes, offset));
+            Object result = PFactory.createTuple(language, unpackInternal(struct, unpackValueNode, bytes, offset));
             self.index += struct.getSize();
             return result;
         }

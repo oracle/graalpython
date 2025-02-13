@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -116,7 +116,7 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
                     @Cached(inline = false) CallUnaryMethodNode callStr,
                     @Cached GetClassNode getResultClassNode,
                     @Cached(inline = false) IsSubtypeNode isSubtypeNode,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(inliningTarget, obj);
         Object strDescr = lookupStr.execute(frame, type, obj);
         // All our objects should have __str__
@@ -126,7 +126,7 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
         if (result instanceof TruffleString || isSubtypeNode.execute(getResultClassNode.execute(inliningTarget, result), PythonBuiltinClassType.PString)) {
             return result;
         } else {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___STR__, result);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NON_STRING, T___STR__, result);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -96,14 +97,14 @@ public final class CodecsKRModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonObjectFactory factory = core.factory();
+        PythonLanguage language = core.getLanguage();
         PythonModule codec = core.lookupBuiltinModule(T__CODECS_KR);
-        registerCodec("euc_kr", 0, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
-        registerCodec("cp949", 1, CodecType.STATELESS, 1, MappingType.ENCONLY, MAPPING_LIST, CODEC_LIST, codec, factory);
-        registerCodec("johab", 2, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, factory);
+        registerCodec("euc_kr", 0, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, language);
+        registerCodec("cp949", 1, CodecType.STATELESS, 1, MappingType.ENCONLY, MAPPING_LIST, CODEC_LIST, codec, language);
+        registerCodec("johab", 2, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, language);
 
-        registerCodec("ksx1001", -1, null, 0, MappingType.DECONLY, MAPPING_LIST, null, codec, factory);
-        registerCodec("cp949ext", -1, null, 2, MappingType.DECONLY, MAPPING_LIST, null, codec, factory);
+        registerCodec("ksx1001", -1, null, 0, MappingType.DECONLY, MAPPING_LIST, null, codec, language);
+        registerCodec("cp949ext", -1, null, 2, MappingType.DECONLY, MAPPING_LIST, null, codec, language);
     }
 
     @Override
@@ -121,20 +122,20 @@ public final class CodecsKRModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
 
             if (!unicodeCheckNode.execute(inliningTarget, encoding)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ENCODING_NAME_MUST_BE_A_STRING);
+                throw raiseNode.raise(inliningTarget, TypeError, ENCODING_NAME_MUST_BE_A_STRING);
             }
 
             MultibyteCodec codec = findCodec(CODEC_LIST, asUTF8Node.execute(inliningTarget, encoding), isEqual);
             if (codec == null) {
-                throw raiseNode.get(inliningTarget).raise(LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
+                throw raiseNode.raise(inliningTarget, LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
-            PyCapsule codecobj = factory.createCapsuleJavaName(codec, PyMultibyteCodec_CAPSULE_NAME);
-            return createCodec(inliningTarget, codecobj, factory, raiseNode);
+            PyCapsule codecobj = PFactory.createCapsuleJavaName(language, codec, PyMultibyteCodec_CAPSULE_NAME);
+            return createCodec(inliningTarget, codecobj, raiseNode);
         }
 
     }

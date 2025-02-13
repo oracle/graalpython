@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -55,13 +56,13 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.Call
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -142,21 +143,20 @@ public abstract class PyNumberAddNode extends BinaryOpNode {
         return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
     }
 
-    @Specialization
-    static PList doPList(Node inliningTarget, PList left, PList right,
-                    @Exclusive @Cached GetClassNode getClassNode,
+    @Specialization(guards = {"isBuiltinList(left)", "isBuiltinList(right)"})
+    static PList doPList(PList left, PList right,
                     @Shared @Cached(value = "createConcat()", inline = false) SequenceStorageNodes.ConcatNode concatNode,
-                    @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                    @Bind PythonLanguage language) {
         SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
-        return factory.createList(getClassNode.execute(inliningTarget, left), newStore);
+        return PFactory.createList(language, newStore);
     }
 
     @Specialization(guards = {"isBuiltinTuple(left)", "isBuiltinTuple(right)"})
-    static PTuple doTuple(Node inliningTarget, PTuple left, PTuple right,
+    static PTuple doTuple(PTuple left, PTuple right,
                     @Shared @Cached(value = "createConcat()", inline = false) SequenceStorageNodes.ConcatNode concatNode,
-                    @Shared @Cached(inline = false) PythonObjectFactory factory) {
+                    @Bind PythonLanguage language) {
         SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
-        return factory.createTuple(concatenated);
+        return PFactory.createTuple(language, concatenated);
     }
 
     @Specialization
@@ -174,7 +174,7 @@ public abstract class PyNumberAddNode extends BinaryOpNode {
                     @Cached CallBinaryOp1Node callBinaryOp1Node,
                     @Cached InlinedBranchProfile hasNbAddResult,
                     @Cached CallSlotBinaryFuncNode callBinarySlotNode,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
@@ -195,8 +195,8 @@ public abstract class PyNumberAddNode extends BinaryOpNode {
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Lazy raiseNode) {
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "+", v, w);
+    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "+", v, w);
     }
 
     @NeverDefault

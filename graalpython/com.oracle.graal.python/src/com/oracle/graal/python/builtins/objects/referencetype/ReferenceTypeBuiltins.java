@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -73,7 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -140,21 +141,21 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile referentProfile,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object referent = self.getObject();
             if (referentProfile.profile(inliningTarget, referent != null)) {
                 long hash = hashNode.execute(frame, inliningTarget, referent);
                 self.setHash(hash);
                 return hash;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.WEAK_OBJ_GONE_AWAY);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.WEAK_OBJ_GONE_AWAY);
             }
         }
 
         @Fallback
         static int hashWrong(@SuppressWarnings("unused") Object self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, "__hash__", "weakref", self);
         }
     }
 
@@ -242,8 +243,8 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

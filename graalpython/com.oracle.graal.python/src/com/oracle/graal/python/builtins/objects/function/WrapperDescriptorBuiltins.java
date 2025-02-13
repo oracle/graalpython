@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -59,9 +60,9 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrG
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -85,8 +86,8 @@ public final class WrapperDescriptorBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends DescrGetBuiltinNode {
         @Specialization(guards = {"!isNoValue(instance)"})
         static PMethod doMethod(PFunction self, Object instance, Object klass,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createMethod(language, PythonBuiltinClassType.MethodWrapper, PythonBuiltinClassType.MethodWrapper.getInstanceShape(language), instance, self);
         }
 
         @Specialization(guards = "isNoValue(instance)")
@@ -96,8 +97,8 @@ public final class WrapperDescriptorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(instance)"})
         static PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return factory.createBuiltinMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createBuiltinMethod(language, PythonBuiltinClassType.MethodWrapper, PythonBuiltinClassType.MethodWrapper.getInstanceShape(language), instance, self);
         }
 
         @Specialization(guards = "isNoValue(instance)")

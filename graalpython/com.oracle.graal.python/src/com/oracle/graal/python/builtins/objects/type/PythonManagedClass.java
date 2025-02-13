@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -45,13 +45,14 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointAtIndexNode;
@@ -113,7 +114,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             unsafeSetSuperClass(baseClasses);
         }
 
-        this.setMRO(ComputeMroNode.doSlowPath(this, invokeMro));
+        // TODO should pass node for exception location
+        this.setMRO(ComputeMroNode.doSlowPath(null, this, invokeMro));
         if (invokeMro) {
             mroInitialized = true;
         }
@@ -131,7 +133,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.instanceShape = lang.getShapeForClass(this);
         }
 
-        this.subClasses = PythonObjectFactory.getUncached().createDict();
+        this.subClasses = PFactory.createDict(lang);
     }
 
     public boolean isMROInitialized() {
@@ -142,8 +144,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
      * Invoke metaclass mro() method and set the result as new method resolution order.
      */
     @TruffleBoundary
-    public void invokeMro() {
-        PythonAbstractClass[] mro = ComputeMroNode.invokeMro(this);
+    public void invokeMro(Node node) {
+        PythonAbstractClass[] mro = ComputeMroNode.invokeMro(node, this);
         if (mro != null) {
             this.setMRO(mro);
         }
@@ -294,7 +296,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         for (PythonAbstractClass base : getBaseClasses()) {
             if (base instanceof PythonManagedClass && !((PythonManagedClass) base).mroInitialized) {
-                throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_EXTEND_INCOMPLETE_P, base);
+                // TODO should pass node for exception location
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.CANNOT_EXTEND_INCOMPLETE_P, base);
             }
         }
         for (PythonAbstractClass base : getBaseClasses()) {
@@ -309,7 +312,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     @TruffleBoundary
-    public final void setBases(Object newBaseClass, PythonAbstractClass[] newBaseClasses) {
+    public final void setBases(Node node, Object newBaseClass, PythonAbstractClass[] newBaseClasses) {
         Object oldBase = getBase();
         PythonAbstractClass[] oldBaseClasses = getBaseClasses();
         PythonAbstractClass[] oldMRO = this.methodResolutionOrder.getInternalClassArray();
@@ -328,12 +331,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.base = newBaseClass;
             this.baseClasses = newBaseClasses;
             this.methodResolutionOrder.lookupChanged();
-            this.setMRO(ComputeMroNode.doSlowPath(this));
+            this.setMRO(ComputeMroNode.doSlowPath(node, this));
 
             for (PythonAbstractClass scls : subclassesArray) {
                 if (scls instanceof PythonManagedClass pmc) {
                     pmc.methodResolutionOrder.lookupChanged();
-                    pmc.setMRO(ComputeMroNode.doSlowPath(scls));
+                    pmc.setMRO(ComputeMroNode.doSlowPath(node, scls));
                 }
             }
         } catch (PException pe) {

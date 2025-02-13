@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,6 +101,7 @@ import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.encoders.DecoderException;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -108,8 +109,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -186,19 +186,19 @@ public final class CertUtils {
      * _ssl.c#_decode_certificate
      */
     @TruffleBoundary
-    public static PDict decodeCertificate(PythonObjectSlowPathFactory factory, X509Certificate cert) throws CertificateParsingException {
-        PDict dict = factory.createDict();
+    public static PDict decodeCertificate(X509Certificate cert, PythonLanguage language) throws CertificateParsingException {
+        PDict dict = PFactory.createDict(language);
         HashingStorage storage = dict.getDictStorage();
         try {
-            storage = setItem(storage, T_JAVA_X509_OCSP, parseOCSP(cert, factory));
-            storage = setItem(storage, T_JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
-            storage = setItem(storage, T_JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerX500Principal().getName("RFC1779"), factory));
+            storage = setItem(storage, T_JAVA_X509_OCSP, parseOCSP(cert, language));
+            storage = setItem(storage, T_JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, language));
+            storage = setItem(storage, T_JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerX500Principal().getName("RFC1779"), language));
             storage = setItem(storage, T_JAVA_X509_NOT_AFTER, getNotAfter(cert));
             storage = setItem(storage, T_JAVA_X509_NOT_BEFORE, getNotBefore(cert));
             storage = setItem(storage, T_JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
-            storage = setItem(storage, T_JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
-            storage = setItem(storage, T_JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectX500Principal().getName("RFC1779"), factory));
-            storage = setItem(storage, T_JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
+            storage = setItem(storage, T_JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, language));
+            storage = setItem(storage, T_JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectX500Principal().getName("RFC1779"), language));
+            storage = setItem(storage, T_JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, language));
             storage = setItem(storage, T_JAVA_X509_VERSION, getVersion(cert));
         } catch (RuntimeException re) {
             throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, re);
@@ -246,23 +246,23 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static PTuple createTupleForX509Name(String name, PythonObjectFactory factory) {
+    private static PTuple createTupleForX509Name(String name, PythonLanguage language) {
         List<PTuple> result = new ArrayList<>();
         for (String component : name.split(",")) {
             String[] kv = component.split("=");
             if (kv.length == 2) {
-                PTuple innerTuple = factory.createTuple(new Object[]{ASN1Helper.translateKeyToPython(kv[0].trim()), toTruffleStringUncached(kv[1].trim())});
-                result.add(factory.createTuple(new Object[]{innerTuple}));
+                PTuple innerTuple = PFactory.createTuple(language, new Object[]{ASN1Helper.translateKeyToPython(kv[0].trim()), toTruffleStringUncached(kv[1].trim())});
+                result.add(PFactory.createTuple(language, new Object[]{innerTuple}));
             }
         }
         // The String form is in the LDAP format, where the elements are in reverse order from what
         // was in the certificate
         Collections.reverse(result);
-        return factory.createTuple(result.toArray(new Object[0]));
+        return PFactory.createTuple(language, result.toArray(new Object[0]));
     }
 
     @TruffleBoundary
-    private static PTuple parseSubjectAltName(X509Certificate certificate, PythonObjectFactory factory) throws CertificateParsingException {
+    private static PTuple parseSubjectAltName(X509Certificate certificate, PythonLanguage language) throws CertificateParsingException {
         List<Object> tuples = new ArrayList<>(16);
         Collection<List<?>> altNames = certificate.getSubjectAlternativeNames();
         if (altNames != null) {
@@ -279,38 +279,39 @@ public final class CertUtils {
                     switch (type) {
                         // see openssl v3_alt.c#i2v_GENERAL_NAME()
                         case 0:
-                            tuples.add(factory.createTuple(new Object[]{T_OTHERNAME, stringValue}));
+                            tuples.add(PFactory.createTuple(language, new Object[]{T_OTHERNAME, stringValue}));
                             break;
                         case 1:
-                            tuples.add(factory.createTuple(new Object[]{T_EMAIL, stringValue}));
+                            tuples.add(PFactory.createTuple(language, new Object[]{T_EMAIL, stringValue}));
                             break;
                         case 2:
-                            tuples.add(factory.createTuple(new Object[]{T_DNS, stringValue}));
+                            tuples.add(PFactory.createTuple(language, new Object[]{T_DNS, stringValue}));
                             break;
                         case 3:
-                            tuples.add(factory.createTuple(new Object[]{T_X_400_NAME, stringValue}));
+                            tuples.add(PFactory.createTuple(language, new Object[]{T_X_400_NAME, stringValue}));
                             break;
                         case 4:
-                            tuples.add(factory.createTuple(new Object[]{T_DIR_NAME, value instanceof String ? createTupleForX509Name((String) value, factory) : factory.createEmptyTuple()}));
+                            tuples.add(PFactory.createTuple(language,
+                                            new Object[]{T_DIR_NAME, value instanceof String ? createTupleForX509Name((String) value, language) : PFactory.createEmptyTuple(language)}));
                             break;
                         case 5:
-                            tuples.add(factory.createTuple(new Object[]{T_EDI_PARTY_NAME, stringValue}));
+                            tuples.add(PFactory.createTuple(language, new Object[]{T_EDI_PARTY_NAME, stringValue}));
                             break;
                         case 6:
-                            tuples.add(factory.createTuple(new Object[]{T_URI, stringValue}));
+                            tuples.add(PFactory.createTuple(language, new Object[]{T_URI, stringValue}));
                             break;
                         case 7:
-                            tuples.add(factory.createTuple(new Object[]{T_IP_ADDRESS, stringValue}));
+                            tuples.add(PFactory.createTuple(language, new Object[]{T_IP_ADDRESS, stringValue}));
                             break;
                         case 8:
-                            tuples.add(factory.createTuple(new Object[]{T_REGISTERED_ID, stringValue}));
+                            tuples.add(PFactory.createTuple(language, new Object[]{T_REGISTERED_ID, stringValue}));
                             break;
                         default:
                             continue;
                     }
                 }
             }
-            return factory.createTuple(tuples.toArray(new Object[tuples.size()]));
+            return PFactory.createTuple(language, tuples.toArray(new Object[tuples.size()]));
         }
         return null;
     }
@@ -464,7 +465,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static PTuple parseCRLPoints(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
+    private static PTuple parseCRLPoints(X509Certificate cert, PythonLanguage language) throws CertificateParsingException {
         List<TruffleString> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_CRL_DISTRIBUTION_POINTS);
         if (bytes == null) {
@@ -502,14 +503,14 @@ public final class CertUtils {
             }
         }, result);
         if (result.size() > 0) {
-            return factory.createTuple(result.toArray(new Object[result.size()]));
+            return PFactory.createTuple(language, result.toArray(new Object[result.size()]));
         } else {
             return null;
         }
     }
 
     @TruffleBoundary
-    private static PTuple parseCAIssuers(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
+    private static PTuple parseCAIssuers(X509Certificate cert, PythonLanguage language) throws CertificateParsingException {
         List<TruffleString> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
         if (bytes == null) {
@@ -538,14 +539,14 @@ public final class CertUtils {
             }
         }, result);
         if (result.size() > 0) {
-            return factory.createTuple(result.toArray(new Object[result.size()]));
+            return PFactory.createTuple(language, result.toArray(new Object[result.size()]));
         } else {
             return null;
         }
     }
 
     @TruffleBoundary
-    private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
+    private static PTuple parseOCSP(X509Certificate cert, PythonLanguage language) throws CertificateParsingException {
         List<TruffleString> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
         if (bytes == null) {
@@ -574,7 +575,7 @@ public final class CertUtils {
             }
         }, result);
         if (result.size() > 0) {
-            return factory.createTuple(result.toArray(new Object[result.size()]));
+            return PFactory.createTuple(language, result.toArray(new Object[result.size()]));
         } else {
             return null;
         }

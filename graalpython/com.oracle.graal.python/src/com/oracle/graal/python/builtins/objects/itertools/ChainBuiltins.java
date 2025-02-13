@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -69,8 +70,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -110,7 +110,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached InlinedBranchProfile nextExceptioProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             while (loopProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
                 if (self.getActive() == PNone.NONE) {
                     try {
@@ -130,7 +130,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                     self.setActive(PNone.NONE);
                 }
             }
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
     }
 
@@ -141,8 +141,8 @@ public final class ChainBuiltins extends PythonBuiltins {
         static Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PythonObjectFactory factory) {
-            PChain instance = factory.createChain(PythonBuiltinClassType.PChain);
+                        @Bind PythonLanguage language) {
+            PChain instance = PFactory.createChain(language);
             instance.setSource(getIter.execute(frame, inliningTarget, arg));
             instance.setActive(PNone.NONE);
             return instance;
@@ -158,19 +158,19 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClass,
                         @Cached InlinedConditionProfile hasSourceProfile,
                         @Cached InlinedConditionProfile hasActiveProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClass.execute(inliningTarget, self);
-            PTuple empty = factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+            PTuple empty = PFactory.createEmptyTuple(language);
             if (hasSourceProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
                 if (hasActiveProfile.profile(inliningTarget, self.getActive() != PNone.NONE)) {
-                    PTuple tuple = factory.createTuple(new Object[]{self.getSource(), self.getActive()});
-                    return factory.createTuple(new Object[]{type, empty, tuple});
+                    PTuple tuple = PFactory.createTuple(language, new Object[]{self.getSource(), self.getActive()});
+                    return PFactory.createTuple(language, new Object[]{type, empty, tuple});
                 } else {
-                    PTuple tuple = factory.createTuple(new Object[]{self.getSource()});
-                    return factory.createTuple(new Object[]{type, empty, tuple});
+                    PTuple tuple = PFactory.createTuple(language, new Object[]{self.getSource()});
+                    return PFactory.createTuple(language, new Object[]{type, empty, tuple});
                 }
             } else {
-                return factory.createTuple(new Object[]{type, empty});
+                return PFactory.createTuple(language, new Object[]{type, empty});
             }
         }
     }
@@ -185,13 +185,13 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached GetItemNode getItemNode,
                         @Cached InlinedBranchProfile len2Profile,
                         @Cached PyIterCheckNode iterCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!(state instanceof PTuple)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             int len = (int) lenNode.execute(frame, state);
             if (len < 1 || len > 2) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             Object source = getItemNode.execute(frame, state, 0);
             checkIterator(inliningTarget, iterCheckNode, source, raiseNode);
@@ -205,9 +205,9 @@ public final class ChainBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private static void checkIterator(Node inliningTarget, PyIterCheckNode iterCheckNode, Object obj, PRaiseNode.Lazy raiseNode) throws PException {
+        private static void checkIterator(Node inliningTarget, PyIterCheckNode iterCheckNode, Object obj, PRaiseNode raiseNode) throws PException {
             if (!iterCheckNode.execute(inliningTarget, obj)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
+                throw raiseNode.raise(inliningTarget, TypeError, ARGUMENTS_MUST_BE_ITERATORS);
             }
         }
     }
@@ -217,8 +217,8 @@ public final class ChainBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

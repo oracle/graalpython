@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,7 +77,7 @@ public final class PythonCextPyThreadBuiltins {
         long allocate() {
             CApiContext context = getCApiContext();
             long id = context.lockId.incrementAndGet() ^ LOCK_MASK;
-            PLock lock = PythonObjectFactory.getUncached().createLock(PythonBuiltinClassType.PLock);
+            PLock lock = PFactory.createLock(PythonLanguage.get(null));
             context.locks.put(id, lock);
             return id;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
@@ -55,7 +56,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -89,7 +90,7 @@ public abstract class WriteUnraisableNode extends Node {
                     @Cached PyObjectLookupAttr lookup,
                     @Cached CallNode callNode,
                     @Cached GetClassNode getClassNode,
-                    @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                     @Cached TruffleString.ConcatNode concatNode,
                     @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
@@ -103,7 +104,8 @@ public abstract class WriteUnraisableNode extends Node {
             if (message != null) {
                 messageObj = formatMessage(message, concatNode);
             }
-            Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLEHOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
+            Object hookArguments = PFactory.createStructSeq(language, SysModuleBuiltins.UNRAISABLEHOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj,
+                            object != null ? object : PNone.NONE);
             callNode.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
             ignoreException(context, message, concatNode, copyToByteArrayNode);

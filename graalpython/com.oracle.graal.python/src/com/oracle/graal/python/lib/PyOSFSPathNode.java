@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,17 +94,17 @@ public abstract class PyOSFSPathNode extends PNodeWithContext {
                     @Cached GetClassNode getClassNode,
                     @Cached LookupSpecialMethodNode.Dynamic lookupFSPath,
                     @Cached(inline = false) CallUnaryMethodNode callFSPath,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         Object fspathMethod = lookupFSPath.execute(frame, inliningTarget, type, T___FSPATH__, object);
         if (fspathMethod == PNone.NO_VALUE) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, object);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, object);
         }
         Object result = callFSPath.executeObject(frame, fspathMethod, object);
         assert !isJavaString(result);
         if (result instanceof TruffleString || result instanceof PString || result instanceof PBytes) {
             return result;
         }
-        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, object, result);
+        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, object, result);
     }
 }

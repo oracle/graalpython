@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -249,7 +250,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
 
         PythonModule polyglotModule = context.lookupBuiltinModule(T_POLYGLOT);
 
-        PythonClass pythonClass = context.factory().createPythonClassAndFixupSlots(context.getLanguage(), PythonBuiltinClassType.PythonClass, name, base, bases);
+        PythonClass pythonClass = PFactory.createPythonClassAndFixupSlots(context.getLanguage(), name, base, bases);
         pythonClass.setAttribute(T___MODULE__, T_POLYGLOT);
 
         assert polyglotModule.getAttribute(name) == PNone.NO_VALUE : name;

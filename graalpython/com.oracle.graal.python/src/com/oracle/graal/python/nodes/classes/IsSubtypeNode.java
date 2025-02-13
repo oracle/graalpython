@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -335,13 +335,13 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
                     @Exclusive @Cached InlinedConditionProfile exceptionDerivedProfile,
                     @Exclusive @Cached InlinedConditionProfile exceptionClsProfile,
-                    @Cached PRaiseNode.Lazy raise) {
+                    @Cached PRaiseNode raise) {
         if (exceptionDerivedProfile.profile(inliningTarget, getBasesNode.execute(frame, derived) == null)) {
-            throw raise.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
+            throw raise.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");
         }
 
         if (exceptionClsProfile.profile(inliningTarget, getBasesNode.execute(frame, cls) == null)) {
-            throw raise.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
+            throw raise.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE);
         }
 
         return abstractIsSubclassNode.execute(frame, derived, cls);

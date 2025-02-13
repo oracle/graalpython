@@ -50,6 +50,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -125,10 +126,10 @@ public final class DropwhileBuiltins extends PythonBuiltins {
         static Object reduce(PDropwhile self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory.createTuple(new Object[]{self.getPredicate(), self.getIterable()});
-            return factory.createTuple(new Object[]{type, tuple, self.isDoneDropping()});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{self.getPredicate(), self.getIterable()});
+            return PFactory.createTuple(language, new Object[]{type, tuple, self.isDoneDropping()});
         }
     }
 
@@ -139,11 +140,11 @@ public final class DropwhileBuiltins extends PythonBuiltins {
         static Object setState(PDropwhile self, Object state,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaBooleanNode castToBoolean,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 self.setDoneDropping(castToBoolean.execute(inliningTarget, state));
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             return PNone.NONE;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -99,7 +99,7 @@ public class PickleState {
         @Specialization
         void init(PickleState state,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyCallableCheckNode callableCheck) {
             PythonContext context = PythonContext.get(this);
@@ -111,28 +111,28 @@ public class PickleState {
             if (dispatchTable instanceof PDict dispatchTableDict) {
                 state.dispatchTable = dispatchTableDict;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg.dispatch_table", "dict", dispatchTable);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg.dispatch_table", "dict", dispatchTable);
             }
 
             var extensionRegistry = getAttr.execute(null, inliningTarget, copyreg, PickleUtils.T_ATTR_EXT_REGISTRY);
             if (extensionRegistry instanceof PDict extensionRegistryDict) {
                 state.extensionRegistry = extensionRegistryDict;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg._extension_registry", "dict", extensionRegistry);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg._extension_registry", "dict", extensionRegistry);
             }
 
             var invertedRegistry = getAttr.execute(null, inliningTarget, copyreg, PickleUtils.T_ATTR_INV_REGISTRY);
             if (invertedRegistry instanceof PDict invertedRegistryDict) {
                 state.invertedRegistry = invertedRegistryDict;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg._inverted_registry", "dict", invertedRegistry);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg._inverted_registry", "dict", invertedRegistry);
             }
 
             var extensionCache = getAttr.execute(null, inliningTarget, copyreg, PickleUtils.T_ATTR_EXT_CACHE);
             if (extensionCache instanceof PDict extensionCacheDict) {
                 state.extensionCache = extensionCacheDict;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg._extension_cache", "dict", extensionCache);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "copyreg._extension_cache", "dict", extensionCache);
             }
 
             final Object codecs = importModule(PickleUtils.T_MOD_CODECS);
@@ -140,7 +140,7 @@ public class PickleState {
             if (callableCheck.execute(inliningTarget, codecsEncode)) {
                 state.codecsEncode = codecsEncode;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "codecs.encode", "callable", codecsEncode);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, "codecs.encode", "callable", codecsEncode);
             }
 
             final Object functools = importModule(PickleUtils.T_MOD_FUNCTOOLS);
@@ -152,14 +152,14 @@ public class PickleState {
             if (nameMapping2To3 instanceof PDict nameMapping2To3Dict) {
                 state.nameMapping2To3 = nameMapping2To3Dict;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_NAME_MAPPING, "dict", nameMapping2To3);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_NAME_MAPPING, "dict", nameMapping2To3);
             }
 
             var importMapping2To3 = getAttr.execute(null, inliningTarget, compatPickle, PickleUtils.T_ATTR_IMPORT_MAPPING);
             if (importMapping2To3 instanceof PDict importMapping2To3Dict) {
                 state.importMapping2To3 = importMapping2To3Dict;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_IMPORT_MAPPING, "dict", importMapping2To3);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_IMPORT_MAPPING, "dict", importMapping2To3);
             }
 
             // ... and the 3.x -> 2.x mapping tables
@@ -167,13 +167,13 @@ public class PickleState {
             if (nameMapping3To2 instanceof PDict nameMapping3To2Dict) {
                 state.nameMapping3To2 = nameMapping3To2Dict;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_REVERSE_NAME_MAPPING, "dict", nameMapping3To2);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_REVERSE_NAME_MAPPING, "dict", nameMapping3To2);
             }
             var importMapping3To2 = getAttr.execute(null, inliningTarget, compatPickle, PickleUtils.T_ATTR_REVERSE_IMPORT_MAPPING);
             if (importMapping3To2 instanceof PDict importMapping3To2Dict) {
                 state.importMapping3To2 = importMapping3To2Dict;
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_REVERSE_IMPORT_MAPPING, "dict",
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.S_SHOULD_BE_A_S_NOT_A_P, PickleUtils.T_CP_REVERSE_IMPORT_MAPPING, "dict",
                                 importMapping3To2);
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,7 +71,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.NFIBz2Support;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -105,14 +105,14 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached GilNode gil,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             gil.release(true);
             try {
                 NFIBz2Support bz2Support = PythonContext.get(this).getNFIBz2Support();
                 Object bzst = bz2Support.createStream(createStream);
                 int err = bz2Support.compressInit(bzst, compresslevel, compressInit);
                 if (err != BZ_OK) {
-                    errorHandling(err, raiseNode.get(inliningTarget));
+                    errorHandling(inliningTarget, err, raiseNode);
                 }
                 self.init(bzst, bz2Support);
                 return PNone.NONE;
@@ -124,8 +124,8 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         static Object err(Object self, Object compresslevel,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9);
         }
     }
 
@@ -134,31 +134,32 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
     abstract static class CompressNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
+        static PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
-            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+            return PFactory.createBytes(context.getLanguage(inliningTarget), compress.compress(self, context, bytes, len));
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Compressor self, Object data,
+        static PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Compressor self, Object data,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
-            return factory.createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
+            return PFactory.createBytes(context.getLanguage(inliningTarget), compress.compress(self, context, bytes, len));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(BZ2Object.BZ2Compressor self, Object data,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, COMPRESSOR_HAS_BEEN_FLUSHED);
         }
     }
 
@@ -167,18 +168,19 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doit(BZ2Object.BZ2Compressor self,
-                        @Cached Bz2Nodes.Bz2NativeCompress compress,
-                        @Cached PythonObjectFactory factory) {
+        static PBytes doit(BZ2Object.BZ2Compressor self,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached Bz2Nodes.Bz2NativeCompress compress) {
             self.setFlushed();
-            return factory.createBytes(compress.flush(self, PythonContext.get(this)));
+            return PFactory.createBytes(context.getLanguage(inliningTarget), compress.flush(self, context));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isFlushed()")
         static PNone error(BZ2Object.BZ2Compressor self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, REPEATED_CALL_TO_FLUSH);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, REPEATED_CALL_TO_FLUSH);
         }
     }
 }

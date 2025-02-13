@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -93,7 +93,7 @@ public abstract class PyNumberRemainderNode extends BinaryOpNode {
                     @Cached GetCachedTpSlotsNode getWSlots,
                     @Cached GetClassNode getWClass,
                     @Cached CallBinaryOp1Node callBinaryOp1Node,
-                    @Cached Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_remainder();
@@ -108,8 +108,8 @@ public abstract class PyNumberRemainderNode extends BinaryOpNode {
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Lazy raiseNode) {
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "%", v, w);
+    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "%", v, w);
     }
 
     @NeverDefault

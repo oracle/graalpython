@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,13 +49,12 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.util.PythonUtils.convertToObjectArray;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -64,23 +63,21 @@ import com.oracle.truffle.api.strings.TruffleString;
 final class AstTypeFactory {
 
     private final PythonLanguage language;
-    private final PythonObjectFactory factory;
     private final PythonModule astModule;
 
-    AstTypeFactory(PythonLanguage language, PythonObjectFactory factory, PythonModule astModule) {
+    AstTypeFactory(PythonLanguage language, PythonModule astModule) {
         this.language = language;
-        this.factory = factory;
         this.astModule = astModule;
     }
 
     PythonClass makeType(TruffleString name, PythonAbstractClass base, TruffleString[] fields, TruffleString[] attributes, TruffleString[] optional, TruffleString docString) {
-        PythonClass newType = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, name, base, new PythonAbstractClass[]{base});
+        PythonClass newType = PFactory.createPythonClassAndFixupSlots(language, name, base, new PythonAbstractClass[]{base});
         newType.setAttribute(T___MODULE__, T_AST);
         newType.setAttribute(T___DOC__, docString);
-        newType.setAttribute(T__FIELDS, factory.createTuple(convertToObjectArray(fields)));
-        newType.setAttribute(T___MATCH_ARGS__, factory.createTuple(convertToObjectArray(fields)));
+        newType.setAttribute(T__FIELDS, PFactory.createTuple(language, convertToObjectArray(fields)));
+        newType.setAttribute(T___MATCH_ARGS__, PFactory.createTuple(language, convertToObjectArray(fields)));
         if (attributes != null) {
-            newType.setAttribute(T__ATTRIBUTES, factory.createTuple(convertToObjectArray(attributes)));
+            newType.setAttribute(T__ATTRIBUTES, PFactory.createTuple(language, convertToObjectArray(attributes)));
         }
         for (TruffleString n : optional) {
             newType.setAttribute(n, PNone.NONE);
@@ -90,6 +87,6 @@ final class AstTypeFactory {
     }
 
     PythonObject createSingleton(PythonClass cls) {
-        return factory.createPythonObject(cls);
+        return PFactory.createPythonObject(language, cls, cls.getInstanceShape());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -240,7 +241,7 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
         @Specialization
         static Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, TruffleString name,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             SharedMultiprocessingData multiprocessing = PythonContext.get(inliningTarget).getSharedMultiprocessingData();
             Semaphore semaphore = multiprocessing.getNamedSemaphore(name);
             if (semaphore == null) {
@@ -248,7 +249,7 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
                 // provided handle
                 semaphore = newSemaphore();
             }
-            return factory.createGraalPySemLock(PythonBuiltinClassType.PGraalPySemLock, name, kind, semaphore);
+            return PFactory.createGraalPySemLock(language, name, kind, semaphore);
         }
 
         @TruffleBoundary
@@ -263,10 +264,10 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
         @Specialization
         static Object doRelease(PGraalPySemLock self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.getKind() == PGraalPySemLock.RECURSIVE_MUTEX) {
                 if (!self.isMine()) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AssertionError, ErrorMessages.ATTEMP_TO_RELEASE_RECURSIVE_LOCK);
                 }
                 if (self.getCount() > 1) {
                     self.decreaseCount();

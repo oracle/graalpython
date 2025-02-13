@@ -44,8 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,11 +59,10 @@ public abstract class PyContextCopyCurrent extends PNodeWithContext {
     public abstract PContextVarsContext execute(Node inliningTarget);
 
     @Specialization
-    static PContextVarsContext doIt(Node inliningTarget,
-                    @Cached(inline = false) PythonObjectFactory factory) {
+    static PContextVarsContext doIt(Node inliningTarget) {
         PythonContext context = PythonContext.get(inliningTarget);
         PythonLanguage language = context.getLanguage(inliningTarget);
         PythonContext.PythonThreadState threadState = context.getThreadState(language);
-        return factory.copyContextVarsContext(threadState.getContextVarsContext());
+        return PFactory.copyContextVarsContext(language, threadState.getContextVarsContext());
     }
 }

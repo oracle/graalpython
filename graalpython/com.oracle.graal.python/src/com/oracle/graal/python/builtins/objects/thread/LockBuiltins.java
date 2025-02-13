@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -152,22 +152,22 @@ public final class LockBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "!blocking"})
         static boolean err1(AbstractPythonLock self, boolean blocking, double timeout,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "isNeg(timeout)"})
         static boolean err2(AbstractPythonLock self, boolean blocking, double timeout,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "timeout > TIMEOUT_MAX"})
         static boolean err3(AbstractPythonLock self, boolean blocking, double timeout,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
         }
 
         protected static boolean invalidArgs(boolean blocking, double timeout) {
@@ -211,9 +211,9 @@ public final class LockBuiltins extends PythonBuiltins {
         @Specialization
         static Object doRelease(PRLock self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!self.isOwned()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.LOCK_NOT_HELD);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.LOCK_NOT_HELD);
             }
             self.release();
             return PNone.NONE;

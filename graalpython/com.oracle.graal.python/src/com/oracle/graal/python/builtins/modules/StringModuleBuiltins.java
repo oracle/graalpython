@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -85,8 +85,7 @@ public final class StringModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PSequenceIterator formatterParser(VirtualFrame frame, TruffleString self,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             List<Object[]> parserList;
             PythonContext context = PythonContext.get(this);
@@ -97,16 +96,16 @@ public final class StringModuleBuiltins extends PythonBuiltins {
             } finally {
                 ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
             }
-            return parserListToIterator(parserList, factory);
+            return parserListToIterator(parserList, language);
         }
     }
 
-    private static PSequenceIterator parserListToIterator(List<Object[]> parserList, PythonObjectFactory factory) {
+    private static PSequenceIterator parserListToIterator(List<Object[]> parserList, PythonLanguage language) {
         Object[] tuples = new Object[parserList.size()];
         for (int i = 0; i < tuples.length; i++) {
-            tuples[i] = factory.createTuple(parserList.get(i));
+            tuples[i] = PFactory.createTuple(language, parserList.get(i));
         }
-        return factory.createSequenceIterator(factory.createList(tuples));
+        return PFactory.createSequenceIterator(language, PFactory.createList(language, tuples));
     }
 
     @Builtin(name = J_FORMATTER_FIELD_NAME_SPLIT, minNumOfPositionalArgs = 1, parameterNames = {"self"})
@@ -120,8 +119,7 @@ public final class StringModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object formatterParser(VirtualFrame frame, TruffleString self,
-                        @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached("createFor(this)") IndirectCallData indirectCallData) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             TemplateFormatter.FieldNameSplitResult result;
             PythonContext context = PythonContext.get(this);
@@ -132,7 +130,7 @@ public final class StringModuleBuiltins extends PythonBuiltins {
             } finally {
                 ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
             }
-            return factory.createTuple(new Object[]{result.first, parserListToIterator(result.parserList, factory)});
+            return PFactory.createTuple(language, new Object[]{result.first, parserListToIterator(result.parserList, language)});
         }
     }
 }

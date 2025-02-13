@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -113,7 +113,7 @@ public final class TemplateFormatter {
 
     private TruffleString buildString(Node node, int start, int end, int level, FormatNode formatNode) {
         if (level == 0) {
-            throw PRaiseNode.raiseUncached(node, ValueError, RECURSION_DEPTH_EXCEEDED);
+            throw PRaiseNode.raiseStatic(node, ValueError, RECURSION_DEPTH_EXCEEDED);
         }
         return doBuildString(node, start, end, level - 1, this.template, formatNode);
     }
@@ -131,14 +131,14 @@ public final class TemplateFormatter {
                 boolean markupFollows = true;
                 if (c == '}') {
                     if (atEnd || s.charAt(i) != '}') {
-                        throw PRaiseNode.raiseUncached(node, ValueError, SINGLE_RBRACE_ENCOUNTERED_IN_FORMAT_STRING);
+                        throw PRaiseNode.raiseStatic(node, ValueError, SINGLE_RBRACE_ENCOUNTERED_IN_FORMAT_STRING);
                     }
                     i += 1;
                     markupFollows = false;
                 }
                 if (c == '{') {
                     if (atEnd) {
-                        throw PRaiseNode.raiseUncached(node, ValueError, SINGLE_RBRACE_ENCOUNTERED_IN_FORMAT_STRING);
+                        throw PRaiseNode.raiseStatic(node, ValueError, SINGLE_RBRACE_ENCOUNTERED_IN_FORMAT_STRING);
                     }
                     if (s.charAt(i) == '{') {
                         i += 1;
@@ -181,7 +181,7 @@ public final class TemplateFormatter {
                     i += 1;
                 }
                 if (nested > 0) {
-                    throw PRaiseNode.raiseUncached(node, ValueError, EXPECTED_RBRACE_BEFORE_END_OF_STRING);
+                    throw PRaiseNode.raiseStatic(node, ValueError, EXPECTED_RBRACE_BEFORE_END_OF_STRING);
                 }
                 Object rendered = renderField(node, fieldStart, i, recursive, level, formatNode);
                 out.append(rendered);
@@ -217,13 +217,13 @@ public final class TemplateFormatter {
                 if (c == '!') {
                     i += 1;
                     if (i == end) {
-                        throw PRaiseNode.raiseUncached(node, ValueError, EXPECTED_CONVERSION);
+                        throw PRaiseNode.raiseStatic(node, ValueError, EXPECTED_CONVERSION);
                     }
                     conversion = s.charAt(i);
                     i += 1;
                     if (i < end) {
                         if (s.charAt(i) != ':') {
-                            throw PRaiseNode.raiseUncached(node, ValueError, EXPECTED_S_AFTER_FORMAT_CONVERSION, ':');
+                            throw PRaiseNode.raiseStatic(node, ValueError, EXPECTED_S_AFTER_FORMAT_CONVERSION, ':');
                         }
                         i += 1;
                     }
@@ -237,7 +237,7 @@ public final class TemplateFormatter {
                     i += 1;
                 }
             } else if (c == '{') {
-                throw PRaiseNode.raiseUncached(node, ValueError, UNEXPECTED_S_IN_FIELD_NAME, "'{'");
+                throw PRaiseNode.raiseStatic(node, ValueError, UNEXPECTED_S_IN_FIELD_NAME, "'{'");
             }
             i += 1;
         }
@@ -274,10 +274,10 @@ public final class TemplateFormatter {
         if (useNumeric) {
             if (this.autoNumberingState == ANS_MANUAL) {
                 if (isEmpty) {
-                    throw PRaiseNode.raiseUncached(node, ValueError, SWITCHING_FROM_MANUAL_TO_AUTOMATIC_NUMBERING);
+                    throw PRaiseNode.raiseStatic(node, ValueError, SWITCHING_FROM_MANUAL_TO_AUTOMATIC_NUMBERING);
                 }
             } else if (!isEmpty) {
-                throw PRaiseNode.raiseUncached(node, ValueError, SWITCHING_FROM_AUTOMATIC_TO_MANUAL_NUMBERING);
+                throw PRaiseNode.raiseStatic(node, ValueError, SWITCHING_FROM_AUTOMATIC_TO_MANUAL_NUMBERING);
             }
         }
         if (isEmpty) {
@@ -289,13 +289,13 @@ public final class TemplateFormatter {
             String kwarg = intString;
             arg = getKeyword(node, kwarg);
         } else if (index > SysModuleBuiltins.MAXSIZE) {
-            throw PRaiseNode.raiseUncached(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
+            throw PRaiseNode.raiseStatic(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
         } else {
             if (this.args == null) {
-                throw PRaiseNode.raiseUncached(node, ValueError, FORMAT_STR_CONTAINS_POS_FIELDS);
+                throw PRaiseNode.raiseStatic(node, ValueError, FORMAT_STR_CONTAINS_POS_FIELDS);
             }
             if (index >= this.args.length) {
-                throw PRaiseNode.raiseUncached(node, IndexError, REPLACEMENT_INDEX_S_OUT_OF_RANGE, index);
+                throw PRaiseNode.raiseStatic(node, IndexError, REPLACEMENT_INDEX_S_OUT_OF_RANGE, index);
             }
             arg = this.args[index];
         }
@@ -320,7 +320,7 @@ public final class TemplateFormatter {
                     i += 1;
                 }
                 if (start == i) {
-                    throw PRaiseNode.raiseUncached(node, ValueError, EMPTY_ATTR_IN_FORMAT_STR);
+                    throw PRaiseNode.raiseStatic(node, ValueError, EMPTY_ATTR_IN_FORMAT_STR);
                 }
                 TruffleString attr = toTruffleStringUncached(name.substring(start, i));
                 if (result != null) {
@@ -341,11 +341,11 @@ public final class TemplateFormatter {
                     i += 1;
                 }
                 if (!gotBracket) {
-                    throw PRaiseNode.raiseUncached(node, ValueError, MISSING_S, "']'");
+                    throw PRaiseNode.raiseStatic(node, ValueError, MISSING_S, "']'");
                 }
                 String s = name.substring(start, i);
                 if (s.isEmpty()) {
-                    throw PRaiseNode.raiseUncached(node, ValueError, EMPTY_ATTR_IN_FORMAT_STR);
+                    throw PRaiseNode.raiseStatic(node, ValueError, EMPTY_ATTR_IN_FORMAT_STR);
                 }
                 int index = toInt(node, s);
                 Object item = index != -1 ? index : toTruffleStringUncached(s);
@@ -356,7 +356,7 @@ public final class TemplateFormatter {
                     this.parserList.add(new Object[]{false, item});
                 }
             } else {
-                throw PRaiseNode.raiseUncached(node, ValueError, ONLY_S_AND_S_AMY_FOLLOW_S, "'['", "'.'", "']'");
+                throw PRaiseNode.raiseStatic(node, ValueError, ONLY_S_AND_S_AMY_FOLLOW_S, "'['", "'.'", "']'");
             }
         }
         return result;
@@ -372,7 +372,7 @@ public final class TemplateFormatter {
         } catch (NumberFormatException e) {
             return -1;
         } catch (ArithmeticException e) {
-            throw PRaiseNode.raiseUncached(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
+            throw PRaiseNode.raiseStatic(node, ValueError, TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
         }
     }
 
@@ -462,7 +462,7 @@ public final class TemplateFormatter {
             case 'a':
                 return PyObjectAsciiNode.executeUncached(obj);
             default:
-                throw PRaiseNode.raiseUncached(node, ValueError, INVALID_CONVERSION);
+                throw PRaiseNode.raiseStatic(node, ValueError, INVALID_CONVERSION);
         }
     }
 
@@ -491,7 +491,7 @@ public final class TemplateFormatter {
                 return result;
             }
         }
-        throw PRaiseNode.raiseUncached(node, KeyError, tKey);
+        throw PRaiseNode.raiseStatic(node, KeyError, tKey);
     }
 
 }

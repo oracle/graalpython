@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -53,7 +54,8 @@ import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -79,10 +81,10 @@ public final class TokenizeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PTokenizerIter tokenizerIter(Object cls, TruffleString source,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTokenizerIter(cls, toJavaStringNode.execute(source));
+        static PTokenizerIter tokenizerIter(@SuppressWarnings("unused") Object cls, TruffleString source,
+                        @Bind PythonLanguage language,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return PFactory.createTokenizerIter(language, toJavaStringNode.execute(source));
         }
     }
 }

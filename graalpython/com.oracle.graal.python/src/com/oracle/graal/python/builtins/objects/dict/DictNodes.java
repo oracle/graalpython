@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -103,9 +103,8 @@ public abstract class DictNodes {
         }
 
         @Fallback
-        static HashingStorage doFallback(Node inliningTarget, Object object,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "dict", object);
+        static HashingStorage doFallback(Node inliningTarget, Object object) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "dict", object);
         }
     }
 
@@ -183,14 +182,14 @@ public abstract class DictNodes {
                         @Cached HashingStorageGetIterator getOtherIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageLen otherLenNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int initialSize = otherLenNode.execute(inliningTarget, otherStorage);
             HashingStorageIterator itOther = getOtherIter.execute(inliningTarget, otherStorage);
             var newStorage = selfStorage;
             while (iterNext.execute(inliningTarget, otherStorage, itOther)) {
                 newStorage = transferItem.execute(frame, inliningTarget, otherStorage, itOther, newStorage);
                 if (initialSize != otherLenNode.execute(inliningTarget, otherStorage)) {
-                    throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
+                    throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
                 }
             }
             updateStorageNode.execute(inliningTarget, self, selfStorage, newStorage);

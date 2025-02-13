@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
@@ -50,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,7 +68,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -104,14 +106,14 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.isStopped()")
         static Object nextStopped(PAbstractCombinations self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
         }
 
         @Specialization(guards = {"!self.isStopped()", "isLastResultNull(self)"})
         static Object nextNoResult(PAbstractCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached @Exclusive InlinedLoopConditionProfile loopConditionProfile) {
             // On the first pass, initialize result tuple using the indices
             Object[] result = new Object[self.getR()];
@@ -121,31 +123,29 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 result[i] = self.getPool()[idx];
             }
             self.setLastResult(result);
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         static Object next(PCombinations self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
                         @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile, raiseNode);
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
         @Specialization(guards = {"!self.isStopped()", "!isLastResultNull(self)"})
         static Object next(PCombinationsWithReplacement self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PythonObjectFactory factory,
                         @Shared @Cached InlinedLoopConditionProfile indexLoopProfile,
                         @Shared @Cached InlinedLoopConditionProfile resultLoopProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
-            return nextInternal(inliningTarget, self, factory, indexLoopProfile, resultLoopProfile, raiseNode);
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return nextInternal(inliningTarget, self, indexLoopProfile, resultLoopProfile, raiseNode);
         }
 
-        private static Object nextInternal(Node inliningTarget, PAbstractCombinations self, PythonObjectFactory factory, InlinedLoopConditionProfile indexLoopProfile,
-                        InlinedLoopConditionProfile resultLoopProfile, PRaiseNode.Lazy raiseNode) throws PException {
+        private static Object nextInternal(Node inliningTarget, PAbstractCombinations self, InlinedLoopConditionProfile indexLoopProfile,
+                        InlinedLoopConditionProfile resultLoopProfile, PRaiseNode raiseNode) throws PException {
 
             CompilerAsserts.partialEvaluationConstant(self.getClass());
 
@@ -162,7 +162,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
             // If i is negative, then the indices are all at their maximum value and we're done
             if (i < 0) {
                 self.setStopped(true);
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, StopIteration);
             }
 
             // Increment the current index which we know is not at its maximum.
@@ -182,7 +182,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 result[j] = elem;
             }
             self.setLastResult(result);
-            return factory.createTuple(result);
+            return PFactory.createTuple(PythonLanguage.get(inliningTarget), result);
         }
 
         protected boolean isLastResultNull(PAbstractCombinations self) {
@@ -200,18 +200,18 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasNoLastResultProfile,
                         @Cached InlinedConditionProfile stoppedProfile,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
             if (hasNoLastResultProfile.profile(inliningTarget, self.getLastResult() == null)) {
-                PTuple args = factory.createTuple(new Object[]{factory.createTuple(self.getPool()), self.getR()});
-                return factory.createTuple(new Object[]{type, args});
+                PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createTuple(language, self.getPool()), self.getR()});
+                return PFactory.createTuple(language, new Object[]{type, args});
             } else if (stoppedProfile.profile(inliningTarget, self.isStopped())) {
-                PTuple args = factory.createTuple(new Object[]{factory.createEmptyTuple(), self.getR()});
-                return factory.createTuple(new Object[]{type, args});
+                PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language), self.getR()});
+                return PFactory.createTuple(language, new Object[]{type, args});
             }
-            PTuple indices = factory.createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getR()));
-            PTuple args = factory.createTuple(new Object[]{factory.createTuple(self.getPool()), self.getR()});
-            return factory.createTuple(new Object[]{type, args, indices});
+            PTuple indices = PFactory.createTuple(language, PythonUtils.arrayCopyOf(self.getIndices(), self.getR()));
+            PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createTuple(language, self.getPool()), self.getR()});
+            return PFactory.createTuple(language, new Object[]{type, args, indices});
         }
     }
 
@@ -224,7 +224,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaIntExactNode cast,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int n = self.getPool().length;
             if (stateObj instanceof PTuple state && state.getSequenceStorage().length() == self.getR()) {
                 SequenceStorage storage = state.getSequenceStorage();
@@ -241,7 +241,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         self.getIndices()[i] = index;
                     }
                 } catch (CannotCastException e) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 Object[] result = new Object[self.getR()];
                 for (int i = 0; i < self.getR(); i++) {
@@ -250,7 +250,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 self.setLastResult(result);
                 return PNone.NONE;
             } else {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.INVALID_ARGS, T___SETSTATE__);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.INVALID_ARGS, T___SETSTATE__);
             }
         }
     }

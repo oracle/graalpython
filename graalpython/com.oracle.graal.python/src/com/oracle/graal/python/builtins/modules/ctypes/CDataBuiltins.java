@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -86,7 +87,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -157,8 +158,8 @@ public final class CDataBuiltins extends PythonBuiltins {
     protected abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
         static long hash(@SuppressWarnings("unused") CDataObject self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, UNHASHABLE_TYPE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, UNHASHABLE_TYPE);
         }
     }
 
@@ -169,30 +170,30 @@ public final class CDataBuiltins extends PythonBuiltins {
         @Specialization
         static Object reduce(VirtualFrame frame, CDataObject self,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached("create(T___DICT__)") GetAttributeNode getAttributeNode,
                         @Cached ReadAttributeFromPythonObjectNode readAttrNode,
                         @Cached PointerNodes.ReadBytesNode readBytesNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             StgDictObject stgDict = pyObjectStgDictNode.execute(inliningTarget, self);
             if ((stgDict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
+                throw raiseNode.raise(inliningTarget, ValueError, CTYPES_OBJECTS_CONTAINING_POINTERS_CANNOT_BE_PICKLED);
             }
             Object dict = getAttributeNode.executeObject(frame, self);
             Object[] t1 = new Object[]{dict, null};
-            t1[1] = factory.createBytes(readBytesNode.execute(inliningTarget, self.b_ptr, self.b_size));
+            t1[1] = PFactory.createBytes(language, readBytesNode.execute(inliningTarget, self.b_ptr, self.b_size));
             Object clazz = getClassNode.execute(inliningTarget, self);
-            Object[] t2 = new Object[]{clazz, factory.createTuple(t1)};
+            Object[] t2 = new Object[]{clazz, PFactory.createTuple(language, t1)};
             PythonModule ctypes = PythonContext.get(inliningTarget).lookupBuiltinModule(T__CTYPES);
             Object unpickle = readAttrNode.execute(ctypes, T_UNPICKLE, null);
             if (unpickle == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));
+                throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("unpickle isn't supported yet."));
             }
-            Object[] t3 = new Object[]{unpickle, factory.createTuple(t2)};
-            return factory.createTuple(t3); // "O(O(NN))"
+            Object[] t3 = new Object[]{unpickle, PFactory.createTuple(language, t2)};
+            return PFactory.createTuple(language, t3); // "O(O(NN))"
         }
     }
 
@@ -210,11 +211,11 @@ public final class CDataBuiltins extends PythonBuiltins {
                         @Cached GetNameNode getNameNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = args.getSequenceStorage();
             Object[] array = getArray.execute(inliningTarget, storage);
             if (storage.length() < 3 || !PGuards.isDict(array[0]) || !PGuards.isInteger(array[2])) {
-                throw raiseNode.get(inliningTarget).raise(TypeError);
+                throw raiseNode.raise(inliningTarget, TypeError);
             }
             PDict dict = (PDict) array[0];
             Object data = array[1];
@@ -227,7 +228,7 @@ public final class CDataBuiltins extends PythonBuiltins {
             memmove(inliningTarget, self.b_ptr, data, len);
             Object mydict = getAttributeNode.executeObject(frame, self);
             if (!PGuards.isDict(mydict)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
+                throw raiseNode.raise(inliningTarget, TypeError, S_DICT_MUST_BE_A_DICTIONARY_NOT_S,
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self)),
                                 getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, mydict)));
             }
@@ -239,7 +240,7 @@ public final class CDataBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         private static void memmove(Node raisingNode, Object dest, Object src, int len) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(raisingNode, NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
+            throw PRaiseNode.raiseStatic(raisingNode, NotImplementedError, toTruffleStringUncached("memmove is partially supported.")); // TODO
         }
     }
 }

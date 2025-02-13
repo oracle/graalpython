@@ -56,6 +56,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictGetItem;
@@ -91,7 +93,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -146,7 +148,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("QUOTE_ALL", QUOTE_ALL.ordinal());
         addBuiltinConstant("QUOTE_NONNUMERIC", QUOTE_NONNUMERIC.ordinal());
         addBuiltinConstant("QUOTE_NONE", QUOTE_NONE.ordinal());
-        addBuiltinConstant(T__DIALECTS, core.factory().createDict());
+        addBuiltinConstant(T__DIALECTS, PFactory.createDict(core.getLanguage()));
         super.initialize(core);
     }
 
@@ -163,12 +165,12 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached CallNode callNode,
                         @Cached PyDictSetItem setItem,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString name;
             try {
                 name = nameNode.execute(inliningTarget, nameObj);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_STRING, "dialect name");
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_STRING, "dialect name");
             }
 
             Object result = callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, keywords);
@@ -193,7 +195,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyDictDelItem delItem,
                         @Cached HashingStorageGetItem getItem,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             // TODO GR-38165: unchecked cast to PDict
             PDict dialects = (PDict) readNode.execute(module, T__DIALECTS);
@@ -201,7 +203,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             if (getItem.hasKey(frame, inliningTarget, (dialects).getDictStorage(), nameObj)) {
                 delItem.execute(frame, inliningTarget, dialects, nameObj);
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNKNOWN_DIALECT);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.UNKNOWN_DIALECT);
             }
 
             return PNone.NONE;
@@ -225,7 +227,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyDictGetItem getItemNode,
                         @Cached ReadAttributeFromObjectNode readNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             // TODO GR-38165: unchecked cast to PDict
             PDict dialects = (PDict) readNode.execute(module, T__DIALECTS);
@@ -233,7 +235,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             CSVDialect dialect = (CSVDialect) getItemNode.execute(frame, inliningTarget, dialects, nameObj);
 
             if (dialect == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNKNOWN_DIALECT);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.UNKNOWN_DIALECT);
             }
 
             return dialect;
@@ -262,10 +264,10 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached CallNode callNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object inputIter = getIter.execute(frame, inliningTarget, csvfile);
             CSVDialect dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
-            return factory.createCSVReader(PythonBuiltinClassType.CSVReader, inputIter, dialect);
+            return PFactory.createCSVReader(language, inputIter, dialect);
         }
     }
 
@@ -278,14 +280,14 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyCallableCheckNode checkCallable,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             Object write = lookupAttr.execute(frame, inliningTarget, outputFile, T_WRITE);
             if (write == PNone.NO_VALUE || !checkCallable.execute(inliningTarget, write)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_HAVE_WRITE_METHOD, "argument 1");
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_HAVE_WRITE_METHOD, "argument 1");
             }
             CSVDialect dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
-            return factory.createCSVWriter(PythonBuiltinClassType.CSVWriter, write, dialect);
+            return PFactory.createCSVWriter(language, write, dialect);
         }
     }
 
@@ -301,13 +303,13 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyLongCheckExactNode checkLongNode,
                         @Cached PyLongAsLongNode castToLong,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             CSVModuleBuiltins csvModuleBuiltins = (CSVModuleBuiltins) self.getBuiltins();
             long oldLimit = csvModuleBuiltins.fieldLimit;
 
             if (newLimit != PNone.NO_VALUE) {
                 if (!checkLongNode.execute(inliningTarget, newLimit)) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_INTEGER, "limit");
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_INTEGER, "limit");
                 }
                 csvModuleBuiltins.fieldLimit = castToLong.execute(frame, inliningTarget, newLimit);
             }
@@ -344,7 +346,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             return createCSVDialect(frame, inliningTarget, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj,
                             quotecharObj, quotingObj, skipinitialspaceObj, strictObj, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode, raiseNode);
         }
@@ -357,7 +359,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             PythonModule module = PythonContext.get(inliningTarget).lookupBuiltinModule(T__CSV);
             CSVDialect dialectObj = getDialect.execute(frame, module, dialectName);
 
@@ -400,7 +402,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
 
             // We use multiple AttributeNodes to be able to cache all attributes as current
             // CACHE_SIZE is 3.
@@ -426,7 +428,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
 
             TruffleString dialectNameStr = castToStringNode.execute(inliningTarget, dialectName);
             PythonModule module = PythonContext.get(inliningTarget).lookupBuiltinModule(T__CSV);
@@ -471,7 +473,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PyLongCheckExactNode pyLongCheckExactNode,
                         @Exclusive @Cached PyLongAsIntNode pyLongAsIntNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
 
             delimiterObj = getAttributeValue(frame, inliningTarget, dialectObj, delimiterObj, T_ATTR_DELIMITER, getFirstAttributesNode);
             doublequoteObj = getAttributeValue(frame, inliningTarget, dialectObj, doublequoteObj, T_ATTR_DOUBLEQUOTE, getFirstAttributesNode);
@@ -492,7 +494,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
 
         private static Object createCSVDialect(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType cls, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
                         Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                        PyObjectIsTrueNode isTrueNode, PyLongCheckExactNode pyLongCheckExactNode, PyLongAsIntNode pyLongAsIntNode, PRaiseNode.Lazy raiseNode) {
+                        PyObjectIsTrueNode isTrueNode, PyLongCheckExactNode pyLongCheckExactNode, PyLongAsIntNode pyLongAsIntNode, PRaiseNode raiseNode) {
             TruffleString delimiter = getChar(inliningTarget, T_ATTR_DELIMITER, delimiterObj, T_COMMA, false);
             boolean doubleQuote = getBoolean(frame, doublequoteObj, true, isTrueNode);
             TruffleString escapeChar = getChar(inliningTarget, T_ATTR_ESCAPECHAR, escapecharObj, T_NOT_SET, true);
@@ -511,15 +513,15 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         private static Object createCSVDialect(Node raisingNode, PythonBuiltinClassType cls, TruffleString delimiter, boolean doubleQuote, TruffleString escapeChar, TruffleString lineTerminator,
                         TruffleString quoteChar, QuoteStyle quoting, boolean skipInitialSpace, boolean strict) {
             if (TruffleString.EqualNode.getUncached().execute(delimiter, T_NOT_SET, TS_ENCODING)) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.DELIMITER_MUST_BE_ONE_CHAR_STRING);
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.DELIMITER_MUST_BE_ONE_CHAR_STRING);
             }
 
             if (quoting != QUOTE_NONE && TruffleString.EqualNode.getUncached().execute(quoteChar, T_NOT_SET, TS_ENCODING)) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.QUOTECHAR_MUST_BE_SET_IF_QUOTING_ENABLED);
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.QUOTECHAR_MUST_BE_SET_IF_QUOTING_ENABLED);
             }
 
             if (lineTerminator == null) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.LINETERMINATOR_MUST_BE_SET);
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.LINETERMINATOR_MUST_BE_SET);
             }
 
             // delimiter cannot be NOT_SET
@@ -529,7 +531,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             int quoteCharCodePoint = TruffleString.EqualNode.getUncached().execute(quoteChar, T_NOT_SET, TS_ENCODING) ? NOT_SET_CODEPOINT
                             : TruffleString.CodePointAtIndexNode.getUncached().execute(quoteChar, 0, TS_ENCODING);
 
-            return PythonObjectFactory.getUncached().createCSVDialect(cls, delimiter, delimiterCodePoint, doubleQuote,
+            return PFactory.createCSVDialect(PythonLanguage.get(null), cls, TypeNodes.GetInstanceShape.executeUncached(cls), delimiter, delimiterCodePoint, doubleQuote,
                             escapeChar, escapeCharCodePoint, lineTerminator, quoteChar, quoteCharCodePoint, quoting,
                             skipInitialSpace, strict);
         }
@@ -555,8 +557,8 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             try {
                 charValue = CastToTruffleStringNode.executeUncached(valueObj);
             } catch (CannotCastException e) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, optional ? ErrorMessages.S_MUST_BE_STRING_OR_NONE_NOT_S : ErrorMessages.S_MUST_BE_STRING_NOT_S, name,
-                                GetClassNode.executeUncached(valueObj));
+                TruffleString format = optional ? ErrorMessages.S_MUST_BE_STRING_OR_NONE_NOT_S : ErrorMessages.S_MUST_BE_STRING_NOT_S;
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, format, name, GetClassNode.executeUncached(valueObj));
             }
 
             if (optional && TruffleString.EqualNode.getUncached().execute(charValue, T_NOT_SET, TS_ENCODING)) {
@@ -564,7 +566,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             }
 
             if (TruffleString.CodePointLengthNode.getUncached().execute(charValue, TS_ENCODING) != 1) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.MUST_BE_ONE_CHARACTER_STRING, name);
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.MUST_BE_ONE_CHARACTER_STRING, name);
             }
 
             return charValue;
@@ -593,14 +595,14 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             try {
                 value = CastToTruffleStringNode.executeUncached(valueObj);
             } catch (CannotCastException e) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.MUST_BE_STRING_QUOTED, attribute);
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.MUST_BE_STRING_QUOTED, attribute);
             }
 
             return value;
         }
 
         private static QuoteStyle getQuotingValue(VirtualFrame frame, Node inliningTarget, TruffleString name, Object valueObj, QuoteStyle defaultValue,
-                        PyLongCheckExactNode pyLongCheckExactNode, PyLongAsIntNode pyLongAsIntNode, PRaiseNode.Lazy raiseNode) {
+                        PyLongCheckExactNode pyLongCheckExactNode, PyLongAsIntNode pyLongAsIntNode, PRaiseNode raiseNode) {
 
             if (valueObj == PNone.NO_VALUE) {
                 return defaultValue;
@@ -611,13 +613,13 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             }
 
             if (!pyLongCheckExactNode.execute(inliningTarget, valueObj)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.MUST_BE_INTEGER_QUOTED_ATTR, name);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_INTEGER_QUOTED_ATTR, name);
             }
 
             int value = pyLongAsIntNode.execute(frame, inliningTarget, valueObj);
 
             if (!QuoteStyle.containsOrdinalValue(value)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.BAD_QUOTING_VALUE);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BAD_QUOTING_VALUE);
             }
 
             return QuoteStyle.getQuoteStyle(value);

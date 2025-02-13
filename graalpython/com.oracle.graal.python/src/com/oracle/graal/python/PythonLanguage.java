@@ -107,7 +107,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -127,6 +127,7 @@ import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -440,6 +441,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
+    @CompilationFinal private AllocationReporter allocationReporter;
 
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
@@ -521,6 +523,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
 
+        if (allocationReporter == null) {
+            allocationReporter = env.lookup(AllocationReporter.class);
+        } else {
+            // GR-61960
+            // assert allocationReporter == env.lookup(AllocationReporter.class);
+        }
+
         return context;
     }
 
@@ -532,6 +541,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             return PythonOptions.getOptionUnrolling(this.engineOptionsStorage, PythonOptions.getEngineOptionKeys(), key);
         }
+    }
+
+    public AllocationReporter getAllocationReporter() {
+        assert allocationReporter != null;
+        return allocationReporter;
     }
 
     @Override
@@ -593,7 +607,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
             byte[] bytes = source.getBytes().toByteArray();
-            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(bytes);
+            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(null, context, bytes);
             boolean internal = shouldMarkSourceInternal(context);
             // The original file path should be passed as the name
             String name = source.getName();
@@ -804,8 +818,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected Object getLanguageView(PythonContext context, Object value) {
         assert !(value instanceof PythonAbstractObject);
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
         InteropLibrary interopLib = InteropLibrary.getFactory().getUncached(value);
+        PythonLanguage language = context.getLanguage();
         try {
             if (interopLib.isBoolean(value)) {
                 if (interopLib.asBoolean(value)) {
@@ -814,21 +828,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     return context.getFalse();
                 }
             } else if (interopLib.isString(value)) {
-                return factory.createString(interopLib.asTruffleString(value).switchEncodingUncached(TS_ENCODING));
+                return PFactory.createString(language, interopLib.asTruffleString(value).switchEncodingUncached(TS_ENCODING));
             } else if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long) {
                 // TODO: (tfel) once the interop protocol allows us to
                 // distinguish fixed point from floating point reliably, we can
                 // remove this branch
-                return factory.createInt(interopLib.asLong(value));
+                return PFactory.createInt(language, interopLib.asLong(value));
             } else if (value instanceof Float || value instanceof Double) {
                 // TODO: (tfel) once the interop protocol allows us to
                 // distinguish fixed point from floating point reliably, we can
                 // remove this branch
-                return factory.createFloat(interopLib.asDouble(value));
+                return PFactory.createFloat(language, interopLib.asDouble(value));
             } else if (interopLib.fitsInLong(value)) {
-                return factory.createInt(interopLib.asLong(value));
+                return PFactory.createInt(language, interopLib.asLong(value));
             } else if (interopLib.fitsInDouble(value)) {
-                return factory.createFloat(interopLib.asDouble(value));
+                return PFactory.createFloat(language, interopLib.asDouble(value));
             } else {
                 return new ForeignLanguageView(value);
             }
@@ -1054,13 +1068,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Shape shape = builtinTypeInstanceShapes[ordinal];
         if (shape == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttr.getClassHiddenKey(), type, 0);
-            if (!type.isBuiltinWithDict()) {
-                shapeBuilder.shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG);
-            }
-            shape = shapeBuilder.build();
-            builtinTypeInstanceShapes[ordinal] = shape;
+            shape = createBuiltinShape(type, ordinal);
         }
+        return shape;
+    }
+
+    private Shape createBuiltinShape(PythonBuiltinClassType type, int ordinal) {
+        Shape shape;
+        Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttr.getClassHiddenKey(), type, 0);
+        if (!type.isBuiltinWithDict()) {
+            shapeBuilder.shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG);
+        }
+        shape = shapeBuilder.build();
+        builtinTypeInstanceShapes[ordinal] = shape;
         return shape;
     }
 

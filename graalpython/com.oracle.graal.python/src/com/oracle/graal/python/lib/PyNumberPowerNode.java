@@ -81,7 +81,7 @@ public abstract class PyNumberPowerNode extends BinaryOpNode {
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,
                     @Cached CallTernaryOpNode callTernaryOpNode,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_power();
@@ -94,11 +94,11 @@ public abstract class PyNumberPowerNode extends BinaryOpNode {
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Object z, PRaiseNode.Lazy raiseNode) {
+    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Object z, PRaiseNode raiseNode) {
         if (z == PNone.NONE) {
-            return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "** or pow()", v, w);
+            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "** or pow()", v, w);
         } else {
-            return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, "** or pow()", v, w, z);
+            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, "** or pow()", v, w, z);
         }
     }
 

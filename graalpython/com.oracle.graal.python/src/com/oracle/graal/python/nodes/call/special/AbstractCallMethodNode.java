@@ -279,7 +279,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
 
     @TruffleBoundary
     private void raiseInvalidArgsNumUncached(BuiltinMethodDescriptor descr) {
-        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, EXPECTED_D_ARGS, descr.minNumOfPositionalArgs());
+        throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, EXPECTED_D_ARGS, descr.minNumOfPositionalArgs());
     }
 
     protected static Object callUnaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1) {

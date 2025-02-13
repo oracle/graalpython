@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -166,7 +166,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
                     @Cached MaybeBindDescriptorNode bindDescriptorNode,
                     @Cached(inline = false) CallUnaryMethodNode callHash,
                     @Cached CastUnsignedToJavaLongHashNode cast,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         /* This combines the logic from abstract.c:PyObject_Hash and typeobject.c:slot_tp_hash */
         Object type = getClassNode.execute(inliningTarget, object);
         // We have to do the lookup and bind steps separately to avoid binding possible None
@@ -175,16 +175,16 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
             try {
                 hashDescr = bindDescriptorNode.execute(frame, inliningTarget, hashDescr, object, type);
             } catch (PException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
             }
             Object result = callHash.executeObject(frame, hashDescr, object);
             try {
                 return avoidNegative1(cast.execute(inliningTarget, result));
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
             }
         }
-        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
+        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
     }
 
     public static PyObjectHashNode getUncached() {

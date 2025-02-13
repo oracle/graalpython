@@ -166,11 +166,11 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtype,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PyLongCopy copy) {
             if (!isSubtype.execute(getClassNode.execute(inliningTarget, result), PythonBuiltinClassType.PInt)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INT, J___INT__, result);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INT, J___INT__, result);
             }
             warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                             ErrorMessages.WARN_P_RETURNED_NON_P, original, J___INT__, "int", result, "int");
@@ -199,7 +199,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached PyLongFromUnicodeObject fromUnicodeObject,
                         @Cached LongFromBufferNode fromBufferNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object truncMethod = lookup.execute(type, T___TRUNC__);
             if (truncMethod != PNone.NO_VALUE) {
@@ -214,7 +214,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                     return longCopy.execute(inliningTarget, result);
                 }
                 if (!indexCheckNode.execute(inliningTarget, result)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, J___TRUNC__, result);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, J___TRUNC__, result);
                 }
                 return indexNode.execute(frame, inliningTarget, result);
             }
@@ -228,7 +228,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                 return result;
             }
 
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", object);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", object);
         }
     }
 
