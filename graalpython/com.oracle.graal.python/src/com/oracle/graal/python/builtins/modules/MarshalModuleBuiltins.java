@@ -1300,7 +1300,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(code.kwOnlyArgCount);
             writeInt(code.positionalOnlyArgCount);
             writeInt(code.stacksize);
-            writeBytes(code.code);
+            writeBytes(code.getBytecodeForSerialization());
             writeBytes(code.srcOffsetTable);
             writeInt(code.flags);
             writeStringArray(code.names);

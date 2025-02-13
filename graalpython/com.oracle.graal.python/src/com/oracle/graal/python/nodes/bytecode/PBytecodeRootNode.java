@@ -676,7 +676,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.internal = source.isInternal();
         this.parserErrorCallback = parserErrorCallback;
         this.signature = sign;
-        this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
+        this.bytecode = co.code;
         this.adoptedNodes = new Node[co.code.length];
         this.conditionProfiles = new int[co.conditionProfileCount];
         this.outputCanQuicken = co.outputCanQuicken;

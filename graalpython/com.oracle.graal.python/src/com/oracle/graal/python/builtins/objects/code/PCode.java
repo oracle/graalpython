@@ -696,12 +696,8 @@ public final class PCode extends PythonBuiltinObject {
         } else if (rootNode instanceof PBytecodeGeneratorFunctionRootNode r) {
             rootNode = r.getBytecodeRootNode();
         }
-        if (rootNode instanceof PBytecodeRootNode) {
-            CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
-            if (quickened) {
-                return code.toString(((PBytecodeRootNode) rootNode).getBytecode());
-            }
-            return code.toString();
+        if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
+            return bytecodeRootNode.getCodeUnit().toString(quickened);
         }
         return J_EMPTY_STRING;
     }
