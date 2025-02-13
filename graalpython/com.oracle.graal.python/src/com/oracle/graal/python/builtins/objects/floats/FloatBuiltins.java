@@ -40,10 +40,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateForFloat;
@@ -77,10 +75,10 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolB
 import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -343,8 +341,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
-    @Builtin(name = J___POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Slot(value = SlotKind.nb_power, isComplex = true)
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonTernaryBuiltinNode {
         protected abstract double executeDouble(VirtualFrame frame, double left, double right, PNone none) throws UnexpectedResultException;
@@ -398,7 +395,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @InliningCutoff
         static double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
+                        @Shared @Cached PyNumberPowerNode powerNode,
                         @Shared @Cached PRaiseNode.Lazy raiseNode) throws UnexpectedResultException {
             if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
                 return 1.0;
@@ -407,7 +404,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Negative numbers raised to fractional powers become complex.
                 PythonObjectFactory factory = PythonObjectFactory.getUncached();
-                throw new UnexpectedResultException(callPow.execute(frame, factory.createComplex(left, 0), factory.createComplex(right, 0), none));
+                throw new UnexpectedResultException(powerNode.execute(frame, inliningTarget, factory.createComplex(left, 0), factory.createComplex(right, 0), none));
             }
             return Math.pow(left, right);
         }
@@ -416,7 +413,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @InliningCutoff
         static Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
                         @Bind("this") Node inliningTarget,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
+                        @Shared @Cached PyNumberPowerNode powerNode,
                         @Exclusive @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (doSpecialCases(inliningTarget, left, right, raiseNode) == 1) {
@@ -425,7 +422,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
                 // Negative numbers raised to fractional powers become complex.
                 PythonObjectFactory pof = factory.get(inliningTarget);
-                return callPow.execute(frame, pof.createComplex(left, 0), pof.createComplex(right, 0), none);
+                return powerNode.execute(frame, inliningTarget, pof.createComplex(left, 0), pof.createComplex(right, 0), none);
             }
             return Math.pow(left, right);
         }
@@ -435,7 +432,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         static Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
+                        @Shared @Cached PyNumberPowerNode powerNode,
                         @Exclusive @Cached PythonObjectFactory.Lazy factory,
                         @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
             if (!(mod instanceof PNone)) {
@@ -449,7 +446,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, callPow, factory, raiseNode);
+            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, inliningTarget, powerNode, factory, raiseNode);
         }
 
         public static PowNode create() {

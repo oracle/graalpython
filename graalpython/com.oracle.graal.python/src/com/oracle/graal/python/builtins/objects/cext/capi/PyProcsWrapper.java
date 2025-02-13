@@ -51,19 +51,21 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.CallSlotBinaryOpNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallManagedSlotGetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallManagedSlotSetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
@@ -300,63 +302,63 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
 
     @ExportLibrary(InteropLibrary.class)
     public static final class BinaryOpSlotFuncWrapper extends TpSlotWrapper {
-        private final BinaryOpSlot binaryOp;
+        private final ReversibleSlot binaryOp;
 
-        public BinaryOpSlotFuncWrapper(TpSlotManaged delegate, BinaryOpSlot binaryOp) {
+        public BinaryOpSlotFuncWrapper(TpSlotManaged delegate, ReversibleSlot binaryOp) {
             super(delegate);
             this.binaryOp = binaryOp;
         }
 
         public static BinaryOpSlotFuncWrapper createAdd(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_ADD);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_ADD);
         }
 
         public static BinaryOpSlotFuncWrapper createSubtract(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_SUBTRACT);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_SUBTRACT);
         }
 
         public static BinaryOpSlotFuncWrapper createMultiply(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_MULTIPLY);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_MULTIPLY);
         }
 
         public static BinaryOpSlotFuncWrapper createRemainder(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_REMAINDER);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_REMAINDER);
         }
 
         public static BinaryOpSlotFuncWrapper createLShift(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_LSHIFT);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_LSHIFT);
         }
 
         public static BinaryOpSlotFuncWrapper createRShift(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_RSHIFT);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_RSHIFT);
         }
 
         public static BinaryOpSlotFuncWrapper createAnd(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_AND);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_AND);
         }
 
         public static BinaryOpSlotFuncWrapper createXor(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_XOR);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_XOR);
         }
 
         public static BinaryOpSlotFuncWrapper createOr(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_OR);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_OR);
         }
 
         public static BinaryOpSlotFuncWrapper createFloorDivide(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_FLOOR_DIVIDE);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_FLOOR_DIVIDE);
         }
 
         public static BinaryOpSlotFuncWrapper createTrueDivide(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_TRUE_DIVIDE);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_TRUE_DIVIDE);
         }
 
         public static BinaryOpSlotFuncWrapper createDivMod(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_DIVMOD);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_DIVMOD);
         }
 
         public static BinaryOpSlotFuncWrapper createMatrixMultiply(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, BinaryOpSlot.NB_MATRIX_MULTIPLY);
+            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_MATRIX_MULTIPLY);
         }
 
         @ExportMessage
@@ -745,9 +747,9 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class TernaryFunctionWrapper extends PyProcsWrapper {
+    public static final class CallFunctionWrapper extends PyProcsWrapper {
 
-        public TernaryFunctionWrapper(Object delegate) {
+        public CallFunctionWrapper(Object delegate) {
             super(delegate);
         }
 
@@ -755,7 +757,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         static class Execute {
 
             @Specialization(guards = "arguments.length == 3")
-            static Object call(TernaryFunctionWrapper self, Object[] arguments,
+            static Object call(CallFunctionWrapper self, Object[] arguments,
                             @Bind("this") Node inliningTarget,
                             @Cached ExecutePositionalStarargsNode posStarargsNode,
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
@@ -779,7 +781,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         Object result = callNode.execute(null, self.getDelegate(), pArgs, kwArgsArray);
                         return toNativeNode.execute(result);
                     } catch (Throwable t) {
-                        throw checkThrowableBeforeNative(t, "TernaryFunctionWrapper", self.getDelegate());
+                        throw checkThrowableBeforeNative(t, "CallFunctionWrapper", self.getDelegate());
                     }
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(inliningTarget, e);
@@ -791,9 +793,65 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
             }
 
             @Specialization(guards = "arguments.length != 3")
-            static Object error(@SuppressWarnings("unused") TernaryFunctionWrapper self, Object[] arguments) throws ArityException {
+            static Object error(@SuppressWarnings("unused") CallFunctionWrapper self, Object[] arguments) throws ArityException {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(3, 3, arguments.length);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER,POINTER):POINTER";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class NbPowerWrapper extends TpSlotWrapper {
+
+        public NbPowerWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new NbPowerWrapper(slot);
+        }
+
+        @ExportMessage
+        static Object execute(NbPowerWrapper self, Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetClassNode vGetClassNode,
+                        @Cached GetClassNode wGetClassNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached GetCachedTpSlotsNode wGetSlots,
+                        @Cached TpSlotNbPower.CallSlotNbPowerNode callSlot,
+                        @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                try {
+                    // convert args
+                    Object v = toJavaNode.execute(arguments[0]);
+                    Object w = toJavaNode.execute(arguments[1]);
+                    Object z = toJavaNode.execute(arguments[2]);
+                    Object vType = vGetClassNode.execute(inliningTarget, v);
+                    Object wType = wGetClassNode.execute(inliningTarget, w);
+                    TpSlots wSlots = wGetSlots.execute(inliningTarget, wType);
+                    boolean sameTypes = isSameTypeNode.execute(inliningTarget, vType, wType);
+                    Object result = callSlot.execute(null, inliningTarget, self.getSlot(), v, vType, w, wSlots.nb_power(), wType, z, sameTypes);
+                    return toNativeNode.execute(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "NbPowerWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(gil).getNativeNull();
+            } finally {
+                CApiTiming.exit(self.timing);
+                gil.release(mustRelease);
             }
         }
 

@@ -34,10 +34,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -50,6 +48,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins.ForeignGetattrNode;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberNegativeNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyNumberPositiveNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyNumberRemainderNode;
 import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -570,19 +571,26 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___POW__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_power, isComplex = true)
     @GenerateNodeFactory
-    abstract static class PowNode extends ForeignBinaryNode {
-        PowNode() {
-            super(BinaryArithmetic.Pow.create(), false);
-        }
-    }
+    abstract static class PowNode extends PythonTernaryBuiltinNode {
 
-    @Builtin(name = J___RPOW__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RPowNode extends ForeignBinaryNode {
-        RPowNode() {
-            super(BinaryArithmetic.Pow.create(), true);
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object v, Object w, Object z,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxV,
+                        @Cached UnboxNode unboxW,
+                        @Cached UnboxNode unboxZ,
+                        @Cached PyNumberPowerNode power) {
+            v = unboxV.execute(inliningTarget, v);
+            w = unboxW.execute(inliningTarget, w);
+            if (!(z instanceof PNone)) {
+                z = unboxZ.execute(inliningTarget, z);
+            }
+            if (v == null || w == null || z == null) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            return power.execute(frame, inliningTarget, v, w, z);
         }
     }
 

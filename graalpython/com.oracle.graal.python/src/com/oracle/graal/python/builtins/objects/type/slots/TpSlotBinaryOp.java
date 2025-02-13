@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RDIVMOD__;
@@ -58,6 +59,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RRSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSUB__;
@@ -125,7 +127,7 @@ public class TpSlotBinaryOp {
     private TpSlotBinaryOp() {
     }
 
-    public enum BinaryOpSlot {
+    public enum ReversibleSlot {
         NB_ADD(T___ADD__, T___RADD__),
         NB_SUBTRACT(T___SUB__, T___RSUB__),
         NB_MULTIPLY(T___MUL__, T___RMUL__),
@@ -138,13 +140,14 @@ public class TpSlotBinaryOp {
         NB_FLOOR_DIVIDE(T___FLOORDIV__, T___RFLOORDIV__),
         NB_TRUE_DIVIDE(T___TRUEDIV__, T___RTRUEDIV__),
         NB_DIVMOD(T___DIVMOD__, T___RDIVMOD__),
-        NB_MATRIX_MULTIPLY(T___MATMUL__, T___RMATMUL__);
+        NB_MATRIX_MULTIPLY(T___MATMUL__, T___RMATMUL__),
+        NB_POWER_BINARY(T___POW__, T___RPOW__);
 
-        private static final BinaryOpSlot[] VALUES = values();
+        private static final ReversibleSlot[] VALUES = values();
         private final TruffleString name;
         private final TruffleString rname;
 
-        BinaryOpSlot(TruffleString name, TruffleString rname) {
+        ReversibleSlot(TruffleString name, TruffleString rname) {
             this.name = name;
             this.rname = rname;
         }
@@ -165,11 +168,12 @@ public class TpSlotBinaryOp {
                 case NB_TRUE_DIVIDE -> slots.nb_true_divide();
                 case NB_DIVMOD -> slots.nb_divmod();
                 case NB_MATRIX_MULTIPLY -> slots.nb_matrix_multiply();
+                case NB_POWER_BINARY -> slots.nb_power();
             };
         }
 
-        public static BinaryOpSlot fromCallableNames(TruffleString[] names) {
-            for (BinaryOpSlot op : VALUES) {
+        public static ReversibleSlot fromCallableNames(TruffleString[] names) {
+            for (ReversibleSlot op : VALUES) {
                 if (names[0].equals(op.name) && names[1].equals(op.rname)) {
                     return op;
                 }
@@ -234,24 +238,24 @@ public class TpSlotBinaryOp {
     public abstract static class BinaryOpBuiltinNode extends PythonBinaryBuiltinNode {
     }
 
-    public static final class TpSlotBinaryOpPython extends TpSlotPython {
-        private final BinaryOpSlot op;
+    public static final class TpSlotReversiblePython extends TpSlotPython {
+        private final ReversibleSlot op;
         private final TruffleWeakReference<Object> left;
         private final TruffleWeakReference<Object> right;
         private final TruffleWeakReference<Object> type;
 
-        public TpSlotBinaryOpPython(BinaryOpSlot op, Object setattr, Object delattr, Object type) {
+        public TpSlotReversiblePython(ReversibleSlot op, Object left, Object right, Object type) {
             this.op = op;
-            this.left = asWeakRef(setattr);
-            this.right = asWeakRef(delattr);
+            this.left = asWeakRef(left);
+            this.right = asWeakRef(right);
             this.type = new TruffleWeakReference<>(type);
         }
 
-        public static TpSlotBinaryOpPython create(Object[] callables, TruffleString[] callableNames, Object type) {
+        public static TpSlotReversiblePython create(Object[] callables, TruffleString[] callableNames, Object type) {
             assert callables.length == 2;
-            BinaryOpSlot op = BinaryOpSlot.fromCallableNames(callableNames);
+            ReversibleSlot op = ReversibleSlot.fromCallableNames(callableNames);
             assert op != null : "Unexpected callable names: " + Arrays.toString(callableNames);
-            return new TpSlotBinaryOpPython(op, callables[0], callables[1], type);
+            return new TpSlotReversiblePython(op, callables[0], callables[1], type);
         }
 
         @Override
@@ -259,7 +263,7 @@ public class TpSlotBinaryOp {
             Object newLeft = LookupAttributeInMRONode.Dynamic.getUncached().execute(klass, op.name);
             Object newRight = LookupAttributeInMRONode.Dynamic.getUncached().execute(klass, op.rname);
             if (newLeft != getLeft() || newRight != getRight()) {
-                return new TpSlotBinaryOpPython(op, newLeft, newRight, getType());
+                return new TpSlotReversiblePython(op, newLeft, newRight, getType());
             }
             return this;
         }
@@ -288,27 +292,27 @@ public class TpSlotBinaryOp {
         // This happens in CallBinaryOp1Node (cpython:binary_op1)
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes,
-                        BinaryOpSlot op);
+                        ReversibleSlot op);
 
         @SuppressWarnings("unused")
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, TpSlotBinaryOpBuiltin<?> slot, Object self,
-                        Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, BinaryOpSlot op,
+                        Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
                         @Cached("slot") TpSlotBinaryOpBuiltin<?> cachedSlot,
                         @Cached("cachedSlot.createOpSlotNode()") BinaryOpBuiltinNode slotNode) {
             return slotNode.execute(frame, self, other);
         }
 
         @Specialization
-        static Object callPython(VirtualFrame frame, TpSlotBinaryOpPython slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, BinaryOpSlot op,
-                        @Cached(inline = false) CallBinaryOpPythonSlotNode callPython) {
+        static Object callPython(VirtualFrame frame, TpSlotReversiblePython slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
+                        @Cached(inline = false) CallReversiblePythonSlotNode callPython) {
             return callPython.execute(frame, slot, self, selfType, other, otherSlot, otherType, sameTypes, op);
         }
 
         @SuppressWarnings("unused")
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
-                        Object selfType, Object arg, TpSlot otherSlot, Object otherType, boolean sameTypes, BinaryOpSlot op,
+                        Object selfType, Object arg, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode argToNativeNode,
@@ -344,7 +348,7 @@ public class TpSlotBinaryOp {
         @Specialization(replaces = "callCachedBuiltin")
         @InliningCutoff
         static Object callGenericComplexBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotBinaryOpBuiltin<?> slot,
-                        Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, BinaryOpSlot op,
+                        Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
                         @Cached(inline = false) CallContext callContext,
                         @Cached InlinedConditionProfile isNullFrameProfile,
                         @Cached(inline = false) IndirectCallNode indirectCallNode) {
@@ -357,11 +361,12 @@ public class TpSlotBinaryOp {
 
     @GenerateUncached
     @GenerateInline(false) // intentional explicit "data-class"
-    abstract static class CallBinaryOpPythonSlotNode extends Node {
-        public abstract Object execute(VirtualFrame frame, TpSlot slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, BinaryOpSlot op);
+    abstract static class CallReversiblePythonSlotNode extends Node {
+        public abstract Object execute(VirtualFrame frame, TpSlotReversiblePython slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes,
+                        ReversibleSlot op);
 
         @Specialization
-        static Object callPython(VirtualFrame frame, TpSlotBinaryOpPython slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, BinaryOpSlot op,
+        static Object callPython(VirtualFrame frame, TpSlotReversiblePython slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
                         @Bind("this") Node inliningTarget,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached GetCachedTpSlotsNode getSelfSlotsNode,
@@ -371,11 +376,11 @@ public class TpSlotBinaryOp {
                         @Cached InlinedConditionProfile dispatchR2Profile,
                         @Cached BinaryPythonSlotDispatcherNode dispatcherNode) {
             // Implements the logic of SLOT1BINFULL macro from CPython
-            TpSlotBinaryOpPython otherSlotValue = null;
+            TpSlotReversiblePython otherSlotValue = null;
             boolean doOther = false;
             if (!sameTypes) {
-                if (isBinOpWrapper(otherSlot, op)) {
-                    otherSlotValue = (TpSlotBinaryOpPython) otherSlot;
+                if (isSameReversibleWrapper(otherSlot, op)) {
+                    otherSlotValue = (TpSlotReversiblePython) otherSlot;
                     doOther = true;
                 }
             }
@@ -383,7 +388,7 @@ public class TpSlotBinaryOp {
             TpSlots selfSlots = getSelfSlotsNode.execute(inliningTarget, selfType);
             TpSlot selfSlotValue = op.getSlotValue(selfSlots);
             // Note: the slot may be other's slot, not self's slot, so this test may not pass
-            if (isBinOpWrapper(selfSlotValue, op)) {
+            if (isSameReversibleWrapper(selfSlotValue, op)) {
                 if (doOther && isSubtypeNode.execute(frame, otherType, selfType)) {
                     if (methodIsOverloaded(frame, inliningTarget, slot, otherSlotValue, neNode)) {
                         Object result = dispatchIfAvailable(frame, inliningTarget, dispatchR1Profile, dispatcherNode, other, self, otherSlotValue.getRight(), otherSlotValue.getType());
@@ -415,14 +420,14 @@ public class TpSlotBinaryOp {
             }
         }
 
-        static boolean isBinOpWrapper(TpSlot s, BinaryOpSlot op) {
+        static boolean isSameReversibleWrapper(TpSlot s, ReversibleSlot op) {
             // Equivalent to CPython test: Py_TYPE(other)->tp_as_number->SLOTNAME == TESTFUNC
             // We have multiple wrappers, because we cache state (MRO lookups) in the wrapper too
-            return s instanceof TpSlotBinaryOpPython p && p.op == op;
+            return s instanceof TpSlotReversiblePython p && p.op == op;
         }
 
         static boolean methodIsOverloaded(VirtualFrame frame, Node inliningTarget,
-                        TpSlotBinaryOpPython leftSlot, TpSlotBinaryOpPython rightSlot, RichCompareCallablesNotEqual neNode) {
+                        TpSlotReversiblePython leftSlot, TpSlotReversiblePython rightSlot, RichCompareCallablesNotEqual neNode) {
             // CPython uses _PyObject_LookupAttr(Py_TYPE(x), name) as opposed to
             // _PyType_Lookup(Py_TYPE(x), name). Moreover, we cache the MRO lookup results in the
             // slot, CPython doesn't, presumably because the slot cannot (easily) hold the extra

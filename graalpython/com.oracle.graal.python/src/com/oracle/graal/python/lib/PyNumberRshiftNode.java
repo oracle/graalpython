@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
@@ -99,7 +99,7 @@ public abstract class PyNumberRshiftNode extends BinaryOpNode {
         TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_rshift();
         TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_rshift();
         if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, BinaryOpSlot.NB_RSHIFT);
+            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_RSHIFT);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }

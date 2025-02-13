@@ -163,7 +163,6 @@ public abstract class ToNativeTypeNode {
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_subtract, getSlot(obj, SlotMethodDef.NB_INPLACE_SUBTRACT));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_true_divide, getSlot(obj, SlotMethodDef.NB_INPLACE_TRUE_DIVIDE));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_xor, getSlot(obj, SlotMethodDef.NB_INPLACE_XOR));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_power, getSlot(obj, SlotMethodDef.NB_POWER));
         return mem;
     }
 
