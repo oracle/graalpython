@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.lib.CallBinaryOpNode.raiseNotSupported;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -56,6 +58,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,28 +67,13 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
-@GenerateInline(inlineByDefault = true)
-public abstract class PyNumberMultiplyNode extends BinaryOpNode {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
-
-    @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right);
-    }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
-        return execute(frame, this, v, w);
-    }
-
-    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
+@GenerateCached(false)
+abstract class PyNumberMultiplyBaseNode extends BinaryOpNode {
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
      * in IntBuiltins, FloatBuiltins, ListBuiltins, ...
      */
-
     @Specialization(rewriteOn = ArithmeticException.class)
     public static int doII(int x, int y) throws ArithmeticException {
         return Math.multiplyExact(x, y);
@@ -115,6 +103,24 @@ public abstract class PyNumberMultiplyNode extends BinaryOpNode {
     public static double doDD(double left, double right) {
         return left * right;
     }
+}
+
+@GenerateInline(inlineByDefault = true)
+public abstract class PyNumberMultiplyNode extends PyNumberMultiplyBaseNode {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
+
+    @Override
+    public final Object execute(VirtualFrame frame, Object left, Object right) {
+        return executeCached(frame, left, right);
+    }
+
+    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
+        return execute(frame, this, v, w);
+    }
+
+    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
+
+    public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
 
     @Fallback
     static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w,
@@ -134,14 +140,10 @@ public abstract class PyNumberMultiplyNode extends BinaryOpNode {
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
         TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
-        TpSlot slotV = slotsV.nb_multiply();
-        TpSlot slotW = slotsW.nb_multiply();
-        if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_MULTIPLY);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                hasNbMulResult.enter(inliningTarget);
-                return result;
-            }
+        Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, ReversibleSlot.NB_MULTIPLY);
+        if (result != PNotImplemented.NOT_IMPLEMENTED) {
+            hasNbMulResult.enter(inliningTarget);
+            return result;
         }
         if (slotsV.sq_repeat() != null) {
             vHasSqRepeat.enter(inliningTarget);
@@ -152,12 +154,7 @@ public abstract class PyNumberMultiplyNode extends BinaryOpNode {
             return sequenceRepeat(frame, inliningTarget, slotsW.sq_repeat(), w, v,
                             indexCheckNode, asSizeNode, callSlotNode, raiseNode);
         }
-        return raiseNotSupported(inliningTarget, v, w, raiseNode);
-    }
-
-    @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
-        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "+", v, w);
+        return raiseNotSupported(inliningTarget, v, w, "*", raiseNode);
     }
 
     private static Object sequenceRepeat(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object seq, Object n,

@@ -41,69 +41,53 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(inlineByDefault = true)
+/**
+ * Equivalent of cpython://Objects/abstract.c#binary_op.
+ */
+@GenerateInline
+@GenerateCached(false)
 @GenerateUncached
-public abstract class PyNumberPowerNode extends BinaryOpNode {
-
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z);
-
-    @Override
-    public final Object execute(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right, PNone.NONE);
-    }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w, Object z) {
-        return execute(frame, this, v, w, z);
-    }
+public abstract class CallBinaryOpNode extends Node {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w, ReversibleSlot slot, String opName);
 
     @Specialization
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z,
+    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w, ReversibleSlot slot, String opName,
                     @Cached GetClassNode getVClass,
-                    @Cached GetClassNode getWClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,
-                    @Cached CallTernaryOpNode callTernaryOpNode,
+                    @Cached GetClassNode getWClass,
+                    @Cached CallBinaryOp1Node callBinaryOp1Node,
                     @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
-        TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_power();
-        TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_power();
-        Object result = callTernaryOpNode.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, z);
+        TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
+        TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
+        Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, slot);
         if (result != PNotImplemented.NOT_IMPLEMENTED) {
             return result;
         }
-        return raiseNotSupported(inliningTarget, v, w, z, raiseNode);
+        throw raiseNotSupported(inliningTarget, v, w, opName, raiseNode);
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Object z, PRaiseNode raiseNode) {
-        if (z == PNone.NONE) {
-            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "** or pow()", v, w);
-        } else {
-            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, "** or pow()", v, w, z);
-        }
-    }
-
-    @NeverDefault
-    public static PyNumberPowerNode create() {
-        return PyNumberPowerNodeGen.create();
+    static PException raiseNotSupported(Node inliningTarget, Object v, Object w, String opName, PRaiseNode raiseNode) {
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, opName, v, w);
     }
 }

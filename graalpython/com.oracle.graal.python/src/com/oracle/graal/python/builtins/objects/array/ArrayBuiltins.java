@@ -405,7 +405,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 Object leftValue = getLeft.execute(inliningTarget, left, i);
                 Object rightValue = getRight.execute(inliningTarget, right, i);
                 if (!eqNode.compare(frame, inliningTarget, leftValue, rightValue)) {
-                    return coerceToBooleanNode.execute(frame, compareNode.executeObject(frame, leftValue, rightValue));
+                    return coerceToBooleanNode.execute(frame, compareNode.execute(frame, leftValue, rightValue));
                 }
             }
             return op.cmpResultToBool(left.getLength() - right.getLength());
@@ -422,7 +422,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
                 double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
-                    return coerceToBooleanNode.execute(frame, compareNode.executeObject(frame, leftValue, rightValue));
+                    return coerceToBooleanNode.execute(frame, compareNode.execute(frame, leftValue, rightValue));
                 }
             }
             return op.cmpResultToBool(left.getLength() - right.getLength());

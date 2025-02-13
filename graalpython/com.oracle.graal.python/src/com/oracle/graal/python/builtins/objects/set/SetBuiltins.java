@@ -26,17 +26,15 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -61,6 +59,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -100,6 +100,8 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
 public final class SetBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = SetBuiltinsSlotsGen.SLOTS;
 
     @Override
     public void initialize(Python3Core core) {
@@ -181,9 +183,9 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IOR__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_inplace_or, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class IOrNode extends PythonBinaryBuiltinNode {
+    public abstract static class IOrNode extends BinaryOpBuiltinNode {
         @Specialization
         Object doSet(VirtualFrame frame, PSet self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
@@ -369,9 +371,9 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IAND__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_inplace_and, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class IAndNode extends PythonBinaryBuiltinNode {
+    public abstract static class IAndNode extends BinaryOpBuiltinNode {
 
         @Specialization
         static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right,
@@ -470,9 +472,9 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IXOR__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_inplace_xor, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class IXorNode extends PythonBinaryBuiltinNode {
+    public abstract static class IXorNode extends BinaryOpBuiltinNode {
 
         @Specialization
         static Object doSet(VirtualFrame frame, PSet self, PBaseSet other,
@@ -556,9 +558,9 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ISUB__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_inplace_subtract, isComplex = true)
     @GenerateNodeFactory
-    abstract static class ISubNode extends PythonBinaryBuiltinNode {
+    abstract static class ISubNode extends BinaryOpBuiltinNode {
         @Specialization
         static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right,
                         @Bind("this") Node inliningTarget,

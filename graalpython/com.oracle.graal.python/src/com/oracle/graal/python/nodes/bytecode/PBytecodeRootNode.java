@@ -109,9 +109,32 @@ import com.oracle.graal.python.compiler.OpCodesConstants;
 import com.oracle.graal.python.compiler.QuickeningTypes;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.compiler.UnaryOpsConstants;
+import com.oracle.graal.python.lib.PyNumberAddNode;
+import com.oracle.graal.python.lib.PyNumberAndNode;
+import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInplaceAndNode;
+import com.oracle.graal.python.lib.PyNumberInplaceFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInplaceLshiftNode;
+import com.oracle.graal.python.lib.PyNumberInplaceMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInplaceOrNode;
+import com.oracle.graal.python.lib.PyNumberInplaceRemainderNode;
+import com.oracle.graal.python.lib.PyNumberInplaceRshiftNode;
+import com.oracle.graal.python.lib.PyNumberInplaceSubtractNode;
+import com.oracle.graal.python.lib.PyNumberInplaceTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberInplaceXorNode;
 import com.oracle.graal.python.lib.PyNumberInvertNode;
+import com.oracle.graal.python.lib.PyNumberLshiftNode;
+import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberNegativeNode;
+import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyNumberPositiveNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
+import com.oracle.graal.python.lib.PyNumberRemainderNode;
+import com.oracle.graal.python.lib.PyNumberRshiftNode;
+import com.oracle.graal.python.lib.PyNumberSubtractNode;
+import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
 import com.oracle.graal.python.lib.PyObjectDelItem;
@@ -167,7 +190,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNodeGen;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
@@ -413,57 +435,57 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final IntNodeFunction<Node> BINARY_OP_FACTORY = (int op) -> {
         switch (op) {
             case BinaryOpsConstants.ADD:
-                return BinaryArithmetic.Add.create();
+                return PyNumberAddNode.create();
             case BinaryOpsConstants.SUB:
-                return BinaryArithmetic.Sub.create();
+                return PyNumberSubtractNode.create();
             case BinaryOpsConstants.MUL:
-                return BinaryArithmetic.Mul.create();
+                return PyNumberMultiplyNode.create();
             case BinaryOpsConstants.TRUEDIV:
-                return BinaryArithmetic.TrueDiv.create();
+                return PyNumberTrueDivideNode.create();
             case BinaryOpsConstants.FLOORDIV:
-                return BinaryArithmetic.FloorDiv.create();
+                return PyNumberFloorDivideNode.create();
             case BinaryOpsConstants.MOD:
-                return BinaryArithmetic.Mod.create();
+                return PyNumberRemainderNode.create();
             case BinaryOpsConstants.LSHIFT:
-                return BinaryArithmetic.LShift.create();
+                return PyNumberLshiftNode.create();
             case BinaryOpsConstants.RSHIFT:
-                return BinaryArithmetic.RShift.create();
+                return PyNumberRshiftNode.create();
             case BinaryOpsConstants.AND:
-                return BinaryArithmetic.And.create();
+                return PyNumberAndNode.create();
             case BinaryOpsConstants.OR:
-                return BinaryArithmetic.Or.create();
+                return PyNumberOrNode.create();
             case BinaryOpsConstants.XOR:
-                return BinaryArithmetic.Xor.create();
+                return PyNumberXorNode.create();
             case BinaryOpsConstants.POW:
-                return BinaryArithmetic.Pow.create();
+                return PyNumberPowerNode.create();
             case BinaryOpsConstants.MATMUL:
-                return BinaryArithmetic.MatMul.create();
+                return PyNumberMatrixMultiplyNode.create();
             case BinaryOpsConstants.INPLACE_ADD:
                 return InplaceArithmetic.IAdd.create();
             case BinaryOpsConstants.INPLACE_SUB:
-                return InplaceArithmetic.ISub.create();
+                return PyNumberInplaceSubtractNode.create();
             case BinaryOpsConstants.INPLACE_MUL:
                 return InplaceArithmetic.IMul.create();
             case BinaryOpsConstants.INPLACE_TRUEDIV:
-                return InplaceArithmetic.ITrueDiv.create();
+                return PyNumberInplaceTrueDivideNode.create();
             case BinaryOpsConstants.INPLACE_FLOORDIV:
-                return InplaceArithmetic.IFloorDiv.create();
+                return PyNumberInplaceFloorDivideNode.create();
             case BinaryOpsConstants.INPLACE_MOD:
-                return InplaceArithmetic.IMod.create();
+                return PyNumberInplaceRemainderNode.create();
             case BinaryOpsConstants.INPLACE_LSHIFT:
-                return InplaceArithmetic.ILShift.create();
+                return PyNumberInplaceLshiftNode.create();
             case BinaryOpsConstants.INPLACE_RSHIFT:
-                return InplaceArithmetic.IRShift.create();
+                return PyNumberInplaceRshiftNode.create();
             case BinaryOpsConstants.INPLACE_AND:
-                return InplaceArithmetic.IAnd.create();
+                return PyNumberInplaceAndNode.create();
             case BinaryOpsConstants.INPLACE_OR:
-                return InplaceArithmetic.IOr.create();
+                return PyNumberInplaceOrNode.create();
             case BinaryOpsConstants.INPLACE_XOR:
-                return InplaceArithmetic.IXor.create();
+                return PyNumberInplaceXorNode.create();
             case BinaryOpsConstants.INPLACE_POW:
                 return InplaceArithmetic.IPow.create();
             case BinaryOpsConstants.INPLACE_MATMUL:
-                return InplaceArithmetic.IMatMul.create();
+                return PyNumberInplaceMatrixMultiplyNode.create();
             case BinaryOpsConstants.EQ:
                 return BinaryComparisonNode.EqNode.create();
             case BinaryOpsConstants.NE:
@@ -3849,7 +3871,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             left = virtualFrame.getValue(stackTop - 1);
         }
         virtualFrame.setObject(stackTop, null);
-        Object result = opNode.executeObject(virtualFrame, left, right);
+        Object result = opNode.execute(virtualFrame, left, right);
         virtualFrame.setObject(stackTop - 1, result);
     }
 

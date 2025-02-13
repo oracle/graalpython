@@ -332,7 +332,7 @@ public final class PythonCextAbstractBuiltins {
         static Object doIntLikePrimitiveWrapper(Object left, Object right, @SuppressWarnings("unused") int op,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
                         @Cached("createCallNode(op)") BinaryOpNode callNode) {
-            return callNode.executeObject(null, left, right);
+            return callNode.execute(null, left, right);
         }
 
         /**
@@ -541,7 +541,7 @@ public final class PythonCextAbstractBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode,
-                        @Cached("createMul()") PyNumberMultiplyNode mulNode,
+                        @Cached PyNumberMultiplyNode mulNode,
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode) {
             Object imulCallable = lookupNode.execute(null, inliningTarget, obj, T___IMUL__);
             if (imulCallable != PNone.NO_VALUE) {

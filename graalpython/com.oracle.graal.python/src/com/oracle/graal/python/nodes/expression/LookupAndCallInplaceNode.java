@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -104,10 +104,6 @@ public abstract class LookupAndCallInplaceNode extends PNodeWithContext implemen
     }
 
     @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return execute(frame, left, right);
-    }
-
     public final Object execute(VirtualFrame frame, Object left, Object right) {
         return executeTernary(frame, left, right, PNone.NO_VALUE);
     }
@@ -142,7 +138,7 @@ public abstract class LookupAndCallInplaceNode extends PNodeWithContext implemen
         // try non-inplace variant
         boolean isBinary = PGuards.isPNone(z);
         if (isBinary) {
-            result = ensureLookupAndCallBinaryNode().executeObject(frame, left, right);
+            result = ensureLookupAndCallBinaryNode().execute(frame, left, right);
         } else {
             result = ensureLookupAndCallTernaryNode().execute(frame, left, right, z);
         }

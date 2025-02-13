@@ -929,10 +929,9 @@ def test_nb_slot_calls():
     obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj /= 2
     assert obj.delegate.delegate == 1.5
-    # TODO fix on graalpy
-    # obj = NativeNbSlotProxy(PureSlotProxy(ObjWithMatmul()))
-    # obj @= 1
-    # assert obj.delegate.delegate == '@'
+    obj = NativeNbSlotProxy(PureSlotProxy(ObjWithMatmul()))
+    obj @= 1
+    assert obj.delegate.delegate == '@'
 
 
 def test_sq_slot_calls():

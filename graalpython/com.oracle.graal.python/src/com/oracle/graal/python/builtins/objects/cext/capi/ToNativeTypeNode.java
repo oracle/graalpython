@@ -152,18 +152,8 @@ public abstract class ToNativeTypeNode {
         writeGroupSlots(CFields.PyTypeObject__tp_as_number, slots, writePointerNode, mem, nullValue);
 
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_add, getSlot(obj, SlotMethodDef.NB_INPLACE_ADD));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_and, getSlot(obj, SlotMethodDef.NB_INPLACE_AND));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_floor_divide, getSlot(obj, SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_lshift, getSlot(obj, SlotMethodDef.NB_INPLACE_LSHIFT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_matrix_multiply, nullValue);
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_multiply, getSlot(obj, SlotMethodDef.NB_INPLACE_MULTIPLY));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_or, getSlot(obj, SlotMethodDef.NB_INPLACE_OR));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_power, getSlot(obj, SlotMethodDef.NB_INPLACE_POWER));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_remainder, getSlot(obj, SlotMethodDef.NB_INPLACE_REMAINDER));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_rshift, getSlot(obj, SlotMethodDef.NB_INPLACE_RSHIFT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_subtract, getSlot(obj, SlotMethodDef.NB_INPLACE_SUBTRACT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_true_divide, getSlot(obj, SlotMethodDef.NB_INPLACE_TRUE_DIVIDE));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_xor, getSlot(obj, SlotMethodDef.NB_INPLACE_XOR));
         return mem;
     }
 

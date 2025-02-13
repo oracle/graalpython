@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,7 +87,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     protected abstract boolean executeInternal(boolean left, Object right);
 
     @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
+    public final Object execute(VirtualFrame frame, Object left, Object right) {
         return execute(left, right);
     }
 

@@ -40,48 +40,44 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
+/**
+ * Equivalent of cpython://Objects/abstract.c#binary_iop1.
+ */
+@GenerateInline
 @GenerateCached(false)
-abstract class PyNumberAndBaseNode extends BinaryOpNode {
-
-    @Specialization
-    public static int op(int left, int right) {
-        return left & right;
-    }
-
-    @Specialization
-    public static long op(long left, long right) {
-        return left & right;
-    }
-}
-
-@GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberAndNode extends PyNumberAndBaseNode {
+public abstract class CallBinaryIOp1Node extends PNodeWithContext {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlots slotsV,
+                    Object w, Object classW, TpSlots slotsW, InplaceSlot op);
 
-    @Fallback
-    @InliningCutoff
-    public static Object doIt(VirtualFrame frame, Object v, Object w,
-                    @Bind Node inliningTarget,
-                    @Cached CallBinaryOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, ReversibleSlot.NB_AND, "&");
-    }
-
-    @NeverDefault
-    public static PyNumberAndNode create() {
-        return PyNumberAndNodeGen.create();
+    @Specialization
+    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlots slotsV, Object w, Object classW, TpSlots slotsW, InplaceSlot iop,
+                    @Cached CallSlotBinaryFuncNode callSlotNode,
+                    @Cached InlinedBranchProfile resultProfile,
+                    @Cached CallBinaryOp1Node callBinaryOp1Node) {
+        TpSlot slot = iop.getSlotValue(slotsV);
+        if (slot != null) {
+            Object result = callSlotNode.execute(frame, inliningTarget, slot, v, w);
+            if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                resultProfile.enter(inliningTarget);
+                return result;
+            }
+        }
+        return callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, iop.getReversibleSlot());
     }
 }

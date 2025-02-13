@@ -302,7 +302,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
             Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
             Object result = newargs[0];
             for (int i = 1; i < newargs.length; i++) {
-                result = orNode.executeObject(frame, result, newargs[i]);
+                result = orNode.execute(frame, result, newargs[i]);
             }
             return result;
         }

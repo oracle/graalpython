@@ -40,48 +40,28 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateCached(false)
-abstract class PyNumberAndBaseNode extends BinaryOpNode {
-
-    @Specialization
-    public static int op(int left, int right) {
-        return left & right;
-    }
-
-    @Specialization
-    public static long op(long left, long right) {
-        return left & right;
-    }
-}
-
 @GenerateInline(false)
-@GenerateUncached
-public abstract class PyNumberAndNode extends PyNumberAndBaseNode {
-
+public abstract class PyNumberInplaceLshiftNode extends PyNumberLshiftBaseNode {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
-                    @Cached CallBinaryOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, ReversibleSlot.NB_AND, "&");
+                    @Cached CallBinaryIOpNode callBinaryOpNode) {
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_LSHIFT, "<<=");
     }
 
     @NeverDefault
-    public static PyNumberAndNode create() {
-        return PyNumberAndNodeGen.create();
+    public static PyNumberInplaceLshiftNode create() {
+        return PyNumberInplaceLshiftNodeGen.create();
     }
 }

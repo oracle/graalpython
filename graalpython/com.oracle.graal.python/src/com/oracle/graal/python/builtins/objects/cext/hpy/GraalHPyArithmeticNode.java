@@ -141,7 +141,7 @@ public abstract class GraalHPyArithmeticNode {
 
         @Override
         public Object execute(Object arg0, Object arg1) {
-            return opNode.executeObject(null, arg0, arg1);
+            return opNode.execute(null, arg0, arg1);
         }
     }
 

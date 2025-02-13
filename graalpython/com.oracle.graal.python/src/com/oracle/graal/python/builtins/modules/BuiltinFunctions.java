@@ -1619,7 +1619,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             isTrue = castToBooleanNode.execute(frame, e.getResult());
                         }
                     } else {
-                        isTrue = castToBooleanNode.execute(frame, compare.executeObject(frame, nextKey, currentKey));
+                        isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
                     }
                     if (isTrue) {
                         currentKey = nextKey;
@@ -1663,7 +1663,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     isTrue = castToBooleanNode.execute(frame, e.getResult());
                 }
             } else {
-                isTrue = castToBooleanNode.execute(frame, compare.executeObject(frame, nextKey, currentKey));
+                isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
             }
             if (isTrue) {
                 currentKey = nextKey;
@@ -1683,7 +1683,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             isTrue = castToBooleanNode.execute(frame, e.getResult());
                         }
                     } else {
-                        isTrue = castToBooleanNode.execute(frame, compare.executeObject(frame, nextKey, currentKey));
+                        isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
                     }
                     if (isTrue) {
                         currentKey = nextKey;

@@ -40,40 +40,26 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(false)
-public abstract class PyNumberSubtractNode extends BinaryOpNode {
-    @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return execute(frame, left, right);
-    }
-
-    public abstract Object execute(VirtualFrame frame, Object v, Object w);
+@GenerateCached(false)
+abstract class PyNumberSubtractBaseNode extends BinaryOpNode {
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
      * in IntBuiltins, FloatBuiltins, ListBuiltins, ...
      */
-
     @Specialization(rewriteOn = ArithmeticException.class)
     public static int doII(int x, int y) throws ArithmeticException {
         return Math.subtractExact(x, y);
@@ -113,32 +99,17 @@ public abstract class PyNumberSubtractNode extends BinaryOpNode {
     public static double doID(int left, double right) {
         return left - right;
     }
+}
+
+@GenerateInline(false)
+public abstract class PyNumberSubtractNode extends PyNumberSubtractBaseNode {
 
     @Fallback
+    @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
-                    @Cached GetClassNode getVClass,
-                    @Cached GetCachedTpSlotsNode getVSlots,
-                    @Cached GetCachedTpSlotsNode getWSlots,
-                    @Cached GetClassNode getWClass,
-                    @Cached CallBinaryOp1Node callBinaryOp1Node,
-                    @Cached PRaiseNode raiseNode) {
-        Object classV = getVClass.execute(inliningTarget, v);
-        Object classW = getWClass.execute(inliningTarget, w);
-        TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_subtract();
-        TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_subtract();
-        if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_SUBTRACT);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
-        }
-        return raiseNotSupported(inliningTarget, v, w, raiseNode);
-    }
-
-    @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
-        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "-", v, w);
+                    @Cached CallBinaryOpNode callBinaryOpNode) {
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, ReversibleSlot.NB_SUBTRACT, "-");
     }
 
     @NeverDefault

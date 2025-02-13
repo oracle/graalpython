@@ -1158,7 +1158,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             profile.profileCounted(args.length);
             for (int i = 1; profile.inject(i < args.length); i++) {
                 Object b = indexNode.execute(frame, inliningTarget, args[i]);
-                if ((boolean) eqNode.executeObject(frame, a, 0)) {
+                if ((boolean) eqNode.execute(frame, a, 0)) {
                     continue;
                 }
                 Object g = gcdNode.execute(frame, a, b);
@@ -2488,7 +2488,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(inliningTarget, errorProfile);
                     return value;
                 }
-                value = mul.executeObject(frame, value, nextValue);
+                value = mul.execute(frame, value, nextValue);
             }
         }
     }

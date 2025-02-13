@@ -134,7 +134,7 @@ public enum BinaryArithmetic {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBinaryNode = insert(binaryOperator.create());
             }
-            return callBinaryNode.executeObject(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
+            return callBinaryNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
         }
     }
 

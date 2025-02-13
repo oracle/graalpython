@@ -116,7 +116,7 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
         boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             final Object cmpResult = ensureCallNode().execute(frame, self.getCmp(), self.getObject(), other.getObject());
-            return isTrueNode.execute(frame, ensureComparisonNode().executeObject(frame, cmpResult, 0));
+            return isTrueNode.execute(frame, ensureComparisonNode().execute(frame, cmpResult, 0));
         }
 
         @Fallback
