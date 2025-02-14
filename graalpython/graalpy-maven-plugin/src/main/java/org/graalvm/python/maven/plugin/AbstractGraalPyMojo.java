@@ -85,20 +85,12 @@ public abstract class AbstractGraalPyMojo extends AbstractMojo {
 
     protected static final String MISSING_LOCK_FILE_WARNING = """
         
-        Additional python dependencies were installed besides the packages declared in graalpy-maven-plugin configuration.
+        The list of installed Python packages does not match the packages specified in the graalpy-maven-plugin configuration.
+        This could indicate that either extra dependencies were installed or some packages were installed with a more specific versions than declared.  
         
-        It is highly recommended to lock python dependencies by running the maven goal 'org.graalvm.python:graalpy-maven-plugin:lock-packages'.
+        In such cases, it is strongly recommended to lock the Python dependencies by executing the Maven goal 'org.graalvm.python:graalpy-maven-plugin:lock-packages'.
         
-        For more information, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
-        
-        """;
-
-    protected static final String WRONG_PACKAGE_VERSION_FORMAT_ERROR = """        
-        Some python packages in graalpy-maven-plugin configuration have no exact version declared: %s
-        
-        When using the graalpy-maven-plugin together with a lock file, it is necessary to declare python packages in format [package_name]==[version].
-        
-        For more information, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
+        For more details on managing Python dependencies, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools#Python-Dependency-Management
         
         """;
 

@@ -48,8 +48,7 @@ import unittest
 from tests.standalone import util
 from tests.standalone.util import TemporaryTestDirectory, Logger
 
-MISSING_FILE_WARNING = "Some python dependencies were installed in addition to packages declared in graalpy-maven-plugin configuration"
-WRONG_PACKAGE_VERSION_FORMAT = "Some python packages in graalpy-maven-plugin configuration have no exact version declared"
+MISSING_FILE_WARNING = "The list of installed Python packages does not match the packages specified in the graalpy-maven-plugin configuration."
 PACKAGES_CHANGED_ERROR = "but packages in graalpy-maven-plugin configuration are different then previously used to generate the lock file"
 VENV_UPTODATE = "Virtual environment is up to date with lock file, skipping install"
 
@@ -209,16 +208,16 @@ class MavenPluginTest(util.BuildToolTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("pip install", out)
             util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=True)
             assert not os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
 
-            # freeze - fails due to no version
+            # freeze without version
             cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:lock-packages", "-DgraalPyLockFile=test-graalpy.lock"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("BUILD SUCCESS", out, contains=False)
-            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)            
-            util.check_ouput(WRONG_PACKAGE_VERSION_FORMAT, out)
-            assert not os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+            util.check_ouput("BUILD SUCCESS", out, contains=True)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+            os.remove(os.path.join(target_dir, "test-graalpy.lock"))
 
             # freeze with correct version
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "requests", "requests==2.32.3")
@@ -228,7 +227,7 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
             assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
 
-            # add termcolor and build - fails as it is not part of ock file
+            # add termcolor and build - fails as it is not part of lock file
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "<package>termcolor==2.2</package>\n</packages>")
             cmd = mvnw_cmd + ["package", "-DgraalPyLockFile=test-graalpy.lock"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
@@ -246,6 +245,11 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
             assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
 
+            # should be able to import requests if installed
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+                                 "import hello",
+                                 "import requests; import hello")
+
             # rebuild with lock file and exec
             cmd = mvnw_cmd + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
@@ -258,17 +262,10 @@ class MavenPluginTest(util.BuildToolTestBase):
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "<packages>", "<!--<packages>")
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "</packages>-->")
 
-            # should be able to import requests if installed
-            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
-                "import hello",
-                "import requests; import hello")
-
-            # clean and rebuild with lock and exec
-            cmd = mvnw_cmd + ["clean", "package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            # clean and rebuild fails
+            cmd = mvnw_cmd + ["clean", "package"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("BUILD SUCCESS", out)
-            util.check_ouput("pip install", out)
-            util.check_ouput("hello java", out)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")

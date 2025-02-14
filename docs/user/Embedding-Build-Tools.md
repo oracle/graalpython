@@ -79,31 +79,32 @@ Any manual change will be overridden by the plugin during the build.
 
 The _src_ subdirectory is left to be manually populated by the user with custom Python scripts or modules.
 
-## Python Dependency Management
 To manage third-party Python packages, a [Python virtual environment](https://docs.python.org/3.11/tutorial/venv.html) is used behind the scenes.
-Whether deployed in a virtual filesystem or an external directory, its contents are solely managed by the plugin based on the Python packages
-specified in the plugin configuration or a Python requirements file.
+Whether deployed in a virtual filesystem or an external directory, its contents are managed by the plugin based on the Python packages
+specified in the plugin configuration.
 
-If a requirements file is provided, it is used exclusively for downloading and installing Python packages. 
-If the file does not exist, the package list from the plugin configuration is used.
-In the case where both a requirements file exists and packages are specified in the plugin configuration, 
-the packages in the configuration must be an exact subset of those listed in the requirements file.
+## Python Dependency Management
+The list of third-party Python packages to be downloaded and installed can be specified in the particular plugin`s configuration. Unfortunately,
+Python does not enforce strict versioning of dependencies, which can result in problems if a third-party package or one of its transitive
+dependencies is unexpectedly updated to a newer version, leading to unforeseen behavior.
 
-### Freezing Dependencies
-When installing packages, additional dependencies may be pulled into the virtual environment. Since Python does not 
-enforce exact versioning of dependencies, this can lead to issues if a third-party package or one of its transitive dependencies 
-is suddenly updated to a newer version, causing unexpected behavior. 
+It is regarded as good practice to always specify a Python package with its exact version. In simpler scenarios, where only a few packages 
+are required, specifying the exact version of each package in the plugin configuration, 
+along with their transitive dependencies, might be sufficient. However, this method is often impractical,
+as manually managing the entire dependency tree can quickly become overwhelming.
 
-In simpler scenarios, where only a few packages are needed, it may be sufficient to specify each package and 
-its exact version in the plugin configuration. However, this approach is not always practical, and manually managing 
-the entire dependency tree can quickly become cumbersome.   
+### Locking Dependencies
 
-For these cases, we **highly recommend freezing** all Python dependencies whenever there is a change in the required packages for the project. 
-As a result a requirements file will be created listing all required Python packages with their specific versions, based on the packages defined
-in the plugin configuration and their dependencies. Subsequent GraalPy plugin executions will then use this file exclusively to install all packages 
-with a guaranteed version.
+For these cases, we **highly recommend locking** all Python dependencies whenever there is a change 
+in the list of required packages for a project. The GraalPy plugins provide an action to do so, 
+and as a result, a GraalPy lock file will be created, listing all required Python packages with their specific versions 
+based on the packages defined in the plugin configuration and their dependencies. Subsequent GraalPy plugin executions 
+will then use this file exclusively to install all packages with guaranteed versions.
 
-For information on the specific Maven or Gradle freeze commands, please refer to the plugin descriptions below in this document.
+The default location of the lock file is in the project root, and since it serves as input for generating resources, 
+it should be stored alongside other project files in a version control system.
+
+For information on the specific Maven or Gradle lock packages actions, please refer to the plugin descriptions below in this document.
 
 ## GraalPy Maven Plugin
 
@@ -132,12 +133,11 @@ The Python packages and their versions are specified as if used with `pip`:
       ...
   </configuration>
   ```
-- The **requirementsFile** element can specify the path to a Python requirements file which has to follow
-the python [requirements file format](https://pip.pypa.io/en/stable/reference/requirements-file-format/). 
-Default value is `${basedir}/requirements.txt`.
+- The **graalPyLockFile** element can specify an alternative path to a GraalPy lock file. 
+Default value is `${basedir}/graalpy.lock`.
   ```xml
   <configuration>
-      <requirementsFile>${basedir}/python-requirements.txt</requirementsFile>
+      <graalPyLockFile>${basedir}/graalpy.lock</graalPyLockFile>
       ...
   </configuration>
   ```
@@ -157,15 +157,15 @@ Remember to use the appropriate `GraalPyResources` API to create the Context. Th
   </configuration>
   ```
   
-### Freezing Installed Packages
-To freeze the current state of the installed packages, execute the GraalPy plugin goal `org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages`. 
+### Locking Python Packages
+To lock the current state of the installed packages, execute the GraalPy plugin goal `org.graalvm.python:graalpy-maven-plugin:lock-packages`. 
 ```bash
-$ mvn org.graalvm.python:graalpy-maven-plugin:freeze-installed-packages
+$ mvn org.graalvm.python:graalpy-maven-plugin:lock-packages
 ```
-*Note that the action will override the existing requirements file, no matter if it was previously generated by the plugin or created manually.*  
+*Note that the action will override the existing lock file.*  
 
-For more information on managing Python packages and working with a requirements file, please refer to the descriptions of 
-the `requirementsFile` and `packages` fields in the [plugin configuration](#maven-plugin-configuration), as well as the [Python Dependency Management](#python-dependency-management) section 
+For more information on managing Python packages, please refer to the descriptions of 
+the `graalPyLockFile` and `packages` fields in the [plugin configuration](#maven-plugin-configuration), as well as the [Python Dependency Management](#python-dependency-management) section 
 above in this document.
 
 ## GraalPy Gradle Plugin 
@@ -195,12 +195,11 @@ The plugin can be configured in the `graalPy` block:
   }
   ```
 
-- The **requirementsFile** element can specify the path to a Python requirements file which has to follow
-  the python [requirements file format](https://pip.pypa.io/en/stable/reference/requirements-file-format/).
-  Default value is `$rootDir/requirements.txt`.
+- The **graalPyLockFile** element can specify an alternative path to a GraalPy lock file.
+  Default value is `$rootDir/graalpy.lock`.
   ```
   graalPy {
-    requirementsFile = file("$rootDir/python-requirements.txt")
+    graalPyLockFile = file("$rootDir/graalpy.lock")
     ...
   }
   ```
@@ -227,15 +226,15 @@ dependency `org.graalvm.python:python` to the community build: `org.graalvm.pyth
     ...
   }
   ```
-### Freezing Installed Packages
-To freeze the current state of the installed packages, execute the GraalPy plugin task `graalpyFreezeInstalledPackages`.
+### Locking Python Packages
+To lock the current state of declared packages, execute the GraalPy plugin task `graalPyLockPackages`.
 ```bash
-$ gradle graalpyFreezeInstalledPackages
+$ gradle graalPyLockPackages
 ```
-*Note that the action will override the existing requirements file, no matter if it was previously generated by the plugin or created manually.*
+*Note that the action will override the existing lock file.*
 
-For more information on managing Python packages and working with a requirements file, please refer to the descriptions of
-the `requirementsFile` and `packages` fields in the [plugin configuration](#gradle-plugin-configuration), as well as the [Python Dependency Management](#python-dependency-management) sections
+For more information on managing Python packages, please refer to the descriptions of
+the `graalPyLockFile` and `packages` fields in the [plugin configuration](#gradle-plugin-configuration), as well as the [Python Dependency Management](#python-dependency-management) sections
 in this document.
 
 ## Related Documentation

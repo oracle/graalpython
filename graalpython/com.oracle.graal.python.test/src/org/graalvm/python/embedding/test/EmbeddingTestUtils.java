@@ -59,11 +59,11 @@ public final class EmbeddingTestUtils {
     }
 
     public static void createVenv(Path venvDir, String graalPyVersion, BuildToolLog log, String... packages) throws IOException {
-        createVenv(venvDir, graalPyVersion, log, null, null, null, null, null, packages);
+        createVenv(venvDir, graalPyVersion, log, null, null, null, null, packages);
     }
 
     public static void createVenv(Path venvDir, String graalPyVersion, BuildToolLog log, Path lockFile,
-                    String lockFileHeader, String wrongPackageVersionError, String missingLockFileWarning, String packageRemovedError,
+                    String lockFileHeader, String missingLockFileWarning, String packageRemovedError,
                     String... packages) throws IOException {
         try {
             info(log, "<<<<<< create test venv %s <<<<<<", venvDir);
@@ -71,7 +71,7 @@ public final class EmbeddingTestUtils {
             Launcher launcher = createLauncher(venvDir);
             if (lockFile != null) {
                 VFSUtils.createVenv(venvDir, Arrays.asList(packages), lockFile,
-                                lockFileHeader, wrongPackageVersionError, packageRemovedError, missingLockFileWarning,
+                                lockFileHeader, packageRemovedError, missingLockFileWarning,
                                 launcher, graalPyVersion, log);
             } else {
                 VFSUtils.createVenv(venvDir, Arrays.asList(packages), launcher, graalPyVersion, log);

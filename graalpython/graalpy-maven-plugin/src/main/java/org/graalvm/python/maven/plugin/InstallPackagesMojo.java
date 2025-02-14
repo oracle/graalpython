@@ -69,7 +69,7 @@ public class InstallPackagesMojo extends AbstractGraalPyMojo {
         MavenDelegateLog log = new MavenDelegateLog(getLog());
         Path requirements = getLockFile();
         try {
-            VFSUtils.createVenv(venvDirectory, packages, requirements, LOCK_FILE_HEADER, WRONG_PACKAGE_VERSION_FORMAT_ERROR, PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(), getGraalPyVersion(project), log);
+            VFSUtils.createVenv(venvDirectory, packages, requirements, LOCK_FILE_HEADER, PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(), getGraalPyVersion(project), log);
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }

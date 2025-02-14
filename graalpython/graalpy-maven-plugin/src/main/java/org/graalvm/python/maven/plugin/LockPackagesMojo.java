@@ -71,7 +71,7 @@ public class LockPackagesMojo extends AbstractGraalPyMojo {
         Path requirements = getLockFile();
 
         try {
-            VFSUtils.lockPackages(venvDirectory, packages, requirements, LOCK_FILE_HEADER, WRONG_PACKAGE_VERSION_FORMAT_ERROR, createLauncher(), getGraalPyVersion(project), log);
+            VFSUtils.lockPackages(venvDirectory, packages, requirements, LOCK_FILE_HEADER, createLauncher(), getGraalPyVersion(project), log);
         } catch (IOException e) {
             throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }
