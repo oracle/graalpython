@@ -93,7 +93,33 @@ class CPyExtTestCase(unittest.TestCase):
 compiled_registry = set()
 
 
+def get_setuptools(build_path, setuptools='setuptools==67.6.1'):
+    """
+    distutils is not part of std library since python 3.12
+    we rely on distutils to pick the toolchain for the underlying system
+    and build the c extension tests.
+    """
+    import site    
+    py_site = build_path / 'site-packages'
+
+    if not os.path.isdir(py_site / 'setuptools'):
+        import subprocess
+        import tempfile
+        import venv
+        temp_env = Path(tempfile.mkdtemp())
+        venv.create(temp_env, with_pip=True)
+        py_executable = temp_env / 'bin' / 'python3'
+        subprocess.run([py_executable, "-m", "pip", "install", "--target", str(py_site), setuptools], check=True)
+        shutil.rmtree(temp_env)
+    
+    pyvenv_site = str(py_site)
+    if pyvenv_site not in site.getsitepackages():
+        site.addsitedir(pyvenv_site)
+
+
 def ccompile(self, name, check_duplicate_name=True):
+    get_setuptools(DIR / 'build')
+    import _distutils_hack # from setuptools to make distutils available
     from distutils.core import setup, Extension
     from distutils.sysconfig import get_config_var
     from hashlib import sha256
