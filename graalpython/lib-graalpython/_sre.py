@@ -420,7 +420,7 @@ class Pattern():
                 literal = b'\\' not in repl
             if not literal:
                 import re
-                repl = re._subx(self, repl)
+                repl = re._compile_template(self, repl)
                 if not callable(repl):
                     literal = True
 
@@ -517,6 +517,34 @@ class SREScanner(object):
     def search(self):
         return self.__match_search(_METHOD_SEARCH)
 
+class SRETemplateItem(object):
+    index = -1
+    literal = None
+
+class SRETemplate(object):
+    def __init__(self, chunks, literal):
+        self.chunks = chunks
+        self.literal = literal
+        self.items = []
+
+def template(pattern, _template):
+    n = len(_template)
+    if (n & 1) == 0 or n < 1:
+        raise TypeError("invalid template")
+    n /= 2
+    tpl = SRETemplate(1 + 2*n, _template[0])
+    for i in range(int(n)):
+        index = int(_template[2*i+1])
+        if index < 0:
+            raise TypeError("invalid template")
+        tpl.items.append(SRETemplateItem())
+        tpl.items[i].index = index
+        literal = _template[2*i+2]
+        if len(literal) == 0:
+            literal = None
+            tpl.chunks -= 1
+        tpl.items[i].literal = literal
+    return tpl
 
 _t_compile = Pattern
 
