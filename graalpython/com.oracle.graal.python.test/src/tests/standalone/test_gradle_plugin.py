@@ -48,8 +48,8 @@ from tests.standalone.util import TemporaryTestDirectory, Logger
 
 MISSING_FILE_WARNING = "Some python dependencies were installed in addition to packages declared in graalpy-gradle-plugin configuration"
 WRONG_PACKAGE_VERSION_FORMAT = "Some python packages in graalpy-gradle-plugin configuration have no exact version declared"
-PACKAGES_INCONSISTENT_ERROR = "some packages in graalpy-gradle-plugin configuration are either missing in requirements file or have a different version"
-VENV_UPTODATE = "Virtual environment is up to date with requirements file, skipping install"
+PACKAGES_CHANGED_ERROR = "but packages in graalpy-maven-plugin configuration are different then previously used to generate the lock file"
+VENV_UPTODATE = "Virtual environment is up to date with lock file, skipping install"
 
 def append(file, txt):
     with open(file, "a") as f:
@@ -97,7 +97,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
     def native_image_with_exlude_email(self):
         pass
 
-    def freeze_requirements_config(self, community, pkgs, requirements):
+    def lock_packages_config(self, community, pkgs, lock_file):
         pass
 
     def generate_app(self, target_dir):
@@ -190,17 +190,17 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             self.check_filelist(target_dir2, log)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
-    def check_freeze_requirements(self, community):
+    def check_lock_packages(self, community):
         with util.TemporaryTestDirectory() as tmpdir:
 
-            target_dir = os.path.join(str(tmpdir), "freeze_requirements" + self.target_dir_name_sufix())
+            target_dir = os.path.join(str(tmpdir), "lock_packages" + self.target_dir_name_sufix())
             self.generate_app(target_dir)
             build_file = os.path.join(target_dir, self.build_file_name)
 
             gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
             # start with requests package without version
-            append(build_file, self.freeze_requirements_config(pkgs=["requests"], requirements="test-requirements.txt", community=True))
+            append(build_file, self.lock_packages_config(pkgs=["requests"], lock_file="test-graalpy.lock", community=True))
 
             # build
             cmd = gradlew_cmd + ["build"]
@@ -208,46 +208,46 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             util.check_ouput("pip install", out)
             util.check_ouput("BUILD SUCCESS", out)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
-            assert not os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
+            assert not os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
 
-            # freeze - fails due to no version
-            cmd = gradlew_cmd + ["graalpyFreezeInstalledPackages"]
+            # lock - fails due to no version
+            cmd = gradlew_cmd + ["graalpyLockPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=False)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
             util.check_ouput(WRONG_PACKAGE_VERSION_FORMAT, out)
-            assert not os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
+            assert not os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
 
-            # freeze with correct version
+            # lock with correct version
             log = Logger()
             self.copy_build_files(target_dir)
-            append(build_file, self.freeze_requirements_config(pkgs=["requests==2.32.3"], requirements="test-requirements.txt", community=True))
-            cmd = gradlew_cmd + ["graalpyFreezeInstalledPackages"]
+            append(build_file, self.lock_packages_config(pkgs=["requests==2.32.3"], lock_file="test-graalpy.lock", community=True))
+            cmd = gradlew_cmd + ["graalpyLockPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=True)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
-            assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
 
-            # add termcolor and build - fails as it is not part of requirements
+            # add termcolor and build - fails as it is not part of lock file
             log = Logger()
             self.copy_build_files(target_dir)
-            append(build_file, self.freeze_requirements_config(pkgs=["requests==2.32.3", "termcolor==2.2"], requirements="test-requirements.txt", community=True))
+            append(build_file, self.lock_packages_config(pkgs=["requests==2.32.3", "termcolor==2.2"], lock_file="test-graalpy.lock", community=True))
             cmd = gradlew_cmd + ["build"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=False)
-            util.check_ouput(PACKAGES_INCONSISTENT_ERROR, out)
+            util.check_ouput(PACKAGES_CHANGED_ERROR, out)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
-            assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
 
-            # freeze with termcolor
+            # lock with termcolor
             log = Logger()
-            cmd = gradlew_cmd + ["graalpyFreezeInstalledPackages"]
+            cmd = gradlew_cmd + ["graalpyLockPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=True)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
-            assert os.path.exists(os.path.join(target_dir, "test-requirements.txt"))
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
 
-            # rebuild with requirements and exec
+            # rebuild with lock and exec
             cmd = gradlew_cmd + ["build", "run"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
@@ -255,19 +255,19 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             util.check_ouput("hello java", out)
             util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 
-            # run with no packages, only requirements file
+            # run with no packages, only lock file
             self.copy_build_files(target_dir)
             append(build_file, self.empty_packages())
 
-            # stop using requirementsFile field and test with default value {project_root}/requirements.txt
-            shutil.move(os.path.join(target_dir, "test-requirements.txt"), os.path.join(target_dir, "requirements.txt"))
+            # stop using lock file field and test with default value {project_root}/graalpy.lock
+            shutil.move(os.path.join(target_dir, "test-graalpy.lock"), os.path.join(target_dir, "graalpy.lock"))
 
             # should be able to import requests if installed
             util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
                                  "import hello",
                                  "import requests; import hello")
 
-            # clean and rebuild with requirements and exec
+            # clean and rebuild with lock and exec
             cmd = gradlew_cmd + ["clean", "build", "run"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
@@ -426,11 +426,11 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             util.check_ouput("BUILD SUCCESS", out)
             assert return_code == 0, out
 
-            cmd = gradle_cmd + ["graalpyFreezeInstalledPackages"]
+            cmd = gradle_cmd + ["graalpyLockPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out, contains=False)
-            util.check_ouput("In order to run the graalpyFreezeInstalledPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.", out)
-            assert not os.path.exists(os.path.join(target_dir, "requirements.txt"))
+            util.check_ouput("In order to run the graalpyLockPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.", out)
+            assert not os.path.exists(os.path.join(target_dir, "graalpy.lock"))
 
 
     def check_gradle_python_resources_dir_deprecation(self):
@@ -575,8 +575,8 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
         self.check_gradle_generated_app(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_freeze_requirements(self):
-        self.check_freeze_requirements(community=True)
+    def test_gradle_lock_packages(self):
+        self.check_lock_packages(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
@@ -634,13 +634,13 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
             }}
             """)
 
-    def freeze_requirements_config(self, community, pkgs, requirements=None):
-        requirements_file = f"requirementsFile = file(\"{requirements}\")" if requirements else ""
+    def lock_packages_config(self, community, pkgs, lock=None):
+        lock_file = f"graalPyLockFile = file(\"{lock}\")" if lock else ""
         packages = "packages = [\"" + "\",\"".join(pkgs) + "\"]"
         return textwrap.dedent(f"""
             graalPy {{
                 {packages}
-                {requirements_file}
+                {lock_file}
                 {_community_as_property(community)}
             }}
             """)
@@ -760,8 +760,8 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
         self.check_gradle_generated_app(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_freeze_requirements(self):
-        self.check_freeze_requirements(community=True)
+    def test_gradle_lock_packages(self):
+        self.check_lock_packages(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_long_running_test_enabled, "ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
@@ -810,15 +810,15 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
     def empty_plugin(self, community):
         return f"graalPy {{ {_community_as_property(community) } }}"
 
-    def freeze_requirements_config(self, community, pkgs, requirements=None):
-        requirements_file = f"requirementsFile = file(\"{requirements}\")" if requirements else ""
+    def lock_packages_config(self, community, pkgs, lock=None):
+        lock_file = f"graalPyLockFile = file(\"{lock}\")" if lock else ""
         packages = ""
         for p in pkgs:
             packages += f"    packages.add(\"{p}\")\n"
         return textwrap.dedent(f"""
             graalPy {{
                 {packages}
-                {requirements_file}
+                {lock_file}
                 {_community_as_property(community)}
             }}
             """)

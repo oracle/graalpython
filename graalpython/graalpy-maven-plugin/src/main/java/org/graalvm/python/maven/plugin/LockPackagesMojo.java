@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,50 +38,69 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.tasks;
 
-import org.gradle.api.GradleException;
-import org.gradle.api.tasks.CacheableTask;
-import org.gradle.api.tasks.TaskAction;
+package org.graalvm.python.maven.plugin;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
-/**
- * Creates a python requirements file from all user packages installed in the python virtual environment.
- *
- * If there is no virtual environment preset then it is first created and packages are installed the same way
- * as in scope of {@link InstallPackagesTask}.
- */
-@CacheableTask
-public abstract class FreezeInstalledPackagesTask extends AbstractPackagesTask {
-    @TaskAction
-    public void exec() throws GradleException {
-        checkEmptyPackages();
+import java.io.IOException;
+import java.nio.file.Path;
 
+@Mojo(name = "lock-packages",
+        requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+public class LockPackagesMojo extends AbstractGraalPyMojo {
+
+    public void execute() throws MojoExecutionException {
+        preExec(false);
+        checkEmptyPackages();
+        
+        manageVenv();
+        listGraalPyResources();
+        
+        postExec();
+    }
+
+    protected void manageVenv() throws MojoExecutionException {
         Path venvDirectory = getVenvDirectory();
+        MavenDelegateLog log = new MavenDelegateLog(getLog());
+        Path requirements = getLockFile();
+
         try {
-            VFSUtils.freezePackages(getVenvDirectory(), getPackages().get(), getRequirementsPath(),
-                    REQUIREMENTS_FILE_HEADER, WRONG_PACKAGE_VERSION_FORMAT_ERROR,
-                    createLauncher(), getPolyglotVersion().get(), getLog());
+            VFSUtils.lockPackages(venvDirectory, packages, requirements, LOCK_FILE_HEADER, WRONG_PACKAGE_VERSION_FORMAT_ERROR, createLauncher(), getGraalPyVersion(project), log);
         } catch (IOException e) {
-            throw new GradleException(String.format("failed to freeze packages in python virtual environment %s", venvDirectory), e);
+            throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
         }
     }
 
-    private void checkEmptyPackages() throws GradleException {
-        List<String> packages = getPackages().get();
+    private void checkEmptyPackages() throws MojoExecutionException {
         if((packages == null || packages.isEmpty())) {
             getLog().error("");
-            getLog().error("In order to run the graalpyFreezeInstalledPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.");
+            getLog().error("In order to run the lock-packages goal there have to be python packages declared in the graalpy-maven-plugin configuration.");
             getLog().error("");
+            getLog().error("NOTE that the <configuration> section has to be declared for the whole graalpy-maven-plugin");
+            getLog().error("and not specifically for the process-graalpy-resources execution goal.");
+            getLog().error("");
+            getLog().error("Please add the <packages> section to your configuration as follows:");
+            getLog().error("<plugin>");
+            getLog().error("  <groupId>org.graalvm.python</groupId>");
+            getLog().error("  <artifactId>graalpy-maven-plugin</artifactId>");
+            getLog().error("  <configuration>");
+            getLog().error("    <packages>");
+            getLog().error("      <package>{package_name}=={package_version}</package>");
+            getLog().error("    </packages>");
+            getLog().error("    ...");
+            getLog().error("  </configuration>");
+            getLog().error("");
+
             getLog().error("For more information, please refer to https://github.com/oracle/graalpython/blob/master/docs/user/Embedding-Build-Tools.md");
             getLog().error("");
 
-            throw new GradleException("missing python packages in plugin configuration");
+            throw new MojoExecutionException("missing python packages in plugin configuration");
         }
     }
 }

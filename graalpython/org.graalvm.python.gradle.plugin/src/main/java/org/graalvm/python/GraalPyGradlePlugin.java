@@ -42,7 +42,7 @@ package org.graalvm.python;
 
 import org.graalvm.python.dsl.GraalPyExtension;
 import org.graalvm.python.tasks.AbstractPackagesTask;
-import org.graalvm.python.tasks.FreezeInstalledPackagesTask;
+import org.graalvm.python.tasks.LockPackagesTask;
 import org.graalvm.python.tasks.MetaInfTask;
 import org.graalvm.python.tasks.InstallPackagesTask;
 import org.graalvm.python.tasks.VFSFilesListTask;
@@ -90,10 +90,10 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String DEFAULT_FILESLIST_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "fileslist";
     private static final String GRAALPY_META_INF_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "META-INF";
     private static final String GRAALPY_INSTALL_PACKAGES_TASK = "graalPyInstallPackages";
-    private static final String GRAALPY_FREEZE_DEPENDENCIES_TASK = "graalPyFreezeInstalledPackages";
+    private static final String GRAALPY_LOCK_PACKAGES_TASK = "graalPyLockPackages";
     private static final String GRAALPY_META_INF_TASK_TASK = "graalPyMetaInf";
     private static final String GRAALPY_VFS_FILESLIST_TASK = "graalPyVFSFilesList";
-    private static final String PYTHON_REQUIREMENTS_FILE = "requirements.txt";
+    private static final String GRAALPY_LOCK_FILE = "graalpy.lock";
 
     GraalPyExtension extension;
     Project project;
@@ -116,7 +116,7 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         var mainSourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         mainSourceSet.getResources().srcDir(installPackagesTask);
 
-        registerFreezeInstalledPackagesTask(project, launcherClasspath, extension);
+        registerLockPackagesTask(project, launcherClasspath, extension);
 
         addDependencies();
 
@@ -208,8 +208,8 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         });
     }
 
-    private TaskProvider<FreezeInstalledPackagesTask> registerFreezeInstalledPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
-        return project.getTasks().register(GRAALPY_FREEZE_DEPENDENCIES_TASK, FreezeInstalledPackagesTask.class, t -> {
+    private TaskProvider<LockPackagesTask> registerLockPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
+        return project.getTasks().register(GRAALPY_LOCK_PACKAGES_TASK, LockPackagesTask.class, t -> {
             registerPackagesTask(project, launcherClasspath, extension, t);
             // TODO probably not necessary
             // t.getOutputs().upToDateWhen(tt -> false);
@@ -231,7 +231,7 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
         t.getIncludeVfsRoot().convention(externalDirectory.map(d -> false).orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
         t.getResourceDirectory().set(extension.getResourceDirectory());
 
-        t.getRequirementsFile().convention(extension.getRequirementsFile().orElse(projectDirectory.file(PYTHON_REQUIREMENTS_FILE)));
+        t.getGraalPyLockFile().convention(extension.getGraalPyLockFile().orElse(projectDirectory.file(GRAALPY_LOCK_FILE)));
 
         t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
     }

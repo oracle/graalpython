@@ -77,14 +77,14 @@ public interface GraalPyExtension {
     Property<String> getResourceDirectory();
 
     /**
-     * A python requirements file.
+     * GraalPy lock file.
      *
      * If present then used as exclusive input when installing python packages
      * for GraalPy usage instead of {@link #getPackages()}.
      *
      * @see #getPackages()
      */
-    RegularFileProperty getRequirementsFile();
+    RegularFileProperty getGraalPyLockFile();
 
     /**
      * Experimental property. Allows overriding the default Polyglot and GraalPy version.
@@ -96,9 +96,9 @@ public interface GraalPyExtension {
 
     /**
      * Determines third party python packages to be installed for GraalPy usage in case
-     * no python requirements file is provided by {@link #getRequirementsFile()}.
+     * no GraalPy lock file is provided by {@link #getGraalPyLockFile()}.
      *
-     * @see #getRequirementsFile()
+     * @see #getGraalPyLockFile()
      */
     SetProperty<String> getPackages();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,41 +38,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.maven.plugin;
+package org.graalvm.python.tasks;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.graalvm.python.embedding.tools.vfs.VFSUtils;
+import org.gradle.api.GradleException;
+import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.TaskAction;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
-@Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
-                requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
-                requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
-public class InstallPackagesMojo extends AbstractGraalPyMojo {
+import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
-    public void execute() throws MojoExecutionException {
-        preExec(true);
+/**
+ * Creates a GraalPy lock file from packages declared in plugin configuration.
+ *
+ * If there is no virtual environment preset then it is first created and packages are installed the same way
+ * as in scope of {@link InstallPackagesTask}.
+ */
+@CacheableTask
+public abstract class LockPackagesTask extends AbstractPackagesTask {
+    @TaskAction
+    public void exec() throws GradleException {
+        checkEmptyPackages();
 
-        manageVenv();
-        listGraalPyResources();
-        manageNativeImageConfig();
-
-        postExec();
-    }
-
-    private void manageVenv() throws MojoExecutionException {
         Path venvDirectory = getVenvDirectory();
-        MavenDelegateLog log = new MavenDelegateLog(getLog());
-        Path requirements = getLockFile();
         try {
-            VFSUtils.createVenv(venvDirectory, packages, requirements, LOCK_FILE_HEADER, WRONG_PACKAGE_VERSION_FORMAT_ERROR, PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(), getGraalPyVersion(project), log);
+            VFSUtils.lockPackages(getVenvDirectory(), getPackages().get(), getLockFilePath(),
+                    LOCK_FILE_HEADER, WRONG_PACKAGE_VERSION_FORMAT_ERROR,
+                    createLauncher(), getPolyglotVersion().get(), getLog());
         } catch (IOException e) {
-            throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
+            throw new GradleException(String.format("failed to lock packages in python virtual environment %s", venvDirectory), e);
         }
     }
 
+    private void checkEmptyPackages() throws GradleException {
+        List<String> packages = getPackages().get();
+        if((packages == null || packages.isEmpty())) {
+            getLog().error("");
+            getLog().error("In order to run the graalpyLockPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.");
+            getLog().error("");
+            getLog().error("For more information, please refer to https://github.com/oracle/graalpython/blob/master/docs/user/Embedding-Build-Tools.md");
+            getLog().error("");
+
+            throw new GradleException("missing python packages in plugin configuration");
+        }
+    }
 }
