@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -59,7 +60,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
@@ -105,7 +105,6 @@ import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
-import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -117,6 +116,7 @@ import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PySequenceDelItemNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.lib.PySequenceInplaceConcat;
+import com.oracle.graal.python.lib.PySequenceInplaceRepeat;
 import com.oracle.graal.python.lib.PySequenceIterSearchNode;
 import com.oracle.graal.python.lib.PySequenceSetItemNode;
 import com.oracle.graal.python.lib.PySequenceSizeNode;
@@ -535,26 +535,15 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class PySequence_InPlaceRepeat extends CApiBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(inliningTarget, obj)"}, limit = "1")
+        @Specialization
         static Object repeat(Object obj, long n,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupNode,
-                        @Cached CallNode callNode,
-                        @Cached PyNumberMultiplyNode mulNode,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode) {
-            Object imulCallable = lookupNode.execute(null, inliningTarget, obj, T___IMUL__);
-            if (imulCallable != PNone.NO_VALUE) {
-                Object ret = callNode.executeWithoutFrame(imulCallable, n);
-                return ret;
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PySequenceInplaceRepeat repeat) {
+            if (!PInt.isIntRange(n)) {
+                throw raiseNode.raise(inliningTarget, OverflowError);
             }
-            return mulNode.execute(null, inliningTarget, obj, n);
-        }
-
-        @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
-        static Object repeat(Object obj, @SuppressWarnings("unused") Object n,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+            return repeat.execute(null, inliningTarget, obj, (int) n);
         }
     }
 

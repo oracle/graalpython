@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,110 +45,75 @@ import static com.oracle.graal.python.lib.CallBinaryOpNode.raiseNotSupported;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
-@GenerateCached(false)
-abstract class PyNumberMultiplyBaseNode extends BinaryOpNode {
-
-    /*
-     * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins, FloatBuiltins, ListBuiltins, ...
-     */
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public static int doII(int x, int y) throws ArithmeticException {
-        return Math.multiplyExact(x, y);
-    }
-
-    @Specialization(replaces = "doII")
-    public static long doIIL(int x, int y) {
-        return x * (long) y;
-    }
-
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public static long doLL(long x, long y) {
-        return Math.multiplyExact(x, y);
-    }
-
-    @Specialization
-    public static double doDL(double left, long right) {
-        return left * right;
-    }
-
-    @Specialization
-    public static double doLD(long left, double right) {
-        return left * right;
-    }
-
-    @Specialization
-    public static double doDD(double left, double right) {
-        return left * right;
-    }
-}
-
-@GenerateInline(inlineByDefault = true)
-public abstract class PyNumberMultiplyNode extends PyNumberMultiplyBaseNode {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
-
-    @Override
-    public final Object execute(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right);
-    }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
-        return execute(frame, this, v, w);
-    }
-
-    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
+@GenerateInline(false)
+public abstract class PyNumberInplaceMultiplyNode extends PyNumberMultiplyBaseNode {
 
     @Fallback
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w,
+    @InliningCutoff
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached GetClassNode getVClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,
                     @Exclusive @Cached GetClassNode getWClass,
-                    @Cached CallBinaryOp1Node callBinaryOp1Node,
-                    @Cached InlinedBranchProfile hasNbMulResult,
-                    @Cached InlinedBranchProfile vHasSqRepeat,
-                    @Cached InlinedBranchProfile wHasSqRepeat,
+                    @Cached CallBinaryIOp1Node callBinaryIOp1Node,
+                    @Cached InlinedBranchProfile hasNbMultiplyResult,
+                    @Cached InlinedBranchProfile hasInplaceRepeat,
+                    @Cached InlinedBranchProfile hasRepeat,
+                    @Cached InlinedBranchProfile wHasRepeat,
                     @Cached SequenceRepeatHelperNode sequenceRepeatNode,
                     @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
         TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
-        Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, ReversibleSlot.NB_MULTIPLY);
+        Object result = callBinaryIOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, InplaceSlot.NB_INPLACE_MULTIPLY);
         if (result != PNotImplemented.NOT_IMPLEMENTED) {
-            hasNbMulResult.enter(inliningTarget);
+            hasNbMultiplyResult.enter(inliningTarget);
             return result;
         }
-        if (slotsV.sq_repeat() != null) {
-            vHasSqRepeat.enter(inliningTarget);
-            return sequenceRepeatNode.execute(frame, slotsV.sq_repeat(), v, w);
-        } else if (slotsW.sq_repeat() != null) {
-            wHasSqRepeat.enter(inliningTarget);
-            return sequenceRepeatNode.execute(frame, slotsW.sq_repeat(), w, v);
+        if (slotsV.has_as_sequence()) {
+            TpSlot repeatSlot = null;
+            if (slotsV.sq_inplace_repeat() != null) {
+                hasInplaceRepeat.enter(inliningTarget);
+                repeatSlot = slotsV.sq_inplace_repeat();
+            } else if (slotsV.sq_repeat() != null) {
+                hasRepeat.enter(inliningTarget);
+                repeatSlot = slotsV.sq_repeat();
+            }
+            if (repeatSlot != null) {
+                return sequenceRepeatNode.execute(frame, repeatSlot, v, w);
+            }
+        } else if (slotsW.has_as_sequence()) {
+            /*
+             * Note that the right hand operand should not be mutated in this case so
+             * sq_inplace_repeat is not used.
+             */
+            if (slotsW.sq_repeat() != null) {
+                wHasRepeat.enter(inliningTarget);
+                return sequenceRepeatNode.execute(frame, slotsW.sq_repeat(), w, v);
+            }
         }
-        return raiseNotSupported(inliningTarget, v, w, "*", raiseNode);
+        return raiseNotSupported(inliningTarget, v, w, "*=", raiseNode);
     }
 
     @NeverDefault
-    public static PyNumberMultiplyNode create() {
-        return PyNumberMultiplyNodeGen.create();
+    public static PyNumberInplaceMultiplyNode create() {
+        return PyNumberInplaceMultiplyNodeGen.create();
     }
 }

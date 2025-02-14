@@ -151,7 +151,6 @@ public abstract class ToNativeTypeNode {
 
         writeGroupSlots(CFields.PyTypeObject__tp_as_number, slots, writePointerNode, mem, nullValue);
 
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_multiply, getSlot(obj, SlotMethodDef.NB_INPLACE_MULTIPLY));
         writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_power, getSlot(obj, SlotMethodDef.NB_INPLACE_POWER));
         return mem;
     }

@@ -60,6 +60,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ILSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INVERT__;
@@ -293,6 +294,7 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot sq_concat, //
                 TpSlot sq_repeat, //
                 TpSlot sq_inplace_concat, //
+                TpSlot sq_inplace_repeat, //
                 TpSlot mp_length, //
                 TpSlot mp_subscript, //
                 TpSlot mp_ass_subscript, //
@@ -706,6 +708,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PySequenceMethods__sq_inplace_concat,
                         PExternalFunctionWrapper.BINARYFUNC,
                         BinarySlotFuncWrapper::new),
+        SQ_INPLACE_REPEAT(
+                        TpSlots::sq_inplace_repeat,
+                        TpSlotPythonSingle.class,
+                        TpSlotSizeArgFunBuiltin.class,
+                        TpSlotGroup.AS_SEQUENCE,
+                        CFields.PySequenceMethods__sq_inplace_repeat,
+                        PExternalFunctionWrapper.SSIZE_ARG,
+                        SsizeargfuncSlotWrapper::new),
         MP_LENGTH(
                         TpSlots::mp_length,
                         TpSlotPythonSingle.class,
@@ -1001,8 +1011,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotDef.withoutHPy(T___RPOW__, TpSlotReversiblePython::create, PExternalFunctionWrapper.TERNARYFUNC_R));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_ADD, TpSlotDef.withSimpleFunction(T___IADD__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_SUBTRACT, TpSlotDef.withSimpleFunction(T___ISUB__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
-        // addSlotDef(s, TpSlotMeta.NB_INPLACE_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMUL__,
-        // PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMUL__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_REMAINDER, TpSlotDef.withSimpleFunction(T___IMOD__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_LSHIFT, TpSlotDef.withSimpleFunction(T___ILSHIFT__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_RSHIFT, TpSlotDef.withSimpleFunction(T___IRSHIFT__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
@@ -1039,6 +1048,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotDef.withoutHPy(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SETITEM),
                         TpSlotDef.withoutHPy(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.DELITEM));
         addSlotDef(s, TpSlotMeta.SQ_INPLACE_CONCAT, TpSlotDef.withNoFunction(T___IADD__, PExternalFunctionWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.SQ_INPLACE_REPEAT, TpSlotDef.withNoFunction(T___IMUL__, PExternalFunctionWrapper.SSIZE_ARG, HPySlotWrapper.INDEXARGFUNC));
 
         SLOTDEFS = s;
         SPECIAL2SLOT = new HashMap<>(SLOTDEFS.size() * 2);
@@ -1651,6 +1661,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.SQ_CONCAT), //
                             get(TpSlotMeta.SQ_REPEAT), //
                             get(TpSlotMeta.SQ_INPLACE_CONCAT), //
+                            get(TpSlotMeta.SQ_INPLACE_REPEAT), //
                             get(TpSlotMeta.MP_LENGTH), //
                             get(TpSlotMeta.MP_SUBSCRIPT), //
                             get(TpSlotMeta.MP_ASS_SUBSCRIPT), //

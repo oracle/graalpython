@@ -64,7 +64,7 @@ public class SlotsMapping {
             case nb_power -> "TpSlotNbPower.TpSlotNbPowerBuiltin";
             case sq_concat -> "TpSlotBinaryFunc.TpSlotSqConcat";
             case sq_length, mp_length -> "TpSlotLen.TpSlotLenBuiltin" + getSuffix(s.isComplex());
-            case sq_item, sq_repeat -> "TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin";
+            case sq_item, sq_repeat, sq_inplace_repeat -> "TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin";
             case sq_ass_item -> "TpSlotSqAssItem.TpSlotSqAssItemBuiltin";
             case mp_subscript -> "TpSlotBinaryFunc.TpSlotMpSubscript";
             case mp_ass_subscript -> "TpSlotMpAssSubscript.TpSlotMpAssSubscriptBuiltin";
@@ -93,7 +93,7 @@ public class SlotsMapping {
             case sq_length, mp_length -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode";
             case sq_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode";
             case sq_ass_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode";
-            case sq_repeat -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode";
+            case sq_repeat, sq_inplace_repeat -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode";
             case mp_subscript -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode";
             case mp_ass_subscript -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode";
             case tp_getattro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode";
@@ -168,7 +168,10 @@ public class SlotsMapping {
             case nb_inplace_floor_divide -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IFLOORDIV__";
             case nb_inplace_true_divide -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___ITRUEDIV__";
             case nb_inplace_matrix_multiply -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IMATMUL__";
+            case sq_item -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__";
+            case sq_repeat -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__";
             case sq_inplace_concat -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__";
+            case sq_inplace_repeat -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__";
             default -> "";
         };
     }
