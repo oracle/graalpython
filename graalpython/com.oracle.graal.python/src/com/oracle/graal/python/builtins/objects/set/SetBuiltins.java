@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -185,7 +184,7 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_inplace_or, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class IOrNode extends BinaryOpBuiltinNode {
+    public abstract static class IOrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doSet(VirtualFrame frame, PSet self, PBaseSet other,
                         @Bind("this") Node inliningTarget,
@@ -373,7 +372,7 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_inplace_and, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class IAndNode extends BinaryOpBuiltinNode {
+    public abstract static class IAndNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right,
@@ -474,7 +473,7 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_inplace_xor, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class IXorNode extends BinaryOpBuiltinNode {
+    public abstract static class IXorNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         static Object doSet(VirtualFrame frame, PSet self, PBaseSet other,
@@ -560,7 +559,7 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_inplace_subtract, isComplex = true)
     @GenerateNodeFactory
-    abstract static class ISubNode extends BinaryOpBuiltinNode {
+    abstract static class ISubNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right,
                         @Bind("this") Node inliningTarget,

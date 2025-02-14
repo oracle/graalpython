@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
@@ -772,7 +771,7 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_concat, isComplex = true)
     @GenerateNodeFactory
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization

@@ -55,6 +55,7 @@ import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PySequenceConcat;
+import com.oracle.graal.python.lib.PySequenceInplaceConcat;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -114,6 +115,17 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
         static Object doObject(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceConcat concatNode) {
+            return concatNode.execute(frame, inliningTarget, left, right);
+        }
+    }
+
+    @Builtin(name = "iconcat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class IConcatNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doObject(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PySequenceInplaceConcat concatNode) {
             return concatNode.execute(frame, inliningTarget, left, right);
         }
     }

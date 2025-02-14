@@ -112,6 +112,7 @@ import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInplaceAddNode;
 import com.oracle.graal.python.lib.PyNumberInplaceAndNode;
 import com.oracle.graal.python.lib.PyNumberInplaceFloorDivideNode;
 import com.oracle.graal.python.lib.PyNumberInplaceLshiftNode;
@@ -461,7 +462,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case BinaryOpsConstants.MATMUL:
                 return PyNumberMatrixMultiplyNode.create();
             case BinaryOpsConstants.INPLACE_ADD:
-                return InplaceArithmetic.IAdd.create();
+                return PyNumberInplaceAddNode.create();
             case BinaryOpsConstants.INPLACE_SUB:
                 return PyNumberInplaceSubtractNode.create();
             case BinaryOpsConstants.INPLACE_MUL:

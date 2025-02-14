@@ -272,7 +272,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_inplace_or, isComplex = true)
     @GenerateNodeFactory
-    abstract static class IOrNode extends BinaryOpBuiltinNode {
+    abstract static class IOrNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object or(VirtualFrame frame, POrderedDict self, Object other,
                         @Bind("this") Node inliningTarget,

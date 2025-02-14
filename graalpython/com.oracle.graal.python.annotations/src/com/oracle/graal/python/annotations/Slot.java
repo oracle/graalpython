@@ -171,6 +171,8 @@ public @interface Slot {
         sq_concat("__add__"),
         /** seq * number, nb_multiply is tried before */
         sq_repeat("__mul__"),
+        /** seq += seq */
+        sq_inplace_concat("__iadd__"),
         /** mapping length */
         mp_length("__len__"),
         /** mapping subscript, e.g. o[key], o[i:j] */

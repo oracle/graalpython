@@ -58,7 +58,8 @@ public class SlotsMapping {
                 "TpSlotBinaryOp.TpSlotBinaryOpBuiltin";
             case nb_inplace_add, nb_inplace_subtract, nb_inplace_multiply, nb_inplace_remainder,
                             nb_inplace_lshift, nb_inplace_rshift, nb_inplace_and, nb_inplace_xor, nb_inplace_or,
-                            nb_inplace_floor_divide, nb_inplace_true_divide, nb_inplace_matrix_multiply ->
+                            nb_inplace_floor_divide, nb_inplace_true_divide, nb_inplace_matrix_multiply,
+                            sq_inplace_concat ->
                 "TpSlotBinaryOp.TpSlotBinaryIOpBuiltin";
             case nb_power -> "TpSlotNbPower.TpSlotNbPowerBuiltin";
             case sq_concat -> "TpSlotBinaryFunc.TpSlotSqConcat";
@@ -80,13 +81,15 @@ public class SlotsMapping {
             case nb_bool -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode";
             case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert -> "com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode";
             case nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift, nb_and, nb_xor, nb_or,
-                            nb_floor_divide, nb_true_divide, nb_matrix_multiply,
-                            nb_inplace_add, nb_inplace_subtract, nb_inplace_multiply, nb_inplace_remainder,
-                            nb_inplace_lshift, nb_inplace_rshift, nb_inplace_and, nb_inplace_xor, nb_inplace_or,
-                            nb_inplace_floor_divide, nb_inplace_true_divide, nb_inplace_matrix_multiply ->
+                            nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
                 "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode";
             case nb_power -> "com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode";
             case sq_concat -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode";
+            case nb_inplace_add, nb_inplace_subtract, nb_inplace_multiply, nb_inplace_remainder,
+                            nb_inplace_lshift, nb_inplace_rshift, nb_inplace_and, nb_inplace_xor, nb_inplace_or,
+                            nb_inplace_floor_divide, nb_inplace_true_divide, nb_inplace_matrix_multiply,
+                            sq_inplace_concat ->
+                "com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode";
             case sq_length, mp_length -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode";
             case sq_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode";
             case sq_ass_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode";
@@ -165,6 +168,7 @@ public class SlotsMapping {
             case nb_inplace_floor_divide -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IFLOORDIV__";
             case nb_inplace_true_divide -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___ITRUEDIV__";
             case nb_inplace_matrix_multiply -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IMATMUL__";
+            case sq_inplace_concat -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__";
             default -> "";
         };
     }

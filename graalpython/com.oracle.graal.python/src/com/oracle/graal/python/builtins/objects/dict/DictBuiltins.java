@@ -625,7 +625,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_inplace_or, isComplex = true)
     @GenerateNodeFactory
-    abstract static class IOrNode extends BinaryOpBuiltinNode {
+    abstract static class IOrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object or(VirtualFrame frame, Object self, Object other,
                         @Cached DictNodes.UpdateNode updateNode) {

@@ -293,14 +293,14 @@ def test_concat_vs_add():
     x = SqAdd()
 
     assert x + x is x
-    # TODO: assert _operator.concat(x, x) is x when _operator.concat is implemented
+    assert operator.concat(x, x) is x
     assert x.__add__(x) is x
 
     class SqAddManaged(SqAdd): pass
     x = SqAddManaged()
     assert x + x is x
     assert x.__add__(x) is x
-    # TODO: assert _operator.concat(x, x) is x when _operator.concat is implemented
+    assert operator.concat(x, x) is x
 
     SqAddAndNbAdd = CPyExtHeapType("SqAddAndNbAdd",
                            slots= [
@@ -314,7 +314,100 @@ def test_concat_vs_add():
     x = SqAddAndNbAdd()
     y = SqAddAndNbAdd()
     assert x + y is y
-    # TODO: assert _operator.concat(x, x) is x when _operator.concat is implemented
+    assert operator.concat(x, y) is x
+
+    SqAddAndNbAddNoImplemented = CPyExtHeapType("SqAddAndNbAddNoImplemented",
+                                   slots= [
+                                       '{Py_sq_concat, &concat}',
+                                       '{Py_nb_add, &myadd}',
+                                   ],
+                                   code=
+                                   'PyObject* concat(PyObject* a, PyObject *b) { Py_INCREF(a); return a; }' +
+                                   'PyObject* myadd(PyObject* a, PyObject *b) { Py_RETURN_NOTIMPLEMENTED; }')
+    x = SqAddAndNbAddNoImplemented()
+    assert x + 1 is x
+
+
+def test_sq_inplace_concat_vs_nb_inplace_add():
+    SqInplaceConcat = CPyExtHeapType(
+        "SqInplaceConcat",
+        slots=['{Py_sq_inplace_concat, &inplace_concat}'],
+        code='PyObject* inplace_concat(PyObject* a, PyObject *b) { return PyUnicode_FromString("inplace_concat"); }',
+    )
+    x = SqInplaceConcat()
+    x += 1
+    assert x == "inplace_concat"
+    x = SqInplaceConcat()
+    assert operator.iconcat(x, []) == "inplace_concat"
+
+    SqInplaceConcatAndNbInplaceAdd = CPyExtHeapType(
+        "SqInplaceConcatAndNbInplaceAdd",
+        slots=['{Py_sq_inplace_concat, &inplace_concat}', '{Py_nb_inplace_add, &inplace_add}'],
+        code='''
+            PyObject* inplace_concat(PyObject* a, PyObject *b) { return PyUnicode_FromString("inplace_concat"); }
+            PyObject* inplace_add(PyObject* a, PyObject *b) { return PyUnicode_FromString("inplace_add"); }
+            ''',
+    )
+
+    x = SqInplaceConcatAndNbInplaceAdd()
+    x += 1
+    assert x == "inplace_add"
+    x = SqInplaceConcatAndNbInplaceAdd()
+    assert operator.iconcat(x, 1) == "inplace_concat"
+
+    SqInplaceConcatAndNbInplaceAddNotImplemented = CPyExtHeapType(
+        "InplaceConcatAddNotImpl",
+        slots=['{Py_sq_inplace_concat, &inplace_concat}', '{Py_nb_inplace_add, &inplace_add}'],
+        code='''
+            PyObject* inplace_concat(PyObject* a, PyObject *b) { return PyUnicode_FromString("inplace_concat"); }
+            PyObject* inplace_add(PyObject* a, PyObject *b) { Py_RETURN_NOTIMPLEMENTED; }
+            ''',
+    )
+
+    x = SqInplaceConcatAndNbInplaceAddNotImplemented()
+    x += 1
+    assert x == "inplace_concat"
+
+    class InplaceConcatSubclass(SqInplaceConcat):
+        pass
+
+    x = InplaceConcatSubclass()
+    assert operator.iconcat(x, 1) == "inplace_concat"
+
+    SqConcat = CPyExtHeapType(
+        "SqConcat",
+        slots=['{Py_sq_concat, &concat}'],
+        code='PyObject* concat(PyObject* a, PyObject *b) { return PyUnicode_FromString("concat"); }',
+    )
+
+    x = SqConcat()
+    x += 1
+    assert x == "concat"
+    x = SqConcat()
+    assert operator.iconcat(x, 1) == "concat"
+
+    NbInplaceAdd = CPyExtHeapType(
+        "NbInplaceAdd",
+        slots=['{Py_nb_inplace_add, &inplace_add}'],
+        code='PyObject* inplace_add(PyObject* a, PyObject *b) { return PyUnicode_FromString("inplace_add"); }',
+    )
+
+    x = NbInplaceAdd()
+    assert_raises(TypeError, operator.iconcat, x, 1)
+    assert_raises(TypeError, operator.iconcat, x, [])
+
+    SequenceWithNbInplaceAdd = CPyExtHeapType(
+        "SequenceWithNbInplaceAdd",
+        slots=['{Py_nb_inplace_add, &inplace_add}', '{Py_sq_item, &item}'],
+        code='''
+        PyObject* inplace_add(PyObject* a, PyObject *b) { return PyUnicode_FromString("inplace_add"); }
+        PyObject* item(PyObject* a, PyObject *b) { return PyUnicode_FromString("item"); }
+        ''',
+    )
+
+    x = SequenceWithNbInplaceAdd()
+    assert_raises(TypeError, operator.iconcat, x, 1)
+    assert operator.iconcat(x, []) == "inplace_add"
 
 
 def test_incompatible_slots_assignment():

@@ -283,7 +283,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_inplace_or, isComplex = true)
     @GenerateNodeFactory
-    abstract static class IOrNode extends BinaryOpBuiltinNode {
+    abstract static class IOrNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object or(Object self, @SuppressWarnings("unused") Object other,
                         @Bind("this") Node inliningTarget) {
