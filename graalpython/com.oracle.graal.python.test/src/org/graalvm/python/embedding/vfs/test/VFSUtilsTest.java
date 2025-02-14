@@ -314,16 +314,10 @@ public class VFSUtilsTest {
 
         createWithLockFile(venvDir, lockFile, log);
 
-        List<String> validLockFileHeader = createLockFileHeader("0.1");
+        List<String> validLockFileHeader = createLockFileHeader("0.1", "pkg");
 
         List<String> lockFileList;
         int headerLineCount = LOCK_FILE_HEADER.split("\n").length;
-        // bogus line in header comment
-        for (int i = 0; i < headerLineCount - 1; i++) {
-            lockFileList = new ArrayList<>(validLockFileHeader);
-            lockFileList.set(i, "test");
-            createWithLockFile(venvDir, lockFile, log, lockFileList);
-        }
 
         // bogus graalPyVersion line
         int graalpVersionLineIdx = headerLineCount;
@@ -359,7 +353,7 @@ public class VFSUtilsTest {
 
     private static void createWithLockFile(Path venvDir, Path lockFile, TestLog log, String... lines) throws IOException {
         Files.write(lockFile, new ArrayList<>(Arrays.asList(lines)), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        checkException(IOException.class, () -> createVenv(venvDir, "0.1", log, lockFile), "invalid lock file format");
+        checkException(IOException.class, () -> createVenv(venvDir, "0.1", log, lockFile), "Cannot read the lock file from ");
         assertFalse(Files.exists(venvDir));
         checkVenvCreate(log.getOutput(), false);
         assertFalse(log.getOutput().contains("pip install"));
@@ -612,7 +606,7 @@ public class VFSUtilsTest {
                 assertEquals(cls, e.getClass());
             }
             if (msg != null) {
-                assertEquals(msg, e.getMessage());
+                assertTrue(e.getMessage().contains(msg));
             }
         }
     }
@@ -643,8 +637,8 @@ public class VFSUtilsTest {
         checkPackages(lockFile, lines, installedPackages);
     }
 
-    private static void checkPackages(Path file, List<String> lines, String... packages) throws IOException {
-        lines = lines.stream().filter(line -> !line.trim().startsWith("#") && !line.trim().isEmpty()).toList();
+    private static void checkPackages(Path file, List<String> linesArg, String... packages) {
+        List<String> lines = linesArg.stream().filter(line -> !line.trim().startsWith("#") && !line.trim().isEmpty()).toList();
         assertEquals(packages.length, lines.size());
         for (String pkg : packages) {
             boolean found = false;
@@ -667,8 +661,7 @@ public class VFSUtilsTest {
     }
 
     private static void createVenv(Path venvDir, String graalPyVersion, TestLog log, Path lockFile, String... packages) throws IOException {
-        EmbeddingTestUtils.createVenv(venvDir, graalPyVersion, log, lockFile, LOCK_FILE_HEADER, MISSING_LOCK_FILE_WARNING, PACKAGES_CHANGED_ERROR,
-                        packages);
+        EmbeddingTestUtils.createVenv(venvDir, graalPyVersion, log, lockFile, MISSING_LOCK_FILE_WARNING, PACKAGES_CHANGED_ERROR, packages);
     }
 
     private static void checkVenvContentsFile(Path contents, String graalPyVersion, String... packages) throws IOException {

@@ -69,7 +69,7 @@ public abstract class InstallPackagesTask extends AbstractPackagesTask {
     public void exec() throws GradleException {
         Path venvDirectory = getVenvDirectory();
         try {
-            VFSUtils.createVenv(venvDirectory, getPackages().get(), getLockFilePath(), LOCK_FILE_HEADER, PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(),  getPolyglotVersion().get(), getLog());
+            VFSUtils.createVenv(venvDirectory, getPackages().get(), getLockFilePath(), PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(),  getPolyglotVersion().get(), getLog());
         } catch (IOException e) {
             throw new GradleException(String.format("failed to create python virtual environment in %s", venvDirectory), e);
         }

@@ -290,7 +290,7 @@ public final class VFSUtils {
             this.inputPackages = inputPackages;
         }
 
-        static LockFile fromFile(Path file, String lockFileHeader, BuildToolLog log) throws IOException {
+        static LockFile fromFile(Path file, BuildToolLog log) throws IOException {
             List<String> packages = new ArrayList<>();
             List<String> inputPackages = null;
             if (Files.isReadable(file)) {
@@ -298,26 +298,31 @@ public final class VFSUtils {
                 if (lines.isEmpty()) {
                     throw wrongFormat(file, lines, log);
                 }
-                // parse version first, we don't care about it for now, but with future versions the
-                // file format might change, and we will need to know to parse differently
-                parseVersion(lines, file, log);
-
-                // parseVersion removed the version line
-                // what is expected to be left is:
+                // format:
                 // 1.) a multiline header comment
-                // 2.) input packages in 1 line (starting with comment #)
-                // 3.) locked packages, 1 line each (as input for pip install)
+                // 2.) graalpy version - 1 line (starting with comment #)
+                // 2.) input packages - 1 line (starting with comment #)
+                // 3.) locked packages - 1 line each (as input for pip install)
                 // see also LockFile.write()
                 Iterator<String> it = lines.iterator();
-                Iterator<String> headerIterator = Arrays.asList(lockFileHeader.split("\n")).iterator();
                 try {
-                    // 1.) header
-                    while (headerIterator.hasNext()) {
-                        if (!("# " + headerIterator.next()).equals(it.next())) {
-                            throw wrongFormat(file, lines, log);
+                    // graalpy version, we don't care about it for now, but with future versions the
+                    // file format might change, and we will need to know to parse differently
+                    String graalPyVersion = null;
+                    while (it.hasNext()) {
+                        String line = it.next();
+                        if (line.startsWith(GRAALPY_VERSION_PREFIX)) {
+                            graalPyVersion = line.substring(GRAALPY_VERSION_PREFIX.length()).trim();
+                            if (graalPyVersion.isEmpty()) {
+                                throw wrongFormat(file, lines, log);
+                            }
+                            break;
                         }
                     }
-                    // 2.) input packages
+                    if (graalPyVersion == null) {
+                        throw wrongFormat(file, lines, log);
+                    }
+                    // input packages
                     String line = it.next();
                     if (!line.startsWith(INPUT_PACKAGES_PREFIX)) {
                         throw wrongFormat(file, lines, log);
@@ -327,33 +332,17 @@ public final class VFSUtils {
                         throw wrongFormat(file, lines, log);
                     }
                     inputPackages = Arrays.asList(pkgs.split(INPUT_PACKAGES_DELIMITER));
+                    // locked packages
+                    while (it.hasNext()) {
+                        packages.add(it.next());
+                    }
                 } catch (NoSuchElementException e) {
                     throw wrongFormat(file, lines, log);
-                }
-                // 3.) locked packages
-                while (it.hasNext()) {
-                    packages.add(it.next());
                 }
             } else {
                 throw new IOException("can't read lock file");
             }
             return new LockFile(file, inputPackages, packages);
-        }
-
-        private static String parseVersion(List<String> lines, Path file, BuildToolLog log) throws IOException {
-            Iterator<String> it = lines.iterator();
-            while (it.hasNext()) {
-                String line = it.next();
-                if (line.startsWith(GRAALPY_VERSION_PREFIX)) {
-                    String graalPyVersion = line.substring(GRAALPY_VERSION_PREFIX.length()).trim();
-                    if (graalPyVersion.isEmpty()) {
-                        throw wrongFormat(file, lines, log);
-                    }
-                    it.remove();
-                    return graalPyVersion;
-                }
-            }
-            throw wrongFormat(file, lines, log);
         }
 
         private static IOException wrongFormat(Path file, List<String> lines, BuildToolLog log) {
@@ -397,12 +386,11 @@ public final class VFSUtils {
     }
 
     public static void createVenv(Path venvDirectory, List<String> packagesArgs, Launcher launcherArgs, String graalPyVersion, BuildToolLog log) throws IOException {
-        createVenv(venvDirectory, packagesArgs, null, null, null, null, launcherArgs, graalPyVersion, log);
+        createVenv(venvDirectory, packagesArgs, null, null, null, launcherArgs, graalPyVersion, log);
     }
 
-    public static void createVenv(Path venvDirectory, List<String> packages, Path lockFilePath,
-                    String lockFileHeader, String packagesChangedError, String missingLockFileWarning,
-                    Launcher launcher, String graalPyVersion, BuildToolLog log) throws IOException {
+    public static void createVenv(Path venvDirectory, List<String> packages, Path lockFilePath, String packagesChangedError, String missingLockFileWarning, Launcher launcher, String graalPyVersion,
+                    BuildToolLog log) throws IOException {
         Objects.requireNonNull(venvDirectory);
         Objects.requireNonNull(packages);
         Objects.requireNonNull(launcher);
@@ -417,7 +405,7 @@ public final class VFSUtils {
         List<String> pluginPackages = trim(packages);
         LockFile lockFile = null;
         if (lockFilePath != null && Files.exists(lockFilePath)) {
-            lockFile = LockFile.fromFile(lockFilePath, lockFileHeader, log);
+            lockFile = LockFile.fromFile(lockFilePath, log);
         }
 
         if (!checkPackages(venvDirectory, pluginPackages, lockFile, packagesChangedError, log)) {
