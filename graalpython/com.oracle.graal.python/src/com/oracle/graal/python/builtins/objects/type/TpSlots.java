@@ -370,18 +370,35 @@ public record TpSlots(TpSlot nb_bool, //
     }
 
     public enum TpSlotGroup {
-        AS_NUMBER(CFields.PyTypeObject__tp_as_number),
-        AS_SEQUENCE(CFields.PyTypeObject__tp_as_sequence),
-        AS_MAPPING(CFields.PyTypeObject__tp_as_mapping),
-        NO_GROUP(null); // Must be last
+        AS_NUMBER(TpSlots::has_as_number, CFields.PyTypeObject__tp_as_number),
+        AS_SEQUENCE(TpSlots::has_as_sequence, CFields.PyTypeObject__tp_as_sequence),
+        AS_MAPPING(TpSlots::has_as_mapping, CFields.PyTypeObject__tp_as_mapping),
+        NO_GROUP(null, null); // Must be last
 
         public static final TpSlotGroup[] VALID_VALUES = Arrays.copyOf(values(), values().length - 1);
 
+        private final GroupGetter getter;
         private final CFields cField;
 
-        TpSlotGroup(CFields cField) {
+        TpSlotGroup(GroupGetter getter, CFields cField) {
+            this.getter = getter;
             this.cField = cField;
         }
+
+        public boolean getValue(TpSlots slots) {
+            assert this != NO_GROUP;
+            return getter.get(slots);
+        }
+
+        public boolean readFromNative(PythonAbstractNativeObject pythonClass) {
+            Object ptr = ReadPointerNode.getUncached().readFromObj(pythonClass, cField);
+            return !InteropLibrary.getUncached().isNull(ptr);
+        }
+    }
+
+    @FunctionalInterface
+    interface GroupGetter {
+        boolean get(TpSlots slot);
     }
 
     /**
@@ -1071,6 +1088,11 @@ public record TpSlots(TpSlot nb_bool, //
      */
     public static TpSlots fromNative(PythonAbstractNativeObject pythonClass, PythonContext ctx) {
         var builder = TpSlots.newBuilder();
+        for (TpSlotGroup group : TpSlotGroup.VALID_VALUES) {
+            if (group.readFromNative(pythonClass)) {
+                builder.setExplicitGroup(group);
+            }
+        }
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             if (!def.hasNativeWrapperFactory()) {
                 continue;
@@ -1518,7 +1540,9 @@ public record TpSlots(TpSlot nb_bool, //
             result.set(def, def.getValue(this));
         }
         for (TpSlotGroup group : TpSlotGroup.VALID_VALUES) {
-            result.setExplicitGroup(group);
+            if (group.getValue(this)) {
+                result.setExplicitGroup(group);
+            }
         }
         return result;
     }
