@@ -79,7 +79,7 @@ _PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
         assert(value == NULL);
         assert(traceback == NULL);
         _PyErr_SetRaisedException(tstate, NULL);
-        return;
+        // return;
     }
 #if 0 // GraalPy change
     assert(PyExceptionClass_Check(type));
