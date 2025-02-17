@@ -3321,7 +3321,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached(value = "createNotNormalized()", inline = false) GetItemNode getItemNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode) {
-            Object divmod = callDivmod.executeObject(frame, value, BILLION);
+            Object divmod = callDivmod.execute(frame, value, BILLION);
             if (!PGuards.isPTuple(divmod) || lenNode.execute(inliningTarget, (PSequence) divmod) != 2) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
             }

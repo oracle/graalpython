@@ -201,7 +201,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
         Object eq(VirtualFrame frame, PReferenceType self, PReferenceType other,
                         @Cached BinaryComparisonNode.EqNode eqNode) {
-            return eqNode.executeObject(frame, self.getObject(), other.getObject());
+            return eqNode.execute(frame, self.getObject(), other.getObject());
         }
 
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")
@@ -223,7 +223,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
         Object ne(VirtualFrame frame, PReferenceType self, PReferenceType other,
                         @Cached BinaryComparisonNode.NeNode neNode) {
-            return neNode.executeObject(frame, self.getObject(), other.getObject());
+            return neNode.execute(frame, self.getObject(), other.getObject());
         }
 
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")

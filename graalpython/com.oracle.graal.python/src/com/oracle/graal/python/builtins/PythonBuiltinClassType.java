@@ -160,6 +160,7 @@ import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.set.BaseSetBuiltins;
+import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
@@ -263,7 +264,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PReferenceType("ReferenceType", "_weakref"),
     PSentinelIterator("callable_iterator", Flags.PRIVATE_DERIVED_WODICT),
     PReverseIterator("reversed", J_BUILTINS),
-    PSet("set", J_BUILTINS, SET_M_FLAGS, BaseSetBuiltins.SLOTS),
+    PSet("set", J_BUILTINS, SET_M_FLAGS, TpSlots.merge(BaseSetBuiltins.SLOTS, SetBuiltins.SLOTS)),
     PSlice("slice", J_BUILTINS),
     PString("str", J_BUILTINS, STRING_M_FLAGS, StringBuiltins.SLOTS),
     PTraceback("traceback"),

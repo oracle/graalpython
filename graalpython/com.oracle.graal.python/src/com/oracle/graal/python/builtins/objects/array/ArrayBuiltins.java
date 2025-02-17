@@ -44,8 +44,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
@@ -206,7 +204,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_concat, isComplex = true)
     @GenerateNodeFactory
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -259,10 +257,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
-    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
+    @Slot(value = SlotKind.sq_inplace_repeat, isComplex = true)
     @GenerateNodeFactory
-    abstract static class IMulNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class IMulNode extends SqRepeatBuiltinNode {
         @Specialization
         static Object concat(PArray self, int value,
                         @Bind("this") Node inliningTarget,
@@ -286,11 +283,6 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
             }
-        }
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return ArrayBuiltinsClinicProviders.IMulNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -405,7 +397,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 Object leftValue = getLeft.execute(inliningTarget, left, i);
                 Object rightValue = getRight.execute(inliningTarget, right, i);
                 if (!eqNode.compare(frame, inliningTarget, leftValue, rightValue)) {
-                    return coerceToBooleanNode.execute(frame, compareNode.executeObject(frame, leftValue, rightValue));
+                    return coerceToBooleanNode.execute(frame, compareNode.execute(frame, leftValue, rightValue));
                 }
             }
             return op.cmpResultToBool(left.getLength() - right.getLength());
@@ -422,7 +414,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 double leftValue = (Double) getLeft.execute(inliningTarget, left, i);
                 double rightValue = (Double) getRight.execute(inliningTarget, right, i);
                 if (leftValue != rightValue) {
-                    return coerceToBooleanNode.execute(frame, compareNode.executeObject(frame, leftValue, rightValue));
+                    return coerceToBooleanNode.execute(frame, compareNode.execute(frame, leftValue, rightValue));
                 }
             }
             return op.cmpResultToBool(left.getLength() - right.getLength());

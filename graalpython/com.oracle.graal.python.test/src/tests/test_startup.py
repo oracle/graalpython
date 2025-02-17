@@ -84,7 +84,7 @@ class StartupTests(unittest.TestCase):
 
     @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-specific test")
     def test_startup_full(self):
-        result = subprocess.check_output([sys.executable, '--log.level=FINE', '-v', '-c', 'print("Hello")'], stderr=subprocess.STDOUT, text=True)
+        result = subprocess.check_output([sys.executable, '--log.level=FINE', '-s', '-v', '-c', 'print("Hello")'], stderr=subprocess.STDOUT, text=True)
         assert 'Hello' in result
         imports = re.findall("import '(\S+)'", result)
         self.assertEqual(expected_full_startup_modules, imports)

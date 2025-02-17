@@ -57,8 +57,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
@@ -90,7 +88,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
-import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInplaceMulNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInsertNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeRotateNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -674,7 +671,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__iadd__(v)
-    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_concat, isComplex = true)
     @GenerateNodeFactory
     public abstract static class DequeInplaceAddNode extends PythonBinaryBuiltinNode {
 
@@ -742,16 +739,10 @@ public final class DequeBuiltins extends PythonBuiltins {
         }
     }
 
-    // deque.__mul__(v)
-    @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "n"})
+    // deque.__imul__(v)
+    @Slot(value = SlotKind.sq_inplace_repeat, isComplex = true)
     @GenerateNodeFactory
-    @ArgumentClinic(name = "n", conversion = ClinicConversion.Index)
-    public abstract static class DequeInplaceMulNode extends PythonBinaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return DequeInplaceMulNodeClinicProviderGen.INSTANCE;
-        }
+    public abstract static class DequeInplaceMulNode extends SqRepeatBuiltinNode {
 
         @Specialization
         PDeque doGeneric(PDeque self, int n) {

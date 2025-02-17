@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.Bin
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSlotBinaryFuncBuiltin;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -182,6 +183,49 @@ public class TpSlotBinaryOp {
         }
     }
 
+    public enum InplaceSlot {
+        NB_INPLACE_ADD(ReversibleSlot.NB_ADD),
+        NB_INPLACE_SUBTRACT(ReversibleSlot.NB_SUBTRACT),
+        NB_INPLACE_MULTIPLY(ReversibleSlot.NB_MULTIPLY),
+        NB_INPLACE_REMAINDER(ReversibleSlot.NB_REMAINDER),
+        NB_INPLACE_LSHIFT(ReversibleSlot.NB_LSHIFT),
+        NB_INPLACE_RSHIFT(ReversibleSlot.NB_RSHIFT),
+        NB_INPLACE_AND(ReversibleSlot.NB_AND),
+        NB_INPLACE_XOR(ReversibleSlot.NB_XOR),
+        NB_INPLACE_OR(ReversibleSlot.NB_OR),
+        NB_INPLACE_FLOOR_DIVIDE(ReversibleSlot.NB_FLOOR_DIVIDE),
+        NB_INPLACE_TRUE_DIVIDE(ReversibleSlot.NB_TRUE_DIVIDE),
+        NB_INPLACE_MATRIX_MULTIPLY(ReversibleSlot.NB_MATRIX_MULTIPLY);
+
+        private final ReversibleSlot reversibleSlot;
+
+        InplaceSlot(ReversibleSlot reversibleSlot) {
+            this.reversibleSlot = reversibleSlot;
+        }
+
+        public TpSlot getSlotValue(TpSlots slots) {
+            // switch instead of using TpSlotMeta for better inlining on fast-path
+            return switch (this) {
+                case NB_INPLACE_ADD -> slots.nb_inplace_add();
+                case NB_INPLACE_SUBTRACT -> slots.nb_inplace_subtract();
+                case NB_INPLACE_MULTIPLY -> slots.nb_inplace_multiply();
+                case NB_INPLACE_REMAINDER -> slots.nb_inplace_remainder();
+                case NB_INPLACE_LSHIFT -> slots.nb_inplace_lshift();
+                case NB_INPLACE_RSHIFT -> slots.nb_inplace_rshift();
+                case NB_INPLACE_AND -> slots.nb_inplace_and();
+                case NB_INPLACE_XOR -> slots.nb_inplace_xor();
+                case NB_INPLACE_OR -> slots.nb_inplace_or();
+                case NB_INPLACE_FLOOR_DIVIDE -> slots.nb_inplace_floor_divide();
+                case NB_INPLACE_TRUE_DIVIDE -> slots.nb_inplace_true_divide();
+                case NB_INPLACE_MATRIX_MULTIPLY -> slots.nb_inplace_matrix_multiply();
+            };
+        }
+
+        public ReversibleSlot getReversibleSlot() {
+            return reversibleSlot;
+        }
+    }
+
     public abstract static class TpSlotBinaryOpBuiltin<T extends BinaryOpBuiltinNode> extends TpSlotBuiltin<T> {
         private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
         private final String builtinName;
@@ -213,6 +257,13 @@ public class TpSlotBinaryOp {
         private PBuiltinFunction createRBuiltin(Python3Core core, Object type, TruffleString tsName) {
             var factory = WrapperNodeFactory.wrap(getNodeFactory(), SwapArgumentsNode.class, SwapArgumentsNode::new);
             return createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, PExternalFunctionWrapper.BINARYFUNC_R, factory);
+        }
+    }
+
+    public abstract static class TpSlotBinaryIOpBuiltin<T extends PythonBinaryBuiltinNode> extends TpSlotBinaryFuncBuiltin<T> {
+
+        protected TpSlotBinaryIOpBuiltin(NodeFactory<T> nodeFactory, String builtinName) {
+            super(nodeFactory, PExternalFunctionWrapper.BINARYFUNC, builtinName);
         }
     }
 

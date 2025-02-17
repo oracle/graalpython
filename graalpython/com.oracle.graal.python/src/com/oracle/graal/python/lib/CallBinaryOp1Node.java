@@ -41,16 +41,18 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.IsSameSlotNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.CallSlotBinaryOpNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -62,9 +64,10 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  */
 @GenerateInline
 @GenerateCached(false)
+@GenerateUncached
 public abstract class CallBinaryOp1Node extends PNodeWithContext {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlot slotV,
-                    Object w, Object classW, TpSlot slotW, ReversibleSlot op);
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlots slotsV,
+                    Object w, Object classW, TpSlots slotsW, ReversibleSlot op);
 
     // CPython binary_op1 may end up calling SLOT1BINFULL - wrapper around the dunder methods, which
     // duplicates some of the logic checking the right operand, its slot, and whether it is subtype.
@@ -86,47 +89,50 @@ public abstract class CallBinaryOp1Node extends PNodeWithContext {
     // we just try __rxxx__, again, without any subclass check.
 
     @Specialization
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlot slotV, Object w, Object classW, TpSlot slotWIn, ReversibleSlot op,
+    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlots slotsV, Object w, Object classW, TpSlots slotsW, ReversibleSlot op,
                     @Cached IsSameTypeNode isSameTypeNode,
                     @Cached IsSameSlotNode isSameSlotNode,
                     @Cached InlinedConditionProfile isSameTypeProfile,
                     @Cached InlinedConditionProfile isSameSlotProfile,
                     @Cached(inline = false) IsSubtypeNode isSubtypeNode,
-                    @Cached InlinedBranchProfile wResultBranch,
-                    @Cached InlinedBranchProfile vResultBranch,
+                    @Cached InlinedConditionProfile vResultProfile,
+                    @Cached InlinedConditionProfile wResultProfile,
                     @Cached InlinedBranchProfile notImplementedBranch,
                     @Cached CallSlotBinaryOpNode callSlotWNode,
                     @Cached CallSlotBinaryOpNode callSlotVNode) {
-        TpSlot slotW = null;
-        boolean sameTypes = isSameTypeProfile.profile(inliningTarget, isSameTypeNode.execute(inliningTarget, classW, classV));
-        if (!sameTypes) {
-            slotW = slotWIn;
-            if (isSameSlotProfile.profile(inliningTarget, slotV != null && slotW != null && isSameSlotNode.execute(inliningTarget, slotW, slotV))) {
-                slotW = null;
-            }
-        }
+        final TpSlot slotV = op.getSlotValue(slotsV);
+        final TpSlot slotW = op.getSlotValue(slotsW);
+        boolean skipReverse = false;
         // Note: we call slotW with v as the receiver. This appears to be the semantics of
         // CPython reversible binop slots. This is supposed to allow the slot to handle
         // the reversible case, if the slot does not want to handle it, it should detect that
         // the first receiver argument is not of the right type and just return NotImplemented.
         if (slotV != null) {
-            if (slotW != null && isSubtypeNode.execute(frame, classW, classV)) {
-                assert !sameTypes;
-                Object result = callSlotWNode.execute(frame, inliningTarget, slotW, v, classV, w, slotW, classW, false, op);
-                if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                    wResultBranch.enter(inliningTarget);
-                    return result;
+            boolean sameTypes = false;
+            if (slotW != null) {
+                sameTypes = isSameTypeProfile.profile(inliningTarget, isSameTypeNode.execute(inliningTarget, classW, classV));
+                if (!sameTypes) {
+                    if (!isSameSlotProfile.profile(inliningTarget, isSameSlotNode.execute(inliningTarget, slotW, slotV))) {
+                        if (isSubtypeNode.execute(frame, classW, classV)) {
+                            Object result = callSlotWNode.execute(frame, inliningTarget, slotW, v, classV, w, slotW, classW, false, op);
+                            if (wResultProfile.profile(inliningTarget, result != PNotImplemented.NOT_IMPLEMENTED)) {
+                                return result;
+                            }
+                            skipReverse = true;
+                        }
+                    } else {
+                        skipReverse = true;
+                    }
+                } else {
+                    skipReverse = true;
                 }
-                slotW = null;
             }
-            Object result = callSlotVNode.execute(frame, inliningTarget, slotV, v, classV, w, slotWIn, classW, sameTypes, op);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                vResultBranch.enter(inliningTarget);
+            Object result = callSlotVNode.execute(frame, inliningTarget, slotV, v, classV, w, slotW, classW, sameTypes, op);
+            if (vResultProfile.profile(inliningTarget, result != PNotImplemented.NOT_IMPLEMENTED)) {
                 return result;
             }
         }
-        if (slotW != null) {
-            assert !sameTypes;
+        if (slotW != null && !skipReverse) {
             return callSlotWNode.execute(frame, inliningTarget, slotW, v, classV, w, slotW, classW, false, op);
         }
         notImplementedBranch.enter(inliningTarget);

@@ -33,8 +33,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
@@ -82,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -426,7 +425,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_concat, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -474,37 +473,18 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_repeat, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class IMulNode extends PythonBinaryBuiltinNode {
+    public abstract static class IMulNode extends SqRepeatBuiltinNode {
         @Specialization
         static Object mul(VirtualFrame frame, PByteArray self, int times,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared SequenceStorageNodes.RepeatNode repeatNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached PRaiseNode raiseNode) {
             self.checkCanResize(inliningTarget, raiseNode);
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
             self.setSequenceStorage(res);
             return self;
-        }
-
-        @Specialization
-        static Object mul(VirtualFrame frame, PByteArray self, Object times,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached @Shared SequenceStorageNodes.RepeatNode repeatNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            self.checkCanResize(inliningTarget, raiseNode);
-            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), asSizeNode.executeExact(frame, inliningTarget, times));
-            self.setSequenceStorage(res);
-            return self;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object mul(Object self, Object other,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, other);
         }
     }
 

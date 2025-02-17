@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 
 import java.util.Objects;
@@ -100,9 +99,11 @@ public class TpSlotSizeArgFun {
 
     public abstract static class TpSlotSizeArgFunBuiltin<T extends SizeArgFunBuiltinNode> extends TpSlotBuiltin<T> {
         private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
+        private final String name;
 
-        protected TpSlotSizeArgFunBuiltin(NodeFactory<T> nodeFactory) {
+        protected TpSlotSizeArgFunBuiltin(NodeFactory<T> nodeFactory, String name) {
             super(nodeFactory);
+            this.name = name;
         }
 
         final SizeArgFunBuiltinNode createSlotNode() {
@@ -111,7 +112,7 @@ public class TpSlotSizeArgFun {
 
         @Override
         public void initialize(PythonLanguage language) {
-            RootCallTarget target = createBuiltinCallTarget(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), J___GETITEM__);
+            RootCallTarget target = createBuiltinCallTarget(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), name);
             language.setBuiltinSlotCallTarget(callTargetIndex, target);
         }
 

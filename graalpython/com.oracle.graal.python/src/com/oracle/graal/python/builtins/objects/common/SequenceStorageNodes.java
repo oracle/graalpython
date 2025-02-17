@@ -2015,7 +2015,7 @@ public abstract class SequenceStorageNodes {
         }
 
         private boolean cmpGeneric(VirtualFrame frame, Object left, Object right) {
-            return castToBoolean(frame, cmpOp.executeObject(frame, left, right));
+            return castToBoolean(frame, cmpOp.execute(frame, left, right));
         }
 
         private boolean castToBoolean(VirtualFrame frame, Object value) {
@@ -2515,8 +2515,6 @@ public abstract class SequenceStorageNodes {
     }
 
     public abstract static class RepeatNode extends SequenceStorageBaseNode {
-        @Child private RepeatNode recursive;
-
         /*
          * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but e.g.
          * bytes raises OverflowError when the memory might be available but the size overflows
@@ -2527,8 +2525,6 @@ public abstract class SequenceStorageNodes {
         protected RepeatNode(PythonBuiltinClassType errorForOverflow) {
             this.errorForOverflow = errorForOverflow;
         }
-
-        public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage left, Object times);
 
         public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage left, int times);
 
@@ -2694,24 +2690,6 @@ public abstract class SequenceStorageNodes {
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
-        }
-
-        @Specialization(guards = "!isInt(times)")
-        @SuppressWarnings("truffle-static-method")
-        SequenceStorage doNonInt(VirtualFrame frame, SequenceStorage s, Object times,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyIndexCheckNode indexCheckNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            if (!indexCheckNode.execute(inliningTarget, times)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, times);
-            }
-            int i = asSizeNode.executeExact(frame, inliningTarget, times);
-            if (recursive == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursive = insert(RepeatNodeGen.create(errorForOverflow));
-            }
-            return recursive.execute(frame, s, i);
         }
 
         private static void repeat(Object dest, Object src, int len, int times) {

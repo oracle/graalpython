@@ -43,18 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_aiter;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_anext;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAsyncMethods__am_await;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_add;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_and;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_floor_divide;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_lshift;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_multiply;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_or;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_power;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_remainder;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_rshift;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_subtract;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_true_divide;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyNumberMethods__nb_inplace_xor;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_number;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_call;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_hash;
@@ -69,30 +58,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ANEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ILSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinaryFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.CallFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.HashfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.CallFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncLegacyWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.type.MethodsFlags;
@@ -116,18 +93,7 @@ public enum SlotMethodDef {
     // (mq) AM_SEND is an internal function and mostly called from within AWAIT, AITER, ANEXT.
     /*-  AM_SEND(PyAsyncMethods__am_send, ASYNC_AM_SEND, CallFunctionWrapper::new, MethodsFlags.AM_SEND), */
 
-    NB_INPLACE_ADD(PyNumberMethods__nb_inplace_add, T___IADD__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_ADD),
-    NB_INPLACE_AND(PyNumberMethods__nb_inplace_and, T___IAND__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_AND),
-    NB_INPLACE_FLOOR_DIVIDE(PyNumberMethods__nb_inplace_floor_divide, T___IFLOORDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_FLOOR_DIVIDE),
-    NB_INPLACE_LSHIFT(PyNumberMethods__nb_inplace_lshift, T___ILSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_LSHIFT),
-    NB_INPLACE_MULTIPLY(PyNumberMethods__nb_inplace_multiply, T___IMUL__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_MULTIPLY),
-    NB_INPLACE_OR(PyNumberMethods__nb_inplace_or, T___IOR__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_OR),
-    NB_INPLACE_POWER(PyNumberMethods__nb_inplace_power, T___IPOW__, CallFunctionWrapper::new, MethodsFlags.NB_INPLACE_POWER),
-    NB_INPLACE_REMAINDER(PyNumberMethods__nb_inplace_remainder, T___IMOD__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_REMAINDER),
-    NB_INPLACE_RSHIFT(PyNumberMethods__nb_inplace_rshift, T___IRSHIFT__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_RSHIFT),
-    NB_INPLACE_SUBTRACT(PyNumberMethods__nb_inplace_subtract, T___ISUB__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_SUBTRACT),
-    NB_INPLACE_TRUE_DIVIDE(PyNumberMethods__nb_inplace_true_divide, T___ITRUEDIV__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_TRUE_DIVIDE),
-    NB_INPLACE_XOR(PyNumberMethods__nb_inplace_xor, T___IXOR__, BinaryFuncWrapper::new, MethodsFlags.NB_INPLACE_XOR);
+    NB_INPLACE_POWER(PyNumberMethods__nb_inplace_power, T___IPOW__, CallFunctionWrapper::new, MethodsFlags.NB_INPLACE_POWER);
 
     public final TruffleString methodName;
     public final Function<Object, PyProcsWrapper> wrapperFactory;
@@ -160,18 +126,7 @@ public enum SlotMethodDef {
     static {
         initGroup(
                         PyTypeObject__tp_as_number,
-                        NB_INPLACE_ADD,
-                        NB_INPLACE_AND,
-                        NB_INPLACE_FLOOR_DIVIDE,
-                        NB_INPLACE_LSHIFT,
-                        NB_INPLACE_MULTIPLY,
-                        NB_INPLACE_OR,
-                        NB_INPLACE_POWER,
-                        NB_INPLACE_REMAINDER,
-                        NB_INPLACE_RSHIFT,
-                        NB_INPLACE_SUBTRACT,
-                        NB_INPLACE_TRUE_DIVIDE,
-                        NB_INPLACE_XOR);
+                        NB_INPLACE_POWER);
     }
 
     private static void initGroup(CFields typeField, SlotMethodDef... slots) {

@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -129,15 +128,11 @@ public abstract class PySequenceConcat extends PNodeWithContext {
         if (pySeqCheckV.execute(inliningTarget, v) && pySeqCheckW.execute(inliningTarget, w)) {
             Object classW = getWClass.execute(inliningTarget, w);
             TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
-            TpSlot slotV = slotsV.nb_add();
-            TpSlot slotW = slotsW.nb_add();
-            if (slotV != null || slotW != null) {
-                hasNbAddSlot.enter(inliningTarget);
-                Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_ADD);
-                if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                    hasNbAddResult.enter(inliningTarget);
-                    return result;
-                }
+            hasNbAddSlot.enter(inliningTarget);
+            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, ReversibleSlot.NB_ADD);
+            if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                hasNbAddResult.enter(inliningTarget);
+                return result;
             }
         }
         return raiseNotSupported(inliningTarget, v, raiseNode);

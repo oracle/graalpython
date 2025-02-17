@@ -292,9 +292,9 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
             Object unboxed = unboxNode.execute(inliningTarget, left);
             if (unboxed != null) {
                 if (!reverse) {
-                    return op.executeObject(frame, unboxed, right);
+                    return op.execute(frame, unboxed, right);
                 } else {
-                    return op.executeObject(frame, right, unboxed);
+                    return op.execute(frame, right, unboxed);
                 }
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -324,7 +324,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
             if (newLeft == null || newRight == null) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return op.executeObject(frame, newLeft, newRight);
+            return op.execute(frame, newLeft, newRight);
         }
     }
 

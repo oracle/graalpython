@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -59,8 +60,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
@@ -102,12 +101,10 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
-import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
-import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -118,6 +115,8 @@ import com.oracle.graal.python.lib.PySequenceConcat;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PySequenceDelItemNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
+import com.oracle.graal.python.lib.PySequenceInplaceConcat;
+import com.oracle.graal.python.lib.PySequenceInplaceRepeat;
 import com.oracle.graal.python.lib.PySequenceIterSearchNode;
 import com.oracle.graal.python.lib.PySequenceSetItemNode;
 import com.oracle.graal.python.lib.PySequenceSizeNode;
@@ -332,7 +331,7 @@ public final class PythonCextAbstractBuiltins {
         static Object doIntLikePrimitiveWrapper(Object left, Object right, @SuppressWarnings("unused") int op,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
                         @Cached("createCallNode(op)") BinaryOpNode callNode) {
-            return callNode.executeObject(null, left, right);
+            return callNode.execute(null, left, right);
         }
 
         /**
@@ -536,26 +535,15 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
     abstract static class PySequence_InPlaceRepeat extends CApiBinaryBuiltinNode {
-        @Specialization(guards = {"checkNode.execute(inliningTarget, obj)"}, limit = "1")
+        @Specialization
         static Object repeat(Object obj, long n,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupNode,
-                        @Cached CallNode callNode,
-                        @Cached("createMul()") PyNumberMultiplyNode mulNode,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode) {
-            Object imulCallable = lookupNode.execute(null, inliningTarget, obj, T___IMUL__);
-            if (imulCallable != PNone.NO_VALUE) {
-                Object ret = callNode.executeWithoutFrame(imulCallable, n);
-                return ret;
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PySequenceInplaceRepeat repeat) {
+            if (!PInt.isIntRange(n)) {
+                throw raiseNode.raise(inliningTarget, OverflowError);
             }
-            return mulNode.execute(null, inliningTarget, obj, n);
-        }
-
-        @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
-        static Object repeat(Object obj, @SuppressWarnings("unused") Object n,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+            return repeat.execute(null, inliningTarget, obj, (int) n);
         }
     }
 
@@ -572,25 +560,11 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class PySequence_InPlaceConcat extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = {"checkNode.execute(inliningTarget, s1)"}, limit = "1")
+        @Specialization
         static Object concat(Object s1, Object s2,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupNode,
-                        @Cached CallNode callNode,
-                        @Cached PyNumberAddNode addNode,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode) {
-            Object iaddCallable = lookupNode.execute(null, inliningTarget, s1, T___IADD__);
-            if (iaddCallable != PNone.NO_VALUE) {
-                return callNode.executeWithoutFrame(iaddCallable, s2);
-            }
-            return addNode.execute(null, inliningTarget, s1, s2);
-        }
-
-        @Specialization(guards = "!checkNode.execute(inliningTarget, s1)", limit = "1")
-        static Object concat(Object s1, @SuppressWarnings("unused") Object s2,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
+                        @Cached PySequenceInplaceConcat concat) {
+            return concat.execute(null, inliningTarget, s1, s2);
         }
     }
 
