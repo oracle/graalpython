@@ -53,14 +53,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
-import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
@@ -88,13 +85,10 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -177,33 +171,17 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object fromObject(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached BytesNode bytesNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (PGuards.isPBytes(obj)) {
-                return obj;
-            } else {
-                Object klass = getClassNode.execute(inliningTarget, obj);
-                if (isSubtypeNode.execute(klass, PythonBuiltinClassType.PBytes)) {
-                    return obj;
-                } else if (isAcceptedSubtype(inliningTarget, obj, klass, isSubtypeNode, lookupAttrNode)) {
-                    return bytesNode.execute(null, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
-                } else {
-                    throw raiseNode.raise(inliningTarget, TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
-                }
-            }
+        @Specialization(guards = "isBuiltinBytes(bytes)")
+        static Object bytes(PBytes bytes) {
+            return bytes;
         }
 
-        private static boolean isAcceptedSubtype(Node inliningTarget, Object obj, Object klass, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
-            return isSubtypeNode.execute(klass, PythonBuiltinClassType.PList) ||
-                            isSubtypeNode.execute(klass, PythonBuiltinClassType.PTuple) ||
-                            isSubtypeNode.execute(klass, PythonBuiltinClassType.PMemoryView) ||
-                            (!isSubtypeNode.execute(klass, PythonBuiltinClassType.PString) && lookupAttrNode.execute(null, inliningTarget, obj, T___ITER__) != PNone.NO_VALUE);
+        @Fallback
+        static Object fromObject(Object obj,
+                        @Bind("this") Node inliningTarget,
+                        @Cached BytesNodes.BytesFromObject fromObject) {
+            byte[] bytes = fromObject.execute(null, obj);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
         }
     }
 
