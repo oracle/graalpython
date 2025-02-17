@@ -190,7 +190,7 @@ if __graalpython__.jython_emulation_enabled:
                 if ".jar!" in path:
                     zipimport_path = path.replace(".jar!/", ".jar/").replace(".jar!", ".jar/")
                     zipimporter = self.zipimport.zipimporter(zipimport_path)
-                    if zipimporter.find_module(fullname):
+                    if zipimporter.find_spec(fullname):
                         if zipimporter.is_package(fullname):
                             return _frozen_importlib.ModuleSpec(fullname, JarImportLoader(zipimporter.get_code(fullname)), is_package=True)
                         else:

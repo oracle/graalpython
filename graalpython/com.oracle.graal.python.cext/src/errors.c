@@ -42,7 +42,7 @@ _PyErr_SetRaisedException(PyThreadState *tstate, PyObject *exc)
 {
     PyObject *old_exc = tstate->current_exception;
     tstate->current_exception = exc;
-    Py_XDECREF(old_exc);
+    // Py_XDECREF(old_exc);
 }
 
 static PyObject*

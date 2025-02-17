@@ -69,12 +69,12 @@ class BasicZipImportTests(ZipImportBaseTestCase, unittest.TestCase):
         z = zipimport.zipimporter(ZIP_PATH)
         self.assertTrue(zipimport._zip_directory_cache[ZIP_ABS_PATH] is not None)
 
-    def test_zipimporter_find_module(self):
-        self.assertTrue(self.z is self.z.find_module("MyTestModule"))
-        self.assertTrue(self.z is self.z.find_module("packageA"))
-        self.assertTrue(self.z is self.z.find_module(os.path.join("packageA", "moduleC")))
-        self.assertTrue(None is self.z.find_module("packageA.moduleC"))
-        self.assertTrue(self.z is self.z.find_module(os.path.join("cesta", "moduleA")))
+    def test_zipimporter_find_spec(self):
+        self.assertTrue(self.z is self.z.find_spec("MyTestModule").loader)
+        self.assertTrue(self.z is self.z.find_spec("packageA").loader)
+        self.assertTrue(self.z is self.z.find_spec(os.path.join("packageA", "moduleC")).loader)
+        self.assertTrue(None is self.z.find_spec("packageA.moduleC"))
+        self.assertTrue(self.z is self.z.find_spec(os.path.join("cesta", "moduleA")).loader)
 
     def test_zipimporter_get_code(self):
         self.assertTrue(self.z.get_code("MyTestModule").co_filename.endswith("MyTestModule.py"))
@@ -145,12 +145,12 @@ class ZipImportWithPrefixTests(ZipImportBaseTestCase, unittest.TestCase):
         self.assertTrue(self.z._files[os.path.join("packageA", "moduleC.py")] is not None)
         self.assertTrue(self.z._files[os.path.join("cesta", "moduleA.py")] is not None)
 
-    def test_zipimporter_with_prefix_find_module(self):
-        self.assertTrue(None is self.z.find_module("MyTestModule"))
-        self.assertTrue(None is self.z.find_module("packageA"))
-        self.assertTrue(None is self.z.find_module(os.path.join("packageA", "moduleC")))
-        self.assertTrue(None is self.z.find_module("packageA.moduleC"))
-        self.assertTrue(self.z is self.z.find_module("moduleA"))
+    def test_zipimporter_with_prefix_find_spec(self):
+        self.assertTrue(None is self.z.find_spec("MyTestModule"))
+        self.assertTrue(None is self.z.find_spec("packageA"))
+        self.assertTrue(None is self.z.find_spec(os.path.join("packageA", "moduleC")))
+        self.assertTrue(None is self.z.find_spec("packageA.moduleC"))
+        self.assertTrue(self.z is self.z.find_spec("moduleA").loader)
 
 class ImportTests(ZipImportBaseTestCase, unittest.TestCase):
 
