@@ -517,7 +517,7 @@ def test_repeat_vs_multiply():
     assert CallRepeatHelper.PySequence_Repeat(x, 2) == "repeat"
 
     SqRepeatAndNbMultiplyNoImplemented = CPyExtHeapType(
-        "SqRepeatAndNbMultiplyNoImplemented",
+        "RepeatAndMulNotImpl",
         slots=[
             '{Py_sq_repeat, &repeat}',
             '{Py_nb_multiply, &mymultiply}',
@@ -554,7 +554,7 @@ def test_sq_inplace_repeat_vs_nb_inplace_multiply():
     assert x == "repeat"
 
     SqInplaceRepeatAndNbInplaceMultiply = CPyExtHeapType(
-        "SqInplaceRepeatAndNbInplaceMultiply",
+        "SqInplaceRepeatAndNbInMul",
         slots=['{Py_sq_inplace_repeat, &inplace_repeat}', '{Py_nb_inplace_multiply, &inplace_multiply}'],
         code='''
             PyObject* inplace_repeat(PyObject* a, Py_ssize_t times) { return PyUnicode_FromString("inplace_repeat"); }
@@ -569,7 +569,7 @@ def test_sq_inplace_repeat_vs_nb_inplace_multiply():
     assert CallRepeatHelper.PySequence_InPlaceRepeat(x, 1) == "inplace_repeat"
 
     SqInplaceRepeatAndNbInplaceMultiplyNotImplemented = CPyExtHeapType(
-        "SqInplaceRepeatAndNbInplaceMultiplyNotImplemented",
+        "InplaceRepeatAndMulNotImpl",
         slots=['{Py_sq_inplace_repeat, &inplace_repeat}', '{Py_nb_inplace_multiply, &inplace_multiply}'],
         code='''
             PyObject* inplace_repeat(PyObject* a, Py_ssize_t times) { return PyUnicode_FromString("inplace_repeat"); }
