@@ -1895,7 +1895,7 @@ public abstract class CApiTransitions {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
                     Object ref = lookup.get();
-                    if (ref == null) {
+                    if (strict && ref == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                     }

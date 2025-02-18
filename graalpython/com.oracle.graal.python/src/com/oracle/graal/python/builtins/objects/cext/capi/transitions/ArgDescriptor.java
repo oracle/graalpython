@@ -145,6 +145,7 @@ public enum ArgDescriptor {
     PyMethodObject(ArgBehavior.PyObject, "PyMethodObject*"),
     PyInstanceMethodObject(ArgBehavior.PyObject, "PyInstanceMethodObject*"),
     PyObjectTransfer(ArgBehavior.PyObject, "PyObject*", true),
+    PyObjectRawPointer(ArgBehavior.Pointer, "PyObject*"),
     Pointer(ArgBehavior.Pointer, "void*"),
     Py_ssize_t(ArgBehavior.Int64, "Py_ssize_t"),
     Py_hash_t(ArgBehavior.Int64, "Py_hash_t"),

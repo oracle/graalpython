@@ -2394,7 +2394,6 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
     fprintf(stderr, "\n");
     fflush(stderr);
 
-#if 0 // GraalPy change
     if (_PyObject_IsFreed(obj)) {
         /* It seems like the object memory has been freed:
            don't access it to prevent a segmentation fault. */
@@ -2402,6 +2401,7 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
         fflush(stderr);
     }
     else {
+#if 0 // GraalPy change
         /* Display the traceback where the object has been allocated.
            Do it before dumping repr(obj), since repr() is more likely
            to crash than dumping the traceback. */
@@ -2418,14 +2418,11 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
 #endif // GraalPy change
         /* This might succeed or fail, but we're about to abort, so at least
            try to provide any extra info we can: */
-        if (obj) // GraalPy change, guard call to _PyObject_Dump
         _PyObject_Dump(obj);
 
-#if 0 // GraalPy change
         fprintf(stderr, "\n");
         fflush(stderr);
     }
-#endif // GraalPy change
 
     Py_FatalError("_PyObject_AssertFailed");
 }
