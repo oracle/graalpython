@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -58,9 +59,11 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.WrapperNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.TernaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.CallReversiblePythonSlotNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.TpSlotReversiblePython;
@@ -225,6 +228,40 @@ public final class TpSlotNbPower {
             }
             notImplementedProfile.enter(inliningTarget);
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class CallSlotNbInPlacePowerNode extends Node {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "ternaryfunc");
+
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object v, Object w, Object z);
+
+        // There are no builtin implementations
+
+        @Specialization
+        static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object v, Object w, @SuppressWarnings("unused") Object z,
+                        @Cached BinaryPythonSlotDispatcherNode dispatcherNode) {
+            // CPython doesn't pass the third argument to __ipow__
+            return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), v, w);
+        }
+
+        @Specialization
+        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object v, Object w, Object z,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached(inline = false) PythonToNativeNode vToNative,
+                        @Cached(inline = false) PythonToNativeNode wToNative,
+                        @Cached(inline = false) PythonToNativeNode zToNative,
+                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
+            PythonContext ctx = PythonContext.get(inliningTarget);
+            PythonContext.PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
+            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___IPOW__, slot.callable,
+                            vToNative.execute(v), wToNative.execute(w), zToNative.execute(z));
+            return checkResultNode.execute(state, T___IPOW__, toPythonNode.execute(result));
         }
     }
 }

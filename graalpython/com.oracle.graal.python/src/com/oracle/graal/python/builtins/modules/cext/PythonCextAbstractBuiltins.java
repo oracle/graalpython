@@ -79,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
@@ -103,6 +102,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.lib.PyNumberInPlacePowerNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
@@ -126,7 +126,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
@@ -146,7 +145,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -428,27 +426,16 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class PyNumber_InPlacePower extends CApiTernaryBuiltinNode {
 
-        @Specialization(guards = {"o1.isIntLike()", "o2.isIntLike()", "o3.isIntLike()"})
-        static Object doIntLikePrimitiveWrapper(PrimitiveNativeWrapper o1, PrimitiveNativeWrapper o2, PrimitiveNativeWrapper o3,
-                        @Shared @Cached("createIPow()") LookupAndCallInplaceNode callNode) {
-            return callNode.executeTernary(null, o1.getLong(), o2.getLong(), o3.getLong());
-        }
-
-        @Specialization(replaces = "doIntLikePrimitiveWrapper")
+        @Specialization
         static Object doGeneric(Object o1, Object o2, Object o3,
-                        @Shared @Cached("createIPow()") LookupAndCallInplaceNode callNode) {
-            return callNode.executeTernary(null, o1, o2, o3);
-        }
-
-        @NeverDefault
-        static LookupAndCallInplaceNode createIPow() {
-            return InplaceArithmetic.IPow.create();
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberInPlacePowerNode powerNode) {
+            return powerNode.execute(null, inliningTarget, o1, o2, o3);
         }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class PyNumber_Power extends CApiTernaryBuiltinNode {
-        @Child private LookupAndCallTernaryNode callNode;
 
         @Specialization
         Object doGeneric(Object o1, Object o2, Object o3,

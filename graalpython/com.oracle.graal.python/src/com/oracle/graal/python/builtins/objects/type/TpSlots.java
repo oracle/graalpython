@@ -65,6 +65,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INVERT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
@@ -127,6 +128,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSe
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbInPlacePowerWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbPowerWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
@@ -288,6 +290,7 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot nb_inplace_floor_divide, //
                 TpSlot nb_inplace_true_divide, //
                 TpSlot nb_inplace_matrix_multiply, //
+                TpSlot nb_inplace_power, //
                 TpSlot sq_length, //
                 TpSlot sq_item, //
                 TpSlot sq_ass_item, //
@@ -677,6 +680,14 @@ public record TpSlots(TpSlot nb_bool, //
                         CFields.PyNumberMethods__nb_inplace_matrix_multiply,
                         PExternalFunctionWrapper.BINARYFUNC,
                         BinarySlotFuncWrapper::new),
+        NB_INPLACE_POWER(
+                        TpSlots::nb_inplace_power,
+                        TpSlotPythonSingle.class,
+                        null, // No builtin implementations
+                        TpSlotGroup.AS_NUMBER,
+                        CFields.PyNumberMethods__nb_inplace_power,
+                        PExternalFunctionWrapper.TERNARYFUNC,
+                        NbInPlacePowerWrapper::new),
         SQ_LENGTH(
                         TpSlots::sq_length,
                         TpSlotPythonSingle.class,
@@ -1038,6 +1049,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_INPLACE_FLOOR_DIVIDE, TpSlotDef.withSimpleFunction(T___IFLOORDIV__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_TRUE_DIVIDE, TpSlotDef.withSimpleFunction(T___ITRUEDIV__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_MATRIX_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMATMUL__, PExternalFunctionWrapper.BINARYFUNC, HPySlotWrapper.BINARYFUNC));
+        addSlotDef(s, TpSlotMeta.NB_INPLACE_POWER, TpSlotDef.withSimpleFunction(T___IPOW__, PExternalFunctionWrapper.TERNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
         addSlotDef(s, TpSlotMeta.NB_INDEX, TpSlotDef.withSimpleFunction(T___INDEX__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INT, TpSlotDef.withSimpleFunction(T___INT__, PExternalFunctionWrapper.UNARYFUNC));
@@ -1679,6 +1691,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.NB_INPLACE_FLOOR_DIVIDE), //
                             get(TpSlotMeta.NB_INPLACE_TRUE_DIVIDE), //
                             get(TpSlotMeta.NB_INPLACE_MATRIX_MULTIPLY), //
+                            get(TpSlotMeta.NB_INPLACE_POWER), //
                             get(TpSlotMeta.SQ_LENGTH), //
                             get(TpSlotMeta.SQ_ITEM), //
                             get(TpSlotMeta.SQ_ASS_ITEM), //

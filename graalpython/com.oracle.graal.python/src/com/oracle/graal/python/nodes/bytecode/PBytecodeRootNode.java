@@ -112,6 +112,7 @@ import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlacePowerNode;
 import com.oracle.graal.python.lib.PyNumberInplaceAddNode;
 import com.oracle.graal.python.lib.PyNumberInplaceAndNode;
 import com.oracle.graal.python.lib.PyNumberInplaceFloorDivideNode;
@@ -195,7 +196,6 @@ import com.oracle.graal.python.nodes.exception.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
-import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
@@ -485,7 +485,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case BinaryOpsConstants.INPLACE_XOR:
                 return PyNumberInplaceXorNode.create();
             case BinaryOpsConstants.INPLACE_POW:
-                return InplaceArithmetic.IPow.create();
+                return PyNumberInPlacePowerNode.create();
             case BinaryOpsConstants.INPLACE_MATMUL:
                 return PyNumberInplaceMatrixMultiplyNode.create();
             case BinaryOpsConstants.EQ:

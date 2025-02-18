@@ -1210,10 +1210,9 @@ def test_nb_slot_calls():
     obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj %= 2
     assert obj.delegate.delegate == 1
-    # TODO fix on graalpy
-    # obj = NativeNbSlotProxy(PureSlotProxy(3))
-    # obj **= 2
-    # assert obj.delegate.delegate == 9
+    obj = NativeNbSlotProxy(PureSlotProxy(3))
+    obj **= 2
+    assert obj.delegate.delegate == 9
     obj = NativeNbSlotProxy(PureSlotProxy(3))
     obj <<= 2
     assert obj.delegate.delegate == 12
