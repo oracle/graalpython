@@ -2369,6 +2369,15 @@ _PyTrash_cond(PyObject *op, destructor dealloc)
     return Py_TYPE(op)->tp_dealloc == dealloc;
 }
 
+// Begin GraalPy change
+#if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)
+#include <execinfo.h>
+static void bt() {
+    void* stack[8];
+    backtrace_symbols_fd(stack, backtrace(stack, 8), stderr);
+}
+#endif
+// End GraalPy change
 
 void _Py_NO_RETURN
 _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
@@ -2393,6 +2402,14 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
     }
     fprintf(stderr, "\n");
     fflush(stderr);
+
+    // Begin GraalPy change
+#if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)
+    fprintf(stderr, "Native backtrace:\n");
+    bt();
+    fflush(stderr);
+#endif
+    // End GraalPy change
 
     if (_PyObject_IsFreed(obj)) {
         /* It seems like the object memory has been freed:
