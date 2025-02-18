@@ -40,13 +40,13 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -59,7 +59,7 @@ public abstract class MakeTypeAliasNode extends PNodeWithContext {
 
     @Specialization
     int makeTypeAlias(VirtualFrame frame, int initialStackTop,
-                    @Cached PythonObjectFactory factory) {
+                    @Bind PythonLanguage language) {
         int stackTop = initialStackTop;
 
         Object computeValue = frame.getObject(stackTop);
@@ -69,7 +69,7 @@ public abstract class MakeTypeAliasNode extends PNodeWithContext {
         TruffleString name = (TruffleString) frame.getObject(stackTop);
         frame.setObject(stackTop--, null);
 
-        PTypeAliasType result = factory.createTypeAliasType(PythonBuiltinClassType.PTypeAliasType, name, typeParams == PNone.NONE ? null : (PTuple) typeParams, computeValue, null, null);
+        PTypeAliasType result = PFactory.createTypeAliasType(language, name, typeParams == PNone.NONE ? null : (PTuple) typeParams, computeValue, null, null);
 
         frame.setObject(++stackTop, result);
         return stackTop;

@@ -78,6 +78,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -124,7 +125,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         PythonModule module = core.lookupBuiltinModule(T_HPY_UNIVERSAL);
-        module.setAttribute(T___ALL__, core.factory().createTuple(ALL_ARRAY));
+        module.setAttribute(T___ALL__, PFactory.createTuple(core.getLanguage(), ALL_ARRAY));
     }
 
     @Builtin(name = "load", parameterNames = {"name", "path", "spec", "debug", "mode"}, minNumOfPositionalArgs = 3)
@@ -187,7 +188,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object module;
 
             PythonContext context = PythonContext.get(inliningTarget);
@@ -198,7 +199,7 @@ public final class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                 module = GraalHPyContext.loadHPyModule(inliningTarget, context, name, file, spec, hmode);
             } catch (CannotCastException e) {
                 // thrown by getHPyModeFromEnviron if value is not a string
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_MODE_VALUE_MUST_BE_STRING);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.HPY_MODE_VALUE_MUST_BE_STRING);
             } catch (ApiInitException ie) {
                 throw ie.reraise(frame, inliningTarget, constructAndRaiseNode);
             } catch (ImportException ie) {

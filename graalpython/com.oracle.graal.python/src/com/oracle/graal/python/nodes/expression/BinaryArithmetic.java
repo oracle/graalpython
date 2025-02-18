@@ -58,6 +58,7 @@ import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyNumberRemainderNode;
 import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
@@ -76,6 +77,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @SuppressWarnings("truffle-inlining")
@@ -92,7 +94,7 @@ public enum BinaryArithmetic {
     Or(PyNumberOrNode::create),
     Xor(PyNumberXorNode::create),
     MatMul(PyNumberMatrixMultiplyNode::create),
-    Pow(BinaryArithmeticFactory.PowNodeGen::create),
+    Pow(PyNumberPowerNode::create),
     DivMod(PyNumberDivmodNode::create);
 
     interface CreateBinaryOp {
@@ -154,11 +156,12 @@ public enum BinaryArithmetic {
 
         static Supplier<NotImplementedHandler> createHandler(String operator) {
             return () -> new NotImplementedHandler() {
-                @Child private PRaiseNode raiseNode = PRaiseNode.create();
+                private final BranchProfile errorProfile = BranchProfile.create();
 
                 @Override
                 public Object execute(VirtualFrame frame, Object arg, Object arg2) {
-                    throw raiseNode.raise(TypeError, getErrorMessage(arg), operator, arg, arg2);
+                    errorProfile.enter();
+                    throw PRaiseNode.raiseStatic(this, TypeError, getErrorMessage(arg), operator, arg, arg2);
                 }
 
                 @CompilerDirectives.TruffleBoundary
@@ -177,18 +180,6 @@ public enum BinaryArithmetic {
             return LookupAndCallBinaryNode.createReversible(slot, slot.getReverse(), handler);
         }
 
-    }
-
-    public abstract static class PowNode extends BinaryArithmeticNode {
-
-        public static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("** or pow()");
-
-        @Specialization
-        public static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        // TODO: ternary_op is not implemented (GR-<2????>)
-                        @Cached("createCallNode(Pow, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
-            return callNode.executeObject(frame, left, right);
-        }
     }
 
     public abstract static class GenericBinaryArithmeticNode extends BinaryArithmeticNode {

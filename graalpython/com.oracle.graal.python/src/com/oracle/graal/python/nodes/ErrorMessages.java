@@ -794,7 +794,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P = tsLiteral("unsupported operand type(s) for %s: '%p' and '%p'");
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT = cat(UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P,
                     tsLiteral(". Did you mean \"print(<message>, file=<output_stream>)\"?"));
-    public static final TruffleString UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P = tsLiteral("unsupported operand type(s) for %s(): '%p', '%p', '%p'");
+    public static final TruffleString UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P = tsLiteral("unsupported operand type(s) for %s: '%p', '%p', '%p'");
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_FOR_S_PR_S_P_AND_P = tsLiteral("unsupported operand type(s) for %s or %s(): '%p' and '%p'");
     public static final TruffleString UNSUPPORTED_SIZE_WAS = tsLiteral("unsupported %s size; was: %d");
     public static final TruffleString UNSUPPORTED_STR_TYPE = tsLiteral("unsupported string type: %s");

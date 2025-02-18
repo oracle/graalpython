@@ -1563,6 +1563,30 @@ def graalpython_gate_runner(args, tasks):
                 "com.oracle.graal.python.test.advanced.ExclusionsTest"
             ])
 
+    if WIN32 and is_collecting_coverage():
+        mx.log("Ask for shutdown of any remaining graalpy.exe processes")
+        # On windows, the jacoco command can fail if the file is still locked
+        # by lingering test processes, so we try to give it a bit of a cleanup
+        mx.run([
+            'taskkill.exe',
+            '/T', # with children
+            '/IM',
+            'graalpy.exe',
+        ], nonZeroIsFatal=False)
+        time.sleep(2)
+        mx.log("Forcefully terminate any remaining graalpy.exe processes")
+        mx.run([
+            'taskkill.exe',
+            '/F', # force
+            '/T', # with children
+            '/IM',
+            'graalpy.exe',
+        ], nonZeroIsFatal=False)
+        # Forcefully killing processes on Windows does not release file
+        # locks immediately, so we still need to sleep for a bit in the
+        # hopes that the OS will release
+        time.sleep(8)
+
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
 
@@ -2398,25 +2422,16 @@ def python_coverage(args):
             '--strict-mode',
             '--tags', args.tags,
         ] + jacoco_args, env=env)
-        # On windows, the command can fail if the file is still locked by lingering test processes
-        retries = 3 if WIN32 else 1
-        while True:
-            retval = mx.run_mx([
-                '--strict-compliance',
-                '--kill-with-sigquit',
-                'jacocoreport',
-                '--format', 'lcov',
-                '--omit-excluded',
-                'coverage',
-                '--generic-paths',
-                '--exclude-src-gen',
-            ], env=env)
-            if retval == 0:
-                break
-            retries -= 1
-            if not retries:
-                sys.exit("Failed to collect coverage report")
-            time.sleep(10)
+        mx.run_mx([
+            '--strict-compliance',
+            '--kill-with-sigquit',
+            'jacocoreport',
+            '--format', 'lcov',
+            '--omit-excluded',
+            'coverage',
+            '--generic-paths',
+            '--exclude-src-gen',
+        ], env=env)
 
     if args.mode == 'truffle':
         executable = graalpy_standalone_jvm()

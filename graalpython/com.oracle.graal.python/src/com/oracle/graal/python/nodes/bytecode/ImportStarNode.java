@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -164,8 +164,8 @@ public abstract class ImportStarNode extends AbstractImportNode {
                 writeAttribute(frame, inliningTarget, locals, name, moduleAttr, dictWriteNode, setAttrNode);
             }
         } catch (CannotCastException cce) {
-            throw PRaiseNode.raiseUncached(this, TypeError, fromAll ? ErrorMessages.ITEM_IN_S_MUST_BE_STRING : ErrorMessages.KEY_IN_S_MUST_BE_STRING,
-                            moduleName, fromAll ? T___ALL__ : T___DICT__, attrName);
+            TruffleString format = fromAll ? ErrorMessages.ITEM_IN_S_MUST_BE_STRING : ErrorMessages.KEY_IN_S_MUST_BE_STRING;
+            throw PRaiseNode.raiseStatic(this, TypeError, format, moduleName, fromAll ? T___ALL__ : T___DICT__, attrName);
         }
     }
 

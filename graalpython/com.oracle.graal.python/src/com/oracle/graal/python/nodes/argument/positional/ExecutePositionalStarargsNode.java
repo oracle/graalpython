@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -118,14 +118,14 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     @Specialization
     static Object[] doNone(PNone none,
-                    @Shared("raise") @Cached PRaiseNode raise) {
-        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, none);
+                    @Bind("this") Node inliningTarget) {
+        throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, none);
     }
 
     @Specialization
     static Object[] starargs(VirtualFrame frame, Object object,
                     @Bind("this") Node inliningTarget,
-                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Cached PRaiseNode raise,
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode nextNode,
                     @Cached IsBuiltinObjectProfile errorProfile) {
@@ -141,7 +141,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
                 }
             }
         }
-        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
+        throw raise.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
     }
 
     @NeverDefault

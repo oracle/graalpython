@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -155,8 +155,8 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static Object setDict(@SuppressWarnings("unused") PDecoratedMethod self, Object mapping,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 
@@ -171,7 +171,7 @@ public final class DecoratedMethodBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasAttrProfile) {
             Object result = lookup.execute(frame, inliningTarget, self.getCallable(), T___ISABSTRACTMETHOD__);
             if (hasAttrProfile.profile(inliningTarget, result != PNone.NO_VALUE)) {
-                return isTrue.execute(frame, inliningTarget, result);
+                return isTrue.execute(frame, result);
             }
             return false;
         }

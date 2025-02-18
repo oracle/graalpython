@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -150,8 +150,8 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         static Object error(int length, String typeCode,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.INVALID_TYPE_CODE, typeCode);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_TYPE_CODE, typeCode);
         }
 
         protected static boolean eq(String a, String b) {
@@ -178,7 +178,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isString(classObj)")
         static Object fromClass(int length, Object classObj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleLanguage.Env env = PythonContext.get(inliningTarget).getEnv();
             if (env.isHostObject(classObj)) {
                 Object clazz = env.asHostObject(classObj);
@@ -187,7 +187,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
                     return env.asGuestValue(array);
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS, classObj);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS, classObj);
         }
 
         @Override
@@ -206,7 +206,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Shared @Cached ZerosNode zerosNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, sequence);
             int length = storage.length();
             Object array = zerosNode.execute(length, type);
@@ -215,7 +215,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
                 try {
                     lib.writeArrayElement(array, i, value);
                 } catch (UnsupportedTypeException e) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
                 } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                     throw CompilerDirectives.shouldNotReachHere("failed to set array item");
                 }
@@ -231,7 +231,7 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Shared @Cached ZerosNode zerosNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             PList list = constructListNode.execute(frame, sequence);
             return fromSequence(list, type, inliningTarget, lib, getSequenceStorageNode, getItemScalarNode, zerosNode, raiseNode);
         }

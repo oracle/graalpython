@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class GetNextNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object iterator);
@@ -78,11 +79,12 @@ public abstract class GetNextNode extends PNodeWithContext {
     private static final class GetNextCached extends GetNextNode {
 
         @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next, () -> new NoAttributeHandler() {
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+            private final BranchProfile errorProfile = BranchProfile.create();
 
             @Override
             public Object execute(Object receiver) {
-                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
             }
         });
 
@@ -125,7 +127,7 @@ public abstract class GetNextNode extends PNodeWithContext {
         private Object executeImpl(Object iterator) {
             Object nextMethod = LookupSpecialMethodSlotNode.getUncached(SpecialMethodSlot.Next).execute(null, GetClassNode.executeUncached(iterator), iterator);
             if (nextMethod == PNone.NO_VALUE) {
-                throw PRaiseNode.getUncached().raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, T___NEXT__);
+                throw PRaiseNode.raiseStatic(null, PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, T___NEXT__);
             }
             return CallUnaryMethodNode.getUncached().executeObject(nextMethod, iterator);
         }

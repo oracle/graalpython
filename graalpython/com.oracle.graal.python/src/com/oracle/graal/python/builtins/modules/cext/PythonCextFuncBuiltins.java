@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -56,10 +56,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -69,8 +69,8 @@ public final class PythonCextFuncBuiltins {
     abstract static class PyStaticMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
         static Object staticmethod(Object func,
-                        @Cached PythonObjectFactory factory) {
-            PDecoratedMethod res = factory.createStaticmethod(PythonBuiltinClassType.PStaticmethod);
+                        @Bind PythonLanguage language) {
+            PDecoratedMethod res = PFactory.createStaticmethod(language);
             res.setCallable(func);
             return res;
         }
@@ -80,8 +80,8 @@ public final class PythonCextFuncBuiltins {
     abstract static class PyClassMethod_New extends CApiUnaryBuiltinNode {
         @Specialization
         static Object staticmethod(Object callable,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createClassmethodFromCallableObj(callable);
+                        @Bind PythonLanguage language) {
+            return PFactory.createClassmethodFromCallableObj(language, callable);
         }
     }
 

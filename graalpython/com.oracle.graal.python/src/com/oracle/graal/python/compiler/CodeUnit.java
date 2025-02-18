@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -609,15 +610,15 @@ public final class CodeUnit {
     }
 
     // returns null if the jump is fine
-    public String checkJump(List<ArrayList<StackItem>> stackElems, int from, int to) {
+    public String checkJump(Node node, List<ArrayList<StackItem>> stackElems, int from, int to) {
         ArrayList<StackItem> blkFrom = stackElems.get(from);
         if (blkFrom == null) {
             // this should not happen
-            PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, bciToLine(from));
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ValueError, ErrorMessages.LINE_D_COMES_BEFORE_THE_CURRENT_CODE_BLOCK, bciToLine(from));
         }
         ArrayList<StackItem> blkTo = stackElems.get(to);
         if (blkTo == null) {
-            PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, bciToLine(from));
+            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ValueError, ErrorMessages.LINE_D_COMES_AFTER_THE_CURRENT_CODE_BLOCK, bciToLine(from));
         }
         if (blkTo.size() > blkFrom.size()) {
             return blkTo.get(blkTo.size() - 1).error;

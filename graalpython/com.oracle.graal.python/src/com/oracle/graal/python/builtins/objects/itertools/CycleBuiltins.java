@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -61,7 +62,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
@@ -76,12 +76,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -116,7 +115,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached InlinedBranchProfile iterableProfile,
                         @Cached InlinedBranchProfile firstPassProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.getIterable() != null) {
                 iterableProfile.enter(inliningTarget);
                 try {
@@ -132,7 +131,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 }
             }
             if (isEmpty(self.getSaved())) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             Object item = get(self.getSaved(), self.getIndex());
             self.setIndex(self.getIndex() + 1);
@@ -170,11 +169,11 @@ public final class CycleBuiltins extends PythonBuiltins {
         static Object reduce(PCycle self,
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClass.execute(inliningTarget, self);
-            PTuple iterableTuple = factory.createTuple(new Object[]{self.getIterable()});
-            PTuple tuple = factory.createTuple(new Object[]{getSavedList(self, factory), self.isFirstpass()});
-            return factory.createTuple(new Object[]{type, iterableTuple, tuple});
+            PTuple iterableTuple = PFactory.createTuple(language, new Object[]{self.getIterable()});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{getSavedList(self, language), self.isFirstpass()});
+            return PFactory.createTuple(language, new Object[]{type, iterableTuple, tuple});
         }
 
         @Specialization(guards = "!hasIterable(self)")
@@ -185,22 +184,22 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached CallUnaryMethodNode callNode,
                         @Cached PyObjectGetIter getIterNode,
                         @Cached InlinedBranchProfile indexProfile,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClass.execute(inliningTarget, self);
-            PList savedList = getSavedList(self, factory);
+            PList savedList = getSavedList(self, language);
             Object it = getIterNode.execute(frame, inliningTarget, savedList);
             if (self.getIndex() > 0) {
                 indexProfile.enter(inliningTarget);
                 Object setStateCallable = lookupAttrNode.execute(frame, inliningTarget, it, T___SETSTATE__);
                 callNode.executeObject(frame, setStateCallable, self.getIndex());
             }
-            PTuple iteratorTuple = factory.createTuple(new Object[]{it});
-            PTuple tuple = factory.createTuple(new Object[]{savedList, true});
-            return factory.createTuple(new Object[]{type, iteratorTuple, tuple});
+            PTuple iteratorTuple = PFactory.createTuple(language, new Object[]{it});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{savedList, true});
+            return PFactory.createTuple(language, new Object[]{type, iteratorTuple, tuple});
         }
 
-        static PList getSavedList(PCycle self, PythonObjectFactory factory) {
-            return factory.createList(toArray(self.getSaved()));
+        static PList getSavedList(PCycle self, PythonLanguage language) {
+            return PFactory.createList(language, toArray(self.getSaved()));
         }
 
         @TruffleBoundary
@@ -216,8 +215,6 @@ public final class CycleBuiltins extends PythonBuiltins {
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
-        abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
-
         @Specialization
         static Object setState(VirtualFrame frame, PCycle self, Object state,
                         @Bind("this") Node inliningTarget,
@@ -226,13 +223,13 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile,
                         @Cached ToArrayNode toArrayNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A, "state", "2-tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object obj = getItemNode.execute(frame, state, 0);
             if (!(obj instanceof PList)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "Plist");
+                throw raiseNode.raise(inliningTarget, TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "Plist");
             }
             PList saved = (PList) obj;
 
@@ -241,7 +238,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 firstPass = asSizeNode.executeLossy(frame, inliningTarget, getItemNode.execute(frame, state, 1)) != 0;
             } catch (PException e) {
                 e.expectTypeError(inliningTarget, isTypeErrorProfile);
-                throw raiseNode.get(inliningTarget).raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
+                throw raiseNode.raise(inliningTarget, TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
             }
 
             Object[] savedArray = toArrayNode.execute(inliningTarget, saved.getSequenceStorage());

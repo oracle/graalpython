@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -439,7 +439,6 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyGetSetDef_doc extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(PythonObject object,
-                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "T___DOC__") GetFixedAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
             Object doc = getAttrNode.execute(null, object);
@@ -463,7 +462,6 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyGetSetDef_name extends CApiUnaryBuiltinNode {
         @Specialization
         Object get(PythonObject object,
-                        @Bind("this") Node inliningTarget,
                         @Cached(parameters = "T___NAME__") GetFixedAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
             Object name = getAttrNode.execute(null, object);
@@ -581,7 +579,6 @@ public final class PythonCextSlotBuiltins {
     abstract static class Py_get_PyModuleObject_md_dict extends CApiUnaryBuiltinNode {
         @Specialization
         static Object get(Object object,
-                        @Bind("this") Node inliningTarget,
                         @Exclusive @Cached(parameters = "T___DICT__") GetFixedAttributeNode getDictNode) {
             return getDictNode.execute(null, object);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,14 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
@@ -100,9 +101,9 @@ public final class PBytesIO extends PythonBuiltinObject {
         return exports.getExports().get();
     }
 
-    public void checkExports(Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+    public void checkExports(Node inliningTarget, PRaiseNode raiseNode) {
         if (getExports() != 0) {
-            throw raiseNode.get(inliningTarget).raise(BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
+            throw raiseNode.raise(inliningTarget, BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
         }
     }
 
@@ -120,14 +121,14 @@ public final class PBytesIO extends PythonBuiltinObject {
      * it without copying the first time the program asks for the whole contents. So that a sequence
      * of writes followed by one getvalue call doesn't have to copy the whole buffer at the end.
      */
-    public void unshareIfNecessary(PythonBufferAccessLibrary bufferLib, PythonObjectFactory factory) {
+    public void unshareIfNecessary(PythonBufferAccessLibrary bufferLib, PythonLanguage language) {
         if (escaped || getExports() != 0) {
-            buf = factory.createByteArray(bufferLib.getCopiedByteArray(buf));
+            buf = PFactory.createByteArray(language, bufferLib.getCopiedByteArray(buf));
             escaped = false;
         }
     }
 
-    public void unshareAndResize(PythonBufferAccessLibrary bufferLib, PythonObjectFactory factory, int size, boolean truncate) {
+    public void unshareAndResize(PythonBufferAccessLibrary bufferLib, PythonLanguage language, int size, boolean truncate) {
         int origLength = bufferLib.getBufferLength(getBuf());
         int alloc;
         if (truncate && size < origLength / 2) {
@@ -135,7 +136,7 @@ public final class PBytesIO extends PythonBuiltinObject {
             alloc = size;
         } else if (size < origLength) {
             /* Within allocated size; quick exit */
-            unshareIfNecessary(bufferLib, factory);
+            unshareIfNecessary(bufferLib, language);
             return;
         } else if (size <= origLength * 1.125) {
             /* Moderate upsize; overallocate similar to list_resize() */
@@ -150,7 +151,7 @@ public final class PBytesIO extends PythonBuiltinObject {
         }
         byte[] newBuf = new byte[alloc];
         bufferLib.readIntoByteArray(getBuf(), 0, newBuf, 0, Math.min(stringSize, size));
-        setBuf(factory.createByteArray(newBuf));
+        setBuf(PFactory.createByteArray(language, newBuf));
         escaped = false;
     }
 }

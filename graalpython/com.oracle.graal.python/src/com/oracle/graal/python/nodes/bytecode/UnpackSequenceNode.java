@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,9 +90,9 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
             }
         } else {
             if (len < count) {
-                throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, len);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, len);
             } else {
-                throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
             }
         }
         return resultStackTop;
@@ -116,7 +116,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
             iterator = getIter.execute(frame, inliningTarget, collection);
         } catch (PException e) {
             e.expectTypeError(inliningTarget, notIterableProfile);
-            throw raiseNode.raise(TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
         for (int i = 0; i < count; i++) {
             try {
@@ -124,7 +124,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
                 frame.setObject(stackTop--, item);
             } catch (PException e) {
                 e.expectStopIteration(inliningTarget, stopIterationProfile1);
-                throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
             }
         }
         try {
@@ -133,7 +133,7 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
             e.expectStopIteration(inliningTarget, stopIterationProfile2);
             return resultStackTop;
         }
-        throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
+        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);
     }
 
     public static UnpackSequenceNode create() {

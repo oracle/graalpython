@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,15 +65,15 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateCached(false)
 public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
 
-    public final long executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode) {
+    public final long executeWithThrowSystemError(Node inliningTarget, Object x, PRaiseNode raiseNode) {
         return executeWithThrow(inliningTarget, x, raiseNode, SystemError);
     }
 
-    public final long executeWithThrow(Node inliningTarget, Object x, PRaiseNode.Lazy raiseNode, PythonBuiltinClassType errType) {
+    public final long executeWithThrow(Node inliningTarget, Object x, PRaiseNode raiseNode, PythonBuiltinClassType errType) {
         try {
             return execute(inliningTarget, x);
         } catch (CannotCastException cce) {
-            throw raiseNode.get(inliningTarget).raise(errType, MUST_BE_S_NOT_P, "a long", x);
+            throw raiseNode.raise(inliningTarget, errType, MUST_BE_S_NOT_P, "a long", x);
         }
     }
 
@@ -88,11 +88,11 @@ public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
 
     @Specialization(replaces = "toLongNoOverflow")
     protected static long toLong(Node inliningTarget, PInt x,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         try {
             return x.longValueExact();
         } catch (OverflowException e) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
+            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -94,9 +95,9 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         static Object reduce(PTupleGetter self,
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
-            PTuple args = factory.createTuple(new Object[]{self.getIndex(), self.getDoc()});
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args});
+                        @Bind PythonLanguage language) {
+            PTuple args = PFactory.createTuple(language, new Object[]{self.getIndex(), self.getDoc()});
+            return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, self), args});
         }
     }
 
@@ -108,10 +109,10 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             final int index = self.getIndex();
             if (index >= sizeNode.execute(frame, inliningTarget, instance)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
             }
             return getItemNode.execute(frame, instance, index);
         }
@@ -124,9 +125,9 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         @Fallback
         @InliningCutoff
         static Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, Object self, Object instance, @SuppressWarnings("unused") Object owner,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             final int index = ((PTupleGetter) self).getIndex();
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
                             index, "tuple subclasses", instance);
         }
     }
@@ -139,9 +140,9 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         void set(PTupleGetter self, Object instance, Object value) {
             if (PGuards.isNoValue(value)) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
             } else {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
             }
         }
     }

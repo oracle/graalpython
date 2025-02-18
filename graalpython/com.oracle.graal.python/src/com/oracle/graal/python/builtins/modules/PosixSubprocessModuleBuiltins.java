@@ -126,13 +126,13 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PSequence argsSequence;
             try {
                 argsSequence = fastConstructListNode.execute(frame, inliningTarget, processArgs);
             } catch (PException e) {
                 e.expect(inliningTarget, TypeError, isBuiltinClassProfile);
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");
             }
 
             SequenceStorage argsStorage = getSequenceStorageNode.execute(inliningTarget, argsSequence);
@@ -142,7 +142,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 SequenceStorage newStorage = getSequenceStorageNode.execute(inliningTarget, argsSequence);
                 if (newStorage != argsStorage || newStorage.length() != len) {
                     // TODO write a test for this
-                    throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
+                    throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
                 }
                 Object o = getItemNode.execute(argsStorage, i);
                 argsArray[i] = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
@@ -171,7 +171,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached ToBytesNode toBytesNode,
                         @Cached PyObjectGetItem getItem,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
             int length = sizeNode.execute(frame, inliningTarget, env);
             Object[] result = new Object[length];
@@ -180,7 +180,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 byte[] bytes = toBytesNode.execute(frame, o);
                 Object o1 = posixLib.createPathFromBytes(context.getPosixSupport(), bytes);
                 if (o1 == null) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
                 }
                 result[i] = o1;
             }
@@ -230,13 +230,13 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return s.getBytes();
         }
 
-        private static Object createPathFromBytes(Node inliningTarget, byte[] bytes, PosixSupportLibrary posixLib, PRaiseNode.Lazy raiseNode) {
+        private static Object createPathFromBytes(Node inliningTarget, byte[] bytes, PosixSupportLibrary posixLib, PRaiseNode raiseNode) {
             Object o = posixLib.createPathFromBytes(PosixSupport.get(inliningTarget), bytes);
             if (o == null) {
                 // TODO reconsider the contract of PosixSupportLibrary#createPathFromBytes w.r.t.
                 // embedded null checks (we need to review that anyway since PosixSupportLibrary
                 // cannot do Python-specific fsencode)
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
             }
             return o;
         }
@@ -259,15 +259,15 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached ToBytesNode toBytesNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!(preexecFn instanceof PNone)) {
-                throw raiseNode.get(inliningTarget).raise(RuntimeError, ErrorMessages.S_NOT_SUPPORTED, "preexec_fn");
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.S_NOT_SUPPORTED, "preexec_fn");
             }
             if (closeFds && errPipeWrite < 3) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.S_MUST_BE_S, "errpipe_write", ">= 3");
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.S_MUST_BE_S, "errpipe_write", ">= 3");
             }
             if (!(fdsToKeepObj instanceof PTuple)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeepObj);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeepObj);
             }
             Object[] processArgs = args;
             int[] fdsToKeep = convertFdSequence(inliningTarget, (PTuple) fdsToKeepObj, tupleGetItem, castToIntNode, raiseNode);
@@ -284,7 +284,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 if (Arrays.equals(bytes, sysExecutable)) {
                     TruffleString[] additionalArgs = PythonOptions.getExecutableList(context);
                     if (length != 1 && additionalArgs.length != 1) {
-                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNSUPPORTED_USE_OF_SYS_EXECUTABLE);
+                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNSUPPORTED_USE_OF_SYS_EXECUTABLE);
                     }
                     Object[] extendedArgs = new Object[additionalArgs.length + (processArgs.length == 0 ? 0 : processArgs.length - 1)];
                     for (int j = 0; j < additionalArgs.length; ++j) {
@@ -319,7 +319,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
          * Checks that the tuple contains only valid fds (positive integers fitting into an int) in
          * ascending order.
          */
-        private static int[] convertFdSequence(Node inliningTarget, PTuple fdSequence, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode, PRaiseNode.Lazy raiseNode) {
+        private static int[] convertFdSequence(Node inliningTarget, PTuple fdSequence, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode, PRaiseNode raiseNode) {
             SequenceStorage storage = fdSequence.getSequenceStorage();
             int len = storage.length();
             int[] fds = new int[len];
@@ -334,7 +334,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 } catch (PException | CannotCastException e) {
                     // 'handled' by raise() below
                 }
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.BAD_VALUES_IN_FDS_TO_KEEP);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_VALUES_IN_FDS_TO_KEEP);
             }
             return fds;
         }

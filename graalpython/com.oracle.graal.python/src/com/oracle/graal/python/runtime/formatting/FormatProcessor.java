@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -37,6 +38,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -126,7 +128,7 @@ abstract class FormatProcessor<T> {
                 break;
         }
         if (ret == null) {
-            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.NOT_ENOUGH_ARGS_FOR_FORMAT_STRING);
+            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.NOT_ENOUGH_ARGS_FOR_FORMAT_STRING);
         }
         return ret;
     }
@@ -138,11 +140,11 @@ abstract class FormatProcessor<T> {
             try {
                 long value = CastToJavaLongLossyNode.executeUncached(o);
                 if (value > Integer.MAX_VALUE || value < Integer.MIN_VALUE) {
-                    throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
+                    throw PRaiseNode.raiseStatic(raisingNode, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
                 }
                 return (int) value;
             } catch (CannotCastException e) {
-                throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.STAR_WANTS_INT);
+                throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.STAR_WANTS_INT);
             }
         } else {
             if (Character.isDigit(c)) {
@@ -154,7 +156,7 @@ abstract class FormatProcessor<T> {
                 try {
                     return parseNumber(numStart, index);
                 } catch (NumberFormatException e) {
-                    throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
+                    throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
                 }
             }
             index -= 1;
@@ -180,7 +182,7 @@ abstract class FormatProcessor<T> {
             if (allowsFloat(specType)) {
                 // Fast path for simple double values, instead of __int__
                 BigDecimal decimal = new BigDecimal((Double) arg, MathContext.UNLIMITED);
-                return core.factory().createInt(decimal.toBigInteger());
+                return PFactory.createInt(PythonLanguage.get(null), decimal.toBigInteger());
             } else {
                 // non-integer result indicates to the caller that it could not be converted
                 return arg;
@@ -245,7 +247,7 @@ abstract class FormatProcessor<T> {
         try {
             return formatImpl(args1);
         } catch (OutOfMemoryError e) {
-            throw PRaiseNode.raiseUncached(raisingNode, MemoryError);
+            throw PRaiseNode.raiseStatic(raisingNode, MemoryError);
         }
     }
 
@@ -309,7 +311,7 @@ abstract class FormatProcessor<T> {
             if (c == '(') {
                 // Mapping key, consisting of a parenthesised sequence of characters.
                 if (mapping == null) {
-                    throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.FORMAT_REQUIRES_MAPPING);
+                    throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.FORMAT_REQUIRES_MAPPING);
                 }
                 // Scan along until a matching close parenthesis is found
                 int parens = 1;
@@ -448,9 +450,9 @@ abstract class FormatProcessor<T> {
                     f = formatInteger(asNumber(arg, spec.type), spec);
                     if (f == null) {
                         if (allowsFloat(spec.type)) {
-                            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, spec.type, arg);
+                            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, spec.type, arg);
                         } else {
-                            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, spec.type, arg);
+                            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, spec.type, arg);
                         }
                     }
                     break;
@@ -472,7 +474,7 @@ abstract class FormatProcessor<T> {
                 default:
                     f = handleRemainingFormats(spec);
                     if (f == null) {
-                        throw PRaiseNode.raiseUncached(raisingNode, ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
+                        throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
                     }
             }
 
@@ -488,7 +490,7 @@ abstract class FormatProcessor<T> {
          * that has not yet been used.
          */
         if (argIndex == -1 || (argIndex >= 0 && PyObjectSizeNode.executeUncached(args1) >= argIndex + 1)) {
-            throw PRaiseNode.raiseUncached(raisingNode, TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
+            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
         }
 
         // Return the final buffer contents as a str or unicode as appropriate.

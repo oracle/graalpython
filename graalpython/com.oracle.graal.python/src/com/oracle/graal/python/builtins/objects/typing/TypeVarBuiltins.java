@@ -191,8 +191,8 @@ public final class TypeVarBuiltins extends PythonBuiltins {
     abstract static class MroEntriesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object mro(@SuppressWarnings("unused") PTypeVar self, @SuppressWarnings("unused") Object bases,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVAR);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVAR);
         }
     }
 

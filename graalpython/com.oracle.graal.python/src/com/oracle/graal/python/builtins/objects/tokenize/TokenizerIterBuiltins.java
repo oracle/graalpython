@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,7 +60,7 @@ import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Token.Kind;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -98,10 +99,10 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayUTF32Node,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             if (self.isDone()) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration(T_EOF);
+                throw raiseNode.raiseStopIteration(inliningTarget, T_EOF);
             }
             EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
             Node encapsulatingNode = encapsulating.set(inliningTarget);
@@ -161,11 +162,11 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
                 tokenCp = CodePoints.EMPTY;
             }
 
-            return factory.createTuple(new Object[]{
+            return PFactory.createTuple(language, new Object[]{
                             type,
                             switchEncodingNode.execute(fromIntArrayUTF32Node.execute(tokenCp.getBuffer(), tokenCp.getOffset(), tokenCp.getLength()), TS_ENCODING),
-                            factory.createTuple(new Object[]{startLine, startColumn}),
-                            factory.createTuple(new Object[]{endLine, endColumn}),
+                            PFactory.createTuple(language, new Object[]{startLine, startColumn}),
+                            PFactory.createTuple(language, new Object[]{endLine, endColumn}),
                             line
             });
         }

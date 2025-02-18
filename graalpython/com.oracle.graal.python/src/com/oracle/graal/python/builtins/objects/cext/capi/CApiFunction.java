@@ -592,6 +592,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyLong_UnsignedLong_Converter", ret = Int, args = {PyObject, Pointer}, call = CImpl)
     @CApiBuiltin(name = "_PyModule_Add", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyModule_CreateInitialized", ret = PyObject, args = {PYMODULEDEF_PTR, Int}, call = CImpl)
+    @CApiBuiltin(name = "_PyObject_AssertFailed", ret = VoidNoReturn, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int,
+                    ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_CallFunction_SizeT", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_CallMethodIdObjArgs", ret = PyObject, args = {PyObject, _PY_IDENTIFIER_PTR, VARARGS}, call = CImpl)
@@ -1088,8 +1090,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyOS_IsMainThread", ret = Int, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_PyOS_URandom", ret = Int, args = {Pointer, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PyOS_URandomNonblock", ret = Int, args = {Pointer, Py_ssize_t}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyObject_AssertFailed", ret = VoidNoReturn, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int,
-                    ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CallMethod", ret = PyObject, args = {PyObject, PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CallMethodId", ret = PyObject, args = {PyObject, PY_IDENTIFIER, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_CallMethodId_SizeT", ret = PyObject, args = {PyObject, PY_IDENTIFIER, ConstCharPtrAsTruffleString, VARARGS}, call = NotImplemented)

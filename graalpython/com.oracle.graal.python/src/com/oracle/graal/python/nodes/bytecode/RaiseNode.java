@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -95,12 +95,11 @@ public abstract class RaiseNode extends PNodeWithContext {
                         @Exclusive @Cached InlinedBranchProfile baseCheckFailedProfile,
                         @Exclusive @Cached ValidExceptionNode validException,
                         @Exclusive @Cached CallNode callConstructor,
-                        @Exclusive @Cached PRaiseNode.Lazy raise,
                         @Exclusive @Cached PyExceptionInstanceCheckNode check,
                         @Exclusive @Cached ExceptionNodes.SetCauseNode setCauseNode) {
             if (!validException.execute(frame, causeClass)) {
                 baseCheckFailedProfile.enter(inliningTarget);
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
             }
             Object cause = callConstructor.execute(frame, causeClass);
             if (check.execute(inliningTarget, cause)) {
@@ -118,11 +117,10 @@ public abstract class RaiseNode extends PNodeWithContext {
         // raise * from <invalid>
         @Specialization(guards = {"!check.execute(inliningTarget, cause)", "!isTypeNode.execute(inliningTarget, cause)"}, limit = "1")
         static void setCause(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object exception, @SuppressWarnings("unused") Object cause,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Exclusive @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Exclusive @Cached PyExceptionInstanceCheckNode check,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
         }
     }
 
@@ -139,7 +137,7 @@ public abstract class RaiseNode extends PNodeWithContext {
         } else if (caughtException != null) {
             throw caughtException;
         } else {
-            throw raise.raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
+            throw raise.raise(inliningTarget, RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
         }
     }
 
@@ -178,11 +176,11 @@ public abstract class RaiseNode extends PNodeWithContext {
         throw PRaiseNode.raiseExceptionObject(inliningTarget, exception);
     }
 
-    private static void checkBaseClass(VirtualFrame frame, Node inliningTarget, Object pythonClass, ValidExceptionNode validException, PRaiseNode.Lazy raise,
+    private static void checkBaseClass(VirtualFrame frame, Node inliningTarget, Object pythonClass, ValidExceptionNode validException, PRaiseNode raise,
                     InlinedBranchProfile baseCheckFailedProfile) {
         if (!validException.execute(frame, pythonClass)) {
             baseCheckFailedProfile.enter(inliningTarget);
-            throw raiseNoException(raise.get(inliningTarget));
+            throw raiseNoException(inliningTarget, raise);
         }
     }
 
@@ -195,13 +193,13 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @Exclusive @Cached CallNode callConstructor,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Exclusive @Cached InlinedBranchProfile baseCheckFailedProfile,
-                    @Exclusive @Cached PRaiseNode.Lazy raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         checkBaseClass(frame, inliningTarget, pythonClass, validException, raise, baseCheckFailedProfile);
         Object newException = callConstructor.execute(frame, pythonClass);
         if (check.execute(inliningTarget, newException)) {
             throw PRaiseNode.raiseExceptionObject(inliningTarget, newException);
         } else {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }
     }
 
@@ -211,7 +209,7 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @Bind("this") Node inliningTarget,
                     @Exclusive @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Exclusive @Cached ValidExceptionNode validException,
-                    @Exclusive @Cached PRaiseNode.Lazy raise,
+                    @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CallNode callConstructor,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Exclusive @Cached InlinedBranchProfile baseCheckFailedProfile,
@@ -222,7 +220,7 @@ public abstract class RaiseNode extends PNodeWithContext {
             setExceptionCauseNode.execute(frame, newException, cause);
             throw PRaiseNode.raiseExceptionObject(inliningTarget, newException);
         } else {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }
     }
 
@@ -232,7 +230,7 @@ public abstract class RaiseNode extends PNodeWithContext {
     public static void doRaise(VirtualFrame frame, Object exception, Object cause, @SuppressWarnings("unused") boolean rootNodeVisible,
                     @Bind("this") Node inliningTarget,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Exclusive @Cached PRaiseNode.Lazy raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         if (lib.isException(exception)) {
             try {
                 throw lib.throwException(exception);
@@ -240,11 +238,11 @@ public abstract class RaiseNode extends PNodeWithContext {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         }
-        throw raiseNoException(raise.get(inliningTarget));
+        throw raiseNoException(inliningTarget, raise);
     }
 
-    private static PException raiseNoException(PRaiseNode raise) {
-        throw raise.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
+    private static PException raiseNoException(Node inliningTarget, PRaiseNode raise) {
+        throw raise.raise(inliningTarget, TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
     }
 
     public static RaiseNode create() {

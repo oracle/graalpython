@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.objects.function.PArguments.getSpecialArgument;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -57,10 +58,9 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -70,6 +70,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
@@ -98,13 +99,14 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Node inliningTarget, Object locals);
 
         @Specialization
-        static void doModule(PythonModule locals,
+        static void doModule(Node inliningTarget, PythonModule locals,
                         @Cached(inline = false) ReadAttributeFromObjectNode read,
                         @Cached(inline = false) WriteAttributeToObjectNode write,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached InlinedBranchProfile create) {
             Object annotations = read.execute(locals, T___ANNOTATIONS__);
             if (annotations == PNone.NO_VALUE) {
-                write.execute(locals, T___ANNOTATIONS__, factory.createDict());
+                create.enter(inliningTarget);
+                write.execute(locals, T___ANNOTATIONS__, PFactory.createDict(PythonLanguage.get(inliningTarget)));
             }
         }
 
@@ -112,10 +114,11 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
         static void doBuiltinDict(VirtualFrame frame, Node inliningTarget, PDict locals,
                         @Cached PyDictGetItem getItem,
                         @Cached PyDictSetItem setItem,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached InlinedBranchProfile create) {
             Object annotations = getItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__);
             if (annotations == null) {
-                setItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__, factory.createDict());
+                create.enter(inliningTarget);
+                setItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__, PFactory.createDict(PythonLanguage.get(inliningTarget)));
             }
         }
 
@@ -123,13 +126,12 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
         static void doOther(VirtualFrame frame, Node inliningTarget, Object locals,
                         @Cached PyObjectGetItem getItem,
                         @Cached PyObjectSetItem setItem,
-                        @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
+                        @Cached IsBuiltinObjectProfile errorProfile) {
             try {
                 getItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.KeyError, errorProfile);
-                setItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__, factory.createDict());
+                setItem.execute(frame, inliningTarget, locals, T___ANNOTATIONS__, PFactory.createDict(PythonLanguage.get(inliningTarget)));
             }
         }
     }

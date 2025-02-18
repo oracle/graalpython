@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.pickle.PickleUtils.J_DEFA
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -66,7 +68,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -99,11 +101,11 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     abstract static class ConstructPickleBufferNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
         static PPickleBuffer construct(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object object,
+                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
-                        @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
-                        @Cached PythonObjectFactory factory) {
+                        @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib) {
             Object buffer = acquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
-            return factory.createPickleBuffer(buffer);
+            return PFactory.createPickleBuffer(language, buffer);
         }
     }
 
@@ -112,8 +114,9 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     abstract static class ConstructPicklerNode extends PythonVarargsBuiltinNode {
         @Specialization
         PPickler construct(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createPickler(cls);
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createPickler(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -122,8 +125,9 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     abstract static class ConstructPicklerMemoProxyNode extends PythonBinaryBuiltinNode {
         @Specialization
         PPicklerMemoProxy construct(Object cls, PPickler pickler,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createPicklerMemoProxy(pickler, cls);
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createPicklerMemoProxy(language, pickler, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -132,8 +136,9 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     abstract static class ConstructUnpicklerMemoProxyNode extends PythonBinaryBuiltinNode {
         @Specialization
         PUnpicklerMemoProxy construct(Object cls, PUnpickler unpickler,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createUnpicklerMemoProxy(unpickler, cls);
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createUnpicklerMemoProxy(language, unpickler, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -142,8 +147,9 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     abstract static class ConstructUnpicklerNode extends PythonVarargsBuiltinNode {
         @Specialization
         PUnpickler construct(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createUnpickler(cls);
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createUnpickler(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -163,12 +169,12 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object dump(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object obj, Object file, int protocol, boolean fixImports, Object bufferCallback,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PPickler.DumpNode dumpNode,
                         @Cached PPickler.FlushToFileNode flushToFileNode,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            PPickler pickler = factory.createPickler();
+                        @Cached PRaiseNode raiseNode) {
+            PPickler pickler = PFactory.createPickler(language);
             pickler.setProtocol(inliningTarget, raiseNode, protocol, fixImports);
             pickler.setOutputStream(frame, inliningTarget, raiseNode, lookup, file);
             pickler.setBufferCallback(inliningTarget, raiseNode, bufferCallback);
@@ -193,14 +199,14 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object dump(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object obj, int protocol, boolean fixImports, Object bufferCallback,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PPickler.DumpNode dumpNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            PPickler pickler = factory.createPickler();
+                        @Cached PRaiseNode raiseNode) {
+            PPickler pickler = PFactory.createPickler(language);
             pickler.setProtocol(inliningTarget, raiseNode, protocol, fixImports);
             pickler.setBufferCallback(inliningTarget, raiseNode, bufferCallback);
             dumpNode.execute(frame, pickler, obj);
-            return pickler.getString(factory);
+            return pickler.getString(language);
         }
     }
 
@@ -220,12 +226,12 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         static Object load(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object file, @SuppressWarnings("unused") boolean fixImports, TruffleString encoding, TruffleString errors,
                         Object buffers,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PUnpickler.LoadNode loadNode,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            PUnpickler unpickler = factory.createUnpickler();
+                        @Cached PRaiseNode raiseNode) {
+            PUnpickler unpickler = PFactory.createUnpickler(language);
             unpickler.setInputStream(frame, inliningTarget, raiseNode, lookup, file);
             unpickler.setInputEncoding(encoding, errors);
             unpickler.setBuffers(frame, inliningTarget, getIter, buffers);
@@ -251,12 +257,12 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
         static Object loads(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object buffer, boolean fixImports, TruffleString encoding, TruffleString errors, Object buffers,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached PUnpickler.LoadNode loadNode,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PyObjectGetIter getIter) {
             try {
-                PUnpickler unpickler = factory.createUnpickler();
+                PUnpickler unpickler = PFactory.createUnpickler(language);
                 byte[] data = bufferLib.getCopiedByteArray(buffer);
                 unpickler.setStringInput(data, data.length);
                 unpickler.setInputEncoding(encoding, errors);

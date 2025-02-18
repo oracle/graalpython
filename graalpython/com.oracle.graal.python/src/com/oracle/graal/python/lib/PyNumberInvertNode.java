@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -59,32 +60,33 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 public abstract class PyNumberInvertNode extends UnaryOpNode {
 
     @Specialization
-    static int doInt(int object) {
+    public static int doInt(int object) {
         return ~object;
     }
 
     @Specialization
-    static long doLong(long object) {
+    public static long doLong(long object) {
         return ~object;
     }
 
     @Fallback
     @InliningCutoff
-    static Object doObject(VirtualFrame frame, Node inliningTarget, Object object,
+    public static Object doObject(VirtualFrame frame, Object object,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlots.execute(inliningTarget, type);
         if (slots.nb_invert() != null) {
             return callSlot.execute(frame, inliningTarget, slots.nb_invert(), object);
         }
-        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_OPERAND_FOR, "unary", "~", object);
+        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_OPERAND_FOR, "unary", "~", object);
     }
 
     @NeverDefault

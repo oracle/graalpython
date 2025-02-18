@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,14 +13,15 @@ import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_OFFSET_OUT_OF_R
 import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K;
 import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_PACK_INTO_REQ_BUFFER_TO_PACK;
 import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES;
-import static com.oracle.graal.python.nodes.ErrorMessages.UNPACK_REQ_A_BUFFER_OF_N_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNPACK_REQ_A_BUFFER_OF_N_BYTES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StructError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -40,7 +41,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -100,18 +101,20 @@ public class StructBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object pack(VirtualFrame frame, PStruct self, Object[] args, PKeyword[] keywords,
+        static Object pack(VirtualFrame frame, PStruct self, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached StructNodes.PackValueNode packValueNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PRaiseNode raiseNode) {
             if (keywords.length != 0) {
-                throw raise(TypeError, S_TAKES_NO_KEYWORD_ARGS, "pack()");
+                throw raiseNode.raise(inliningTarget, TypeError, S_TAKES_NO_KEYWORD_ARGS, "pack()");
             }
             if (args.length != self.getLen()) {
-                throw raise(StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, self.getLen(), args.length);
+                throw raiseNode.raise(inliningTarget, StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, self.getLen(), args.length);
             }
             byte[] bytes = new byte[self.getSize()];
             packInternal(frame, self, packValueNode, args, bytes, 0);
-            return factory.createBytes(bytes);
+            return PFactory.createBytes(language, bytes);
         }
     }
 
@@ -133,11 +136,11 @@ public class StructBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.PackValueNode packValueNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 final long size = self.getUnsignedSize();
                 if (args.length != self.getLen()) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, size, args.length);
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_PACK_EXPECTED_N_ITEMS_GOT_K, size, args.length);
                 }
                 int bufferOffset = offset;
                 int bufferLen = bufferLib.getBufferLength(buffer);
@@ -153,12 +156,12 @@ public class StructBuiltins extends PythonBuiltins {
                 if (bufferOffset < 0) {
                     // Check that negative offset is low enough to fit data
                     if (bufferOffset + size > 0) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_NO_SPACE_TO_PACK_N_BYTES, size, bufferOffset);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_NO_SPACE_TO_PACK_N_BYTES, size, bufferOffset);
                     }
 
                     // Check that negative offset is not crossing buffer boundary
                     if (bufferOffset + bufferLen < 0) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_OFFSET_OUT_OF_RANGE, bufferOffset, bufferLen);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_OFFSET_OUT_OF_RANGE, bufferOffset, bufferLen);
                     }
 
                     bufferOffset += bufferLen;
@@ -169,7 +172,7 @@ public class StructBuiltins extends PythonBuiltins {
                     assert bufferOffset >= 0;
                     assert size >= 0;
 
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_PACK_INTO_REQ_BUFFER_TO_PACK, size + bufferOffset, size, bufferOffset, bufferLen);
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_PACK_INTO_REQ_BUFFER_TO_PACK, size + bufferOffset, size, bufferOffset, bufferLen);
                 }
 
                 // TODO: GR-54860 use buffer API in the packing process
@@ -203,18 +206,18 @@ public class StructBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object unpack(VirtualFrame frame, PStruct self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int bytesLen = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 if (bytesLen != self.getSize()) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, UNPACK_REQ_A_BUFFER_OF_N_BYTES, self.getSize());
+                    throw raiseNode.raise(inliningTarget, StructError, UNPACK_REQ_A_BUFFER_OF_N_BYTES, self.getSize());
                 }
-                return factory.createTuple(unpackInternal(self, unpackValueNode, bytes, 0));
+                return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, 0));
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
@@ -235,17 +238,17 @@ public class StructBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object iterUnpack(VirtualFrame frame, PStruct self, Object buffer,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (self.getSize() == 0) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0);
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_ITER_CANNOT_UNPACK_FROM_STRUCT_OF_SIZE_0);
                 }
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 if (bufferLen % self.getSize() != 0) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES, self.getSize());
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES, self.getSize());
                 }
             } catch (Exception e) {
                 bufferLib.release(buffer, frame, indirectCallData);
@@ -253,7 +256,7 @@ public class StructBuiltins extends PythonBuiltins {
             }
             // The buffer ownership is transferred to the iterator
             // TODO: GR-54860 release it when iterator is collected
-            final PStructUnpackIterator structUnpackIterator = factory.createStructUnpackIterator(self, buffer);
+            final PStructUnpackIterator structUnpackIterator = PFactory.createStructUnpackIterator(language, self, buffer);
             structUnpackIterator.index = 0;
             return structUnpackIterator;
         }
@@ -274,11 +277,11 @@ public class StructBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object unpackFrom(VirtualFrame frame, PStruct self, Object buffer, int offset,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int bufferOffset = offset;
                 int bytesLen = bufferLib.getBufferLength(buffer);
@@ -287,20 +290,20 @@ public class StructBuiltins extends PythonBuiltins {
                 final long size = self.getUnsignedSize();
                 if (bufferOffset < 0) {
                     if (bufferOffset + size > 0) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_NOT_ENOUGH_DATA_TO_UNPACK_N_BYTES, size, bufferOffset);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_NOT_ENOUGH_DATA_TO_UNPACK_N_BYTES, size, bufferOffset);
                     }
 
                     if (bufferOffset + bytesLen < 0) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_OFFSET_OUT_OF_RANGE, bufferOffset, bytesLen);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_OFFSET_OUT_OF_RANGE, bufferOffset, bytesLen);
                     }
                     bufferOffset += bytesLen;
                 }
 
                 if ((bytesLen - bufferOffset) < size) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES, size + bufferOffset, size, bufferOffset, bytesLen);
+                    throw raiseNode.raise(inliningTarget, StructError, STRUCT_UNPACK_FROM_REQ_AT_LEAST_N_BYTES, size + bufferOffset, size, bufferOffset, bytesLen);
                 }
 
-                return factory.createTuple(unpackInternal(self, unpackValueNode, bytes, bufferOffset));
+                return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, bufferOffset));
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }

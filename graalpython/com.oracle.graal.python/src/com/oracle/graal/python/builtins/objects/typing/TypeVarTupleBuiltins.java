@@ -53,6 +53,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -109,11 +110,11 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
         @Specialization
         static PythonObject iter(VirtualFrame frame, PTypeVarTuple self,
                         @Bind("this") Node inliningTarget,
-                        @Cached UnpackNode unpackNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached UnpackNode unpackNode) {
             Object unpacked = unpackNode.execute(frame, inliningTarget, self);
-            PTuple tuple = factory.createTuple(new Object[]{unpacked});
-            return factory.createSequenceIterator(tuple);
+            PTuple tuple = PFactory.createTuple(language, new Object[]{unpacked});
+            return PFactory.createSequenceIterator(language, tuple);
         }
     }
 
@@ -122,8 +123,8 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
     abstract static class TypingSubstNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doTypingSubst(@SuppressWarnings("unused") PTypeVarTuple self, @SuppressWarnings("unused") Object arg,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, SUBSTITUTION_OF_BARE_TYPEVARTUPLE_IS_NOT_SUPPORTED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, SUBSTITUTION_OF_BARE_TYPEVARTUPLE_IS_NOT_SUPPORTED);
         }
     }
 
@@ -145,8 +146,8 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
     abstract static class MroEntriesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object mro(@SuppressWarnings("unused") PTypeVarTuple self, @SuppressWarnings("unused") Object bases,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVARTUPLE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_TYPEVARTUPLE);
         }
     }
 

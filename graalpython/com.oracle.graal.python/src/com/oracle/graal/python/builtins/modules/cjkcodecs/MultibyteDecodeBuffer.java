@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,10 +48,8 @@ import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -102,10 +100,6 @@ public class MultibyteDecodeBuffer {
         return !inputBuffer.hasRemaining();
     }
 
-    protected PBytes createPBytes(PythonObjectFactory factory) {
-        return factory.createBytes(inputBuffer.array(), getInpos());
-    }
-
     @TruffleBoundary
     protected void replaceInbuf(byte[] inbuf) {
         inputBuffer = ByteBuffer.wrap(inbuf);
@@ -135,7 +129,7 @@ public class MultibyteDecodeBuffer {
     protected void grow(Node raisingNode) {
         int newCapacity = 2 * writer.capacity() + 1;
         if (newCapacity < 0) {
-            throw PRaiseNode.raiseUncached(raisingNode, MemoryError);
+            throw PRaiseNode.raiseStatic(raisingNode, MemoryError);
         }
         CharBuffer newBuffer = CharBuffer.allocate(newCapacity);
         writer.flip();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATCH_ARGS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -57,7 +58,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -85,14 +86,14 @@ public abstract class MatchClassNode extends PNodeWithContext {
                     @Cached IsBuiltinObjectProfile isClassProfile,
                     @Cached StringBuiltins.EqNode eqStrNode,
                     @Cached PyTupleCheckExactNode tupleCheckExactNode,
-                    @Cached PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Cached PyTupleSizeNode tupleSizeNode,
                     @Cached TupleBuiltins.GetItemNode getItemNode,
                     @Cached PyUnicodeCheckNode unicodeCheckNode,
                     @Cached PRaiseNode raise) {
 
         if (!isTypeNode.execute(inliningTarget, type)) {
-            throw raise.raise(TypeError, ErrorMessages.CALLED_MATCH_PAT_MUST_BE_TYPE);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.CALLED_MATCH_PAT_MUST_BE_TYPE);
         }
 
         if (!isInstanceNode.executeWith(frame, subject, type)) {
@@ -110,7 +111,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
             try {
                 matchArgs = getAttr.execute(frame, inliningTarget, type, T___MATCH_ARGS);
                 if (!tupleCheckExactNode.execute(inliningTarget, matchArgs)) {
-                    throw raise.raise(TypeError, ErrorMessages.P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P, type, matchArgs);
+                    throw raise.raise(inliningTarget, TypeError, ErrorMessages.P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P, type, matchArgs);
                 }
             } catch (PException e) {
                 // _Py_TPFLAGS_MATCH_SELF is only acknowledged if the type does not
@@ -118,12 +119,12 @@ public abstract class MatchClassNode extends PNodeWithContext {
                 // it's as if __match_args__ is some "magic" value that is lost as
                 // soon as they redefine it.
                 e.expectAttributeError(inliningTarget, isClassProfile);
-                matchArgs = factory.createEmptyTuple();
+                matchArgs = PFactory.createEmptyTuple(language);
                 matchSelf = (getTypeFlagsNode.execute(type) & MATCH_SELF) != 0;
             }
             int allowed = matchSelf ? 1 : tupleSizeNode.execute(inliningTarget, matchArgs);
             if (allowed < nargs) {
-                throw raise.raise(TypeError, ErrorMessages.P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN, type, allowed, (allowed == 1) ? "" : "s", nargs);
+                throw raise.raise(inliningTarget, TypeError, ErrorMessages.P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN, type, allowed, (allowed == 1) ? "" : "s", nargs);
             }
             if (matchSelf) {
                 // Easy. Copy the subject itself, and move on to kwargs.
@@ -138,7 +139,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
         }
         // Finally, the keyword subpatterns:
         getKwArgs(frame, inliningTarget, subject, type, kwArgs, seen, seenLength, attrs, attrsLength, getAttr, eqStrNode, raise);
-        return factory.createList(attrs);
+        return PFactory.createList(language, attrs);
     }
 
     @ExplodeLoop
@@ -149,9 +150,9 @@ public abstract class MatchClassNode extends PNodeWithContext {
         for (int i = 0; i < nargs; i++) {
             Object name = getItemNode.execute(frame, matchArgs, i);
             if (!unicodeCheckNode.execute(inliningTarget, name)) {
-                throw raise.raise(TypeError, ErrorMessages.MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P, name);
+                throw raise.raise(inliningTarget, TypeError, ErrorMessages.MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P, name);
             }
-            setName(frame, type, name, seen, seenLength, eqStrNode, raise);
+            setName(frame, inliningTarget, type, name, seen, seenLength, eqStrNode, raise);
             attrs[attrsLength[0]++] = getAttr.execute(frame, inliningTarget, subject, name);
         }
     }
@@ -164,14 +165,14 @@ public abstract class MatchClassNode extends PNodeWithContext {
         for (int i = 0; i < kwArgs.length; i++) {
             TruffleString name = kwArgs[i];
             CompilerAsserts.partialEvaluationConstant(name);
-            setName(frame, type, name, seen, seenLength, eqStrNode, raise);
+            setName(frame, inliningTarget, type, name, seen, seenLength, eqStrNode, raise);
             attrs[attrsLength[0]++] = getAttr.execute(frame, inliningTarget, subject, name);
         }
     }
 
-    private static void setName(VirtualFrame frame, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
+    private static void setName(VirtualFrame frame, Node inliningTarget, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
         if (seenLength[0] > 0 && contains(frame, seen, name, eqNode)) {
-            throw raise.raise(TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
         }
         seen[seenLength[0]++] = name;
     }

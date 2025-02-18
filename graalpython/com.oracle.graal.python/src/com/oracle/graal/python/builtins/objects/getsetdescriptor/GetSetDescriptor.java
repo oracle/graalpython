@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -102,11 +102,11 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         return allowsDelete;
     }
 
-    public GetSetDescriptor boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {
+    public GetSetDescriptor boundToObject(PythonBuiltinClassType klass, PythonLanguage language) {
         if (klass == type) {
             return this;
         } else {
-            return factory.createGetSetDescriptor(get, set, getName(), klass, allowsDelete);
+            return PFactory.createGetSetDescriptor(language, get, set, getName(), klass, allowsDelete);
         }
     }
 }

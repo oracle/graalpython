@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
@@ -109,6 +108,7 @@ import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -132,7 +132,6 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -140,6 +139,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -187,7 +187,7 @@ public final class PythonCextAbstractBuiltins {
         static Object index(Object obj,
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             checkNonNullArg(inliningTarget, obj, raiseNode);
             return indexNode.execute(null, inliningTarget, obj);
         }
@@ -261,8 +261,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkBase(base)")
         static Object toBase(@SuppressWarnings("unused") Object n, @SuppressWarnings("unused") int base,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, BASE_MUST_BE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BASE_MUST_BE);
         }
 
         protected boolean checkBase(int base) {
@@ -452,16 +452,10 @@ public final class PythonCextAbstractBuiltins {
         @Child private LookupAndCallTernaryNode callNode;
 
         @Specialization
-        Object doGeneric(Object o1, Object o2, Object o3) {
-            return ensureCallNode().execute(null, o1, o2, o3);
-        }
-
-        private LookupAndCallTernaryNode ensureCallNode() {
-            if (callNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(TernaryArithmetic.Pow.create());
-            }
-            return callNode;
+        Object doGeneric(Object o1, Object o2, Object o3,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PyNumberPowerNode powerNode) {
+            return powerNode.execute(null, inliningTarget, o1, o2, o3);
         }
     }
 
@@ -499,7 +493,7 @@ public final class PythonCextAbstractBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceSetItemNode setItemNode) {
             if ((int) key != key) {
-                throw PRaiseNode.raiseUncached(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
             }
             setItemNode.execute(null, inliningTarget, obj, (int) key, value);
             return 0;
@@ -523,10 +517,9 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
         static Object getSlice(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
         }
     }
 
@@ -560,10 +553,9 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
         static Object repeat(Object obj, @SuppressWarnings("unused") Object n,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, obj);
         }
     }
 
@@ -596,10 +588,9 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "!checkNode.execute(inliningTarget, s1)", limit = "1")
         static Object concat(Object s1, @SuppressWarnings("unused") Object s2,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, s1);
         }
     }
 
@@ -610,7 +601,7 @@ public final class PythonCextAbstractBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceDelItemNode delItemNode) {
             if ((int) i != i) {
-                throw PRaiseNode.raiseUncached(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, i);
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, i);
             }
             delItemNode.execute(null, inliningTarget, o, (int) i);
             return 0;
@@ -624,7 +615,7 @@ public final class PythonCextAbstractBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceGetItemNode getItemNode) {
             if ((int) position != position) {
-                throw PRaiseNode.raiseUncached(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
             }
             return getItemNode.execute(null, delegate, (int) position);
         }
@@ -649,14 +640,14 @@ public final class PythonCextAbstractBuiltins {
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached CallSlotMpAssSubscriptNode callSetItem,
                         @Cached PySliceNew sliceNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TpSlots slots = getSlotsNode.execute(inliningTarget, sequence);
             if (slots.mp_ass_subscript() != null) {
                 PSlice slice = sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE);
                 callSetItem.execute(null, inliningTarget, slots.mp_ass_subscript(), sequence, slice, s);
                 return 0;
             } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_ASSIGNMENT, sequence);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_ASSIGNMENT, sequence);
             }
         }
     }
@@ -669,14 +660,14 @@ public final class PythonCextAbstractBuiltins {
                         @Cached GetObjectSlotsNode getSlotsNode,
                         @Cached CallSlotMpAssSubscriptNode callSetItem,
                         @Cached PySliceNew sliceNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TpSlots slots = getSlotsNode.execute(inliningTarget, sequence);
             if (slots.mp_ass_subscript() != null) {
                 PSlice slice = sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE);
                 callSetItem.execute(null, inliningTarget, slots.mp_ass_subscript(), sequence, slice, PNone.NO_VALUE);
                 return 0;
             } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_DELETION, sequence);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_DELETION, sequence);
             }
         }
     }
@@ -809,7 +800,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Shared @Cached ConstructListNode listNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             checkNonNullArg(inliningTarget, obj, raiseNode);
             Object attr = getAttrNode.execute(inliningTarget, obj, T_VALUES);
             return listNode.execute(null, callNode.executeWithoutFrame(attr));
@@ -828,12 +819,12 @@ public final class PythonCextAbstractBuiltins {
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
                         @Cached IsSameTypeNode isSameType,
                         @Cached GetClassNode getClassNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object cls = getClassNode.execute(inliningTarget, obj);
             if (isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PSet) ||
                             isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PFrozenSet) ||
                             isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PDeque)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, OBJ_ISNT_MAPPING, obj);
+                throw raiseNode.raise(inliningTarget, TypeError, OBJ_ISNT_MAPPING, obj);
             } else {
                 return sizeNode.execute(null, inliningTarget, obj);
             }

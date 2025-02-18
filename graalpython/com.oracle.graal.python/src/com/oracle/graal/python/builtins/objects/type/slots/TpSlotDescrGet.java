@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,7 +73,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -87,6 +86,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -152,7 +152,7 @@ public abstract class TpSlotDescrGet {
     static final class DescrGetWrapperNode extends PythonTernaryBuiltinNode {
         private final ConditionProfile objIsNoneProfile = ConditionProfile.create();
         private final ConditionProfile typeIsNoneProfile = ConditionProfile.create();
-        @Child private PRaiseNode raiseNode;
+        private final BranchProfile errorProfile = BranchProfile.create();
         @Child private DescrGetBuiltinNode wrapped;
 
         DescrGetWrapperNode(DescrGetBuiltinNode wrapped) {
@@ -168,11 +168,8 @@ public abstract class TpSlotDescrGet {
             Object obj = normalizeNone(objIsNoneProfile, objIn);
             Object type = normalizeNone(typeIsNoneProfile, typeIn);
             if (obj == PNone.NO_VALUE && type == PNone.NO_VALUE) {
-                if (raiseNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    raiseNode = insert(PRaiseNode.create());
-                }
-                raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GET_NONE_NONE_IS_INVALID);
+                errorProfile.enter();
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.GET_NONE_NONE_IS_INVALID);
             }
             return wrapped.execute(frame, self, obj, type);
         }

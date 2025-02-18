@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -75,7 +76,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -126,12 +127,12 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
         StructSequence.initType(core, STRUCT_PASSWD_DESC);
     }
 
-    private static Object[] createPwuidObject(Node inliningTarget, PwdResult pwd, PythonObjectFactory factory, InlinedConditionProfile unsignedConversionProfile) {
+    private static Object[] createPwuidObject(Node inliningTarget, PwdResult pwd, PythonLanguage language, InlinedConditionProfile unsignedConversionProfile) {
         return new Object[]{
                         pwd.name,
                         T_NOT_AVAILABLE,
-                        PInt.createPythonIntFromUnsignedLong(inliningTarget, factory, unsignedConversionProfile, pwd.uid),
-                        PInt.createPythonIntFromUnsignedLong(inliningTarget, factory, unsignedConversionProfile, pwd.gid),
+                        PInt.createPythonIntFromUnsignedLong(inliningTarget, language, unsignedConversionProfile, pwd.uid),
+                        PInt.createPythonIntFromUnsignedLong(inliningTarget, language, unsignedConversionProfile, pwd.gid),
                         /* gecos: */ T_EMPTY_STRING,
                         pwd.dir,
                         pwd.shell
@@ -144,26 +145,25 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGetpwuid(VirtualFrame frame, Object uidObj,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached UidConversionNode uidConversionNode,
                         @Cached IsBuiltinObjectProfile classProfile,
                         @Cached GilNode gil,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             long uid;
             try {
                 uid = uidConversionNode.executeLong(frame, uidObj);
             } catch (PException ex) {
                 if (classProfile.profileException(inliningTarget, ex, PythonBuiltinClassType.OverflowError)) {
-                    throw raiseUidNotFound(raiseNode.get(inliningTarget));
+                    throw raiseUidNotFound(inliningTarget, raiseNode);
                 }
                 throw ex;
             }
             PwdResult pwd;
             try {
-                PythonContext context = PythonContext.get(inliningTarget);
                 gil.release(true);
                 try {
                     pwd = posixLib.getpwuid(context.getPosixSupport(), uid);
@@ -174,13 +174,14 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (pwd == null) {
-                throw raiseUidNotFound(raiseNode.get(inliningTarget));
+                throw raiseUidNotFound(inliningTarget, raiseNode);
             }
-            return factory.createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, factory, unsignedConversionProfile));
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            return PFactory.createStructSeq(language, STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, language, unsignedConversionProfile));
         }
 
-        private static PException raiseUidNotFound(PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.KeyError, ErrorMessages.GETPWUID_NOT_FOUND);
+        private static PException raiseUidNotFound(Node inliningTarget, PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.KeyError, ErrorMessages.GETPWUID_NOT_FOUND);
         }
     }
 
@@ -197,20 +198,20 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGetpwname(VirtualFrame frame, TruffleString name,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached GilNode gil,
                         @Cached StringOrBytesToOpaquePathNode encodeFSDefault,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             // Note: CPython also takes only Strings, not bytes, and then encodes the String
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
             Object nameEncoded = encodeFSDefault.execute(inliningTarget, name);
             PwdResult pwd;
             try {
                 gil.release(true);
-                PythonContext context = PythonContext.get(inliningTarget);
                 try {
                     pwd = posixLib.getpwnam(context.getPosixSupport(), nameEncoded);
                 } finally {
@@ -220,9 +221,9 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             if (pwd == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, ErrorMessages.GETPWNAM_NAME_NOT_FOUND, name);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.KeyError, ErrorMessages.GETPWNAM_NAME_NOT_FOUND, name);
             }
-            return factory.createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, factory, unsignedConversionProfile));
+            return PFactory.createStructSeq(language, STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, pwd, context.getLanguage(inliningTarget), unsignedConversionProfile));
         }
     }
 
@@ -230,24 +231,25 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetpwallNode extends PythonBuiltinNode {
         @Specialization
-        Object doGetpall(VirtualFrame frame,
+        static Object doGetpall(VirtualFrame frame,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile unsignedConversionProfile,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // We cannot release the GIL, because the underlying POSIX calls are not thread safe
             PwdResult[] entries;
             try {
-                entries = posixLib.getpwentries(getPosixSupport());
+                entries = posixLib.getpwentries(context.getPosixSupport());
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
+            PythonLanguage language = context.getLanguage(inliningTarget);
             Object[] result = new Object[entries.length];
             for (int i = 0; i < result.length; i++) {
-                result[i] = factory.createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, entries[i], factory, unsignedConversionProfile));
+                result[i] = PFactory.createStructSeq(language, STRUCT_PASSWD_DESC, createPwuidObject(inliningTarget, entries[i], language, unsignedConversionProfile));
             }
-            return factory.createList(result);
+            return PFactory.createList(language, result);
         }
     }
 }

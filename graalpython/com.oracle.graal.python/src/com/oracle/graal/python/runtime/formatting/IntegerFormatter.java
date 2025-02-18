@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -286,7 +286,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     final void format_c(BigInteger value) {
         assert !bytes; // for bytes we use directly BytesFormatter
         if (value.signum() < 0 || value.compareTo(LIMIT_UNICODE) >= 0) {
-            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
+            throw PRaiseNode.raiseStatic(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
         }
         result.appendCodePoint(value.intValue());
     }
@@ -466,7 +466,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     final void format_c(int value) {
         assert !bytes; // for bytes we use directly BytesFormatter
         if (value < 0 || value >= LIMIT_UNICODE.intValue()) {
-            throw PRaiseNode.raiseUncached(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
+            throw PRaiseNode.raiseStatic(raisingNode, OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
         }
         result.appendCodePoint(value);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.PrintWriter;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
@@ -135,7 +136,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -432,7 +433,7 @@ public abstract class PythonCextObjectBuiltins {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptorNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!longCheckNode.execute(inliningTarget, obj)) {
                 Object posixSupport = PythonContext.get(inliningTarget).getPosixSupport();
                 if (eqNode.execute(T_JAVA, posixLib.getBackend(posixSupport), TS_ENCODING)) {
@@ -440,7 +441,7 @@ public abstract class PythonCextObjectBuiltins {
                      * For non Python 'int' objects, we refuse to hand out the fileno field when
                      * using the emulated Posix backend, because it is likely a fake.
                      */
-                    throw raiseNode.get(inliningTarget).raise(NotImplementedError, ErrorMessages.S_NOT_SUPPORTED_ON_JAVA_POSIX_BACKEND, "PyObject_AsFileDescriptor");
+                    throw raiseNode.raise(inliningTarget, NotImplementedError, ErrorMessages.S_NOT_SUPPORTED_ON_JAVA_POSIX_BACKEND, "PyObject_AsFileDescriptor");
                 }
             }
             return asFileDescriptorNode.execute(null, inliningTarget, obj);
@@ -487,8 +488,8 @@ public abstract class PythonCextObjectBuiltins {
     abstract static class PyObject_HashNotImplemented extends CApiUnaryBuiltinNode {
         @Specialization
         static Object unhashable(Object obj,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, UNHASHABLE_TYPE_P, obj);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, UNHASHABLE_TYPE_P, obj);
         }
     }
 
@@ -496,9 +497,8 @@ public abstract class PythonCextObjectBuiltins {
     abstract static class PyObject_IsTrue extends CApiUnaryBuiltinNode {
         @Specialization
         static int isTrue(Object obj,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            return isTrueNode.execute(null, inliningTarget, obj) ? 1 : 0;
+            return isTrueNode.execute(null, obj) ? 1 : 0;
         }
     }
 
@@ -539,12 +539,12 @@ public abstract class PythonCextObjectBuiltins {
 
         @Specialization(guards = "isNoValue(obj)")
         static Object bytesNoValue(@SuppressWarnings("unused") Object obj,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             /*
              * Note: CPython calls PyBytes_FromString("<NULL>") but we do not directly have it.
              * Therefore, we directly create the bytes object with string "<NULL>" here.
              */
-            return factory.createBytes(BytesUtils.NULL_STRING);
+            return PFactory.createBytes(language, BytesUtils.NULL_STRING);
         }
 
         protected static boolean hasBytes(Node inliningTarget, Object obj, PyObjectLookupAttr lookupAttrNode) {

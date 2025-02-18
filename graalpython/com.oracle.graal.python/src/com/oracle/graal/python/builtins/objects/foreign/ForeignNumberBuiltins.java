@@ -34,22 +34,22 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins.ForeignGetattrNode;
@@ -72,12 +72,14 @@ import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberNegativeNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyNumberPositiveNode;
+import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyNumberRemainderNode;
 import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
 import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
 import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -87,12 +89,13 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -169,13 +172,13 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "lib.fitsInBigInteger(obj)"})
         PInt doBigInt(Object obj,
+                        @Bind PythonLanguage language,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil,
-                        @Cached(inline = false) PythonObjectFactory factory) {
+                        @Shared @Cached(inline = false) GilNode gil) {
             assert !lib.isBoolean(obj);
             gil.release(true);
             try {
-                return factory.createInt(lib.asBigInteger(obj));
+                return PFactory.createInt(language, lib.asBigInteger(obj));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
@@ -570,19 +573,26 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___POW__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.nb_power, isComplex = true)
     @GenerateNodeFactory
-    abstract static class PowNode extends ForeignBinaryNode {
-        PowNode() {
-            super(BinaryArithmetic.Pow.create(), false);
-        }
-    }
+    abstract static class PowNode extends PythonTernaryBuiltinNode {
 
-    @Builtin(name = J___RPOW__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class RPowNode extends ForeignBinaryNode {
-        RPowNode() {
-            super(BinaryArithmetic.Pow.create(), true);
+        @Specialization
+        static Object doIt(VirtualFrame frame, Object v, Object w, Object z,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxV,
+                        @Cached UnboxNode unboxW,
+                        @Cached UnboxNode unboxZ,
+                        @Cached PyNumberPowerNode power) {
+            v = unboxV.execute(inliningTarget, v);
+            w = unboxW.execute(inliningTarget, w);
+            if (!(z instanceof PNone)) {
+                z = unboxZ.execute(inliningTarget, z);
+            }
+            if (v == null || w == null || z == null) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            return power.execute(frame, inliningTarget, v, w, z);
         }
     }
 
@@ -659,10 +669,10 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         protected static Object doIt(Object object,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @Cached GilNode gil,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached GilNode gil) {
             assert !lib.isBoolean(object);
             gil.release(true);
             try {
@@ -685,13 +695,13 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                 if (lib.fitsInBigInteger(object)) {
                     try {
                         var big = lib.asBigInteger(object);
-                        return factory.createInt(big);
+                        return PFactory.createInt(PythonLanguage.get(inliningTarget), big);
                     } catch (UnsupportedMessageException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException("foreign value claims to be a big integer but isn't");
                     }
                 }
-                throw raiseNode.raiseIntegerInterpretationError(object);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
             } finally {
                 gil.acquire();
             }

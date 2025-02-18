@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -107,16 +107,15 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
                         @Cached CommonGeneratorBuiltins.SendNode send,
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached IsBuiltinObjectProfile isGenExit,
-                        @Cached IsBuiltinObjectExactProfile isAsyncGenWrappedValue,
-                        @Cached PRaiseNode raiseStopIteration) {
+                        @Cached IsBuiltinObjectExactProfile isAsyncGenWrappedValue) {
             Object result;
             if (self.getState() == AwaitableState.CLOSED) {
-                throw raiseReuse.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_ASEND);
+                throw raiseReuse.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_ASEND);
             }
 
             if (self.getState() == AwaitableState.INIT) {
                 if (self.receiver.isRunningAsync()) {
-                    throw raiseAlreadyRunning.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.AGEN_ALREADY_RUNNING);
+                    throw raiseAlreadyRunning.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.AGEN_ALREADY_RUNNING);
                 }
                 if (sent == null || sent == PNone.NONE) {
                     sent = self.message;
@@ -131,7 +130,7 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
                 throw handleAGError(self.receiver, e, inliningTarget, isStopIteration, isGenExit);
             }
             try {
-                return unwrapAGYield(self.receiver, result, inliningTarget, isAsyncGenWrappedValue, raiseStopIteration);
+                return unwrapAGYield(self.receiver, result, inliningTarget, isAsyncGenWrappedValue);
             } catch (PException e) {
                 self.setState(AwaitableState.CLOSED);
                 throw e;
@@ -159,12 +158,11 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
 
     static Object unwrapAGYield(PAsyncGen self, Object result,
                     Node inliningTarget,
-                    IsBuiltinObjectExactProfile isAGWrappedValue,
-                    PRaiseNode raise) {
+                    IsBuiltinObjectExactProfile isAGWrappedValue) {
         if (isAGWrappedValue.profileObject(inliningTarget, result, PythonBuiltinClassType.PAsyncGenAWrappedValue)) {
             self.setRunningAsync(false);
             Object wrapped = ((PAsyncGenWrappedValue) result).getWrapped();
-            throw raise.raise(PythonBuiltinClassType.StopIteration, new Object[]{wrapped});
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration, new Object[]{wrapped});
         }
         return result;
     }
@@ -181,12 +179,11 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
                         @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                         @Cached IsBuiltinObjectProfile isStopIteration,
                         @Cached IsBuiltinObjectProfile isGeneratorExit,
-                        @Cached IsBuiltinObjectExactProfile isAGWrappedValue,
-                        @Cached PRaiseNode raiseStopIteration) {
+                        @Cached IsBuiltinObjectExactProfile isAGWrappedValue) {
             Object result;
 
             if (self.getState() == AwaitableState.CLOSED) {
-                throw raiseReuse.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_ASEND);
+                throw raiseReuse.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_ASEND);
             }
             try {
                 result = throwNode.execute(frame, self.receiver, arg1, arg2, arg3);
@@ -195,7 +192,7 @@ public final class AsyncGenSendBuiltins extends PythonBuiltins {
                 throw handleAGError(self.receiver, e, inliningTarget, isStopIteration, isGeneratorExit);
             }
             try {
-                return unwrapAGYield(self.receiver, result, inliningTarget, isAGWrappedValue, raiseStopIteration);
+                return unwrapAGYield(self.receiver, result, inliningTarget, isAGWrappedValue);
             } catch (PException e) {
                 self.setState(AwaitableState.CLOSED);
                 throw e;

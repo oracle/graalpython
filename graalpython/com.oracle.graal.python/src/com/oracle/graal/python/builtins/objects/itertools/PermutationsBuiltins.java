@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
@@ -51,6 +52,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -69,7 +71,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -104,9 +106,9 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.isStopped()")
         static Object next(PPermutations self,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             self.setRaisedStopIteration(true);
-            throw raiseNode.raiseStopIteration();
+            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
         }
 
         @Specialization(guards = "!self.isStopped()")
@@ -117,8 +119,8 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile resultLoopProfile,
                         @Cached InlinedLoopConditionProfile mainLoopProfile,
                         @Cached InlinedLoopConditionProfile shiftIndicesProfile,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             int r = self.getR();
 
             int[] indices = self.getIndices();
@@ -139,7 +141,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                     int tmp = indices[i];
                     indices[i] = indices[indices.length - j];
                     indices[indices.length - j] = tmp;
-                    return factory.createTuple(result);
+                    return PFactory.createTuple(language, result);
                 }
                 cycles[i] = indices.length - i;
                 int n1 = indices.length - 1;
@@ -155,11 +157,11 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
             self.setStopped(true);
             if (isStartedProfile.profile(inliningTarget, self.isStarted())) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, StopIteration);
             } else {
                 self.setStarted(true);
             }
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
     }
 
@@ -170,29 +172,29 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         static Object reduce(PPermutations self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PList poolList = factory.createList(self.getPool());
-            PTuple tuple = factory.createTuple(new Object[]{poolList, self.getR()});
+            PList poolList = PFactory.createList(language, self.getPool());
+            PTuple tuple = PFactory.createTuple(language, new Object[]{poolList, self.getR()});
 
             // we must pickle the indices and use them for setstate
-            PTuple indicesTuple = factory.createTuple(self.getIndices());
-            PTuple cyclesTuple = factory.createTuple(self.getCycles());
-            PTuple tuple2 = factory.createTuple(new Object[]{indicesTuple, cyclesTuple, self.isStarted()});
+            PTuple indicesTuple = PFactory.createTuple(language, self.getIndices());
+            PTuple cyclesTuple = PFactory.createTuple(language, self.getCycles());
+            PTuple tuple2 = PFactory.createTuple(language, new Object[]{indicesTuple, cyclesTuple, self.isStarted()});
 
             Object[] result = new Object[]{type, tuple, tuple2};
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
 
         @Specialization(guards = "self.isRaisedStopIteration()")
         static Object reduceStopped(PPermutations self,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = factory.createTuple(new Object[]{factory.createEmptyTuple(), self.getR()});
+            PTuple tuple = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language), self.getR()});
             Object[] result = new Object[]{type, tuple};
-            return factory.createTuple(result);
+            return PFactory.createTuple(language, result);
         }
     }
 
@@ -209,16 +211,16 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile cyclesProfile,
                         @Cached CastToJavaBooleanNode castBoolean,
                         @Cached CastToJavaIntExactNode castInt,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 if (sizeNode.execute(frame, inliningTarget, state) != 3) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
                 }
                 Object indices = getItemNode.execute(frame, state, 0);
                 Object cycles = getItemNode.execute(frame, state, 1);
                 int poolLen = self.getPool().length;
                 if (sizeNode.execute(frame, inliningTarget, indices) != poolLen || sizeNode.execute(frame, inliningTarget, cycles) != self.getR()) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_ARGS, T___SETSTATE__);
+                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
                 }
 
                 self.setStarted(castBoolean.execute(inliningTarget, getItemNode.execute(frame, state, 2)));
@@ -246,7 +248,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
                 return PNone.NONE;
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
         }
     }

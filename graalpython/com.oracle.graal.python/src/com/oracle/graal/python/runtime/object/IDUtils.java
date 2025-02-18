@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -106,11 +107,11 @@ public final class IDUtils {
         return BigInteger.valueOf(id).shiftLeft(2).or(mask);
     }
 
-    private static Object asMaskedId(long id, PythonObjectFactory factory, long max, long mask, BigInteger biMask) {
+    private static Object asMaskedId(PythonLanguage language, long id, long max, long mask, BigInteger biMask) {
         if (Long.compareUnsigned(id, max) <= 0) {
             return (id << 2) | mask;
         }
-        return factory.createInt(asMaskedBigIntId(id, biMask));
+        return PFactory.createInt(language, asMaskedBigIntId(id, biMask));
     }
 
     private static long getId(ReservedID reservedID) {
@@ -125,13 +126,13 @@ public final class IDUtils {
         return ((long) id << 2) | ID_MASK_LONG;
     }
 
-    public static Object getId(long id, PythonObjectFactory factory) {
-        return asMaskedId(id, factory, MAX_OBJECT_ID, ID_MASK_LONG, ID_MASK_LONG_BI);
+    public static Object getId(PythonLanguage language, long id) {
+        return asMaskedId(language, id, MAX_OBJECT_ID, ID_MASK_LONG, ID_MASK_LONG_BI);
     }
 
-    public static Object getId(double id, PythonObjectFactory factory) {
+    public static Object getId(PythonLanguage language, double id) {
         long ieee754 = Double.doubleToLongBits(id);
-        return asMaskedId(ieee754, factory, MAX_DOUBLE_ID, ID_MASK_DOUBLE, ID_MASK_DOUBLE_BI);
+        return asMaskedId(language, ieee754, MAX_DOUBLE_ID, ID_MASK_DOUBLE, ID_MASK_DOUBLE_BI);
     }
 
     @CompilerDirectives.TruffleBoundary(allowInlining = true)

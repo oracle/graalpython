@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 public abstract class ThreadLocalNodes {
 
@@ -61,12 +63,13 @@ public abstract class ThreadLocalNodes {
         @Specialization
         PDict get(VirtualFrame frame, PThreadLocal self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
+                        @Cached InlinedBranchProfile create,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached CallNode callNode) {
             PDict dict = self.getThreadLocalDict();
             if (dict == null) {
-                dict = factory.createDict();
+                create.enter(inliningTarget);
+                dict = PFactory.createDict(PythonLanguage.get(inliningTarget));
                 self.setThreadLocalDict(dict);
                 Object initMethod = lookup.execute(frame, inliningTarget, self, SpecialMethodNames.T___INIT__);
                 callNode.execute(frame, initMethod, self.getArgs(), self.getKeywords());

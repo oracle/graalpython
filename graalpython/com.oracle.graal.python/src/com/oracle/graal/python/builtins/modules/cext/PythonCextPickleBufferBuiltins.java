@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,13 +65,13 @@ public final class PythonCextPickleBufferBuiltins {
         static Object getviewobj(PPickleBuffer object,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object owner = null;
             if (object.getView() != null) {
                 owner = bufferLib.getOwner(object.getView());
             }
             if (owner == null) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.OP_FORBIDDEN_ON_OBJECT, "PickleBuffer");
             }
             return owner;
         }

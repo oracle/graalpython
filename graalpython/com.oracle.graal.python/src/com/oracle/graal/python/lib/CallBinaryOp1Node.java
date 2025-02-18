@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.IsSameSlotNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.CallSlotBinaryOpNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -64,7 +64,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @GenerateCached(false)
 public abstract class CallBinaryOp1Node extends PNodeWithContext {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlot slotV,
-                    Object w, Object classW, TpSlot slotW, BinaryOpSlot op);
+                    Object w, Object classW, TpSlot slotW, ReversibleSlot op);
 
     // CPython binary_op1 may end up calling SLOT1BINFULL - wrapper around the dunder methods, which
     // duplicates some of the logic checking the right operand, its slot, and whether it is subtype.
@@ -86,7 +86,7 @@ public abstract class CallBinaryOp1Node extends PNodeWithContext {
     // we just try __rxxx__, again, without any subclass check.
 
     @Specialization
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlot slotV, Object w, Object classW, TpSlot slotWIn, BinaryOpSlot op,
+    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object classV, TpSlot slotV, Object w, Object classW, TpSlot slotWIn, ReversibleSlot op,
                     @Cached IsSameTypeNode isSameTypeNode,
                     @Cached IsSameSlotNode isSameSlotNode,
                     @Cached InlinedConditionProfile isSameTypeProfile,

@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -65,11 +66,10 @@ import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
@@ -272,16 +272,16 @@ public final class ExceptionUtils {
         return PException.fromObject(pythonException, node, e);
     }
 
-    @InliningCutoff
-    public static PException wrapJavaExceptionIfApplicable(Node location, Throwable e, PythonObjectFactory factory) {
+    public static PException wrapJavaExceptionIfApplicable(Node location, Throwable e) {
         if (e instanceof StackOverflowError) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            PythonContext.get(null).ensureGilAfterFailure();
-            return ExceptionUtils.wrapJavaException(e, location, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
+            PythonContext context = PythonContext.get(null);
+            context.ensureGilAfterFailure();
+            return ExceptionUtils.wrapJavaException(e, location, PFactory.createBaseException(context.getLanguage(), RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
         if (e instanceof OutOfMemoryError) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            return ExceptionUtils.wrapJavaException(e, location, factory.createBaseException(MemoryError));
+            return ExceptionUtils.wrapJavaException(e, location, PFactory.createBaseException(PythonLanguage.get(null), MemoryError));
         }
         return null;
     }

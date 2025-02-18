@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,9 +76,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -133,10 +131,9 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
                         factory.getNodeClass(),
                         builtin.name());
-        PythonObjectSlowPathFactory f = PythonContext.get(null).factory();
         int flags = PBuiltinFunction.getFlags(builtin, rawCallTarget);
-        PBuiltinFunction getter = f.createBuiltinFunction(name, type, 1, flags, rawCallTarget);
-        GetSetDescriptor callable = f.createGetSetDescriptor(getter, getter, name, type, false);
+        PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, type, 1, flags, rawCallTarget);
+        GetSetDescriptor callable = PFactory.createGetSetDescriptor(language, getter, getter, name, type, false);
         callable.setAttribute(T___DOC__, toTruffleStringUncached(builtin.doc()));
         WriteAttributeToObjectNode.getUncached(true).execute(type, name, callable);
     }
@@ -147,10 +144,10 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind PythonLanguage language,
                         @Bind("this") Node inliningTarget,
-                        @Cached PointerNodes.ReadBytesNode read,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(read.execute(inliningTarget, self.b_ptr, self.b_size));
+                        @Cached PointerNodes.ReadBytesNode read) {
+            return PFactory.createBytes(language, read.execute(inliningTarget, self.b_ptr, self.b_size));
         }
 
         @Specialization(limit = "3")
@@ -160,13 +157,13 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object buffer = acquireLib.acquire(value, BufferFlags.PyBUF_SIMPLE, frame, indirectCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
                 if (len > self.b_size) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, BYTE_STRING_TOO_LONG);
+                    throw raiseNode.raise(inliningTarget, ValueError, BYTE_STRING_TOO_LONG);
                 }
                 writeBytesNode.execute(inliningTarget, self.b_ptr, bytes, 0, len);
                 return PNone.NONE;
@@ -183,10 +180,10 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static PBytes doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PointerNodes.StrLenNode strLenNode,
-                        @Cached PointerNodes.ReadBytesNode read,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createBytes(read.execute(inliningTarget, self.b_ptr, strLenNode.execute(inliningTarget, self.b_ptr)));
+                        @Cached PointerNodes.ReadBytesNode read) {
+            return PFactory.createBytes(language, read.execute(inliningTarget, self.b_ptr, strLenNode.execute(inliningTarget, self.b_ptr)));
         }
 
         @Specialization
@@ -194,11 +191,11 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetInternalByteArrayNode getBytes,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = value.getSequenceStorage();
             int len = storage.length();
             if (len > self.b_size) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, BYTE_STRING_TOO_LONG);
+                throw raiseNode.raise(inliningTarget, ValueError, BYTE_STRING_TOO_LONG);
             }
             byte[] bytes = getBytes.execute(inliningTarget, storage);
             writeBytesNode.execute(inliningTarget, self.b_ptr, bytes, 0, len);
@@ -207,8 +204,8 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, BYTES_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BYTES_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
         }
     }
 
@@ -235,11 +232,11 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached PointerNodes.WriteBytesNode writeBytesNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(inliningTarget, value), WCHAR_T_ENCODING);
             int len = str.byteLength(WCHAR_T_ENCODING);
             if (len > self.b_size) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, STRING_TOO_LONG);
+                throw raiseNode.raise(inliningTarget, ValueError, STRING_TOO_LONG);
             }
             InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
             writeBytesNode.execute(inliningTarget, self.b_ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
@@ -248,8 +245,8 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
         }
     }
 

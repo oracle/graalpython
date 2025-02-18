@@ -135,6 +135,8 @@ public @interface Slot {
         nb_true_divide("__truediv__, __rtruediv__"),
         /** foo @ bar */
         nb_matrix_multiply("__matmul__, __rmatmul__"),
+        /** foo ** bar */
+        nb_power("__pow__, __rpow__"),
         /** sequence length/size */
         sq_length("__len__"),
         /** sequence item: read element at index */

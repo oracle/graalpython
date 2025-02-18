@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -73,7 +74,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     @Specialization(rewriteOn = UnexpectedResultException.class)
     public static boolean doBoolean(VirtualFrame frame, boolean item, Object iter,
                     @Bind("this") Node inliningTarget,
-                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
+                    @Shared @Cached PyObjectIsTrueNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -84,13 +85,13 @@ public abstract class ContainsNode extends BinaryOpNode {
             Object iterator = getIter.execute(frame, inliningTarget, iter);
             return sequenceContains(frame, iterator, item, eqNode, nextNode, inliningTarget, errorProfile);
         }
-        return castBool.executeBoolean(frame, inliningTarget, result);
+        return castBool.execute(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     public static boolean doInt(VirtualFrame frame, int item, Object iter,
                     @Bind("this") Node inliningTarget,
-                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
+                    @Shared @Cached PyObjectIsTrueNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -100,13 +101,13 @@ public abstract class ContainsNode extends BinaryOpNode {
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
             return sequenceContains(frame, getIter.execute(frame, inliningTarget, iter), item, eqNode, nextNode, inliningTarget, errorProfile);
         }
-        return castBool.executeBoolean(frame, inliningTarget, result);
+        return castBool.execute(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     public static boolean doLong(VirtualFrame frame, long item, Object iter,
                     @Bind("this") Node inliningTarget,
-                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
+                    @Shared @Cached PyObjectIsTrueNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -116,13 +117,13 @@ public abstract class ContainsNode extends BinaryOpNode {
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
             return sequenceContains(frame, getIter.execute(frame, inliningTarget, iter), item, eqNode, nextNode, inliningTarget, errorProfile);
         }
-        return castBool.executeBoolean(frame, inliningTarget, result);
+        return castBool.execute(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     public static boolean doDouble(VirtualFrame frame, double item, Object iter,
                     @Bind("this") Node inliningTarget,
-                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
+                    @Shared @Cached PyObjectIsTrueNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -132,13 +133,13 @@ public abstract class ContainsNode extends BinaryOpNode {
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
             return sequenceContains(frame, getIter.execute(frame, inliningTarget, iter), item, eqNode, nextNode, inliningTarget, errorProfile);
         }
-        return castBool.executeBoolean(frame, inliningTarget, result);
+        return castBool.execute(frame, result);
     }
 
     @Specialization
     public static boolean doGeneric(VirtualFrame frame, Object item, Object iter,
                     @Bind("this") Node inliningTarget,
-                    @Shared @Cached CoerceToBooleanNode.YesNode castBool,
+                    @Shared @Cached PyObjectIsTrueNode castBool,
                     @Shared("callNode") @Cached("createCallNode()") LookupAndCallBinaryNode callNode,
                     @Shared("errorProfile") @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -148,7 +149,7 @@ public abstract class ContainsNode extends BinaryOpNode {
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
             return sequenceContainsObject(frame, getIter.execute(frame, inliningTarget, iter), item, eqNode, nextNode, inliningTarget, errorProfile);
         }
-        return castBool.executeBoolean(frame, inliningTarget, result);
+        return castBool.execute(frame, result);
     }
 
     private static void handleUnexpectedResult(VirtualFrame frame, Object iterator, Object item, UnexpectedResultException e, PyObjectRichCompareBool.EqNode eqNode, GetNextNode nextNode,

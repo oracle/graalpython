@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -36,6 +36,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,7 +56,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -86,8 +87,8 @@ public final class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isExhausted()")
         static Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raiseStopIteration();
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -95,7 +96,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceGetItemNode getItemNode,
                         @Cached IsBuiltinObjectProfile profile,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.index >= 0) {
                 try {
                     return getItemNode.execute(frame, self.getObject(), self.index--);
@@ -104,19 +105,19 @@ public final class ReversedBuiltins extends PythonBuiltins {
                 }
             }
             self.setExhausted();
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(PStringReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.SubstringNode substringNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             if (self.index >= 0) {
                 return substringNode.execute(self.value, self.index--, 1, TS_ENCODING, false);
             }
             self.setExhausted();
-            throw raiseNode.get(inliningTarget).raiseStopIteration();
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
     }
 
@@ -148,10 +149,10 @@ public final class ReversedBuiltins extends PythonBuiltins {
         static int lengthHint(PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceNodes.LenNode lenNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             int len = lenNode.execute(inliningTarget, self.getPSequence());
             if (len == -1) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, OBJ_HAS_NO_LEN, self);
+                throw raiseNode.raise(inliningTarget, TypeError, OBJ_HAS_NO_LEN, self);
             }
             if (len < self.index) {
                 return 0;
@@ -179,22 +180,22 @@ public final class ReversedBuiltins extends PythonBuiltins {
         static Object reduce(PStringReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             if (self.isExhausted()) {
-                return reduceInternal(inliningTarget, self, "", null, getClassNode, factory);
+                return reduceInternal(inliningTarget, self, "", null, getClassNode, language);
             }
-            return reduceInternal(inliningTarget, self, self.value, self.index, getClassNode, factory);
+            return reduceInternal(inliningTarget, self, self.value, self.index, getClassNode, language);
         }
 
         @Specialization(guards = "self.isPSequence()")
         static Object reduce(PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             if (self.isExhausted()) {
-                return reduceInternal(inliningTarget, self, factory.createList(), null, getClassNode, factory);
+                return reduceInternal(inliningTarget, self, PFactory.createList(language), null, getClassNode, language);
             }
-            return reduceInternal(inliningTarget, self, self.getPSequence(), self.index, getClassNode, factory);
+            return reduceInternal(inliningTarget, self, self.getPSequence(), self.index, getClassNode, language);
         }
 
         @Specialization(guards = "!self.isPSequence()")
@@ -202,19 +203,19 @@ public final class ReversedBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("create(T___REDUCE__)") LookupAndCallUnaryNode callReduce,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object content = callReduce.executeObject(frame, self.getObject());
-            return reduceInternal(inliningTarget, self, content, self.index, getClassNode, factory);
+            return reduceInternal(inliningTarget, self, content, self.index, getClassNode, language);
         }
 
-        private static PTuple reduceInternal(Node inliningTarget, Object self, Object arg, Object state, GetClassNode getClassNode, PythonObjectFactory factory) {
+        private static PTuple reduceInternal(Node inliningTarget, Object self, Object arg, Object state, GetClassNode getClassNode, PythonLanguage language) {
             Object revIter = getClassNode.execute(inliningTarget, self);
-            PTuple args = factory.createTuple(new Object[]{arg});
+            PTuple args = PFactory.createTuple(language, new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {
-                return factory.createTuple(new Object[]{revIter, args, state});
+                return PFactory.createTuple(language, new Object[]{revIter, args, state});
             } else {
-                return factory.createTuple(new Object[]{revIter, args});
+                return PFactory.createTuple(language, new Object[]{revIter, args});
             }
         }
     }

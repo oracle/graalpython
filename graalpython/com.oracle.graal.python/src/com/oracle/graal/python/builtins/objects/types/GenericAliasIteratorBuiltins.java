@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -56,7 +57,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -77,13 +78,14 @@ public final class GenericAliasIteratorBuiltins extends PythonBuiltins {
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object next(PGenericAliasIterator self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             if (self.isExhausted()) {
-                throw raiseNode.raise(PythonBuiltinClassType.StopIteration);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             PGenericAlias alias = self.getObj();
-            PGenericAlias starredAlias = factory.createGenericAlias(alias.getOrigin(), alias.getArgs(), true);
+            PGenericAlias starredAlias = PFactory.createGenericAlias(language, alias.getOrigin(), alias.getArgs(), true);
             self.markExhausted();
             return starredAlias;
         }
@@ -96,16 +98,16 @@ public final class GenericAliasIteratorBuiltins extends PythonBuiltins {
         static Object reduce(VirtualFrame frame, PGenericAliasIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
             Object iter = getAttr.execute(frame, inliningTarget, builtins, T_ITER);
             Object[] args;
             if (!self.isExhausted()) {
                 args = new Object[]{self.getObj()};
             } else {
-                args = new Object[]{factory.createEmptyTuple()};
+                args = new Object[]{PFactory.createEmptyTuple(language)};
             }
-            return factory.createTuple(new Object[]{iter, factory.createTuple(args)});
+            return PFactory.createTuple(language, new Object[]{iter, PFactory.createTuple(language, args)});
         }
     }
 }

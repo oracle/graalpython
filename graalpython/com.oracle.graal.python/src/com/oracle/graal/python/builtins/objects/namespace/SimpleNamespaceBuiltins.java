@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,9 +58,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import org.graalvm.collections.Pair;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -94,7 +95,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -120,10 +121,12 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class SimpleNamespaceInitNode extends PythonVarargsBuiltinNode {
         @Specialization
-        Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
-                        @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
+        static Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
+                        @Bind("this") Node inliningTarget,
+                        @Cached WriteAttributeToPythonObjectNode writeAttrNode,
+                        @Cached PRaiseNode raiseNode) {
             if (args.length > 0) {
-                throw raise(PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
             }
             for (PKeyword keyword : kwargs) {
                 writeAttrNode.execute(self, keyword.getName(), keyword.getValue());
@@ -169,10 +172,10 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetOrCreateDictNode getDict,
-                        @Cached PythonObjectFactory factory) {
-            PTuple args = factory.createEmptyTuple();
+                        @Bind PythonLanguage language) {
+            PTuple args = PFactory.createEmptyTuple(language);
             final PDict dict = getDict.execute(inliningTarget, self);
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), args, dict});
+            return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, self), args, dict});
         }
     }
 
@@ -232,7 +235,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                 try {
                     return castStr.execute(inliningTarget, reprObj);
                 } catch (CannotCastException e) {
-                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprObj);
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprObj);
                 }
             }
 

@@ -32,6 +32,8 @@ test.test_capi.test_getargs.Keywords_TestCase.test_positional_args @ darwin-arm6
 test.test_capi.test_getargs.Keywords_TestCase.test_required_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.Keywords_TestCase.test_surrogate_keyword @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.Keywords_TestCase.test_too_many_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.LongLong_TestCase.test_K @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.LongLong_TestCase.test_L @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.Object_TestCase.test_S @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.Object_TestCase.test_Y @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.ParseTupleAndKeywords_Test.test_bad_use @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -43,6 +45,10 @@ test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_mixed_args @
 test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_optional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_positional_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.PositionalOnlyAndKeywords_TestCase.test_required_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Signed_TestCase.test_h @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Signed_TestCase.test_i @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Signed_TestCase.test_l @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Signed_TestCase.test_n @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.SkipitemTest.test_skipitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.SkipitemTest.test_skipitem_with_suffix @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.String_TestCase.test_C @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -59,6 +65,11 @@ test.test_capi.test_getargs.Test_testcapi.test_k_code @ darwin-arm64,darwin-x86_
 test.test_capi.test_getargs.Test_testcapi.test_s_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.Tuple_TestCase.test_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_getargs.Tuple_TestCase.test_tuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Unsigned_TestCase.test_B @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Unsigned_TestCase.test_H @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Unsigned_TestCase.test_I @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Unsigned_TestCase.test_b @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_getargs.Unsigned_TestCase.test_k @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.CAPITest.test_c_type_with_ipow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.CAPITest.test_c_type_with_matrix_multiplication @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.CAPITest.test_export_symbols @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -106,12 +117,12 @@ test.test_capi.test_misc.Test_testcapi.test_incref_decref_API @ darwin-arm64,dar
 test.test_capi.test_misc.Test_testcapi.test_incref_doesnt_leak @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_lazy_hash_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_list_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_capi.test_misc.Test_testcapi.test_long_and_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64
+test.test_capi.test_misc.Test_testcapi.test_long_and_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_long_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_long_as_double @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_long_as_size_t @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_long_as_unsigned_long_long_mask @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_capi.test_misc.Test_testcapi.test_long_long_and_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64
+test.test_capi.test_misc.Test_testcapi.test_long_long_and_overflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_long_numbits @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_longlong_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_testcapi.test_py_is_funcs @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

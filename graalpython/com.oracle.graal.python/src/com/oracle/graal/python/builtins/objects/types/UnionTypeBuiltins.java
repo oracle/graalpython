@@ -54,6 +54,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -86,7 +87,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -97,6 +98,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -123,9 +125,9 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object parameters(PUnionType self,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             if (self.getParameters() == null) {
-                self.setParameters(factory.createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
+                self.setParameters(PFactory.createTuple(language, GenericTypeNodes.makeParameters(self.getArgs())));
             }
             return self.getParameters();
         }
@@ -178,8 +180,8 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectHashNode hashNode,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
-                        @Cached PythonObjectFactory factory) {
-            PFrozenSet argSet = factory.createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
+                        @Bind PythonLanguage language) {
+            PFrozenSet argSet = PFactory.createFrozenSet(language, getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
             return hashNode.execute(frame, inliningTarget, argSet);
         }
     }
@@ -217,13 +219,13 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
             for (int i = 0; i < argsStorage.length(); i++) {
                 Object arg = getItem.execute(inliningTarget, argsStorage, i);
                 if (arg instanceof PGenericAlias) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
                 if (!result) {
                     result = isInstanceNode.executeWith(frame, other, arg);
@@ -243,16 +245,16 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, other)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
             }
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
             for (int i = 0; i < argsStorage.length(); i++) {
                 Object arg = getItem.execute(inliningTarget, argsStorage, i);
                 if (arg instanceof PGenericAlias) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
                 if (!result) {
                     result = isSubClassNode.executeWith(frame, other, arg);
@@ -271,9 +273,9 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached PythonObjectFactory factory) {
-            PFrozenSet argSet1 = factory.createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
-            PFrozenSet argSet2 = factory.createFrozenSet(getHashingStorageNode.doNoValue(frame, inliningTarget, other.getArgs()));
+                        @Bind PythonLanguage language) {
+            PFrozenSet argSet1 = PFactory.createFrozenSet(language, getHashingStorageNode.doNoValue(frame, inliningTarget, self.getArgs()));
+            PFrozenSet argSet2 = PFactory.createFrozenSet(language, getHashingStorageNode.doNoValue(frame, inliningTarget, other.getArgs()));
             return eqNode.compare(frame, inliningTarget, argSet1, argSet2);
         }
 
@@ -292,9 +294,10 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object getitem(VirtualFrame frame, PUnionType self, Object item,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached InlinedBranchProfile createProfile) {
             if (self.getParameters() == null) {
-                self.setParameters(factory.get(inliningTarget).createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
+                createProfile.enter(inliningTarget);
+                self.setParameters(PFactory.createTuple(PythonLanguage.get(inliningTarget), GenericTypeNodes.makeParameters(self.getArgs())));
             }
             Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
             Object result = newargs[0];

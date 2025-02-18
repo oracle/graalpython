@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -322,7 +322,7 @@ abstract class GraalHPyLLVMNodes {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(arrayLib, SystemError, ErrorMessages.CANNOT_ACCESS_IDX, e.getInvalidIndex(), n);
+                throw PRaiseNode.raiseStatic(arrayLib, SystemError, ErrorMessages.CANNOT_ACCESS_IDX, e.getInvalidIndex(), n);
             }
         }
 
@@ -900,14 +900,14 @@ abstract class GraalHPyLLVMNodes {
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached HPyLLVMImportSymbolNode importCExtSymbolNode,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 Object llvmFunction = importCExtSymbolNode.execute(inliningTarget, context, name);
                 return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(llvmFunction, args));
             } catch (UnsupportedTypeException | ArityException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, e);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.HPY_CAPI_SYM_NOT_CALLABLE, name);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.HPY_CAPI_SYM_NOT_CALLABLE, name);
             }
         }
     }

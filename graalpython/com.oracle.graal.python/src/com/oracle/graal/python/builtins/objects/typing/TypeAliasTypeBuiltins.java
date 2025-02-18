@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -70,7 +71,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -109,8 +110,8 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.typeParams == null")
         static PTuple doEmpty(@SuppressWarnings("unused") PTypeAliasType self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createEmptyTuple();
+                        @Bind PythonLanguage language) {
+            return PFactory.createEmptyTuple(language);
         }
     }
 
@@ -168,8 +169,8 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.typeParams == null")
         static PTuple doEmpty(@SuppressWarnings("unused") PTypeAliasType self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createEmptyTuple();
+                        @Bind PythonLanguage language) {
+            return PFactory.createEmptyTuple(language);
         }
     }
 
@@ -207,14 +208,14 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends MpSubscriptBuiltinNode {
         @Specialization(guards = "self.typeParams != null")
         static Object doGenericAlias(PTypeAliasType self, Object args,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(self, args);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, self, args);
         }
 
         @Specialization(guards = "self.typeParams == null")
         static Object doError(@SuppressWarnings("unused") PTypeAliasType self, @SuppressWarnings("unused") Object args,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ONLY_GENERIC_TYPE_ALIASES_ARE_SUBSCRIPTABLE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ONLY_GENERIC_TYPE_ALIASES_ARE_SUBSCRIPTABLE);
         }
     }
 }

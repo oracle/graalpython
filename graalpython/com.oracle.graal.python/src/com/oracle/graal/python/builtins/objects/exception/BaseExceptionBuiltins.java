@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -93,7 +94,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -151,35 +152,41 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length != 0", "keywords.length == 0"})
-        Object doWithArguments(PBaseException self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
-            self.setArgs(factory().createTuple(args));
+        Object doWithArguments(PBaseException self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Bind PythonLanguage language) {
+            self.setArgs(PFactory.createTuple(language, args));
             return PNone.NONE;
         }
 
         @Specialization(replaces = {"doNoArguments", "doWithArguments"})
-        Object doGeneric(PBaseException self, Object[] args, PKeyword[] keywords) {
+        static Object doGeneric(PBaseException self, Object[] args, PKeyword[] keywords,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             if (keywords.length != 0) {
-                throw raise(TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
+                throw raiseNode.raise(inliningTarget, TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
             }
             if (args.length == 0) {
                 self.setArgs(null);
             } else {
-                self.setArgs(factory().createTuple(args));
+                self.setArgs(PFactory.createTuple(language, args));
             }
             return PNone.NONE;
         }
 
         @Specialization
-        Object doNative(PythonAbstractNativeObject self, Object[] args, PKeyword[] keywords,
+        static Object doNative(PythonAbstractNativeObject self, Object[] args, PKeyword[] keywords,
                         @Bind("this") Node inliningTarget,
-                        @Cached ExceptionNodes.SetArgsNode setArgsNode) {
+                        @Cached ExceptionNodes.SetArgsNode setArgsNode,
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             if (keywords.length != 0) {
-                throw raise(TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
+                throw raiseNode.raise(inliningTarget, TypeError, P_TAKES_NO_KEYWORD_ARGS, self);
             }
             if (args.length == 0) {
-                setArgsNode.execute(inliningTarget, self, factory().createEmptyTuple());
+                setArgsNode.execute(inliningTarget, self, PFactory.createEmptyTuple(language));
             } else {
-                setArgsNode.execute(inliningTarget, self, factory().createTuple(args));
+                setArgsNode.execute(inliningTarget, self, PFactory.createTuple(language, args));
             }
             return PNone.NONE;
         }
@@ -202,9 +209,9 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached CastToListNode castToList,
                         @Cached SequenceStorageNodes.CopyInternalArrayNode copy,
                         @Cached ExceptionNodes.SetArgsNode setArgsNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PList list = castToList.execute(frame, value);
-            setArgsNode.execute(inliningTarget, self, factory.createTuple(copy.execute(inliningTarget, list.getSequenceStorage())));
+            setArgsNode.execute(inliningTarget, self, PFactory.createTuple(language, copy.execute(inliningTarget, list.getSequenceStorage())));
             return PNone.NONE;
         }
     }
@@ -238,10 +245,9 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
         public static Object cause(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
 
@@ -274,10 +280,9 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "!check.execute(inliningTarget, value)"})
         public static Object context(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyExceptionInstanceCheckNode check,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CONTEXT_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXCEPTION_CONTEXT_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
 
@@ -296,12 +301,12 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached ExceptionNodes.SetSuppressContextNode setSuppressContextNode,
                         @Cached CastToJavaBooleanNode castToJavaBooleanNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             boolean value;
             try {
                 value = castToJavaBooleanNode.execute(inliningTarget, valueObj);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
             }
             setSuppressContextNode.execute(inliningTarget, self, value);
             return PNone.NONE;
@@ -337,8 +342,8 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object setTraceback(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object tb,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.MUST_BE_S_OR_S, "__traceback__", "a traceback", "None");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.MUST_BE_S_OR_S, "__traceback__", "a traceback", "None");
         }
     }
 
@@ -383,8 +388,8 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         static PNone dict(@SuppressWarnings("unused") Object self, Object mapping,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 
@@ -397,11 +402,11 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached ExceptionNodes.GetArgsNode argsNode,
                         @Cached DictNode dictNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             PTuple args = argsNode.execute(inliningTarget, self);
             Object dict = dictNode.execute(frame, self, PNone.NO_VALUE);
-            return factory.createTuple(new Object[]{clazz, args, dict});
+            return PFactory.createTuple(language, new Object[]{clazz, args, dict});
         }
     }
 
@@ -518,9 +523,9 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isDict(state)")
         static Object generic(@SuppressWarnings("unused") Object self, Object state,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (state != PNone.NONE) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, STATE_IS_NOT_A_DICT);
+                throw raiseNode.raise(inliningTarget, TypeError, STATE_IS_NOT_A_DICT);
             }
             return PNone.NONE;
         }
@@ -536,20 +541,20 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached ListNodes.AppendNode appendNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             if (!unicodeCheckNode.execute(inliningTarget, note)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOTE_MUST_BE_A_STR_NOT_P, note);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOTE_MUST_BE_A_STR_NOT_P, note);
             }
             Object notes = lookupAttr.execute(frame, inliningTarget, self, T___NOTES__);
             if (notes == PNone.NO_VALUE) {
-                notes = factory.createList();
+                notes = PFactory.createList(language);
                 setAttr.execute(frame, inliningTarget, self, T___NOTES__, notes);
             }
             if (notes instanceof PList notesList) {
                 appendNode.execute(notesList, note);
             } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.CANNOT_ADD_NOTE_NOTES_IS_NOT_A_LIST);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_ADD_NOTE_NOTES_IS_NOT_A_LIST);
             }
             return PNone.NONE;
         }

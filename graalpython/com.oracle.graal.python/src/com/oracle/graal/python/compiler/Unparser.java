@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -657,7 +657,7 @@ public class Unparser implements SSTreeVisitor<Void> {
                     conversion = "!s";
                     break;
                 default:
-                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, ErrorMessages.UNKNOWN_F_VALUE_CONVERSION_KIND);
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.SystemError, ErrorMessages.UNKNOWN_F_VALUE_CONVERSION_KIND);
             }
             appendStr(conversion);
         }

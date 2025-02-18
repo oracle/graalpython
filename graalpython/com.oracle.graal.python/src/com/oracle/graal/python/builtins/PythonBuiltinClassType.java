@@ -188,7 +188,6 @@ import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.TypeVarBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -824,9 +823,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     public final Shape getInstanceShape(PythonLanguage lang) {
-        if (name == null) {
-            throw CompilerDirectives.shouldNotReachHere("incorrect use of Python builtin type marker");
-        }
         return lang.getBuiltinTypeInstanceShape(this);
     }
 

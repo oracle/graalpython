@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -47,7 +48,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -67,7 +69,7 @@ public abstract class PyDictKeys extends Node {
 
     @Specialization
     static Object getString(Node inliningTarget, PDict dict,
-                    @Cached(inline = false) PythonObjectFactory factory,
+                    @Bind PythonLanguage language,
                     @Cached HashingStorageLen lenNode,
                     @Cached HashingStorageGetIterator getIter,
                     @Cached HashingStorageIteratorNext iterNext,
@@ -80,6 +82,6 @@ public abstract class PyDictKeys extends Node {
         while (iterNext.execute(inliningTarget, storage, it)) {
             keys[i++] = iterKey.execute(inliningTarget, storage, it);
         }
-        return factory.createList(keys);
+        return PFactory.createList(language, keys);
     }
 }

@@ -51,7 +51,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -127,40 +127,39 @@ public abstract class PyLongFromUnicodeObject extends Node {
                         @Cached InlinedBranchProfile invalidBase,
                         @Cached InlinedBranchProfile notSimpleDecimalLiteralProfile,
                         @Cached InlinedBranchProfile invalidValueProfile,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached StringNodes.StringReprNode stringReprNode,
                         @Cached BytesNodes.BytesReprNode bytesReprNode) {
             String number = toJavaStringNode.execute(numberTs);
             if ((base != 0 && base < 2) || base > 36) {
                 invalidBase.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.INT_BASE_MUST_BE_2_AND_36_OR_0);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.INT_BASE_MUST_BE_2_AND_36_OR_0);
             }
             notSimpleDecimalLiteralProfile.enter(inliningTarget);
             PythonContext context = PythonContext.get(inliningTarget);
-            Object value = stringToIntInternal(number, base, context, factory);
+            Object value = stringToIntInternal(inliningTarget, number, base, context);
             if (value == null) {
                 invalidValueProfile.enter(inliningTarget);
                 Object repr;
                 if (originalBytes == null) {
                     repr = stringReprNode.execute(numberTs);
                 } else {
-                    repr = bytesReprNode.execute(inliningTarget, factory.createBytes(originalBytes, originalBytesLen));
+                    repr = bytesReprNode.execute(inliningTarget, PFactory.createBytes(context.getLanguage(inliningTarget), originalBytes, originalBytesLen));
                 }
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, repr);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_LITERAL_FOR_INT_WITH_BASE, base, repr);
             }
             return value;
         }
 
         @TruffleBoundary
-        private static Object stringToIntInternal(String num, int base, PythonContext context, PythonObjectFactory factory) {
+        private static Object stringToIntInternal(Node inliningTarget, String num, int base, PythonContext context) {
             try {
-                BigInteger bi = asciiToBigInteger(num, base, context);
+                BigInteger bi = asciiToBigInteger(inliningTarget, num, base, context);
                 if (bi == null) {
                     return null;
                 }
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
-                    return factory.createInt(bi);
+                    return PFactory.createInt(context.getLanguage(), bi);
                 } else {
                     return bi.intValue();
                 }
@@ -170,7 +169,7 @@ public abstract class PyLongFromUnicodeObject extends Node {
         }
 
         @TruffleBoundary
-        private static BigInteger asciiToBigInteger(String str, int possibleBase, PythonContext context) throws NumberFormatException {
+        private static BigInteger asciiToBigInteger(Node inliningTarget, String str, int possibleBase, PythonContext context) throws NumberFormatException {
             int base = possibleBase;
             int b = 0;
             int e = str.length();
@@ -240,7 +239,7 @@ public abstract class PyLongFromUnicodeObject extends Node {
             }
             s = s.replace("_", "");
 
-            checkMaxDigits(context, s.length(), base);
+            checkMaxDigits(inliningTarget, context, s.length(), base);
 
             BigInteger bi;
             if (sign == '-') {
@@ -255,11 +254,12 @@ public abstract class PyLongFromUnicodeObject extends Node {
             return bi;
         }
 
-        private static void checkMaxDigits(PythonContext context, int digits, int base) {
+        private static void checkMaxDigits(Node inliningTarget, PythonContext context, int digits, int base) {
             if (digits > SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD && Integer.bitCount(base) != 1) {
                 int maxDigits = context.getIntMaxStrDigits();
                 if (maxDigits > 0 && digits > maxDigits) {
-                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D, maxDigits, digits);
+                    throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D, maxDigits,
+                                    digits);
                 }
             }
         }

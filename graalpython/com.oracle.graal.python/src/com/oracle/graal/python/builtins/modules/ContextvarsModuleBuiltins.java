@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -60,7 +61,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -103,11 +104,11 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
         protected static Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile noValueProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             if (noValueProfile.profile(inliningTarget, isNoValue(def))) {
                 def = PContextVar.NO_DEFAULT;
             }
-            return factory.createContextVar(name, def);
+            return PFactory.createContextVar(language, name, def);
         }
     }
 
@@ -116,8 +117,8 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
     public abstract static class ContextNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object construct(@SuppressWarnings("unused") Object cls,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createContextVarsContext();
+                        @Bind PythonLanguage language) {
+            return PFactory.createContextVarsContext(language);
         }
     }
 
@@ -126,8 +127,8 @@ public final class ContextvarsModuleBuiltins extends PythonBuiltins {
     public abstract static class TokenNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object construct(@SuppressWarnings("unused") Object cls,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ONLY_BY_CONTEXTVAR);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ONLY_BY_CONTEXTVAR);
         }
     }
 }

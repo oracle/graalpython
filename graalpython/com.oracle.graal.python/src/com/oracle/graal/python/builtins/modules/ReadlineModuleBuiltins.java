@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -138,7 +138,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
                 data.bindings.put("tab", spec.split(":")[1].trim());
                 return PNone.NONE;
             } else {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("any other binding than 'tab'"));
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("any other binding than 'tab'"));
             }
         }
     }
@@ -148,8 +148,8 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     abstract static class ReadInitNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PNone setCompleter(@SuppressWarnings("unused") PythonModule self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.OSError, ErrorMessages.NOT_IMPLEMENTED);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OSError, ErrorMessages.NOT_IMPLEMENTED);
         }
     }
 
@@ -174,7 +174,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
             try {
                 return data.history.get(index);
             } catch (IndexOutOfBoundsException e) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -196,7 +196,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
             try {
                 return data.history.set(index, string);
             } catch (IndexOutOfBoundsException e) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -211,7 +211,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
             try {
                 return data.history.remove(index);
             } catch (IndexOutOfBoundsException e) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS);
             }
         }
     }
@@ -258,7 +258,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
                 }
                 reader.close();
             } catch (IOException e) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.IOError, e);
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.IOError, e);
             }
             return PNone.NONE;
         }
@@ -286,7 +286,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
                 }
                 writer.close();
             } catch (IOException e) {
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.IOError, e);
+                throw PRaiseNode.raiseStatic(this, PythonErrorType.IOError, e);
             }
             return PNone.NONE;
         }

@@ -68,9 +68,9 @@ public abstract class PyDictDelItem extends Node {
     @Specialization
     static void delItem(VirtualFrame frame, Node inliningTarget, PDict dict, Object key,
                     @Cached HashingStorageDelItem delItem,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         if (!delItem.execute(frame, inliningTarget, dict.getDictStorage(), key, dict)) {
-            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.KeyError, new Object[]{key});
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.KeyError, new Object[]{key});
         }
     }
 }

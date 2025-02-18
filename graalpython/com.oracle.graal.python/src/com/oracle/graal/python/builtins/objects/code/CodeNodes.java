@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -143,19 +143,18 @@ public abstract class CodeNodes {
                                 parameterNames,
                                 kwOnlyNames);
             } else {
-                ct = create().deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars);
+                ct = create().deserializeForBytecodeInterpreter(context, codedata, cellvars, freevars);
                 signature = ((PRootNode) ct.getRootNode()).getSignature();
             }
             if (filename != null) {
                 context.setCodeFilename(ct, filename);
             }
-            PythonObjectFactory factory = context.factory();
-            return factory.createCode(ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
+            return PFactory.createCode(language, ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 
         @SuppressWarnings("static-method")
-        private RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {
-            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(data);
+        private RootCallTarget deserializeForBytecodeInterpreter(PythonContext context, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {
+            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(null, context, data);
             if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars)) {
                 code = new CodeUnit(code.name, code.qualname, code.argCount, code.kwOnlyArgCount, code.positionalOnlyArgCount, code.stacksize, code.code,
                                 code.srcOffsetTable, code.flags, code.names, code.varnames,
@@ -165,9 +164,9 @@ public abstract class CodeNodes {
                                 code.outputCanQuicken, code.variableShouldUnbox,
                                 code.generalizeInputsMap, code.generalizeVarsMap);
             }
-            RootNode rootNode = PBytecodeRootNode.create(language, code, PythonUtils.createFakeSource());
+            RootNode rootNode = PBytecodeRootNode.create(context.getLanguage(), code, PythonUtils.createFakeSource());
             if (code.isGeneratorOrCoroutine()) {
-                rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
+                rootNode = new PBytecodeGeneratorFunctionRootNode(context.getLanguage(), rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
             }
             return PythonUtils.getOrCreateCallTarget(rootNode);
         }
@@ -183,12 +182,11 @@ public abstract class CodeNodes {
                 return context.getEnv().parsePublic(source);
             };
 
-            PythonObjectFactory factory = context.factory();
             if (context.isCoreInitialized() || isNotAModule) {
-                return factory.createCode(createCode, flags, firstlineno, lnotab, filename);
+                return PFactory.createCode(language, createCode, flags, firstlineno, lnotab, filename);
             } else {
                 RootCallTarget ct = (RootCallTarget) language.cacheCode(filename, createCode);
-                return factory.createCode(ct, flags, firstlineno, lnotab, filename);
+                return PFactory.createCode(language, ct, flags, firstlineno, lnotab, filename);
             }
         }
 

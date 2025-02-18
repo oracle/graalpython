@@ -12,7 +12,7 @@ partial_splits_individual_tests = true
 selector = [
   "standalone/test_gradle_plugin.py",
   "standalone/test_maven_plugin.py"]
-per_test_timeout = 3600
+per_test_timeout = 5400
 partial_splits_individual_tests = true
 
 [[test_rules]]

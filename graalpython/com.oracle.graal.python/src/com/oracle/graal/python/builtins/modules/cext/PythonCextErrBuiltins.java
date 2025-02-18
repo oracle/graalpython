@@ -124,7 +124,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -308,11 +308,10 @@ public final class PythonCextErrBuiltins {
     abstract static class _PyTruffleErr_CreateAndSetException extends CApiBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
         }
 
         @Specialization(guards = "isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
@@ -336,6 +335,7 @@ public final class PythonCextErrBuiltins {
         @Specialization
         static Object newEx(TruffleString name, Object base, Object dict,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached HashingStorageGetItem getItem,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -345,19 +345,18 @@ public final class PythonCextErrBuiltins {
                         @Cached InlinedBranchProfile notDotProfile,
                         @Cached InlinedBranchProfile notModuleProfile,
                         @Cached InlinedConditionProfile baseProfile,
-                        @Cached PythonObjectFactory.Lazy factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (base == PNone.NO_VALUE) {
                 base = PythonErrorType.Exception;
             }
             if (dict == PNone.NO_VALUE) {
-                dict = factory.get(inliningTarget).createDict();
+                dict = PFactory.createDict(language);
             }
             int length = codePointLengthNode.execute(name, TS_ENCODING);
             int dotIdx = indexOfCodepointNode.execute(name, '.', 0, length, TS_ENCODING);
             if (dotIdx < 0) {
                 notDotProfile.enter(inliningTarget);
-                throw raiseNode.get(inliningTarget).raise(SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
+                throw raiseNode.raise(inliningTarget, SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
             }
             if (getItem.execute(null, inliningTarget, ((PDict) dict).getDictStorage(), base) == null) {
                 notModuleProfile.enter(inliningTarget);
@@ -367,7 +366,7 @@ public final class PythonCextErrBuiltins {
             if (baseProfile.profile(inliningTarget, base instanceof PTuple)) {
                 bases = (PTuple) base;
             } else {
-                bases = factory.get(inliningTarget).createTuple(new Object[]{base});
+                bases = PFactory.createTuple(language, new Object[]{base});
             }
             return typeNode.execute(null, PythonBuiltinClassType.PythonClass, substringNode.execute(name, dotIdx + 1, length - dotIdx - 1, TS_ENCODING, false), bases, dict,
                             PKeyword.EMPTY_KEYWORDS);
@@ -381,12 +380,12 @@ public final class PythonCextErrBuiltins {
         static Object raise(TruffleString name, Object doc, Object base, Object dict,
                         @Cached PyErr_NewException newExNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             if (base == PNone.NO_VALUE) {
                 base = PythonErrorType.Exception;
             }
             if (dict == PNone.NO_VALUE) {
-                dict = factory.createDict();
+                dict = PFactory.createDict(language);
             }
             Object ex = newExNode.execute(name, base, dict);
             if (doc != PNone.NO_VALUE) {
@@ -406,7 +405,7 @@ public final class PythonCextErrBuiltins {
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached InlinedBranchProfile noExceptionProfile,
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             AbstractTruffleException currentException = getCaughtExceptionNode.executeFromNative();
             if (currentException == null) {
                 noExceptionProfile.enter(inliningTarget);
@@ -415,7 +414,7 @@ public final class PythonCextErrBuiltins {
             assert currentException != PException.NO_EXCEPTION;
             Object exception = getEscapedExceptionNode.execute(inliningTarget, currentException);
             Object traceback = noneToNativeNull(inliningTarget, getTracebackNode.execute(inliningTarget, exception));
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
+            return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
         }
     }
 

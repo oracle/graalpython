@@ -54,6 +54,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.Builtin;
@@ -76,7 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -153,9 +154,9 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isAscii(value, getCodeRangeNode)")
         static Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
-                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
+                        @Bind("this") Node inliningTarget,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
         }
 
         @Specialization
@@ -163,20 +164,19 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached InlinedConditionProfile asciiProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached InlinedConditionProfile asciiProfile) {
             TruffleString ts = cast.execute(inliningTarget, value);
             if (asciiProfile.profile(inliningTarget, isAscii(ts, getCodeRangeNode))) {
                 return asciiString(ts, getCodeRangeNode);
             } else {
-                return nonAsciiString(ts, getCodeRangeNode, raiseNode.get(inliningTarget));
+                return nonAsciiString(ts, inliningTarget, getCodeRangeNode);
             }
         }
 
         @Fallback
         static Object error(@SuppressWarnings("unused") Object value,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
         }
 
         @ClinicConverterFactory
@@ -195,10 +195,10 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         PBytes doConvert(VirtualFrame frame, Object buffer, boolean strictMode,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             try {
                 ByteSequenceStorage storage = b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), strictMode);
-                return factory.createBytes(storage);
+                return PFactory.createBytes(language, storage);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
@@ -226,19 +226,19 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                     } else if (c == '=') {
                         padding++;
                     } else if (strictMode) {
-                        throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.ONLY_BASE64_DATA_IS_ALLOWED);
+                        throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.ONLY_BASE64_DATA_IS_ALLOWED);
                     }
                 }
                 int expectedPadding = 0;
                 if (base64chars % 4 == 1) {
-                    throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.INVALID_BASE64_ENCODED_STRING);
+                    throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.INVALID_BASE64_ENCODED_STRING);
                 } else if (base64chars % 4 == 2) {
                     expectedPadding = 2;
                 } else if (base64chars % 4 == 3) {
                     expectedPadding = 1;
                 }
                 if (padding < expectedPadding) {
-                    throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.INCORRECT_PADDING);
+                    throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.INCORRECT_PADDING);
                 }
                 // Find the end of the expected padding, if any
                 int decodeLen = lastBase64Char + 1;
@@ -262,7 +262,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                 ByteBuffer result = decoder.decode(ByteBuffer.wrap(data, 0, decodeLen));
                 return new ByteSequenceStorage(result.array(), result.limit());
             } catch (IllegalArgumentException e) {
-                throw PRaiseNode.raiseUncached(this, BinasciiError, e);
+                throw PRaiseNode.raiseStatic(this, BinasciiError, e);
             }
         }
 
@@ -280,10 +280,10 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         PBytes a2b(VirtualFrame frame, Object buffer,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             try {
                 byte[] bytes = a2b(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
-                return factory.createBytes(bytes);
+                return PFactory.createBytes(language, bytes);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
@@ -292,7 +292,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private byte[] a2b(byte[] bytes, int length) {
             if (length % 2 != 0) {
-                throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
+                throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
             }
             byte[] output = new byte[length / 2];
             for (int i = 0; i < length / 2; i++) {
@@ -309,7 +309,7 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
             } else if (b >= 'A' && b <= 'F') {
                 return b - 'A' + 10;
             } else {
-                throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
+                throw PRaiseNode.raiseStatic(this, BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
             }
         }
 
@@ -325,28 +325,28 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class B2aBase64Node extends PythonClinicBuiltinNode {
         @TruffleBoundary
-        private PBytes b2a(byte[] data, int lenght, int newline, PythonObjectFactory factory) {
+        private PBytes b2a(byte[] data, int lenght, int newline, PythonLanguage language) {
             ByteBuffer encoded;
             try {
                 encoded = Base64.getEncoder().encode(ByteBuffer.wrap(data, 0, lenght));
             } catch (IllegalArgumentException e) {
-                throw PRaiseNode.raiseUncached(this, BinasciiError, e);
+                throw PRaiseNode.raiseStatic(this, BinasciiError, e);
             }
             if (newline != 0) {
                 byte[] encodedWithNL = Arrays.copyOf(encoded.array(), encoded.limit() + 1);
                 encodedWithNL[encodedWithNL.length - 1] = '\n';
-                return factory.createBytes(encodedWithNL);
+                return PFactory.createBytes(language, encodedWithNL);
             }
-            return factory.createBytes(encoded.array(), encoded.limit());
+            return PFactory.createBytes(language, encoded.array(), encoded.limit());
         }
 
         @Specialization(limit = "3")
         PBytes b2aBuffer(VirtualFrame frame, Object buffer, int newline,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             try {
-                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), newline, factory);
+                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), newline, language);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
@@ -371,28 +371,28 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             if (sep != PNone.NO_VALUE || bytesPerSep != 1) {
                 // TODO implement sep and bytes_per_sep
-                throw raiseNode.get(inliningTarget).raise(NotImplementedError);
+                throw raiseNode.raise(inliningTarget, NotImplementedError);
             }
             try {
-                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), factory);
+                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), language);
             } finally {
                 bufferLib.release(buffer, frame, indirectCallData);
             }
         }
 
         @TruffleBoundary
-        private static PBytes b2a(byte[] bytes, int length, PythonObjectFactory factory) {
+        private static PBytes b2a(byte[] bytes, int length, PythonLanguage language) {
             byte[] output = new byte[length * 2];
             for (int i = 0; i < length; i++) {
                 int v = bytes[i] & 0xff;
                 output[i * 2] = HEX_DIGITS[v >> 4];
                 output[i * 2 + 1] = HEX_DIGITS[v & 0xf];
             }
-            return factory.createBytes(output);
+            return PFactory.createBytes(language, output);
         }
 
         @Override

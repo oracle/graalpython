@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,6 +75,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeW
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -103,12 +105,11 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -137,7 +138,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
         PythonBuiltinClass unsupportedOpExcType = core.lookupType(IOUnsupportedOperation);
         PythonBuiltinClass osError = core.lookupType(OSError);
-        unsupportedOpExcType.setBases(osError, new PythonAbstractClass[]{osError, core.lookupType(ValueError)});
+        unsupportedOpExcType.setBases(null, osError, new PythonAbstractClass[]{osError, core.lookupType(ValueError)});
         addBuiltinConstant(IOUnsupportedOperation.getName(), unsupportedOpExcType);
         addBuiltinConstant(BlockingIOError.getName(), core.lookupType(BlockingIOError));
 
@@ -154,8 +155,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class IOBaseNode extends PythonBuiltinNode {
         @Specialization
         static PythonObject doGeneric(Object cls,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createPythonObject(cls);
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createPythonObject(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -164,9 +166,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class FileIONode extends PythonBuiltinNode {
         @Specialization
         static PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
-            return factory.createFileIO(cls);
+            return PFactory.createFileIO(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -175,9 +178,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class BufferedReaderNode extends PythonBuiltinNode {
         @Specialization
         static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BufferedReaderBuiltins.InitNode
-            return factory.createBufferedReader(cls);
+            return PFactory.createBufferedReader(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -186,9 +190,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class BufferedWriterNode extends PythonBuiltinNode {
         @Specialization
         static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BufferedWriterBuiltins.InitNode
-            return factory.createBufferedWriter(cls);
+            return PFactory.createBufferedWriter(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -197,9 +202,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class BufferedRWPairNode extends PythonBuiltinNode {
         @Specialization
         static PRWPair doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BufferedRWPairBuiltins.InitNode
-            return factory.createRWPair(cls);
+            return PFactory.createRWPair(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -208,9 +214,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class BufferedRandomNode extends PythonBuiltinNode {
         @Specialization
         static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BufferedRandomBuiltins.InitNode
-            return factory.createBufferedRandom(cls);
+            return PFactory.createBufferedRandom(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -219,9 +226,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
         @Specialization
         static PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see TextIOWrapperBuiltins.InitNode
-            return factory.createTextIO(cls);
+            return PFactory.createTextIO(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -230,10 +238,11 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class BytesIONode extends PythonBuiltinNode {
         @Specialization
         static PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BytesIONodeBuiltins.InitNode
-            PBytesIO bytesIO = factory.createBytesIO(cls);
-            bytesIO.setBuf(factory.createByteArray(PythonUtils.EMPTY_BYTE_ARRAY));
+            PBytesIO bytesIO = PFactory.createBytesIO(language, cls, getInstanceShape.execute(cls));
+            bytesIO.setBuf(PFactory.createByteArray(language, PythonUtils.EMPTY_BYTE_ARRAY));
             return bytesIO;
         }
     }
@@ -243,9 +252,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class StringIONode extends PythonBuiltinNode {
         @Specialization
         static PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see StringIONodeBuiltins.InitNode
-            return factory.createStringIO(cls);
+            return PFactory.createStringIO(language, cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -254,19 +264,19 @@ public final class IOModuleBuiltins extends PythonBuiltins {
     public abstract static class IncrementalNewlineDecoderNode extends PythonBuiltinNode {
         @Specialization
         static PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see
             // IncrementalNewlineDecoderBuiltins.InitNode
-            return factory.createNLDecoder(cls);
+            return PFactory.createNLDecoder(language, cls, getInstanceShape.execute(cls));
         }
     }
 
     private static PFileIO createFileIO(VirtualFrame frame, Node inliningTarget, Object file, IONodes.IOMode mode, boolean closefd, Object opener,
-                    PythonObjectFactory factory,
                     FileIOBuiltins.FileIOInit initFileIO) {
         /* Create the Raw file stream */
         mode.text = mode.universal = false; // FileIO doesn't recognize those.
-        PFileIO fileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
+        PFileIO fileIO = PFactory.createFileIO(PythonLanguage.get(inliningTarget));
         initFileIO.execute(frame, inliningTarget, fileIO, file, mode, closefd, opener);
         return fileIO;
     }
@@ -285,9 +295,8 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PFileIO openCode(VirtualFrame frame, TruffleString path,
                         @Bind("this") Node inliningTarget,
-                        @Cached FileIOBuiltins.FileIOInit initFileIO,
-                        @Cached PythonObjectFactory factory) {
-            return createFileIO(frame, inliningTarget, path, IOMode.RB, true, PNone.NONE, factory, initFileIO);
+                        @Cached FileIOBuiltins.FileIOInit initFileIO) {
+            return createFileIO(frame, inliningTarget, path, IOMode.RB, true, PNone.NONE, initFileIO);
         }
     }
 
@@ -319,9 +328,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectSetAttr setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, factory, initFileIO);
+                        @Bind PythonLanguage language,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
             Object result = fileIO;
             try {
                 /* buffering */
@@ -349,21 +358,21 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                     buffering = fileIO.getBlksize();
                 }
                 if (buffering < 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_BUFFERING_SIZE);
+                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_BUFFERING_SIZE);
                 }
 
                 /* if not buffering, returns the raw file object */
                 if (buffering == 0) {
-                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener, raiseNode.get(inliningTarget));
+                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener, raiseNode);
                 }
 
                 /* wraps into a buffered file */
 
-                PBuffered buffer = createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory, mode);
+                PBuffered buffer = createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, mode);
                 result = buffer;
 
                 /* wraps into a TextIOWrapper */
-                PTextIO wrapper = factory.createTextIO(PTextIOWrapper);
+                PTextIO wrapper = PFactory.createTextIO(language);
                 initTextIO.execute(frame, inliningTarget, wrapper, buffer, encoding,
                                 errors == PNone.NONE ? T_STRICT : (TruffleString) errors,
                                 newline, line_buffering, false);
@@ -385,9 +394,8 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
                         @Bind("this") Node inliningTarget,
-                        @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return createFileIO(frame, inliningTarget, file, mode, closefd, opener, factory, initFileIO);
+                        @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO) {
+            return createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 1"})
@@ -402,10 +410,9 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose, factory, raiseNode);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose, raiseNode);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
@@ -419,9 +426,8 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
-                        @Shared @Cached PythonObjectFactory factory,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
-            PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, factory, initFileIO);
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
             try {
                 /* buffering */
                 boolean isatty = false;
@@ -444,7 +450,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                     buffering = fileIO.getBlksize();
                 }
                 if (buffering < 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, INVALID_BUFFERING_SIZE);
+                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_BUFFERING_SIZE);
                 }
 
                 /* if not buffering, returns the raw file object */
@@ -455,7 +461,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                 /* wraps into a buffered file */
 
                 /* if binary, returns the buffered file */
-                return createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, factory, mode);
+                return createBufferedIO.execute(frame, inliningTarget, fileIO, buffering, mode);
             } catch (PException e) {
                 callClose.execute(frame, inliningTarget, fileIO, T_CLOSE);
                 throw e;
@@ -465,35 +471,35 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isUnknown(mode)")
         protected static Object unknownMode(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, UNKNOWN_MODE_S, mode.mode);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, UNKNOWN_MODE_S, mode.mode);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isTB(mode)")
         protected static Object invalidTB(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isValidUniveral(mode)")
         protected static Object invalidUniversal(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isXRWA(mode)")
         protected static Object invalidxrwa(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isBinary(mode)", "isAnyNotNone(encoding, errors, newline)"})
         protected static Object invalidBinary(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             String s;
             if (encoding != PNone.NONE) {
                 s = "encoding";
@@ -502,14 +508,14 @@ public final class IOModuleBuiltins extends PythonBuiltins {
             } else {
                 s = "newline";
             }
-            throw raiseNode.raise(ValueError, BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT, s);
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT, s);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isBinary(mode)", "bufferingValue == 0"})
         protected static Object invalidunbuf(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
         }
 
         public static boolean isAnyNotNone(Object encoding, Object errors, Object newline) {

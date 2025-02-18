@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -31,6 +31,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -45,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -250,11 +251,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     @Override
-    public PBuiltinFunction boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {
+    public PBuiltinFunction boundToObject(PythonBuiltinClassType klass, PythonLanguage language) {
         if (klass == enclosingType) {
             return this;
         } else {
-            PBuiltinFunction func = factory.createBuiltinFunction(this, klass);
+            PBuiltinFunction func = PFactory.createBuiltinFunction(language, this, klass);
             func.setAttribute(T___DOC__, getAttribute(T___DOC__));
             return func;
         }

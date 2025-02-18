@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,6 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBoolFactory.EqNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -121,7 +120,7 @@ public abstract class PyObjectRichCompareBool {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
 
-        protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+        protected boolean doDefault(Node inliningTarget, PRaiseNode raiseNode, Object a, Object b) {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
     }
@@ -265,7 +264,7 @@ public abstract class PyObjectRichCompareBool {
                         @Cached(inline = false) CallBinaryMethodNode callMethod,
                         @Cached(inline = false) CallBinaryMethodNode callReverseMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (cmp.needsIdentityComparison()) {
                 if (isNode.execute(a, b)) {
                     return cmp.identityComparisonResult();
@@ -281,7 +280,7 @@ public abstract class PyObjectRichCompareBool {
                 if (reverseMethod != PNone.NO_VALUE) {
                     Object result = callReverseMethod.executeObject(frame, reverseMethod, b, a);
                     if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                        return isTrueNode.execute(frame, inliningTarget, result);
+                        return isTrueNode.execute(frame, result);
                     }
                 }
             }
@@ -289,7 +288,7 @@ public abstract class PyObjectRichCompareBool {
             if (method != PNone.NO_VALUE) {
                 Object result = callMethod.executeObject(frame, method, a, b);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                    return isTrueNode.execute(frame, inliningTarget, result);
+                    return isTrueNode.execute(frame, result);
                 }
             }
             if (!checkedReverseOp) {
@@ -297,7 +296,7 @@ public abstract class PyObjectRichCompareBool {
                 if (reverseMethod != PNone.NO_VALUE) {
                     Object result = callReverseMethod.executeObject(frame, reverseMethod, b, a);
                     if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                        return isTrueNode.execute(frame, inliningTarget, result);
+                        return isTrueNode.execute(frame, result);
                     }
                 }
             }
@@ -358,7 +357,7 @@ public abstract class PyObjectRichCompareBool {
             }
 
             @Override
-            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+            protected boolean doDefault(Node inliningTarget, PRaiseNode raiseNode, Object a, Object b) {
                 // Already compared for identity
                 return false;
             }
@@ -443,7 +442,7 @@ public abstract class PyObjectRichCompareBool {
 
             @Override
             @SuppressWarnings("unused")
-            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
+            protected boolean doDefault(Node inliningTarget, PRaiseNode raiseNode, Object a, Object b) {
                 // Already compared for identity
                 return true;
             }
@@ -501,8 +500,8 @@ public abstract class PyObjectRichCompareBool {
 
             @Override
             @SuppressWarnings("unused")
-            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
+            protected boolean doDefault(Node inliningTarget, PRaiseNode raiseNode, Object a, Object b) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
             }
         }
 
@@ -556,8 +555,8 @@ public abstract class PyObjectRichCompareBool {
             }
 
             @Override
-            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<=", a, b);
+            protected boolean doDefault(Node inliningTarget, PRaiseNode raiseNode, Object a, Object b) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<=", a, b);
             }
         }
 
@@ -612,8 +611,8 @@ public abstract class PyObjectRichCompareBool {
             }
 
             @Override
-            protected boolean doDefault(Node inliningTarget, PRaiseNode.Lazy raiseNode, Object a, Object b) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">", a, b);
+            protected boolean doDefault(Node inliningTarget, PRaiseNode raiseNode, Object a, Object b) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">", a, b);
             }
         }
 
@@ -668,8 +667,8 @@ public abstract class PyObjectRichCompareBool {
             }
 
             @Override
-            protected boolean doDefault(Node inliningTarget, Lazy raiseNode, Object a, Object b) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">=", a, b);
+            protected boolean doDefault(Node inliningTarget, PRaiseNode raiseNode, Object a, Object b) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">=", a, b);
             }
         }
 

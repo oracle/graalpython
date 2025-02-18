@@ -44,14 +44,15 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -59,46 +60,37 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 public abstract class PyNumberTrueDivideNode extends BinaryOpNode {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
+    public abstract Object execute(VirtualFrame frame, Object v, Object w);
 
     @Override
     public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return executeCached(frame, left, right);
+        return execute(frame, left, right);
     }
-
-    public final Object executeCached(VirtualFrame frame, Object v, Object w) {
-        return execute(frame, this, v, w);
-    }
-
-    public abstract int executeInt(VirtualFrame frame, Node inliningTarget, int left, int right) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
      * in IntBuiltins, FloatBuiltins, ...
      */
     @Specialization(rewriteOn = OverflowException.class)
-    static double doII(int left, int right) throws OverflowException {
+    public static double doII(int left, int right) throws OverflowException {
         return doDD(left, right);
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static double doDI(double left, int right) throws OverflowException {
+    public static double doDI(double left, int right) throws OverflowException {
         return doDD(left, right);
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static double doII(int left, double right) throws OverflowException {
+    public static double doID(int left, double right) throws OverflowException {
         return doDD(left, right);
     }
 
     @Specialization(rewriteOn = OverflowException.class)
-    static double doDD(double left, double right) throws OverflowException {
+    public static double doDD(double left, double right) throws OverflowException {
         if (right == 0.0) {
             throw OverflowException.INSTANCE;
         }
@@ -106,19 +98,20 @@ public abstract class PyNumberTrueDivideNode extends BinaryOpNode {
     }
 
     @Fallback
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w,
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
                     @Cached GetClassNode getVClass,
                     @Cached GetCachedTpSlotsNode getVSlots,
                     @Cached GetCachedTpSlotsNode getWSlots,
                     @Cached GetClassNode getWClass,
                     @Cached CallBinaryOp1Node callBinaryOp1Node,
-                    @Cached Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_true_divide();
         TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_true_divide();
         if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, BinaryOpSlot.NB_TRUE_DIVIDE);
+            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_TRUE_DIVIDE);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
@@ -127,8 +120,8 @@ public abstract class PyNumberTrueDivideNode extends BinaryOpNode {
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Lazy raiseNode) {
-        return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "/", v, w);
+    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "/", v, w);
     }
 
     @NeverDefault

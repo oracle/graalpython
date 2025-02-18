@@ -103,7 +103,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
@@ -188,9 +188,10 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static Object doIt(PythonNativeClass self, TruffleString className) {
-            PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(self);
-            return PythonObjectFactory.getUncached().createTuple(new MroSequenceStorage(className, doSlowPath));
+        static Object doIt(PythonNativeClass self, TruffleString className,
+                        @Bind("this") Node inliningTarget) {
+            PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(inliningTarget, self);
+            return PFactory.createTuple(PythonLanguage.get(null), new MroSequenceStorage(className, doSlowPath));
         }
     }
 
@@ -208,7 +209,7 @@ public final class PythonCextTypeBuiltins {
         static PDict doGeneric(PythonNativeClass nativeClass) {
             PythonLanguage language = PythonLanguage.get(null);
             NativeTypeDictStorage nativeTypeStore = new NativeTypeDictStorage(language.getEmptyShape());
-            PDict dict = PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(nativeTypeStore));
+            PDict dict = PFactory.createDict(language, new DynamicObjectStorage(nativeTypeStore));
             HiddenAttr.WriteNode.executeUncached(dict, HiddenAttr.INSTANCESHAPE, language.getShapeForClass(nativeClass));
             return dict;
         }
@@ -269,7 +270,7 @@ public final class PythonCextTypeBuiltins {
 
         @Specialization(guards = "isClassOrStaticMethod(flags)")
         static Object classOrStatic(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
-                        @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode,
                         @Exclusive @Cached CreateFunctionNode createFunctionNode) {
@@ -277,9 +278,9 @@ public final class PythonCextTypeBuiltins {
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
             PythonObject function;
             if ((flags & METH_CLASS) != 0) {
-                function = factory.createClassmethodFromCallableObj(func);
+                function = PFactory.createClassmethodFromCallableObj(language, func);
             } else {
-                function = factory.createStaticmethodFromCallableObj(func);
+                function = PFactory.createStaticmethodFromCallableObj(language, func);
             }
             writeAttrNode.execute(function, T___NAME__, name);
             writeAttrNode.execute(function, T___DOC__, doc);
@@ -358,7 +359,7 @@ public final class PythonCextTypeBuiltins {
             }
 
             // create member descriptor
-            GetSetDescriptor memberDescriptor = PythonObjectFactory.getUncached().createMemberDescriptor(getterObject, setterObject, memberName, clazz);
+            GetSetDescriptor memberDescriptor = PFactory.createMemberDescriptor(language, getterObject, setterObject, memberName, clazz);
             WriteAttributeToPythonObjectNode.getUncached().execute(memberDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add member descriptor to tp_dict
@@ -376,7 +377,6 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         @TruffleBoundary
         static GetSetDescriptor createGetSet(Node inliningTarget, TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @Cached(inline = false) PythonObjectFactory factory,
                         @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
             assert !(doc instanceof CArrayWrapper);
             // note: 'doc' may be NULL; in this case, we would store 'None'
@@ -385,7 +385,7 @@ public final class PythonCextTypeBuiltins {
             if (!interopLibrary.isNull(getter)) {
                 RootCallTarget getterCT = getterCallTarget(name, language);
                 getter = EnsureExecutableNode.executeUncached(getter, PExternalFunctionWrapper.GETTER);
-                get = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
+                get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
             }
 
             PBuiltinFunction set = null;
@@ -393,11 +393,11 @@ public final class PythonCextTypeBuiltins {
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, language);
                 setter = EnsureExecutableNode.executeUncached(setter, PExternalFunctionWrapper.SETTER);
-                set = factory.createBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
+                set = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
             }
 
             // create get-set descriptor
-            GetSetDescriptor descriptor = factory.createGetSetDescriptor(get, set, name, cls, hasSetter);
+            GetSetDescriptor descriptor = PFactory.createGetSetDescriptor(language, get, set, name, cls, hasSetter);
             WriteAttributeToPythonObjectNode.executeUncached(descriptor, T___DOC__, doc);
             return descriptor;
         }

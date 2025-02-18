@@ -859,13 +859,12 @@ def test_nb_slot_calls():
         assert 2 % obj == 2
         assert divmod(obj, 2) == (1, 1)
         assert divmod(2, obj) == (0, 2)
-        # TODO fix on graalpy
-        # assert obj ** 2 == 9
-        # assert 2 ** obj == 8
-        # assert pow(obj, 2, 2) == 1
-        # if isinstance(obj.delegate, int):  # pow doesn't call __rpow__
-        #     assert pow(2, obj, 2) == 0
-        #     assert pow(2, 2, obj) == 1
+        assert obj ** 2 == 9
+        assert 2 ** obj == 8
+        assert pow(obj, 2, 2) == 1
+        if isinstance(obj.delegate, int):  # pow doesn't call __rpow__
+            assert pow(2, obj, 2) == 0
+            assert pow(2, 2, obj) == 1
         assert -obj == -3
         assert +obj == 3
         assert abs(obj) == 3

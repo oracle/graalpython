@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,13 +110,13 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
     }
 
     static void Simple_set_value(VirtualFrame frame, Node inliningTarget, CDataObject self, Object value,
-                    PRaiseNode.Lazy raiseNode,
+                    PRaiseNode raiseNode,
                     PyObjectStgDictNode pyObjectStgDictNode,
                     SetFuncNode setFuncNode,
                     KeepRefNode keepRefNode) {
         StgDictObject dict = pyObjectStgDictNode.execute(inliningTarget, self);
         if (value == null) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, CANT_DELETE_ATTRIBUTE);
+            throw raiseNode.raise(inliningTarget, TypeError, CANT_DELETE_ATTRIBUTE);
         }
         assert dict != null : "Cannot be NULL for CDataObject instances";
         assert dict.setfunc != FieldSet.nil;
@@ -133,7 +133,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
             return pyCDataNewNode.execute(inliningTarget, type, dict);
         }
@@ -149,7 +149,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (args.length > 0) {
                 Simple_set_value(frame, inliningTarget, self, args[0], raiseNode, pyObjectStgDictNode, setFuncNode, keepRefNode);
             }
@@ -178,7 +178,7 @@ public final class SimpleCDataBuiltins extends PythonBuiltins {
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
                         @Exclusive @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Simple_set_value(frame, inliningTarget, self, value, raiseNode, pyObjectStgDictNode, setFuncNode, keepRefNode);
             return PNone.NONE;
         }

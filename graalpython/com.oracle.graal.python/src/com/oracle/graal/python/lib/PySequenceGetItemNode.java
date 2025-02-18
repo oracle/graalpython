@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.Call
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -90,7 +89,7 @@ public abstract class PySequenceGetItemNode extends Node {
                     @Cached GetObjectSlotsNode getSlotsNode,
                     @Cached IndexForSqSlotInt indexForSqSlot,
                     @Cached CallSlotSizeArgFun callSqItem,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         TpSlots slots = getSlotsNode.execute(inliningTarget, object);
         index = indexForSqSlot.execute(frame, inliningTarget, object, slots, index);
         if (slots.sq_item() != null) {
@@ -101,12 +100,12 @@ public abstract class PySequenceGetItemNode extends Node {
     }
 
     @InliningCutoff
-    private static PException raiseNotSupported(Object object, Node inliningTarget, Lazy raiseNode, TpSlots slots) {
+    private static PException raiseNotSupported(Object object, Node inliningTarget, PRaiseNode raiseNode, TpSlots slots) {
         TruffleString message = ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING;
         if (slots.mp_subscript() != null) {
             message = ErrorMessages.IS_NOT_A_SEQUENCE;
         }
-        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, message, object);
+        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, message, object);
     }
 
     @GenerateInline
@@ -153,9 +152,9 @@ public abstract class PySequenceGetItemNode extends Node {
                         @Cached PyIndexCheckNode checkNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Exclusive @Cached IndexForSqSlotInt indexForSqSlotInt,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!checkNode.execute(inliningTarget, indexObj)) {
-                raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.SEQUENCE_INDEX_MUST_BE_INT_NOT_P, indexObj);
+                raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SEQUENCE_INDEX_MUST_BE_INT_NOT_P, indexObj);
             }
             int index = asSizeNode.executeExact(frame, inliningTarget, indexObj, PythonBuiltinClassType.IndexError);
             return indexForSqSlotInt.execute(frame, inliningTarget, object, slots, index);

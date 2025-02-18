@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,6 +12,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -25,18 +26,19 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -94,11 +96,11 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
         Object call(Object string, int end, boolean strict,
                         @Bind("this") Node inliningTarget,
                         @Cached CastToJavaStringCheckedNode castString,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             IntRef nextIdx = new IntRef();
             TruffleString result = JSONScannerBuiltins.scanStringUnicode(castString.cast(inliningTarget, string, ErrorMessages.FIRST_ARG_MUST_BE_STRING_NOT_P, string), end, strict, nextIdx,
                             this);
-            return factory.createTuple(new Object[]{result, nextIdx.value});
+            return PFactory.createTuple(language, new Object[]{result, nextIdx.value});
         }
     }
 
@@ -124,7 +126,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int len = string.byteLength(TS_ENCODING);
                 // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
@@ -132,7 +134,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                 JSONUtils.appendString(string, createCodePointIteratorNode.execute(string, TS_ENCODING), builder, false, nextNode, appendCodePointNode, appendStringNode, substringNode);
                 return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
         }
 
@@ -160,7 +162,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int len = string.byteLength(TS_ENCODING);
                 // 12.5% overallocated, TruffleStringBuilder.ToStringNode will copy anyway
@@ -169,7 +171,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                                 nextNode, appendCodePointNode, appendStringNode, substringNode);
                 return toStringNode.execute(builder);
             } catch (OutOfMemoryError | NegativeArraySizeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.STR_TOO_LONG_TO_ESCAPE);
             }
         }
     }
@@ -188,17 +190,17 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CoerceToBooleanNode.YesNode castStrict,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PyObjectIsTrueNode castStrict,
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
 
-            boolean strict = castStrict.executeBoolean(frame, inliningTarget, getStrict.execute(frame, context));
+            boolean strict = castStrict.execute(frame, getStrict.execute(frame, context));
             Object objectHook = getObjectHook.execute(frame, context);
             Object objectPairsHook = getObjectPairsHook.execute(frame, context);
             Object parseFloat = getParseFloat.execute(frame, context);
             Object parseInt = getParseInt.execute(frame, context);
             Object parseConstant = getParseConstant.execute(frame, context);
-            return factory.createJSONScanner(cls, strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
+            return PFactory.createJSONScanner(language, cls, getInstanceShape.execute(cls), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
         }
     }
 
@@ -224,7 +226,7 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
         PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator, TruffleString itemSeparator, boolean sortKeys,
                         boolean skipKeys, boolean allowNan) {
             if (markers != PNone.NONE && !(markers instanceof PDict)) {
-                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
+                throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.MAKE_ENCODER_ARG_1_MUST_BE_DICT, markers);
             }
 
             FastEncode fastEncode = FastEncode.None;
@@ -242,7 +244,8 @@ public final class JSONModuleBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            return getContext().factory().createJSONEncoder(cls, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
+            return PFactory.createJSONEncoder(PythonLanguage.get(null), cls, TypeNodes.GetInstanceShape.executeUncached(cls),
+                            markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
         }
     }
 }

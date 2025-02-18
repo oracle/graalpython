@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,6 +87,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -118,7 +119,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
@@ -200,9 +201,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         static PNone doIt(VirtualFrame frame, Node inliningTarget, PythonObject self,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached PRaiseNode.Lazy lazyRaiseNode) {
-            if (isTrueNode.execute(frame, inliningTarget, getAttr.execute(frame, inliningTarget, self, T_CLOSED))) {
-                throw lazyRaiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IO_CLOSED);
+                        @Cached PRaiseNode raiseNode) {
+            if (isTrueNode.execute(frame, getAttr.execute(frame, inliningTarget, self, T_CLOSED))) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
         }
@@ -241,14 +242,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         static boolean doIt(VirtualFrame frame, Node inliningTarget, Object self, TruffleString method, TruffleString errorMessage,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached(inline = false) IsNode isNode,
-                        @Cached PRaiseNode.Lazy lazyRaiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             CompilerAsserts.partialEvaluationConstant(method);
             CompilerAsserts.partialEvaluationConstant(errorMessage);
             Object v = callMethod.execute(frame, inliningTarget, self, method);
             if (isNode.isTrue(v)) {
                 return true;
             }
-            throw unsupported(lazyRaiseNode.get(inliningTarget), errorMessage);
+            throw unsupported(inliningTarget, raiseNode, errorMessage);
         }
     }
 
@@ -323,9 +324,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         static PNone flush(VirtualFrame frame, PythonObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (isClosed(inliningTarget, self, frame, lookup)) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IO_CLOSED);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
         }
@@ -336,8 +337,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class SeekNode extends PythonBuiltinNode {
         @Specialization
         static Object seek(@SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") Object args,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            throw unsupported(raiseNode, T_SEEK);
+            throw unsupported(inliningTarget, raiseNode, T_SEEK);
         }
     }
 
@@ -346,8 +348,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class TruncateNode extends PythonBuiltinNode {
         @Specialization
         static Object truncate(@SuppressWarnings("unused") PythonObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            throw unsupported(raiseNode, T_TRUNCATE);
+            throw unsupported(inliningTarget, raiseNode, T_TRUNCATE);
         }
     }
 
@@ -390,8 +393,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     abstract static class FilenoNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object fileno(@SuppressWarnings("unused") PythonObject self,
+                        @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            throw unsupported(raiseNode, T_FILENO);
+            throw unsupported(inliningTarget, raiseNode, T_FILENO);
         }
     }
 
@@ -427,10 +431,10 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object line = callMethod.execute(frame, inliningTarget, self, T_READLINE);
             if (sizeNode.execute(frame, inliningTarget, line) <= 0) {
-                throw raiseNode.get(inliningTarget).raiseStopIteration();
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
             }
             return line;
         }
@@ -480,14 +484,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         static PBytes readline(VirtualFrame frame, Object self, int limit,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PyObjectLookupAttr lookupPeek,
                         @Cached CallNode callPeek,
                         @Cached PyObjectCallMethodObjArgs callRead,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile hasPeek,
                         @Cached InlinedConditionProfile isBytes,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             /* For backwards compatibility, a (slowish) readline(). */
             Object peek = lookupPeek.execute(frame, inliningTarget, self, T_PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
@@ -497,7 +501,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     Object readahead = callPeek.execute(frame, peek, 1);
                     // TODO _PyIO_trap_eintr [GR-23297]
                     if (isBytes.profile(inliningTarget, !(readahead instanceof PBytes))) {
-                        throw raiseNode.get(inliningTarget).raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
+                        throw raiseNode.raise(inliningTarget, OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
                     }
                     byte[] buf = bufferLib.getInternalOrCopiedByteArray(readahead);
                     int bufLen = bufferLib.getBufferLength(readahead);
@@ -514,7 +518,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
 
                 Object b = callRead.execute(frame, inliningTarget, self, T_READ, nreadahead);
                 if (isBytes.profile(inliningTarget, !(b instanceof PBytes))) {
-                    throw raiseNode.get(inliningTarget).raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
+                    throw raiseNode.raise(inliningTarget, OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(b);
                 int bytesLen = bufferLib.getBufferLength(b);
@@ -528,7 +532,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                 }
             }
 
-            return factory.createBytes(toByteArray(buffer));
+            return PFactory.createBytes(language, toByteArray(buffer));
         }
     }
 
@@ -544,12 +548,12 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         static Object withHint(VirtualFrame frame, Object self, int hintIn,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached GetNextNode next,
                         @Cached InlinedConditionProfile isNegativeHintProfile,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached PyObjectSizeNode sizeNode) {
             int hint = isNegativeHintProfile.profile(inliningTarget, hintIn <= 0) ? Integer.MAX_VALUE : hintIn;
             int length = 0;
             Object iterator = getIter.execute(frame, inliningTarget, self);
@@ -568,7 +572,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     break;
                 }
             }
-            return factory.createList(list.toArray(new Object[0]));
+            return PFactory.createList(language, list.toArray(new Object[0]));
         }
     }
 
@@ -585,7 +589,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
     /**
      * Equivalent of {@code iobase_unsupported}.
      */
-    private static PException unsupported(PRaiseNode raiseNode, TruffleString message) {
-        throw raiseNode.raise(IOUnsupportedOperation, message);
+    private static PException unsupported(Node inliningTarget, PRaiseNode raiseNode, TruffleString message) {
+        throw raiseNode.raise(inliningTarget, IOUnsupportedOperation, message);
     }
 }

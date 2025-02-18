@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,7 +110,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -283,17 +282,17 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!isSupportedWhence(whence)"})
         static Object whenceError(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") int off, int whence,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(ValueError, UNSUPPORTED_WHENCE, whence);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, UNSUPPORTED_WHENCE, whence);
         }
 
         @Specialization(guards = "!self.isOK()")
         static Object initError(PBuffered self, @SuppressWarnings("unused") int off, @SuppressWarnings("unused") int whence,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             if (self.isDetached()) {
-                throw raiseNode.raise(ValueError, IO_STREAM_DETACHED);
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_STREAM_DETACHED);
             } else {
-                throw raiseNode.raise(ValueError, IO_UNINIT);
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, IO_UNINIT);
             }
         }
     }
@@ -345,8 +344,8 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!self.isWritable()"})
         static Object notWritable(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") Object pos,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(IOUnsupportedOperation, T_TRUNCATE);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, IOUnsupportedOperation, T_TRUNCATE);
         }
     }
 
@@ -413,7 +412,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached IsBuiltinObjectProfile isValueError,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self));
             Object nameobj = PNone.NO_VALUE;
             try {
@@ -426,7 +425,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 return simpleTruffleStringFormatNode.format("<%s>", typeName);
             } else {
                 if (!PythonContext.get(inliningTarget).reprEnter(self)) {
-                    throw raiseNode.get(inliningTarget).raise(RuntimeError, REENTRANT_CALL_INSIDE_S_REPR, typeName);
+                    throw raiseNode.raise(inliningTarget, RuntimeError, REENTRANT_CALL_INSIDE_S_REPR, typeName);
                 } else {
                     try {
                         TruffleString name = repr.execute(frame, inliningTarget, nameobj);

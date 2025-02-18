@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -190,11 +191,11 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
         PythonClass pythonClass;
         try {
             // The call might not succeed if, for instance, the MRO can't be constructed
-            pythonClass = context.factory().createPythonClassAndFixupSlots(context.getLanguage(), PythonBuiltinClassType.PythonClass, className, bases[0], basesWithForeign);
+            pythonClass = PFactory.createPythonClassAndFixupSlots(context.getLanguage(), className, bases[0], basesWithForeign);
         } catch (PException e) {
             // Catch the error to additionally print the collected classes and specify the error
             // occurred during class creation
-            throw PRaiseNode.getUncached().raiseWithCause(PythonBuiltinClassType.TypeError, e, ErrorMessages.INTEROP_CLASS_CREATION_NOT_POSSIBLE,
+            throw PRaiseNode.raiseWithCauseStatic(inliningTarget, PythonBuiltinClassType.TypeError, e, ErrorMessages.INTEROP_CLASS_CREATION_NOT_POSSIBLE,
                             interopLibrary.getMetaQualifiedName(metaObject),
                             Arrays.toString(basesWithForeign));
         }

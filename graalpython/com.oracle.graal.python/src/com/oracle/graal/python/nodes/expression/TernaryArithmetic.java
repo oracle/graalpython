@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum TernaryArithmetic {
@@ -67,14 +68,15 @@ public enum TernaryArithmetic {
     TernaryArithmetic(TruffleString methodName, @SuppressWarnings("unused") String operator, String operatorFunction) {
         this.methodName = methodName;
         this.notImplementedHandler = () -> new NotImplementedHandler() {
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+            private final BranchProfile errorProfile = BranchProfile.create();
 
             @Override
             public Object execute(Object arg, Object arg2, Object arg3) {
+                errorProfile.enter();
                 if (arg3 instanceof PNone) {
-                    throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_PR_S_P_AND_P, operator, operatorFunction, arg, arg2);
+                    throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_PR_S_P_AND_P, operator, operatorFunction, arg, arg2);
                 } else {
-                    throw raiseNode.raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, operatorFunction, arg, arg2, arg3);
+                    throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, operatorFunction, arg, arg2, arg3);
                 }
             }
         };

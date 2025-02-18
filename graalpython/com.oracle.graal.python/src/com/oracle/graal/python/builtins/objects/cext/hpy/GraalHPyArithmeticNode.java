@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,12 +44,10 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -175,66 +173,6 @@ public abstract class GraalHPyArithmeticNode {
             UNCACHEDS = new HPyBinaryArithmeticUncached[values.length];
             for (int i = 0; i < values.length; i++) {
                 UNCACHEDS[i] = new HPyBinaryArithmeticUncached(values[i]);
-            }
-        }
-    }
-
-    public abstract static class HPyTernaryArithmeticNode extends Node {
-
-        public abstract Object execute(Object arg0, Object arg1, Object arg2);
-
-        @NeverDefault
-        public static HPyTernaryArithmeticNode create(TernaryArithmetic operator) {
-            return new HPyTernaryArithmeticCached(operator);
-        }
-
-        public static HPyTernaryArithmeticNode getUncached(TernaryArithmetic operator) {
-            return HPyTernaryArithmeticUncached.UNCACHEDS[operator.ordinal()];
-        }
-    }
-
-    private static final class HPyTernaryArithmeticCached extends HPyTernaryArithmeticNode {
-        @Child private LookupAndCallTernaryNode opNode;
-
-        private HPyTernaryArithmeticCached(TernaryArithmetic operator) {
-            opNode = operator.create();
-        }
-
-        @Override
-        public Object execute(Object arg0, Object arg1, Object arg2) {
-            return opNode.execute(null, arg0, arg1, arg2);
-        }
-    }
-
-    private static final class HPyTernaryArithmeticUncached extends HPyTernaryArithmeticNode {
-        final TernaryArithmetic operator;
-
-        public HPyTernaryArithmeticUncached(TernaryArithmetic operator) {
-            this.operator = operator;
-        }
-
-        @TruffleBoundary
-        @Override
-        public Object execute(Object arg0, Object arg1, Object arg2) {
-            Object[] pythonArguments = PArguments.create(3);
-            PArguments.setArgument(pythonArguments, 0, arg0);
-            PArguments.setArgument(pythonArguments, 1, arg1);
-            PArguments.setArgument(pythonArguments, 2, arg2);
-            RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(operator::createRootNode, operator);
-            return GenericInvokeNode.invokeUncached(callTarget, pythonArguments);
-        }
-
-        @Override
-        public boolean isAdoptable() {
-            return false;
-        }
-
-        private static final HPyTernaryArithmeticUncached[] UNCACHEDS;
-        static {
-            TernaryArithmetic[] values = TernaryArithmetic.values();
-            UNCACHEDS = new HPyTernaryArithmeticUncached[values.length];
-            for (int i = 0; i < values.length; i++) {
-                UNCACHEDS[i] = new HPyTernaryArithmeticUncached(values[i]);
             }
         }
     }

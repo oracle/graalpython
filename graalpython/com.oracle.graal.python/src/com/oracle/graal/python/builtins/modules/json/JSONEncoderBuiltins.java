@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -21,6 +21,7 @@ import static com.oracle.truffle.api.CompilerDirectives.castExact;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -62,12 +63,12 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -108,8 +109,8 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
 
         @Specialization
         protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createTuple(new Object[]{jsonEncode(self, obj)});
+                        @Bind PythonLanguage language) {
+            return PFactory.createTuple(language, new Object[]{jsonEncode(self, obj)});
         }
 
         @TruffleBoundary
@@ -133,7 +134,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         private void appendFloat(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, double obj) {
             if (!Double.isFinite(obj)) {
                 if (!encoder.allowNan) {
-                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT);
+                    throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.OUT_OF_RANGE_FLOAT_NOT_JSON_COMPLIANT);
                 }
                 if (obj > 0) {
                     builder.appendStringUncached(T_POSITIVE_INFINITY);
@@ -164,7 +165,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                 case None:
                     Object result = CallUnaryMethodNode.getUncached().executeObject(encoder.encoder, obj);
                     if (!isString(result)) {
-                        throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
+                        throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.ENCODER_MUST_RETURN_STR, result);
                     }
                     builder.appendStringUncached(CastToTruffleStringNode.executeUncached(result));
                     break;
@@ -229,7 +230,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         private void startRecursion(PJSONEncoder encoder, Object obj) {
             if (encoder.markers != PNone.NONE) {
                 if (!encoder.tryAddCircular(obj)) {
-                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.CIRCULAR_REFERENCE_DETECTED);
+                    throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.CIRCULAR_REFERENCE_DETECTED);
                 }
             }
         }
@@ -276,7 +277,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     break;
                 }
                 if (!(item instanceof PTuple itemTuple) || itemTuple.getSequenceStorage().length() != 2) {
-                    throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
+                    throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
                 }
                 SequenceStorage sequenceStorage = itemTuple.getSequenceStorage();
                 Object key = SequenceStorageNodes.GetItemScalarNode.executeUncached(sequenceStorage, 0);
@@ -296,7 +297,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     if (encoder.skipKeys) {
                         return true;
                     }
-                    throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.KEYS_MUST_BE_STR_INT___NOT_P, key);
+                    throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.KEYS_MUST_BE_STR_INT___NOT_P, key);
                 }
                 builder.appendCodePointUncached('"');
                 appendSimpleObj(encoder, builder, key);

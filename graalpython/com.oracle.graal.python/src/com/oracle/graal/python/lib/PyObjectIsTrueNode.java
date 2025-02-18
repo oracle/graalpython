@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,13 +46,13 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -60,7 +60,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -76,71 +75,71 @@ import com.oracle.truffle.api.strings.TruffleString;
  * to true if neither is defined.
  */
 @GenerateUncached
-@GenerateInline(inlineByDefault = true)
+@GenerateInline(false)
 @GenerateCached
-@ImportStatic(SpecialMethodSlot.class)
-public abstract class PyObjectIsTrueNode extends PNodeWithContext {
-    public final boolean executeCached(Frame frame, Object object) {
-        return execute(frame, this, object);
+public abstract class PyObjectIsTrueNode extends UnaryOpNode {
+    public abstract boolean execute(Frame frame, Object object);
+
+    @Override
+    public final Object executeCached(VirtualFrame frame, Object value) {
+        return execute(frame, value);
     }
 
-    public abstract boolean execute(Frame frame, Node inliningTarget, Object object);
-
-    protected abstract Object executeObject(Frame frame, Node inliningTarget, Object object);
-
     public static boolean executeUncached(Object object) {
-        return getUncached().execute(null, null, object);
+        return getUncached().execute(null, object);
     }
 
     @Specialization
-    static boolean doBoolean(boolean object) {
+    public static boolean doBoolean(boolean object) {
         return object;
     }
 
     @Specialization
-    static boolean doNone(@SuppressWarnings("unused") PNone object) {
+    public static boolean doNone(@SuppressWarnings("unused") PNone object) {
         return false;
     }
 
     @Specialization
-    static boolean doInt(int object) {
+    public static boolean doInt(int object) {
         return object != 0;
     }
 
     @Specialization
-    static boolean doLong(long object) {
+    public static boolean doLong(long object) {
         return object != 0;
     }
 
     @Specialization
-    static boolean doDouble(double object) {
+    public static boolean doDouble(double object) {
         return object != 0.0;
     }
 
     @Specialization
-    static boolean doString(TruffleString object) {
+    public static boolean doString(TruffleString object) {
         return !object.isEmpty();
     }
 
     @Specialization(guards = "isBuiltinList(object)")
-    static boolean doList(PList object) {
+    public static boolean doList(PList object) {
         return object.getSequenceStorage().length() != 0;
     }
 
     @Specialization(guards = "isBuiltinTuple(object)")
-    static boolean doTuple(PTuple object) {
+    public static boolean doTuple(PTuple object) {
         return object.getSequenceStorage().length() != 0;
     }
 
     @Specialization(guards = "isBuiltinDict(object)")
-    static boolean doDict(Node inliningTarget, PDict object,
+    public static boolean doDict(PDict object,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }
 
     @Specialization(guards = "isBuiltinAnySet(object)")
     @InliningCutoff
-    static boolean doSet(Node inliningTarget, PBaseSet object,
+    public static boolean doSet(PBaseSet object,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage()) != 0;
     }
@@ -152,7 +151,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInt(object)", "!isLong(object)", "!isDouble(object)", "!isTruffleString(object)"}, //
                     replaces = {"doList", "doTuple", "doDict", "doSet"})
     @InliningCutoff
-    static boolean doOthers(Frame frame, Object object,
+    public static boolean doOthers(VirtualFrame frame, Object object,
                     @Cached(inline = false) PyObjectIsTrueNodeGeneric internalNode) {
         // Cached PyObjectItTrue nodes used in PBytecodeRootNode are significant contributors to
         // footprint, so we use indirection to save all the fields for the nodes used in the generic

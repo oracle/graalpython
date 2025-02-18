@@ -62,6 +62,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -82,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpec;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpecArgs;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
@@ -102,7 +104,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -196,34 +198,35 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PTypeVar newTypeVar(VirtualFrame frame, Object cls, TruffleString name, Object[] constraints, Object bound, boolean covariant, boolean contravariant, boolean inferVariance,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached CheckBoundNode checkBoundNode,
                         @Cached CallerNode callerNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached PythonObjectFactory factory,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PyObjectSetAttr setAttrNode) {
             if (covariant && contravariant) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, BIVARIANT_TYPES_ARE_NOT_SUPPORTED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, BIVARIANT_TYPES_ARE_NOT_SUPPORTED);
             }
 
             if (inferVariance && (covariant || contravariant)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, VARIANCE_CANNOT_BE_SPECIFIED_WITH_INFER_VARIANCE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, VARIANCE_CANNOT_BE_SPECIFIED_WITH_INFER_VARIANCE);
             }
 
             Object boundChecked = checkBoundNode.execute(frame, inliningTarget, bound);
             Object constraintsTuple;
 
             if (constraints.length == 1) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, A_SINGLE_CONSTRAINT_IS_NOT_ALLOWED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, A_SINGLE_CONSTRAINT_IS_NOT_ALLOWED);
             } else if (constraints.length == 0) {
-                constraintsTuple = factory.createEmptyTuple();
+                constraintsTuple = PFactory.createEmptyTuple(language);
             } else if (boundChecked != PNone.NONE) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, CONSTRAINTS_CANNOT_BE_COMBINED_WITH_BOUND);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, CONSTRAINTS_CANNOT_BE_COMBINED_WITH_BOUND);
             } else {
-                constraintsTuple = factory.createTuple(constraints);
+                constraintsTuple = PFactory.createTuple(language, constraints);
             }
             Object module = callerNode.execute(frame, inliningTarget);
 
-            PTypeVar result = factory.createTypeVar(cls, name, boundChecked, null, constraintsTuple, null, covariant, contravariant, inferVariance);
+            PTypeVar result = PFactory.createTypeVar(language, cls, getInstanceShape.execute(cls), name, boundChecked, null, constraintsTuple, null, covariant, contravariant, inferVariance);
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }
@@ -276,11 +279,12 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PTypeVarTuple newTypeVarTuple(VirtualFrame frame, Object cls, TruffleString name,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached CallerNode callerNode,
-                        @Cached PythonObjectFactory factory,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyObjectSetAttr setAttrNode) {
             Object module = callerNode.execute(frame, inliningTarget);
-            PTypeVarTuple result = factory.createTypeVarTuple(cls, name);
+            PTypeVarTuple result = PFactory.createTypeVarTuple(language, cls, getInstanceShape.execute(cls), name);
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }
@@ -347,24 +351,25 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PParamSpec newParamSpec(VirtualFrame frame, Object cls, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached CheckBoundNode checkBoundNode,
                         @Cached CallerNode callerNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
-                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyObjectSetAttr setAttrNode) {
             if (covariant && contravariant) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, BIVARIANT_TYPES_ARE_NOT_SUPPORTED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, BIVARIANT_TYPES_ARE_NOT_SUPPORTED);
             }
 
             if (inferVariance && (covariant || contravariant)) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.ValueError, VARIANCE_CANNOT_BE_SPECIFIED_WITH_INFER_VARIANCE);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, VARIANCE_CANNOT_BE_SPECIFIED_WITH_INFER_VARIANCE);
             }
 
             Object boundChecked = checkBoundNode.execute(frame, inliningTarget, bound);
 
             Object module = callerNode.execute(frame, inliningTarget);
 
-            PParamSpec result = factory.createParamSpec(cls, name, boundChecked, covariant, contravariant, inferVariance);
+            PParamSpec result = PFactory.createParamSpec(language, cls, getInstanceShape.execute(cls), name, boundChecked, covariant, contravariant, inferVariance);
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }
@@ -389,8 +394,9 @@ public class TypingModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PParamSpecArgs newParamSpecArgs(Object cls, Object origin,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createParamSpecArgs(cls, origin);
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createParamSpecArgs(language, cls, getInstanceShape.execute(cls), origin);
         }
     }
 
@@ -413,8 +419,9 @@ public class TypingModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PParamSpecKwargs newParamSpecKwargs(Object cls, Object origin,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createParamSpecKwargs(cls, origin);
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            return PFactory.createParamSpecKwargs(language, cls, getInstanceShape.execute(cls), origin);
         }
     }
 
@@ -455,12 +462,13 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PTypeAliasType newTypeAliasType(VirtualFrame frame, Object cls, TruffleString name, Object value, Object typeParams,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached CheckTypeParamsNode checkNode,
                         @Cached CallerNode callerNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             PTuple typeParamsTuple = checkNode.execute(inliningTarget, typeParams);
             Object module = callerNode.execute(frame, inliningTarget);
-            return factory.createTypeAliasType(cls, name, typeParamsTuple, null, value, module);
+            return PFactory.createTypeAliasType(language, cls, getInstanceShape.execute(cls), name, typeParamsTuple, null, value, module);
         }
 
         @GenerateInline
@@ -481,8 +489,8 @@ public class TypingModuleBuiltins extends PythonBuiltins {
 
             @Fallback
             static PTuple doError(@SuppressWarnings("unused") Object o,
-                            @Cached(inline = false) PRaiseNode raiseNode) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, TYPE_PARAMS_MUST_BE_A_TUPLE);
+                            @Bind("this") Node inliningTarget) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, TYPE_PARAMS_MUST_BE_A_TUPLE);
             }
         }
     }
@@ -628,9 +636,9 @@ public class TypingModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple doUnpack(VirtualFrame frame, Node inliningTarget, PTuple params,
+                        @Bind PythonLanguage language,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached UnpackNode unpackNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached UnpackNode unpackNode) {
             Object[] elements = toArrayNode.execute(inliningTarget, params.getSequenceStorage());
             boolean found = false;
             for (Object element : elements) {
@@ -650,7 +658,7 @@ public class TypingModuleBuiltins extends PythonBuiltins {
                     unpacked[i] = elements[i];
                 }
             }
-            return factory.createTuple(unpacked);
+            return PFactory.createTuple(language, unpacked);
         }
     }
 }

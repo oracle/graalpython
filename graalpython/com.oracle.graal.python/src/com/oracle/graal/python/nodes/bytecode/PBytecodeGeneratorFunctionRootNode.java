@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -63,7 +63,6 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
 
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] callTargets;
 
-    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     private final ConditionProfile isIterableCoroutine = ConditionProfile.create();
 
     @TruffleBoundary
@@ -80,6 +79,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     public Object execute(VirtualFrame frame) {
         Object[] arguments = frame.getArguments();
 
+        PythonLanguage language = PythonLanguage.get(this);
         // This is passed from InvokeNode node
         PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
         assert generatorFunction != null;
@@ -88,14 +88,14 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
             // pass the information to the generator
             // .gi_code.co_flags will still be wrong, but at least await will work correctly
             if (isIterableCoroutine.profile((generatorFunction.getCode().getFlags() & 0x100) != 0)) {
-                return factory.createIterableCoroutine(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+                return PFactory.createIterableCoroutine(language, generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
             } else {
-                return factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+                return PFactory.createGenerator(language, generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
             }
         } else if (rootNode.getCodeUnit().isCoroutine()) {
-            return factory.createCoroutine(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+            return PFactory.createCoroutine(language, generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
         } else if (rootNode.getCodeUnit().isAsyncGenerator()) {
-            return factory.createAsyncGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
+            return PFactory.createAsyncGenerator(language, generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
         }
         throw CompilerDirectives.shouldNotReachHere("Unknown generator/coroutine type");
     }

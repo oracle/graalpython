@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -6,12 +6,6 @@
 package com.oracle.graal.python.builtins.objects.struct;
 
 import static com.oracle.graal.python.builtins.modules.StructModuleBuiltins.ConstructStructNode.NUM_BYTES_LIMIT;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_FOR_N_MUST_BE;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_NOT_T;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_O_O_RANGE;
-import static com.oracle.graal.python.nodes.ErrorMessages.FMT_REQ_RANGE;
-import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_CHR_FMT_BYTES_1;
-import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_FMT_NOT_YET_SUPPORTED;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_BOOL;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_CHAR;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_DOUBLE;
@@ -20,12 +14,19 @@ import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_HAL
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_PASCAL_STRING;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_STRING;
 import static com.oracle.graal.python.builtins.objects.struct.FormatCode.FMT_VOID_PTR;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_FOR_N_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_NOT_T;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_O_O_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.FMT_REQ_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_CHR_FMT_BYTES_1;
+import static com.oracle.graal.python.nodes.ErrorMessages.STRUCT_FMT_NOT_YET_SUPPORTED;
 import static com.oracle.graal.python.nodes.PGuards.isBytes;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StructError;
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -44,7 +45,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -81,13 +82,13 @@ public final class StructNodes {
                         @Cached PyLongCheckNode pyLongCheckNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached PyLongAsLongNode pyLongAsLongNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object longValue;
             if (!pyLongCheckNode.execute(inliningTarget, value)) {
                 if (indexCheckNode.execute(inliningTarget, value)) {
                     longValue = indexNode.execute(frame, inliningTarget, value);
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(StructError, ARG_NOT_T, "an integer");
+                    throw raiseNode.raise(inliningTarget, StructError, ARG_NOT_T, "an integer");
                 }
             } else {
                 longValue = value;
@@ -98,10 +99,10 @@ public final class StructNodes {
                 x = pyLongAsLongNode.execute(frame, inliningTarget, longValue);
             } catch (PException pe) {
                 pe.expect(inliningTarget, PythonBuiltinClassType.OverflowError, errorProfile);
-                throw raiseNode.get(inliningTarget).raise(StructError, ARG_O_O_RANGE);
+                throw raiseNode.raise(inliningTarget, StructError, ARG_O_O_RANGE);
             }
             if (unsigned && x < 0) {
-                throw raiseNode.get(inliningTarget).raise(StructError, ARG_O_O_RANGE);
+                throw raiseNode.raise(inliningTarget, StructError, ARG_O_O_RANGE);
             }
             return x;
         }
@@ -158,30 +159,30 @@ public final class StructNodes {
         }
 
         // checks
-        private static PException raiseNumberError(FormatCode formatCode, PRaiseNode raiseNode) {
+        private static PException raiseNumberError(Node inliningTarget, FormatCode formatCode, PRaiseNode raiseNode) {
             if (formatCode.formatDef.name == null) {
-                return raiseNode.raise(StructError, ARG_O_O_RANGE);
+                return raiseNode.raise(inliningTarget, StructError, ARG_O_O_RANGE);
             }
-            return raiseNode.raise(StructError, FMT_REQ_RANGE, formatCode.formatDef.name, formatCode.formatDef.min, formatCode.formatDef.max);
+            return raiseNode.raise(inliningTarget, StructError, FMT_REQ_RANGE, formatCode.formatDef.name, formatCode.formatDef.min, formatCode.formatDef.max);
         }
 
         private static PException raiseNumberErrorUncached(Node raisingNode, FormatCode formatCode) {
             if (formatCode.formatDef.name == null) {
-                return PRaiseNode.raiseUncached(raisingNode, StructError, ARG_O_O_RANGE);
+                return PRaiseNode.raiseStatic(raisingNode, StructError, ARG_O_O_RANGE);
             }
-            return PRaiseNode.raiseUncached(raisingNode, StructError, FMT_REQ_RANGE, formatCode.formatDef.name, formatCode.formatDef.min, formatCode.formatDef.max);
+            return PRaiseNode.raiseStatic(raisingNode, StructError, FMT_REQ_RANGE, formatCode.formatDef.name, formatCode.formatDef.min, formatCode.formatDef.max);
         }
 
-        public static long checkLong(Node inliningTarget, FormatCode formatCode, long value, PRaiseNode.Lazy raiseNode) {
+        public static long checkLong(Node inliningTarget, FormatCode formatCode, long value, PRaiseNode raiseNode) {
             if (value < formatCode.formatDef.min || value > formatCode.formatDef.max) {
-                throw raiseNumberError(formatCode, raiseNode.get(inliningTarget));
+                throw raiseNumberError(inliningTarget, formatCode, raiseNode);
             }
             return value;
         }
 
-        public static long checkLongUnsigned(Node inliningTarget, FormatCode formatCode, long value, PRaiseNode.Lazy raiseNode) {
+        public static long checkLongUnsigned(Node inliningTarget, FormatCode formatCode, long value, PRaiseNode raiseNode) {
             if (value < formatCode.formatDef.min || Long.compareUnsigned(value, formatCode.formatDef.max) > 0) {
-                throw raiseNumberError(formatCode, raiseNode.get(inliningTarget));
+                throw raiseNumberError(inliningTarget, formatCode, raiseNode);
             }
             return value;
         }
@@ -221,7 +222,7 @@ public final class StructNodes {
         public abstract void execute(VirtualFrame frame, FormatCode formatCode, FormatAlignment formatAlignment, Object value, byte[] buffer, int offset);
 
         private static void packLongInternal(Node inliningTarget, FormatCode formatCode, long value, byte[] buffer, int offset, NumericSupport numericSupport, int numBytes,
-                        InlinedConditionProfile profileSigned, PRaiseNode.Lazy raiseNode) {
+                        InlinedConditionProfile profileSigned, PRaiseNode raiseNode) {
             final long num;
             if (profileSigned.profile(inliningTarget, formatCode.isUnsigned())) {
                 num = checkLongUnsigned(inliningTarget, formatCode, value, raiseNode);
@@ -236,7 +237,7 @@ public final class StructNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached InlinedConditionProfile profileSigned,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             packLongInternal(inliningTarget, formatCode, value, buffer, offset, numericSupport, formatCode.numBytes(), profileSigned, raiseNode);
         }
 
@@ -245,7 +246,7 @@ public final class StructNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached InlinedConditionProfile profileSigned,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             packLongInternal(inliningTarget, formatCode, value, buffer, offset, numericSupport, formatCode.numBytes(), profileSigned, raiseNode);
         }
 
@@ -254,12 +255,12 @@ public final class StructNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached CastToJavaBigIntegerNode toJavaBigIntegerNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             try {
                 BigInteger num = checkBigInt(inliningTarget, formatCode, toJavaBigIntegerNode.execute(inliningTarget, value));
                 numericSupport.putBigInteger(buffer, offset, num, formatCode.numBytes());
             } catch (OverflowException oe) {
-                throw raiseNode.get(inliningTarget).raise(StructError, ARG_O_O_RANGE);
+                throw raiseNode.raise(inliningTarget, StructError, ARG_O_O_RANGE);
             }
         }
 
@@ -267,7 +268,7 @@ public final class StructNodes {
         static void packFloat(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, double value, byte[] buffer, int offset,
                         @Bind("this") Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             numericSupport.putDouble(inliningTarget, buffer, offset, value, formatCode.numBytes(), raiseNode);
         }
 
@@ -275,7 +276,7 @@ public final class StructNodes {
         static void packPFloat(FormatCode formatCode, FormatAlignment formatAlignment, PFloat value, byte[] buffer, int offset,
                         @Bind("this") Node inliningTarget,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             packFloat(formatCode, formatAlignment, value.getValue(), buffer, offset, inliningTarget, numericSupport, raiseNode);
         }
 
@@ -290,13 +291,13 @@ public final class StructNodes {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached("createEqualityProfile()") PrimitiveValueProfile formatProfile,
                         @CachedLibrary("value") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             int n = bufferLib.getBufferLength(value);
 
             switch (formatProfile.profile(formatCode.formatDef.format)) {
                 case FMT_CHAR:
                     if (n != 1) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, STRUCT_CHR_FMT_BYTES_1);
+                        throw raiseNode.raise(inliningTarget, StructError, STRUCT_CHR_FMT_BYTES_1);
                     }
                     assert n <= buffer.length - offset;
                     bufferLib.readIntoByteArray(value, 0, buffer, offset, n);
@@ -339,7 +340,7 @@ public final class StructNodes {
                         @Shared @Cached InlinedConditionProfile profileSigned,
                         @Shared @Cached IsBuiltinObjectProfile errorProfile,
                         @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             if (isNumberUpToSize8Unsigned(formatCode)) {
                 packLong(formatCode, formatAlignment, getLongNode.execute(frame, value, formatCode.isUnsigned()), buffer, offset, inliningTarget, numericSupport, profileSigned, raiseNode);
             } else if (isNumberSize8Unsigned(formatCode)) {
@@ -350,29 +351,29 @@ public final class StructNodes {
                         BigInteger num = checkBigInt(inliningTarget, formatCode, toJavaBigIntegerNode.execute(inliningTarget, value));
                         getNumericSupport(formatAlignment).putBigInteger(buffer, offset, num, formatCode.numBytes());
                     } catch (OverflowException oe) {
-                        throw raiseNode.get(inliningTarget).raise(StructError, ARG_O_O_RANGE);
+                        throw raiseNode.raise(inliningTarget, StructError, ARG_O_O_RANGE);
                     } catch (PException pe) {
                         pe.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
-                        throw raiseNode.get(inliningTarget).raise(StructError, ARG_NOT_T, "an integer");
+                        throw raiseNode.raise(inliningTarget, StructError, ARG_NOT_T, "an integer");
                     }
                 }
             } else if (isFmtFloat(formatCode)) {
                 if (!canBeDoubleNode.execute(inliningTarget, value)) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, ARG_NOT_T, "a float");
+                    throw raiseNode.raise(inliningTarget, StructError, ARG_NOT_T, "a float");
                 }
                 packFloat(formatCode, formatAlignment, asDoubleNode.execute(frame, inliningTarget, value), buffer, offset, inliningTarget, numericSupport, raiseNode);
             } else if (isFmtVoidPtr(formatCode)) {
                 getLongNode.execute(frame, value, formatCode.isUnsigned());
                 packLong(formatCode, formatAlignment, getLongNode.execute(frame, value, formatCode.isUnsigned()), buffer, offset, inliningTarget, numericSupport, profileSigned, raiseNode);
             } else if (isFmtBoolean(formatCode)) {
-                packBoolean(formatCode, formatAlignment, isTrueNode.execute(frame, inliningTarget, value), buffer, offset);
+                packBoolean(formatCode, formatAlignment, isTrueNode.execute(frame, value), buffer, offset);
             } else if (isFmtBytes(formatCode)) {
                 if (!isBytes(value)) {
-                    throw raiseNode.get(inliningTarget).raise(StructError, ARG_FOR_N_MUST_BE, formatCode.formatDef.format, "bytes");
+                    throw raiseNode.raise(inliningTarget, StructError, ARG_FOR_N_MUST_BE, formatCode.formatDef.format, "bytes");
                 }
                 packBytes(formatCode, formatAlignment, (PBytesLike) value, buffer, offset, inliningTarget, formatProfile, bufferLib, raiseNode);
             } else {
-                throw raiseNode.get(inliningTarget).raise(NotImplementedError, STRUCT_FMT_NOT_YET_SUPPORTED, formatCode);
+                throw raiseNode.raise(inliningTarget, NotImplementedError, STRUCT_FMT_NOT_YET_SUPPORTED, formatCode);
             }
         }
 
@@ -388,7 +389,7 @@ public final class StructNodes {
                         @Shared @Cached InlinedConditionProfile profileSigned,
                         @Shared @Cached IsBuiltinObjectProfile errorProfile,
                         @Shared @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             packObjectCached(frame, formatCode, formatAlignment, value, buffer, offset, inliningTarget, getLongNode, toJavaBigIntegerNode,
                             canBeDoubleNode, asDoubleNode, isTrueNode,
                             getNumericSupport(formatAlignment), formatProfile, profileSigned, errorProfile, bufferLib, raiseNode);
@@ -406,8 +407,7 @@ public final class StructNodes {
                         @Cached("formatCode.numBytes()") int numBytes,
                         @Cached("getNumericSupport(formatAlignment)") NumericSupport numericSupport,
                         @Shared @Cached InlinedConditionProfile profilePIntResult,
-                        @Shared @Cached InlinedConditionProfile profileSigned,
-                        @Shared @Cached PythonObjectFactory.Lazy factory) {
+                        @Shared @Cached InlinedConditionProfile profileSigned) {
             long num;
             if (profileSigned.profile(inliningTarget, formatCode.isUnsigned())) {
                 num = numericSupport.getLongUnsigned(buffer, offset, numBytes);
@@ -416,7 +416,7 @@ public final class StructNodes {
                 num = handleSign(formatCode, num);
             }
             if (profilePIntResult.profile(inliningTarget, formatCode.isUnsigned() && num < 0)) {
-                return factory.get(inliningTarget).createInt(getAsUnsignedBigInt(num));
+                return PFactory.createInt(PythonLanguage.get(inliningTarget), getAsUnsignedBigInt(num));
             }
             return num;
         }
@@ -425,10 +425,9 @@ public final class StructNodes {
         static Object unpack8(FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profilePIntResult,
-                        @Shared @Cached InlinedConditionProfile profileSigned,
-                        @Shared @Cached PythonObjectFactory.Lazy factory) {
+                        @Shared @Cached InlinedConditionProfile profileSigned) {
             return unpack8Cached(formatCode, formatAlignment, buffer, offset, inliningTarget, formatCode.numBytes(),
-                            getNumericSupport(formatAlignment), profilePIntResult, profileSigned, factory);
+                            getNumericSupport(formatAlignment), profilePIntResult, profileSigned);
         }
 
         @Specialization(guards = {"isFmtFloat(formatCode)", "numericSupport == getNumericSupport(formatAlignment)"}, limit = "3")
@@ -441,12 +440,10 @@ public final class StructNodes {
         @SuppressWarnings("unused")
         static Object unpackVoidPtr(FormatCode formatCode, FormatAlignment formatAlignment, byte[] buffer, int offset,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile profilePIntResult,
-                        @Shared @Cached PythonObjectFactory.Lazy factory,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached InlinedConditionProfile profilePIntResult) {
             long num = getNumericSupport(formatAlignment).getLongUnsigned(buffer, offset, formatCode.numBytes());
             if (profilePIntResult.profile(inliningTarget, num < 0)) {
-                return factory.get(inliningTarget).createInt(getAsUnsignedBigInt(num));
+                return PFactory.createInt(PythonLanguage.get(inliningTarget), getAsUnsignedBigInt(num));
             }
             return num;
         }
@@ -459,8 +456,7 @@ public final class StructNodes {
         @Specialization(guards = "isFmtBytes(formatCode)")
         static Object unpackBytes(@SuppressWarnings("unused") FormatCode formatCode, @SuppressWarnings("unused") FormatAlignment formatAlignment, byte[] buffer, int offset,
                         @Bind("this") Node inliningTarget,
-                        @Cached(value = "createIdentityProfile()", inline = false) ValueProfile formatProfile,
-                        @Shared @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached(value = "createIdentityProfile()", inline = false) ValueProfile formatProfile) {
             byte[] bytes;
             switch (formatProfile.profile(formatCode.formatDef.format)) {
                 case FMT_CHAR:
@@ -479,14 +475,14 @@ public final class StructNodes {
                     bytes = new byte[n];
                     PythonUtils.arraycopy(buffer, offset + 1, bytes, 0, n);
             }
-            return factory.get(inliningTarget).createBytes(bytes);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
         }
 
         @Specialization(guards = "!isSupportedFormat(formatCode)")
         @SuppressWarnings("unused")
         static byte[] unpackUnsupported(FormatCode formatCode, FormatAlignment formatAlignment, byte[] buffer, int offset,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError, STRUCT_FMT_NOT_YET_SUPPORTED, formatCode);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, STRUCT_FMT_NOT_YET_SUPPORTED, formatCode);
         }
     }
 

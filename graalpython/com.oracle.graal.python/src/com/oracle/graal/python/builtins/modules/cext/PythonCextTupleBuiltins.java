@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -68,7 +69,7 @@ import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -86,12 +87,12 @@ public final class PythonCextTupleBuiltins {
         @Specialization
         static PTuple doGeneric(long longSize,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode,
                         @Cached CStructAccess.AllocateNode alloc) {
             int size = (int) longSize;
             if (longSize != size) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.MemoryError);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.MemoryError);
             }
             /*
              * Already allocate the tuple with native memory, since it has to be populated from the
@@ -99,7 +100,7 @@ public final class PythonCextTupleBuiltins {
              */
             Object mem = alloc.alloc((longSize + 1) * CStructAccess.POINTER_SIZE);
             NativeObjectSequenceStorage storage = NativeObjectSequenceStorage.create(mem, size, size, true);
-            return factory.createTuple(storage);
+            return PFactory.createTuple(language, storage);
         }
     }
 
@@ -115,7 +116,7 @@ public final class PythonCextTupleBuiltins {
                         @Cached ListGeneralizationNode generalizationNode,
                         @Shared @Cached SetItemScalarNode setItemNode,
                         @Shared @Cached GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
@@ -137,7 +138,7 @@ public final class PythonCextTupleBuiltins {
                         @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
                         @Shared @Cached SetItemScalarNode setItemNode,
                         @Shared @Cached GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             SequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
@@ -157,10 +158,10 @@ public final class PythonCextTupleBuiltins {
             throw raiseFallback(tuple, PythonBuiltinClassType.PTuple);
         }
 
-        private static int checkIndex(Node inliningTarget, long key, SequenceStorage sequenceStorage, PRaiseNode.Lazy raiseNode) {
+        private static int checkIndex(Node inliningTarget, long key, SequenceStorage sequenceStorage, PRaiseNode raiseNode) {
             // we must do a bounds-check but we must not normalize the index
             if (key < 0 || key >= sequenceStorage.length()) {
-                throw raiseNode.get(inliningTarget).raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
             }
             return (int) key;
         }

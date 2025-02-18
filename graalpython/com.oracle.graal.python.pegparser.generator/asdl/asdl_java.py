@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ from typing import Optional, Tuple
 
 from asdl import java_file
 from asdl import model
-
 
 SST_PACKAGE = 'com.oracle.graal.python.pegparser.sst'
 AST_PACKAGE = 'com.oracle.graal.python.builtins.modules.ast'
@@ -285,7 +284,7 @@ class Sst2ObjGenerator(Generator):
 
     def visit_concrete_class(self, c: model.ConcreteClass, emitter: java_file.Emitter):
         with emitter.define(f'public Object visit({c.full_name} node)', '@Override'):
-            emitter.println(f'PythonObject o = factory.createPythonObject(state.{c.name.cls_field});')
+            emitter.println(f'PythonObject o = createPythonObject(state.{c.name.cls_field});')
             for f in c.fields:
                 self.visit(f, emitter)
             if c.outer_has_attributes or c.attributes:
@@ -338,6 +337,7 @@ class Obj2Sst2Generator(Generator):
     @staticmethod
     def emit_imports(module, emitter):
         emitter.println()
+        emitter.println('import com.oracle.truffle.api.nodes.Node;')
         emitter.println('import com.oracle.graal.python.builtins.objects.PNone;')
         emitter.println('import com.oracle.graal.python.pegparser.sst.ConstantValue;')
         top_level_class_names = [t.name.java for t in module.types]
@@ -346,8 +346,8 @@ class Obj2Sst2Generator(Generator):
         emitter.println('import com.oracle.graal.python.pegparser.tokenizer.SourceRange;')
 
     def emit_constructor(self, emitter: java_file.Emitter):
-        with emitter.define(f'{self.CLASS_NAME}({AstStateGenerator.CLASS_NAME} state)'):
-            emitter.println('super(state);')
+        with emitter.define(f'{self.CLASS_NAME}(Node node, {AstStateGenerator.CLASS_NAME} state)'):
+            emitter.println('super(node, state);')
 
     @staticmethod
     def visit_enum(c: model.Enum, emitter: java_file.Emitter):

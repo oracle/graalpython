@@ -318,7 +318,7 @@ public class TpSlotSetAttr {
 
         @Specialization(guards = "!isNoValue(value)")
         static void callPythonSimpleSet(VirtualFrame frame, Node inliningTarget, TpSlotSetAttrPython slot, Object self, Object name, Object value,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached TernaryPythonSlotDispatcherNode callPythonFun) {
             Object callable = slot.getSetattr();
             if (callable == null) {
@@ -330,7 +330,7 @@ public class TpSlotSetAttr {
         @Specialization(guards = "isNoValue(value)")
         @InliningCutoff
         static void callPythonSimpleDel(VirtualFrame frame, Node inliningTarget, TpSlotSetAttrPython slot, Object self, Object name, @SuppressWarnings("unused") Object value,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached BinaryPythonSlotDispatcherNode callPythonFun) {
             Object callable = slot.getDelattr();
             if (callable == null) {
@@ -340,8 +340,8 @@ public class TpSlotSetAttr {
         }
 
         @InliningCutoff
-        private static PException raiseAttributeError(Node inliningTarget, PRaiseNode.Lazy raiseNode, TruffleString attrName) {
-            return raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError, attrName);
+        private static PException raiseAttributeError(Node inliningTarget, PRaiseNode raiseNode, TruffleString attrName) {
+            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, attrName);
         }
 
         @Specialization(replaces = "callCachedBuiltin")

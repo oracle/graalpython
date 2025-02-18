@@ -51,6 +51,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -66,7 +67,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -135,8 +136,8 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
     public abstract static class GetArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PParamSpecArgs doArgs(PParamSpec self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createParamSpecArgs(PythonBuiltinClassType.PParamSpecArgs, self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createParamSpecArgs(language, self);
         }
     }
 
@@ -145,8 +146,8 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
     public abstract static class GetKwargsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PParamSpecKwargs doKwargs(PParamSpec self,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createParamSpecKwargs(PythonBuiltinClassType.PParamSpecKwargs, self);
+                        @Bind PythonLanguage language) {
+            return PFactory.createParamSpecKwargs(language, self);
         }
     }
 
@@ -198,8 +199,8 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
     abstract static class MroEntriesNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object mro(@SuppressWarnings("unused") PParamSpec self, @SuppressWarnings("unused") Object bases,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, CANNOT_SUBCLASS_AN_INSTANCE_OF_PARAMSPEC);
         }
     }
 

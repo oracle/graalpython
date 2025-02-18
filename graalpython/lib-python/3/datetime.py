@@ -7,3 +7,5 @@ except ImportError:
 
 __all__ = ("date", "datetime", "time", "timedelta", "timezone", "tzinfo",
            "MINYEAR", "MAXYEAR", "UTC")
+
+import _polyglot_datetime # GraalPy change: register interop behavior on datetime as soon as datetime is defined

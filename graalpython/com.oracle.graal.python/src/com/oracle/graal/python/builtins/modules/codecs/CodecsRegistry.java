@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -93,7 +93,7 @@ public final class CodecsRegistry {
         @Specialization
         static Object lookup(Node inliningTarget, TruffleString name,
                         @Cached InlinedConditionProfile resultProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             ensureRegistryInitialized(context);
             if (name == null) {
@@ -101,7 +101,7 @@ public final class CodecsRegistry {
             }
             Object result = getErrorHandler(context, name);
             if (resultProfile.profile(inliningTarget, result == null)) {
-                throw raiseNode.get(inliningTarget).raise(LookupError, UNKNOWN_ERROR_HANDLER, name);
+                throw raiseNode.raise(inliningTarget, LookupError, UNKNOWN_ERROR_HANDLER, name);
             }
             return result;
         }
@@ -124,9 +124,8 @@ public final class CodecsRegistry {
 
         @Specialization(guards = "!callableCheckNode.execute(inliningTarget, handler)")
         static void registerNoCallable(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") TruffleString name, @SuppressWarnings("unused") Object handler,
-                        @SuppressWarnings("unused") @Cached @Shared("callableCheck") PyCallableCheckNode callableCheckNode,
-                        @Cached(inline = false) PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, HANDLER_MUST_BE_CALLABLE);
+                        @SuppressWarnings("unused") @Cached @Shared("callableCheck") PyCallableCheckNode callableCheckNode) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, HANDLER_MUST_BE_CALLABLE);
         }
     }
 

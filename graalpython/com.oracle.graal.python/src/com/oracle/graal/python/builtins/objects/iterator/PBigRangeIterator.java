@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,9 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
@@ -98,8 +99,8 @@ public final class PBigRangeIterator extends PBuiltinIterator {
         return len;
     }
 
-    public PInt getLongIndex(PythonObjectFactory factory) {
-        return factory.createInt(longIndex);
+    public PInt getLongIndex(PythonLanguage language) {
+        return PFactory.createInt(language, longIndex);
     }
 
     public void setLongIndex(BigInteger idx) {

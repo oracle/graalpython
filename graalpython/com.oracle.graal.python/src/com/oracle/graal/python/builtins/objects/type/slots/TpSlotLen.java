@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,6 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseNode.Lazy;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
@@ -175,7 +174,7 @@ public abstract class TpSlotLen {
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
@@ -192,7 +191,7 @@ public abstract class TpSlotLen {
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) HPyAsHandleNode toNativeNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
@@ -205,8 +204,8 @@ public abstract class TpSlotLen {
         }
 
         @InliningCutoff
-        private static void raiseOverflow(Node inliningTarget, Lazy raiseNode, long l) {
-            throw raiseNode.get(inliningTarget).raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
+        private static void raiseOverflow(Node inliningTarget, PRaiseNode raiseNode, long l) {
+            throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
         }
 
         @Specialization(replaces = "callCachedBuiltin")
@@ -231,7 +230,7 @@ public abstract class TpSlotLen {
         static int callHPy(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached UnaryHPySlotDispatcherNode hpyDispatcher,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
@@ -257,7 +256,7 @@ public abstract class TpSlotLen {
                         @Bind("this") Node inliningTarget,
                         @Cached UnaryPythonSlotDispatcherNode dispatcherNode,
                         @Cached InlinedBranchProfile genericCheck,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaIntLossyNode castLossy,
                         @Cached PyNumberAsSizeNode asSizeNode) {
@@ -274,7 +273,7 @@ public abstract class TpSlotLen {
             return convertAndCheckLen(frame, inliningTarget, result, indexNode, castLossy, asSizeNode, raiseNode);
         }
 
-        static int checkLen(Node inliningTarget, PRaiseNode.Lazy raiseNode, int len) {
+        static int checkLen(Node inliningTarget, PRaiseNode raiseNode, int len) {
             if (len < 0) {
                 raiseLenGt0(inliningTarget, raiseNode);
             }
@@ -282,12 +281,12 @@ public abstract class TpSlotLen {
         }
 
         @InliningCutoff
-        private static void raiseLenGt0(Node inliningTarget, Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
+        private static void raiseLenGt0(Node inliningTarget, PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
         }
 
         public static int convertAndCheckLen(VirtualFrame frame, Node inliningTarget, Object result, PyNumberIndexNode indexNode,
-                        CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, PRaiseNode.Lazy raiseNode) {
+                        CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, PRaiseNode raiseNode) {
             int len;
             Object index = indexNode.execute(frame, inliningTarget, result);
             try {
@@ -305,7 +304,7 @@ public abstract class TpSlotLen {
         }
 
         @InliningCutoff
-        private static PException checkNegative(Node inliningTarget, CastToJavaIntLossyNode castLossy, Lazy raiseNode, PException e, Object index) {
+        private static PException checkNegative(Node inliningTarget, CastToJavaIntLossyNode castLossy, PRaiseNode raiseNode, PException e, Object index) {
             int len;
             len = castLossy.execute(inliningTarget, index);
             checkLen(inliningTarget, raiseNode, len);

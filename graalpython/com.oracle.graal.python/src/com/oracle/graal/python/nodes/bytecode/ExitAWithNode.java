@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -54,7 +53,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline(false) // Used in BCI
@@ -63,7 +61,6 @@ public abstract class ExitAWithNode extends PNodeWithContext {
 
     @Specialization
     int exit(VirtualFrame virtualFrame, int stackTopIn, boolean rootNodeVisible,
-                    @Bind("this") Node inliningTarget,
                     @Cached PyObjectIsTrueNode isTrueNode) {
         int stackTop = stackTopIn;
         Object result = virtualFrame.getObject(stackTop);
@@ -72,7 +69,7 @@ public abstract class ExitAWithNode extends PNodeWithContext {
         virtualFrame.setObject(stackTop--, null);
         AbstractTruffleException savedExcState = PArguments.getException(virtualFrame);
         try {
-            if (!isTrueNode.execute(virtualFrame, inliningTarget, result) && exception != PNone.NONE) {
+            if (!isTrueNode.execute(virtualFrame, result) && exception != PNone.NONE) {
                 if (exception instanceof PException) {
                     throw ((PException) exception).getExceptionForReraise(rootNodeVisible);
                 } else if (exception instanceof AbstractTruffleException) {

@@ -61,6 +61,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -101,10 +102,9 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -198,9 +198,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIterator,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage storage = self.getDictStorage();
-            return factory.createBaseSetIterator(self, getIterator.execute(inliningTarget, storage), lenNode.execute(inliningTarget, storage));
+            return PFactory.createBaseSetIterator(language, self, getIterator.execute(inliningTarget, storage), lenNode.execute(inliningTarget, storage));
         }
     }
 
@@ -229,7 +229,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageIteratorKey getIterKey,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetStateNode getStateNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             HashingStorage storage = self.getDictStorage();
             int len = lenNode.execute(inliningTarget, storage);
             Object[] keysArray = new Object[len];
@@ -239,9 +239,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                 assert hasNext;
                 keysArray[i] = getIterKey.execute(inliningTarget, storage, it);
             }
-            PTuple contents = factory.createTuple(new Object[]{factory.createList(keysArray)});
+            PTuple contents = PFactory.createTuple(language, new Object[]{PFactory.createList(language, keysArray)});
             Object state = getStateNode.execute(frame, inliningTarget, self);
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents, state});
+            return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, self), contents, state});
         }
     }
 
@@ -282,14 +282,14 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBaseSet doSet(HashingStorage storage, @SuppressWarnings("unused") PSet template,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createSet(storage);
+                        @Bind PythonLanguage language) {
+            return PFactory.createSet(language, storage);
         }
 
         @Specialization
         static PBaseSet doFrozenSet(HashingStorage storage, @SuppressWarnings("unused") PFrozenSet template,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createFrozenSet(storage);
+                        @Bind PythonLanguage language) {
+            return PFactory.createFrozenSet(language, storage);
         }
     }
 
@@ -556,10 +556,10 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageCopy copyNode,
                         @Cached GetClassNode getClassNode,
                         @Cached(parameters = "Hash", inline = false) LookupCallableSlotInMRONode lookupHash,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached InlinedConditionProfile createSet) {
             Object hashDescr = lookupHash.execute(getClassNode.execute(inliningTarget, key));
-            if (hashDescr instanceof PNone) {
-                return factory.get(inliningTarget).createFrozenSet(copyNode.execute(inliningTarget, key.getDictStorage()));
+            if (createSet.profile(inliningTarget, hashDescr instanceof PNone)) {
+                return PFactory.createFrozenSet(PythonLanguage.get(inliningTarget), copyNode.execute(inliningTarget, key.getDictStorage()));
             } else {
                 return key;
             }
@@ -571,8 +571,8 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

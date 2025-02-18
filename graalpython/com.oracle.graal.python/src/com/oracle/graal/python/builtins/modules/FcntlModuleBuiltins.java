@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,8 +79,9 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -152,7 +153,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PyLongAsLongNode asLongNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(inliningTarget, "fcntl.lockf", fd, code, lenObj != PNone.NO_VALUE ? lenObj : PNone.NONE, startObj != PNone.NO_VALUE ? startObj : PNone.NONE, whence);
             int lockType;
@@ -163,7 +164,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
             } else if ((code & LOCK_EX.value) != 0) {
                 lockType = F_WRLCK.getValueIfDefined();
             } else {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.UNRECOGNIZED_LOCKF_ARGUMENT);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNRECOGNIZED_LOCKF_ARGUMENT);
             }
             long start = 0;
             if (startObj != PNone.NO_VALUE) {
@@ -198,7 +199,8 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object ioctl(VirtualFrame frame, int fd, long request, Object arg, boolean mutateArg,
                         @Bind("this") Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
@@ -207,9 +209,8 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Cached GilNode gilNode,
-                        @Cached PRaiseNode.Lazy raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit(inliningTarget, "fcnt.ioctl", fd, request, arg);
 
@@ -248,7 +249,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                                     }
                                 } else {
                                     if (len > IOCTL_BUFSZ) {
-                                        throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                                        throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
                                     }
                                 }
                                 if (ioctlArg == null) {
@@ -260,7 +261,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                                     if (writable && mutateArg) {
                                         return ret;
                                     } else {
-                                        return factory.createBytes(ioctlArg, len);
+                                        return PFactory.createBytes(context.getLanguage(inliningTarget), ioctlArg, len);
                                     }
                                 } finally {
                                     if (writeBack) {
@@ -284,12 +285,12 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         stringArg = switchEncodingNode.execute(stringArg, utf8);
                         int len = stringArg.byteLength(utf8);
                         if (len > IOCTL_BUFSZ) {
-                            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
+                            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.IOCTL_STRING_ARG_TOO_LONG);
                         }
                         byte[] ioctlArg = new byte[len + 1];
                         copyToByteArrayNode.execute(stringArg, 0, ioctlArg, 0, len, utf8);
                         callIoctlBytes(frame, inliningTarget, fd, request, ioctlArg, true, posixLib, gilNode, constructAndRaiseNode);
-                        return factory.createBytes(ioctlArg, len);
+                        return PFactory.createBytes(context.getLanguage(inliningTarget), ioctlArg, len);
                     }
 
                     // int arg

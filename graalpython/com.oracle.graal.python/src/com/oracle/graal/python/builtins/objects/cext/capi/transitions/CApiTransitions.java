@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -104,7 +104,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
@@ -566,7 +566,7 @@ public abstract class CApiTransitions {
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
         if (reference.data.getDestructor() != null) {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
-            PyCapsule capsule = PythonObjectFactory.getUncached().createCapsule(reference.data);
+            PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
             PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TRUFFLE_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeUncached(capsule), capsule.getDestructor());
         }
     }
@@ -1065,7 +1065,7 @@ public abstract class CApiTransitions {
                  * Python-level MemoryError.
                  */
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(inliningTarget, PythonBuiltinClassType.MemoryError);
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.MemoryError);
             } finally {
                 gil.release(acquired);
             }

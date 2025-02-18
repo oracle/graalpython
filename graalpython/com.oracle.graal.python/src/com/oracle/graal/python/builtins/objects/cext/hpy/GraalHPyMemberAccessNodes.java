@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -107,7 +107,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -220,13 +220,13 @@ public class GraalHPyMemberAccessNodes {
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             GraalHPyContext hPyContext = getContext().getHPyContext();
 
             Object nativeSpacePtr = ensureReadNativeSpaceNode().executeCached(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_READ_FROM_OFFSET_D, offset, self);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_READ_FROM_OFFSET_D, offset, self);
             }
             Object nativeResult;
             switch (type) {
@@ -237,7 +237,7 @@ public class GraalHPyMemberAccessNodes {
                             if (type == HPY_MEMBER_OBJECT) {
                                 return PNone.NONE;
                             } else {
-                                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError);
+                                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError);
                             }
                         }
                         return fieldValue;
@@ -326,7 +326,7 @@ public class GraalHPyMemberAccessNodes {
                             l -> new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<>(HPyReadMemberNodeGen.create(offset, type, asPythonObjectNode)), true),
                             HPyReadMemberNode.class, builtin.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, callTarget);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, callTarget);
         }
     }
 
@@ -342,8 +342,8 @@ public class GraalHPyMemberAccessNodes {
         @Specialization
         @SuppressWarnings("unused")
         Object doGeneric(Object self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
         }
 
         @TruffleBoundary
@@ -351,7 +351,7 @@ public class GraalHPyMemberAccessNodes {
             RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<>(HPyReadOnlyMemberNodeGen.create(propertyName)), true),
                             HPyReadOnlyMemberNode.class, builtin.name());
             int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, builtinCt);
         }
     }
 
@@ -361,12 +361,12 @@ public class GraalHPyMemberAccessNodes {
 
         @Specialization
         static Object doGeneric(Object self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind("this") Node inliningTarget) {
             if (value == DescriptorDeleteMarker.INSTANCE) {
                 // This node is actually only used for T_NONE, so this error message is right.
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
             }
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
         }
 
         @TruffleBoundary
@@ -374,7 +374,7 @@ public class GraalHPyMemberAccessNodes {
             RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true),
                             HPyBadMemberDescrNode.class, builtin.name());
             int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, builtinCt);
         }
     }
 
@@ -407,14 +407,14 @@ public class GraalHPyMemberAccessNodes {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             PythonContext context = getContext();
             GraalHPyContext hPyContext = context.getHPyContext();
 
             Object nativeSpacePtr = ensureReadNativeSpaceNode().executeCached(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_WRITE_OFFSET_D, offset, self);
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.ATTEMPTING_WRITE_OFFSET_D, offset, self);
             }
 
             /*
@@ -427,13 +427,13 @@ public class GraalHPyMemberAccessNodes {
                     if (self instanceof PythonObject pythonObject) {
                         Object oldValue = ensureReadHPyFieldNode(hPyContext).read(hPyContext, pythonObject, nativeSpacePtr, offset);
                         if (oldValue == PNone.NO_VALUE) {
-                            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.AttributeError);
+                            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError);
                         }
                     } else {
                         throw CompilerDirectives.shouldNotReachHere("Cannot have HPyField on non-Python object");
                     }
                 } else if (type != HPY_MEMBER_OBJECT) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
                 }
                 // NO_VALUE will be converted to the NULL handle
                 newValue = PNone.NO_VALUE;
@@ -524,7 +524,7 @@ public class GraalHPyMemberAccessNodes {
                 case HPY_MEMBER_BOOL:
                     // note: exact type check is sufficient; bool cannot be subclassed
                     if (!ensureIsBuiltinObjectProfile().profileObject(this, newValue, PythonBuiltinClassType.Boolean)) {
-                        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
                     }
                     val = ensureIsNode().isTrue(newValue) ? 1 : 0;
                     ensureWriteGenericNode(hPyContext).execute(hPyContext, nativeSpacePtr, offset, Bool, val);
@@ -544,7 +544,7 @@ public class GraalHPyMemberAccessNodes {
                     ensureWriteGenericNode(hPyContext).execute(hPyContext, nativeSpacePtr, offset, HPyContextSignatureType.HPy_ssize_t, val);
                     break;
                 default:
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_S, "");
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_S, "");
             }
             return PNone.NONE;
         }
@@ -641,7 +641,7 @@ public class GraalHPyMemberAccessNodes {
                             l -> new BuiltinFunctionRootNode(l, builtin, new PrototypeNodeFactory<>(HPyWriteMemberNodeGen.create(type, offset)), true),
                             HPyWriteMemberNode.class, builtin.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, callTarget);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, callTarget);
         }
     }
 

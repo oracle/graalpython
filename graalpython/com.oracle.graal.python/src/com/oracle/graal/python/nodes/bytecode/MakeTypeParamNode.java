@@ -42,12 +42,12 @@ package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -60,7 +60,7 @@ public abstract class MakeTypeParamNode extends PNodeWithContext {
 
     @Specialization
     int makeTypeParam(VirtualFrame frame, int initialStackTop, int kind,
-                    @Cached PythonObjectFactory factory) {
+                    @Bind PythonLanguage language) {
         int stackTop = initialStackTop;
 
         Object evaluateBound = null;
@@ -77,12 +77,12 @@ public abstract class MakeTypeParamNode extends PNodeWithContext {
         frame.setObject(stackTop--, null);
 
         Object result = switch (kind) {
-            case MakeTypeParamKind.TYPE_VAR, MakeTypeParamKind.TYPE_VAR_WITH_BOUND, MakeTypeParamKind.TYPE_VAR_WITH_CONSTRAINTS -> factory.createTypeVar(PythonBuiltinClassType.PTypeVar, name,
+            case MakeTypeParamKind.TYPE_VAR, MakeTypeParamKind.TYPE_VAR_WITH_BOUND, MakeTypeParamKind.TYPE_VAR_WITH_CONSTRAINTS -> PFactory.createTypeVar(language, name,
                             evaluateBound == null ? PNone.NONE : null, evaluateBound,
-                            evaluateConstraints == null ? factory.createEmptyTuple() : null, evaluateConstraints,
+                            evaluateConstraints == null ? PFactory.createEmptyTuple(language) : null, evaluateConstraints,
                             false, false, true);
-            case MakeTypeParamKind.PARAM_SPEC -> factory.createParamSpec(PythonBuiltinClassType.PParamSpec, name, PNone.NONE, false, false, true);
-            case MakeTypeParamKind.TYPE_VAR_TUPLE -> factory.createTypeVarTuple(PythonBuiltinClassType.PTypeVarTuple, name);
+            case MakeTypeParamKind.PARAM_SPEC -> PFactory.createParamSpec(language, name, PNone.NONE, false, false, true);
+            case MakeTypeParamKind.TYPE_VAR_TUPLE -> PFactory.createTypeVarTuple(language, name);
             default -> throw shouldNotReachHere();
         };
 

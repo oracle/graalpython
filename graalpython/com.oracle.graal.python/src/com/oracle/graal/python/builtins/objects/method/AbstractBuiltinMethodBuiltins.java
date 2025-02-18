@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -116,7 +116,7 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
                         @Shared @Cached InlinedConditionProfile isGlobalProfile,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return makeQualname(frame, inliningTarget, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToStringNode, getClassNode, isTypeNode, isGlobalProfile,
                             simpleTruffleStringFormatNode, raiseNode);
         }
@@ -131,19 +131,19 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
                         @Shared @Cached InlinedConditionProfile isGlobalProfile,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return makeQualname(frame, inliningTarget, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToStringNode, getClassNode, isTypeNode, isGlobalProfile,
                             simpleTruffleStringFormatNode, raiseNode);
         }
 
         private static TruffleString makeQualname(VirtualFrame frame, Node inliningTarget, Object method, Object self, GetAttributeNode getQualNameAttrNode, GetAttributeNode getNameAttrNode,
                         CastToTruffleStringNode castToStringNode, GetClassNode getClassNode, TypeNodes.IsTypeNode isTypeNode, InlinedConditionProfile isGlobalProfile,
-                        SimpleTruffleStringFormatNode simpleTruffleStringFormatNode, PRaiseNode.Lazy raiseNode) {
+                        SimpleTruffleStringFormatNode simpleTruffleStringFormatNode, PRaiseNode raiseNode) {
             TruffleString methodName;
             try {
                 methodName = castToStringNode.execute(inliningTarget, getNameAttrNode.executeObject(frame, method));
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___NAME__);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___NAME__);
             }
             if (isGlobalProfile.profile(inliningTarget, self == PNone.NO_VALUE || self instanceof PythonModule)) {
                 return methodName;
@@ -154,7 +154,7 @@ public final class AbstractBuiltinMethodBuiltins extends PythonBuiltins {
             try {
                 typeQualName = castToStringNode.execute(inliningTarget, getQualNameAttrNode.executeObject(frame, type));
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___QUALNAME__);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___QUALNAME__);
             }
 
             return simpleTruffleStringFormatNode.format("%s.%s", typeQualName, methodName);

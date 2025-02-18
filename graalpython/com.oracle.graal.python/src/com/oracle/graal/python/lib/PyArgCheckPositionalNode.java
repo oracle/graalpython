@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,16 +66,16 @@ public abstract class PyArgCheckPositionalNode extends Node {
 
     @Specialization
     static boolean doGeneric(Node inliningTarget, TruffleString name, int nargs, int min, int max,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         assert min >= 0;
         assert min <= max;
 
         if (nargs < min) {
             if (name != null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, S_EXPECTED_SD_ARGS_GOT_D,
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, S_EXPECTED_SD_ARGS_GOT_D,
                                 name, (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS,
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS,
                                 (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
             }
         }
@@ -86,10 +86,10 @@ public abstract class PyArgCheckPositionalNode extends Node {
 
         if (nargs > max) {
             if (name != null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, S_EXPECTED_SD_ARGS_GOT_D,
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, S_EXPECTED_SD_ARGS_GOT_D,
                                 name, (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
             } else {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS,
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS,
                                 (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
             }
         }

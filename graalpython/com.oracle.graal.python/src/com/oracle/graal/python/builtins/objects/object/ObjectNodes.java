@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -140,7 +140,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.IDUtils;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -329,8 +329,8 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(double self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return IDUtils.getId(self, factory);
+                        @Bind PythonLanguage language) {
+            return IDUtils.getId(language, self);
         }
 
         @Specialization
@@ -342,8 +342,8 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(long self,
-                        @Shared @Cached PythonObjectFactory factory) {
-            return IDUtils.getId(self, factory);
+                        @Bind PythonLanguage language) {
+            return IDUtils.getId(language, self);
         }
 
         @Specialization
@@ -461,14 +461,14 @@ public abstract class ObjectNodes {
                             @Cached SequenceStorageNodes.GetItemNode getItemNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached PyObjectSizeNode sizeNode,
-                            @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                            @Exclusive @Cached PRaiseNode raiseNode) {
                 Object newargs = callNode.execute(frame, getNewArgsExAttr);
                 if (!tupleCheckNode.execute(inliningTarget, newargs)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS_EX__, "tuple", newargs);
+                    throw raiseNode.raise(inliningTarget, TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS_EX__, "tuple", newargs);
                 }
                 int length = sizeNode.execute(frame, inliningTarget, newargs);
                 if (length != 2) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, SHOULD_RETURN_A_NOT_B, T___GETNEWARGS_EX__, "tuple of length 2", length);
+                    throw raiseNode.raise(inliningTarget, ValueError, SHOULD_RETURN_A_NOT_B, T___GETNEWARGS_EX__, "tuple of length 2", length);
                 }
 
                 SequenceStorage sequenceStorage = getSequenceStorageNode.execute(inliningTarget, newargs);
@@ -476,10 +476,10 @@ public abstract class ObjectNodes {
                 Object kwargs = getItemNode.execute(sequenceStorage, 1);
 
                 if (!tupleCheckNode.execute(inliningTarget, args)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
+                    throw raiseNode.raise(inliningTarget, TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
                 }
                 if (!isDictSubClassNode.execute(inliningTarget, kwargs)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "second item of the tuple returned by __getnewargs_ex__", "dict", kwargs);
+                    throw raiseNode.raise(inliningTarget, TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "second item of the tuple returned by __getnewargs_ex__", "dict", kwargs);
                 }
 
                 return Pair.create(args, kwargs);
@@ -490,10 +490,10 @@ public abstract class ObjectNodes {
                             @Bind("this") Node inliningTarget,
                             @Exclusive @Cached CallNode callNode,
                             @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
-                            @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                            @Exclusive @Cached PRaiseNode raiseNode) {
                 Object args = callNode.execute(frame, getNewArgsAttr);
                 if (!tupleCheckNode.execute(inliningTarget, args)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS__, "tuple", args);
+                    throw raiseNode.raise(inliningTarget, TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS__, "tuple", args);
                 }
                 return Pair.create(args, PNone.NONE);
             }
@@ -519,7 +519,7 @@ public abstract class ObjectNodes {
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyImportImport importNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object slotnames = read.execute(type, T___SLOTNAMES__);
             boolean hadCachedSlotnames = false;
             if (slotnames != PNone.NO_VALUE) {
@@ -533,9 +533,9 @@ public abstract class ObjectNodes {
             } else if (slotnames == PNone.NONE) {
                 return EMPTY_OBJECT_ARRAY;
             } else if (hadCachedSlotnames) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.COPYREG_SLOTNAMES_DIDN_T_RETURN_A_LIST_OR_NONE);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.COPYREG_SLOTNAMES_DIDN_T_RETURN_A_LIST_OR_NONE);
             } else {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.N_SLOTNAMES_SHOULD_BE_A_LIST_OR_NONE_NOT_P, type, slotnames);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_SLOTNAMES_SHOULD_BE_A_LIST_OR_NONE_NOT_P, type, slotnames);
             }
         }
     }
@@ -556,12 +556,11 @@ public abstract class ObjectNodes {
                         @Cached PyObjectLookupAttrO lookupAttr,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached CheckBasesizeForGetState checkBasesize,
-                        @Cached PythonObjectFactory.Lazy factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object state;
             Object type = getClassNode.execute(inliningTarget, obj);
             if (required && getItemsizeNode.execute(inliningTarget, type) != 0) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
+                throw raiseNode.raise(inliningTarget, TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
             }
 
             Object dict = lookupAttr.execute(frame, inliningTarget, obj, T___DICT__);
@@ -574,7 +573,7 @@ public abstract class ObjectNodes {
             Object[] slotnames = getSlotNamesNode.execute(frame, inliningTarget, type);
 
             if (required && !checkBasesize.execute(inliningTarget, obj, type, slotnames.length)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
+                throw raiseNode.raise(inliningTarget, TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
             }
 
             if (slotnames.length > 0) {
@@ -592,8 +591,9 @@ public abstract class ObjectNodes {
                      * If we found some slot attributes, pack them in a tuple along the original
                      * attribute dictionary.
                      */
-                    PDict slotsState = factory.get(inliningTarget).createDict(slotsStorage);
-                    state = factory.get(inliningTarget).createTuple(new Object[]{state, slotsState});
+                    PythonLanguage language = PythonLanguage.get(inliningTarget);
+                    PDict slotsState = PFactory.createDict(language, slotsStorage);
+                    state = PFactory.createTuple(language, new Object[]{state, slotsState});
                 }
             }
 
@@ -675,11 +675,11 @@ public abstract class ObjectNodes {
                         @Cached PyObjectSizeNode sizeNode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter,
-                        @Cached(inline = false) PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             Object cls = getClassNode.execute(inliningTarget, obj);
             if (lookupNew.execute(cls) == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
+                throw raiseNode.raise(inliningTarget, TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
             }
 
             Pair<Object, Object> rv = getNewArgsNode.execute(frame, obj);
@@ -703,12 +703,12 @@ public abstract class ObjectNodes {
                 } else {
                     newargsVals = new Object[]{cls};
                 }
-                newargs = factory.createTuple(newargsVals);
+                newargs = PFactory.createTuple(language, newargsVals);
             } else if (hasArgsProfile.profile(inliningTarget, hasargs)) {
                 newobj = lookupAttr.execute(frame, inliningTarget, copyReg, T___NEWOBJ_EX__);
-                newargs = factory.createTuple(new Object[]{cls, args, kwargs});
+                newargs = PFactory.createTuple(language, new Object[]{cls, args, kwargs});
             } else {
-                throw raiseNode.get(inliningTarget).raiseBadInternalCall();
+                throw raiseNode.raiseBadInternalCall(inliningTarget);
             }
 
             boolean objIsList = isSubClassNode.executeWith(frame, cls, PythonBuiltinClassType.PList);
@@ -719,7 +719,7 @@ public abstract class ObjectNodes {
             Object listitems = objIsList ? getIter.execute(frame, inliningTarget, obj) : PNone.NONE;
             Object dictitems = objIsDict ? getIter.execute(frame, inliningTarget, callMethod.execute(frame, inliningTarget, obj, T_ITEMS)) : PNone.NONE;
 
-            return factory.createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
+            return PFactory.createTuple(language, new Object[]{newobj, newargs, state, listitems, dictitems});
         }
 
         @Specialization(guards = "proto < 2")
@@ -847,7 +847,7 @@ public abstract class ObjectNodes {
                         @Shared @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
                         @Shared @Cached(inline = false) ReadAttributeFromObjectNode attrRead,
                         @Shared @Cached InlinedBranchProfile deleteNonExistingBranchProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             setAttr(inliningTarget, frame, object, key, value, writeNode, getClassNode, hasDescriptor,
                             getDescrSlotsNode, callSetNode, getExisting, attrRead, deleteNonExistingBranchProfile,
                             raiseNode);
@@ -864,18 +864,18 @@ public abstract class ObjectNodes {
                         @Shared @Cached(inline = false) LookupAttributeInMRONode.Dynamic getExisting,
                         @Shared @Cached(inline = false) ReadAttributeFromObjectNode attrRead,
                         @Shared @Cached InlinedBranchProfile deleteNonExistingBranchProfile,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             TruffleString key = castAttributeKey(inliningTarget, keyObject, castKeyToStringNode, raiseNode);
             setAttr(inliningTarget, frame, object, key, value, writeNode, getClassNode, hasDescriptor,
                             getDescrSlotsNode, callSetNode, getExisting, attrRead, deleteNonExistingBranchProfile,
                             raiseNode);
         }
 
-        public static TruffleString castAttributeKey(Node inliningTarget, Object keyObject, CastToTruffleStringNode castKeyToStringNode, PRaiseNode.Lazy raiseNode) {
+        public static TruffleString castAttributeKey(Node inliningTarget, Object keyObject, CastToTruffleStringNode castKeyToStringNode, PRaiseNode raiseNode) {
             try {
                 return castKeyToStringNode.execute(inliningTarget, keyObject);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
             }
         }
 
@@ -884,7 +884,7 @@ public abstract class ObjectNodes {
                         InlinedConditionProfile hasDescriptor, GetObjectSlotsNode getDescrSlotsNode,
                         CallSlotDescrSet callSetNode, LookupAttributeInMRONode.Dynamic getExisting,
                         ReadAttributeFromObjectNode attrRead, InlinedBranchProfile deleteNonExistingBranchProfile,
-                        PRaiseNode.Lazy raiseNode) {
+                        PRaiseNode raiseNode) {
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = getExisting.execute(type, key);
             if (hasDescriptor.profile(inliningTarget, !PGuards.isNoValue(descr))) {
@@ -912,9 +912,9 @@ public abstract class ObjectNodes {
             }
 
             if (descr != PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
-                throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
+                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
             }
         }
 
@@ -998,7 +998,7 @@ public abstract class ObjectNodes {
                     message = ErrorMessages.HAS_NO_ATTR;
                     firstArg = object;
                 }
-                raiseNode.raise(PythonBuiltinClassType.AttributeError, message, firstArg, key);
+                raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, message, firstArg, key);
             }
         }
 

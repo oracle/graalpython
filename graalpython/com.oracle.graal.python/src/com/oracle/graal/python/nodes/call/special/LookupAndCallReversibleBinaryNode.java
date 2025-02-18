@@ -80,7 +80,6 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
     protected final SpecialMethodSlot rslot;
     private final boolean alwaysCheckReverse;
 
-    @Child private PRaiseNode raiseNode;
     @Child private GetNameNode getNameNode;
     @Child private CallBinaryMethodNode reverseDispatchNode;
 
@@ -91,14 +90,6 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         this.slot = slot;
         this.rslot = rslot;
         this.alwaysCheckReverse = alwaysCheckReverse;
-    }
-
-    private PRaiseNode ensureRaiseNode() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        return raiseNode;
     }
 
     private GetNameNode ensureGetNameNode() {
@@ -238,7 +229,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         // see descrobject.c/wrapperdescr_call()
         Object enclosing = getEnclosingType.execute(inliningTarget, callable);
         if (enclosing != null && !isSubtype.execute(leftClass, enclosing)) {
-            throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getName(), ensureGetNameNode().executeCached(leftClass), leftValue);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, op.getName(), ensureGetNameNode().executeCached(leftClass), leftValue);
         }
         return dispatch.executeObject(frame, callable, leftValue, rightValue);
     }

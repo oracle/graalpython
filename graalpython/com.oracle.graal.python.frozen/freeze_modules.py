@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -110,13 +110,15 @@ def add_graalpython_core():
     l.append("polyglot.arrow : polyglot.arrow = " + os.path.join(lib_graalpython, "modules/_polyglot_arrow.py"))
     for name in [
         "modules/_sysconfigdata",
+        "modules/_polyglot",
+        "modules/_polyglot_datetime",
+        "modules/_polyglot_time",
     ]:
         modname = os.path.basename(name)
         modpath = os.path.join(lib_graalpython, f"{name}.py")
         l.append(f"{modname} : {modname} = {modpath}")
     for name in [
         "__graalpython__",
-        "_polyglot",
         "_sre",
         "_sysconfig",
         "_weakref",
@@ -500,7 +502,7 @@ def lower_camel_case(str):
 # write frozen files
 
 FROZEN_MODULES_HEADER = """/*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0

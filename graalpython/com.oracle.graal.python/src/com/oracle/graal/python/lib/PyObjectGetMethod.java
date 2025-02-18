@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -120,7 +120,7 @@ public abstract class PyObjectGetMethod extends Node {
                     @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
                     @Exclusive @Cached CallSlotDescrGet callGetNode,
                     @Shared("readAttr") @Cached(inline = false) ReadAttributeFromObjectNode readAttr,
-                    @Exclusive @Cached PRaiseNode.Lazy raiseNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
                     @Cached InlinedBranchProfile hasDescr,
                     @Cached InlinedBranchProfile returnDataDescr,
                     @Cached InlinedBranchProfile returnAttr,
@@ -163,7 +163,7 @@ public abstract class PyObjectGetMethod extends Node {
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);
         }
-        throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+        throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 
     // No explicit branch profiling when we're looking up multiple things
@@ -178,7 +178,7 @@ public abstract class PyObjectGetMethod extends Node {
                     @Exclusive @Cached GetObjectSlotsNode getSlotsNode,
                     @Exclusive @Cached CallSlotDescrGet callGetNode,
                     @Shared("readAttr") @Cached(inline = false) ReadAttributeFromObjectNode readAttr,
-                    /* Truffle bug: @Shared("raiseNode") */ @Exclusive @Cached PRaiseNode.Lazy raiseNode) {
+                    /* Truffle bug: @Shared("raiseNode") */ @Exclusive @Cached PRaiseNode raiseNode) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass, name);
         TpSlot getMethod = null;
@@ -208,7 +208,7 @@ public abstract class PyObjectGetMethod extends Node {
         if (descr != PNone.NO_VALUE) {
             return new BoundDescriptor(descr);
         }
-        throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+        throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 
     @Specialization(guards = "isForeignObject(inliningTarget, isForeignObjectNode, receiver)", limit = "1")

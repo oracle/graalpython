@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -104,14 +104,14 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object iter;
 
             try {
                 iter = getIter.execute(frame, inliningTarget, seq);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(inliningTarget, seq));
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(inliningTarget, seq));
             }
 
             // Join all fields of passed in sequence in internal buffer.
@@ -170,7 +170,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             if (!first && sb.isEmpty()) {
                 if (dialect.quoting == QUOTE_NONE ||
                                 (nullField && (dialect.quoting == QUOTE_STRINGS || dialect.quoting == QUOTE_NOTNULL))) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
                 }
                 joinAppend(inliningTarget, sb, self, null, true,
                                 raiseNode, appendStringNode, codePointLengthNode, joinAppendData);
@@ -183,7 +183,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
         }
 
         static void joinAppend(Node inliningTarget, TruffleStringBuilder sb, CSVWriter self, TruffleString field, boolean quotedArg,
-                        PRaiseNode.Lazy raiseNode,
+                        PRaiseNode raiseNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode,
                         TruffleString.CodePointLengthNode codePointLengthNode,
                         JoinAppendData joinAppendData) {
@@ -197,7 +197,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                 if (dialect.quoting == QUOTE_NONE ||
                                 (field == null &&
                                                 (dialect.quoting == QUOTE_STRINGS || dialect.quoting == QUOTE_NOTNULL))) {
-                    raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError,
+                    raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError,
                                     DELIMITER_IS_A_SPACE_AND_SKIPINITIALSPACE_IS_TRUE);
                 }
                 quoted = true;
@@ -214,12 +214,12 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
     protected static abstract class JoinAppendData extends Node {
 
         abstract boolean execute(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, TruffleString field, boolean quoted, boolean copyPhase,
-                        PRaiseNode.Lazy raiseNode,
+                        PRaiseNode raiseNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode);
 
         @Specialization
         static boolean joinAppendData(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, TruffleString field, boolean quotedArg, boolean isCopyPhase,
-                        PRaiseNode.Lazy raiseNode,
+                        PRaiseNode raiseNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
@@ -262,7 +262,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         }
                         if (wantEscape) {
                             if (dialect.escapeCharCodePoint == NOT_SET_CODEPOINT) {
-                                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.ESCAPE_WITHOUT_ESCAPECHAR);
+                                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.ESCAPE_WITHOUT_ESCAPECHAR);
                             }
                             addChar(sb, dialect.escapeChar, isCopyPhase, appendStringNode);
                         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -91,9 +91,8 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class TruthNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doObject(VirtualFrame frame, Object object,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            return isTrueNode.execute(frame, inliningTarget, object);
+            return isTrueNode.execute(frame, object);
         }
     }
 
@@ -143,14 +142,14 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 String leftString = cast.execute(left);
                 String rightString = cast.execute(right);
                 return tscmp(leftString, rightString);
             } catch (CannotCastException e) {
                 if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
                 }
                 Object savedState = IndirectCallContext.enter(frame, indirectCallData);
                 Object leftBuffer = bufferAcquireLib.acquireReadonly(left);

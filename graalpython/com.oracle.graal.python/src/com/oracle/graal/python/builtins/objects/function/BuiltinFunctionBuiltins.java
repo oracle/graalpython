@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -41,6 +41,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,7 +60,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -90,8 +91,8 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static TruffleString setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
         }
     }
 
@@ -105,8 +106,8 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static TruffleString setQualname(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
         }
     }
 
@@ -116,8 +117,8 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
         static Object objclassMissing(@SuppressWarnings("unused") PBuiltinFunction self,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")
@@ -133,11 +134,11 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             PythonModule builtins = getContext().getBuiltins();
             Object getattr = getAttr.execute(frame, inliningTarget, builtins, T_GETATTR);
-            PTuple args = factory.createTuple(new Object[]{func.getEnclosingType(), func.getName()});
-            return factory.createTuple(new Object[]{getattr, args});
+            PTuple args = PFactory.createTuple(language, new Object[]{func.getEnclosingType(), func.getName()});
+            return PFactory.createTuple(language, new Object[]{getattr, args});
         }
     }
 
@@ -150,7 +151,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         static Object doIt(PBuiltinFunction fun,
                         @Bind("this") Node inliningTarget) {
             if (fun.getSignature().isHidden()) {
-                throw PRaiseNode.raiseUncached(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
             }
             return createInspectSignature(fun.getSignature(), false);
         }
@@ -214,7 +215,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
                 parameters.add(callNode.executeWithoutFrame(inspectParameter, StringLiterals.T_KWARGS, ParameterKinds.VAR_KEYWORD.get(parameterKinds, inspectParameter)));
             }
 
-            return callNode.executeWithoutFrame(inspectSignature, PythonObjectFactory.getUncached().createTuple(parameters.toArray()));
+            return callNode.executeWithoutFrame(inspectSignature, PFactory.createTuple(PythonLanguage.get(null), parameters.toArray()));
         }
     }
 }

@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -56,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.MaterializeLazyTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -72,8 +73,8 @@ public final class PythonCextTracebackBuiltins {
         static Object tbHere(TruffleString funcname, TruffleString filename, int lineno,
                         @Cached PyCode_NewEmpty newCode,
                         @Cached PyTraceBack_Here pyTraceBackHereNode,
-                        @Cached PythonObjectFactory factory) {
-            PFrame frame = factory.createPFrame(null, newCode.execute(filename, funcname, lineno), factory.createDict(), factory.createDict());
+                        @Bind PythonLanguage language) {
+            PFrame frame = PFactory.createPFrame(language, null, newCode.execute(filename, funcname, lineno), PFactory.createDict(language), PFactory.createDict(language));
             pyTraceBackHereNode.execute(frame);
             return PNone.NONE;
         }
@@ -85,8 +86,7 @@ public final class PythonCextTracebackBuiltins {
         static int tbHere(PFrame frame,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             AbstractTruffleException currentException = threadState.getCurrentException();
             if (currentException != null) {
@@ -94,7 +94,7 @@ public final class PythonCextTracebackBuiltins {
                 if (threadState.getCurrentTraceback() != null) {
                     currentTraceback = materializeLazyTracebackNode.execute(inliningTarget, threadState.getCurrentTraceback());
                 }
-                PTraceback newTraceback = factory.createTraceback(frame, frame.getLine(), currentTraceback);
+                PTraceback newTraceback = PFactory.createTraceback(PythonLanguage.get(inliningTarget), frame, frame.getLine(), currentTraceback);
                 threadState.setCurrentTraceback(new LazyTraceback(newTraceback));
             }
 

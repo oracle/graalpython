@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.IllegalFormatException;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -62,11 +63,11 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -156,7 +157,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, Object value) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 
@@ -220,7 +221,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, Object value) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 
@@ -279,7 +280,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, boolean value) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 
@@ -351,7 +352,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, Object value) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 
@@ -382,17 +383,17 @@ public final class ExceptionNodes {
 
         @Specialization
         static PTuple doManaged(Node inliningTarget, PBaseException self,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile nullArgsProfile,
                         @Cached InlinedConditionProfile hasMessageFormat,
                         @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             PTuple args = self.getArgs();
             if (nullArgsProfile.profile(inliningTarget, args == null)) {
                 if (hasMessageFormat.profile(inliningTarget, !self.hasMessageFormat())) {
-                    args = factory.createEmptyTuple();
+                    args = PFactory.createEmptyTuple(language);
                 } else {
                     // lazily format the exception message:
-                    args = factory.createTuple(new Object[]{fromJavaStringNode.execute(getFormattedMessage(self.getMessageFormat(), self.getMessageArgs()), TS_ENCODING)});
+                    args = PFactory.createTuple(language, new Object[]{fromJavaStringNode.execute(getFormattedMessage(self.getMessageFormat(), self.getMessageArgs()), TS_ENCODING)});
                 }
                 self.setArgs(args);
             }
@@ -408,7 +409,7 @@ public final class ExceptionNodes {
 
         @Specialization
         static PTuple doInterop(AbstractTruffleException exception,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory,
+                        @Bind PythonLanguage language,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
             assert IsForeignObjectNode.executeUncached(exception);
@@ -422,9 +423,9 @@ public final class ExceptionNodes {
                 }
 
                 if (interop.hasMetaObject(exception)) {
-                    return factory.createTuple(new Object[]{concat(getMetaObjectName(exception), message)});
+                    return PFactory.createTuple(language, new Object[]{concat(getMetaObjectName(exception), message)});
                 } else {
-                    return factory.createTuple(new Object[]{message});
+                    return PFactory.createTuple(language, new Object[]{message});
                 }
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -478,7 +479,7 @@ public final class ExceptionNodes {
         @Specialization
         @SuppressWarnings("unused")
         static void doInterop(Node inliningTarget, AbstractTruffleException exception, PTuple argsTuple) {
-            throw PRaiseNode.raiseUncached(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SET_PROPERTY_ON_INTEROP_EXCEPTION);
         }
     }
 }

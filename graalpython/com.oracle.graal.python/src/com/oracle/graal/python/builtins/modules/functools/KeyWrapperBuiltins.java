@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -63,7 +64,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -113,17 +114,16 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doCompare(VirtualFrame frame, PKeyWrapper self, PKeyWrapper other,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             final Object cmpResult = ensureCallNode().execute(frame, self.getCmp(), self.getObject(), other.getObject());
-            return isTrueNode.execute(frame, inliningTarget, ensureComparisonNode().executeObject(frame, cmpResult, 0));
+            return isTrueNode.execute(frame, ensureComparisonNode().executeObject(frame, cmpResult, 0));
         }
 
         @Fallback
         @SuppressWarnings("unused")
         static boolean fallback(Object self, Object other,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, OTHER_ARG_MUST_BE_KEY);
         }
     }
 
@@ -177,8 +177,8 @@ public final class KeyWrapperBuiltins extends PythonBuiltins {
     public abstract static class KWCallNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object call(PKeyWrapper self, Object obj,
-                        @Cached PythonObjectFactory factory) {
-            final PKeyWrapper keyWrapper = factory.createKeyWrapper(self.getCmp());
+                        @Bind PythonLanguage language) {
+            final PKeyWrapper keyWrapper = PFactory.createKeyWrapper(language, self.getCmp());
             keyWrapper.setObject(obj);
             return keyWrapper;
         }

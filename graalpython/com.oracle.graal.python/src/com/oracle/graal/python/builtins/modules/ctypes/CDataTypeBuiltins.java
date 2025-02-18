@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -99,7 +100,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -156,7 +157,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached IsInstanceNode isInstanceNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (isInstanceNode.executeWith(frame, value, type)) {
                 return value;
             }
@@ -174,7 +175,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         return value;
                     }
                 }
-                throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P, type, ob != null ? ob : PNone.NONE);
+                throw raiseNode.raise(inliningTarget, TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_POINTER_TO_P, type, ob != null ? ob : PNone.NONE);
             }
 
             Object as_parameter = lookupAttr.execute(frame, inliningTarget, value, T__AS_PARAMETER_);
@@ -183,7 +184,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                 return CDataType_from_param(frame, type, as_parameter, inliningTarget,
                                 pyTypeStgDictNode, lookupAttr, isInstanceNode, raiseNode);
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_P, type, value);
+            throw raiseNode.raise(inliningTarget, TypeError, EXPECTED_P_INSTANCE_INSTEAD_OF_P, type, value);
         }
     }
 
@@ -231,25 +232,25 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyCDataAtAddress atAddress,
                         @Cached KeepRefNode keepRefNode,
                         @Cached AuditNode auditNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
 
             PMemoryView mv = memoryViewNode.execute(frame, obj);
 
             if (mv.isReadOnly()) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
+                throw raiseNode.raise(inliningTarget, TypeError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
             }
 
             if (!mv.isCContiguous()) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS);
+                throw raiseNode.raise(inliningTarget, TypeError, UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS);
             }
 
             if (offset < 0) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
+                throw raiseNode.raise(inliningTarget, ValueError, OFFSET_CANNOT_BE_NEGATIVE);
             }
 
             if (dict.size > mv.getLength() - offset) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, mv.getLength(), dict.size + offset);
+                throw raiseNode.raise(inliningTarget, ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, mv.getLength(), dict.size + offset);
             }
 
             auditNode.audit(inliningTarget, "ctypes.cdata/buffer", mv, mv.getLength(), offset);
@@ -282,18 +283,18 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached AuditNode auditNode,
                         @Cached CtypesNodes.GenericPyCDataNewNode pyCDataNewNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             try {
                 StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
 
                 if (offset < 0) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
+                    throw raiseNode.raise(inliningTarget, ValueError, OFFSET_CANNOT_BE_NEGATIVE);
                 }
 
                 int bufferLen = bufferLib.getBufferLength(buffer);
 
                 if (dict.size > bufferLen - offset) {
-                    throw raiseNode.get(inliningTarget).raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, bufferLen, dict.size + offset);
+                    throw raiseNode.raise(inliningTarget, ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, bufferLen, dict.size + offset);
                 }
 
                 // This prints the raw pointer in C, so just print 0
@@ -331,17 +332,17 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached AuditNode auditNode,
                         @Cached PointerNodes.PointerFromLongNode pointerFromLongNode,
                         @Cached CtypesDlSymNode dlSymNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             auditNode.audit(inliningTarget, "ctypes.dlsym", dll, name);
             Object obj = getAttributeNode.executeObject(frame, dll);
             if (!longCheckNode.execute(inliningTarget, obj)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
+                throw raiseNode.raise(inliningTarget, TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             Pointer handlePtr;
             try {
                 handlePtr = pointerFromLongNode.execute(inliningTarget, obj);
             } catch (PException e) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.COULD_NOT_CONVERT_THE_HANDLE_ATTRIBUTE_TO_A_POINTER);
             }
             Object address = dlSymNode.execute(frame, handlePtr, name, ValueError);
             if (address instanceof PythonNativeVoidPtr ptr) {
@@ -365,7 +366,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached CtypesNodes.CreateCDataObjectNode createCDataObjectNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // auditNode.audit("ctypes.cdata", buf);
             // assert(PyType_Check(type));
             StgDictObject stgdict = pyTypeStgDictNode.checkAbstractClass(inliningTarget, type, raiseNode);
@@ -420,6 +421,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         @Specialization
         static void PyCData_set(VirtualFrame frame, CDataObject dst, Object type, FieldSet setfunc, Object value, int index, int size, Pointer ptr,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached SetFuncNode setFuncNode,
                         @Cached CallNode callNode,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -429,14 +431,13 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached KeepRefNode keepRefNode,
                         @Cached PointerNodes.MemcpyNode memcpyNode,
                         @Cached PointerNodes.WritePointerNode writePointerNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!pyTypeCheck.isCDataObject(inliningTarget, dst)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, NOT_A_CTYPE_INSTANCE);
+                throw raiseNode.raise(inliningTarget, TypeError, NOT_A_CTYPE_INSTANCE);
             }
 
             Object result = PyCDataSetInternal(frame, inliningTarget, type, setfunc, value, size, ptr,
-                            factory,
+                            language,
                             pyTypeCheck,
                             setFuncNode,
                             callNode,
@@ -455,7 +456,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
          */
         // corresponds to _PyCData_set
         static Object PyCDataSetInternal(VirtualFrame frame, Node inliningTarget, Object type, FieldSet setfunc, Object value, int size, Pointer ptr,
-                        PythonObjectFactory factory,
+                        PythonLanguage language,
                         PyTypeCheck pyTypeCheck,
                         SetFuncNode setFuncNode,
                         CallNode callNode,
@@ -464,7 +465,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                         PyObjectStgDictNode pyObjectStgDictNode,
                         PointerNodes.MemcpyNode memcpyNode,
                         PointerNodes.WritePointerNode writePointerNode,
-                        PRaiseNode.Lazy raiseNode) {
+                        PRaiseNode raiseNode) {
             if (setfunc != FieldSet.nil) {
                 return setFuncNode.execute(frame, setfunc, ptr, value, size);
             }
@@ -480,7 +481,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                 if (PGuards.isPTuple(value)) {
                     Object ob = callNode.execute(frame, type, value);
                     return PyCDataSetInternal(frame, inliningTarget, type, setfunc, ob, size, ptr,
-                                    factory,
+                                    language,
                                     pyTypeCheck,
                                     setFuncNode,
                                     callNode,
@@ -494,14 +495,14 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                     writePointerNode.execute(inliningTarget, ptr, Pointer.NULL);
                     return PNone.NONE;
                 } else {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, EXPECTED_P_INSTANCE_GOT_P, type, value);
+                    throw raiseNode.raise(inliningTarget, TypeError, EXPECTED_P_INSTANCE_GOT_P, type, value);
                 }
             }
             CDataObject src = (CDataObject) value;
 
             if (isInstanceNode.executeWith(frame, value, type)) {
                 memcpyNode.execute(inliningTarget, ptr, src.b_ptr, size);
-                return GetKeepedObjects(src, factory);
+                return GetKeepedObjects(src, language);
             }
 
             if (pyTypeCheck.isPyCPointerTypeObject(inliningTarget, type) && pyTypeCheck.isArrayObject(inliningTarget, value)) {
@@ -511,12 +512,12 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                 assert p2 != null : "Cannot be NULL for pointer types";
 
                 if (p1.proto != p2.proto) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
+                    throw raiseNode.raise(inliningTarget, TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
                 }
 
                 writePointerNode.execute(inliningTarget, ptr, src.b_ptr);
 
-                Object keep = GetKeepedObjects(src, factory);
+                Object keep = GetKeepedObjects(src, language);
 
                 /*
                  * We are assigning an array object to a field which represents a pointer. This has
@@ -525,9 +526,9 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
                  * it's object list. So we create a tuple, containing b_objects list PLUS the array
                  * itself, and return that!
                  */
-                return factory.createTuple(new Object[]{keep, value});
+                return PFactory.createTuple(language, new Object[]{keep, value});
             }
-            throw raiseNode.get(inliningTarget).raise(TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
+            throw raiseNode.raise(inliningTarget, TypeError, INCOMPATIBLE_TYPES_P_INSTANCE_INSTEAD_OF_P_INSTANCE, value, type);
         }
 
     }
@@ -536,14 +537,14 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
      * Code to keep needed objects alive
      */
 
-    protected static CDataObject PyCData_GetContainer(CDataObject leaf, PythonObjectFactory factory) {
+    protected static CDataObject PyCData_GetContainer(CDataObject leaf, PythonLanguage language) {
         CDataObject self = leaf;
         while (self.b_base != null) {
             self = self.b_base;
         }
         if (self.b_objects == null) {
             if (self.b_length != 0) {
-                self.b_objects = factory.createDict();
+                self.b_objects = PFactory.createDict(language);
             } else {
                 self.b_objects = PNone.NONE;
             }
@@ -551,8 +552,8 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         return self;
     }
 
-    static Object GetKeepedObjects(CDataObject target, PythonObjectFactory factory) {
-        return PyCData_GetContainer(target, factory).b_objects;
+    static Object GetKeepedObjects(CDataObject target, PythonLanguage language) {
+        return PyCData_GetContainer(target, language).b_objects;
     }
 
     /*
@@ -585,13 +586,13 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(keep)")
         static void KeepRef(VirtualFrame frame, Node inliningTarget, CDataObject target, int index, Object keep,
+                        @Bind PythonLanguage language,
                         @Cached(inline = false) TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached(inline = false) TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached HashingStorageSetItem setItem,
-                        @Cached(inline = false) PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            CDataObject ob = PyCData_GetContainer(target, factory);
+                        @Cached PRaiseNode raiseNode) {
+            CDataObject ob = PyCData_GetContainer(target, language);
             if (!PGuards.isDict(ob.b_objects)) {
                 ob.b_objects = keep;
                 return;
@@ -605,7 +606,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
     private static final int MAX_KEY_SIZE = 256;
 
     static TruffleString unique_key(Node inliningTarget, CDataObject cdata, int index,
-                    PRaiseNode.Lazy raiseNode, TruffleStringBuilder.AppendStringNode appendStringNode,
+                    PRaiseNode raiseNode, TruffleStringBuilder.AppendStringNode appendStringNode,
                     TruffleStringBuilder.ToStringNode toStringNode, TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert TS_ENCODING == Encoding.UTF_32;
         final int bytesPerCodepoint = 4;      // assumes utf-32
@@ -617,7 +618,7 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
             int bytesLeft = MAX_KEY_SIZE - sb.byteLength() / bytesPerCodepoint - 1;
             /* Hex format needs 2 characters per byte */
             if (bytesLeft < Integer.BYTES * 2) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, CTYPES_OBJECT_STRUCTURE_TOO_DEEP);
+                throw raiseNode.raise(inliningTarget, ValueError, CTYPES_OBJECT_STRUCTURE_TOO_DEEP);
             }
             appendStringNode.execute(sb, T_COLON);
             appendStringNode.execute(sb, fromJavaStringNode.execute(toHex(target.b_index), TS_ENCODING));

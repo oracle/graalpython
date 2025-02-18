@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -42,7 +43,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -67,12 +68,12 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         @Specialization
         static Object doNext(VirtualFrame frame, PEnumerate self,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
-                        @Cached GetNextNode next,
-                        @Cached PythonObjectFactory factory) {
-            Object index = self.getAndIncrementIndex(inliningTarget, factory, bigIntIndexProfile);
+                        @Cached GetNextNode next) {
+            Object index = self.getAndIncrementIndex(inliningTarget, language, bigIntIndexProfile);
             Object nextValue = next.execute(frame, self.getDecoratedIterator());
-            return factory.createTuple((new Object[]{index, nextValue}));
+            return PFactory.createTuple(language, (new Object[]{index, nextValue}));
         }
     }
 
@@ -92,13 +93,13 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         @Specialization
         static Object reduce(PEnumerate self,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Cached GetClassNode getClassNode) {
             Object iterator = self.getDecoratedIterator();
             Object index = self.getIndex(inliningTarget, bigIntIndexProfile);
-            PTuple contents = factory.createTuple(new Object[]{iterator, index});
-            return factory.createTuple(new Object[]{getClassNode.execute(inliningTarget, self), contents});
+            PTuple contents = PFactory.createTuple(language, new Object[]{iterator, index});
+            return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, self), contents});
         }
     }
 
@@ -107,8 +108,8 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

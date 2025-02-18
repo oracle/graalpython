@@ -190,7 +190,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -205,7 +205,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -253,26 +252,26 @@ public final class PythonCextBuiltins {
 
         @Specialization
         static PString doString(TruffleString str,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createString(str);
+                        @Bind PythonLanguage language) {
+            return PFactory.createString(language, str);
         }
 
         @Specialization
         static PythonBuiltinObject doInteger(int i,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createInt(i);
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, i);
         }
 
         @Specialization
         static PythonBuiltinObject doLong(long i,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createInt(i);
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, i);
         }
 
         @Specialization(guards = "!isNaN(d)")
         static PythonBuiltinObject doDouble(double d,
-                        @Shared @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createFloat(d);
+                        @Bind PythonLanguage language) {
+            return PFactory.createFloat(language, d);
         }
 
         static boolean isNaN(double d) {
@@ -298,12 +297,12 @@ public final class PythonCextBuiltins {
             CompilerDirectives.transferToInterpreter();
             PythonContext context = PythonContext.get(null);
             context.ensureGilAfterFailure();
-            PBaseException newException = context.factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
+            PBaseException newException = PFactory.createBaseException(context.getLanguage(), RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, EMPTY_OBJECT_ARRAY);
             throw ExceptionUtils.wrapJavaException(soe, null, newException);
         }
         if (t instanceof OutOfMemoryError oome) {
             CompilerDirectives.transferToInterpreter();
-            PBaseException newException = PythonContext.get(null).factory().createBaseException(MemoryError);
+            PBaseException newException = PFactory.createBaseException(PythonLanguage.get(null), MemoryError);
             throw ExceptionUtils.wrapJavaException(oome, null, newException);
         }
         // everything else: log and convert to PException (SystemError)
@@ -324,7 +323,7 @@ public final class PythonCextBuiltins {
             out.println("ERROR: Native API called without Truffle context. This can happen when called from C-level atexit, C++ global destructor or an unregistered native thread");
         }
         out.flush();
-        throw PRaiseNode.raiseUncached(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
+        throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
     }
 
     public abstract static class CApiBuiltinNode extends PNodeWithContext {
@@ -375,7 +374,7 @@ public final class PythonCextBuiltins {
 
         protected final PException badInternalCall(String argName) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
+            throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
         }
 
         @NonIdempotent
@@ -395,25 +394,25 @@ public final class PythonCextBuiltins {
         @TruffleBoundary
         protected PException raiseFallback(Object obj, PythonBuiltinClassType type) {
             if (obj == PNone.NO_VALUE) {
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
             if (IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(obj), type)) {
-                throw PRaiseNode.raiseUncached(this, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type.getName());
+                throw PRaiseNode.raiseStatic(this, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type.getName());
             } else {
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_S_NOT_P, type.getName(), obj);
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.EXPECTED_S_NOT_P, type.getName(), obj);
             }
         }
 
         @TruffleBoundary
         protected PException raiseFallback(Object obj, PythonBuiltinClassType type1, PythonBuiltinClassType type2) {
             if (obj == PNone.NO_VALUE) {
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S, getName());
             }
             Object objType = GetClassNode.executeUncached(obj);
             if (IsSubtypeNode.getUncached().execute(objType, type1) || IsSubtypeNode.getUncached().execute(objType, type2)) {
-                throw PRaiseNode.raiseUncached(this, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type1.getName());
+                throw PRaiseNode.raiseStatic(this, NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, type1.getName());
             } else {
-                throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.EXPECTED_S_NOT_P, type1.getName(), obj);
+                throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.EXPECTED_S_NOT_P, type1.getName(), obj);
             }
         }
 
@@ -426,18 +425,18 @@ public final class PythonCextBuiltins {
                 return (int) elementSize;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, SystemError, INDEX_OUT_OF_RANGE);
+            throw PRaiseNode.raiseStatic(this, SystemError, INDEX_OUT_OF_RANGE);
         }
 
-        protected static void checkNonNullArg(Node inliningTarget, Object obj, PRaiseNode.Lazy raiseNode) {
+        protected static void checkNonNullArg(Node inliningTarget, Object obj, PRaiseNode raiseNode) {
             if (obj == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
+                throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.NULL_ARG_INTERNAL);
             }
         }
 
-        protected static void checkNonNullArg(Node inliningTarget, Object obj1, Object obj2, PRaiseNode.Lazy raiseNode) {
+        protected static void checkNonNullArg(Node inliningTarget, Object obj1, Object obj2, PRaiseNode raiseNode) {
             if (obj1 == PNone.NO_VALUE || obj2 == PNone.NO_VALUE) {
-                throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.NULL_ARG_INTERNAL);
+                throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.NULL_ARG_INTERNAL);
             }
         }
     }
@@ -993,7 +992,7 @@ public final class PythonCextBuiltins {
         static Object doI(TruffleString typeName,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Python3Core core = PythonContext.get(inliningTarget);
             for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
                 if (eqNode.execute(type.getName(), typeName, TS_ENCODING)) {
@@ -1006,7 +1005,7 @@ public final class PythonCextBuiltins {
                     return attribute;
                 }
             }
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
         }
     }
 
@@ -1143,14 +1142,14 @@ public final class PythonCextBuiltins {
     abstract static class PyFrame_New extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object frameLocals;
             if (locals == null || PGuards.isPNone(locals)) {
-                frameLocals = factory.createDict();
+                frameLocals = PFactory.createDict(language);
             } else {
                 frameLocals = locals;
             }
-            return factory.createPFrame(threadState, code, globals, frameLocals);
+            return PFactory.createPFrame(language, threadState, code, globals, frameLocals);
         }
     }
 
@@ -1171,7 +1170,7 @@ public final class PythonCextBuiltins {
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode atIndexNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             int ndim = castToIntNode.execute(inliningTarget, ndimObj);
             int itemsize = castToIntNode.execute(inliningTarget, itemsizeObj);
             int len = castToIntNode.execute(inliningTarget, lenObj);
@@ -1202,7 +1201,7 @@ public final class PythonCextBuiltins {
             if (!lib.isNull(bufferStructPointer)) {
                 bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
             }
-            return factory.createMemoryView(PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
+            return PFactory.createMemoryView(language, PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
         }
     }

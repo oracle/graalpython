@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -61,18 +60,19 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ImportStatic(PGuards.class)
 public abstract class CastToByteNode extends Node {
     public static final CastToByteNode UNCACHED_INSTANCE = CastToByteNode.create();
 
-    @Child private PRaiseNode raiseNode;
+    private final BranchProfile errorProfile = BranchProfile.create();
 
-    private final BiFunction<Object, PRaiseNode, Byte> rangeErrorHandler;
-    private final BiFunction<Object, PRaiseNode, Byte> typeErrorHandler;
+    private final BiFunction<Node, Object, Byte> rangeErrorHandler;
+    private final BiFunction<Node, Object, Byte> typeErrorHandler;
     protected final boolean coerce;
 
-    protected CastToByteNode(BiFunction<Object, PRaiseNode, Byte> rangeErrorHandler, BiFunction<Object, PRaiseNode, Byte> typeErrorHandler, boolean coerce) {
+    protected CastToByteNode(BiFunction<Node, Object, Byte> rangeErrorHandler, BiFunction<Node, Object, Byte> typeErrorHandler, boolean coerce) {
         this.rangeErrorHandler = rangeErrorHandler;
         this.typeErrorHandler = typeErrorHandler;
         this.coerce = coerce;
@@ -170,27 +170,21 @@ public abstract class CastToByteNode extends Node {
         return doError(value);
     }
 
-    private byte doError(@SuppressWarnings("unused") Object val) {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
+    private byte doError(Object val) {
+        errorProfile.enter();
         if (typeErrorHandler != null) {
-            return typeErrorHandler.apply(val, raiseNode);
+            return typeErrorHandler.apply(this, val);
         } else {
-            throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, val);
+            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, val);
         }
     }
 
     private byte handleRangeError(Object val) {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
+        errorProfile.enter();
         if (rangeErrorHandler != null) {
-            return rangeErrorHandler.apply(val, raiseNode);
+            return rangeErrorHandler.apply(this, val);
         } else {
-            throw raiseNode.raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 
@@ -209,12 +203,7 @@ public abstract class CastToByteNode extends Node {
     }
 
     @NeverDefault
-    public static CastToByteNode create(BiFunction<Object, PRaiseNode, Byte> rangeErrorHandler, BiFunction<Object, PRaiseNode, Byte> typeErrorHandler) {
+    public static CastToByteNode create(BiFunction<Node, Object, Byte> rangeErrorHandler, BiFunction<Node, Object, Byte> typeErrorHandler) {
         return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler, false);
-    }
-
-    @NeverDefault
-    public static CastToByteNode create(BiFunction<Object, PRaiseNode, Byte> rangeErrorHandler, BiFunction<Object, PRaiseNode, Byte> typeErrorHandler, boolean coerce) {
-        return CastToByteNodeGen.create(rangeErrorHandler, typeErrorHandler, coerce);
     }
 }

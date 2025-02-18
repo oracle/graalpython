@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FU
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.FrozenSetNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
@@ -79,7 +80,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -96,13 +97,13 @@ public final class PythonCextSetBuiltins {
         @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
         static Object newSet(Object iterable,
                         @Cached ConstructSetNode constructSetNode) {
-            return constructSetNode.executeWith(null, iterable);
+            return constructSetNode.execute(null, iterable);
         }
 
         @Specialization
         static Object newSet(@SuppressWarnings("unused") PNone iterable,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createSet();
+                        @Bind PythonLanguage language) {
+            return PFactory.createSet(language);
         }
     }
 
@@ -143,9 +144,8 @@ public final class PythonCextSetBuiltins {
                         @Shared @Cached HashingStorageIteratorNext itNext,
                         @Shared @Cached HashingStorageIteratorKey itKey,
                         @Shared @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Shared @Cached InlinedLoopConditionProfile loopProfile,
-                        @Shared @Cached PythonObjectFactory.Lazy factory) {
-            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, factory);
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
+            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
         }
 
         @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)")
@@ -156,9 +156,8 @@ public final class PythonCextSetBuiltins {
                         @Shared @Cached HashingStorageIteratorNext itNext,
                         @Shared @Cached HashingStorageIteratorKey itKey,
                         @Shared @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Shared @Cached InlinedLoopConditionProfile loopProfile,
-                        @Shared @Cached PythonObjectFactory.Lazy factory) {
-            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, factory);
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
+            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
         }
 
         @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(inliningTarget, set, sizeNode)"})
@@ -170,21 +169,19 @@ public final class PythonCextSetBuiltins {
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
         static Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
         static Object nextEntry(Object anyset, @SuppressWarnings("unused") Object pos,
-                        @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(anyset), anyset);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(anyset), anyset);
         }
 
         protected boolean isSetSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -198,7 +195,7 @@ public final class PythonCextSetBuiltins {
 
         private static Object next(Node inliningTarget, int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
                         HashingStorageIteratorNext itNext, HashingStorageIteratorKey itKey, HashingStorageIteratorKeyHash itKeyHash,
-                        InlinedLoopConditionProfile loopProfile, PythonObjectFactory.Lazy factory) {
+                        InlinedLoopConditionProfile loopProfile) {
             HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
             loopProfile.profileCounted(inliningTarget, pos);
             for (int i = 0; loopProfile.inject(inliningTarget, i <= pos); i++) {
@@ -208,7 +205,7 @@ public final class PythonCextSetBuiltins {
             }
             Object key = itKey.execute(inliningTarget, storage, it);
             long hash = itKeyHash.execute(null, inliningTarget, storage, it);
-            return factory.get(inliningTarget).createTuple(new Object[]{key, hash});
+            return PFactory.createTuple(PythonLanguage.get(inliningTarget), new Object[]{key, hash});
         }
     }
 
@@ -237,8 +234,8 @@ public final class PythonCextSetBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         static Object newFrozenSet(PNone iterable,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createFrozenSet(PythonBuiltinClassType.PFrozenSet);
+                        @Bind PythonLanguage language) {
+            return PFactory.createFrozenSet(language);
         }
     }
 
@@ -286,8 +283,8 @@ public final class PythonCextSetBuiltins {
 
         @Specialization(guards = "!isAnySet(self)")
         static int add(Object self, @SuppressWarnings("unused") Object o,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, EXPECTED_S_NOT_P, "a set object", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, EXPECTED_S_NOT_P, "a set object", self);
         }
     }
 

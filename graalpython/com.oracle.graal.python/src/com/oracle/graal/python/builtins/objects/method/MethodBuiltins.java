@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -69,7 +70,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -132,14 +133,14 @@ public final class MethodBuiltins extends PythonBuiltins {
                         @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // TODO: (GR-53090) this is different to what CPython does and CPython also does not
             // define tp_descrget for method
             TruffleString key;
             try {
                 key = castKeyToStringNode.execute(inliningTarget, keyObj);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
             try {
@@ -153,8 +154,8 @@ public final class MethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPMethod(self)")
         @InliningCutoff
         static Object getattribute(Object self, @SuppressWarnings("unused") Object key,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "method", self);
+                        @Bind("this") Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P, T___GETATTRIBUTE__, "method", self);
         }
     }
 
@@ -190,11 +191,10 @@ public final class MethodBuiltins extends PythonBuiltins {
         @Specialization
         static Object defaults(PMethod self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetDefaultsNode getDefaultsNode,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached GetDefaultsNode getDefaultsNode) {
             Object[] argDefaults = getDefaultsNode.execute(inliningTarget, self);
             assert argDefaults != null;
-            return (argDefaults.length == 0) ? PNone.NONE : factory.get(inliningTarget).createTuple(argDefaults);
+            return (argDefaults.length == 0) ? PNone.NONE : PFactory.createTuple(PythonLanguage.get(inliningTarget), argDefaults);
         }
     }
 
@@ -204,10 +204,9 @@ public final class MethodBuiltins extends PythonBuiltins {
         @Specialization
         static Object kwDefaults(PMethod self,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetKeywordDefaultsNode getKeywordDefaultsNode,
-                        @Cached PythonObjectFactory.Lazy factory) {
+                        @Cached GetKeywordDefaultsNode getKeywordDefaultsNode) {
             PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(inliningTarget, self);
-            return (kwdefaults.length > 0) ? factory.get(inliningTarget).createDict(kwdefaults) : PNone.NONE;
+            return (kwdefaults.length > 0) ? PFactory.createDict(PythonLanguage.get(inliningTarget), kwdefaults) : PNone.NONE;
         }
     }
 

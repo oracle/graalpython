@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -76,7 +77,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -120,7 +121,6 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
         @Specialization
         static Object nextPos(VirtualFrame frame, CSVReader self,
                         @Bind("this") Node inliningTarget,
-                        @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
@@ -131,9 +131,9 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            PList fields = factory.createList();
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
+            PList fields = PFactory.createList(language);
             CSVModuleBuiltins csvModuleBuiltins = (CSVModuleBuiltins) PythonContext.get(inliningTarget).lookupBuiltinModule(T__CSV).getBuiltins();
             self.parseReset();
             do {
@@ -145,7 +145,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                     self.fieldLimit = csvModuleBuiltins.fieldLimit;
                     if (!self.field.isEmpty() || self.state == IN_QUOTED_FIELD) {
                         if (self.dialect.strict) {
-                            throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNEXPECTED_END_OF_DATA);
+                            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.UNEXPECTED_END_OF_DATA);
                         } else {
                             try {
                                 parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
@@ -155,7 +155,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                             break;
                         }
                     }
-                    throw raiseNode.get(inliningTarget).raiseStopIteration();
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
                 }
                 self.fieldLimit = csvModuleBuiltins.fieldLimit;
 
@@ -163,7 +163,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                 try {
                     line = castToStringNode.execute(inliningTarget, lineObj);
                 } catch (CannotCastException e) {
-                    throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, getClassNode.execute(inliningTarget, lineObj));
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, getClassNode.execute(inliningTarget, lineObj));
                 }
 
                 self.lineNum++;
@@ -180,7 +180,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("fallthrough")
         private static void parseProcessCodePoint(Node inliningTarget, CSVReader self, PList fields, int codePoint, AppendCodePointNode appendCodePointNode, ToStringNode toStringNode,
-                        PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode, PRaiseNode.Lazy raiseNode) {
+                        PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode, PRaiseNode raiseNode) {
             CSVDialect dialect = self.dialect;
 
             switch (self.state) {
@@ -318,7 +318,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         self.state = IN_FIELD;
                     } else {
                         /* illegal */
-                        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.S_EXPECTED_AFTER_S, dialect.delimiter, dialect.quoteChar);
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.S_EXPECTED_AFTER_S, dialect.delimiter, dialect.quoteChar);
                     }
                     break;
 
@@ -328,7 +328,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                     } else if (codePoint == EOL) {
                         self.state = START_RECORD;
                     } else {
-                        throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.NEWLINE_IN_UNQOUTED_FIELD);
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.NEWLINE_IN_UNQOUTED_FIELD);
                     }
                     break;
             }
@@ -345,11 +345,11 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
             }
         }
 
-        private static void parseAddCodePoint(Node inliningTarget, CSVReader self, int codePoint, TruffleStringBuilder.AppendCodePointNode appendCodePointNode, PRaiseNode.Lazy raise) {
+        private static void parseAddCodePoint(Node inliningTarget, CSVReader self, int codePoint, TruffleStringBuilder.AppendCodePointNode appendCodePointNode, PRaiseNode raise) {
             assert TS_ENCODING == TruffleString.Encoding.UTF_32;
             int cpLen = self.field.byteLength() / 4;        // assumes UTF-32
             if (cpLen + 1 > self.fieldLimit) {
-                throw raise.get(inliningTarget).raise(PythonBuiltinClassType.CSVError, ErrorMessages.LARGER_THAN_FIELD_SIZE_LIMIT, self.fieldLimit);
+                throw raise.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.LARGER_THAN_FIELD_SIZE_LIMIT, self.fieldLimit);
             }
             appendCodePointNode.execute(self.field, codePoint, 1, true);
         }

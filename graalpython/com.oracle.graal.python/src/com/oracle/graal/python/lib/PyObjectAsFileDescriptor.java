@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,7 +71,7 @@ public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
 
     @Specialization
     static int doInt(Node inliningTarget, @SuppressWarnings("unused") int object,
-                    @Exclusive @Cached PRaiseNode.Lazy raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         return checkResult(object, inliningTarget, raise);
     }
 
@@ -79,7 +79,7 @@ public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
     static int doPyLong(VirtualFrame frame, @SuppressWarnings("unused") Node inliningTarget, Object object,
                     @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                     @Exclusive @Cached PyLongAsIntNode asIntNode,
-                    @Exclusive @Cached PRaiseNode.Lazy raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         return checkResult(asIntNode.execute(frame, inliningTarget, object), inliningTarget, raise);
     }
 
@@ -89,21 +89,21 @@ public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
                     @Cached(inline = false) CallNode callFileno,
                     @Exclusive @Cached PyLongCheckNode checkResultNode,
                     @Exclusive @Cached PyLongAsIntNode asIntNode,
-                    @Exclusive @Cached PRaiseNode.Lazy raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         Object filenoMethod = lookupFileno.execute(frame, inliningTarget, object, T_FILENO);
         if (filenoMethod != PNone.NO_VALUE) {
             Object result = callFileno.execute(frame, filenoMethod);
             if (checkResultNode.execute(inliningTarget, result)) {
                 return checkResult(asIntNode.execute(frame, inliningTarget, result), inliningTarget, raise);
             }
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
         }
-        throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
+        throw raise.raise(inliningTarget, TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
     }
 
-    private static int checkResult(int result, Node inliningTarget, PRaiseNode.Lazy raiseNode) {
+    private static int checkResult(int result, Node inliningTarget, PRaiseNode raiseNode) {
         if (result < 0) {
-            throw raiseNode.get(inliningTarget).raise(ValueError, ErrorMessages.S_CANNOT_BE_NEGATIVE_INTEGER_D, "file descriptor", result);
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.S_CANNOT_BE_NEGATIVE_INTEGER_D, "file descriptor", result);
         }
         return result;
     }

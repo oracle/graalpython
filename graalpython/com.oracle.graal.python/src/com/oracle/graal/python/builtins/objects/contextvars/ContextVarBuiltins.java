@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -58,7 +59,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -83,7 +84,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         static Object get(PContextVar self, Object def,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile defIsNoValueProfile,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object defValue = defIsNoValueProfile.profile(inliningTarget, isNoValue(def)) ? PContextVar.NO_DEFAULT : def;
             PythonContext context = PythonContext.get(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
@@ -91,7 +92,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
             if (value != null) {
                 return value;
             }
-            throw raiseNode.get(inliningTarget).raise(LookupError);
+            throw raiseNode.raise(inliningTarget, LookupError);
         }
     }
 
@@ -101,12 +102,12 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         @Specialization
         static Object set(PContextVar self, Object value,
                         @Bind("this") Node inliningTarget,
-                        @Bind PythonContext context,
-                        @Cached PythonObjectFactory factory) {
-            PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
+                        @Bind PythonContext context) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonContext.PythonThreadState threadState = context.getThreadState(language);
             Object oldValue = self.getValue(threadState);
             self.setValue(threadState, value);
-            return factory.createContextVarsToken(self, oldValue);
+            return PFactory.createContextVarsToken(language, self, oldValue);
         }
     }
 
@@ -117,7 +118,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         static Object reset(PContextVar self, PContextVarsToken token,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonContext pythonContext,
-                        @Shared @Cached PRaiseNode.Lazy raise) {
+                        @Shared @Cached PRaiseNode raise) {
             if (self == token.getVar()) {
                 token.use(inliningTarget, raise);
                 PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
@@ -128,7 +129,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
                     self.setValue(threadState, token.getOldValue());
                 }
             } else {
-                throw raise.get(inliningTarget).raise(ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
+                throw raise.raise(inliningTarget, ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);
             }
             return PNone.NONE;
         }
@@ -136,8 +137,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isToken(token)")
         Object doError(@SuppressWarnings("unused") PContextVar self, Object token,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PRaiseNode.Lazy raise) {
-            throw raise.get(inliningTarget).raise(TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
+                        @Shared @Cached PRaiseNode raise) {
+            throw raise.raise(inliningTarget, TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
         }
 
         static boolean isToken(Object obj) {
@@ -150,8 +151,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object classGetItem(Object cls, Object key,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createGenericAlias(cls, key);
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

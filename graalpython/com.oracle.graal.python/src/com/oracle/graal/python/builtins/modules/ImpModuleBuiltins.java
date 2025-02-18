@@ -117,7 +117,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -260,8 +260,6 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             MAGIC_NUMBER_BYTES[3] = '\n';
         }
 
-        @Child PythonObjectFactory factory = PythonObjectFactory.create();        // GR-47032
-
         @Specialization(guards = "isSingleContext()")
         PBytes runCachedSingleContext(
                         @Cached(value = "getMagicNumberPBytes()", weak = true) PBytes magicBytes) {
@@ -269,12 +267,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "runCachedSingleContext")
-        PBytes run() {
-            return factory.createBytes(MAGIC_NUMBER_BYTES);
+        PBytes run(
+                        @Bind PythonLanguage language) {
+            return PFactory.createBytes(language, MAGIC_NUMBER_BYTES);
         }
 
         protected PBytes getMagicNumberPBytes() {
-            return factory.createBytes(MAGIC_NUMBER_BYTES);
+            return PFactory.createBytes(PythonLanguage.get(this), MAGIC_NUMBER_BYTES);
         }
     }
 
@@ -351,7 +350,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached ExecModuleNode execModuleNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
             if (nativeModuleDef == null) {
                 return 0;
@@ -368,7 +367,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
             PythonContext context = PythonContext.get(inliningTarget);
             if (!context.hasCApiContext()) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
             }
 
             /*
@@ -449,7 +448,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 return builtinModule;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(inliningTarget, NotImplementedError, toTruffleStringUncached("_imp.create_builtin"));
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError, toTruffleStringUncached("_imp.create_builtin"));
         }
     }
 
@@ -540,12 +539,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object run(VirtualFrame frame, TruffleString name, Object dataObj,
                         @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached InlinedConditionProfile isCodeObjectProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 try {
@@ -558,7 +558,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                     raiseFrozenError(frame, FROZEN_INVALID, name, constructAndRaiseNode.get(inliningTarget));
                 }
             } else {
-                FrozenResult result = findFrozen(PythonContext.get(inliningTarget), name, equalNode);
+                FrozenResult result = findFrozen(context, name, equalNode);
                 FrozenStatus status = result.status;
                 info = result.info;
                 raiseFrozenError(frame, status, name, constructAndRaiseNode.get(inliningTarget));
@@ -567,13 +567,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             Object code = null;
 
             try {
-                code = MarshalModuleBuiltins.Marshal.load(info.data, info.size);
+                code = MarshalModuleBuiltins.Marshal.load(context, info.data, info.size);
             } catch (MarshalError | NumberFormatException e) {
                 raiseFrozenError(frame, FROZEN_INVALID, name, constructAndRaiseNode.get(inliningTarget));
             }
 
             if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
             }
 
             return code;
@@ -603,12 +603,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(VirtualFrame frame, TruffleString name, boolean withData,
+        static Object run(VirtualFrame frame, TruffleString name, boolean withData,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached MemoryViewNode memoryViewNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
-                        @Cached PythonObjectFactory factory) {
-            FrozenResult result = findFrozen(getContext(), name, equalNode);
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+            FrozenResult result = findFrozen(context, name, equalNode);
             FrozenStatus status = result.status;
             FrozenInfo info = result.info;
 
@@ -624,7 +625,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             PMemoryView data = null;
 
             if (withData) {
-                data = memoryViewNode.execute(frame, factory.createBytes(info.data));
+                data = memoryViewNode.execute(frame, PFactory.createBytes(context.getLanguage(inliningTarget), info.data));
             }
 
             Object[] returnValues = new Object[]{
@@ -633,7 +634,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                             info.origName == null ? PNone.NONE : info.origName
             };
 
-            return factory.createTuple(returnValues);
+            return PFactory.createTuple(context.getLanguage(inliningTarget), returnValues);
         }
     }
 
@@ -689,13 +690,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 }
         }
 
-        PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(info.data, info.size);
+        PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(core.getContext(), info.data, info.size);
 
-        PythonModule module = globals == null ? core.factory().createPythonModule(name) : globals;
+        PythonModule module = globals == null ? PFactory.createPythonModule(core.getLanguage(), name) : globals;
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
-            WriteAttributeToPythonObjectNode.getUncached().execute(module, T___PATH__, core.factory().createList());
+            WriteAttributeToPythonObjectNode.getUncached().execute(module, T___PATH__, PFactory.createList(core.getLanguage()));
         }
 
         RootCallTarget callTarget = CodeNodes.GetCodeCallTargetNode.executeUncached(code);
@@ -767,10 +768,10 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PBytes run(long magicNumber, Object sourceBuffer,
                         @Bind("this") Node inliningTarget,
-                        @Cached BytesNodes.HashBufferNode hashBufferNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Cached BytesNodes.HashBufferNode hashBufferNode) {
             long sourceHash = hashBufferNode.execute(inliningTarget, sourceBuffer);
-            return factory.createBytes(computeHash(magicNumber, sourceHash));
+            return PFactory.createBytes(language, computeHash(magicNumber, sourceHash));
         }
 
         @TruffleBoundary
@@ -814,8 +815,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
         @Specialization
         Object run(
-                        @Cached PythonObjectFactory factory) {
-            return factory.createList(new Object[]{PythonContext.get(this).getSoAbi(), T_EXT_SO, T_EXT_PYD});
+                        @Bind PythonLanguage language) {
+            return PFactory.createList(language, new Object[]{PythonContext.get(this).getSoAbi(), T_EXT_SO, T_EXT_PYD});
         }
     }
 

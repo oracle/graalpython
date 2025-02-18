@@ -216,7 +216,6 @@ import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.memory.ByteArraySupport;
@@ -3285,7 +3284,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     throw parserCallbacks.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern keys may only match literals and attribute lookups");
                 }
                 assert constantValue != null;
-                Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue, PythonObjectFactory.getUncached());
+                Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue);
                 for (Object o : seen) {
                     // need python like equal - e.g. 1 equals True
                     if (PyObjectRichCompareBool.EqNode.compareUncached(o, pythonValue)) {

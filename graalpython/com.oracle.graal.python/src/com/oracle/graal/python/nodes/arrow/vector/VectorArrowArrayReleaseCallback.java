@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.nodes.arrow.vector;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ARROW_ARRAY_ALREADY_RELEASED;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
@@ -53,9 +56,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-
-import static com.oracle.graal.python.nodes.ErrorMessages.ARROW_ARRAY_ALREADY_RELEASED;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 @ExportLibrary(InteropLibrary.class)
 public class VectorArrowArrayReleaseCallback implements TruffleObject {
@@ -71,10 +71,10 @@ public class VectorArrowArrayReleaseCallback implements TruffleObject {
         @Specialization(guards = "validateArgs(args)")
         static Object doRelease(VectorArrowArrayReleaseCallback self, Object[] args,
                         @Bind("$node") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             ArrowArray arrowArray = ArrowArray.wrap((long) args[0]);
             if (arrowArray.isReleased()) {
-                throw raiseNode.get(inliningTarget).raise(ValueError, ARROW_ARRAY_ALREADY_RELEASED);
+                throw raiseNode.raise(inliningTarget, ValueError, ARROW_ARRAY_ALREADY_RELEASED);
             }
 
             arrowArray.markReleased();

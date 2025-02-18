@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -76,7 +77,8 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -136,10 +138,10 @@ public final class PythonCextStructSeqBuiltins {
                         @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                         @Cached CallNode callTypeNewNode,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.T_TYPE);
-            PTuple bases = factory.createTuple(new Object[]{PythonBuiltinClassType.PTuple});
-            PDict namespace = factory.createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
+            PTuple bases = PFactory.createTuple(language, new Object[]{PythonBuiltinClassType.PTuple});
+            PDict namespace = PFactory.createDict(language, new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
             Object cls = callTypeNewNode.executeWithoutFrame(typeBuiltin, typeName, bases, namespace);
             initNode.execute(cls, fields, nInSequence);
             if (cls instanceof PythonClass) {
@@ -157,17 +159,18 @@ public final class PythonCextStructSeqBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PRaiseNode raiseNode) {
             try {
                 Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.T_N_FIELDS);
                 if (realSizeObj == PNone.NO_VALUE) {
-                    throw raiseNode.get(inliningTarget).raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
+                    throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY);
                 } else {
                     int realSize = castToIntNode.execute(inliningTarget, realSizeObj);
                     Object[] values = new Object[realSize];
                     Arrays.fill(values, PNone.NO_VALUE); // Initialize to C NULL
-                    return factory.createTuple(cls, values);
+                    return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(values));
                 }
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("attribute 'n_fields' is expected to be a Java int");

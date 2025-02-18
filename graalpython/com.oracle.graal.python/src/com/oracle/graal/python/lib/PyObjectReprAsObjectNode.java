@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,7 +105,7 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
                     @Cached(inline = false) ObjectNodes.DefaultObjectReprNode defaultRepr,
                     @Cached InlinedConditionProfile isString,
                     @Cached InlinedConditionProfile isPString,
-                    @Cached PRaiseNode.Lazy raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(inliningTarget, obj);
         Object reprMethod;
         try {
@@ -128,8 +128,8 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
     }
 
     @InliningCutoff
-    private static PException raiseTypeError(Node inliningTarget, Object obj, PRaiseNode.Lazy raiseNode) {
-        throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.RETURNED_NON_STRING, T___REPR__, obj);
+    private static PException raiseTypeError(Node inliningTarget, Object obj, PRaiseNode raiseNode) {
+        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NON_STRING, T___REPR__, obj);
     }
 
     @NeverDefault

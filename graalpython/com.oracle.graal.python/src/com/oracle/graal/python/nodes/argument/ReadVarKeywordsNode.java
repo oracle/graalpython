@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,7 +33,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -47,7 +47,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     @CompilationFinal(dimensions = 1) private final TruffleString[] keywordNames;
-    @Child private PythonObjectFactory factory;
+    private final boolean doWrap;
 
     public abstract PKeyword[] executePKeyword(VirtualFrame frame);
 
@@ -65,7 +65,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
 
     ReadVarKeywordsNode(TruffleString[] keywordNames, boolean doWrap) {
         this.keywordNames = keywordNames;
-        this.factory = doWrap ? PythonObjectFactory.create() : null;
+        this.doWrap = doWrap;
     }
 
     protected int getLimit() {
@@ -86,8 +86,8 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     }
 
     private Object returnValue(PKeyword[] keywords) {
-        if (factory != null) {
-            return factory.createDict(keywords);
+        if (doWrap) {
+            return PFactory.createDict(PythonLanguage.get(this), keywords);
         } else {
             return keywords;
         }

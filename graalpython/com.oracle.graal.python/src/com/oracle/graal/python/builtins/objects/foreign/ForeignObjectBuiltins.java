@@ -68,7 +68,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -89,6 +89,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /*
@@ -168,14 +169,14 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached(inline = false) CastToJavaStringNode castToString,
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) PForeignToPTypeNode toPythonNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             gil.release(true);
             try {
                 String member;
                 try {
                     member = castToString.execute(memberObj);
                 } catch (CannotCastException e) {
-                    throw raiseNode.get(inliningTarget).raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
                 }
 
                 if (read.isMemberReadable(object, member)) {
@@ -197,7 +198,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            throw raiseNode.get(inliningTarget).raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
+            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
         }
     }
 
@@ -211,13 +212,13 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached CastToJavaStringNode castToString,
                         @Shared @Cached GilNode gil,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             gil.release(true);
             String member;
             try {
                 member = castToString.execute(key);
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             }
             try {
                 try {
@@ -240,11 +241,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                 }
             } catch (UnsupportedTypeException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.INVALID_TYPE_FOR_S, key);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INVALID_TYPE_FOR_S, key);
             } finally {
                 gil.acquire();
             }
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -253,14 +254,14 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached CastToJavaStringNode castToString,
                         @Shared @Cached GilNode gil,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             gil.release(true);
             try {
                 lib.removeMember(object, castToString.execute(key));
             } catch (CannotCastException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raiseNode.get(inliningTarget).raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+                throw raiseNode.raise(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             } finally {
                 gil.acquire();
             }
@@ -276,8 +277,8 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil,
-                        @Cached PythonObjectFactory.Lazy factory) {
-            if (lib.hasMembers(object)) {
+                        @Cached InlinedConditionProfile profile) {
+            if (profile.profile(inliningTarget, lib.hasMembers(object))) {
                 gil.release(true);
                 try {
                     return lib.getMembers(object);
@@ -288,7 +289,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } else {
-                return factory.get(inliningTarget).createList();
+                return PFactory.createList(PythonLanguage.get(inliningTarget));
             }
         }
     }

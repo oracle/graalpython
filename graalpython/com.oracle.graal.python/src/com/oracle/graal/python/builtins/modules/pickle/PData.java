@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.pickle;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -47,7 +48,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -97,8 +98,8 @@ public class PData {
     }
 
     public abstract static class PDataBaseNode extends PNodeWithContext {
-        static PException raiseUnderflow(PData self, PRaiseNode raiseNode) {
-            return raiseNode.raise(PythonBuiltinClassType.UnpicklingError,
+        static PException raiseUnderflow(PData self, Node inliningTarget, PRaiseNode raiseNode) {
+            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnpicklingError,
                             self.mark ? ErrorMessages.PDATA_UNEXPECTED_MARK_FOUND : ErrorMessages.PDATA_UNPICKLING_STACK_UNDERFLOW);
         }
     }
@@ -111,9 +112,9 @@ public class PData {
         @Specialization
         static Object pop(PData self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.size <= self.fence) {
-                throw raiseUnderflow(self, raiseNode.get(inliningTarget));
+                throw raiseUnderflow(self, inliningTarget, raiseNode);
             }
             return self.data[--self.size];
         }
@@ -131,12 +132,12 @@ public class PData {
         @Specialization
         static void push(PData self, Object obj,
                         @Bind("this") Node inliningTarget,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (self.size == self.data.length) {
                 try {
                     self.grow();
                 } catch (OverflowException e) {
-                    throw raiseNode.get(inliningTarget).raiseOverflow();
+                    throw raiseNode.raiseOverflow(inliningTarget);
                 }
             }
             self.data[self.size++] = obj;
@@ -155,12 +156,12 @@ public class PData {
         @Specialization
         static PTuple popTuple(PData self, int start,
                         @Bind("this") Node inliningTarget,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Bind PythonLanguage language,
+                        @Cached PRaiseNode raiseNode) {
             int len, i, j;
 
             if (start < self.fence) {
-                throw raiseUnderflow(self, raiseNode.get(inliningTarget));
+                throw raiseUnderflow(self, inliningTarget, raiseNode);
             }
             len = self.size - start;
             Object[] items = new Object[len];
@@ -168,7 +169,7 @@ public class PData {
                 items[j] = self.data[i];
             }
             self.size = start;
-            return factory.createTuple(items);
+            return PFactory.createTuple(language, items);
         }
 
         public static PDataPopTupleNode create() {
@@ -183,7 +184,7 @@ public class PData {
 
         @Specialization
         public PList popList(PData self, int start,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language) {
             int len, i, j;
 
             len = self.size - start;
@@ -192,7 +193,7 @@ public class PData {
                 items[j] = self.data[i];
             }
             self.size = start;
-            return factory.createList(items);
+            return PFactory.createList(language, items);
         }
 
         public static PDataPopListNode create() {

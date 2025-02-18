@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,14 +69,14 @@ public abstract class PyConvertOptionalToSizeNode extends PNodeWithContext {
 
     @Specialization(guards = {"!isNone(value)", "!isNoValue(value)"})
     static int doObject(VirtualFrame frame, Node inliningTarget, Object value, @SuppressWarnings("unused") int defaultValue,
-                    @Cached PRaiseNode.Lazy raiseNode,
+                    @Cached PRaiseNode raiseNode,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberAsSizeNode asSizeNode) {
         int limit;
         if (indexCheckNode.execute(inliningTarget, value)) {
             limit = asSizeNode.executeExact(frame, inliningTarget, value);
         } else {
-            throw raiseNode.get(inliningTarget).raise(PythonErrorType.TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+            throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
         }
         return limit;
     }

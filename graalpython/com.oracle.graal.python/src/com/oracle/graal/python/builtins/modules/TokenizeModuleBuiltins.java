@@ -51,6 +51,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -72,14 +74,16 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -105,7 +109,8 @@ public final class TokenizeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTokenizerIter tokenizerIterStr(Object cls, Object readline, boolean extraTokens, @SuppressWarnings("unused") PNone encoding,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Supplier<int[]> inputSupplier = () -> {
                 Object o;
                 try {
@@ -118,22 +123,24 @@ public final class TokenizeModuleBuiltins extends PythonBuiltins {
                 try {
                     line = CastToTruffleStringNode.executeUncached(o);
                 } catch (CannotCastException e) {
-                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, RETURNED_NON_STRING, "readline()", o);
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, RETURNED_NON_STRING, "readline()", o);
                 }
                 return getCodePoints(line);
             };
-            return factory.createTokenizerIter(cls, inputSupplier, extraTokens);
+            return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
         }
 
         @Specialization
         static PTokenizerIter tokenizerIterBytes(Object cls, Object readline, boolean extraTokens, TruffleString encoding,
-                        @Shared @Cached PythonObjectFactory factory,
+                        @Bind("this") Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             Charset charset;
             try {
                 charset = getCharset(Tokenizer.getNormalName(encoding.toJavaStringUncached()));
             } catch (Exception e) {
-                throw raiseNode.raise(PythonBuiltinClassType.LookupError, UNKNOWN_ENCODING, encoding);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.LookupError, UNKNOWN_ENCODING, encoding);
             }
 
             Supplier<int[]> inputSupplier = () -> {
@@ -145,14 +152,14 @@ public final class TokenizeModuleBuiltins extends PythonBuiltins {
                     return null;
                 }
                 if (!PyBytesCheckNode.executeUncached(o)) {
-                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, RETURNED_NONBYTES, "readline()", o);
+                    throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, RETURNED_NONBYTES, "readline()", o);
                 }
 
                 Object buffer;
                 try {
                     buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(o);
                 } catch (PException e) {
-                    throw PRaiseNode.raiseUncached(null, TypeError, EXPECTED_BYTESLIKE_GOT_P, o);
+                    throw PRaiseNode.raiseStatic(null, TypeError, EXPECTED_BYTESLIKE_GOT_P, o);
                 }
                 PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getUncached();
                 byte[] bytes;
@@ -164,7 +171,7 @@ public final class TokenizeModuleBuiltins extends PythonBuiltins {
                 String line = charset.decode(ByteBuffer.wrap(bytes)).toString();
                 return getCodePoints(TruffleString.fromJavaStringUncached(line, TS_ENCODING));
             };
-            return factory.createTokenizerIter(cls, inputSupplier, extraTokens);
+            return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
         }
 
         @TruffleBoundary

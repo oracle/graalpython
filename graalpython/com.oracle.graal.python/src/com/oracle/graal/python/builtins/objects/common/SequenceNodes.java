@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -163,9 +163,8 @@ public abstract class SequenceNodes {
         }
 
         @Fallback
-        static SequenceStorage doFallback(Node inliningTarget, Object seq,
-                        @Cached PRaiseNode.Lazy raiseNode) {
-            throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A_SEQUENCE, seq);
+        static SequenceStorage doFallback(Node inliningTarget, Object seq) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, IS_NOT_A_SEQUENCE, seq);
         }
 
         @NeverDefault
@@ -247,9 +246,9 @@ public abstract class SequenceNodes {
         @Specialization
         static void check(Node inliningTarget, Object obj,
                         @Cached PySequenceCheckNode sequenceCheckNode,
-                        @Cached PRaiseNode.Lazy raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!sequenceCheckNode.execute(inliningTarget, obj)) {
-                throw raiseNode.get(inliningTarget).raise(TypeError, IS_NOT_A_SEQUENCE, obj);
+                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A_SEQUENCE, obj);
             }
         }
     }

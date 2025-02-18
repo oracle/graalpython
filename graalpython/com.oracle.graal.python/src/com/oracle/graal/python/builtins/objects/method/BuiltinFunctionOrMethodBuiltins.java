@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -152,7 +152,7 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget) {
             Signature signature = GetSignatureNode.executeUncached(fun);
             if (signature.isHidden()) {
-                throw PRaiseNode.raiseUncached(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
             }
             return BuiltinFunctionBuiltins.SignatureNode.createInspectSignature(signature, true);
         }

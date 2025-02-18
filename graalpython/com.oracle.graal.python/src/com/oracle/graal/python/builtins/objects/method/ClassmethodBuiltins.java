@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
@@ -67,7 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -126,7 +127,7 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetClassNode getClass,
                         @Shared @Cached MakeMethodNode makeMethod,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), makeMethod, raiseNode);
         }
 
@@ -144,14 +145,14 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
         static Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached MakeMethodNode makeMethod,
-                        @Shared @Cached PRaiseNode.Lazy raiseNode) {
+                        @Shared @Cached PRaiseNode raiseNode) {
             return doGet(inliningTarget, self, type, makeMethod, raiseNode);
         }
 
-        private static Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, MakeMethodNode makeMethod, PRaiseNode.Lazy raiseNode) {
+        private static Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, MakeMethodNode makeMethod, PRaiseNode raiseNode) {
             Object callable = self.getCallable();
             if (callable == null) {
-                throw raiseNode.get(inliningTarget).raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
             return makeMethod.execute(inliningTarget, type, callable);
         }
@@ -167,26 +168,26 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
 
         @Specialization
         Object method(Object self, PFunction func,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createMethod(self, func);
+                        @Bind PythonLanguage language) {
+            return PFactory.createMethod(language, self, func);
         }
 
         @Specialization(guards = "!func.needsDeclaringType()")
         Object methodBuiltin(Object self, PBuiltinFunction func,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createBuiltinMethod(self, func);
+                        @Bind PythonLanguage language) {
+            return PFactory.createBuiltinMethod(language, self, func);
         }
 
         @Specialization(guards = "func.needsDeclaringType()")
         Object methodBuiltinWithDeclaringType(Object self, PBuiltinFunction func,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createBuiltinMethod(self, func, func.getEnclosingType());
+                        @Bind PythonLanguage language) {
+            return PFactory.createBuiltinMethod(language, self, func, func.getEnclosingType());
         }
 
         @Specialization(guards = "!isFunction(func)")
         Object generic(Object self, Object func,
-                        @Shared("factory") @Cached(inline = false) PythonObjectFactory factory) {
-            return factory.createMethod(self, func);
+                        @Bind PythonLanguage language) {
+            return PFactory.createMethod(language, self, func);
         }
     }
 

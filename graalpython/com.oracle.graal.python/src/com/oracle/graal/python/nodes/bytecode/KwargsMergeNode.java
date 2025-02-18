@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,7 +65,7 @@ public abstract class KwargsMergeNode extends AbstractKwargsNode {
     static int merge(VirtualFrame frame, int initialStackTop,
                     @Bind("this") Node inliningTarget,
                     @Cached ConcatDictToStorageNode concatNode,
-                    @Cached PRaiseNode.Lazy raise,
+                    @Cached PRaiseNode raise,
                     @Cached InlinedBranchProfile keywordsError1,
                     @Cached InlinedBranchProfile keywordsError2) {
         int stackTop = initialStackTop;
@@ -77,10 +77,10 @@ public abstract class KwargsMergeNode extends AbstractKwargsNode {
             dict.setDictStorage(resultStorage);
         } catch (SameDictKeyException e) {
             keywordsError1.enter(inliningTarget);
-            throw handleSameKey(frame, raise.get(inliningTarget), stackTop, e);
+            throw handleSameKey(frame, inliningTarget, raise, stackTop, e);
         } catch (NonMappingException e) {
             keywordsError2.enter(inliningTarget);
-            throw handleNonMapping(frame, raise.get(inliningTarget), stackTop, e);
+            throw handleNonMapping(frame, inliningTarget, raise, stackTop, e);
         }
         return stackTop;
     }

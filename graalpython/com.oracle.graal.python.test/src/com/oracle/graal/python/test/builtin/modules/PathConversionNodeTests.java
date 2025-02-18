@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFd;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory;
@@ -67,7 +68,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -123,7 +124,7 @@ public class PathConversionNodeTests extends ConversionNodeTests {
     @Test
     public void string() {
         Assert.assertEquals("abc", callAndExpectPath(false, false, T_ABC, false));
-        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createString(T_ABC), false));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, PFactory.createString(PythonLanguage.get(null), T_ABC), false));
     }
 
     @Test
@@ -135,16 +136,16 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void bytes() {
-        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createBytes("abc".getBytes()), true));
-        Assert.assertEquals("abc", callAndExpectPath(false, true, factory().createBytes("abc".getBytes()), true));
-        Assert.assertEquals("abc", callAndExpectPath(true, false, factory().createBytes("abc".getBytes()), true));
-        Assert.assertEquals("abc", callAndExpectPath(true, true, factory().createBytes("abc".getBytes()), true));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, PFactory.createBytes(PythonLanguage.get(null), "abc".getBytes()), true));
+        Assert.assertEquals("abc", callAndExpectPath(false, true, PFactory.createBytes(PythonLanguage.get(null), "abc".getBytes()), true));
+        Assert.assertEquals("abc", callAndExpectPath(true, false, PFactory.createBytes(PythonLanguage.get(null), "abc".getBytes()), true));
+        Assert.assertEquals("abc", callAndExpectPath(true, true, PFactory.createBytes(PythonLanguage.get(null), "abc".getBytes()), true));
     }
 
     @Test
     public void bytesWithZero() {
         expectPythonMessage("ValueError: fun: embedded null character in arg", () -> {
-            call(false, false, factory().createBytes("a\0c".getBytes()));
+            call(false, false, PFactory.createBytes(PythonLanguage.get(null), "a\0c".getBytes()));
         });
     }
 
@@ -221,27 +222,27 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void pintFitsInt() {
-        Assert.assertEquals(42, callAndExpectFd(factory().createInt(BigInteger.valueOf(42))));
+        Assert.assertEquals(42, callAndExpectFd(PFactory.createInt(PythonLanguage.get(null), BigInteger.valueOf(42))));
     }
 
     @Test
     public void pintTooBig() {
         expectPythonMessage("OverflowError: fd is greater than maximum", () -> {
-            call(false, true, factory().createInt(BigInteger.ONE.shiftLeft(100)));
+            call(false, true, PFactory.createInt(PythonLanguage.get(null), BigInteger.ONE.shiftLeft(100)));
         });
     }
 
     @Test
     public void pintTooSmall() {
         expectPythonMessage("OverflowError: fd is less than minimum", () -> {
-            call(false, true, factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
+            call(false, true, PFactory.createInt(PythonLanguage.get(null), BigInteger.ONE.shiftLeft(100).negate()));
         });
     }
 
     @Test
     public void pintForbidden() {
         expectPythonMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not int", () -> {
-            call(true, false, factory().createInt(BigInteger.valueOf(42)));
+            call(true, false, PFactory.createInt(PythonLanguage.get(null), BigInteger.valueOf(42)));
         });
     }
 
@@ -384,10 +385,6 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     protected static Object call(boolean nullable, boolean allowFd, Object arg) {
         return call(arg, PosixModuleBuiltinsFactory.PathConversionNodeGen.create("fun", "arg", nullable, allowFd));
-    }
-
-    private static PythonObjectFactory factory() {
-        return PythonObjectFactory.getUncached();
     }
 
     private static Object evalValue(String source) {

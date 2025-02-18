@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -57,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -77,16 +78,15 @@ public final class PythonCextNamespaceBuiltins {
                         @Shared("itNext") @Cached HashingStorageIteratorNext itNext,
                         @Shared("itKey") @Cached HashingStorageIteratorKey itKey,
                         @Shared("itVal") @Cached HashingStorageIteratorValue itValue,
-                        @Shared("dylib") @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared("dylib") @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib) {
             HashingStorage storage = dict.getDictStorage();
-            return impl(inliningTarget, storage, getIterator, itNext, itKey, itValue, dyLib, factory);
+            return impl(inliningTarget, storage, getIterator, itNext, itKey, itValue, dyLib);
         }
 
         private static Object impl(Node inliningTarget, HashingStorage storage, HashingStorageGetIterator getIterator, HashingStorageIteratorNext itNext,
                         HashingStorageIteratorKey itKey, HashingStorageIteratorValue itValue,
-                        DynamicObjectLibrary dyLib, PythonObjectFactory factory) {
-            PSimpleNamespace ns = factory.createSimpleNamespace();
+                        DynamicObjectLibrary dyLib) {
+            PSimpleNamespace ns = PFactory.createSimpleNamespace(PythonLanguage.get(inliningTarget));
             HashingStorageNodes.HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
             while (itNext.execute(inliningTarget, storage, it)) {
                 Object key = itKey.execute(inliningTarget, storage, it);
@@ -104,10 +104,9 @@ public final class PythonCextNamespaceBuiltins {
                         @Shared("itNext") @Cached HashingStorageIteratorNext itNext,
                         @Shared("itKey") @Cached HashingStorageIteratorKey itKey,
                         @Shared("itVal") @Cached HashingStorageIteratorValue itValue,
-                        @Shared("dylib") @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
-                        @Shared @Cached PythonObjectFactory factory) {
+                        @Shared("dylib") @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib) {
             HashingStorage hs = initNode.execute(null, dict, PKeyword.EMPTY_KEYWORDS);
-            return impl(inliningTarget, hs, getIterator, itNext, itKey, itValue, dyLib, factory);
+            return impl(inliningTarget, hs, getIterator, itNext, itKey, itValue, dyLib);
         }
     }
 

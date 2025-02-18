@@ -72,7 +72,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ThreadLocalAction;
@@ -150,12 +150,11 @@ public final class PythonCextPyStateBuiltins {
         @TruffleBoundary
         static PDict get(
                         @Bind("this") Node inliningTarget,
-                        @Bind PythonContext context,
-                        @Cached PythonObjectFactory factory) {
+                        @Bind PythonContext context) {
             PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
             PDict threadStateDict = threadState.getDict();
             if (threadStateDict == null) {
-                threadStateDict = factory.createDict();
+                threadStateDict = PFactory.createDict(context.getLanguage());
                 threadState.setDict(threadStateDict);
             }
             return threadStateDict;
