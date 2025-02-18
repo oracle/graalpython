@@ -364,62 +364,62 @@ public final class IntBuiltins extends PythonBuiltins {
         public abstract Object execute(int left, int right);
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        static int add(int left, int right) {
+        static int doII(int left, int right) {
             return Math.addExact(left, right);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        static long addLong(long left, long right) {
+        @Specialization(replaces = "doII", rewriteOn = ArithmeticException.class)
+        static long doLL(long left, long right) {
             return Math.addExact(left, right);
         }
 
-        @Specialization
-        static Object addLongWithOverflow(long x, long y,
+        @Specialization(replaces = "doLL")
+        static Object doLLOvf(long x, long y,
                         @Bind PythonLanguage language) {
             /* Inlined version of Math.addExact(x, y) with BigInteger fallback. */
             long r = x + y;
             // HD 2-12 Overflow iff both arguments have the opposite sign of the result
             if (((x ^ r) & (y ^ r)) < 0) {
-                return PFactory.createInt(language, op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+                return PFactory.createInt(language, add(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
             }
             return r;
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        static Object addPIntLongAndNarrow(PInt left, long right) throws OverflowException {
-            return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
+        static Object doPLNarrow(PInt left, long right) throws OverflowException {
+            return PInt.longValueExact(add(left.getValue(), PInt.longToBigInteger(right)));
         }
 
-        @Specialization(replaces = "addPIntLongAndNarrow")
-        static Object addPIntLong(PInt left, long right,
+        @Specialization(replaces = "doPLNarrow")
+        static Object doPL(PInt left, long right,
                         @Bind PythonLanguage language) {
-            return PFactory.createInt(language, op(left.getValue(), PInt.longToBigInteger(right)));
+            return PFactory.createInt(language, add(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        static Object addLongPIntAndNarrow(long left, PInt right) throws OverflowException {
-            return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
+        static Object doLPNarrow(long left, PInt right) throws OverflowException {
+            return PInt.longValueExact(add(PInt.longToBigInteger(left), right.getValue()));
         }
 
-        @Specialization(replaces = "addLongPIntAndNarrow")
-        static Object addLongPInt(long left, PInt right,
+        @Specialization(replaces = "doLPNarrow")
+        static Object doLP(long left, PInt right,
                         @Bind PythonLanguage language) {
-            return PFactory.createInt(language, op(PInt.longToBigInteger(left), right.getValue()));
+            return PFactory.createInt(language, add(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        static Object addPIntPIntAndNarrow(PInt left, PInt right) throws OverflowException {
-            return PInt.longValueExact(op(left.getValue(), right.getValue()));
+        static Object doPPNarrow(PInt left, PInt right) throws OverflowException {
+            return PInt.longValueExact(add(left.getValue(), right.getValue()));
         }
 
-        @Specialization(replaces = "addPIntPIntAndNarrow")
-        static Object addPIntPInt(PInt left, PInt right,
+        @Specialization(replaces = "doPPNarrow")
+        static Object doPP(PInt left, PInt right,
                         @Bind PythonLanguage language) {
-            return PFactory.createInt(language, op(left.getValue(), right.getValue()));
+            return PFactory.createInt(language, add(left.getValue(), right.getValue()));
         }
 
         @TruffleBoundary
-        static BigInteger op(BigInteger left, BigInteger right) {
+        public static BigInteger add(BigInteger left, BigInteger right) {
             return left.add(right);
         }
 

@@ -46,7 +46,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -68,7 +67,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -80,24 +78,19 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PySequenceConcatNode extends PNodeWithContext {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
 
-    @NeverDefault
-    protected static SequenceStorageNodes.ConcatNode createConcat() {
-        return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
-    }
-
     @Specialization(guards = {"isBuiltinList(left)", "isBuiltinList(right)"})
-    static PList doPList(PList left, PList right,
-                    @Shared @Cached(value = "createConcat()", inline = false) SequenceStorageNodes.ConcatNode concatNode,
+    static PList doPList(Node inliningTarget, PList left, PList right,
+                    @Shared @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
                     @Bind PythonLanguage language) {
-        SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        SequenceStorage newStore = concatNode.execute(inliningTarget, left.getSequenceStorage(), right.getSequenceStorage());
         return PFactory.createList(language, newStore);
     }
 
     @Specialization(guards = {"isBuiltinTuple(left)", "isBuiltinTuple(right)"})
-    static PTuple doTuple(PTuple left, PTuple right,
-                    @Shared @Cached(value = "createConcat()", inline = false) SequenceStorageNodes.ConcatNode concatNode,
+    static PTuple doTuple(Node inliningTarget, PTuple left, PTuple right,
+                    @Shared @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
                     @Bind PythonLanguage language) {
-        SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        SequenceStorage concatenated = concatNode.execute(inliningTarget, left.getSequenceStorage(), right.getSequenceStorage());
         return PFactory.createTuple(language, concatenated);
     }
 

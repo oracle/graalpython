@@ -749,7 +749,7 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached PyListCheckNode isListNode,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached GetClassForNewListNode getClassForNewListNode,
-                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
@@ -759,14 +759,9 @@ public final class ListBuiltins extends PythonBuiltins {
 
             var leftStorage = getStorageNode.execute(inliningTarget, left);
             var rightStorage = getStorageNode.execute(inliningTarget, right);
-            SequenceStorage newStore = concatNode.execute(leftStorage, rightStorage);
+            SequenceStorage newStore = concatNode.execute(inliningTarget, leftStorage, rightStorage);
             Object newClass = getClassForNewListNode.execute(inliningTarget, left);
             return PFactory.createList(language, newClass, getInstanceShape.execute(newClass), newStore);
-        }
-
-        @NeverDefault
-        protected static SequenceStorageNodes.ConcatNode createConcat() {
-            return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
         }
     }
 

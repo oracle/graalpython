@@ -2185,6 +2185,7 @@ public abstract class SequenceStorageNodes {
     }
 
     @SuppressWarnings("truffle-inlining")       // footprint reduction 68 -> 49
+    @GenerateUncached
     public abstract static class ConcatBaseNode extends SequenceStorageBaseNode {
 
         public abstract SequenceStorage execute(SequenceStorage dest, SequenceStorage left, SequenceStorage right);
@@ -2400,18 +2401,37 @@ public abstract class SequenceStorageNodes {
         }
 
         @NeverDefault
-        public static ConcatNode create(TruffleString msg) {
-            return create(() -> NoGeneralizationCustomMessageNode.create(msg), MemoryError);
-        }
-
-        @NeverDefault
-        public static ConcatNode create(Supplier<GeneralizationNode> genNodeProvider) {
-            return create(genNodeProvider, MemoryError);
-        }
-
-        @NeverDefault
         private static ConcatNode create(Supplier<GeneralizationNode> genNodeProvider, PythonBuiltinClassType errorForOverflow) {
             return ConcatNodeGen.create(genNodeProvider, errorForOverflow);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class ConcatListOrTupleNode extends Node {
+
+        public abstract SequenceStorage execute(Node inliningTarget, SequenceStorage left, SequenceStorage right);
+
+        @Specialization
+        static SequenceStorage concat(Node inliningTarget, SequenceStorage left, SequenceStorage right,
+                        @Cached CreateEmpty2Node create,
+                        @Cached(inline = false) ConcatBaseNode concat,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                int len1 = left.length();
+                int len2 = right.length();
+                int destlen = PythonUtils.addExact(len1, len2);
+                SequenceStorage empty = create.execute(inliningTarget, left, right, destlen);
+                empty.setNewLength(destlen);
+                try {
+                    return concat.execute(empty, left, right);
+                } catch (SequenceStoreException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } catch (OutOfMemoryError | OverflowException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
         }
     }
 
@@ -3099,6 +3119,23 @@ public abstract class SequenceStorageNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class CreateEmpty2Node extends SequenceStorageBaseNode {
+
+        public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, SequenceStorage s1, SequenceStorage s2, int cap);
+
+        @Specialization
+        static ArrayBasedSequenceStorage doIt(Node inliningTarget, SequenceStorage s1, SequenceStorage s2, int cap,
+                        @Cached GetElementType getElementType1,
+                        @Cached GetElementType getElementType2,
+                        @Cached CreateEmptyForTypesNode create) {
+            return create.execute(inliningTarget, getElementType1.execute(inliningTarget, s1), getElementType2.execute(inliningTarget, s2), cap);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
     abstract static class CreateEmptyForTypeNode extends SequenceStorageBaseNode {
 
         public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, StorageType type, int cap);
@@ -3131,6 +3168,34 @@ public abstract class SequenceStorageNodes {
         @Fallback
         static ObjectSequenceStorage doObject(@SuppressWarnings("unused") StorageType type, int cap) {
             return new ObjectSequenceStorage(cap);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class CreateEmptyForTypesNode extends SequenceStorageBaseNode {
+
+        public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, StorageType type1, StorageType type2, int cap);
+
+        @Specialization(guards = "type1 == type2")
+        static ArrayBasedSequenceStorage doSame(Node inliningTarget, StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap,
+                        @Cached CreateEmptyForTypeNode create) {
+            return create.execute(inliningTarget, type1, cap);
+        }
+
+        @Specialization(guards = "generalizeToLong(type1, type2)")
+        static LongSequenceStorage doLong(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap) {
+            return new LongSequenceStorage(cap);
+        }
+
+        @Fallback
+        static ObjectSequenceStorage doObject(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap) {
+            return new ObjectSequenceStorage(cap);
+        }
+
+        protected static boolean generalizeToLong(StorageType type1, StorageType type2) {
+            return isInt(type1) && isLong(type2) || isLong(type1) && isInt(type2);
         }
     }
 

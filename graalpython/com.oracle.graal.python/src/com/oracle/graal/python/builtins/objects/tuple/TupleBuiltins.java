@@ -62,8 +62,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CmpNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ConcatNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
@@ -456,15 +454,12 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode checkRight,
                         @Cached GetTupleStorage getLeft,
                         @Cached GetTupleStorage getRight,
-                        @Cached("createConcat()") ConcatNode concatNode,
+                        @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
                         @Bind PythonLanguage language) {
-            SequenceStorage concatenated = concatNode.execute(getLeft.execute(inliningTarget, left), getRight.execute(inliningTarget, right));
+            SequenceStorage leftStorage = getLeft.execute(inliningTarget, left);
+            SequenceStorage rightStorage = getRight.execute(inliningTarget, right);
+            SequenceStorage concatenated = concatNode.execute(inliningTarget, leftStorage, rightStorage);
             return PFactory.createTuple(language, concatenated);
-        }
-
-        @NeverDefault
-        protected static SequenceStorageNodes.ConcatNode createConcat() {
-            return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
         }
 
         @Fallback
