@@ -53,17 +53,17 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberInplaceXorNode extends PyNumberXorBaseNode {
+public abstract class PyNumberInPlaceAndNode extends PyNumberAndBaseNode {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_XOR, "^=");
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_AND, "&=");
     }
 
     @NeverDefault
-    public static PyNumberInplaceXorNode create() {
-        return PyNumberInplaceXorNodeGen.create();
+    public static PyNumberInPlaceAndNode create() {
+        return PyNumberInPlaceAndNodeGen.create();
     }
 }

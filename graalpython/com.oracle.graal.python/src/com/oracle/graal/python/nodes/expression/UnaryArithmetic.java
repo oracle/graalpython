@@ -62,7 +62,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -111,7 +110,7 @@ public enum UnaryArithmetic {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callUnaryNode = insert(unaryOperator.create());
             }
-            return callUnaryNode.executeCached(frame, PArguments.getArgument(frame, 0));
+            return callUnaryNode.execute(frame, PArguments.getArgument(frame, 0));
         }
     }
 
@@ -157,12 +156,6 @@ public enum UnaryArithmetic {
         protected GenericUnaryArithmeticNode(TruffleString specialMethodName) {
             this.specialMethodName = specialMethodName;
         }
-
-        public final Object execute(VirtualFrame frame, Node inliningTarget, Object value) {
-            return execute(frame, value);
-        }
-
-        protected abstract Object execute(VirtualFrame frame, Object value);
 
         @Specialization
         public static Object doGeneric(VirtualFrame frame, Object arg,

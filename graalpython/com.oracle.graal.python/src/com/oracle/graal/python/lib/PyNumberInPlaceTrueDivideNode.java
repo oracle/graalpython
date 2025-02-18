@@ -51,17 +51,17 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-public abstract class PyNumberInplaceSubtractNode extends PyNumberSubtractBaseNode {
+public abstract class PyNumberInPlaceTrueDivideNode extends PyNumberTrueDivideBaseNode {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_SUBTRACT, "-=");
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_TRUE_DIVIDE, "/=");
     }
 
     @NeverDefault
-    public static PyNumberInplaceSubtractNode create() {
-        return PyNumberInplaceSubtractNodeGen.create();
+    public static PyNumberInPlaceTrueDivideNode create() {
+        return PyNumberInPlaceTrueDivideNodeGen.create();
     }
 }

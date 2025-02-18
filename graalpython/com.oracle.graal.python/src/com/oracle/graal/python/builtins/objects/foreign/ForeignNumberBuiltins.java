@@ -269,7 +269,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                         @Cached UnboxNode unboxNode) {
             Object unboxed = unboxNode.execute(inliningTarget, value);
             if (unboxed != null) {
-                return op.executeCached(frame, unboxed);
+                return op.execute(frame, unboxed);
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }

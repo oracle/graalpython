@@ -53,7 +53,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberInplaceOrNode extends PyNumberOrBaseNode {
+public abstract class PyNumberInPlaceOrNode extends PyNumberOrBaseNode {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
@@ -63,7 +63,7 @@ public abstract class PyNumberInplaceOrNode extends PyNumberOrBaseNode {
     }
 
     @NeverDefault
-    public static PyNumberInplaceOrNode create() {
-        return PyNumberInplaceOrNodeGen.create();
+    public static PyNumberInPlaceOrNode create() {
+        return PyNumberInPlaceOrNodeGen.create();
     }
 }

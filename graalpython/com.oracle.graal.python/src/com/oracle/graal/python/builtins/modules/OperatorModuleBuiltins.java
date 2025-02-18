@@ -54,8 +54,8 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
-import com.oracle.graal.python.lib.PySequenceConcat;
-import com.oracle.graal.python.lib.PySequenceInplaceConcat;
+import com.oracle.graal.python.lib.PySequenceConcatNode;
+import com.oracle.graal.python.lib.PySequenceInPlaceConcatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -114,7 +114,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doObject(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Cached PySequenceConcat concatNode) {
+                        @Cached PySequenceConcatNode concatNode) {
             return concatNode.execute(frame, inliningTarget, left, right);
         }
     }
@@ -125,7 +125,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doObject(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Cached PySequenceInplaceConcat concatNode) {
+                        @Cached PySequenceInPlaceConcatNode concatNode) {
             return concatNode.execute(frame, inliningTarget, left, right);
         }
     }

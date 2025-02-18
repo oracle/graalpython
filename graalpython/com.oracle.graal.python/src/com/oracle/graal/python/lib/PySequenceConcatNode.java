@@ -77,7 +77,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateInline
 @GenerateCached(false)
-public abstract class PySequenceConcat extends PNodeWithContext {
+public abstract class PySequenceConcatNode extends PNodeWithContext {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
 
     @NeverDefault

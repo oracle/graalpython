@@ -51,17 +51,17 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-public abstract class PyNumberInplaceRshiftNode extends PyNumberRshiftBaseNode {
+public abstract class PyNumberInPlaceRemainderNode extends PyNumberRemainderBaseNode {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_RSHIFT, ">>=");
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_REMAINDER, "%=");
     }
 
     @NeverDefault
-    public static PyNumberInplaceRshiftNode create() {
-        return PyNumberInplaceRshiftNodeGen.create();
+    public static PyNumberInPlaceRemainderNode create() {
+        return PyNumberInPlaceRemainderNodeGen.create();
     }
 }

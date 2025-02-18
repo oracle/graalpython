@@ -61,7 +61,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline(false)
-public abstract class PyNumberInplaceMultiplyNode extends PyNumberMultiplyBaseNode {
+public abstract class PyNumberInPlaceMultiplyNode extends PyNumberMultiplyBaseNode {
 
     @Fallback
     @InliningCutoff
@@ -113,7 +113,7 @@ public abstract class PyNumberInplaceMultiplyNode extends PyNumberMultiplyBaseNo
     }
 
     @NeverDefault
-    public static PyNumberInplaceMultiplyNode create() {
-        return PyNumberInplaceMultiplyNodeGen.create();
+    public static PyNumberInPlaceMultiplyNode create() {
+        return PyNumberInPlaceMultiplyNodeGen.create();
     }
 }

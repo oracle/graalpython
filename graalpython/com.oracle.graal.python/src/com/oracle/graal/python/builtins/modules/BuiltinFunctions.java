@@ -333,7 +333,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object absObject(VirtualFrame frame, Object object,
                         @Cached PyNumberAbsoluteNode absoluteNode) {
-            return absoluteNode.executeCached(frame, object);
+            return absoluteNode.execute(frame, object);
         }
     }
 

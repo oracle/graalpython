@@ -63,7 +63,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline
 @GenerateCached(false)
-public abstract class PySequenceInplaceConcat extends PNodeWithContext {
+public abstract class PySequenceInPlaceConcatNode extends PNodeWithContext {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
 
     @Specialization

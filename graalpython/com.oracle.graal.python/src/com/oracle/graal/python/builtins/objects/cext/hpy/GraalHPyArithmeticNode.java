@@ -83,7 +83,7 @@ public abstract class GraalHPyArithmeticNode {
 
         @Override
         public Object execute(Object object) {
-            return opNode.executeCached(null, object);
+            return opNode.execute(null, object);
         }
     }
 

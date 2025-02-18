@@ -22,37 +22,6 @@
 #include <stddef.h>               // offsetof()
 
 
-// GraalPy-specific
-typedef enum e_binop {
-    ADD=0, SUB, MUL, TRUEDIV, LSHIFT, RSHIFT, OR, AND, XOR, FLOORDIV, MOD,
-    INPLACE_OFFSET, MATRIX_MUL
-} BinOp;
-
-// GraalPy-specific
-typedef enum e_unaryop {
-	POS=0, NEG, INVERT
-} UnaryOp;
-
-// GraalPy-specific
-static PyObject *
-do_unaryop(PyObject *v, UnaryOp unaryop)
-{
-    return GraalPyTruffleNumber_UnaryOp(v, (int) unaryop);
-}
-
-// GraalPy-specific
-MUST_INLINE static PyObject *
-do_binop(PyObject *v, PyObject *w, BinOp binop)
-{
-    return GraalPyTruffleNumber_BinOp(v, w, (int) binop);
-}
-
-// GraalPy-specific
-MUST_INLINE static PyObject *
-do_inplace_binop(PyObject *v, PyObject *w, BinOp binop)
-{
-    return GraalPyTruffleNumber_InPlaceBinOp(v, w, (int) binop);
-}
 
 /* Shorthands to return certain errors */
 
@@ -1117,16 +1086,26 @@ BINARY_FUNC(PyNumber_Lshift, nb_lshift, "<<")
 BINARY_FUNC(PyNumber_Rshift, nb_rshift, ">>")
 BINARY_FUNC(PyNumber_Subtract, nb_subtract, "-")
 BINARY_FUNC(PyNumber_Divmod, nb_divmod, "divmod()")
-#endif // GraalPy change
 
 PyObject *
 PyNumber_Add(PyObject *v, PyObject *w)
 {
-    // GraalPy change: different implementation
-    return do_binop(v, w, ADD);
+    PyObject *result = BINARY_OP1(v, w, NB_SLOT(nb_add), "+");
+    if (result != Py_NotImplemented) {
+        return result;
+    }
+    Py_DECREF(result);
+
+    PySequenceMethods *m = Py_TYPE(v)->tp_as_sequence;
+    if (m && m->sq_concat) {
+        result = (*m->sq_concat)(v, w);
+        assert(_Py_CheckSlotResult(v, "+", result != NULL));
+        return result;
+    }
+
+    return binop_type_error(v, w, "+");
 }
 
-#if 0 // GraalPy change
 static PyObject *
 sequence_repeat(ssizeargfunc repeatfunc, PyObject *seq, PyObject *n)
 {
@@ -1145,44 +1124,50 @@ sequence_repeat(ssizeargfunc repeatfunc, PyObject *seq, PyObject *n)
     assert(_Py_CheckSlotResult(seq, "*", res != NULL));
     return res;
 }
-#endif // GraalPy change
 
 PyObject *
 PyNumber_Multiply(PyObject *v, PyObject *w)
 {
-    // GraalPy change: different implementation
-    return do_binop(v, w, MUL);
+    PyObject *result = BINARY_OP1(v, w, NB_SLOT(nb_multiply), "*");
+    if (result == Py_NotImplemented) {
+        PySequenceMethods *mv = Py_TYPE(v)->tp_as_sequence;
+        PySequenceMethods *mw = Py_TYPE(w)->tp_as_sequence;
+        Py_DECREF(result);
+        if  (mv && mv->sq_repeat) {
+            return sequence_repeat(mv->sq_repeat, v, w);
+        }
+        else if (mw && mw->sq_repeat) {
+            return sequence_repeat(mw->sq_repeat, w, v);
+        }
+        result = binop_type_error(v, w, "*");
+    }
+    return result;
 }
 
 PyObject *
 PyNumber_MatrixMultiply(PyObject *v, PyObject *w)
 {
-    // GraalPy change: different implementation
-    return do_binop(v, w, MATRIX_MUL);
+    return binary_op(v, w, NB_SLOT(nb_matrix_multiply), "@");
 }
 
 PyObject *
 PyNumber_FloorDivide(PyObject *v, PyObject *w)
 {
-    // GraalPy change: different implementation
-    return do_binop(v, w, FLOORDIV);
+    return binary_op(v, w, NB_SLOT(nb_floor_divide), "//");
 }
 
 PyObject *
 PyNumber_TrueDivide(PyObject *v, PyObject *w)
 {
-    // GraalPy change: different implementation
-    return do_binop(v, w, TRUEDIV);
+    return binary_op(v, w, NB_SLOT(nb_true_divide), "/");
 }
 
 PyObject *
 PyNumber_Remainder(PyObject *v, PyObject *w)
 {
-    // GraalPy change: different implementation
-    return do_binop(v, w, MOD);
+    return binary_op(v, w, NB_SLOT(nb_remainder), "%");
 }
 
-#if 0 // GraalPy change
 PyObject *
 PyNumber_Power(PyObject *v, PyObject *w, PyObject *z)
 {
@@ -1289,23 +1274,59 @@ INPLACE_BINOP(PyNumber_InPlaceMatrixMultiply, nb_inplace_matrix_multiply, nb_mat
 INPLACE_BINOP(PyNumber_InPlaceFloorDivide, nb_inplace_floor_divide, nb_floor_divide, "//=")
 INPLACE_BINOP(PyNumber_InPlaceTrueDivide, nb_inplace_true_divide, nb_true_divide,  "/=")
 INPLACE_BINOP(PyNumber_InPlaceRemainder, nb_inplace_remainder, nb_remainder, "%=")
-#endif // GraalPy change
 
 PyObject *
 PyNumber_InPlaceAdd(PyObject *v, PyObject *w)
 {
-    // GraalPy change: different implementation
-	return do_inplace_binop(v, w, ADD);
+    PyObject *result = BINARY_IOP1(v, w, NB_SLOT(nb_inplace_add),
+                                   NB_SLOT(nb_add), "+=");
+    if (result == Py_NotImplemented) {
+        PySequenceMethods *m = Py_TYPE(v)->tp_as_sequence;
+        Py_DECREF(result);
+        if (m != NULL) {
+            binaryfunc func = m->sq_inplace_concat;
+            if (func == NULL)
+                func = m->sq_concat;
+            if (func != NULL) {
+                result = func(v, w);
+                assert(_Py_CheckSlotResult(v, "+=", result != NULL));
+                return result;
+            }
+        }
+        result = binop_type_error(v, w, "+=");
+    }
+    return result;
 }
 
 PyObject *
 PyNumber_InPlaceMultiply(PyObject *v, PyObject *w)
 {
-    // GraalPy change: different implementation
-	return do_inplace_binop(v, w, MUL);
+    PyObject *result = BINARY_IOP1(v, w, NB_SLOT(nb_inplace_multiply),
+                                   NB_SLOT(nb_multiply), "*=");
+    if (result == Py_NotImplemented) {
+        ssizeargfunc f = NULL;
+        PySequenceMethods *mv = Py_TYPE(v)->tp_as_sequence;
+        PySequenceMethods *mw = Py_TYPE(w)->tp_as_sequence;
+        Py_DECREF(result);
+        if (mv != NULL) {
+            f = mv->sq_inplace_repeat;
+            if (f == NULL)
+                f = mv->sq_repeat;
+            if (f != NULL)
+                return sequence_repeat(f, v, w);
+        }
+        else if (mw != NULL) {
+            /* Note that the right hand operand should not be
+             * mutated in this case so sq_inplace_repeat is not
+             * used. */
+            if (mw->sq_repeat)
+                return sequence_repeat(mw->sq_repeat, w, v);
+        }
+        result = binop_type_error(v, w, "*=");
+    }
+    return result;
 }
 
-# if 0 // GraalPy change
 PyObject *
 PyNumber_InPlacePower(PyObject *v, PyObject *w, PyObject *z)
 {
@@ -1318,7 +1339,6 @@ _PyNumber_InPlacePowerNoMod(PyObject *lhs, PyObject *rhs)
 {
     return PyNumber_InPlacePower(lhs, rhs, Py_None);
 }
-#endif // GraalPy change
 
 
 /* Unary operators and functions */
@@ -1326,25 +1346,54 @@ _PyNumber_InPlacePowerNoMod(PyObject *lhs, PyObject *rhs)
 PyObject *
 PyNumber_Negative(PyObject *o)
 {
-    // GraalPy change: different implementation
-    return do_unaryop(o, NEG);
+    if (o == NULL) {
+        return null_error();
+    }
+
+    PyNumberMethods *m = Py_TYPE(o)->tp_as_number;
+    if (m && m->nb_negative) {
+        PyObject *res = (*m->nb_negative)(o);
+        assert(_Py_CheckSlotResult(o, "__neg__", res != NULL));
+        return res;
+    }
+
+    return type_error("bad operand type for unary -: '%.200s'", o);
 }
 
 PyObject *
 PyNumber_Positive(PyObject *o)
 {
-    // GraalPy change: different implementation
-    return do_unaryop(o, POS);
+    if (o == NULL) {
+        return null_error();
+    }
+
+    PyNumberMethods *m = Py_TYPE(o)->tp_as_number;
+    if (m && m->nb_positive) {
+        PyObject *res = (*m->nb_positive)(o);
+        assert(_Py_CheckSlotResult(o, "__pos__", res != NULL));
+        return res;
+    }
+
+    return type_error("bad operand type for unary +: '%.200s'", o);
 }
 
 PyObject *
 PyNumber_Invert(PyObject *o)
 {
-    // GraalPy change: different implementation
-    return do_unaryop(o, INVERT);
+    if (o == NULL) {
+        return null_error();
+    }
+
+    PyNumberMethods *m = Py_TYPE(o)->tp_as_number;
+    if (m && m->nb_invert) {
+        PyObject *res = (*m->nb_invert)(o);
+        assert(_Py_CheckSlotResult(o, "__invert__", res != NULL));
+        return res;
+    }
+
+    return type_error("bad operand type for unary ~: '%.200s'", o);
 }
 
-# if 0 // GraalPy change
 PyObject *
 PyNumber_Absolute(PyObject *o)
 {
@@ -2963,103 +3012,6 @@ _Py_FreeCharPArray(char *const array[])
     PyMem_Free((void*)array);
 }
 #endif // GraalPy change
-
-// GraalPy note: The following functions are declared in CPython via macros, so we declare them separate here
-PyObject *
-PyNumber_Subtract(PyObject *v, PyObject *w)
-{
-	return do_binop(v, w, SUB);
-}
-
-PyObject *
-PyNumber_Lshift(PyObject *v, PyObject *w)
-{
-	return do_binop(v, w, LSHIFT);
-}
-
-PyObject *
-PyNumber_Rshift(PyObject *v, PyObject *w)
-{
-	return do_binop(v, w, RSHIFT);
-}
-
-PyObject *
-PyNumber_Or(PyObject *v, PyObject *w)
-{
-	return do_binop(v, w, OR);
-}
-
-PyObject *
-PyNumber_And(PyObject *v, PyObject *w)
-{
-	return do_binop(v, w, AND);
-}
-
-PyObject *
-PyNumber_Xor(PyObject *v, PyObject *w)
-{
-	return do_binop(v, w, XOR);
-}
-
-PyObject *
-PyNumber_InPlaceSubtract(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, SUB);
-}
-
-PyObject *
-PyNumber_InPlaceMatrixMultiply(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, MATRIX_MUL);
-}
-
-PyObject *
-PyNumber_InPlaceFloorDivide(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, FLOORDIV);
-}
-
-PyObject *
-PyNumber_InPlaceTrueDivide(PyObject *v, PyObject *w)
-{
-    return do_inplace_binop(v, w, TRUEDIV);
-}
-
-PyObject*
-PyNumber_InPlaceRemainder(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, MOD);
-}
-
-PyObject*
-PyNumber_InPlaceLshift(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, LSHIFT);
-}
-
-PyObject*
-PyNumber_InPlaceRshift(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, RSHIFT);
-}
-
-PyObject*
-PyNumber_InPlaceAnd(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, AND);
-}
-
-PyObject*
-PyNumber_InPlaceXor(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, XOR);
-}
-
-PyObject*
-PyNumber_InPlaceOr(PyObject *v, PyObject *w)
-{
-	return do_inplace_binop(v, w, OR);
-}
 
 // GraalPy additions
 PyObject **
