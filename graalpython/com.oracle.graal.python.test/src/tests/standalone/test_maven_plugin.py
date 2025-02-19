@@ -115,6 +115,8 @@ class MavenPluginTest(util.BuildToolTestBase):
             cmd = mvnw_cmd + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Virtual filesystem is deployed to default resources directory", out, contains=use_default_vfs_path)
+            util.check_ouput("This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem.", out, contains=use_default_vfs_path)
 
             # check fileslist.txt
             fl_path = os.path.join(target_dir, "target", "classes", vfs_prefix, "fileslist.txt")

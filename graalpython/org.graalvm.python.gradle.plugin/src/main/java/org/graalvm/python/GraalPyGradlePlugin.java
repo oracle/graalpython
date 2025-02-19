@@ -117,11 +117,11 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
 
             if (extension.getPythonResourcesDirectory().isPresent() && extension.getExternalDirectory().isPresent()) {
                 throw new GradleException(
-                        "Cannot set both 'externalDirectory' and 'resourcesDirectory' at the same time. " +
+                        "Cannot set both 'externalDirectory' and 'resourceDirectory' at the same time. " +
                                 "New property 'externalDirectory' is a replacement for deprecated 'pythonResourcesDirectory'. " +
                                 "If you want to deploy the virtual environment into physical filesystem, use 'externalDirectory'. " +
                                 "The deployment of the external directory alongside the application is not handled by the GraalPy Maven plugin in such case." +
-                                "If you wish to bundle the virtual filesystem in Java resources, use 'resourcesDirectory'. " +
+                                "If you wish to bundle the virtual filesystem in Java resources, use 'resourceDirectory'. " +
                                 "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ");
             }
 
@@ -132,9 +132,9 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
             // Run the vfsFilesListTask conditionally only if 'externalDirectory' is not set
             if (!extension.getPythonResourcesDirectory().isPresent() && !extension.getExternalDirectory().isPresent()) {
                 if (!extension.getResourceDirectory().isPresent()) {
-                    proj.getLogger().info(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
+                    proj.getLogger().warn(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
                                     "This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem. " +
-                                    "Consider adding `resourcesDirectory = \"GRAALPY-VFS/${groupId}/${artifactId}\"` to your build.gradle script " +
+                                    "Consider adding `resourceDirectory = \"GRAALPY-VFS/${groupId}/${artifactId}\"` to your build.gradle script " +
                                     "(replace the placeholders with values specific to your project), " +
                                     "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory." +
                                     "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ",
@@ -192,7 +192,7 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
                 t.getLogger().warn("The GraalPy plugin pythonHome configuration setting was deprecated and has no effect anymore.\n" +
                         "For execution in jvm mode, the python language home is always available.\n" +
                         "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
-                        "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources documentation.");
+                        "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources.");
             }
             t.getPackages().set(extension.getPackages());
 
