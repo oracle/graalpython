@@ -88,6 +88,7 @@ import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
@@ -98,8 +99,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -3300,7 +3299,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
      */
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic({BinaryArithmetic.class, PGuards.class})
+    @ImportStatic(PGuards.class)
     abstract static class SplitLongToSAndNsNode extends ConvertToTimespecBaseNode {
 
         private static final long BILLION = 1000000000;
@@ -3318,12 +3317,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isInteger(value)"})
         static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
-                        @Cached(value = "DivMod.create()", inline = false) BinaryOpNode callDivmod,
+                        @Cached PyNumberDivmodNode divmodNode,
                         @Cached LenNode lenNode,
                         @Cached(value = "createNotNormalized()", inline = false) GetItemNode getItemNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode) {
-            Object divmod = callDivmod.execute(frame, value, BILLION);
+            Object divmod = divmodNode.execute(frame, inliningTarget, value, BILLION);
             if (!PGuards.isPTuple(divmod) || lenNode.execute(inliningTarget, (PSequence) divmod) != 2) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
             }

@@ -56,6 +56,7 @@ import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -65,9 +66,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -2469,14 +2468,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class ProdNode extends PythonBuiltinNode {
 
         @Child private LookupAndCallUnaryNode callNextNode = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next);
-        @Child private BinaryOpNode mul = BinaryArithmetic.Mul.create();
 
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object iterable, Object startIn,
                         @Bind("this") Node inliningTarget,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached InlinedConditionProfile startIsNoValueProfile,
-                        @Cached PyObjectGetIter getIter) {
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyNumberMultiplyNode multiplyNode) {
             Object start = startIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(startIn)) ? 1 : startIn;
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             Object value = start;
@@ -2488,7 +2487,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(inliningTarget, errorProfile);
                     return value;
                 }
-                value = mul.execute(frame, value, nextValue);
+                value = multiplyNode.execute(frame, inliningTarget, value, nextValue);
             }
         }
     }
