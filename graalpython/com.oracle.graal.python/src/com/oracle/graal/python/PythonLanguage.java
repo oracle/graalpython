@@ -312,7 +312,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
 
-    private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
+    public static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
 
     private static final LanguageReference<PythonLanguage> REFERENCE = LanguageReference.create(PythonLanguage.class);
 
@@ -671,6 +671,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     EnumSet<FutureFeature> futureFeatures) {
         RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
+            if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
+                LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
+            }
             Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;

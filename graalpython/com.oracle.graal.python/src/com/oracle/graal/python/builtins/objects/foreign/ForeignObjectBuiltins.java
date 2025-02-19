@@ -46,15 +46,21 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -68,7 +74,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -83,6 +88,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -268,29 +274,54 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    // TODO dir(foreign) should list both foreign object members and attributes from class
     @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object doIt(Object object,
+        protected Object doIt(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @CachedLibrary(limit = "3") InteropLibrary arrayInterop,
+                        @CachedLibrary(limit = "3") InteropLibrary stringInterop,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached GilNode gil,
-                        @Cached InlinedConditionProfile profile) {
+                        @Cached InlinedConditionProfile profile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeBuiltins.DirNode typeDirNode,
+                        @Cached SetNodes.AddNode addNode,
+                        @Cached(inline = false) ListBuiltins.ListSortNode sortNode,
+                        @Cached(inline = false) ListNodes.ConstructListNode constructListNode) {
+            // Inspired by ObjectBuiltins.DirNode
+            var pythonClass = getClassNode.execute(inliningTarget, object);
+            PSet attributes = typeDirNode.execute(frame, pythonClass);
+
             if (profile.profile(inliningTarget, lib.hasMembers(object))) {
+                final Object members;
                 gil.release(true);
                 try {
-                    return lib.getMembers(object);
+                    members = lib.getMembers(object);
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("foreign object claims to have members, but does not return them");
+                    throw CompilerDirectives.shouldNotReachHere("foreign object claims to have members, but does not return them");
                 } finally {
                     gil.acquire();
                 }
-            } else {
-                return PFactory.createList(PythonLanguage.get(inliningTarget));
+
+                try {
+                    long size = arrayInterop.getArraySize(members);
+                    for (int i = 0; i < size; i++) {
+                        TruffleString memberString = stringInterop.asTruffleString(arrayInterop.readArrayElement(members, i));
+                        memberString = switchEncodingNode.execute(memberString, TS_ENCODING);
+                        addNode.execute(frame, attributes, memberString);
+                    }
+                } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
             }
+
+            // set to sorted list, like in PyObjectDir
+            PList list = constructListNode.execute(frame, attributes);
+            sortNode.execute(frame, list);
+            return list;
         }
     }
 

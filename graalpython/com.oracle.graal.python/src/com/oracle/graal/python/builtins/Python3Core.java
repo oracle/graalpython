@@ -1318,6 +1318,8 @@ public abstract class Python3Core {
             LOGGER.log(Level.FINE, () -> "import '" + s + "' # <frozen>");
             return;
         }
+
+        LOGGER.log(Level.FINE, () -> "import '" + s + "'");
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
             return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));

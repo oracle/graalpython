@@ -771,6 +771,14 @@ class InteropTests(unittest.TestCase):
 
         assert il == [1, 2, 3] # unchanged
 
+    def test_dir(self):
+        from java.util import ArrayList
+
+        l = ArrayList()
+        self.assertIn('addAll', dir(l)) # a Java method
+        self.assertIn('extend', dir(l)) # a Python method
+        self.assertEqual(sorted(dir(l)), dir(l))
+
     def test_java_list(self):
         from java.util import ArrayList
 
