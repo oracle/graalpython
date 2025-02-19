@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -72,6 +73,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -80,14 +82,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateCached(false)
 @ImportStatic(PGuards.class)
+@TypeSystemReference(PythonIntegerTypes.class)
 abstract class PyNumberAddBaseNode extends BinaryOpNode {
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
      * in IntBuiltins, but it additionally needs to check PInts for only builtin ints
      */
-    // XXX this could benefit from the type system conversions, but that would also unpack PFloat
-    // which we don't want
 
     @Specialization(rewriteOn = ArithmeticException.class)
     static int doII(int left, int right) {
@@ -161,16 +162,6 @@ abstract class PyNumberAddBaseNode extends BinaryOpNode {
 
     @Specialization
     public static double doLD(long left, double right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doDI(double left, int right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doID(int left, double right) {
         return left + right;
     }
 }

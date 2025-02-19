@@ -76,7 +76,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -88,7 +87,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -104,7 +102,6 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "memlimit", "filters"})
     @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "LZMAModuleBuiltins.FORMAT_AUTO", useDefaultForNone = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
@@ -195,7 +192,6 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
     @Builtin(name = "decompress", minNumOfPositionalArgs = 2, parameterNames = {"$self", "$data", "max_length"}, needsFrame = true)
     @ArgumentClinic(name = "max_length", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DecompressNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
@@ -236,7 +232,6 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "eof", minNumOfPositionalArgs = 1, parameterNames = {"self"}, isGetter = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EofNode extends PythonUnaryBuiltinNode {
 
         @Specialization
@@ -248,7 +243,6 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "needs_input", minNumOfPositionalArgs = 1, parameterNames = {"self"}, isGetter = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeedsInputNode extends PythonUnaryBuiltinNode {
 
         @Specialization
@@ -260,7 +254,6 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "check", minNumOfPositionalArgs = 1, parameterNames = {"self"}, isGetter = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CheckNode extends PythonUnaryBuiltinNode {
 
         @Specialization
@@ -278,7 +271,6 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "unused_data", minNumOfPositionalArgs = 1, parameterNames = {"self"}, isGetter = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
 
         @Specialization

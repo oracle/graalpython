@@ -156,7 +156,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
@@ -188,7 +187,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -595,7 +593,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_toolchain_tools_for_venv")
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetToolchainToolsForVenv extends PythonBuiltinNode {
         private static final class Tool {
@@ -668,7 +665,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_toolchain_tool_path", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -686,7 +682,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_toolchain_paths", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetToolchainPathsNode extends PythonUnaryBuiltinNode {
         @Specialization

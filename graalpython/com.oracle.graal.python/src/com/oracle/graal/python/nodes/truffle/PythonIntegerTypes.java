@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,34 +25,16 @@
  */
 package com.oracle.graal.python.nodes.truffle;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.ImplicitCast;
-import com.oracle.truffle.api.dsl.TypeCast;
-import com.oracle.truffle.api.dsl.TypeCheck;
 import com.oracle.truffle.api.dsl.TypeSystem;
 
 /**
  * This type system is supposed to be used in builtin nodes to reduce the number of specializations
- * due to type combinations. A node that needs to handle all combinations of Python {@code int} and
- * {@code float} types can just use the most general primitive type, i.e., in case of Python type
- * {@code int} use Java {@code long} and in case of Python type {@code float} use Java
- * {@code double}. {@code PInt} needs to be treated separately because of its arbitrary precision.
- *
- * Only use in nodes where it is known that {@code PInt} and {@code PFloat} objects are not
- * subclassed!
+ * due to type combinations. Booleans and ints are converted to long. PInt needs to be handled
+ * separately.
  */
 @TypeSystem
-public abstract class PythonArithmeticTypes {
-
-    @ImplicitCast
-    public static double PFloatToDouble(PFloat value) {
-        // NOTE: That's correct because we just use it in arithmetic operations where CPython also
-        // access the value ('f_val') directly. So, even if the object is subclassed, it is ignored.
-        return value.getValue();
-    }
+public abstract class PythonIntegerTypes {
 
     @ImplicitCast
     public static int booleanToInt(boolean value) {
@@ -67,25 +49,5 @@ public abstract class PythonArithmeticTypes {
     @ImplicitCast
     public static long intToLong(int value) {
         return value;
-    }
-
-    @TypeCheck(PythonNativeObject.class)
-    public static boolean isNativeObject(Object object) {
-        return PythonNativeObject.isInstance(object);
-    }
-
-    @TypeCast(PythonNativeObject.class)
-    public static PythonNativeObject asNativeObject(Object object) {
-        return PythonNativeObject.cast(object);
-    }
-
-    @TypeCheck(PythonNativeClass.class)
-    public static boolean isNativeClass(Object object) {
-        return PGuards.isNativeClass(object);
-    }
-
-    @TypeCast(PythonNativeClass.class)
-    public static PythonNativeClass asNativeClass(Object object) {
-        return PythonNativeClass.cast(object);
     }
 }

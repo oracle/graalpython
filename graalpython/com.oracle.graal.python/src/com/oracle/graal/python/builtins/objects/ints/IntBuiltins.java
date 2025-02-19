@@ -112,7 +112,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
@@ -177,7 +177,7 @@ public final class IntBuiltins extends PythonBuiltins {
     @Builtin(name = J___ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
@@ -359,7 +359,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_add, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class AddNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
@@ -443,7 +443,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_subtract, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class SubNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
@@ -527,7 +527,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_true_divide, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class TrueDivNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
@@ -637,7 +637,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_floor_divide, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     public abstract static class FloorDivNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
@@ -810,7 +810,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_remainder, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     public abstract static class ModNode extends BinaryOpBuiltinNode {
         public abstract int executeInt(int left, int right) throws UnexpectedResultException;
@@ -972,7 +972,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_multiply, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class MulNode extends BinaryOpBuiltinNode {
         public abstract Object execute(int left, int right);
 
@@ -1084,7 +1084,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_power, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @ImportStatic(MathGuards.class)
     @ReportPolymorphism
     public abstract static class PowNode extends PythonTernaryBuiltinNode {
@@ -1423,7 +1423,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___CEIL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class CeilNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int ceil(int arg) {
@@ -1443,7 +1443,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___FLOOR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class FloorNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int floor(int arg) {
@@ -1568,7 +1568,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_lshift, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class LShiftNode extends BinaryOpBuiltinNode {
         public abstract int executeInt(int left, int right) throws UnexpectedResultException;
 
@@ -1795,7 +1795,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_rshift, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     public abstract static class RShiftNode extends BinaryOpBuiltinNode {
         public abstract int executeInt(int left, int right) throws UnexpectedResultException;
@@ -2017,7 +2017,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_and, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     public abstract static class AndNode extends BinaryBitwiseNode {
 
@@ -2044,7 +2044,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_or, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     public abstract static class OrNode extends BinaryBitwiseNode {
 
@@ -2071,7 +2071,7 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_xor, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     public abstract static class XorNode extends BinaryBitwiseNode {
         @Override
@@ -2098,7 +2098,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean eqLL(long a, long b) {
@@ -2234,7 +2234,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean eqLL(long a, long b) {
@@ -2283,7 +2283,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @ImportStatic(FromNativeSubclassNode.class)
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -2365,7 +2365,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean doII(int left, int right) {
@@ -2409,7 +2409,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
 
         @Specialization
@@ -2454,7 +2454,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
@@ -2499,7 +2499,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class RichCompareHelperNode extends Node {
 
         abstract Object execute(Node inliningTarget, Object left, Object right, ComparisonOp op);
@@ -2568,7 +2568,7 @@ public final class IntBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "signed", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
     @SuppressWarnings("unused")
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class ToBytesNode extends PythonClinicBuiltinNode {
 
         @TruffleBoundary
@@ -2828,7 +2828,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class StrNode extends PythonBuiltinNode {
 
         @Specialization
@@ -2906,7 +2906,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return FormatNodeClinicProviderGen.INSTANCE;
         }
 
-        // We cannot use PythonArithmeticTypes, because for empty format string we need to call the
+        // We cannot use PythonIntegerTypes, because for empty format string we need to call the
         // boolean's __str__ and not int's __str__ (that specialization is inherited)
         @Specialization(guards = "!formatString.isEmpty()")
         static TruffleString formatB(boolean self, TruffleString formatString,
@@ -3003,7 +3003,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
 
         @Specialization
@@ -3043,7 +3043,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = "bit_count", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class BitCountNode extends PythonBuiltinNode {
         @Specialization
         static int bitCount(int i) {
@@ -3064,7 +3064,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = "bit_length", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class BitLengthNode extends PythonUnaryBuiltinNode {
         public abstract int execute(Object argument);
 
@@ -3087,7 +3087,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = "is_integer", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class IsIntegerNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doLong(long argument) {
@@ -3180,7 +3180,7 @@ public final class IntBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.nb_float, isComplex = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class FloatNode extends PythonUnaryBuiltinNode {
         @Specialization
         static double doBoolean(boolean self) {

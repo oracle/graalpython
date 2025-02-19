@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,37 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.nodes.truffle;
 
-import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.truffle.api.dsl.ImplicitCast;
+import com.oracle.truffle.api.dsl.TypeSystem;
 
-@TypeSystemReference(PythonIntegerTypes.class)
-@ImportStatic(MathGuards.class)
-@GenerateInline
-@GenerateCached(false)
-abstract class CastToJavaIntNode extends PNodeWithContext {
-
-    public abstract int execute(Node inliningTarget, long x);
-
-    public abstract int execute(Node inliningTarget, Object x);
-
-    @Specialization
-    static int toInt(int x) {
-        return x;
+/**
+ * Type system that automatically unpacks PFloat object to the contained double value. Should only
+ * be used in nodes where CPython directly accesses f_val.
+ */
+@TypeSystem
+public class PythonIntegerAndFloatTypes extends PythonIntegerTypes {
+    @ImplicitCast
+    public static double PFloatToDouble(PFloat value) {
+        // NOTE: That's correct because we just use it in arithmetic operations where CPython also
+        // access the value ('f_val') directly. So, even if the object is subclassed, it is ignored.
+        return value.getValue();
     }
-
-    @Fallback
-    static int doUnsupported(@SuppressWarnings("unused") Object x) {
-        throw CannotCastException.INSTANCE;
-    }
-
 }

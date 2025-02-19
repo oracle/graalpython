@@ -77,7 +77,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -92,7 +91,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -109,7 +107,6 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "check", conversion = ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "preset", conversionClass = ExpectUINT32Node.class, defaultValue = "PNone.NO_VALUE")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class InitNode extends PythonClinicBuiltinNode {
 
         @Override
@@ -135,26 +132,26 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "badIntegrity(format, check)")
         @SuppressWarnings("unused")
-        static PNone integrityError(LZMACompressor self, long format, long check, Object preset, Object filters,
+        static PNone integrityError(LZMACompressor self, int format, int check, Object preset, Object filters,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "badPresetFilters(preset, filters)"})
         @SuppressWarnings("unused")
-        static PNone presetError(LZMACompressor self, long format, long check, Object preset, Object filters,
+        static PNone presetError(LZMACompressor self, int format, int check, Object preset, Object filters,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
         }
 
         @Specialization(guards = {"!badIntegrity(format, check)", "!badPresetFilters(preset, filters)", "badRawFilter(format, filters)"})
         @SuppressWarnings("unused")
-        static PNone rawError(LZMACompressor self, long format, long check, Object preset, PNone filters,
+        static PNone rawError(LZMACompressor self, int format, int check, Object preset, PNone filters,
                         @Bind("this") Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MUST_SPECIFY_FILTERS);
         }
 
-        protected static boolean badIntegrity(long format, long check) {
+        protected static boolean badIntegrity(int format, int check) {
             return format != FORMAT_XZ && check != -1 && check != CHECK_NONE;
         }
 
@@ -166,14 +163,13 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
             return format == FORMAT_RAW && PGuards.isPNone(filters);
         }
 
-        protected static boolean isValid(long format, long check, Object preset, Object filters) {
+        protected static boolean isValid(int format, int check, Object preset, Object filters) {
             return !badIntegrity(format, check) && !badPresetFilters(preset, filters) && !badRawFilter(format, filters);
         }
     }
 
     @Builtin(name = "compress", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CompressNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})
@@ -221,7 +217,6 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "flush", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!self.isFlushed()"})

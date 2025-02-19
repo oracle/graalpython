@@ -82,7 +82,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -104,7 +103,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -462,7 +460,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "tregex_init_cache", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class TRegexInitCache extends PythonTernaryBuiltinNode {
 
@@ -479,7 +476,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "tregex_compile", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(PythonMethod.class)
     abstract static class TRegexCompile extends PythonTernaryBuiltinNode {
@@ -625,7 +621,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "tregex_search", minNumOfPositionalArgs = 6)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(PythonMethod.class)
     abstract static class TRegexSearch extends PythonSenaryBuiltinNode {
@@ -783,7 +778,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class TRegexCallExec extends PythonTernaryBuiltinNode {
 

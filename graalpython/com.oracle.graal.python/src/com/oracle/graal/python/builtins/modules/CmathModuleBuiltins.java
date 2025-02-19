@@ -28,7 +28,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerAndFloatTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -167,7 +167,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     abstract static class CmathComplexUnaryHelperNode extends Node {
 
@@ -208,7 +208,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateInline
     @GenerateCached(false)
@@ -277,7 +277,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "phase", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     abstract static class PhaseNode extends PythonUnaryBuiltinNode {
@@ -306,7 +306,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "polar", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     abstract static class PolarNode extends PythonUnaryBuiltinNode {
@@ -346,7 +346,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "rect", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     abstract static class RectNode extends PythonBinaryBuiltinNode {
@@ -421,7 +421,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "log", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     abstract static class LogNode extends PythonBinaryBuiltinNode {
@@ -516,7 +516,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "log10", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     abstract static class Log10Node extends PythonUnaryBuiltinNode {
@@ -1093,7 +1093,7 @@ public final class CmathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isclose", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, varArgsMarker = true, keywordOnlyNames = {"rel_tol", "abs_tol"})
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     abstract static class IsCloseNode extends PythonBuiltinNode {
