@@ -31,7 +31,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_GETATTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SIGNATURE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T__SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.T_DOLLAR_DECL_TYPE;
@@ -148,7 +148,7 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
         static Object doIt(PBuiltinFunction fun,
                         @Bind("this") Node inliningTarget) {
             if (fun.getSignature().isHidden()) {
-                throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T___SIGNATURE__);
             }
             return createInspectSignature(fun.getSignature(), false);
         }
