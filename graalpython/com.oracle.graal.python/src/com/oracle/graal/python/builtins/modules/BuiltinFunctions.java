@@ -200,7 +200,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -1276,8 +1275,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object delattr(VirtualFrame frame, Object object, Object name,
                         @Bind("this") Node inliningTarget,
-                        @Cached DeleteAttributeNode delNode) {
-            delNode.execute(frame, inliningTarget, object, name);
+                        @Cached PyObjectSetAttrO setAttr) {
+            setAttr.execute(frame, inliningTarget, object, name, NO_VALUE);
             return PNone.NONE;
         }
     }

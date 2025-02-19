@@ -95,6 +95,10 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
         execute(frame, null, receiver, name, PNone.NO_VALUE);
     }
 
+    public static void deleteUncached(Object receiver, TruffleString name) {
+        executeUncached(receiver, name, PNone.NO_VALUE);
+    }
+
     public final void delete(Frame frame, Node inliningTarget, Object receiver, TruffleString name) {
         execute(frame, inliningTarget, receiver, name, PNone.NO_VALUE);
     }
