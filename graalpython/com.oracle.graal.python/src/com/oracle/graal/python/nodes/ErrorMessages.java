@@ -205,6 +205,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER = tsLiteral("cannot convert float NaN to integer");
     public static final TruffleString CANT_CAPTURE_NAME_UNDERSCORE_IN_PATTERNS = tsLiteral("can't capture name '_' in patterns");
     public static final TruffleString CANT_CONCAT_P_TO_S = tsLiteral("can't concat %p to %s");
+    public static final TruffleString CANT_CONCAT_P_TO_P = tsLiteral("can't concat %p to %p");
     public static final TruffleString CANT_CONVERT_TO_STR_IMPLICITLY = tsLiteral("Can't convert '%p' object to str implicitly");
     public static final TruffleString CANT_COMPARE = tsLiteral("Can't compare %p and %p");
     public static final TruffleString CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE = tsLiteral("can't delete numeric/char attribute");

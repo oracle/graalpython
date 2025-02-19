@@ -289,11 +289,11 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @Specialization
         static PBytesLike add(PBytesLike self, PBytesLike other,
-                        @Bind("this") Node node,
-                        @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.ConcatNode concatNode,
-                        @Cached @Exclusive BytesNodes.CreateBytesNode create) {
-            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
-            return create.execute(node, self, res);
+                        @Bind Node inliningTarget,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached BytesNodes.CreateBytesNode create,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            return concatBuffers(self, self, other, inliningTarget, bufferLib, create, raiseNode);
         }
 
         @Specialization(limit = "3")
@@ -302,23 +302,35 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached GetBytesStorage getBytesStorage,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createWithOverflowError()") @Shared SequenceStorageNodes.ConcatNode concatNode,
-                        @Cached @Exclusive BytesNodes.CreateBytesNode create,
-                        @Cached PRaiseNode raiseNode) {
-            Object buffer;
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Shared @Cached BytesNodes.CreateBytesNode create,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            Object otherBuffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(other, frame, indirectCallData);
+                otherBuffer = bufferAcquireLib.acquireReadonly(other, frame, indirectCallData);
             } catch (PException e) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_CONCAT_P_TO_P, other, self);
             }
             try {
-                // TODO avoid copying
-                byte[] bytes = bufferLib.getCopiedByteArray(buffer);
-                SequenceStorage res = concatNode.execute(getBytesStorage.execute(inliningTarget, self), new ByteSequenceStorage(bytes));
-                return create.execute(inliningTarget, self, res);
+                SequenceStorage selfBuffer = getBytesStorage.execute(inliningTarget, self);
+                return concatBuffers(self, selfBuffer, otherBuffer, inliningTarget, bufferLib, create, raiseNode);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(otherBuffer, frame, indirectCallData);
+            }
+        }
+
+        private static PBytesLike concatBuffers(Object self, Object selfBuffer, Object otherBuffer, Node inliningTarget, PythonBufferAccessLibrary bufferLib, BytesNodes.CreateBytesNode create,
+                        PRaiseNode raiseNode) {
+            try {
+                int len = bufferLib.getBufferLength(selfBuffer);
+                int otherLen = bufferLib.getBufferLength(otherBuffer);
+                int newLen = PythonUtils.addExact(len, otherLen);
+                byte[] newBytes = new byte[newLen];
+                bufferLib.readIntoByteArray(selfBuffer, 0, newBytes, 0, len);
+                bufferLib.readIntoByteArray(otherBuffer, 0, newBytes, len, otherLen);
+                return create.execute(inliningTarget, self, new ByteSequenceStorage(newBytes));
+            } catch (OverflowException e) {
+                throw raiseNode.raise(inliningTarget, OverflowError);
             }
         }
     }

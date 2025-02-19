@@ -45,7 +45,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -57,8 +56,6 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatBaseNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CreateStorageFromIteratorNodeFactory.CreateStorageFromIteratorNodeCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
@@ -2312,97 +2309,6 @@ public abstract class SequenceStorageNodes {
         private static void concat(Object dest, Object arr1, int len1, Object arr2, int len2) {
             PythonUtils.arraycopy(arr1, 0, dest, 0, len1);
             PythonUtils.arraycopy(arr2, 0, dest, len1, len2);
-        }
-    }
-
-    /**
-     * Concatenates two sequence storages; creates a storage of a suitable type and writes the
-     * result to the new storage.
-     */
-    public abstract static class ConcatNode extends SequenceStorageBaseNode {
-        private static final TruffleString DEFAULT_ERROR_MSG = ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
-
-        @Child private ConcatBaseNode concatBaseNode = ConcatBaseNodeGen.create();
-        @Child private GeneralizationNode genNode;
-
-        private final Supplier<GeneralizationNode> genNodeProvider;
-
-        /*
-         * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but e.g.
-         * bytes raises OverflowError when the memory might be available but the size overflows
-         * sys.maxint
-         */
-        private final PythonBuiltinClassType errorForOverflow;
-
-        ConcatNode(Supplier<GeneralizationNode> genNodeProvider, PythonBuiltinClassType errorForOverflow) {
-            this.genNodeProvider = genNodeProvider;
-            this.errorForOverflow = errorForOverflow;
-        }
-
-        public abstract SequenceStorage execute(SequenceStorage left, SequenceStorage right);
-
-        @Specialization
-        SequenceStorage doRight(SequenceStorage left, SequenceStorage right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CreateEmptyNode createEmptyNode,
-                        @Cached InlinedConditionProfile shouldOverflow,
-                        @Cached PRaiseNode raiseNode) {
-            int destlen = 0;
-            try {
-                int len1 = left.length();
-                int len2 = right.length();
-                // we eagerly generalize the store to avoid possible cascading generalizations
-                destlen = PythonUtils.addExact(len1, len2);
-                if (errorForOverflow == OverflowError && shouldOverflow.profile(inliningTarget, destlen >= SysModuleBuiltins.MAXSIZE)) {
-                    // cpython raises an overflow error when this happens
-                    throw raiseNode.raise(inliningTarget, OverflowError);
-                }
-                SequenceStorage generalized = generalizeStore(createEmpty(createEmptyNode, inliningTarget, left, right, destlen), right);
-                return doConcat(generalized, left, right);
-            } catch (OutOfMemoryError e) {
-                throw raiseNode.raise(inliningTarget, MemoryError);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, errorForOverflow);
-            }
-        }
-
-        private SequenceStorage createEmpty(CreateEmptyNode createEmptyNode, Node inliningTarget, SequenceStorage l, SequenceStorage r, int len) {
-            if (l instanceof EmptySequenceStorage) {
-                return createEmptyNode.execute(inliningTarget, r, len, -1);
-            }
-            return createEmptyNode.execute(inliningTarget, l, len, len);
-        }
-
-        private SequenceStorage doConcat(SequenceStorage dest, SequenceStorage leftProfiled, SequenceStorage rightProfiled) {
-            try {
-                return concatBaseNode.execute(dest, leftProfiled, rightProfiled);
-            } catch (SequenceStoreException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("generalized sequence storage cannot take value: " + e.getIndicationValue());
-            }
-        }
-
-        private SequenceStorage generalizeStore(SequenceStorage storage, Object value) {
-            if (genNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                genNode = insert(genNodeProvider.get());
-            }
-            return genNode.executeCached(storage, value);
-        }
-
-        @NeverDefault
-        public static ConcatNode create() {
-            return create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG), MemoryError);
-        }
-
-        @NeverDefault
-        public static ConcatNode createWithOverflowError() {
-            return create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG), OverflowError);
-        }
-
-        @NeverDefault
-        private static ConcatNode create(Supplier<GeneralizationNode> genNodeProvider, PythonBuiltinClassType errorForOverflow) {
-            return ConcatNodeGen.create(genNodeProvider, errorForOverflow);
         }
     }
 
