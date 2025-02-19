@@ -54,14 +54,12 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -70,7 +68,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -81,15 +78,13 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateCached(false)
-@ImportStatic(PGuards.class)
 @TypeSystemReference(PythonIntegerTypes.class)
 abstract class PyNumberAddBaseNode extends BinaryOpNode {
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins, but it additionally needs to check PInts for only builtin ints
+     * in IntBuiltins
      */
-
     @Specialization(rewriteOn = ArithmeticException.class)
     static int doII(int left, int right) {
         return Math.addExact(left, right);
@@ -112,44 +107,10 @@ abstract class PyNumberAddBaseNode extends BinaryOpNode {
         return r;
     }
 
-    @Specialization(guards = "isBuiltinPInt(left)", rewriteOn = OverflowException.class)
-    static Object doPLNarrow(PInt left, long right) throws OverflowException {
-        return PInt.longValueExact(add(left.getValue(), PInt.longToBigInteger(right)));
-    }
-
-    @Specialization(guards = "isBuiltinPInt(left)", replaces = "doPLNarrow")
-    static Object doPL(PInt left, long right,
-                    @Bind PythonLanguage language) {
-        return PFactory.createInt(language, add(left.getValue(), PInt.longToBigInteger(right)));
-    }
-
-    @Specialization(guards = "isBuiltinPInt(right)", rewriteOn = OverflowException.class)
-    static Object doLPNarrow(long left, PInt right) throws OverflowException {
-        return PInt.longValueExact(add(PInt.longToBigInteger(left), right.getValue()));
-    }
-
-    @Specialization(guards = "isBuiltinPInt(right)", replaces = "doLPNarrow")
-    static Object doLP(long left, PInt right,
-                    @Bind PythonLanguage language) {
-        return PFactory.createInt(language, add(PInt.longToBigInteger(left), right.getValue()));
-    }
-
-    @Specialization(guards = {"isBuiltinPInt(left)", "isBuiltinPInt(right)"}, rewriteOn = OverflowException.class)
-    static Object doPPNarrow(PInt left, PInt right) throws OverflowException {
-        return PInt.longValueExact(add(left.getValue(), right.getValue()));
-    }
-
-    @Specialization(guards = {"isBuiltinPInt(left)", "isBuiltinPInt(right)"}, replaces = "doPPNarrow")
-    static Object doPP(PInt left, PInt right,
-                    @Bind PythonLanguage language) {
-        return PFactory.createInt(language, add(left.getValue(), right.getValue()));
-    }
-
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
      * in FloatBuiltins
      */
-
     @Specialization
     public static double doDD(double left, double right) {
         return left + right;

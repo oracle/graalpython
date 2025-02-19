@@ -157,15 +157,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class IntBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = IntBuiltinsSlotsGen.SLOTS;
 
-    private static void raiseDivisionByZero(Node inliningTarget, boolean cond, InlinedBranchProfile divisionByZeroProfile, PRaiseNode raiseNode) {
+    private static void raiseDivisionByZero(Node inliningTarget, boolean cond, PRaiseNode raiseNode) {
         if (cond) {
-            raiseDivisionByZero(inliningTarget, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, raiseNode);
         }
     }
 
     @InliningCutoff
-    private static void raiseDivisionByZero(Node inliningTarget, InlinedBranchProfile divisionByZeroProfile, PRaiseNode raiseNode) {
-        divisionByZeroProfile.enter(inliningTarget);
+    private static void raiseDivisionByZero(Node inliningTarget, PRaiseNode raiseNode) {
         throw raiseNode.raise(inliningTarget, PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
     }
 
@@ -452,7 +451,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return Math.subtractExact(x, y);
         }
 
-        @Specialization
+        @Specialization(replaces = "doII")
         static long doIIOvf(int x, int y) {
             return (long) x - (long) y;
         }
@@ -462,7 +461,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return Math.subtractExact(x, y);
         }
 
-        @Specialization
+        @Specialization(replaces = "doLL")
         static Object doLongWithOverflow(long x, long y,
                         @Bind("this") Node inliningTarget) {
             /* Inlined version of Math.subtractExact(x, y) with BigInteger fallback. */
@@ -470,46 +469,46 @@ public final class IntBuiltins extends PythonBuiltins {
             // HD 2-12 Overflow iff the arguments have different signs and
             // the sign of the result is different than the sign of x
             if (((x ^ y) & (x ^ r)) < 0) {
-                return PFactory.createInt(PythonLanguage.get(inliningTarget), op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+                return PFactory.createInt(PythonLanguage.get(inliningTarget), sub(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
             }
             return r;
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static long doPIntLongAndNarrow(PInt left, long right) throws OverflowException {
-            return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
+            return PInt.longValueExact(sub(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(replaces = "doPIntLongAndNarrow")
         static PInt doPIntLong(PInt left, long right,
                         @Bind PythonLanguage language) {
-            return PFactory.createInt(language, op(left.getValue(), PInt.longToBigInteger(right)));
+            return PFactory.createInt(language, sub(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static long doLongPIntAndNarrow(long left, PInt right) throws OverflowException {
-            return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
+            return PInt.longValueExact(sub(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(replaces = "doLongPIntAndNarrow")
         static PInt doLongPInt(long left, PInt right,
                         @Bind PythonLanguage language) {
-            return PFactory.createInt(language, op(PInt.longToBigInteger(left), right.getValue()));
+            return PFactory.createInt(language, sub(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static long doPIntPIntAndNarrow(PInt left, PInt right) throws OverflowException {
-            return PInt.longValueExact(op(left.getValue(), right.getValue()));
+            return PInt.longValueExact(sub(left.getValue(), right.getValue()));
         }
 
         @Specialization(replaces = "doPIntPIntAndNarrow")
         static PInt doPIntPInt(PInt left, PInt right,
                         @Bind PythonLanguage language) {
-            return PFactory.createInt(language, op(left.getValue(), right.getValue()));
+            return PFactory.createInt(language, sub(left.getValue(), right.getValue()));
         }
 
         @TruffleBoundary
-        private static BigInteger op(BigInteger left, BigInteger right) {
+        public static BigInteger sub(BigInteger left, BigInteger right) {
             return left.subtract(right);
         }
 
@@ -616,7 +615,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return d;
         }
 
-        protected static boolean fitsIntoDouble(long x) {
+        public static boolean fitsIntoDouble(long x) {
             return x < (1L << 52) && x > -(1L << 52);
         }
 
@@ -648,10 +647,9 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object doII(int left, int right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached BranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             if (left == Integer.MIN_VALUE && right == -1) {
                 overflowValueProfile.enter();
                 return INT_OVERFLOW_VALUE;
@@ -662,10 +660,9 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object doLL(long left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached BranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             if (left == Long.MIN_VALUE && right == -1) {
                 overflowValueProfile.enter();
                 return PFactory.createInt(PythonLanguage.get(inliningTarget), LONG_OVERFLOW_VALUE);
@@ -676,12 +673,11 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object doIPi(int left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached BranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 int rightValue = right.intValueExact();
-                raiseDivisionByZero(inliningTarget, rightValue == 0, divisionByZeroProfile, raiseNode);
+                raiseDivisionByZero(inliningTarget, rightValue == 0, raiseNode);
                 if (left == Integer.MIN_VALUE && rightValue == -1) {
                     overflowValueProfile.enter();
                     return INT_OVERFLOW_VALUE;
@@ -695,12 +691,11 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static Object doLPi(long left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached BranchProfile overflowValueProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             try {
                 long rightValue = right.longValueExact();
-                raiseDivisionByZero(inliningTarget, rightValue == 0, divisionByZeroProfile, raiseNode);
+                raiseDivisionByZero(inliningTarget, rightValue == 0, raiseNode);
                 if (left == Long.MIN_VALUE && rightValue == -1) {
                     overflowValueProfile.enter();
                     return PFactory.createInt(PythonLanguage.get(inliningTarget), LONG_OVERFLOW_VALUE);
@@ -714,9 +709,8 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization(rewriteOn = OverflowException.class)
         static long doPiIAndNarrow(PInt left, int right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
@@ -724,18 +718,16 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doPiI(PInt left, int right,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return PFactory.createInt(language, op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static long doPiLAndNarrow(PInt left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
@@ -743,18 +735,16 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doPiL(PInt left, long right,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return PFactory.createInt(language, op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(rewriteOn = OverflowException.class)
         static long doPiPiAndNarrow(PInt left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
@@ -762,9 +752,8 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doPiPi(PInt left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
             return PFactory.createInt(language, op(left.getValue(), right.getValue()));
         }
 
@@ -820,27 +809,24 @@ public final class IntBuiltins extends PythonBuiltins {
         @Specialization
         static int doII(int left, int right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return Math.floorMod(left, right);
         }
 
         @Specialization
         static long doLL(long left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return Math.floorMod(left, right);
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = OverflowException.class)
         static long doLPiAndNarrow(long left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
             return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
@@ -848,18 +834,16 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doLPi(long left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
             return PFactory.createInt(language, op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = OverflowException.class)
         static long doLPiNegativeAndNarrow(long left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
             return PInt.longValueExact(opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
 
@@ -867,18 +851,16 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doLPiNegative(long left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
             return PFactory.createInt(language, opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = OverflowException.class)
         static long doPiLAndNarrow(PInt left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
@@ -886,18 +868,16 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doPiL(PInt left, long right,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return PFactory.createInt(language, op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right < 0", rewriteOn = OverflowException.class)
         static long doPiLNegAndNarrow(PInt left, long right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return PInt.longValueExact(opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
 
@@ -905,18 +885,16 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doPiLNeg(PInt left, long right,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right == 0, divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
             return PFactory.createInt(language, opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = OverflowException.class)
         static long doPiPiAndNarrow(PInt left, PInt right,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) throws OverflowException {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
@@ -924,9 +902,8 @@ public final class IntBuiltins extends PythonBuiltins {
         static PInt doPiPi(PInt left, PInt right,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Shared @Cached InlinedBranchProfile divisionByZeroProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            raiseDivisionByZero(inliningTarget, right.isZero(), divisionByZeroProfile, raiseNode);
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
             return PFactory.createInt(language, op(left.getValue(), right.getValue()));
         }
 
@@ -991,7 +968,7 @@ public final class IntBuiltins extends PythonBuiltins {
             return Math.multiplyExact(x, y);
         }
 
-        @Specialization
+        @Specialization(replaces = "doLL")
         static Object doLongWithOverflow(long x, long y,
                         @Bind("this") Node inliningTarget) {
             /* Inlined version of Math.multiplyExact(x, y) with BigInteger fallback. */
@@ -1052,7 +1029,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        static BigInteger mul(BigInteger a, BigInteger b) {
+        public static BigInteger mul(BigInteger a, BigInteger b) {
             if (!BigInteger.ZERO.equals(b) && b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO)) {
                 return bigIntegerShift(a, b.getLowestSetBit());
             } else {

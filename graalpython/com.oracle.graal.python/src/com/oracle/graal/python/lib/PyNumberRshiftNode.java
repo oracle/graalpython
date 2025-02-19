@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -61,12 +62,15 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
 abstract class PyNumberRshiftBaseNode extends BinaryOpNode {
 
     @Specialization(guards = {"right < 32", "right >= 0"})
@@ -81,6 +85,7 @@ abstract class PyNumberRshiftBaseNode extends BinaryOpNode {
 }
 
 @GenerateInline(false)
+@GenerateUncached
 public abstract class PyNumberRshiftNode extends PyNumberRshiftBaseNode {
 
     @Fallback

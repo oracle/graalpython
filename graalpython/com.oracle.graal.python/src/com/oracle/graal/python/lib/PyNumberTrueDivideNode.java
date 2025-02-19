@@ -40,52 +40,66 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
+@ImportStatic(IntBuiltins.TrueDivNode.class)
 abstract class PyNumberTrueDivideBaseNode extends BinaryOpNode {
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
      * in IntBuiltins, FloatBuiltins, ...
      */
-    @Specialization(rewriteOn = OverflowException.class)
-    public static double doII(int left, int right) throws OverflowException {
-        return doDD(left, right);
-    }
 
-    @Specialization(rewriteOn = OverflowException.class)
-    public static double doDI(double left, int right) throws OverflowException {
-        return doDD(left, right);
-    }
-
-    @Specialization(rewriteOn = OverflowException.class)
-    public static double doID(int left, double right) throws OverflowException {
-        return doDD(left, right);
-    }
-
-    @Specialization(rewriteOn = OverflowException.class)
-    public static double doDD(double left, double right) throws OverflowException {
-        if (right == 0.0) {
-            throw OverflowException.INSTANCE;
-        }
+    @Specialization(guards = "!isZero(right)")
+    public static double doDD(double left, double right) {
         return left / right;
+    }
+
+    @Specialization(guards = "right != 0")
+    public static double doDL(double left, long right) {
+        return doDD(left, right);
+    }
+
+    @Specialization(guards = "!isZero(right)")
+    public static double doLD(long left, double right) {
+        return doDD(left, right);
+    }
+
+    @Specialization(guards = "right != 0")
+    public static double doII(int left, int right) {
+        return doDD(left, right);
+    }
+
+    @Specialization(guards = {"right != 0", "fitsIntoDouble(left)", "fitsIntoDouble(right)"})
+    public static double doLL(long left, long right) {
+        return doDD(left, right);
+    }
+
+    protected static boolean isZero(double right) {
+        return right == 0.0;
     }
 }
 
 @GenerateInline(false)
+@GenerateUncached
 public abstract class PyNumberTrueDivideNode extends PyNumberTrueDivideBaseNode {
 
     @Fallback
