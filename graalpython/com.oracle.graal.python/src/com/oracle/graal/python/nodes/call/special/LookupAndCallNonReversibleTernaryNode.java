@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,7 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -68,10 +66,6 @@ public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCal
         super(name);
     }
 
-    LookupAndCallNonReversibleTernaryNode(SpecialMethodSlot slot) {
-        super(slot);
-    }
-
     protected static PythonBuiltinClassType getBuiltinClass(Node inliningTarget, Object receiver, GetClassNode getClassNode) {
         Object clazz = getClassNode.execute(inliningTarget, receiver);
         return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
@@ -82,14 +76,6 @@ public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCal
     }
 
     protected final PythonTernaryBuiltinNode getTernaryBuiltin(PythonBuiltinClassType clazz) {
-        if (slot != null) {
-            Object attribute = slot.getValue(clazz);
-            if (attribute instanceof TernaryBuiltinDescriptor) {
-                return ((TernaryBuiltinDescriptor) attribute).createNode();
-            }
-            // If the slot does not contain builtin, full lookup wouldn't find a builtin either
-            return null;
-        }
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;

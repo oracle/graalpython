@@ -43,11 +43,7 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PRINT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyNumberAddNode;
@@ -76,7 +72,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -107,48 +102,9 @@ public enum BinaryArithmetic {
         this.create = create;
     }
 
-    /**
-     * A helper root node that dispatches to {@link LookupAndCallBinaryNode} to execute the provided
-     * ternary operator. Note: this is just a root node and won't do any signature checking.
-     */
-    static final class CallBinaryArithmeticRootNode extends CallArithmeticRootNode {
-        static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, tsArray("$self", "other"), null);
-
-        @Child private BinaryOpNode callBinaryNode;
-
-        private final BinaryArithmetic binaryOperator;
-
-        CallBinaryArithmeticRootNode(PythonLanguage language, BinaryArithmetic binaryOperator) {
-            super(language);
-            this.binaryOperator = binaryOperator;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE_BINARY;
-        }
-
-        @Override
-        protected Object doCall(VirtualFrame frame) {
-            if (callBinaryNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callBinaryNode = insert(binaryOperator.create());
-            }
-            return callBinaryNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
-        }
-    }
-
     @NeverDefault
     public BinaryOpNode create() {
         return create.create();
-    }
-
-    /**
-     * Creates a root node for this binary operator such that the operator can be executed via a
-     * full call.
-     */
-    public RootNode createRootNode(PythonLanguage language) {
-        return new CallBinaryArithmeticRootNode(language, this);
     }
 
     @ImportStatic(SpecialMethodNames.class)
@@ -172,12 +128,6 @@ public enum BinaryArithmetic {
                     return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P;
                 }
             };
-        }
-
-        @NeverDefault
-        public static LookupAndCallBinaryNode createCallNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
-            assert slot.getReverse() != null;
-            return LookupAndCallBinaryNode.createReversible(slot, slot.getReverse(), handler);
         }
 
     }
