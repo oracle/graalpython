@@ -839,6 +839,46 @@ public class JavaInteropTest {
             assertEquals(object.getMetaSimpleName(), "object");
             assertFalse(object.hasMetaParents());
         }
+
+        public static class MyFunction implements java.util.function.Function<String, String> {
+            public String __text_signature__ = "(string) -> str";
+
+            @Override
+            public String apply(String s) {
+                return s;
+            }
+        }
+
+        public static class MyFunctionWithCustomName implements java.util.function.Function<String, String> {
+            public String __text_signature__ = "(string) -> str";
+            public String __name__ = "myfunc";
+
+            @Override
+            public String apply(String s) {
+                return s;
+            }
+        }
+
+        public static class MyFunctionWithIncorrectSignature implements java.util.function.Function<String, String> {
+            public String __text_signature__ = "[I;java.lang.String;";
+
+            @Override
+            public String apply(String s) {
+                return s;
+            }
+        }
+
+        @Test
+        public void javaExecutablesAsPythonFunctions() throws IOException {
+            Value inspectSignature = context.eval("python", "import inspect; inspect.signature");
+            assertEquals("<Signature (string)>", inspectSignature.execute(new MyFunction()).toString());
+
+            Value signature = context.eval("python", "lambda f: f.__text_signature__");
+            assertEquals(new MyFunctionWithIncorrectSignature().__text_signature__, signature.execute(new MyFunctionWithIncorrectSignature()).asString());
+
+            Value name = context.eval("python", "lambda f: f.__name__");
+            assertEquals(new MyFunctionWithCustomName().__name__, name.execute(new MyFunctionWithCustomName()).asString());
+        }
     }
 
     @RunWith(Parameterized.class)
