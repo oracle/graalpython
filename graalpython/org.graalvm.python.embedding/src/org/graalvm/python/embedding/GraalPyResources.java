@@ -198,7 +198,12 @@ public final class GraalPyResources {
      * location</li>
      * <li><code>/org.graalvm.python.vfs/src</code> - is set as the python sources location</li>
      * </ul>
-     * </p>
+     * <p>
+     * When the virtual filesystem is located in other than the default resource directory,
+     * {@code org.graalvm.python.vfs}, i.e., using Maven or Gradle option {@code resourceDirectory},
+     * use {@link #contextBuilder(VirtualFileSystem)} and
+     * {@link VirtualFileSystem.Builder#resourceDirectory(String)} when building the
+     * {@link VirtualFileSystem}.
      *
      * @return a new {@link Context} instance
      * @since 24.2.0
@@ -233,6 +238,12 @@ public final class GraalPyResources {
      *     }
      * }
      * </pre>
+     * <p>
+     * When the virtual filesystem is located in other than the default resource directory,
+     * {@code org.graalvm.python.vfs}, i.e., using Maven or Gradle option {@code resourceDirectory},
+     * use {@link #contextBuilder(VirtualFileSystem)} and
+     * {@link VirtualFileSystem.Builder#resourceDirectory(String)} when building the
+     * {@link VirtualFileSystem}.
      * 
      * @see <a href=
      *      "https://github.com/oracle/graalpython/blob/master/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java">PythonOptions</a>
@@ -308,13 +319,14 @@ public final class GraalPyResources {
 
     /**
      * Creates a GraalPy context preconfigured with GraalPy and polyglot Context configuration
-     * options for use with resources located in a real filesystem.
+     * options for use with resources located in an external directory in real filesystem.
      * <p>
      * Following resource paths are preconfigured:
      * <ul>
-     * <li><code>${resourcesDirectory}/venv</code> - is set as the python virtual environment
+     * <li><code>${externalResourcesDirectory}/venv</code> - is set as the python virtual
+     * environment location</li>
+     * <li><code>${externalResourcesDirectory}/src</code> - is set as the python sources
      * location</li>
-     * <li><code>${resourcesDirectory}/src</code> - is set as the python sources location</li>
      * </ul>
      * </p>
      * <p>
@@ -343,19 +355,20 @@ public final class GraalPyResources {
      * </ul>
      * </p>
      * 
-     * @param resourcesDirectory the root directory with GraalPy specific embedding resources
+     * @param externalResourcesDirectory the root directory with GraalPy specific embedding
+     *            resources
      * @return a new {@link org.graalvm.polyglot.Context.Builder} instance
      * @since 24.2.0
      */
-    public static Context.Builder contextBuilder(Path resourcesDirectory) {
+    public static Context.Builder contextBuilder(Path externalResourcesDirectory) {
         String execPath;
         if (VirtualFileSystemImpl.isWindows()) {
-            execPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("Scripts").resolve("python.exe").toAbsolutePath().toString();
+            execPath = externalResourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("Scripts").resolve("python.exe").toAbsolutePath().toString();
         } else {
-            execPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("bin").resolve("python").toAbsolutePath().toString();
+            execPath = externalResourcesDirectory.resolve(VirtualFileSystemImpl.VFS_VENV).resolve("bin").resolve("python").toAbsolutePath().toString();
         }
 
-        String srcPath = resourcesDirectory.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString();
+        String srcPath = externalResourcesDirectory.resolve(VirtualFileSystemImpl.VFS_SRC).toAbsolutePath().toString();
         return createContextBuilder().
         // allow all IO access
                         allowIO(IOAccess.ALL).
@@ -437,8 +450,9 @@ public final class GraalPyResources {
      * The structure of the created resource directory will stay the same like the embedded Python
      * resources structure:
      * <ul>
-     * <li><code>${resourcesDirectory}/venv</code> - the python virtual environment location</li>
-     * <li><code>${resourcesDirectory}/src</code> - the python sources location</li>
+     * <li><code>${externalResourcesDirectory}/venv</code> - the python virtual environment
+     * location</li>
+     * <li><code>${externalResourcesDirectory}/src</code> - the python sources location</li>
      * </ul>
      * </p>
      * </p>
@@ -456,17 +470,17 @@ public final class GraalPyResources {
      * </p>
      *
      * @param vfs the {@link VirtualFileSystem} from which resources are to be extracted
-     * @param resourcesDirectory the target directory to extract the resources to
+     * @param externalResourcesDirectory the target directory to extract the resources to
      * @throws IOException if resources isn't a directory
      * @see #contextBuilder(Path)
      * @see VirtualFileSystem.Builder#resourceLoadingClass(Class)
      *
      * @since 24.2.0
      */
-    public static void extractVirtualFileSystemResources(VirtualFileSystem vfs, Path resourcesDirectory) throws IOException {
-        if (Files.exists(resourcesDirectory) && !Files.isDirectory(resourcesDirectory)) {
-            throw new IOException(String.format("%s has to be a directory", resourcesDirectory.toString()));
+    public static void extractVirtualFileSystemResources(VirtualFileSystem vfs, Path externalResourcesDirectory) throws IOException {
+        if (Files.exists(externalResourcesDirectory) && !Files.isDirectory(externalResourcesDirectory)) {
+            throw new IOException(String.format("%s has to be a directory", externalResourcesDirectory.toString()));
         }
-        vfs.impl.extractResources(resourcesDirectory);
+        vfs.impl.extractResources(externalResourcesDirectory);
     }
 }
