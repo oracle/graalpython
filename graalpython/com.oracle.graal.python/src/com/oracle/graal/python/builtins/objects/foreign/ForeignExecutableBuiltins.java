@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
@@ -37,6 +38,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -88,6 +90,27 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    @Builtin(name = J___DOC__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class DocNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object getName(Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PForeignToPTypeNode toPythonNode,
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+            if (lib.isMemberReadable(self, J___DOC__)) {
+                try {
+                    return toPythonNode.executeConvert(lib.readMember(self, J___DOC__));
+                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            } else {
+                return PNone.NONE;
             }
         }
     }
