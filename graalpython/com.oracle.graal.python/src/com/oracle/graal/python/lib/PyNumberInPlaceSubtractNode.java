@@ -66,4 +66,8 @@ public abstract class PyNumberInPlaceSubtractNode extends PyNumberSubtractBaseNo
     public static PyNumberInPlaceSubtractNode create() {
         return PyNumberInPlaceSubtractNodeGen.create();
     }
+
+    public static PyNumberInPlaceSubtractNode getUncached() {
+        return PyNumberInPlaceSubtractNodeGen.getUncached();
+    }
 }

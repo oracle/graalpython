@@ -65,4 +65,8 @@ public abstract class PyNumberInPlaceMatrixMultiplyNode extends BinaryOpNode {
     public static PyNumberInPlaceMatrixMultiplyNode create() {
         return PyNumberInPlaceMatrixMultiplyNodeGen.create();
     }
+
+    public static PyNumberInPlaceMatrixMultiplyNode getUncached() {
+        return PyNumberInPlaceMatrixMultiplyNodeGen.getUncached();
+    }
 }

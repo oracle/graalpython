@@ -127,4 +127,8 @@ public abstract class PyNumberRshiftNode extends PyNumberRshiftBaseNode {
     public static PyNumberRshiftNode create() {
         return PyNumberRshiftNodeGen.create();
     }
+
+    public static PyNumberRshiftNode getUncached() {
+        return PyNumberRshiftNodeGen.getUncached();
+    }
 }

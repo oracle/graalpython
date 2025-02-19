@@ -74,4 +74,8 @@ public abstract class PyNumberDivmodNode extends BinaryOpNode {
     public static PyNumberDivmodNode create() {
         return PyNumberDivmodNodeGen.create();
     }
+
+    public static PyNumberDivmodNode getUncached() {
+        return PyNumberDivmodNodeGen.getUncached();
+    }
 }

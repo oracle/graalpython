@@ -66,4 +66,8 @@ public abstract class PyNumberInPlaceRemainderNode extends PyNumberRemainderBase
     public static PyNumberInPlaceRemainderNode create() {
         return PyNumberInPlaceRemainderNodeGen.create();
     }
+
+    public static PyNumberInPlaceRemainderNode getUncached() {
+        return PyNumberInPlaceRemainderNodeGen.getUncached();
+    }
 }

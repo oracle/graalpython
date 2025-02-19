@@ -118,4 +118,8 @@ public abstract class PyNumberInPlaceMultiplyNode extends PyNumberMultiplyBaseNo
     public static PyNumberInPlaceMultiplyNode create() {
         return PyNumberInPlaceMultiplyNodeGen.create();
     }
+
+    public static PyNumberInPlaceMultiplyNode getUncached() {
+        return PyNumberInPlaceMultiplyNodeGen.getUncached();
+    }
 }

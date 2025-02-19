@@ -66,4 +66,8 @@ public abstract class PyNumberInPlaceTrueDivideNode extends PyNumberTrueDivideBa
     public static PyNumberInPlaceTrueDivideNode create() {
         return PyNumberInPlaceTrueDivideNodeGen.create();
     }
+
+    public static PyNumberInPlaceTrueDivideNode getUncached() {
+        return PyNumberInPlaceTrueDivideNodeGen.getUncached();
+    }
 }

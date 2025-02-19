@@ -106,4 +106,8 @@ public abstract class PyNumberNegativeNode extends UnaryOpNode {
     public static PyNumberNegativeNode create() {
         return PyNumberNegativeNodeGen.create();
     }
+
+    public static PyNumberNegativeNode getUncached() {
+        return PyNumberNegativeNodeGen.getUncached();
+    }
 }

@@ -66,4 +66,8 @@ public abstract class PyNumberInPlaceXorNode extends PyNumberXorBaseNode {
     public static PyNumberInPlaceXorNode create() {
         return PyNumberInPlaceXorNodeGen.create();
     }
+
+    public static PyNumberInPlaceXorNode getUncached() {
+        return PyNumberInPlaceXorNodeGen.getUncached();
+    }
 }

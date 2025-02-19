@@ -584,9 +584,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2, Object o3,
-                        @Bind Node inliningTarget,
                         @Cached PyNumberInPlacePowerNode powerNode) {
-            return powerNode.execute(null, inliningTarget, o1, o2, o3);
+            return powerNode.execute(null, o1, o2, o3);
         }
     }
 

@@ -65,4 +65,8 @@ public abstract class PyNumberInPlaceLshiftNode extends BinaryOpNode {
     public static PyNumberInPlaceLshiftNode create() {
         return PyNumberInPlaceLshiftNodeGen.create();
     }
+
+    public static PyNumberInPlaceLshiftNode getUncached() {
+        return PyNumberInPlaceLshiftNodeGen.getUncached();
+    }
 }

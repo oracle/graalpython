@@ -184,4 +184,8 @@ public abstract class PyNumberMultiplyNode extends PyNumberMultiplyBaseNode {
     public static PyNumberMultiplyNode create() {
         return PyNumberMultiplyNodeGen.create();
     }
+
+    public static PyNumberMultiplyNode getUncached() {
+        return PyNumberMultiplyNodeGen.getUncached();
+    }
 }

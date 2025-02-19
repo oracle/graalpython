@@ -114,4 +114,8 @@ public abstract class PyNumberTrueDivideNode extends PyNumberTrueDivideBaseNode 
     public static PyNumberTrueDivideNode create() {
         return PyNumberTrueDivideNodeGen.create();
     }
+
+    public static PyNumberTrueDivideNode getUncached() {
+        return PyNumberTrueDivideNodeGen.getUncached();
+    }
 }

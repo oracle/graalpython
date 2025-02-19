@@ -132,4 +132,8 @@ public abstract class PyNumberSubtractNode extends PyNumberSubtractBaseNode {
     public static PyNumberSubtractNode create() {
         return PyNumberSubtractNodeGen.create();
     }
+
+    public static PyNumberSubtractNode getUncached() {
+        return PyNumberSubtractNodeGen.getUncached();
+    }
 }

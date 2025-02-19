@@ -106,4 +106,8 @@ public abstract class PyNumberInPlaceAddNode extends PyNumberAddBaseNode {
     public static PyNumberInPlaceAddNode create() {
         return PyNumberInPlaceAddNodeGen.create();
     }
+
+    public static PyNumberInPlaceAddNode getUncached() {
+        return PyNumberInPlaceAddNodeGen.getUncached();
+    }
 }

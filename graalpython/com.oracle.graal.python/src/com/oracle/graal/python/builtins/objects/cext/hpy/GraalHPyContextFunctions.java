@@ -95,9 +95,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNa
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ClearCurrentExceptionNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyBinaryArithmeticNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyInplaceArithmeticNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyArithmeticNode.HPyUnaryArithmeticNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyASCIINodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAbsoluteNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctionsFactory.GraalHPyAddNodeGen;
@@ -310,9 +307,38 @@ import com.oracle.graal.python.lib.PyDictKeys;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
+import com.oracle.graal.python.lib.PyNumberAddNode;
+import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
+import com.oracle.graal.python.lib.PyNumberDivmodNode;
+import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceAddNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceAndNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceLshiftNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceOrNode;
+import com.oracle.graal.python.lib.PyNumberInPlacePowerNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceRemainderNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceRshiftNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceSubtractNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceXorNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberInvertNode;
+import com.oracle.graal.python.lib.PyNumberLshiftNode;
+import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberNegativeNode;
+import com.oracle.graal.python.lib.PyNumberOrNode;
+import com.oracle.graal.python.lib.PyNumberPositiveNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
+import com.oracle.graal.python.lib.PyNumberRemainderNode;
+import com.oracle.graal.python.lib.PyNumberRshiftNode;
+import com.oracle.graal.python.lib.PyNumberSubtractNode;
+import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
@@ -344,9 +370,6 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
@@ -830,193 +853,179 @@ public abstract class GraalHPyContextFunctions {
 
     @HPyContextFunction("ctx_Positive")
     @GenerateUncached
-    @ImportStatic(UnaryArithmetic.class)
     public abstract static class GraalHPyPositive extends HPyBinaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg,
-                        @Cached(parameters = "Pos") HPyUnaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg);
+                        @Cached PyNumberPositiveNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg);
         }
     }
 
     @HPyContextFunction("ctx_Negative")
     @GenerateUncached
-    @ImportStatic(UnaryArithmetic.class)
     public abstract static class GraalHPyNegative extends HPyBinaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg,
-                        @Cached(parameters = "Neg") HPyUnaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg);
+                        @Cached PyNumberNegativeNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg);
         }
     }
 
     @HPyContextFunction("ctx_Invert")
     @GenerateUncached
-    @ImportStatic(UnaryArithmetic.class)
     public abstract static class GraalHPyInvert extends HPyBinaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg,
-                        @Cached(parameters = "Invert") HPyUnaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg);
+                        @Cached PyNumberInvertNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg);
         }
     }
 
     @HPyContextFunction("ctx_Add")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyAdd extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "Add") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberAddNode arithmeticNode) {
+            return arithmeticNode.execute(null, inliningTarget, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_Subtract")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPySubtract extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "Sub") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberSubtractNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_Multiply")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyMultiply extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "Mul") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberMultiplyNode arithmeticNode) {
+            return arithmeticNode.execute(null, inliningTarget, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_MatrixMultiply")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyMatrixMultiply extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "MatMul") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberMatrixMultiplyNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_FloorDivide")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyFloorDivide extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "FloorDiv") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberFloorDivideNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_TrueDivide")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyTrueDivide extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "TrueDiv") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberTrueDivideNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_Remainder")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyRemainder extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "Mod") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberRemainderNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_Divmod")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyDivmod extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "DivMod") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberDivmodNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_And")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyAnd extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "And") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberAndNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_Xor")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyXor extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "Xor") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberXorNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_Or")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyOr extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "Or") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberOrNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_Lshift")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyLshift extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "LShift") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberLshiftNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_Rshift")
     @GenerateUncached
-    @ImportStatic(BinaryArithmetic.class)
     public abstract static class GraalHPyRshift extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "RShift") HPyBinaryArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberRshiftNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
@@ -1034,157 +1043,144 @@ public abstract class GraalHPyContextFunctions {
 
     @HPyContextFunction("ctx_InPlaceAdd")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceAdd extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IAdd") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceAddNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceSubtract")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceSubtract extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "ISub") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceSubtractNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceMultiply")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceMultiply extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IMul") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceMultiplyNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceMatrixMultiply")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceMatrixMultiply extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IMatMul") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceMatrixMultiplyNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceFloorDivide")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceFloorDivide extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IFloorDiv") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceFloorDivideNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceTrueDivide")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceTrueDivide extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "ITrueDiv") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceTrueDivideNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceRemainder")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceRemainder extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IMod") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceRemainderNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlacePower")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlacePower extends HPyQuaternaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1, Object arg2,
-                        @Cached(parameters = "IPow") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1, arg2);
+                        @Cached PyNumberInPlacePowerNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1, arg2);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceLshift")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceLshift extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "ILShift") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceLshiftNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceRshift")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceRshift extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IRShift") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceRshiftNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceAnd")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceAnd extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IAnd") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceAndNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceXor")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceXor extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IXor") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceXorNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 
     @HPyContextFunction("ctx_InPlaceOr")
     @GenerateUncached
-    @ImportStatic(InplaceArithmetic.class)
     public abstract static class GraalHPyInPlaceOr extends HPyTernaryContextFunction {
 
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object hpyContext, Object arg0, Object arg1,
-                        @Cached(parameters = "IOr") HPyInplaceArithmeticNode arithmeticNode) {
-            return arithmeticNode.execute(arg0, arg1);
+                        @Cached PyNumberInPlaceOrNode arithmeticNode) {
+            return arithmeticNode.execute(null, arg0, arg1);
         }
     }
 

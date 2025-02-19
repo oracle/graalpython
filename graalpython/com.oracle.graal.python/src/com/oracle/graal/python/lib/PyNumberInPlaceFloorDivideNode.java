@@ -66,4 +66,8 @@ public abstract class PyNumberInPlaceFloorDivideNode extends PyNumberFloorDivide
     public static PyNumberInPlaceFloorDivideNode create() {
         return PyNumberInPlaceFloorDivideNodeGen.create();
     }
+
+    public static PyNumberInPlaceFloorDivideNode getUncached() {
+        return PyNumberInPlaceFloorDivideNodeGen.getUncached();
+    }
 }

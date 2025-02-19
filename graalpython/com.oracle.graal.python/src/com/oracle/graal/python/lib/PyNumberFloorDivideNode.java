@@ -115,4 +115,8 @@ public abstract class PyNumberFloorDivideNode extends PyNumberFloorDivideBaseNod
     public static PyNumberFloorDivideNode create() {
         return PyNumberFloorDivideNodeGen.create();
     }
+
+    public static PyNumberFloorDivideNode getUncached() {
+        return PyNumberFloorDivideNodeGen.getUncached();
+    }
 }

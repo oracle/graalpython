@@ -93,4 +93,8 @@ public abstract class PyNumberInvertNode extends UnaryOpNode {
     public static PyNumberInvertNode create() {
         return PyNumberInvertNodeGen.create();
     }
+
+    public static PyNumberInvertNode getUncached() {
+        return PyNumberInvertNodeGen.getUncached();
+    }
 }

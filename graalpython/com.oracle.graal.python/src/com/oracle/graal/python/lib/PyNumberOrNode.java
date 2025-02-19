@@ -92,4 +92,8 @@ public abstract class PyNumberOrNode extends PyNumberOrBaseNode {
     public static PyNumberOrNode create() {
         return PyNumberOrNodeGen.create();
     }
+
+    public static PyNumberOrNode getUncached() {
+        return PyNumberOrNodeGen.getUncached();
+    }
 }

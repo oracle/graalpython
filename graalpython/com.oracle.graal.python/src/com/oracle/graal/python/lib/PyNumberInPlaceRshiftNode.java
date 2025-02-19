@@ -66,4 +66,8 @@ public abstract class PyNumberInPlaceRshiftNode extends PyNumberRshiftBaseNode {
     public static PyNumberInPlaceRshiftNode create() {
         return PyNumberInPlaceRshiftNodeGen.create();
     }
+
+    public static PyNumberInPlaceRshiftNode getUncached() {
+        return PyNumberInPlaceRshiftNodeGen.getUncached();
+    }
 }

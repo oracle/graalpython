@@ -92,4 +92,8 @@ public abstract class PyNumberXorNode extends PyNumberXorBaseNode {
     public static PyNumberXorNode create() {
         return PyNumberXorNodeGen.create();
     }
+
+    public static PyNumberXorNode getUncached() {
+        return PyNumberXorNodeGen.getUncached();
+    }
 }
