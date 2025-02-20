@@ -133,6 +133,8 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             cmd = gradlew_cmd + ["build"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
+            util.check_ouput("Virtual filesystem is deployed to default resources directory", out, logger=log)
+            util.check_ouput("This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem", out, logger=log)
             self.check_filelist(target_dir, log)
 
             cmd = gradlew_cmd + ["nativeCompile"]
@@ -413,7 +415,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
             cmd = gradle_cmd + ["graalPyResources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("Cannot set both 'externalDirectory' and 'resourcesDirectory' at the same time", out)
+            util.check_ouput("Cannot set both 'externalDirectory' and 'resourceDirectory' at the same time", out)
             assert return_code != 0, out
 
 
@@ -478,6 +480,8 @@ class GradlePluginTestBase(util.BuildToolTestBase):
 
             app1_gradle_cmd = util.get_gradle_wrapper(app1_dir, self.env)
             out, return_code = util.run_cmd(app1_gradle_cmd + ['publishToMavenLocal'], self.env, cwd=app1_dir)
+            util.check_ouput("Virtual filesystem is deployed to default resources directory", out, contains=False)
+            util.check_ouput("This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem", out, contains=False)
             assert return_code == 0, out
 
             app2_gradle_cmd = util.get_gradle_wrapper(app2_dir, self.env)

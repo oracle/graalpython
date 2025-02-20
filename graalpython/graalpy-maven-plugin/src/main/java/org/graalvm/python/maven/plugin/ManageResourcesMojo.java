@@ -145,7 +145,7 @@ public class ManageResourcesMojo extends AbstractMojo {
         }
 
         if (resourceDirectory == null) {
-            if (externalDirectory != null) {
+            if (externalDirectory == null) {
                 getLog().info(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
                         "This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem. " +
                         "Consider adding <resourceDirectory>GRAALPY-VFS/${project.groupId}/${project.artifactId}</resourceDirectory> to your pom.xml, " +
@@ -162,7 +162,7 @@ public class ManageResourcesMojo extends AbstractMojo {
             getLog().warn("The GraalPy plugin <pythonHome> configuration setting was deprecated and has no effect anymore.\n" +
                 "For execution in jvm mode, the python language home is always available.\n" +
                 "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
-                    "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources documentation.");
+                    "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources.");
         }
 
         manageVenv();
