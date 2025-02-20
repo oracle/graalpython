@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -87,7 +87,6 @@ _Py_CheckFunctionResult(PyThreadState *tstate, PyObject *callable,
 }
 
 
-#if 0 // GraalPy change
 int
 _Py_CheckSlotResult(PyObject *obj, const char *slot_name, int success)
 {
@@ -110,7 +109,6 @@ _Py_CheckSlotResult(PyObject *obj, const char *slot_name, int success)
     }
     return 1;
 }
-#endif // GraalPy change
 
 
 /* --- Core PyObject call functions ------------------------------- */

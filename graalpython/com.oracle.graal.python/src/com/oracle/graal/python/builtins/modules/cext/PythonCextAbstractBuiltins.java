@@ -64,9 +64,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AbsNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.DivModNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.NextNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
@@ -98,11 +96,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
 import com.oracle.graal.python.lib.GetNextNode;
-import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
-import com.oracle.graal.python.lib.PyNumberCheckNode;
+import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
 import com.oracle.graal.python.lib.PyNumberInPlaceAddNode;
@@ -119,14 +116,11 @@ import com.oracle.graal.python.lib.PyNumberInPlaceSubtractNode;
 import com.oracle.graal.python.lib.PyNumberInPlaceTrueDivideNode;
 import com.oracle.graal.python.lib.PyNumberInPlaceXorNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
-import com.oracle.graal.python.lib.PyNumberInvertNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
-import com.oracle.graal.python.lib.PyNumberNegativeNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
-import com.oracle.graal.python.lib.PyNumberPositiveNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyNumberRemainderNode;
 import com.oracle.graal.python.lib.PyNumberRshiftNode;
@@ -172,29 +166,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextAbstractBuiltins {
 
-    /////// PyIndex ///////
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyIndex_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object check(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyIndexCheckNode checkNode) {
-            return checkNode.execute(inliningTarget, obj) ? 1 : 0;
-        }
-    }
-
     /////// PyNumber ///////
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object check(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyNumberCheckNode checkNode) {
-            return PInt.intValue(checkNode.execute(inliningTarget, obj));
-        }
-    }
 
     @CApiBuiltin(name = "_PyNumber_Index", ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
@@ -217,24 +189,6 @@ public final class PythonCextAbstractBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberLongNode pyNumberLongNode) {
             return pyNumberLongNode.execute(null, inliningTarget, object);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Absolute extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object abs(Object obj,
-                        @Cached AbsNode absNode) {
-            return absNode.execute(null, obj);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Divmod extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object div(Object a, Object b,
-                        @Cached DivModNode divNode) {
-            return divNode.execute(null, a, b);
         }
     }
 
@@ -307,38 +261,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Positive extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object obj,
-                        @Cached PyNumberPositiveNode positiveNode) {
-            return positiveNode.execute(null, obj);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Negative extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object obj,
-                        @Cached PyNumberNegativeNode negativeNode) {
-            return negativeNode.execute(null, obj);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Invert extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object obj,
-                        @Cached PyNumberInvertNode invertNode) {
-            return invertNode.execute(null, obj);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Add extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Add extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -348,8 +272,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Subtract extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Subtract extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -358,8 +282,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Multiply extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Multiply extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -369,8 +293,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Remainder extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Remainder extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -379,8 +303,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_TrueDivide extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_TrueDivide extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -389,8 +313,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_FloorDivide extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_FloorDivide extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -399,8 +323,18 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_And extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Divmod extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object div(Object a, Object b,
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberDivmodNode divmodNode) {
+            return divmodNode.execute(null, inliningTarget, a, b);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_And extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -409,8 +343,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Or extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Or extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -419,8 +353,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Xor extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Xor extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -429,8 +363,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Lshift extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Lshift extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -439,8 +373,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Rshift extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Rshift extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -449,8 +383,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_MatrixMultiply extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_MatrixMultiply extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -459,8 +393,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceAdd extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceAdd extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -469,8 +403,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceSubtract extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceSubtract extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -479,8 +413,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceMultiply extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceMultiply extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -489,8 +423,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceRemainder extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceRemainder extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -499,8 +433,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceTrueDivide extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceTrueDivide extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -509,8 +443,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceFloorDivide extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceFloorDivide extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -519,8 +453,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceAnd extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceAnd extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -529,8 +463,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceOr extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceOr extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -539,8 +473,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceXor extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceXor extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -549,8 +483,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceLshift extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceLshift extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -559,8 +493,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceRshift extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceRshift extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -569,8 +503,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlaceMatrixMultiply extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceMatrixMultiply extends CApiBinaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
@@ -579,8 +513,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlacePower extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlacePower extends CApiTernaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2, Object o3,
@@ -589,8 +523,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Power extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Power extends CApiTernaryBuiltinNode {
 
         @Specialization
         Object doGeneric(Object o1, Object o2, Object o3,

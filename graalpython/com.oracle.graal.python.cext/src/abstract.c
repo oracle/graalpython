@@ -7,8 +7,8 @@
 
 #include "Python.h"
 #include "capi.h" // GraalPy change
-#if 0 // GraalPy change
 #include "pycore_abstract.h"      // _PyIndex_Check()
+#if 0 // GraalPy change
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
 #include "pycore_ceval.h"         // _Py_EnterRecursiveCallTstate()
 #include "pycore_object.h"        // _Py_CheckSlotResult()
@@ -844,6 +844,7 @@ done:
     Py_XDECREF(empty);
     return result;
 }
+#endif // GraalPy
 /* Operations on numbers */
 
 int
@@ -854,7 +855,6 @@ PyNumber_Check(PyObject *o)
     PyNumberMethods *nb = Py_TYPE(o)->tp_as_number;
     return nb && (nb->nb_index || nb->nb_int || nb->nb_float || PyComplex_Check(o));
 }
-#endif // GraalPy
 
 /* Binary operators */
 
@@ -1072,13 +1072,16 @@ ternary_op(PyObject *v,
     return NULL;
 }
 
+// GraalPy change: upcall when both managed to save on doing multiple upcalls
 #define BINARY_FUNC(func, op, op_name) \
     PyObject * \
     func(PyObject *v, PyObject *w) { \
+        if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) { \
+            return GraalPyTruffle##func(v, w); \
+        } \
         return binary_op(v, w, NB_SLOT(op), op_name); \
     }
 
-#if 0 // GraalPy
 BINARY_FUNC(PyNumber_Or, nb_or, "|")
 BINARY_FUNC(PyNumber_Xor, nb_xor, "^")
 BINARY_FUNC(PyNumber_And, nb_and, "&")
@@ -1090,6 +1093,10 @@ BINARY_FUNC(PyNumber_Divmod, nb_divmod, "divmod()")
 PyObject *
 PyNumber_Add(PyObject *v, PyObject *w)
 {
+    // GraalPy change: upcall when both managed to save on doing multiple upcalls
+    if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
+        return GraalPyTrufflePyNumber_Add(v, w);
+    }
     PyObject *result = BINARY_OP1(v, w, NB_SLOT(nb_add), "+");
     if (result != Py_NotImplemented) {
         return result;
@@ -1128,6 +1135,10 @@ sequence_repeat(ssizeargfunc repeatfunc, PyObject *seq, PyObject *n)
 PyObject *
 PyNumber_Multiply(PyObject *v, PyObject *w)
 {
+    // GraalPy change: upcall when both managed to save on doing multiple upcalls
+    if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
+        return GraalPyTrufflePyNumber_Multiply(v, w);
+    }
     PyObject *result = BINARY_OP1(v, w, NB_SLOT(nb_multiply), "*");
     if (result == Py_NotImplemented) {
         PySequenceMethods *mv = Py_TYPE(v)->tp_as_sequence;
@@ -1147,30 +1158,50 @@ PyNumber_Multiply(PyObject *v, PyObject *w)
 PyObject *
 PyNumber_MatrixMultiply(PyObject *v, PyObject *w)
 {
+    // GraalPy change: upcall when both managed to save on doing multiple upcalls
+    if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
+        return GraalPyTrufflePyNumber_MatrixMultiply(v, w);
+    }
     return binary_op(v, w, NB_SLOT(nb_matrix_multiply), "@");
 }
 
 PyObject *
 PyNumber_FloorDivide(PyObject *v, PyObject *w)
 {
+    // GraalPy change: upcall when both managed to save on doing multiple upcalls
+    if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
+        return GraalPyTrufflePyNumber_FloorDivide(v, w);
+    }
     return binary_op(v, w, NB_SLOT(nb_floor_divide), "//");
 }
 
 PyObject *
 PyNumber_TrueDivide(PyObject *v, PyObject *w)
 {
+    // GraalPy change: upcall when both managed to save on doing multiple upcalls
+    if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
+        return GraalPyTrufflePyNumber_TrueDivide(v, w);
+    }
     return binary_op(v, w, NB_SLOT(nb_true_divide), "/");
 }
 
 PyObject *
 PyNumber_Remainder(PyObject *v, PyObject *w)
 {
+    // GraalPy change: upcall when both managed to save on doing multiple upcalls
+    if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
+        return GraalPyTrufflePyNumber_Remainder(v, w);
+    }
     return binary_op(v, w, NB_SLOT(nb_remainder), "%");
 }
 
 PyObject *
 PyNumber_Power(PyObject *v, PyObject *w, PyObject *z)
 {
+    // GraalPy change: upcall when both managed to save on doing multiple upcalls
+    if (points_to_py_handle_space(v) && points_to_py_handle_space(w)) {
+        return GraalPyTrufflePyNumber_Power(v, w, z);
+    }
     return ternary_op(v, w, z, NB_SLOT(nb_power), "** or pow()");
 }
 
@@ -1258,9 +1289,13 @@ ternary_iop(PyObject *v, PyObject *w, PyObject *z, const int iop_slot, const int
     return ternary_op(v, w, z, op_slot, op_name);
 }
 
+// GraalPy change: upcall when v is managed to avoid multiple upcalls
 #define INPLACE_BINOP(func, iop, op, op_name) \
     PyObject * \
     func(PyObject *v, PyObject *w) { \
+        if (points_to_py_handle_space(v)) { \
+            return GraalPyTruffle##func(v, w); \
+        } \
         return binary_iop(v, w, NB_SLOT(iop), NB_SLOT(op), op_name); \
     }
 
@@ -1278,6 +1313,10 @@ INPLACE_BINOP(PyNumber_InPlaceRemainder, nb_inplace_remainder, nb_remainder, "%=
 PyObject *
 PyNumber_InPlaceAdd(PyObject *v, PyObject *w)
 {
+    // GraalPy change: upcall when v is managed to avoid multiple upcalls
+    if (points_to_py_handle_space(v)) {
+        return GraalPyTrufflePyNumber_InPlaceAdd(v, w);
+    }
     PyObject *result = BINARY_IOP1(v, w, NB_SLOT(nb_inplace_add),
                                    NB_SLOT(nb_add), "+=");
     if (result == Py_NotImplemented) {
@@ -1301,6 +1340,10 @@ PyNumber_InPlaceAdd(PyObject *v, PyObject *w)
 PyObject *
 PyNumber_InPlaceMultiply(PyObject *v, PyObject *w)
 {
+    // GraalPy change: upcall when v is managed to avoid multiple upcalls
+    if (points_to_py_handle_space(v)) {
+        return GraalPyTrufflePyNumber_InPlaceMultiply(v, w);
+    }
     PyObject *result = BINARY_IOP1(v, w, NB_SLOT(nb_inplace_multiply),
                                    NB_SLOT(nb_multiply), "*=");
     if (result == Py_NotImplemented) {
@@ -1330,6 +1373,10 @@ PyNumber_InPlaceMultiply(PyObject *v, PyObject *w)
 PyObject *
 PyNumber_InPlacePower(PyObject *v, PyObject *w, PyObject *z)
 {
+    // GraalPy change: upcall when v is managed to avoid multiple upcalls
+    if (points_to_py_handle_space(v)) {
+        return GraalPyTrufflePyNumber_InPlacePower(v, w, z);
+    }
     return ternary_iop(v, w, z, NB_SLOT(nb_inplace_power),
                                 NB_SLOT(nb_power), "**=");
 }
@@ -1339,7 +1386,6 @@ _PyNumber_InPlacePowerNoMod(PyObject *lhs, PyObject *rhs)
 {
     return PyNumber_InPlacePower(lhs, rhs, Py_None);
 }
-
 
 /* Unary operators and functions */
 
@@ -1419,6 +1465,7 @@ PyIndex_Check(PyObject *obj)
 }
 
 
+#if 0 // GraalPy change
 /* Return a Python int from the object item.
    Can return an instance of int subclass.
    Raise TypeError if the result is not an int
@@ -3027,6 +3074,6 @@ PyTruffleSequence_Fast_ITEMS(PyObject *o)
 PyObject*
 PyTruffleSequence_ITEM(PyObject* obj, Py_ssize_t index)
 {
-	PySequenceMethods* methods = Py_TYPE(obj)->tp_as_sequence;
-	return methods->sq_item(obj, index);
+        PySequenceMethods* methods = Py_TYPE(obj)->tp_as_sequence;
+        return methods->sq_item(obj, index);
 }
