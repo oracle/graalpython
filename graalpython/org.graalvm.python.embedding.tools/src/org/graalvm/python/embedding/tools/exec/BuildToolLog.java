@@ -44,6 +44,10 @@ package org.graalvm.python.embedding.tools.exec;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Build tool verbosity: maven - debug, info, warning, error gradle - debug, info, lifecycle,
+ * warning, error
+ */
 public interface BuildToolLog {
     void subProcessOut(String out);
 
