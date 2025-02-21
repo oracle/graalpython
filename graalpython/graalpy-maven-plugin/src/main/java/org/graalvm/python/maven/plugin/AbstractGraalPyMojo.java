@@ -96,7 +96,7 @@ public abstract class AbstractGraalPyMojo extends AbstractMojo {
 
     protected static final String PACKAGES_CHANGED_ERROR = """
         Install of python packages is based on lock file %s,
-        but packages in graalpy-maven-plugin configuration are different then previously used to generate the lock file.
+        but packages and their version constraints in graalpy-maven-plugin configuration are different then previously used to generate the lock file.
         
         Packages currently declared in graalpy-maven-plugin configuration: %s
         Packages which were used to generate the lock file: %s

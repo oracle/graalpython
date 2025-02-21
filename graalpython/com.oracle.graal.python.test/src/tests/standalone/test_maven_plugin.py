@@ -49,7 +49,7 @@ from tests.standalone import util
 from tests.standalone.util import TemporaryTestDirectory, Logger
 
 MISSING_FILE_WARNING = "The list of installed Python packages does not match the packages specified in the graalpy-maven-plugin configuration."
-PACKAGES_CHANGED_ERROR = "but packages in graalpy-maven-plugin configuration are different then previously used to generate the lock file"
+PACKAGES_CHANGED_ERROR = "but packages and their version constraints in graalpy-maven-plugin configuration are different then previously used to generate the lock file"
 VENV_UPTODATE = "Virtual environment is up to date with lock file, skipping install"
 
 class MavenPluginTest(util.BuildToolTestBase):
