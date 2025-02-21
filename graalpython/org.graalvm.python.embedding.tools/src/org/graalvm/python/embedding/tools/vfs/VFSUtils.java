@@ -293,54 +293,55 @@ public final class VFSUtils {
         static LockFile fromFile(Path file, BuildToolLog log) throws IOException {
             List<String> packages = new ArrayList<>();
             List<String> inputPackages = null;
-            if (Files.isReadable(file)) {
-                List<String> lines = Files.readAllLines(file);
-                if (lines.isEmpty()) {
-                    throw wrongFormat(file, lines, log);
-                }
-                // format:
-                // 1.) a multiline header comment
-                // 2.) graalpy version - 1 line (starting with comment #)
-                // 2.) input packages - 1 line (starting with comment #)
-                // 3.) locked packages - 1 line each (as input for pip install)
-                // see also LockFile.write()
-                Iterator<String> it = lines.iterator();
-                try {
-                    // graalpy version, we don't care about it for now, but with future versions the
-                    // file format might change, and we will need to know to parse differently
-                    String graalPyVersion = null;
-                    while (it.hasNext()) {
-                        String line = it.next();
-                        if (line.startsWith(GRAALPY_VERSION_PREFIX)) {
-                            graalPyVersion = line.substring(GRAALPY_VERSION_PREFIX.length()).trim();
-                            if (graalPyVersion.isEmpty()) {
-                                throw wrongFormat(file, lines, log);
-                            }
-                            break;
-                        }
-                    }
-                    if (graalPyVersion == null) {
-                        throw wrongFormat(file, lines, log);
-                    }
-                    // input packages
+            List<String> lines;
+            try {
+                lines = Files.readAllLines(file);
+            } catch (IOException e) {
+                throw new IOException(String.format("Cannot read the lock file from '%s'", file), e);
+            }
+            if (lines.isEmpty()) {
+                throw wrongFormat(file, lines, log);
+            }
+            // format:
+            // 1.) a multiline header comment
+            // 2.) graalpy version - 1 line (starting with comment #)
+            // 2.) input packages - 1 line (starting with comment #)
+            // 3.) locked packages - 1 line each (as input for pip install)
+            // see also LockFile.write()
+            Iterator<String> it = lines.iterator();
+            try {
+                // graalpy version, we don't care about it for now, but with future versions the
+                // file format might change, and we will need to know to parse differently
+                String graalPyVersion = null;
+                while (it.hasNext()) {
                     String line = it.next();
-                    if (!line.startsWith(INPUT_PACKAGES_PREFIX)) {
-                        throw wrongFormat(file, lines, log);
+                    if (line.startsWith(GRAALPY_VERSION_PREFIX)) {
+                        graalPyVersion = line.substring(GRAALPY_VERSION_PREFIX.length()).trim();
+                        if (graalPyVersion.isEmpty()) {
+                            throw wrongFormat(file, lines, log);
+                        }
+                        break;
                     }
-                    String pkgs = line.substring(INPUT_PACKAGES_PREFIX.length()).trim();
-                    if (pkgs.isEmpty()) {
-                        throw wrongFormat(file, lines, log);
-                    }
-                    inputPackages = Arrays.asList(pkgs.split(INPUT_PACKAGES_DELIMITER));
-                    // locked packages
-                    while (it.hasNext()) {
-                        packages.add(it.next());
-                    }
-                } catch (NoSuchElementException e) {
+                }
+                if (graalPyVersion == null) {
                     throw wrongFormat(file, lines, log);
                 }
-            } else {
-                throw new IOException("can't read lock file");
+                // input packages
+                String line = it.next();
+                if (!line.startsWith(INPUT_PACKAGES_PREFIX)) {
+                    throw wrongFormat(file, lines, log);
+                }
+                String pkgs = line.substring(INPUT_PACKAGES_PREFIX.length()).trim();
+                if (pkgs.isEmpty()) {
+                    throw wrongFormat(file, lines, log);
+                }
+                inputPackages = Arrays.asList(pkgs.split(INPUT_PACKAGES_DELIMITER));
+                // locked packages
+                while (it.hasNext()) {
+                    packages.add(it.next());
+                }
+            } catch (NoSuchElementException e) {
+                throw wrongFormat(file, lines, log);
             }
             return new LockFile(file, inputPackages, packages);
         }
@@ -353,7 +354,7 @@ public final class VFSUtils {
                 }
                 log.debug("");
             }
-            return new IOException("invalid lock file format");
+            return new IOException(String.format("Cannot read the lock file from '%s'\n(turn on debug log level to see the contents)", file));
         }
 
         private static void write(Path venvDirectory, Path lockFile, String lockFileHeader, List<String> inputPackages, String graalPyVersion, BuildToolLog log) throws IOException {
@@ -836,7 +837,7 @@ public final class VFSUtils {
     }
 
     private static void debug(BuildToolLog log, String txt) {
-            log.debug(txt);
+        log.debug(txt);
     }
 
     private static void logDebug(BuildToolLog log, List<String> l, String msg, Object... args) {
