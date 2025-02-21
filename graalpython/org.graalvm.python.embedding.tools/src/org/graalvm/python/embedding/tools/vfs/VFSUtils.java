@@ -414,15 +414,19 @@ public final class VFSUtils {
 
         VenvContents venvContents = ensureVenv(venvDirectory, graalPyVersion, launcher, log);
 
+        InstalledPackages installedPackages = InstalledPackages.fromVenv(venvDirectory);
         boolean installed;
         if (lockFile != null) {
-            installed = install(venvDirectory, lockFile, log);
+            installed = install(venvDirectory, installedPackages, lockFile, log);
         } else {
             installed = install(venvDirectory, pluginPackages, venvContents, log);
-            missingLockFileWarning(venvDirectory, pluginPackages, missingLockFileWarning, log);
         }
         if (installed) {
             venvContents.write(pluginPackages);
+            installedPackages.freeze(log);
+        }
+        if (lockFile == null) {
+            missingLockFileWarning(venvDirectory, pluginPackages, missingLockFileWarning, log);
         }
     }
 
@@ -591,11 +595,9 @@ public final class VFSUtils {
         return contents;
     }
 
-    private static boolean install(Path venvDirectory, LockFile lockFile, BuildToolLog log) throws IOException {
-        InstalledPackages installedPackages = InstalledPackages.fromVenv(venvDirectory);
+    private static boolean install(Path venvDirectory, InstalledPackages installedPackages, LockFile lockFile, BuildToolLog log) throws IOException {
         if (installedPackages.packages.size() != lockFile.packages.size() || deleteUnwantedPackages(venvDirectory, lockFile.packages, installedPackages.packages, log)) {
             runPip(venvDirectory, "install", log, "-r", lockFile.path.toString());
-            installedPackages.freeze(log);
             return true;
         } else {
             info(log, "Virtual environment is up to date with lock file, skipping install");
@@ -611,9 +613,8 @@ public final class VFSUtils {
     }
 
     private static void missingLockFileWarning(Path venvDirectory, List<String> newPackages, String missingLockFileWarning, BuildToolLog log) throws IOException {
-        List<String> installedPackages = InstalledPackages.fromVenv(venvDirectory).freeze(log);
         if (missingLockFileWarning != null && !Boolean.getBoolean("graalpy.vfs.skipMissingLockFileWarning")) {
-            if (!newPackages.containsAll(installedPackages)) {
+            if (!newPackages.containsAll(InstalledPackages.fromVenv(venvDirectory).packages)) {
                 if (log.isWarningEnabled()) {
                     String txt = missingLockFileWarning + "\n";
                     for (String t : txt.split("\n")) {
@@ -809,9 +810,7 @@ public final class VFSUtils {
     }
 
     private static void warning(BuildToolLog log, String txt) {
-        if (log.isWarningEnabled()) {
-            log.warning(txt);
-        }
+        log.warning(txt);
     }
 
     private static void extendedError(BuildToolLog log, String txt) {
@@ -837,9 +836,7 @@ public final class VFSUtils {
     }
 
     private static void debug(BuildToolLog log, String txt) {
-        if (log.isDebugEnabled()) {
             log.debug(txt);
-        }
     }
 
     private static void logDebug(BuildToolLog log, List<String> l, String msg, Object... args) {
