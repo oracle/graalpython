@@ -84,7 +84,7 @@ Whether deployed in a virtual filesystem or an external directory, its contents 
 specified in the plugin configuration.
 
 ## Python Dependency Management
-The list of third-party Python packages to be downloaded and installed can be specified in the particular plugin`s configuration. Unfortunately,
+The list of third-party Python packages to be downloaded and installed can be specified in Maven or Gradle plugin configuration. Unfortunately,
 Python does not enforce strict versioning of dependencies, which can result in problems if a third-party package or one of its transitive
 dependencies is unexpectedly updated to a newer version, leading to unforeseen behavior.
 
@@ -158,7 +158,7 @@ Remember to use the appropriate `GraalPyResources` API to create the Context. Th
   ```
   
 ### Locking Python Packages
-To lock the current state of the installed packages, execute the GraalPy plugin goal `org.graalvm.python:graalpy-maven-plugin:lock-packages`. 
+To lock the dependency tree of the specified Python packages, execute the GraalPy plugin goal `org.graalvm.python:graalpy-maven-plugin:lock-packages`. 
 ```bash
 $ mvn org.graalvm.python:graalpy-maven-plugin:lock-packages
 ```
@@ -227,7 +227,7 @@ dependency `org.graalvm.python:python` to the community build: `org.graalvm.pyth
   }
   ```
 ### Locking Python Packages
-To lock the current state of declared packages, execute the GraalPy plugin task `graalPyLockPackages`.
+To lock the dependency tree of the specified Python packages, execute the GraalPy plugin task `graalPyLockPackages`.
 ```bash
 $ gradle graalPyLockPackages
 ```
