@@ -1147,9 +1147,6 @@ suite = {
                 "exports": [
                     "com.oracle.graal.python.* to org.graalvm.py.enterprise",
                 ],
-                "uses": [
-                    "com.oracle.graal.python.builtins.PythonBuiltins",
-                ],
             },
             "useModulePath": True,
             "dependencies": [

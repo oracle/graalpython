@@ -56,10 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.ServiceLoader;
 import java.util.logging.Level;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
@@ -419,28 +416,15 @@ public abstract class Python3Core {
 
     private static TruffleString[] initializeCoreFiles() {
         // Order matters!
-        List<TruffleString> coreFiles = new ArrayList<>(Arrays.asList(
+        return new TruffleString[]{
                         toTruffleStringUncached("__graalpython__"),
                         toTruffleStringUncached("_weakref"),
                         toTruffleStringUncached("unicodedata"),
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("_sysconfig"),
                         toTruffleStringUncached("java"),
-                        toTruffleStringUncached("pip_hook")));
-        // add service loader defined python file extensions
-        if (!ImageInfo.inImageRuntimeCode()) {
-            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
-            PythonOS currentOs = PythonOS.getPythonOS();
-            for (PythonBuiltins builtin : providers) {
-                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (!annotation.pythonFile().isEmpty() &&
-                                (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs)) {
-                    coreFiles.add(toTruffleStringUncached(annotation.pythonFile()));
-                }
-            }
-        }
-        coreFiles.removeAll(Arrays.asList(new TruffleString[]{null}));
-        return coreFiles.toArray(new TruffleString[coreFiles.size()]);
+                        toTruffleStringUncached("pip_hook")
+        };
     }
 
     private final PythonBuiltins[] builtins;
@@ -809,10 +793,6 @@ public abstract class Python3Core {
             builtins.add(new BZ2CompressorBuiltins());
             builtins.add(new BZ2DecompressorBuiltins());
             builtins.add(new BZ2ModuleBuiltins());
-        }
-        ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
-        for (PythonBuiltins builtin : providers) {
-            builtins.add(builtin);
         }
         filterBuiltins(builtins);
         return builtins.toArray(new PythonBuiltins[builtins.size()]);

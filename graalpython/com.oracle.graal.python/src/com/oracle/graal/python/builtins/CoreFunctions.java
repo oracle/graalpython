@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,11 +40,7 @@ public @interface CoreFunctions {
      */
     PythonOS os() default PythonOS.PLATFORM_ANY;
 
-    String publicName() default "";
-
     PythonBuiltinClassType[] extendClasses() default {};
-
-    String pythonFile() default "";
 
     boolean isEager() default false;
 }
