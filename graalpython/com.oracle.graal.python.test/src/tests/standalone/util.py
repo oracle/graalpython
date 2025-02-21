@@ -227,12 +227,15 @@ def get_mvn_wrapper(project_dir, env):
     check_ouput(MAVEN_VERSION, out)
     return mvn_cmd
 
-def get_gradle_wrapper(project_dir, env):
+def get_gradle_wrapper(project_dir, env, verbose=True):
     gradle_cmd = [os.path.abspath(os.path.join(project_dir, "gradlew" if 'win32' != sys.platform else "gradlew.bat"))]
     cmd = gradle_cmd + ["--version"]
     out, return_code = run_cmd(cmd, env, cwd=project_dir)
     check_ouput(GRADLE_VERSION, out)
-    return gradle_cmd + ["-i"]
+    if verbose:
+        return gradle_cmd + ["-i"]
+    else:
+        return gradle_cmd
 
 def get_gp():
     if "PYTHON_STANDALONE_HOME" not in os.environ:

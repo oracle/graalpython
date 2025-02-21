@@ -47,7 +47,7 @@ from tests.standalone import util
 from tests.standalone.util import TemporaryTestDirectory, Logger
 
 MISSING_FILE_WARNING = "The list of installed Python packages does not match the packages specified in the graalpy-maven-plugin configuration"
-PACKAGES_CHANGED_ERROR = "but packages in graalpy-maven-plugin configuration are different then previously used to generate the lock file"
+PACKAGES_CHANGED_ERROR = "packages and their version constraints in graalpy-maven-plugin configuration are different then previously used to generate the lock file"
 VENV_UPTODATE = "Virtual environment is up to date with lock file, skipping install"
 
 def append(file, txt):
@@ -133,16 +133,19 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             build_file = os.path.join(target_dir, self.build_file_name)
             append(build_file, self.packages_termcolor(community))
 
-            gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env)
             log = Logger()
 
             # build
+            gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env, verbose=False)
+
             cmd = gradlew_cmd + ["build"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("Virtual filesystem is deployed to default resources directory", out, logger=log)
             util.check_ouput("This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem", out, logger=log)
             self.check_filelist(target_dir, log)
+
+            gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
             cmd = gradlew_cmd + ["nativeCompile"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
