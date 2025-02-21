@@ -45,8 +45,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -63,52 +63,48 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline
 @GenerateCached(false)
-public abstract class PySequenceInplaceConcat extends PNodeWithContext {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
+public abstract class PySequenceInPlaceRepeatNode extends PNodeWithContext {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object o, int count);
 
     @Specialization
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object v, Object w,
-                    @Cached GetClassNode getVClass,
-                    @Cached GetCachedTpSlotsNode getVSlots,
-                    @Cached GetCachedTpSlotsNode getWSlots,
-                    @Cached GetClassNode getWClass,
-                    @Cached PySequenceCheckNode pySeqCheckV,
-                    @Cached PySequenceCheckNode pySeqCheckW,
+    static Object doIt(VirtualFrame frame, Node inliningTarget, Object o, int count,
+                    @Cached GetClassNode getClassNode,
+                    @Cached GetCachedTpSlotsNode slotsNode,
+                    @Cached PySequenceCheckNode sequenceCheckNode,
                     @Cached CallBinaryIOp1Node callBinaryIOp1Node,
-                    @Cached InlinedBranchProfile hasInplaceConcat,
-                    @Cached InlinedBranchProfile hasConcat,
-                    @Cached InlinedBranchProfile hasNbAddSlot,
-                    @Cached InlinedBranchProfile hasNbAddResult,
-                    @Cached CallSlotBinaryFuncNode callBinarySlotNode,
+                    @Cached InlinedBranchProfile hasInplaceRepeat,
+                    @Cached InlinedBranchProfile hasRepeat,
+                    @Cached InlinedBranchProfile isSequence,
+                    @Cached InlinedBranchProfile hasNbMultiplyResult,
+                    @Cached CallSlotSizeArgFun callSlot,
                     @Cached PRaiseNode raiseNode) {
-        Object classV = getVClass.execute(inliningTarget, v);
-        TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
-        TpSlot concatSlot = null;
-        if (slotsV.sq_inplace_concat() != null) {
-            hasInplaceConcat.enter(inliningTarget);
-            concatSlot = slotsV.sq_inplace_concat();
-        } else if (slotsV.sq_concat() != null) {
-            hasConcat.enter(inliningTarget);
-            concatSlot = slotsV.sq_concat();
+        Object classV = getClassNode.execute(inliningTarget, o);
+        TpSlots slotsV = slotsNode.execute(inliningTarget, classV);
+        TpSlot repeatSlot = null;
+        if (slotsV.sq_inplace_repeat() != null) {
+            hasInplaceRepeat.enter(inliningTarget);
+            repeatSlot = slotsV.sq_inplace_repeat();
+        } else if (slotsV.sq_repeat() != null) {
+            hasRepeat.enter(inliningTarget);
+            repeatSlot = slotsV.sq_repeat();
         }
-        if (concatSlot != null) {
-            return callBinarySlotNode.execute(frame, inliningTarget, concatSlot, v, w);
+        if (repeatSlot != null) {
+            return callSlot.execute(frame, inliningTarget, repeatSlot, o, count);
         }
-        if (pySeqCheckV.execute(inliningTarget, v) && pySeqCheckW.execute(inliningTarget, w)) {
-            Object classW = getWClass.execute(inliningTarget, w);
-            TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
-            hasNbAddSlot.enter(inliningTarget);
-            Object result = callBinaryIOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, InplaceSlot.NB_INPLACE_ADD);
+        if (sequenceCheckNode.execute(inliningTarget, o)) {
+            isSequence.enter(inliningTarget);
+            PythonBuiltinClassType countType = PythonBuiltinClassType.PInt;
+            Object result = callBinaryIOp1Node.execute(frame, inliningTarget, o, classV, slotsV, count, countType, countType.getSlots(), InplaceSlot.NB_INPLACE_MULTIPLY);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                hasNbAddResult.enter(inliningTarget);
+                hasNbMultiplyResult.enter(inliningTarget);
                 return result;
             }
         }
-        return raiseNotSupported(inliningTarget, v, raiseNode);
+        return raiseNotSupported(inliningTarget, o, raiseNode);
     }
 
     @InliningCutoff
     private static PException raiseNotSupported(Node inliningTarget, Object v, PRaiseNode raiseNode) {
-        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANT_BE_CONCATENATED, v);
+        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, v);
     }
 }

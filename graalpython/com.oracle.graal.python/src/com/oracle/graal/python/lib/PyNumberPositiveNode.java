@@ -88,4 +88,8 @@ public abstract class PyNumberPositiveNode extends UnaryOpNode {
     public static PyNumberPositiveNode create() {
         return PyNumberPositiveNodeGen.create();
     }
+
+    public static PyNumberPositiveNode getUncached() {
+        return PyNumberPositiveNodeGen.getUncached();
+    }
 }

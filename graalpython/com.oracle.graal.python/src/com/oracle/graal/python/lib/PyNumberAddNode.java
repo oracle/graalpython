@@ -40,13 +40,14 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.objects.ints.IntBuiltins.AddNode.add;
 import static com.oracle.graal.python.lib.CallBinaryOpNode.raiseNotSupported;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Revers
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -65,8 +67,10 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -74,27 +78,39 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
 abstract class PyNumberAddBaseNode extends BinaryOpNode {
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins, FloatBuiltins, ListBuiltins, ...
+     * in IntBuiltins
      */
     @Specialization(rewriteOn = ArithmeticException.class)
-    public static int add(int left, int right) {
+    static int doII(int left, int right) {
         return Math.addExact(left, right);
     }
 
-    @Specialization
-    public static long doIIOvf(int x, int y) {
-        return x + (long) y;
-    }
-
-    @Specialization(rewriteOn = ArithmeticException.class)
-    public static long addLong(long left, long right) {
+    @Specialization(replaces = "doII", rewriteOn = ArithmeticException.class)
+    static long doLL(long left, long right) {
         return Math.addExact(left, right);
     }
 
+    @Specialization(replaces = "doLL")
+    static Object doLLOvf(long x, long y,
+                    @Bind PythonLanguage language) {
+        /* Inlined version of Math.addExact(x, y) with BigInteger fallback. */
+        long r = x + y;
+        // HD 2-12 Overflow iff both arguments have the opposite sign of the result
+        if (((x ^ r) & (y ^ r)) < 0) {
+            return PFactory.createInt(language, add(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+        }
+        return r;
+    }
+
+    /*
+     * All the following fast paths need to be kept in sync with the corresponding builtin functions
+     * in FloatBuiltins
+     */
     @Specialization
     public static double doDD(double left, double right) {
         return left + right;
@@ -109,19 +125,10 @@ abstract class PyNumberAddBaseNode extends BinaryOpNode {
     public static double doLD(long left, double right) {
         return left + right;
     }
-
-    @Specialization
-    public static double doDI(double left, int right) {
-        return left + right;
-    }
-
-    @Specialization
-    public static double doID(int left, double right) {
-        return left + right;
-    }
 }
 
 @GenerateInline(inlineByDefault = true)
+@GenerateUncached
 public abstract class PyNumberAddNode extends PyNumberAddBaseNode {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
 
@@ -138,24 +145,19 @@ public abstract class PyNumberAddNode extends PyNumberAddBaseNode {
 
     public abstract double executeDouble(VirtualFrame frame, Node inliningTarget, double left, double right) throws UnexpectedResultException;
 
-    @NeverDefault
-    protected static SequenceStorageNodes.ConcatNode createConcat() {
-        return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
-    }
-
     @Specialization(guards = {"isBuiltinList(left)", "isBuiltinList(right)"})
-    static PList doPList(PList left, PList right,
-                    @Shared @Cached(value = "createConcat()", inline = false) SequenceStorageNodes.ConcatNode concatNode,
+    static PList doPList(Node inliningTarget, PList left, PList right,
+                    @Shared @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
                     @Bind PythonLanguage language) {
-        SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        SequenceStorage newStore = concatNode.execute(inliningTarget, left.getSequenceStorage(), right.getSequenceStorage());
         return PFactory.createList(language, newStore);
     }
 
     @Specialization(guards = {"isBuiltinTuple(left)", "isBuiltinTuple(right)"})
-    static PTuple doTuple(PTuple left, PTuple right,
-                    @Shared @Cached(value = "createConcat()", inline = false) SequenceStorageNodes.ConcatNode concatNode,
+    static PTuple doTuple(Node inliningTarget, PTuple left, PTuple right,
+                    @Shared @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
                     @Bind PythonLanguage language) {
-        SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        SequenceStorage concatenated = concatNode.execute(inliningTarget, left.getSequenceStorage(), right.getSequenceStorage());
         return PFactory.createTuple(language, concatenated);
     }
 
@@ -193,5 +195,9 @@ public abstract class PyNumberAddNode extends PyNumberAddBaseNode {
     @NeverDefault
     public static PyNumberAddNode create() {
         return PyNumberAddNodeGen.create();
+    }
+
+    public static PyNumberAddNode getUncached() {
+        return PyNumberAddNodeGen.getUncached();
     }
 }

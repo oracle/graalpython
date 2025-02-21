@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -166,7 +166,7 @@ public class BufferedIONodes {
     }
 
     @ImportStatic(PGuards.class)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateInline
     @GenerateCached(false)
     // PyNumber_AsOff_t

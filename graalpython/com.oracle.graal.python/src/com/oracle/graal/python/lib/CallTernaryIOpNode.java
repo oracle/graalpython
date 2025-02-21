@@ -40,30 +40,46 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.CallSlotNbInPlacePowerNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(false)
+@GenerateInline
+@GenerateCached(false)
 @GenerateUncached
-public abstract class PyNumberInplaceOrNode extends PyNumberOrBaseNode {
-    @Fallback
-    @InliningCutoff
-    public static Object doIt(VirtualFrame frame, Object v, Object w,
-                    @Bind Node inliningTarget,
-                    @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_OR, "|=");
-    }
+public abstract class CallTernaryIOpNode extends Node {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z);
 
-    @NeverDefault
-    public static PyNumberInplaceOrNode create() {
-        return PyNumberInplaceOrNodeGen.create();
+    @Specialization
+    static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z,
+                    @Cached GetClassNode getVClass,
+                    @Cached GetClassNode getWClass,
+                    @Cached GetCachedTpSlotsNode getVSlots,
+                    @Cached GetCachedTpSlotsNode getWSlots,
+                    @Cached CallSlotNbInPlacePowerNode callInplacePower,
+                    @Cached CallTernaryOpNode callTernaryOpNode) {
+        Object classV = getVClass.execute(inliningTarget, v);
+        TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
+        TpSlot slotV = slotsV.nb_inplace_power();
+        if (slotV != null) {
+            Object result = callInplacePower.execute(frame, inliningTarget, slotV, v, w, z);
+            if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+        }
+        slotV = slotsV.nb_power();
+        Object classW = getWClass.execute(inliningTarget, w);
+        TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_power();
+        return callTernaryOpNode.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, z);
     }
 }

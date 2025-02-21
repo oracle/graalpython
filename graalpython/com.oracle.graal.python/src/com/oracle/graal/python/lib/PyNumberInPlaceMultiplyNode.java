@@ -40,71 +40,86 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.lib.CallBinaryOpNode.raiseNotSupported;
+
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
-@GenerateInline
-@GenerateCached(false)
-public abstract class PySequenceInplaceRepeat extends PNodeWithContext {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object o, int count);
+@GenerateInline(false)
+@GenerateUncached
+public abstract class PyNumberInPlaceMultiplyNode extends PyNumberMultiplyBaseNode {
 
-    @Specialization
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object o, int count,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetCachedTpSlotsNode slotsNode,
-                    @Cached PySequenceCheckNode sequenceCheckNode,
+    @Fallback
+    @InliningCutoff
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
+                    @Exclusive @Cached GetClassNode getVClass,
+                    @Cached GetCachedTpSlotsNode getVSlots,
+                    @Cached GetCachedTpSlotsNode getWSlots,
+                    @Exclusive @Cached GetClassNode getWClass,
                     @Cached CallBinaryIOp1Node callBinaryIOp1Node,
+                    @Cached InlinedBranchProfile hasNbMultiplyResult,
                     @Cached InlinedBranchProfile hasInplaceRepeat,
                     @Cached InlinedBranchProfile hasRepeat,
-                    @Cached InlinedBranchProfile isSequence,
-                    @Cached InlinedBranchProfile hasNbMultiplyResult,
-                    @Cached CallSlotSizeArgFun callSlot,
+                    @Cached InlinedBranchProfile wHasRepeat,
+                    @Cached SequenceRepeatHelperNode sequenceRepeatNode,
                     @Cached PRaiseNode raiseNode) {
-        Object classV = getClassNode.execute(inliningTarget, o);
-        TpSlots slotsV = slotsNode.execute(inliningTarget, classV);
-        TpSlot repeatSlot = null;
-        if (slotsV.sq_inplace_repeat() != null) {
-            hasInplaceRepeat.enter(inliningTarget);
-            repeatSlot = slotsV.sq_inplace_repeat();
-        } else if (slotsV.sq_repeat() != null) {
-            hasRepeat.enter(inliningTarget);
-            repeatSlot = slotsV.sq_repeat();
+        Object classV = getVClass.execute(inliningTarget, v);
+        Object classW = getWClass.execute(inliningTarget, w);
+        TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
+        TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
+        Object result = callBinaryIOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, InplaceSlot.NB_INPLACE_MULTIPLY);
+        if (result != PNotImplemented.NOT_IMPLEMENTED) {
+            hasNbMultiplyResult.enter(inliningTarget);
+            return result;
         }
-        if (repeatSlot != null) {
-            return callSlot.execute(frame, inliningTarget, repeatSlot, o, count);
-        }
-        if (sequenceCheckNode.execute(inliningTarget, o)) {
-            isSequence.enter(inliningTarget);
-            PythonBuiltinClassType countType = PythonBuiltinClassType.PInt;
-            Object result = callBinaryIOp1Node.execute(frame, inliningTarget, o, classV, slotsV, count, countType, countType.getSlots(), InplaceSlot.NB_INPLACE_MULTIPLY);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                hasNbMultiplyResult.enter(inliningTarget);
-                return result;
+        if (slotsV.has_as_sequence()) {
+            TpSlot repeatSlot = null;
+            if (slotsV.sq_inplace_repeat() != null) {
+                hasInplaceRepeat.enter(inliningTarget);
+                repeatSlot = slotsV.sq_inplace_repeat();
+            } else if (slotsV.sq_repeat() != null) {
+                hasRepeat.enter(inliningTarget);
+                repeatSlot = slotsV.sq_repeat();
+            }
+            if (repeatSlot != null) {
+                return sequenceRepeatNode.execute(frame, repeatSlot, v, w);
+            }
+        } else if (slotsW.has_as_sequence()) {
+            /*
+             * Note that the right hand operand should not be mutated in this case so
+             * sq_inplace_repeat is not used.
+             */
+            if (slotsW.sq_repeat() != null) {
+                wHasRepeat.enter(inliningTarget);
+                return sequenceRepeatNode.execute(frame, slotsW.sq_repeat(), w, v);
             }
         }
-        return raiseNotSupported(inliningTarget, o, raiseNode);
+        return raiseNotSupported(inliningTarget, v, w, "*=", raiseNode);
     }
 
-    @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, PRaiseNode raiseNode) {
-        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANT_BE_REPEATED, v);
+    @NeverDefault
+    public static PyNumberInPlaceMultiplyNode create() {
+        return PyNumberInPlaceMultiplyNodeGen.create();
+    }
+
+    public static PyNumberInPlaceMultiplyNode getUncached() {
+        return PyNumberInPlaceMultiplyNodeGen.getUncached();
     }
 }

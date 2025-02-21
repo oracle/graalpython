@@ -46,22 +46,28 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-public abstract class PyNumberInplaceSubtractNode extends PyNumberSubtractBaseNode {
+@GenerateUncached
+public abstract class PyNumberInPlaceOrNode extends PyNumberOrBaseNode {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_SUBTRACT, "-=");
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_OR, "|=");
     }
 
     @NeverDefault
-    public static PyNumberInplaceSubtractNode create() {
-        return PyNumberInplaceSubtractNodeGen.create();
+    public static PyNumberInPlaceOrNode create() {
+        return PyNumberInPlaceOrNodeGen.create();
+    }
+
+    public static PyNumberInPlaceOrNode getUncached() {
+        return PyNumberInPlaceOrNodeGen.getUncached();
     }
 }

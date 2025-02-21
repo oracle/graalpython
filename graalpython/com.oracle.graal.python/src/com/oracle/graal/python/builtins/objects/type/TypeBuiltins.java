@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -168,7 +167,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassE
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
@@ -194,7 +192,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -278,7 +275,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object getDoc(PythonNativeClass self, @SuppressWarnings("unused") PNone value) {
+        static Object getDoc(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone value) {
             return ReadAttributeFromObjectNode.getUncachedForceType().execute(self, T___DOC__);
         }
 
@@ -559,7 +556,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Shared @Cached BindNew bindNew,
                         @Shared @Cached PRaiseNode raiseNode) {
             checkFlags(self, inliningTarget, getTypeFlagsNode, raiseNode);
-            return op(frame, inliningTarget, PythonNativeClass.cast(cachedSelf), arguments, keywords, getInstanceClassNode, hasInit, gotInitResult, bindNew, raiseNode);
+            return op(frame, inliningTarget, cachedSelf, arguments, keywords, getInstanceClassNode, hasInit, gotInitResult, bindNew, raiseNode);
         }
 
         @Specialization(replaces = "doIt1")
@@ -572,7 +569,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Shared @Cached BindNew bindNew,
                         @Shared @Cached PRaiseNode raiseNode) {
             checkFlags(self, inliningTarget, getTypeFlagsNode, raiseNode);
-            return op(frame, inliningTarget, PythonNativeClass.cast(self), arguments, keywords, getInstanceClassNode, hasInit, gotInitResult, bindNew, raiseNode);
+            return op(frame, inliningTarget, self, arguments, keywords, getInstanceClassNode, hasInit, gotInitResult, bindNew, raiseNode);
         }
 
         private void checkFlags(PythonAbstractNativeObject self, Node inliningTarget, GetTypeFlagsNode getTypeFlagsNode, PRaiseNode raiseNode) {
@@ -907,7 +904,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doNative(PythonNativeClass self,
+        static Object doNative(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadObjectNode getTpDictNode) {
             return getTpDictNode.readFromObj(self, CFields.PyTypeObject__tp_dict);
         }
@@ -1050,7 +1047,6 @@ public final class TypeBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @TypeSystemReference(PythonTypes.class)
     abstract static class AbstractSlotNode extends PythonBinaryBuiltinNode {
     }
 
@@ -1194,7 +1190,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        static Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+        static Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
                         @Bind("this") Node inliningTarget,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
                         @Shared @Cached GetTypeFlagsNode getFlags,
@@ -1223,7 +1219,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        static Object setNative(PythonNativeClass cls, Object value,
+        static Object setNative(PythonAbstractNativeObject cls, Object value,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached GetTypeFlagsNode getFlags,
                         @Cached("createForceType()") WriteAttributeToObjectNode writeAttr,
@@ -1263,7 +1259,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        static Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+        static Object getNative(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
                         @Cached GetTypeFlagsNode getTypeFlagsNode,
                         @Cached CStructAccess.ReadObjectNode getHtName,
                         @Cached CStructAccess.ReadCharPtrNode getTpNameNode,

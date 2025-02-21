@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -51,11 +52,18 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
 abstract class PyNumberAndBaseNode extends BinaryOpNode {
+
+    @Specialization
+    public static boolean op(boolean left, boolean right) {
+        return left && right;
+    }
 
     @Specialization
     public static int op(int left, int right) {
@@ -83,5 +91,9 @@ public abstract class PyNumberAndNode extends PyNumberAndBaseNode {
     @NeverDefault
     public static PyNumberAndNode create() {
         return PyNumberAndNodeGen.create();
+    }
+
+    public static PyNumberAndNode getUncached() {
+        return PyNumberAndNodeGen.getUncached();
     }
 }

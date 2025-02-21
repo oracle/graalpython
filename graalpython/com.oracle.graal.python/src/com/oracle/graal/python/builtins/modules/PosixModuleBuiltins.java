@@ -88,6 +88,7 @@ import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
@@ -98,8 +99,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -110,7 +109,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -148,7 +146,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -2635,10 +2632,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_exit", minNumOfPositionalArgs = 1)
+    @Builtin(name = "_exit", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ExitNode extends PythonUnaryBuiltinNode {
+    public abstract static class ExitNode extends PythonUnaryClinicBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object exit(int status) {
@@ -2666,6 +2663,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 });
             }
             throw new ThreadDeath();
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ExitNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -2916,7 +2918,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "urandom", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"size"})
     @ArgumentClinic(name = "size", conversion = ClinicConversion.Index)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
         @Specialization(guards = "size >= 0")
         static PBytes urandom(int size,
@@ -3298,7 +3299,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
      */
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic({BinaryArithmetic.class, PGuards.class})
+    @ImportStatic(PGuards.class)
     abstract static class SplitLongToSAndNsNode extends ConvertToTimespecBaseNode {
 
         private static final long BILLION = 1000000000;
@@ -3316,12 +3317,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isInteger(value)"})
         static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
-                        @Cached(value = "DivMod.create()", inline = false) BinaryOpNode callDivmod,
+                        @Cached PyNumberDivmodNode divmodNode,
                         @Cached LenNode lenNode,
                         @Cached(value = "createNotNormalized()", inline = false) GetItemNode getItemNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode) {
-            Object divmod = callDivmod.execute(frame, value, BILLION);
+            Object divmod = divmodNode.execute(frame, inliningTarget, value, BILLION);
             if (!PGuards.isPTuple(divmod) || lenNode.execute(inliningTarget, (PSequence) divmod) != 2) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
             }

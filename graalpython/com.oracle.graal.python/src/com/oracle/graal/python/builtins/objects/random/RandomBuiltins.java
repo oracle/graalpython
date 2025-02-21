@@ -67,7 +67,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -91,7 +91,7 @@ public final class RandomBuiltins extends PythonBuiltins {
 
     @Builtin(name = "seed", minNumOfPositionalArgs = 1, parameterNames = {"$self", "seed"})
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class SeedNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary

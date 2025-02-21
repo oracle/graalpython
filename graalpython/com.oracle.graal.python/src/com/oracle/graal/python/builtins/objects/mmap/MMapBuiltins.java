@@ -114,7 +114,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverterNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
@@ -135,7 +134,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -471,7 +469,6 @@ public final class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = "read_byte", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadByteNode extends PythonUnaryBuiltinNode {
 
         @Specialization
@@ -496,7 +493,6 @@ public final class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = "read", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNode extends PythonBuiltinNode {
 
         @Specialization
@@ -659,7 +655,6 @@ public final class MMapBuiltins extends PythonBuiltins {
     @Builtin(name = "find", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
     @ArgumentClinic(name = "sub", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FindNode extends PythonQuaternaryClinicBuiltinNode {
         private static final int BUFFER_SIZE = 1024; // keep in sync with test_mmap.py
 

@@ -200,7 +200,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassP
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -232,7 +231,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -767,7 +765,6 @@ public abstract class TypeNodes {
         }
     }
 
-    @TypeSystemReference(PythonTypes.class)
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
@@ -820,7 +817,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static PDict doNativeClass(Node inliningTarget, PythonNativeClass obj,
+        static PDict doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
                         @Cached(inline = false) CStructAccess.ReadObjectNode getTpSubclassesNode,
                         @Cached InlinedExactClassProfile profile) {
             Object tpSubclasses = getTpSubclassesNode.readFromObj(obj, PyTypeObject__tp_subclasses);

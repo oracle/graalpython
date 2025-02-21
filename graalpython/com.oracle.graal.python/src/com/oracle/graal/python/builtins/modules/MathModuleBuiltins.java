@@ -56,6 +56,7 @@ import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -65,9 +66,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -79,7 +78,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerAndFloatTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -145,7 +144,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     public abstract static class MathUnaryHelperNode extends Node {
 
@@ -405,7 +404,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "comb", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class CombNode extends PythonBinaryBuiltinNode {
@@ -475,7 +474,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "perm", minNumOfPositionalArgs = 1, parameterNames = {"n", "k"})
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class PermNode extends PythonBinaryBuiltinNode {
@@ -717,7 +716,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isnan", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class IsNanNode extends PythonUnaryBuiltinNode {
@@ -783,7 +782,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "ldexp", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"x", "i"})
     @ArgumentClinic(name = "x", conversion = ArgumentClinic.ClinicConversion.Double)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @GenerateNodeFactory
     public abstract static class LdexpNode extends PythonBinaryClinicBuiltinNode {
 
@@ -1033,7 +1032,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     public abstract static class Gcd2Node extends Node {
 
@@ -1193,7 +1192,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "nextafter", minNumOfPositionalArgs = 2, parameterNames = {"start", "direction"})
     @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.Double)
     @ArgumentClinic(name = "direction", conversion = ArgumentClinic.ClinicConversion.Double)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class NextAfterNode extends PythonBinaryClinicBuiltinNode {
@@ -1211,7 +1210,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "ulp", minNumOfPositionalArgs = 1, parameterNames = {"x"})
     @ArgumentClinic(name = "x", conversion = ArgumentClinic.ClinicConversion.Double)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class UlpNode extends PythonUnaryClinicBuiltinNode {
@@ -1442,7 +1441,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "asinh", minNumOfPositionalArgs = 1, doc = "Return the inverse hyperbolic sine of x.")
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class AsinhNode extends PythonUnaryBuiltinNode {
@@ -1464,7 +1463,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isfinite", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class IsFiniteNode extends PythonUnaryBuiltinNode {
@@ -1493,7 +1492,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isinf", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class IsInfNode extends PythonUnaryBuiltinNode {
@@ -1522,7 +1521,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "log", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     @SuppressWarnings("truffle-static-method")
@@ -1980,7 +1979,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "hypot", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class HypotNode extends PythonVarargsBuiltinNode {
@@ -2400,7 +2399,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isqrt", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     public abstract static class IsqrtNode extends PythonUnaryBuiltinNode {
@@ -2469,14 +2468,14 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class ProdNode extends PythonBuiltinNode {
 
         @Child private LookupAndCallUnaryNode callNextNode = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next);
-        @Child private BinaryOpNode mul = BinaryArithmetic.Mul.create();
 
         @Specialization
         public Object doGeneric(VirtualFrame frame, Object iterable, Object startIn,
                         @Bind("this") Node inliningTarget,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached InlinedConditionProfile startIsNoValueProfile,
-                        @Cached PyObjectGetIter getIter) {
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyNumberMultiplyNode multiplyNode) {
             Object start = startIsNoValueProfile.profile(inliningTarget, PGuards.isNoValue(startIn)) ? 1 : startIn;
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             Object value = start;
@@ -2488,7 +2487,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(inliningTarget, errorProfile);
                     return value;
                 }
-                value = mul.execute(frame, value, nextValue);
+                value = multiplyNode.execute(frame, inliningTarget, value, nextValue);
             }
         }
     }

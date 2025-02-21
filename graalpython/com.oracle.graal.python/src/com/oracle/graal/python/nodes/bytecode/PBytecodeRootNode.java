@@ -112,18 +112,19 @@ import com.oracle.graal.python.compiler.UnaryOpsConstants;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
-import com.oracle.graal.python.lib.PyNumberInplaceAddNode;
-import com.oracle.graal.python.lib.PyNumberInplaceAndNode;
-import com.oracle.graal.python.lib.PyNumberInplaceFloorDivideNode;
-import com.oracle.graal.python.lib.PyNumberInplaceLshiftNode;
-import com.oracle.graal.python.lib.PyNumberInplaceMatrixMultiplyNode;
-import com.oracle.graal.python.lib.PyNumberInplaceMultiplyNode;
-import com.oracle.graal.python.lib.PyNumberInplaceOrNode;
-import com.oracle.graal.python.lib.PyNumberInplaceRemainderNode;
-import com.oracle.graal.python.lib.PyNumberInplaceRshiftNode;
-import com.oracle.graal.python.lib.PyNumberInplaceSubtractNode;
-import com.oracle.graal.python.lib.PyNumberInplaceTrueDivideNode;
-import com.oracle.graal.python.lib.PyNumberInplaceXorNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceAddNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceAndNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceLshiftNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceOrNode;
+import com.oracle.graal.python.lib.PyNumberInPlacePowerNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceRemainderNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceRshiftNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceSubtractNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceXorNode;
 import com.oracle.graal.python.lib.PyNumberInvertNode;
 import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
@@ -149,7 +150,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetIterNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
-import com.oracle.graal.python.lib.PyObjectIsNotTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNodeGen;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -195,7 +195,6 @@ import com.oracle.graal.python.nodes.exception.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
-import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
@@ -422,7 +421,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
             case UnaryOpsConstants.NOT:
-                return PyObjectIsNotTrueNode.create();
+                return NotNode.create();
             case UnaryOpsConstants.POSITIVE:
                 return PyNumberPositiveNode.create();
             case UnaryOpsConstants.NEGATIVE:
@@ -463,31 +462,31 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case BinaryOpsConstants.MATMUL:
                 return PyNumberMatrixMultiplyNode.create();
             case BinaryOpsConstants.INPLACE_ADD:
-                return PyNumberInplaceAddNode.create();
+                return PyNumberInPlaceAddNode.create();
             case BinaryOpsConstants.INPLACE_SUB:
-                return PyNumberInplaceSubtractNode.create();
+                return PyNumberInPlaceSubtractNode.create();
             case BinaryOpsConstants.INPLACE_MUL:
-                return PyNumberInplaceMultiplyNode.create();
+                return PyNumberInPlaceMultiplyNode.create();
             case BinaryOpsConstants.INPLACE_TRUEDIV:
-                return PyNumberInplaceTrueDivideNode.create();
+                return PyNumberInPlaceTrueDivideNode.create();
             case BinaryOpsConstants.INPLACE_FLOORDIV:
-                return PyNumberInplaceFloorDivideNode.create();
+                return PyNumberInPlaceFloorDivideNode.create();
             case BinaryOpsConstants.INPLACE_MOD:
-                return PyNumberInplaceRemainderNode.create();
+                return PyNumberInPlaceRemainderNode.create();
             case BinaryOpsConstants.INPLACE_LSHIFT:
-                return PyNumberInplaceLshiftNode.create();
+                return PyNumberInPlaceLshiftNode.create();
             case BinaryOpsConstants.INPLACE_RSHIFT:
-                return PyNumberInplaceRshiftNode.create();
+                return PyNumberInPlaceRshiftNode.create();
             case BinaryOpsConstants.INPLACE_AND:
-                return PyNumberInplaceAndNode.create();
+                return PyNumberInPlaceAndNode.create();
             case BinaryOpsConstants.INPLACE_OR:
-                return PyNumberInplaceOrNode.create();
+                return PyNumberInPlaceOrNode.create();
             case BinaryOpsConstants.INPLACE_XOR:
-                return PyNumberInplaceXorNode.create();
+                return PyNumberInPlaceXorNode.create();
             case BinaryOpsConstants.INPLACE_POW:
-                return InplaceArithmetic.IPow.create();
+                return PyNumberInPlacePowerNode.create();
             case BinaryOpsConstants.INPLACE_MATMUL:
-                return PyNumberInplaceMatrixMultiplyNode.create();
+                return PyNumberInPlaceMatrixMultiplyNode.create();
             case BinaryOpsConstants.EQ:
                 return BinaryComparisonNode.EqNode.create();
             case BinaryOpsConstants.NE:
@@ -4091,7 +4090,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             generalizeInputs(bci);
             value = virtualFrame.getValue(stackTop);
         }
-        Object result = opNode.executeCached(virtualFrame, value);
+        Object result = opNode.execute(virtualFrame, value);
         virtualFrame.setObject(stackTop, result);
     }
 

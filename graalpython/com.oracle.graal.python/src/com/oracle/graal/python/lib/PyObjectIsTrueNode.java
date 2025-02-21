@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -77,13 +76,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateInline(false)
 @GenerateCached
-public abstract class PyObjectIsTrueNode extends UnaryOpNode {
+public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object object);
-
-    @Override
-    public final Object executeCached(VirtualFrame frame, Object value) {
-        return execute(frame, value);
-    }
 
     public static boolean executeUncached(Object object) {
         return getUncached().execute(null, object);

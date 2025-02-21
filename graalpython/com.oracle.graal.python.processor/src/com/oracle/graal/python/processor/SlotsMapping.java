@@ -62,6 +62,7 @@ public class SlotsMapping {
                             sq_inplace_concat ->
                 "TpSlotBinaryOp.TpSlotBinaryIOpBuiltin";
             case nb_power -> "TpSlotNbPower.TpSlotNbPowerBuiltin";
+            case nb_inplace_power -> null; // No builtin implementations
             case sq_concat -> "TpSlotBinaryFunc.TpSlotSqConcat";
             case sq_length, mp_length -> "TpSlotLen.TpSlotLenBuiltin" + getSuffix(s.isComplex());
             case sq_item, sq_repeat, sq_inplace_repeat -> "TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin";
@@ -83,7 +84,7 @@ public class SlotsMapping {
             case nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift, nb_and, nb_xor, nb_or,
                             nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
                 "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode";
-            case nb_power -> "com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode";
+            case nb_power, nb_inplace_power -> "com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode";
             case sq_concat -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqConcatBuiltinNode";
             case nb_inplace_add, nb_inplace_subtract, nb_inplace_multiply, nb_inplace_remainder,
                             nb_inplace_lshift, nb_inplace_rshift, nb_inplace_and, nb_inplace_xor, nb_inplace_or,

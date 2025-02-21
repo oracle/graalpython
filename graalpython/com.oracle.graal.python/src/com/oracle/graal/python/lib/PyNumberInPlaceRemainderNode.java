@@ -40,34 +40,34 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberMatrixMultiplyNode extends BinaryOpNode {
-
-    @Specialization
+public abstract class PyNumberInPlaceRemainderNode extends PyNumberRemainderBaseNode {
+    @Fallback
+    @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
-                    @Cached CallBinaryOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, ReversibleSlot.NB_MATRIX_MULTIPLY, "@");
+                    @Cached CallBinaryIOpNode callBinaryOpNode) {
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_REMAINDER, "%=");
     }
 
     @NeverDefault
-    public static PyNumberMatrixMultiplyNode create() {
-        return PyNumberMatrixMultiplyNodeGen.create();
+    public static PyNumberInPlaceRemainderNode create() {
+        return PyNumberInPlaceRemainderNodeGen.create();
     }
 
-    public static PyNumberMatrixMultiplyNode getUncached() {
-        return PyNumberMatrixMultiplyNodeGen.getUncached();
+    public static PyNumberInPlaceRemainderNode getUncached() {
+        return PyNumberInPlaceRemainderNodeGen.getUncached();
     }
 }

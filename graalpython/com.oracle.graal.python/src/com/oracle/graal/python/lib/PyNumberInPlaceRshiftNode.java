@@ -53,17 +53,21 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberInplaceAndNode extends PyNumberAndBaseNode {
+public abstract class PyNumberInPlaceRshiftNode extends PyNumberRshiftBaseNode {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_AND, "&=");
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_RSHIFT, ">>=");
     }
 
     @NeverDefault
-    public static PyNumberInplaceAndNode create() {
-        return PyNumberInplaceAndNodeGen.create();
+    public static PyNumberInPlaceRshiftNode create() {
+        return PyNumberInPlaceRshiftNodeGen.create();
+    }
+
+    public static PyNumberInPlaceRshiftNode getUncached() {
+        return PyNumberInPlaceRshiftNodeGen.getUncached();
     }
 }

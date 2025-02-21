@@ -46,22 +46,28 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-public abstract class PyNumberInplaceRshiftNode extends PyNumberRshiftBaseNode {
+@GenerateUncached
+public abstract class PyNumberInPlaceTrueDivideNode extends PyNumberTrueDivideBaseNode {
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_RSHIFT, ">>=");
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_TRUE_DIVIDE, "/=");
     }
 
     @NeverDefault
-    public static PyNumberInplaceRshiftNode create() {
-        return PyNumberInplaceRshiftNodeGen.create();
+    public static PyNumberInPlaceTrueDivideNode create() {
+        return PyNumberInPlaceTrueDivideNodeGen.create();
+    }
+
+    public static PyNumberInPlaceTrueDivideNode getUncached() {
+        return PyNumberInPlaceTrueDivideNodeGen.getUncached();
     }
 }

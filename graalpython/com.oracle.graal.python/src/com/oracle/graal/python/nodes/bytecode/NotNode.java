@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode.PyObjectIsTrueNodeGeneric;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -55,7 +56,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -63,16 +63,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 /**
  * Equivalent of a negation of CPython's {@code PyObject_IsTrue}. This class exists only so that we
  * can have quickening fast-paths for this operation. The fast-paths should be synchronized with
- * {@link PyObjectIsNotTrueNode}.
+ * {@link PyObjectIsTrueNode}.
  */
 @GenerateInline(false)
-public abstract class PyObjectIsNotTrueNode extends UnaryOpNode {
-    public abstract boolean execute(Frame frame, Object object);
-
-    @Override
-    public final Object executeCached(VirtualFrame frame, Object value) {
-        return execute(frame, value);
-    }
+public abstract class NotNode extends UnaryOpNode {
 
     @Specialization
     public static boolean doBoolean(boolean object) {
@@ -138,7 +132,7 @@ public abstract class PyObjectIsNotTrueNode extends UnaryOpNode {
     }
 
     @NeverDefault
-    public static PyObjectIsNotTrueNode create() {
-        return PyObjectIsNotTrueNodeGen.create();
+    public static NotNode create() {
+        return NotNodeGen.create();
     }
 }

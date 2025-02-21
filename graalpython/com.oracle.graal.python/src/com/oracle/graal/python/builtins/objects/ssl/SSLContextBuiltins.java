@@ -122,7 +122,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -143,7 +142,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -551,7 +549,6 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "num_tickets", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NumTicketsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
@@ -712,7 +709,6 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "load_verify_locations", minNumOfPositionalArgs = 1, parameterNames = {"$self", "cafile", "capath", "cadata"})
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object cafile, Object capath, Object cadata,
@@ -835,7 +831,6 @@ public final class SSLContextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "load_cert_chain", minNumOfPositionalArgs = 2, parameterNames = {"$self", "certfile", "keyfile", "password"})
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LoadCertChainNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object certfile, Object keyfile, Object passwordObj,

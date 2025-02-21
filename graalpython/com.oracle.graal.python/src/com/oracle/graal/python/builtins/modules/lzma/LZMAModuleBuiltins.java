@@ -95,7 +95,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
@@ -107,7 +106,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -291,7 +289,6 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "is_check_supported", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsCheckSupportedNode extends PythonUnaryBuiltinNode {
 
         @Specialization
@@ -305,7 +302,6 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_encode_filter_properties", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EncodeFilterPropertiesNode extends PythonUnaryBuiltinNode {
 
         @Specialization
@@ -318,7 +314,6 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_decode_filter_properties", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DecodeFilterPropertiesNode extends PythonBinaryBuiltinNode {
 
         @Specialization

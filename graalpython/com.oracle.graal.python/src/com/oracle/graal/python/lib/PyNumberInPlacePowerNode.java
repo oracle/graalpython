@@ -40,28 +40,61 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-public abstract class PyNumberInplaceRemainderNode extends PyNumberRemainderBaseNode {
-    @Fallback
-    @InliningCutoff
-    public static Object doIt(VirtualFrame frame, Object v, Object w,
+@GenerateUncached
+public abstract class PyNumberInPlacePowerNode extends BinaryOpNode {
+
+    public abstract Object execute(VirtualFrame frame, Object v, Object w, Object z);
+
+    @Override
+    public final Object execute(VirtualFrame frame, Object left, Object right) {
+        return execute(frame, left, right, PNone.NONE);
+    }
+
+    @Specialization
+    static Object doIt(VirtualFrame frame, Object v, Object w, Object z,
                     @Bind Node inliningTarget,
-                    @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_REMAINDER, "%=");
+                    @Cached CallTernaryIOpNode callTernaryOpNode,
+                    @Cached PRaiseNode raiseNode) {
+        Object result = callTernaryOpNode.execute(frame, inliningTarget, v, w, z);
+        if (result != PNotImplemented.NOT_IMPLEMENTED) {
+            return result;
+        }
+        return raiseNotSupported(inliningTarget, v, w, z, raiseNode);
+    }
+
+    @InliningCutoff
+    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, Object z, PRaiseNode raiseNode) {
+        if (z == PNone.NONE) {
+            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "**=", v, w);
+        } else {
+            return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P, "**=", v, w, z);
+        }
     }
 
     @NeverDefault
-    public static PyNumberInplaceRemainderNode create() {
-        return PyNumberInplaceRemainderNodeGen.create();
+    public static PyNumberInPlacePowerNode create() {
+        return PyNumberInPlacePowerNodeGen.create();
+    }
+
+    public static PyNumberInPlacePowerNode getUncached() {
+        return PyNumberInPlacePowerNodeGen.getUncached();
     }
 }

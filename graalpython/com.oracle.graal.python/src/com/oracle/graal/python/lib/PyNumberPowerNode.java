@@ -106,4 +106,8 @@ public abstract class PyNumberPowerNode extends BinaryOpNode {
     public static PyNumberPowerNode create() {
         return PyNumberPowerNodeGen.create();
     }
+
+    public static PyNumberPowerNode getUncached() {
+        return PyNumberPowerNodeGen.getUncached();
+    }
 }

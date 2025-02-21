@@ -58,10 +58,10 @@ import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesAsArrayNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -70,7 +70,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -94,8 +93,7 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static Object init(Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached DeleteAttributeNode deleteAttributeNode) {
+                        @Bind("this") Node inliningTarget) {
             if (TypeNodes.IsTypeNode.executeUncached(object)) {
                 Object flags = PyObjectLookupAttr.executeUncached(object, ABC_TPFLAGS);
                 long val;
@@ -117,7 +115,7 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
                     type = (PythonAbstractObject) object;
                 }
                 HiddenAttr.WriteNode.executeUncached(type, HiddenAttr.FLAGS, tpFlags);
-                deleteAttributeNode.execute(null, inliningTarget, object, ABC_TPFLAGS);
+                PyObjectSetAttr.deleteUncached(object, ABC_TPFLAGS);
             }
             return PNone.NONE;
         }

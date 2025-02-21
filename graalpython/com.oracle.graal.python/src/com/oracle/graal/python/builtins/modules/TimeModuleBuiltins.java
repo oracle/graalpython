@@ -49,7 +49,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
-import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -87,7 +86,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerAndFloatTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -312,7 +312,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     // time.gmtime([seconds])
     @Builtin(name = "gmtime", maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
 
         @Specialization
@@ -348,7 +347,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     // time.localtime([seconds])
     @Builtin(name = "localtime", maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonLocalTimeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
@@ -452,7 +450,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "process_time", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ProcessTimeNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -464,7 +461,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "process_time_ns", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ProcessTimeNsNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -476,7 +472,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "thread_time")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ThreadTimeNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -487,7 +482,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "thread_time_ns")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ThreadTimeNsNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -498,7 +492,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "sleep", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerAndFloatTypes.class)
     abstract static class SleepNode extends PythonBuiltinNode {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 

@@ -41,27 +41,32 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-public abstract class PyNumberInplaceLshiftNode extends PyNumberLshiftBaseNode {
-    @Fallback
-    @InliningCutoff
+@GenerateUncached
+public abstract class PyNumberInPlaceMatrixMultiplyNode extends BinaryOpNode {
+    @Specialization
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_LSHIFT, "<<=");
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_MATRIX_MULTIPLY, "@=");
     }
 
     @NeverDefault
-    public static PyNumberInplaceLshiftNode create() {
-        return PyNumberInplaceLshiftNodeGen.create();
+    public static PyNumberInPlaceMatrixMultiplyNode create() {
+        return PyNumberInPlaceMatrixMultiplyNodeGen.create();
+    }
+
+    public static PyNumberInPlaceMatrixMultiplyNode getUncached() {
+        return PyNumberInPlaceMatrixMultiplyNodeGen.getUncached();
     }
 }

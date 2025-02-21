@@ -41,27 +41,32 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-public abstract class PyNumberInplaceTrueDivideNode extends PyNumberTrueDivideBaseNode {
-    @Fallback
-    @InliningCutoff
+@GenerateUncached
+public abstract class PyNumberInPlaceLshiftNode extends BinaryOpNode {
+    @Specialization
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_TRUE_DIVIDE, "/=");
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_LSHIFT, "<<=");
     }
 
     @NeverDefault
-    public static PyNumberInplaceTrueDivideNode create() {
-        return PyNumberInplaceTrueDivideNodeGen.create();
+    public static PyNumberInPlaceLshiftNode create() {
+        return PyNumberInPlaceLshiftNodeGen.create();
+    }
+
+    public static PyNumberInPlaceLshiftNode getUncached() {
+        return PyNumberInPlaceLshiftNodeGen.getUncached();
     }
 }

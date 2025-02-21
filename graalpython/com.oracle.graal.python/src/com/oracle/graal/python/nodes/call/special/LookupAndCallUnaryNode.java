@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -66,7 +67,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
-public abstract class LookupAndCallUnaryNode extends Node {
+public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
 
     public abstract static class NoAttributeHandler extends PNodeWithContext {
         public abstract Object execute(Object receiver);
@@ -78,6 +79,11 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Child private NoAttributeHandler handler;
 
     public abstract Object executeObject(VirtualFrame frame, Object receiver);
+
+    @Override
+    public Object execute(VirtualFrame frame, Object receiver) {
+        return executeObject(frame, receiver);
+    }
 
     @NeverDefault
     public static LookupAndCallUnaryNode create(TruffleString name) {

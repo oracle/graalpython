@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -70,8 +71,6 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -267,10 +266,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.nb_or, isComplex = true)
     @GenerateNodeFactory
     abstract static class OrNode extends BinaryOpBuiltinNode {
-        @Child BinaryOpNode orNode = BinaryArithmetic.Or.create();
 
         @Specialization
-        Object or(VirtualFrame frame, Object self, Object other) {
+        static Object or(VirtualFrame frame, Object self, Object other,
+                        @Cached PyNumberOrNode orNode) {
             if (self instanceof PMappingproxy) {
                 self = ((PMappingproxy) self).getMapping();
             }

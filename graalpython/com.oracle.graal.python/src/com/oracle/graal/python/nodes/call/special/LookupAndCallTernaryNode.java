@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,25 +41,18 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-// actual implementation is in the subclasses: one for reversible, other for non-reversible.
 @ImportStatic({SpecialMethodNames.class, PythonOptions.class})
 public abstract class LookupAndCallTernaryNode extends Node {
-    public abstract static class NotImplementedHandler extends PNodeWithContext {
-        public abstract Object execute(Object arg, Object arg2, Object arg3);
-    }
 
     protected final TruffleString name;
-    protected final SpecialMethodSlot slot;
 
     public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
 
@@ -72,36 +65,12 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return LookupAndCallNonReversibleTernaryNodeGen.create(name);
     }
 
-    @NeverDefault
-    public static LookupAndCallTernaryNode create(SpecialMethodSlot slot) {
-        return LookupAndCallNonReversibleTernaryNodeGen.create(slot);
-    }
-
-    @NeverDefault
-    public static LookupAndCallTernaryNode createReversible(TruffleString name, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallReversibleTernaryNodeGen.create(name, handlerFactory);
-    }
-
-    @NeverDefault
-    public static LookupAndCallTernaryNode createReversible(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallReversibleTernaryNodeGen.create(slot, handlerFactory);
-    }
-
     LookupAndCallTernaryNode(TruffleString name) {
         this.name = name;
-        this.slot = null;
-    }
-
-    LookupAndCallTernaryNode(SpecialMethodSlot slot) {
-        this.slot = slot;
-        this.name = slot.getName();
     }
 
     @NeverDefault
     protected final LookupSpecialBaseNode createLookup() {
-        if (slot != null) {
-            return LookupSpecialMethodSlotNode.create(slot);
-        }
         return LookupSpecialMethodNode.create(name);
     }
 }

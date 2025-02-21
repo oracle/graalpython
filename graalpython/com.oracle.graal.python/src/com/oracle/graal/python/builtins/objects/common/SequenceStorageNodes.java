@@ -45,7 +45,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -57,8 +56,6 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatBaseNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CreateStorageFromIteratorNodeFactory.CreateStorageFromIteratorNodeCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
@@ -2185,6 +2182,7 @@ public abstract class SequenceStorageNodes {
     }
 
     @SuppressWarnings("truffle-inlining")       // footprint reduction 68 -> 49
+    @GenerateUncached
     public abstract static class ConcatBaseNode extends SequenceStorageBaseNode {
 
         public abstract SequenceStorage execute(SequenceStorage dest, SequenceStorage left, SequenceStorage right);
@@ -2314,104 +2312,32 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    /**
-     * Concatenates two sequence storages; creates a storage of a suitable type and writes the
-     * result to the new storage.
-     */
-    public abstract static class ConcatNode extends SequenceStorageBaseNode {
-        private static final TruffleString DEFAULT_ERROR_MSG = ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class ConcatListOrTupleNode extends Node {
 
-        @Child private ConcatBaseNode concatBaseNode = ConcatBaseNodeGen.create();
-        @Child private GeneralizationNode genNode;
-
-        private final Supplier<GeneralizationNode> genNodeProvider;
-
-        /*
-         * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but e.g.
-         * bytes raises OverflowError when the memory might be available but the size overflows
-         * sys.maxint
-         */
-        private final PythonBuiltinClassType errorForOverflow;
-
-        ConcatNode(Supplier<GeneralizationNode> genNodeProvider, PythonBuiltinClassType errorForOverflow) {
-            this.genNodeProvider = genNodeProvider;
-            this.errorForOverflow = errorForOverflow;
-        }
-
-        public abstract SequenceStorage execute(SequenceStorage left, SequenceStorage right);
+        public abstract SequenceStorage execute(Node inliningTarget, SequenceStorage left, SequenceStorage right);
 
         @Specialization
-        SequenceStorage doRight(SequenceStorage left, SequenceStorage right,
-                        @Bind("this") Node inliningTarget,
-                        @Cached CreateEmptyNode createEmptyNode,
-                        @Cached InlinedConditionProfile shouldOverflow,
+        static SequenceStorage concat(Node inliningTarget, SequenceStorage left, SequenceStorage right,
+                        @Cached CreateEmpty2Node create,
+                        @Cached(inline = false) ConcatBaseNode concat,
                         @Cached PRaiseNode raiseNode) {
-            int destlen = 0;
             try {
                 int len1 = left.length();
                 int len2 = right.length();
-                // we eagerly generalize the store to avoid possible cascading generalizations
-                destlen = PythonUtils.addExact(len1, len2);
-                if (errorForOverflow == OverflowError && shouldOverflow.profile(inliningTarget, destlen >= SysModuleBuiltins.MAXSIZE)) {
-                    // cpython raises an overflow error when this happens
-                    throw raiseNode.raise(inliningTarget, OverflowError);
+                int destlen = PythonUtils.addExact(len1, len2);
+                SequenceStorage empty = create.execute(inliningTarget, left, right, destlen);
+                empty.setNewLength(destlen);
+                try {
+                    return concat.execute(empty, left, right);
+                } catch (SequenceStoreException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
-                SequenceStorage generalized = generalizeStore(createEmpty(createEmptyNode, inliningTarget, left, right, destlen), right);
-                return doConcat(generalized, left, right);
-            } catch (OutOfMemoryError e) {
+            } catch (OutOfMemoryError | OverflowException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, errorForOverflow);
             }
-        }
-
-        private SequenceStorage createEmpty(CreateEmptyNode createEmptyNode, Node inliningTarget, SequenceStorage l, SequenceStorage r, int len) {
-            if (l instanceof EmptySequenceStorage) {
-                return createEmptyNode.execute(inliningTarget, r, len, -1);
-            }
-            return createEmptyNode.execute(inliningTarget, l, len, len);
-        }
-
-        private SequenceStorage doConcat(SequenceStorage dest, SequenceStorage leftProfiled, SequenceStorage rightProfiled) {
-            try {
-                return concatBaseNode.execute(dest, leftProfiled, rightProfiled);
-            } catch (SequenceStoreException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("generalized sequence storage cannot take value: " + e.getIndicationValue());
-            }
-        }
-
-        private SequenceStorage generalizeStore(SequenceStorage storage, Object value) {
-            if (genNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                genNode = insert(genNodeProvider.get());
-            }
-            return genNode.executeCached(storage, value);
-        }
-
-        @NeverDefault
-        public static ConcatNode create() {
-            return create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG), MemoryError);
-        }
-
-        @NeverDefault
-        public static ConcatNode createWithOverflowError() {
-            return create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG), OverflowError);
-        }
-
-        @NeverDefault
-        public static ConcatNode create(TruffleString msg) {
-            return create(() -> NoGeneralizationCustomMessageNode.create(msg), MemoryError);
-        }
-
-        @NeverDefault
-        public static ConcatNode create(Supplier<GeneralizationNode> genNodeProvider) {
-            return create(genNodeProvider, MemoryError);
-        }
-
-        @NeverDefault
-        private static ConcatNode create(Supplier<GeneralizationNode> genNodeProvider, PythonBuiltinClassType errorForOverflow) {
-            return ConcatNodeGen.create(genNodeProvider, errorForOverflow);
         }
     }
 
@@ -3099,6 +3025,23 @@ public abstract class SequenceStorageNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class CreateEmpty2Node extends SequenceStorageBaseNode {
+
+        public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, SequenceStorage s1, SequenceStorage s2, int cap);
+
+        @Specialization
+        static ArrayBasedSequenceStorage doIt(Node inliningTarget, SequenceStorage s1, SequenceStorage s2, int cap,
+                        @Cached GetElementType getElementType1,
+                        @Cached GetElementType getElementType2,
+                        @Cached CreateEmptyForTypesNode create) {
+            return create.execute(inliningTarget, getElementType1.execute(inliningTarget, s1), getElementType2.execute(inliningTarget, s2), cap);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
     abstract static class CreateEmptyForTypeNode extends SequenceStorageBaseNode {
 
         public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, StorageType type, int cap);
@@ -3131,6 +3074,34 @@ public abstract class SequenceStorageNodes {
         @Fallback
         static ObjectSequenceStorage doObject(@SuppressWarnings("unused") StorageType type, int cap) {
             return new ObjectSequenceStorage(cap);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class CreateEmptyForTypesNode extends SequenceStorageBaseNode {
+
+        public abstract ArrayBasedSequenceStorage execute(Node inliningTarget, StorageType type1, StorageType type2, int cap);
+
+        @Specialization(guards = "type1 == type2")
+        static ArrayBasedSequenceStorage doSame(Node inliningTarget, StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap,
+                        @Cached CreateEmptyForTypeNode create) {
+            return create.execute(inliningTarget, type1, cap);
+        }
+
+        @Specialization(guards = "generalizeToLong(type1, type2)")
+        static LongSequenceStorage doLong(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap) {
+            return new LongSequenceStorage(cap);
+        }
+
+        @Fallback
+        static ObjectSequenceStorage doObject(@SuppressWarnings("unused") StorageType type1, @SuppressWarnings("unused") StorageType type2, int cap) {
+            return new ObjectSequenceStorage(cap);
+        }
+
+        protected static boolean generalizeToLong(StorageType type1, StorageType type2) {
+            return isInt(type1) && isLong(type2) || isLong(type1) && isInt(type2);
         }
     }
 

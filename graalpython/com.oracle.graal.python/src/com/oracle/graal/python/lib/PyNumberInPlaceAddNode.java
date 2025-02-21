@@ -40,30 +40,74 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.lib.CallBinaryOpNode.raiseNotSupported;
+
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.CallSlotBinaryFuncNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline(false)
 @GenerateUncached
-public abstract class PyNumberInplaceXorNode extends PyNumberXorBaseNode {
+public abstract class PyNumberInPlaceAddNode extends PyNumberAddBaseNode {
+
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
-                    @Cached CallBinaryIOpNode callBinaryOpNode) {
-        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_XOR, "^=");
+                    @Exclusive @Cached GetClassNode getVClass,
+                    @Cached GetCachedTpSlotsNode getVSlots,
+                    @Cached GetCachedTpSlotsNode getWSlots,
+                    @Exclusive @Cached GetClassNode getWClass,
+                    @Cached CallBinaryIOp1Node callBinaryIOp1Node,
+                    @Cached InlinedBranchProfile hasNbAddResult,
+                    @Cached InlinedBranchProfile hasInplaceConcat,
+                    @Cached InlinedBranchProfile hasConcat,
+                    @Cached CallSlotBinaryFuncNode callBinarySlotNode,
+                    @Cached PRaiseNode raiseNode) {
+        Object classV = getVClass.execute(inliningTarget, v);
+        Object classW = getWClass.execute(inliningTarget, w);
+        TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
+        TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
+        Object result = callBinaryIOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, InplaceSlot.NB_INPLACE_ADD);
+        if (result != PNotImplemented.NOT_IMPLEMENTED) {
+            hasNbAddResult.enter(inliningTarget);
+            return result;
+        }
+        TpSlot concatSlot;
+        if (slotsV.sq_inplace_concat() != null) {
+            hasInplaceConcat.enter(inliningTarget);
+            concatSlot = slotsV.sq_inplace_concat();
+        } else if (slotsV.sq_concat() != null) {
+            hasConcat.enter(inliningTarget);
+            concatSlot = slotsV.sq_concat();
+        } else {
+            return raiseNotSupported(inliningTarget, v, w, "+=", raiseNode);
+        }
+        return callBinarySlotNode.execute(frame, inliningTarget, concatSlot, v, w);
     }
 
     @NeverDefault
-    public static PyNumberInplaceXorNode create() {
-        return PyNumberInplaceXorNodeGen.create();
+    public static PyNumberInPlaceAddNode create() {
+        return PyNumberInPlaceAddNodeGen.create();
+    }
+
+    public static PyNumberInPlaceAddNode getUncached() {
+        return PyNumberInPlaceAddNodeGen.getUncached();
     }
 }

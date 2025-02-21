@@ -29,5 +29,5 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class UnaryOpNode extends PNodeWithContext {
-    public abstract Object executeCached(VirtualFrame frame, Object value);
+    public abstract Object execute(VirtualFrame frame, Object value);
 }

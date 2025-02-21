@@ -64,9 +64,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AbsNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.DivModNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.NextNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
@@ -79,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
@@ -99,24 +96,48 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
 import com.oracle.graal.python.lib.GetNextNode;
-import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
-import com.oracle.graal.python.lib.PyNumberCheckNode;
+import com.oracle.graal.python.lib.PyNumberAddNode;
+import com.oracle.graal.python.lib.PyNumberAndNode;
+import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceAddNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceAndNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceLshiftNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceOrNode;
+import com.oracle.graal.python.lib.PyNumberInPlacePowerNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceRemainderNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceRshiftNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceSubtractNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceXorNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
+import com.oracle.graal.python.lib.PyNumberLshiftNode;
+import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
+import com.oracle.graal.python.lib.PyNumberRemainderNode;
+import com.oracle.graal.python.lib.PyNumberRshiftNode;
+import com.oracle.graal.python.lib.PyNumberSubtractNode;
+import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
-import com.oracle.graal.python.lib.PySequenceConcat;
+import com.oracle.graal.python.lib.PySequenceConcatNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PySequenceDelItemNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
-import com.oracle.graal.python.lib.PySequenceInplaceConcat;
-import com.oracle.graal.python.lib.PySequenceInplaceRepeat;
+import com.oracle.graal.python.lib.PySequenceInPlaceConcatNode;
+import com.oracle.graal.python.lib.PySequenceInPlaceRepeatNode;
 import com.oracle.graal.python.lib.PySequenceIterSearchNode;
 import com.oracle.graal.python.lib.PySequenceSetItemNode;
 import com.oracle.graal.python.lib.PySequenceSizeNode;
@@ -126,16 +147,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -146,38 +159,14 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextAbstractBuiltins {
 
-    /////// PyIndex ///////
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyIndex_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object check(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyIndexCheckNode checkNode) {
-            return checkNode.execute(inliningTarget, obj) ? 1 : 0;
-        }
-    }
-
     /////// PyNumber ///////
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object check(Object obj,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyNumberCheckNode checkNode) {
-            return PInt.intValue(checkNode.execute(inliningTarget, obj));
-        }
-    }
 
     @CApiBuiltin(name = "_PyNumber_Index", ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
@@ -200,24 +189,6 @@ public final class PythonCextAbstractBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyNumberLongNode pyNumberLongNode) {
             return pyNumberLongNode.execute(null, inliningTarget, object);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Absolute extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object abs(Object obj,
-                        @Cached AbsNode absNode) {
-            return absNode.execute(null, obj);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Divmod extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object div(Object a, Object b,
-                        @Cached DivModNode divNode) {
-            return divNode.execute(null, a, b);
         }
     }
 
@@ -290,165 +261,270 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Ignored)
-    abstract static class PyTruffleNumber_UnaryOp extends CApiBinaryBuiltinNode {
-        static int MAX_CACHE_SIZE = UnaryArithmetic.values().length;
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Add extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = {"cachedOp == op"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(Object left, @SuppressWarnings("unused") int op,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") UnaryOpNode callNode) {
-            return callNode.executeCached(null, left);
-        }
-
-        /**
-         * This needs to stay in sync with {@code abstract.c: enum e_unaryop}.
-         */
-        static UnaryOpNode createCallNode(int op) {
-            UnaryArithmetic unaryArithmetic;
-            switch (op) {
-                case 0:
-                    unaryArithmetic = UnaryArithmetic.Pos;
-                    break;
-                case 1:
-                    unaryArithmetic = UnaryArithmetic.Neg;
-                    break;
-                case 2:
-                    unaryArithmetic = UnaryArithmetic.Invert;
-                    break;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere("invalid unary operator");
-            }
-            return unaryArithmetic.create();
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberAddNode addNode) {
+            return addNode.execute(null, inliningTarget, o1, o2);
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = Ignored)
-    abstract static class PyTruffleNumber_BinOp extends CApiTernaryBuiltinNode {
-        static int MAX_CACHE_SIZE = BinaryArithmetic.values().length;
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Subtract extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = {"cachedOp == op"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(Object left, Object right, @SuppressWarnings("unused") int op,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") BinaryOpNode callNode) {
-            return callNode.execute(null, left, right);
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberSubtractNode subtractNode) {
+            return subtractNode.execute(null, o1, o2);
         }
-
-        /**
-         * This needs to stay in sync with {@code abstract.c: enum e_binop}.
-         */
-        static BinaryOpNode createCallNode(int op) {
-            return getBinaryArithmetic(op).create();
-        }
-
-        private static BinaryArithmetic getBinaryArithmetic(int op) {
-            switch (op) {
-                case 0:
-                    return BinaryArithmetic.Add;
-                case 1:
-                    return BinaryArithmetic.Sub;
-                case 2:
-                    return BinaryArithmetic.Mul;
-                case 3:
-                    return BinaryArithmetic.TrueDiv;
-                case 4:
-                    return BinaryArithmetic.LShift;
-                case 5:
-                    return BinaryArithmetic.RShift;
-                case 6:
-                    return BinaryArithmetic.Or;
-                case 7:
-                    return BinaryArithmetic.And;
-                case 8:
-                    return BinaryArithmetic.Xor;
-                case 9:
-                    return BinaryArithmetic.FloorDiv;
-                case 10:
-                    return BinaryArithmetic.Mod;
-                case 12:
-                    return BinaryArithmetic.MatMul;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere("invalid binary operator");
-            }
-        }
-
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Int}, call = Ignored)
-    abstract static class PyTruffleNumber_InPlaceBinOp extends CApiTernaryBuiltinNode {
-        static int MAX_CACHE_SIZE = InplaceArithmetic.values().length;
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Multiply extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = {"cachedOp == op"}, limit = "MAX_CACHE_SIZE")
-        static Object doIntLikePrimitiveWrapper(Object left, Object right, @SuppressWarnings("unused") int op,
-                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") LookupAndCallInplaceNode callNode) {
-            return callNode.execute(null, left, right);
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberMultiplyNode multiplyNode) {
+            return multiplyNode.execute(null, inliningTarget, o1, o2);
         }
-
-        /**
-         * This needs to stay in sync with {@code abstract.c: enum e_binop}.
-         */
-        static LookupAndCallInplaceNode createCallNode(int op) {
-            return getInplaceArithmetic(op).create();
-        }
-
-        private static InplaceArithmetic getInplaceArithmetic(int op) {
-            switch (op) {
-                case 0:
-                    return InplaceArithmetic.IAdd;
-                case 1:
-                    return InplaceArithmetic.ISub;
-                case 2:
-                    return InplaceArithmetic.IMul;
-                case 3:
-                    return InplaceArithmetic.ITrueDiv;
-                case 4:
-                    return InplaceArithmetic.ILShift;
-                case 5:
-                    return InplaceArithmetic.IRShift;
-                case 6:
-                    return InplaceArithmetic.IOr;
-                case 7:
-                    return InplaceArithmetic.IAnd;
-                case 8:
-                    return InplaceArithmetic.IXor;
-                case 9:
-                    return InplaceArithmetic.IFloorDiv;
-                case 10:
-                    return InplaceArithmetic.IMod;
-                case 12:
-                    return InplaceArithmetic.IMatMul;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere("invalid binary operator");
-            }
-        }
-
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_InPlacePower extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Remainder extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = {"o1.isIntLike()", "o2.isIntLike()", "o3.isIntLike()"})
-        static Object doIntLikePrimitiveWrapper(PrimitiveNativeWrapper o1, PrimitiveNativeWrapper o2, PrimitiveNativeWrapper o3,
-                        @Shared @Cached("createIPow()") LookupAndCallInplaceNode callNode) {
-            return callNode.executeTernary(null, o1.getLong(), o2.getLong(), o3.getLong());
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberRemainderNode remainderNode) {
+            return remainderNode.execute(null, o1, o2);
         }
+    }
 
-        @Specialization(replaces = "doIntLikePrimitiveWrapper")
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_TrueDivide extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberTrueDivideNode trueDivideNode) {
+            return trueDivideNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_FloorDivide extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberFloorDivideNode floorDivideNode) {
+            return floorDivideNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Divmod extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object div(Object a, Object b,
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberDivmodNode divmodNode) {
+            return divmodNode.execute(null, inliningTarget, a, b);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_And extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberAndNode andNode) {
+            return andNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Or extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberOrNode orNode) {
+            return orNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Xor extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberXorNode xorNode) {
+            return xorNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Lshift extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberLshiftNode lshiftNode) {
+            return lshiftNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Rshift extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberRshiftNode rshiftNode) {
+            return rshiftNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_MatrixMultiply extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberMatrixMultiplyNode matrixMultiplyNode) {
+            return matrixMultiplyNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceAdd extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceAddNode addNode) {
+            return addNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceSubtract extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceSubtractNode subtractNode) {
+            return subtractNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceMultiply extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceMultiplyNode multiplyNode) {
+            return multiplyNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceRemainder extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceRemainderNode remainderNode) {
+            return remainderNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceTrueDivide extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceTrueDivideNode trueDivideNode) {
+            return trueDivideNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceFloorDivide extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceFloorDivideNode floorDivideNode) {
+            return floorDivideNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceAnd extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceAndNode andNode) {
+            return andNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceOr extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceOrNode orNode) {
+            return orNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceXor extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceXorNode xorNode) {
+            return xorNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceLshift extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceLshiftNode lshiftNode) {
+            return lshiftNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceRshift extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceRshiftNode rshiftNode) {
+            return rshiftNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlaceMatrixMultiply extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object o1, Object o2,
+                        @Cached PyNumberInPlaceMatrixMultiplyNode matrixMultiplyNode) {
+            return matrixMultiplyNode.execute(null, o1, o2);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_InPlacePower extends CApiTernaryBuiltinNode {
+
+        @Specialization
         static Object doGeneric(Object o1, Object o2, Object o3,
-                        @Shared @Cached("createIPow()") LookupAndCallInplaceNode callNode) {
-            return callNode.executeTernary(null, o1, o2, o3);
-        }
-
-        @NeverDefault
-        static LookupAndCallInplaceNode createIPow() {
-            return InplaceArithmetic.IPow.create();
+                        @Cached PyNumberInPlacePowerNode powerNode) {
+            return powerNode.execute(null, o1, o2, o3);
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Direct)
-    abstract static class PyNumber_Power extends CApiTernaryBuiltinNode {
-        @Child private LookupAndCallTernaryNode callNode;
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Ignored)
+    abstract static class PyTrufflePyNumber_Power extends CApiTernaryBuiltinNode {
 
         @Specialization
         Object doGeneric(Object o1, Object o2, Object o3,
@@ -500,7 +576,6 @@ public final class PythonCextAbstractBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
-    @TypeSystemReference(PythonTypes.class)
     abstract static class PySequence_GetSlice extends CApiTernaryBuiltinNode {
 
         @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
@@ -539,7 +614,7 @@ public final class PythonCextAbstractBuiltins {
         static Object repeat(Object obj, long n,
                         @Bind("this") Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PySequenceInplaceRepeat repeat) {
+                        @Cached PySequenceInPlaceRepeatNode repeat) {
             if (!PInt.isIntRange(n)) {
                 throw raiseNode.raise(inliningTarget, OverflowError);
             }
@@ -552,7 +627,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization
         Object doIt(Object s1, Object s2,
                         @Bind("this") Node inliningTarget,
-                        @Cached PySequenceConcat pySeqConcat) {
+                        @Cached PySequenceConcatNode pySeqConcat) {
             return pySeqConcat.execute(null, inliningTarget, s1, s2);
         }
     }
@@ -563,7 +638,7 @@ public final class PythonCextAbstractBuiltins {
         @Specialization
         static Object concat(Object s1, Object s2,
                         @Bind("this") Node inliningTarget,
-                        @Cached PySequenceInplaceConcat concat) {
+                        @Cached PySequenceInPlaceConcatNode concat) {
             return concat.execute(null, inliningTarget, s1, s2);
         }
     }

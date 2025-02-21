@@ -114,7 +114,7 @@ import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetForeignObjectClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1146,7 +1146,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__element_info__", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class ArrayElementInfoNode extends PythonBuiltinNode {
         @Specialization
         static boolean keyInfo(Object receiver, long member, TruffleString info,
@@ -1171,7 +1171,6 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "storage", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StorageNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
