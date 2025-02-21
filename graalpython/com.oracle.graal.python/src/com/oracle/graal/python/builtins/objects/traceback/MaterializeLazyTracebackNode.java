@@ -72,7 +72,7 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * frames that the exception has passed through during the unwinding plus the frame where it was
  * caught. It doesn't include the frames above it (to the top). Secondly, the traceback is never
  * frozen. The traceback accumulates more frames when the exception gets reraised. To correct the
- * mismatch between Truffle and Python eception handling, we need to wrap {@link PException}s in
+ * mismatch between Truffle and Python exception handling, we need to wrap {@link PException}s in
  * {@link LazyTraceback} objects when caught and adhere to particular rules of exception handling
  * mentioned below.
  * </p>
