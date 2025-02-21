@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -23,12 +23,17 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import print_function
 
+import statistics
+import sys
+
 import os
 import re
 import subprocess
 from abc import ABCMeta, abstractproperty, abstractmethod
 from contextlib import contextmanager
 from os.path import join
+from datetime import datetime
+from pathlib import Path
 
 import mx
 import mx_benchmark
@@ -41,6 +46,7 @@ from mx_graalpython_bench_param import HARNESS_PATH
 #
 # ----------------------------------------------------------------------------------------------------------------------
 SUITE = mx.suite("graalpython")
+DIR = Path(__file__).parent.resolve()
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -89,11 +95,6 @@ BENCH_BGV = 'benchmarks-bgv'
 # utils
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def _check_vm_args(name, args):
-    if len(args) < 2:
-        mx.abort("Expected at least 2 args (a single benchmark path in addition to the harness), "
-                 "got {} instead".format(args))
-
 
 def is_sandboxed_configuration(conf):
     return conf in (CONFIGURATION_SANDBOXED, CONFIGURATION_SANDBOXED_MULTI)
@@ -187,7 +188,6 @@ class AbstractPythonVm(Vm):
         return None
 
     def run(self, cwd, args):
-        _check_vm_args(self.name(), args)
         out = mx.OutputCapture()
         stdout_capture = mx.TeeOutputCapture(out)
         ret_code = mx.run([self.interpreter] + args, out=stdout_capture, err=stdout_capture, env=self._env)
@@ -294,7 +294,6 @@ class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
     def run(self, cwd, args):
         jar = mx.get_env(ENV_JYTHON_JAR)
         if jar:
-            _check_vm_args(self.name(), args)
             host_vm = self.host_vm()
 
             vm_args = mx.get_runtime_jvm_args([])
@@ -364,7 +363,6 @@ class GraalPythonVmBase(GuestVm):
             return argument
 
     def run(self, cwd, args):
-        _check_vm_args(self.name(), args)
         extra_polyglot_args = self.get_extra_polyglot_args()
 
         host_vm = self.host_vm()
@@ -1031,3 +1029,83 @@ class PythonJMHDistMxBenchmarkSuite(mx_benchmark.JMHDistBenchmarkSuite):
         # but by overriding this method we fix that and also get the nice property
         # that one cannot accidentally run some other JMH benchmarks via this class
         return dist.name == 'GRAALPYTHON_BENCH'
+
+
+class LiveHeapTracker(mx_benchmark.Tracker):
+    def __init__(self, bmSuite):
+        super().__init__(bmSuite)
+        self.out_file = None
+
+    def map_command(self, cmd):
+        bench_name = self.bmSuite.currently_running_benchmark() if self.bmSuite else "benchmark"
+        if self.bmSuite:
+            bench_name = f"{self.bmSuite.name()}-{bench_name}"
+        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        jmap_command = mx.get_jdk().exe_path('jmap')
+        self.out_file = os.path.join(os.getcwd(), f"heap_tracker_{bench_name}_{ts}.txt")
+        iterations = 3
+        return [sys.executable, str(DIR / 'live_heap_tracker.py'), self.out_file, str(iterations), jmap_command, *cmd]
+
+    def get_rules(self, bmSuiteArgs):
+        return [self.LiveHeapRule(self, bmSuiteArgs)]
+
+    class LiveHeapRule(mx_benchmark.Rule):
+        def __init__(self, tracker, bmSuiteArgs):
+            self.tracker = tracker
+            self.bmSuiteArgs = bmSuiteArgs
+
+        def parse(self, text):
+            with open(self.tracker.out_file) as f:
+                heap_mb = [int(line.strip()) / (1024 ** 2) for line in f if line]
+            os.unlink(self.tracker.out_file)
+            self.tracker.out_file = None
+            deciles = statistics.quantiles(heap_mb, n=10)
+            print(f"Heap size deciles (MiB): {deciles}")
+            return [
+                {
+                    "benchmark": self.tracker.bmSuite.currently_running_benchmark(),
+                    "bench-suite": self.tracker.bmSuite.benchSuiteName(self.bmSuiteArgs),
+                    "config.vm-flags": ' '.join(self.tracker.bmSuite.vmArgs(self.bmSuiteArgs)),
+                    "metric.name": "allocated-memory",
+                    "metric.value": deciles[-1],
+                    "metric.unit": "MB",
+                    "metric.type": "numeric",
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "metric.iteration": 0
+                }
+            ]
+
+
+class PythonHeapBenchmarkSuite(PythonBaseBenchmarkSuite):
+    def __init__(self, name, bench_path, benchmarks):
+        super().__init__(name, benchmarks)
+        super().register_tracker('live-heap', LiveHeapTracker)
+        self._bench_path = bench_path
+
+    def get_vm_registry(self):
+        return python_vm_registry
+
+    def rules(self, output, benchmarks, bm_suite_args):
+        return []  # Tracker will add a rule
+
+    def register_tracker(self, name, tracker_type):
+        # We don't want any other trackers
+        pass
+
+    def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        benchmark = benchmarks[0]
+        bench_path = os.path.join(self._bench_path, f'{benchmark}.py')
+        return [*self.vmArgs(bmSuiteArgs), bench_path, *self.runArgs(bmSuiteArgs)]
+
+    def successPatterns(self):
+        return []
+
+    def failurePatterns(self):
+        return []
+
+    @classmethod
+    def get_benchmark_suites(cls, benchmarks):
+        assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: [path, {bench: args, ... }], ...}"
+        return [cls(suite_name, suite_info[0], suite_info[1])
+                for suite_name, suite_info in benchmarks.items()]
