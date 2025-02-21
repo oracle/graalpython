@@ -50,7 +50,14 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.*;
+import org.gradle.api.tasks.Classpath;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -76,7 +83,6 @@ import static org.graalvm.python.embedding.tools.vfs.VFSUtils.VFS_VENV;
  * </ol>
  *
  */
-@CacheableTask
 public abstract class AbstractPackagesTask extends DefaultTask {
 
     protected static final String LOCK_FILE_HEADER = """

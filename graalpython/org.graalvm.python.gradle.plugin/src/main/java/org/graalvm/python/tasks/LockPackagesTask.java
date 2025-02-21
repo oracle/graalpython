@@ -41,7 +41,7 @@
 package org.graalvm.python.tasks;
 
 import org.gradle.api.GradleException;
-import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.IOException;
@@ -56,7 +56,7 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils;
  * If there is no virtual environment preset then it is first created and packages are installed the same way
  * as in scope of {@link InstallPackagesTask}.
  */
-@CacheableTask
+@UntrackedTask(because="manually triggered, should always run")
 public abstract class LockPackagesTask extends AbstractPackagesTask {
     @TaskAction
     public void exec() throws GradleException {
