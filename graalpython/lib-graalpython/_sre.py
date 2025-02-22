@@ -195,7 +195,8 @@ class Match():
 
     def expand(self, template):
         import re
-        return re._expand(self.__re, self, template)
+        filter = re._compile_template(self.__re, template)
+        return expand_template(filter, self)
 
     @property
     def regs(self):
@@ -411,6 +412,7 @@ class Pattern():
         result = []
         pos = 0
         literal = False
+        template = False
         must_advance = False
         if not callable(repl):
             self.__check_input_type(repl)
@@ -421,8 +423,7 @@ class Pattern():
             if not literal:
                 import re
                 repl = re._compile_template(self, repl)
-                if not callable(repl):
-                    literal = True
+                template = True
 
         while (count == 0 or n < count) and pos <= len(string):
             compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
@@ -437,9 +438,12 @@ class Pattern():
                 result.append(repl)
             else:
                 _srematch = Match(self, pos, -1, match_result, string, self.__indexgroup)
-                _repl = repl(_srematch)
+                if template:
+                    _repl = expand_template(repl, _srematch)
+                else:
+                    _repl = repl(_srematch)
                 if _repl is not None:
-                    result.append(_repl)
+                    result.append(str(_repl))
             pos = end
             must_advance = start == end
         result.append(string[pos:])
@@ -517,33 +521,35 @@ class SREScanner(object):
     def search(self):
         return self.__match_search(_METHOD_SEARCH)
 
-class SRETemplateItem(object):
-    index = -1
-    literal = None
-
 class SRETemplate(object):
     def __init__(self, chunks, literal):
         self.chunks = chunks
         self.literal = literal
         self.items = []
 
+def expand_template(template, match):
+    result = template.literal
+    for index, literal in template.items:
+        result += match.group(index)
+        if literal:
+            result += literal
+    return result
+
 def template(pattern, _template):
     n = len(_template)
     if (n & 1) == 0 or n < 1:
         raise TypeError("invalid template")
-    n /= 2
-    tpl = SRETemplate(1 + 2*n, _template[0])
-    for i in range(int(n)):
-        index = int(_template[2*i+1])
+    n //= 2
+    tpl = SRETemplate(1 + 2 * n, _template[0])
+    for i in range(n):
+        index = int(_template[2 * i + 1])
         if index < 0:
             raise TypeError("invalid template")
-        tpl.items.append(SRETemplateItem())
-        tpl.items[i].index = index
-        literal = _template[2*i+2]
+        literal = _template[2 * i + 2]
         if len(literal) == 0:
             literal = None
             tpl.chunks -= 1
-        tpl.items[i].literal = literal
+        tpl.items.append((index, literal))
     return tpl
 
 _t_compile = Pattern
