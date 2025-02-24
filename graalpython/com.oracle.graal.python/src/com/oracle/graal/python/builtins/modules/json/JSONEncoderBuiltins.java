@@ -45,9 +45,9 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyListCheckExactNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -98,8 +98,8 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallEncoderNode extends PythonTernaryClinicBuiltinNode {
         @Child private LookupAndCallUnaryNode callGetItems = LookupAndCallUnaryNode.create(SpecialMethodNames.T_ITEMS);
-        @Child private LookupAndCallUnaryNode callGetDictIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
-        @Child private LookupAndCallUnaryNode callGetListIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
+        @Child private PyObjectGetIter callGetDictIter = PyObjectGetIter.create();
+        @Child private PyObjectGetIter callGetListIter = PyObjectGetIter.create();
         @Child private ListSortNode sortList = ListSortNode.create();
 
         @Override
@@ -266,7 +266,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             if (encoder.sortKeys) {
                 sortList.execute(null, items);
             }
-            Object iter = callGetDictIter.executeObject(null, items);
+            Object iter = callGetDictIter.executeCached(null, items);
             boolean first = true;
             while (true) {
                 Object item;
@@ -334,7 +334,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         }
 
         private void appendListSlowPath(PJSONEncoder encoder, TruffleStringBuilderUTF32 builder, PSequence list) {
-            Object iter = callGetListIter.executeObject(null, list);
+            Object iter = callGetListIter.executeCached(null, list);
             boolean first = true;
             while (true) {
                 Object item;

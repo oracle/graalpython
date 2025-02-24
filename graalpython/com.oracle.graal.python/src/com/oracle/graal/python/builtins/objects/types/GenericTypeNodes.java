@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -73,7 +73,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
@@ -324,7 +323,7 @@ public abstract class GenericTypeNodes {
                     // TypeVarTuple
                     if (arg instanceof PTuple tuple1) {
                         Object paramType = GetClassNode.executeUncached(param);
-                        if (LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Iter).execute(paramType) != PNone.NO_VALUE) {
+                        if (GetObjectSlotsNode.executeUncached(paramType).tp_iter() != null) {
                             listExtend(subargs, tuple1);
                         }
                     }

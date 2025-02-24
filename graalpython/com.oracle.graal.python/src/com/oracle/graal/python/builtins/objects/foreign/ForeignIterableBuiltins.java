@@ -26,14 +26,14 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-
 import java.util.List;
 
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -55,12 +55,14 @@ import com.oracle.truffle.api.library.CachedLibrary;
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignIterable)
 public final class ForeignIterableBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = ForeignIterableBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ForeignIterableBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

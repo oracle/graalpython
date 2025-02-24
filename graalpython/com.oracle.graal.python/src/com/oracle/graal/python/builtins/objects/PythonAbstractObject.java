@@ -98,6 +98,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
@@ -200,7 +202,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     private PythonAbstractObjectNativeWrapper nativeWrapper;
 
     // @ImportStatic doesn't work for this for some reason
-    protected static final SpecialMethodSlot Iter = SpecialMethodSlot.Iter;
     protected static final SpecialMethodSlot Next = SpecialMethodSlot.Next;
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
@@ -1674,7 +1675,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                    @Cached GetCachedTpSlotsNode getSlots,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1684,7 +1685,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
             } else {
-                return !(lookupIter.execute(getClassNode.executeCached(this)) instanceof PNone);
+                TpSlots slots = getSlots.execute(inliningTarget, getClassNode.executeCached(this));
+                return slots.tp_iter() != null;
             }
         } finally {
             gil.release(mustRelease);

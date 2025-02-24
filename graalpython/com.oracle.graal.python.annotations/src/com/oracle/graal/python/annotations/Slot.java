@@ -192,7 +192,9 @@ public @interface Slot {
         /** get object attribute */
         tp_getattro("__getattribute__, __getattr__"),
         /** set/delete object attribute */
-        tp_setattro("__setattr__, __delattr__");
+        tp_setattro("__setattr__, __delattr__"),
+        /** iter(obj) */
+        tp_iter("__iter__");
 
         SlotKind(@SuppressWarnings("unused") String specialMethods) {
         }

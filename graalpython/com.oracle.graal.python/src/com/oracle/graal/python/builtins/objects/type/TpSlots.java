@@ -69,6 +69,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
@@ -315,6 +316,7 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot tp_setattro, //
                 TpSlot tp_setattr,
                 TpSlot combined_tp_setattro_setattr,
+                TpSlot tp_iter, //
                 boolean has_as_number,
                 boolean has_as_sequence,
                 boolean has_as_mapping) {
@@ -827,7 +829,15 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_setattr,
                         PExternalFunctionWrapper.SETATTR,
-                        new NativeWrapperFactory.ShouldNotReach("tp_setattr"));
+                        new NativeWrapperFactory.ShouldNotReach("tp_setattr")),
+        TP_ITER(
+                        TpSlots::tp_iter,
+                        TpSlotPythonSingle.class,
+                        TpSlotUnaryFuncBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
+                        CFields.PyTypeObject__tp_iter,
+                        PExternalFunctionWrapper.UNARYFUNC,
+                        UnaryFuncWrapper::new);
 
         public static final TpSlotMeta[] VALUES = values();
 
@@ -1007,6 +1017,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.TP_DESCR_SET, //
                         TpSlotDef.withoutHPy(T___SET__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_SET), //
                         TpSlotDef.withoutHPy(T___DELETE__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_DELETE));
+        addSlotDef(s, TpSlotMeta.TP_ITER, TpSlotDef.withSimpleFunction(T___ITER__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_ADD,
                         TpSlotDef.withoutHPy(T___ADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
@@ -1726,6 +1737,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.TP_SETATTRO),
                             get(TpSlotMeta.TP_SETATTR),
                             tp_set_attro_attr,
+                            get(TpSlotMeta.TP_ITER), //
                             hasGroup(TpSlotGroup.AS_NUMBER),
                             hasGroup(TpSlotGroup.AS_SEQUENCE),
                             hasGroup(TpSlotGroup.AS_MAPPING));
@@ -1818,6 +1830,10 @@ public record TpSlots(TpSlot nb_bool, //
 
         public final TpSlots executeCached(Object pythonObject) {
             return execute(this, pythonObject);
+        }
+
+        public static TpSlots executeUncached(Object pythonObject) {
+            return GetObjectSlotsNodeGen.getUncached().execute(null, pythonObject);
         }
 
         @NeverDefault

@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -61,7 +62,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -102,20 +102,20 @@ public abstract class HashingStorage {
             return new KeywordsStorage(kwargs);
         }
 
-        @Specialization(guards = {"isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, lookupIter)"})
+        @Specialization(guards = {"isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)"})
         static HashingStorage doPDict(PDict dict, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                         @Shared @Cached HashingStorageCopy copyNode) {
             return copyNode.execute(inliningTarget, dict.getDictStorage());
         }
 
-        @Specialization(guards = {"!isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, lookupIter)"})
+        @Specialization(guards = {"!isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)"})
         static HashingStorage doPDictKwargs(VirtualFrame frame, PDict dict, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
             HashingStorage iterableDictStorage = dict.getDictStorage();

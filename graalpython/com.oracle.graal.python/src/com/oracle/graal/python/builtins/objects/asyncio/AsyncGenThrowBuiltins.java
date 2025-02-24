@@ -44,17 +44,19 @@ import static com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend.Aw
 import static com.oracle.graal.python.nodes.ErrorMessages.GENERATOR_IGNORED_EXIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -75,6 +77,8 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PAsyncGenAThrow)
 public final class AsyncGenThrowBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = AsyncGenThrowBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AsyncGenThrowBuiltinsFactory.getFactories();
@@ -89,7 +93,7 @@ public final class AsyncGenThrowBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class Iter extends PythonUnaryBuiltinNode {
         @Specialization

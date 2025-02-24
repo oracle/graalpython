@@ -52,7 +52,9 @@ public class SlotsMapping {
     static String getSlotBaseClass(Slot s) {
         return switch (s.value()) {
             case nb_bool -> "TpSlotInquiry.TpSlotInquiryBuiltin";
-            case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert -> "TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin";
+            case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert,
+                            tp_iter ->
+                "TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin";
             case nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift, nb_and, nb_xor, nb_or,
                             nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
                 "TpSlotBinaryOp.TpSlotBinaryOpBuiltin";
@@ -81,7 +83,9 @@ public class SlotsMapping {
         return switch (s.value()) {
             case tp_descr_get -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode";
             case nb_bool -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode";
-            case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert -> "com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode";
+            case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert,
+                            tp_iter ->
+                "com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode";
             case nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift, nb_and, nb_xor, nb_or,
                             nb_floor_divide, nb_true_divide, nb_matrix_multiply ->
                 "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode";
@@ -175,6 +179,7 @@ public class SlotsMapping {
             case sq_repeat -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__";
             case sq_inplace_concat -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__";
             case sq_inplace_repeat -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__";
+            case tp_iter -> ", com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__";
             default -> "";
         };
     }
