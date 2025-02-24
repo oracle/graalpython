@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ISDISJOINT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -83,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -197,9 +197,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_contains, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+    public abstract static class ContainsNode extends SqContainsBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "len.execute(inliningTarget, self.getWrappedStorage()) == 0", limit = "1")
         static boolean containsEmpty(PDictView self, Object key,

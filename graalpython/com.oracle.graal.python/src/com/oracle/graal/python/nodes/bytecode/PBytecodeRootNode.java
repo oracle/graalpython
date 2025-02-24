@@ -194,7 +194,6 @@ import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
-import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNodeGen;
@@ -502,7 +501,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case BinaryOpsConstants.IS:
                 return IsNode.create();
             case BinaryOpsConstants.IN:
-                return ContainsNode.create();
+                return InNode.create();
             default:
                 throw CompilerDirectives.shouldNotReachHere();
         }

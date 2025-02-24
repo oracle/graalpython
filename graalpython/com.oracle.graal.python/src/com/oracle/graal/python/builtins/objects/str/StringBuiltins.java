@@ -37,7 +37,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STARTSWITH;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILL_CHAR_MUST_BE_UNICODE_CHAR_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
@@ -131,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -423,9 +423,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_contains, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+    public abstract static class ContainsNode extends SqContainsBuiltinNode {
         public abstract boolean executeBool(Object self, Object left);
 
         @Specialization

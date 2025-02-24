@@ -177,6 +177,8 @@ public @interface Slot {
         sq_inplace_concat("__iadd__"),
         /** seq *= seq */
         sq_inplace_repeat("__imul__"),
+        /** item in seq **/
+        sq_contains("__contains__"),
         /** mapping length */
         mp_length("__len__"),
         /** mapping subscript, e.g. o[key], o[i:j] */

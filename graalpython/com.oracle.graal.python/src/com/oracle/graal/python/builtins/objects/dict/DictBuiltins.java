@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
@@ -74,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSu
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyDictSetDefault;
@@ -430,9 +430,9 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_contains, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+    public abstract static class ContainsNode extends SqContainsBuiltinNode {
 
         @Specialization
         static boolean run(VirtualFrame frame, Object self, Object key,

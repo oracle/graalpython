@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,44 +38,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
-import com.oracle.graal.python.lib.PySequenceIterSearchNode.LazyPySequenceIterSeachNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
-/**
- * Equivalent of CPython's {@code PySequence_Contains}.
- */
-@GenerateUncached
-@GenerateInline
-@GenerateCached(false)
-public abstract class PySequenceContainsNode extends Node {
-    public abstract boolean execute(Frame frame, Node inliningTarget, Object container, Object key);
+@GenerateInline(false)
+abstract class InNode extends BinaryOpNode {
 
     @Specialization
-    static boolean contains(VirtualFrame frame, Node inliningTarget, Object container, Object key,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetCachedTpSlotsNode getSlots,
-                    @Cached InlinedConditionProfile hasContains,
-                    @Cached CallSlotSqContainsNode callSlot,
-                    @Cached LazyPySequenceIterSeachNode iterSearch) {
-        TpSlots slots = getSlots.execute(inliningTarget, getClassNode.execute(inliningTarget, container));
-        if (hasContains.profile(inliningTarget, slots.sq_contains() != null)) {
-            return callSlot.execute(frame, inliningTarget, slots.sq_contains(), container, key);
-        } else {
-            return iterSearch.get(inliningTarget).executeCached(frame, container, key, PySequenceIterSearchNode.PY_ITERSEARCH_CONTAINS) == 1;
-        }
+    Object contains(VirtualFrame frame, Object item, Object container,
+                    @Bind Node inliningTarget,
+                    @Cached PySequenceContainsNode containsNode) {
+        return containsNode.execute(frame, inliningTarget, container, item);
+    }
+
+    @NeverDefault
+    public static InNode create() {
+        return InNodeGen.create();
     }
 }

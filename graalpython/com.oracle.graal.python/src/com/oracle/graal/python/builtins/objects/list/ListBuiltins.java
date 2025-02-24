@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
@@ -87,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyListCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -1011,9 +1011,9 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_contains, isComplex = true)
     @GenerateNodeFactory
-    abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+    abstract static class ContainsNode extends SqContainsBuiltinNode {
         @Specialization
         boolean contains(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,

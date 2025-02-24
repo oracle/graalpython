@@ -67,6 +67,7 @@ public class SlotsMapping {
             case sq_length, mp_length -> "TpSlotLen.TpSlotLenBuiltin" + getSuffix(s.isComplex());
             case sq_item, sq_repeat, sq_inplace_repeat -> "TpSlotSizeArgFun.TpSlotSizeArgFunBuiltin";
             case sq_ass_item -> "TpSlotSqAssItem.TpSlotSqAssItemBuiltin";
+            case sq_contains -> "TpSlotSqContains.TpSlotSqContainsBuiltin";
             case mp_subscript -> "TpSlotBinaryFunc.TpSlotMpSubscript";
             case mp_ass_subscript -> "TpSlotMpAssSubscript.TpSlotMpAssSubscriptBuiltin";
             case tp_getattro -> "TpSlotGetAttr.TpSlotGetAttrBuiltin";
@@ -95,6 +96,7 @@ public class SlotsMapping {
             case sq_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode";
             case sq_ass_item -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode";
             case sq_repeat, sq_inplace_repeat -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode";
+            case sq_contains -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode";
             case mp_subscript -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode";
             case mp_ass_subscript -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode";
             case tp_getattro -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode";
