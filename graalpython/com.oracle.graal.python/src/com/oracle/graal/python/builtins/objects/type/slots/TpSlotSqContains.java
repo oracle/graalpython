@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -54,6 +56,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNati
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSlotBinaryFuncBuiltin;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -114,7 +118,11 @@ public final class TpSlotSqContains {
         @Specialization
         static boolean callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object arg,
                         @Cached BinaryPythonSlotDispatcherNode dispatcherNode,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (slot.getCallable() == PNone.NONE) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_CONTAINER, self);
+            }
             Object result = dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self, arg);
             return isTrueNode.execute(frame, result);
         }

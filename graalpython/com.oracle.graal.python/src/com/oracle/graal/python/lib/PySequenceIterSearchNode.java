@@ -104,7 +104,7 @@ public abstract class PySequenceIterSearchNode extends PNodeWithContext {
             iterator = getIter.execute(frame, inliningTarget, container);
         } catch (PException e) {
             e.expectTypeError(inliningTarget, noIterProfile);
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_CONTAINER, container);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ARGUMENT_OF_TYPE_P_IS_NOT_ITERABLE, container);
         }
         Object next = PNone.NO_VALUE;
         try {
