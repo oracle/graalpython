@@ -1456,3 +1456,55 @@ def test_mp_slot_calls():
         assert get_delegate(obj) == {'a': 1}
         del obj['a']
         assert not bool(obj)
+
+
+def test_tp_slot_calls():
+    NativeSlotProxy = CPyExtType(
+        name='TpSlotProxy',
+        cmembers='PyObject* delegate;',
+        code=r'''
+            typedef TpSlotProxyObject ProxyObject;
+            static PyObject* get_delegate(PyObject* self) {
+                return ((ProxyObject*)self)->delegate;
+            }
+            static PyObject* proxy_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                PyObject* delegate;
+                if (!PyArg_UnpackTuple(args, "NativeTpSlotProxy", 0, 1, &delegate))
+                    return NULL;
+                ProxyObject* obj = (ProxyObject*)type->tp_alloc(type, 0);
+                if (!obj)
+                    return NULL;
+                obj->delegate = Py_NewRef(delegate);  // leaked
+                return (PyObject*)obj;
+            }
+            static PyObject* proxy_tp_iter(PyObject* self) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_iter(delegate);
+            }
+            static PyObject* proxy_tp_iternext(PyObject* self) {
+                PyObject* delegate = get_delegate(self);
+                return Py_TYPE(delegate)->tp_iternext(delegate);
+            }
+        ''',
+        tp_new='proxy_tp_new',
+        tp_members='{"delegate", T_OBJECT, offsetof(ProxyObject, delegate), 0, NULL}',
+        tp_iter='proxy_tp_iter',
+        tp_iternext='proxy_tp_iternext',
+    )
+
+    class PureSlotProxy:
+        def __init__(self, delegate):
+            self.delegate = delegate
+
+        def __iter__(self):
+            return iter(self.delegate)
+
+        def __next__(self):
+            return next(self.delegate)
+
+    for obj in [NativeSlotProxy([1]), NativeSlotProxy(PureSlotProxy([1]))]:
+        assert isinstance(iter(obj), type(iter([])))
+
+    for obj in [NativeSlotProxy(iter([1])), NativeSlotProxy(PureSlotProxy(iter([1])))]:
+        assert next(obj) == 1
+        assert_raises(StopIteration, next, obj)
