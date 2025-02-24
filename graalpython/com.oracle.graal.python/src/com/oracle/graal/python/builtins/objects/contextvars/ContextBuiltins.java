@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.contextvars;
 
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 
 import java.util.List;
@@ -58,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -192,9 +192,9 @@ public final class ContextBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_contains, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class Contains extends PythonBuiltinNode {
+    public abstract static class Contains extends SqContainsBuiltinNode {
         @Specialization
         boolean doIn(PContextVarsContext self, Object key,
                         @Bind("this") Node inliningTarget,

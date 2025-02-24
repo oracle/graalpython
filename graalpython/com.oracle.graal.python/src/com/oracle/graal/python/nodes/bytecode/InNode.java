@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,54 +38,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.expression;
+package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
-/**
- * A simple base class for root nodes that call an arithmetic operation.
- */
-abstract class CallArithmeticRootNode extends PRootNode {
+@GenerateInline(false)
+abstract class InNode extends BinaryOpNode {
 
-    @Child private CalleeContext calleeContext;
-
-    protected CallArithmeticRootNode(TruffleLanguage<?> language) {
-        super(language);
+    @Specialization
+    Object contains(VirtualFrame frame, Object item, Object container,
+                    @Bind Node inliningTarget,
+                    @Cached PySequenceContainsNode containsNode) {
+        return containsNode.execute(frame, inliningTarget, container, item);
     }
 
-    @Override
-    public boolean isInternal() {
-        return true;
-    }
-
-    @Override
-    public boolean isPythonInternal() {
-        return true;
-    }
-
-    @Override
-    public Object execute(VirtualFrame frame) {
-        if (calleeContext == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            calleeContext = insert(CalleeContext.create());
-        }
-
-        calleeContext.enter(frame);
-        try {
-            return doCall(frame);
-        } finally {
-            calleeContext.exit(frame, this);
-        }
-    }
-
-    protected abstract Object doCall(VirtualFrame frame);
-
-    @Override
-    public boolean setsUpCalleeContext() {
-        return true;
+    @NeverDefault
+    public static InNode create() {
+        return InNodeGen.create();
     }
 }

@@ -582,6 +582,7 @@ public abstract class ErrorMessages {
     public static final TruffleString OBJ_ISNT_MAPPING = tsLiteral("'%p' object is not a mapping");
     public static final TruffleString OBJ_ISNT_REVERSIBLE = tsLiteral("'%p' object is not reversible");
     public static final TruffleString OBJ_NOT_ITERABLE = tsLiteral("'%p' object is not iterable");
+    public static final TruffleString ARGUMENT_OF_TYPE_P_IS_NOT_ITERABLE = tsLiteral("argument of type '%p' is not iterable");
     public static final TruffleString OBJ_NOT_SUBSCRIPTABLE = tsLiteral("'%p' object is not subscriptable");
     public static final TruffleString TYPE_NOT_SUBSCRIPTABLE = tsLiteral("type '%N' is not subscriptable");
     public static final TruffleString OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ = tsLiteral("the object '%p' or klass '%p' arguments is not a host object");

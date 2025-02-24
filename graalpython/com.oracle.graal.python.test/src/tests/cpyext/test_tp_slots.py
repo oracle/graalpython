@@ -1336,9 +1336,8 @@ def test_sq_slot_calls():
     for obj in [NativeSqSlotProxy([1]), NativeSqSlotProxy(PureSlotProxy([1]))]:
         assert len(obj) == 1
         assert bool(obj)
-        # TODO fix on graalpy
-        # assert 1 in obj
-        # assert 2 not in obj
+        assert 1 in obj
+        assert 2 not in obj
 
         assert obj[0] == 1
         assert_raises(IndexError, operator.getitem, obj, 1)

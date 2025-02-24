@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.tuple;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
@@ -75,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.SqCo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -488,9 +488,9 @@ public final class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_contains, isComplex = true)
     @GenerateNodeFactory
-    abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+    abstract static class ContainsNode extends SqContainsBuiltinNode {
         @Specialization
         boolean contains(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,
@@ -498,7 +498,6 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.ContainsNode containsNode) {
             return containsNode.execute(frame, inliningTarget, getTupleStorage.execute(inliningTarget, self), other);
         }
-
     }
 
     @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)

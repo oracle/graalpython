@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.CallSlo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallManagedSlotSetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -545,6 +546,47 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new InquiryWrapper(slot);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class SqContainsWrapper extends TpSlotWrapper {
+        public SqContainsWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached CallSlotSqContainsNode callSlotNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                try {
+                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "SqContainsWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return -1;
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER):SINT32";
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new SqContainsWrapper(slot);
         }
     }
 
