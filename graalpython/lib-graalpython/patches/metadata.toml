@@ -368,6 +368,12 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[pandas.rules]]
+version = '== 2.2.3'
+patch = 'pandas-2.2.3.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[pandas.rules]]
 version = '== 2.0.3'
 patch = 'pandas-2.0.3.patch'
 license = 'BSD-3-Clause'
