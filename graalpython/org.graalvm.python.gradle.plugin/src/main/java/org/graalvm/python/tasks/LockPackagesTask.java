@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,76 +38,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.maven.plugin;
+package org.graalvm.python.tasks;
 
-import org.apache.maven.plugin.logging.Log;
-import org.graalvm.python.embedding.tools.exec.BuildToolLog;
+import org.gradle.api.GradleException;
+import org.gradle.api.tasks.UntrackedTask;
+import org.gradle.api.tasks.TaskAction;
 
-final class MavenDelegateLog implements BuildToolLog {
-    private final Log delegate;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 
-    MavenDelegateLog(Log delegate) {
-        this.delegate = delegate;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils;
+
+/**
+ * Creates a GraalPy lock file from packages declared in plugin configuration.
+ *
+ * If there is no virtual environment preset then it is first created and packages are installed the same way
+ * as in scope of {@link InstallPackagesTask}.
+ */
+@UntrackedTask(because="manually triggered, should always run")
+public abstract class LockPackagesTask extends AbstractPackagesTask {
+    @TaskAction
+    public void exec() throws GradleException {
+        checkEmptyPackages();
+
+        Path venvDirectory = getVenvDirectory();
+        try {
+            VFSUtils.lockPackages(getVenvDirectory(), getPackages().get(), getLockFilePath(), LOCK_FILE_HEADER, createLauncher(), getPolyglotVersion().get(), getLog());
+        } catch (IOException e) {
+            throw new GradleException(String.format("failed to lock packages in python virtual environment %s", venvDirectory), e);
+        }
     }
 
-    @Override
-    public void info(String txt) {
-        delegate.info(txt);
-    }
+    private void checkEmptyPackages() throws GradleException {
+        List<String> packages = getPackages().get();
+        if((packages == null || packages.isEmpty())) {
+            getLog().error("");
+            getLog().error("In order to run the graalpyLockPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.");
+            getLog().error("");
+            getLog().error("For more information, please refer to https://github.com/oracle/graalpython/blob/master/docs/user/Embedding-Build-Tools.md");
+            getLog().error("");
 
-    @Override
-    public void warning(String txt) {
-        delegate.warn(txt);
-    }
-
-    @Override
-    public void warning(String txt, Throwable t) {
-        delegate.warn(txt, t);
-    }
-
-    @Override
-    public void error(String txt) {
-        delegate.error(txt);
-    }
-
-    @Override
-    public void debug(String txt) {
-        delegate.debug(txt);
-    }
-
-    @Override
-    public void subProcessOut(String out) {
-        // don't annotate output with [INFO]
-        System.out.println(out);
-    }
-
-    @Override
-    public void subProcessErr(String err) {
-        delegate.error(err);
-    }
-
-    @Override
-    public boolean isDebugEnabled() {
-        return delegate.isDebugEnabled();
-    }
-
-    @Override
-    public boolean isWarningEnabled() {
-        return delegate.isWarnEnabled();
-    }
-
-    @Override
-    public boolean isErrorEnabled() {
-        return delegate.isErrorEnabled();
-    }
-
-    @Override
-    public boolean isSubprocessOutEnabled() {
-        return delegate.isInfoEnabled();
-    }
-
-    @Override
-    public boolean isInfoEnabled() {
-        return delegate.isInfoEnabled();
+            throw new GradleException("missing python packages in plugin configuration");
+        }
     }
 }

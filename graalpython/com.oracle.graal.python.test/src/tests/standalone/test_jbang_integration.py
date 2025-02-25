@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -340,8 +340,8 @@ def hello():
         out, result = run_cmd(command, cwd=work_dir)
 
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
-        self.assertTrue("Uninstalling ujson" in out, f"Expected text:\nUninstalling ujson")
-        self.assertFalse("Successfully installed termcolor" in out, f"Did not expect text:\nSuccessfully installed termcolor")
+        self.assertFalse("ujson" in out, f"Did not expect text:\n ujson")
+        self.assertTrue("Successfully installed termcolor" in out, f"Did not expect text:\nSuccessfully installed termcolor")
         self.assertTrue("hello java" in out, f"Expected text:\nhello java\nbut in stdout was:\n{out}")
 
         # add ujson in additional PIP comment
@@ -401,7 +401,8 @@ def hello():
         self.assertTrue(result == 0, f"Execution failed with code {result}\n    command: {command}\n    stdout: {out}")
         self.assertFalse("[graalpy jbang integration] python packages" in out, f"Did not expect text:\n[graalpy jbang integration] python packages")
         self.assertTrue("[graalpy jbang integration] python resources directory: python-resources" in out, f"Expected text:\n[graalpy jbang integration] python resources directory: python-resources")
-        self.assertTrue("-m ensurepip" in out, f"-m ensurepip")
+        self.assertFalse("-m ensurepip" in out)
+        self.assertFalse("pip install" in out)
 
     @unittest.skipUnless(is_enabled, "ENABLE_JBANG_INTEGRATION_UNITTESTS is not true")
     def test_two_resource_dirs(self):

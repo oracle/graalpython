@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,76 +38,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.maven.plugin;
+package org.graalvm.python.tasks;
 
-import org.apache.maven.plugin.logging.Log;
-import org.graalvm.python.embedding.tools.exec.BuildToolLog;
+import org.graalvm.python.dsl.GraalPyExtension;
+import org.gradle.api.GradleException;
+import org.gradle.api.tasks.*;
 
-final class MavenDelegateLog implements BuildToolLog {
-    private final Log delegate;
+import java.io.IOException;
+import java.nio.file.Path;
 
-    MavenDelegateLog(Log delegate) {
-        this.delegate = delegate;
-    }
+import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
-    @Override
-    public void info(String txt) {
-        delegate.info(txt);
-    }
-
-    @Override
-    public void warning(String txt) {
-        delegate.warn(txt);
-    }
-
-    @Override
-    public void warning(String txt, Throwable t) {
-        delegate.warn(txt, t);
-    }
-
-    @Override
-    public void error(String txt) {
-        delegate.error(txt);
-    }
-
-    @Override
-    public void debug(String txt) {
-        delegate.debug(txt);
-    }
-
-    @Override
-    public void subProcessOut(String out) {
-        // don't annotate output with [INFO]
-        System.out.println(out);
-    }
-
-    @Override
-    public void subProcessErr(String err) {
-        delegate.error(err);
-    }
-
-    @Override
-    public boolean isDebugEnabled() {
-        return delegate.isDebugEnabled();
-    }
-
-    @Override
-    public boolean isWarningEnabled() {
-        return delegate.isWarnEnabled();
-    }
-
-    @Override
-    public boolean isErrorEnabled() {
-        return delegate.isErrorEnabled();
-    }
-
-    @Override
-    public boolean isSubprocessOutEnabled() {
-        return delegate.isInfoEnabled();
-    }
-
-    @Override
-    public boolean isInfoEnabled() {
-        return delegate.isInfoEnabled();
+/**
+ * This task is responsible installing the dependencies which were requested by the user.
+ * This is either done in generated resources folder or in external directory provided by the user
+ * in {@link GraalPyExtension#getExternalDirectory()}.
+ *
+ * <p/>
+ * In scope of this task:
+ * <ol>
+ *     <li>The GraalPy launcher is set up.</li>
+ *     <li>A python venv is created.</li>
+ *     <li>Python packages are installed into the venv.</li>
+ * </ol>
+ *
+ */
+@CacheableTask
+public abstract class InstallPackagesTask extends AbstractPackagesTask {
+    @TaskAction
+    public void exec() throws GradleException {
+        Path venvDirectory = getVenvDirectory();
+        try {
+            VFSUtils.createVenv(venvDirectory, getPackages().get(), getLockFilePath(), PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(),  getPolyglotVersion().get(), getLog());
+        } catch (IOException e) {
+            throw new GradleException(String.format("failed to create python virtual environment in %s", venvDirectory), e);
+        }
     }
 }

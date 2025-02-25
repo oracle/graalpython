@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,10 @@
  */
 package org.graalvm.python;
 
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.gradle.api.logging.Logger;
 
-public class GradleLogger implements SubprocessLog {
+public class GradleLogger implements BuildToolLog {
     private Logger logger;
 
     private GradleLogger(Logger logger) {
@@ -51,23 +51,73 @@ public class GradleLogger implements SubprocessLog {
     }
 
     @Override
-    public void subProcessOut(CharSequence out) {
-        logger.lifecycle(out.toString());
+    public void subProcessOut(String out) {
+        logger.info(out.toString());
     }
 
     @Override
-    public void subProcessErr(CharSequence err) {
+    public void subProcessErr(String err) {
         logger.warn(err.toString());
     }
 
     @Override
-    public void log(CharSequence txt) {
-        logger.lifecycle(txt.toString());
+    public void lifecycle(String txt) {
+        logger.lifecycle(txt);
     }
 
     @Override
-    public void log(CharSequence txt, Throwable t) {
-        logger.lifecycle(txt.toString(), t);
+    public void info(String txt) {
+        logger.info(txt.toString());
+    }
+
+    @Override
+    public void warning(String txt, Throwable t) {
+        logger.warn(txt, t);
+    }
+
+    @Override
+    public void warning(String txt) {
+        logger.warn(txt);
+    }
+
+    @Override
+    public void error(String txt) {
+        logger.error(txt);
+    }
+
+    @Override
+    public void debug(String txt) {
+        logger.debug(txt);
+    }
+
+    @Override
+    public boolean isDebugEnabled() {
+        return logger.isDebugEnabled();
+    }
+
+    @Override
+    public boolean isWarningEnabled() {
+        return logger.isWarnEnabled();
+    }
+
+    @Override
+    public boolean isErrorEnabled() {
+        return logger.isErrorEnabled();
+    }
+
+    @Override
+    public boolean isInfoEnabled() {
+        return logger.isInfoEnabled();
+    }
+
+    @Override
+    public boolean isLifecycleEnabled() {
+        return logger.isLifecycleEnabled();
+    }
+
+    @Override
+    public boolean isSubprocessOutEnabled() {
+        return logger.isInfoEnabled();
     }
 
     public static GradleLogger of(Logger logger) {

@@ -40,74 +40,39 @@
  */
 package org.graalvm.python.maven.plugin;
 
-import org.apache.maven.plugin.logging.Log;
-import org.graalvm.python.embedding.tools.exec.BuildToolLog;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 
-final class MavenDelegateLog implements BuildToolLog {
-    private final Log delegate;
+import java.io.IOException;
+import java.nio.file.Path;
 
-    MavenDelegateLog(Log delegate) {
-        this.delegate = delegate;
+@Mojo(name = "process-graalpy-resources", defaultPhase = LifecyclePhase.PROCESS_RESOURCES,
+                requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME,
+                requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+public class InstallPackagesMojo extends AbstractGraalPyMojo {
+
+    public void execute() throws MojoExecutionException {
+        preExec(true);
+
+        manageVenv();
+        listGraalPyResources();
+        manageNativeImageConfig();
+
+        postExec();
     }
 
-    @Override
-    public void info(String txt) {
-        delegate.info(txt);
+    private void manageVenv() throws MojoExecutionException {
+        Path venvDirectory = getVenvDirectory();
+        MavenDelegateLog log = new MavenDelegateLog(getLog());
+        Path requirements = getLockFile();
+        try {
+            VFSUtils.createVenv(venvDirectory, packages, requirements, PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(), getGraalPyVersion(project), log);
+        } catch (IOException e) {
+            throw new MojoExecutionException(String.format("failed to create venv %s", venvDirectory), e);
+        }
     }
 
-    @Override
-    public void warning(String txt) {
-        delegate.warn(txt);
-    }
-
-    @Override
-    public void warning(String txt, Throwable t) {
-        delegate.warn(txt, t);
-    }
-
-    @Override
-    public void error(String txt) {
-        delegate.error(txt);
-    }
-
-    @Override
-    public void debug(String txt) {
-        delegate.debug(txt);
-    }
-
-    @Override
-    public void subProcessOut(String out) {
-        // don't annotate output with [INFO]
-        System.out.println(out);
-    }
-
-    @Override
-    public void subProcessErr(String err) {
-        delegate.error(err);
-    }
-
-    @Override
-    public boolean isDebugEnabled() {
-        return delegate.isDebugEnabled();
-    }
-
-    @Override
-    public boolean isWarningEnabled() {
-        return delegate.isWarnEnabled();
-    }
-
-    @Override
-    public boolean isErrorEnabled() {
-        return delegate.isErrorEnabled();
-    }
-
-    @Override
-    public boolean isSubprocessOutEnabled() {
-        return delegate.isInfoEnabled();
-    }
-
-    @Override
-    public boolean isInfoEnabled() {
-        return delegate.isInfoEnabled();
-    }
 }

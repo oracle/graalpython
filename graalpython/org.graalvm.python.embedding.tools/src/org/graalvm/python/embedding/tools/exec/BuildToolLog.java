@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,50 +38,119 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package org.graalvm.python.embedding.tools.exec;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public interface SubprocessLog {
+/**
+ * Build tool verbosity: maven - debug, info, warning, error gradle - debug, info, lifecycle,
+ * warning, error
+ */
+public interface BuildToolLog {
+    void subProcessOut(String out);
 
-    default void subProcessOut(CharSequence out) {
-        System.out.println(out);
+    void subProcessErr(String err);
+
+    default void lifecycle(String s) {
+        info(s);
     }
 
-    default void subProcessErr(CharSequence err) {
-        System.err.println(err);
+    void info(String s);
+
+    void warning(String s);
+
+    void warning(String s, Throwable t);
+
+    void error(String s);
+
+    void debug(String s);
+
+    boolean isWarningEnabled();
+
+    default boolean isLifecycleEnabled() {
+        return true;
     }
 
-    default void log(CharSequence txt) {
-        System.out.println(txt);
-    }
+    boolean isInfoEnabled();
 
-    default void log(CharSequence txt, Throwable t) {
-        System.out.println(txt);
-        t.printStackTrace();
-    }
+    boolean isErrorEnabled();
 
-    final class CollectOutputLog implements SubprocessLog {
+    boolean isDebugEnabled();
+
+    boolean isSubprocessOutEnabled();
+
+    final class CollectOutputLog implements BuildToolLog {
         private final List<String> output = new ArrayList<>();
+        private final BuildToolLog delegate;
+
+        public CollectOutputLog(BuildToolLog delegate) {
+            this.delegate = delegate;
+        }
 
         public List<String> getOutput() {
             return output;
         }
 
         @Override
-        public void subProcessOut(CharSequence var1) {
-            output.add(var1.toString());
+        public boolean isDebugEnabled() {
+            return delegate.isDebugEnabled();
         }
 
         @Override
-        public void subProcessErr(CharSequence var1) {
-            System.err.println(var1);
+        public boolean isInfoEnabled() {
+            return delegate.isInfoEnabled();
         }
 
         @Override
-        public void log(CharSequence var1) {
+        public void info(String s) {
+            delegate.info(s);
+        }
+
+        @Override
+        public void warning(String s) {
+            delegate.warning(s);
+        }
+
+        @Override
+        public void warning(String s, Throwable t) {
+            delegate.warning(s, t);
+        }
+
+        @Override
+        public void error(String s) {
+            delegate.error(s);
+        }
+
+        @Override
+        public void debug(String s) {
+            delegate.debug(s);
+        }
+
+        @Override
+        public boolean isWarningEnabled() {
+            return delegate.isWarningEnabled();
+        }
+
+        @Override
+        public boolean isErrorEnabled() {
+            return delegate.isErrorEnabled();
+        }
+
+        @Override
+        public boolean isSubprocessOutEnabled() {
+            return true;
+        }
+
+        @Override
+        public void subProcessOut(String s) {
+            output.add(s);
+        }
+
+        @Override
+        public void subProcessErr(String s) {
+            delegate.error(s);
         }
     }
-
 }

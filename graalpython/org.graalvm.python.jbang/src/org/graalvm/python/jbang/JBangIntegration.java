@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,9 @@
 
 package org.graalvm.python.jbang;
 
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 import org.graalvm.python.embedding.tools.vfs.VFSUtils;
+import org.graalvm.python.embedding.tools.vfs.VFSUtils.Launcher;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,6 +59,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,8 +77,70 @@ public class JBangIntegration {
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
     private static final String LAUNCHER = IS_WINDOWS ? "graalpy.exe" : "graalpy.sh";
 
-    private static final SubprocessLog LOG = new SubprocessLog() {
+    private static final BuildToolLog BUILD_TOOL_LOG = new BuildToolLog() {
+        private static final boolean debugEnabled = Boolean.getBoolean("org.graalvm.python.jbang.log.debug");
+
+        @Override
+        public void subProcessOut(String out) {
+            System.out.println(out);
+        }
+
+        @Override
+        public void subProcessErr(String err) {
+            System.err.println(err);
+        }
+
+        @Override
+        public void info(String s) {
+            System.out.println(s);
+        }
+
+        @Override
+        public void warning(String s) {
+            System.out.println(s);
+        }
+
+        @Override
+        public void warning(String s, Throwable t) {
+            System.out.println(s);
+        }
+
+        @Override
+        public void error(String s) {
+            System.err.println(s);
+        }
+
+        @Override
+        public void debug(String s) {
+            System.out.println(s);
+        }
+
+        @Override
+        public boolean isWarningEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isInfoEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isErrorEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isDebugEnabled() {
+            return debugEnabled;
+        }
+
+        @Override
+        public boolean isSubprocessOutEnabled() {
+            return true;
+        }
     };
+
     private static final String JBANG_COORDINATES = "org.graalvm.python:jbang:jar";
 
     /**
@@ -170,7 +234,13 @@ public class JBangIntegration {
             // perhaps already checked by jbang
             throw new IllegalStateException("could not resolve parent for venv path: " + venv);
         }
-        VFSUtils.createVenv(venv, pkgs, getLauncherPath(venvParent.toString()), () -> calculateClasspath(dependencies), graalPyVersion, LOG, (txt) -> LOG.log(txt));
+        Launcher launcher = new Launcher(getLauncherPath(venvParent.toString())) {
+            @Override
+            public Set<String> computeClassPath() {
+                return calculateClasspath(dependencies);
+            }
+        };
+        VFSUtils.createVenv(venv, pkgs, launcher, graalPyVersion, BUILD_TOOL_LOG);
 
         if (dropPip) {
             try {
@@ -234,6 +304,8 @@ public class JBangIntegration {
     }
 
     private static void log(String txt) {
-        LOG.log("[graalpy jbang integration] " + txt);
+        if (BUILD_TOOL_LOG.isInfoEnabled()) {
+            BUILD_TOOL_LOG.info("[graalpy jbang integration] " + txt);
+        }
     }
 }

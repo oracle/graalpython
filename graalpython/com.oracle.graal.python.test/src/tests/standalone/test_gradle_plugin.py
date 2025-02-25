@@ -46,6 +46,10 @@ import unittest
 from tests.standalone import util
 from tests.standalone.util import TemporaryTestDirectory, Logger
 
+MISSING_FILE_WARNING = "The list of installed Python packages does not match the packages specified in the graalpy-maven-plugin configuration"
+PACKAGES_CHANGED_ERROR = "packages and their version constraints in graalpy-maven-plugin configuration are different then previously used to generate the lock file"
+VENV_UPTODATE = "Virtual environment is up to date with lock file, skipping install"
+
 def append(file, txt):
     with open(file, "a") as f:
         f.write(txt)
@@ -92,6 +96,9 @@ class GradlePluginTestBase(util.BuildToolTestBase):
     def native_image_with_exlude_email(self):
         pass
 
+    def lock_packages_config(self, community, pkgs, lock_file):
+        pass
+
     def generate_app(self, target_dir):
         shutil.copytree(self.test_prj_path, target_dir)
         for root, dirs, files in os.walk(target_dir):
@@ -126,16 +133,19 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             build_file = os.path.join(target_dir, self.build_file_name)
             append(build_file, self.packages_termcolor(community))
 
-            gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env)
             log = Logger()
 
             # build
+            gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env, verbose=False)
+
             cmd = gradlew_cmd + ["build"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("Virtual filesystem is deployed to default resources directory", out, logger=log)
             util.check_ouput("This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem", out, logger=log)
             self.check_filelist(target_dir, log)
+
+            gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env)
 
             cmd = gradlew_cmd + ["nativeCompile"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir, logger=log)
@@ -180,6 +190,90 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             util.check_ouput("BUILD SUCCESS", out, logger=log)
             util.check_ouput("hello java", out, logger=log)
             self.check_filelist(target_dir2, log)
+
+    @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
+    def check_lock_packages(self, community):
+        with util.TemporaryTestDirectory() as tmpdir:
+
+            target_dir = os.path.join(str(tmpdir), "lock_packages" + self.target_dir_name_sufix())
+            self.generate_app(target_dir)
+            build_file = os.path.join(target_dir, self.build_file_name)
+
+            gradlew_cmd = util.get_gradle_wrapper(target_dir, self.env)
+
+            # start with requests package without version
+            append(build_file, self.lock_packages_config(pkgs=["requests"], lock_file="test-graalpy.lock", community=True))
+
+            # build
+            cmd = gradlew_cmd + ["build"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("pip install", out)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=True)
+            assert not os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # lock without version
+            cmd = gradlew_cmd + ["graalpyLockPackages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=True)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+            os.remove(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # lock with correct version
+            log = Logger()
+            self.copy_build_files(target_dir)
+            append(build_file, self.lock_packages_config(pkgs=["requests==2.32.3"], lock_file="test-graalpy.lock", community=True))
+            cmd = gradlew_cmd + ["graalpyLockPackages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=True)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # add termcolor and build - fails as it is not part of lock file
+            log = Logger()
+            self.copy_build_files(target_dir)
+            append(build_file, self.lock_packages_config(pkgs=["requests==2.32.3", "termcolor==2.2"], lock_file="test-graalpy.lock", community=True))
+            cmd = gradlew_cmd + ["build"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput(PACKAGES_CHANGED_ERROR, out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # lock with termcolor
+            log = Logger()
+            cmd = gradlew_cmd + ["graalpyLockPackages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=True)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # should be able to import requests if installed
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "org", "example", "GraalPy.java"),
+                                 "import hello",
+                                 "import requests; import hello")
+
+            # rebuild with lock and exec
+            cmd = gradlew_cmd + ["build", "run"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput(VENV_UPTODATE, out)
+            util.check_ouput("hello java", out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+
+            # run with no packages, only lock file
+            self.copy_build_files(target_dir)
+            append(build_file, self.empty_packages())
+
+            # stop using lock file field and test with default value {project_root}/graalpy.lock
+            shutil.move(os.path.join(target_dir, "test-graalpy.lock"), os.path.join(target_dir, "graalpy.lock"))
+
+            # clean and rebuild fails
+            cmd = gradlew_cmd + ["clean", "build", "run"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 
     def check_gradle_generated_app_external_resources(self):
         with TemporaryTestDirectory() as tmpdir:
@@ -236,43 +330,6 @@ class GradlePluginTestBase(util.BuildToolTestBase):
     def check_gradle_fail_with_mismatching_graalpy_dep(self):
         pass # TODO: once the CI job builds enterprise
 
-    def check_gradle_gen_launcher_and_venv(self, community):
-        with TemporaryTestDirectory() as tmpdir:
-            target_dir = os.path.join(str(tmpdir), "gradle_gen_launcher_and_venv" + self.target_dir_name_sufix())
-            self.generate_app(target_dir)
-
-            build_file = os.path.join(target_dir, self.build_file_name)
-
-            gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-
-            append(build_file, self.packages_termcolor_ujson(community))
-
-            cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out)
-            util.check_ouput("-m ensurepip",out)
-            util.check_ouput("ujson", out)
-            util.check_ouput("termcolor", out)
-
-            # run again and assert that we do not regenerate the venv
-            cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out, False)
-            util.check_ouput("-m ensurepip", out, False)
-            util.check_ouput("ujson", out, False)
-            util.check_ouput("termcolor", out, False)
-
-            # remove ujson pkg from plugin config and check if unistalled
-            self.copy_build_files(target_dir)
-            append(build_file, self.packages_termcolor(community))
-
-            cmd = gradle_cmd + ["graalPyResources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out, False)
-            util.check_ouput("-m ensurepip", out, False)
-            util.check_ouput("Uninstalling ujson", out)
-            util.check_ouput("termcolor", out, False)
-
     def check_tagfile(self, home, expected, log=''):
         with open(os.path.join(home, "tagfile")) as f:
             lines = f.readlines()
@@ -286,7 +343,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             build_file = os.path.join(target_dir, self.build_file_name)
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-            process_resources_cmd = gradle_cmd + ["--stacktrace", "graalPyResources"]
+            process_resources_cmd = gradle_cmd + ["--stacktrace", "graalPyInstallPackages"]
 
             # 1. process-resources with no pythonHome config - no warning printed
             log = Logger()
@@ -364,10 +421,16 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             append(build_file, self.empty_packages())
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-            cmd = gradle_cmd + ["graalPyResources"]
+            cmd = gradle_cmd + ["graalPyInstallPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
             assert return_code == 0, out
+
+            cmd = gradle_cmd + ["graalpyLockPackages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput("In order to run the graalpyLockPackages task there have to be python packages declared in the graalpy-gradle-plugin configuration.", out)
+            assert not os.path.exists(os.path.join(target_dir, "graalpy.lock"))
 
 
     def check_gradle_python_resources_dir_deprecation(self):
@@ -388,7 +451,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             ''')
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-            cmd = gradle_cmd + ["graalPyResources"]
+            cmd = gradle_cmd + ["graalPyInstallPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("Property 'pythonResourcesDirectory' is deprecated and will be removed. Use property 'externalDirectory' instead.", out)
             assert return_code == 0, out
@@ -413,7 +476,7 @@ class GradlePluginTestBase(util.BuildToolTestBase):
             ''')
 
             gradle_cmd = util.get_gradle_wrapper(target_dir, self.env)
-            cmd = gradle_cmd + ["graalPyResources"]
+            cmd = gradle_cmd + ["graalPyInstallPackages"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("Cannot set both 'externalDirectory' and 'resourceDirectory' at the same time", out)
             assert return_code != 0, out
@@ -512,12 +575,12 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
         self.check_gradle_generated_app(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_generated_app_external_resources(self):
-        self.check_gradle_generated_app_external_resources()
+    def test_gradle_lock_packages(self):
+        self.check_lock_packages(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_gen_launcher_and_venv(self):
-        self.check_gradle_gen_launcher_and_venv(community=True)
+    def test_gradle_generated_app_external_resources(self):
+        self.check_gradle_generated_app_external_resources()
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_check_home_warning(self):
@@ -567,6 +630,17 @@ class GradlePluginGroovyTest(GradlePluginTestBase):
         return textwrap.dedent(f"""
             graalPy {{
                 packages = ["termcolor"]
+                {_community_as_property(community)}
+            }}
+            """)
+
+    def lock_packages_config(self, community, pkgs, lock_file=None):
+        lf = f"graalPyLockFile = file(\"{lock_file}\")" if lock_file else ""
+        packages = "packages = [\"" + "\",\"".join(pkgs) + "\"]"
+        return textwrap.dedent(f"""
+            graalPy {{
+                {packages}
+                {lf}
                 {_community_as_property(community)}
             }}
             """)
@@ -685,13 +759,13 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
     def test_gradle_generated_app(self):
         self.check_gradle_generated_app(community=True)
 
+    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
+    def test_gradle_lock_packages(self):
+        self.check_lock_packages(community=True)
+
     @unittest.skipUnless(util.is_gradle_plugin_long_running_test_enabled, "ENABLE_GRADLE_PLUGIN_LONG_RUNNING_UNITTESTS is not true")
     def test_gradle_generated_app_external_resources(self):
         self.check_gradle_generated_app_external_resources()
-
-    @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
-    def test_gradle_gen_launcher_and_venv(self):
-        self.check_gradle_gen_launcher_and_venv(community=True)
 
     @unittest.skipUnless(util.is_gradle_plugin_test_enabled, "ENABLE_GRADLE_PLUGIN_UNITTESTS is not true")
     def test_gradle_check_home_warning(self):
@@ -735,6 +809,19 @@ class GradlePluginKotlinTest(GradlePluginTestBase):
 
     def empty_plugin(self, community):
         return f"graalPy {{ {_community_as_property(community) } }}"
+
+    def lock_packages_config(self, community, pkgs, lock_file=None):
+        lf = f"graalPyLockFile = file(\"{lock_file}\")" if lock_file else ""
+        packages = ""
+        for p in pkgs:
+            packages += f"    packages.add(\"{p}\")\n"
+        return textwrap.dedent(f"""
+            graalPy {{
+                {packages}
+                {lf}
+                {_community_as_property(community)}
+            }}
+            """)
 
     def packages_termcolor(self, community):
        return textwrap.dedent(f"""

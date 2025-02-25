@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,11 +60,11 @@ public class GraalPyRunner {
     private static final String BIN_DIR = IS_WINDOWS ? "Scripts" : "bin";
     private static final String EXE_SUFFIX = IS_WINDOWS ? ".exe" : "";
 
-    public static void run(Set<String> classpath, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void run(Set<String> classpath, BuildToolLog log, String... args) throws IOException, InterruptedException {
         run(String.join(File.pathSeparator, classpath), log, args);
     }
 
-    public static void run(String classpath, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void run(String classpath, BuildToolLog log, String... args) throws IOException, InterruptedException {
         String workdir = System.getProperty("exec.workingdir");
         Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
         List<String> cmd = new ArrayList<>();
@@ -77,20 +77,20 @@ public class GraalPyRunner {
         if (workdir != null) {
             pb.directory(new File(workdir));
         }
-        log.log(String.format("Running GraalPy: %s", String.join(" ", cmd)));
+        infoCmd(log, "Running GraalPy:", cmd);
         runProcess(pb, log);
     }
 
-    public static void runLauncher(String launcherPath, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void runLauncher(String launcherPath, BuildToolLog log, String... args) throws IOException, InterruptedException {
         var cmd = new ArrayList<String>();
         cmd.add(launcherPath);
         cmd.addAll(List.of(args));
-        log.log(String.format("Running: %s", String.join(" ", cmd)));
+        infoCmd(log, "Running:", cmd);
         var pb = new ProcessBuilder(cmd);
         runProcess(pb, log);
     }
 
-    public static void runPip(Path venvDirectory, String command, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void runPip(Path venvDirectory, String command, BuildToolLog log, String... args) throws IOException, InterruptedException {
         var newArgs = new ArrayList<String>();
         newArgs.add("-m");
         newArgs.add("pip");
@@ -101,15 +101,15 @@ public class GraalPyRunner {
         runVenvBin(venvDirectory, "graalpy", log, newArgs);
     }
 
-    public static void runVenvBin(Path venvDirectory, String command, SubprocessLog log, String... args) throws IOException, InterruptedException {
+    public static void runVenvBin(Path venvDirectory, String command, BuildToolLog log, String... args) throws IOException, InterruptedException {
         runVenvBin(venvDirectory, command, log, List.of(args));
     }
 
-    private static void runVenvBin(Path venvDirectory, String command, SubprocessLog log, List<String> args) throws IOException, InterruptedException {
+    private static void runVenvBin(Path venvDirectory, String command, BuildToolLog log, List<String> args) throws IOException, InterruptedException {
         var cmd = new ArrayList<String>();
         cmd.add(venvDirectory.resolve(BIN_DIR).resolve(command + EXE_SUFFIX).toString());
         cmd.addAll(args);
-        log.log(String.join(" ", cmd));
+        infoCmd(log, "Executing:", cmd);
         var pb = new ProcessBuilder(cmd);
         runProcess(pb, log);
     }
@@ -139,7 +139,7 @@ public class GraalPyRunner {
         return proxyAddress.startsWith(protocol) ? proxyAddress : protocol + "://" + proxyAddress;
     }
 
-    private static void runProcess(ProcessBuilder pb, SubprocessLog log) throws IOException, InterruptedException {
+    private static void runProcess(ProcessBuilder pb, BuildToolLog log) throws IOException, InterruptedException {
         pb.redirectError();
         pb.redirectOutput();
         Process process = pb.start();
@@ -147,12 +147,12 @@ public class GraalPyRunner {
             try (InputStream is = process.getInputStream(); BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    log.subProcessOut(line);
+                    subProcessOut(log, line);
                 }
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.log("exception while reading subprocess out", e);
+                warn(log, "exception while reading subprocess out", e);
             }
         });
         outputReader.start();
@@ -162,12 +162,12 @@ public class GraalPyRunner {
                 BufferedReader errorBufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                 String line;
                 while ((line = errorBufferedReader.readLine()) != null) {
-                    log.subProcessErr(line);
+                    subProcessErr(log, line);
                 }
             } catch (IOException e) {
                 // Do nothing for now. Probably is not good idea to stop the
                 // execution at this moment
-                log.log("exception while reading subprocess err", e);
+                warn(log, "exception while reading subprocess err", e);
             }
         });
         errorReader.start();
@@ -181,4 +181,27 @@ public class GraalPyRunner {
         }
     }
 
+    private static void warn(BuildToolLog log, String txt, Throwable t) {
+        if (log.isWarningEnabled()) {
+            log.warning(txt, t);
+        }
+    }
+
+    private static void infoCmd(BuildToolLog log, String msg, List<String> cmd) {
+        if (log.isInfoEnabled()) {
+            log.info(String.format("%s %s", msg, String.join(" ", cmd)));
+        }
+    }
+
+    private static void subProcessOut(BuildToolLog log, String txt) {
+        if (log.isSubprocessOutEnabled()) {
+            log.subProcessOut(txt);
+        }
+    }
+
+    private static void subProcessErr(BuildToolLog log, String txt) {
+        if (log.isErrorEnabled()) {
+            log.subProcessErr(txt);
+        }
+    }
 }

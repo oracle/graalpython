@@ -79,7 +79,36 @@ Any manual change will be overridden by the plugin during the build.
 
 The _src_ subdirectory is left to be manually populated by the user with custom Python scripts or modules.
 
-## GraalPy Maven Plugin Configuration
+To manage third-party Python packages, a [Python virtual environment](https://docs.python.org/3.11/tutorial/venv.html) is used behind the scenes.
+Whether deployed in a virtual filesystem or an external directory, its contents are managed by the plugin based on the Python packages
+specified in the plugin configuration.
+
+## Python Dependency Management
+The list of third-party Python packages to be downloaded and installed can be specified in Maven or Gradle plugin configuration. Unfortunately,
+Python does not enforce strict versioning of dependencies, which can result in problems if a third-party package or one of its transitive
+dependencies is unexpectedly updated to a newer version, leading to unforeseen behavior.
+
+It is regarded as good practice to always specify a Python package with its exact version. In simpler scenarios, where only a few packages 
+are required, specifying the exact version of each package in the plugin configuration, 
+along with their transitive dependencies, might be sufficient. However, this method is often impractical,
+as manually managing the entire dependency tree can quickly become overwhelming.
+
+### Locking Dependencies
+
+For these cases, we **highly recommend locking** all Python dependencies whenever there is a change 
+in the list of required packages for a project. The GraalPy plugins provide an action to do so, 
+and as a result, a GraalPy lock file will be created, listing all required Python packages with their specific versions 
+based on the packages defined in the plugin configuration and their dependencies. Subsequent GraalPy plugin executions 
+will then use this file exclusively to install all packages with guaranteed versions.
+
+The default location of the lock file is in the project root, and since it serves as input for generating resources, 
+it should be stored alongside other project files in a version control system.
+
+For information on the specific Maven or Gradle lock packages actions, please refer to the plugin descriptions below in this document.
+
+## GraalPy Maven Plugin
+
+### Maven Plugin Configuration
 
 Add the plugin configuration in the `configuration` block of `graalpy-maven-plugin` in the _pom.xml_ file:
 ```xml
@@ -104,7 +133,15 @@ The Python packages and their versions are specified as if used with `pip`:
       ...
   </configuration>
   ```
-
+- The **graalPyLockFile** element can specify an alternative path to a GraalPy lock file. 
+Default value is `${basedir}/graalpy.lock`.
+  ```xml
+  <configuration>
+      <graalPyLockFile>${basedir}/graalpy.lock</graalPyLockFile>
+      ...
+  </configuration>
+  ```
+  
 - The **resourceDirectory** element can specify the relative [Java resource path](#java-resource-path).
   Remember to use `VirtualFileSystem$Builder#resourceDirectory` when configuring the `VirtualFileSystem` in Java.
   ```xml
@@ -119,9 +156,21 @@ Remember to use the appropriate `GraalPyResources` API to create the Context. Th
       ...
   </configuration>
   ```
+  
+### Locking Python Packages
+To lock the dependency tree of the specified Python packages, execute the GraalPy plugin goal `org.graalvm.python:graalpy-maven-plugin:lock-packages`. 
+```bash
+$ mvn org.graalvm.python:graalpy-maven-plugin:lock-packages
+```
+*Note that the action will override the existing lock file.*  
 
-## GraalPy Gradle Plugin Configuration
+For more information on managing Python packages, please refer to the descriptions of 
+the `graalPyLockFile` and `packages` fields in the [plugin configuration](#maven-plugin-configuration), as well as the [Python Dependency Management](#python-dependency-management) section 
+above in this document.
 
+## GraalPy Gradle Plugin 
+
+### Gradle Plugin Configuration
 The plugin must be added to the plugins section in the _build.gradle_ file.
 The **version** property defines which version of GraalPy to use.
 ```
@@ -146,6 +195,15 @@ The plugin can be configured in the `graalPy` block:
   }
   ```
 
+- The **graalPyLockFile** element can specify an alternative path to a GraalPy lock file.
+  Default value is `$rootDir/graalpy.lock`.
+  ```
+  graalPy {
+    graalPyLockFile = file("$rootDir/graalpy.lock")
+    ...
+  }
+  ```
+  
 - The **resourceDirectory** element can specify the relative [Java resource path](#java-resource-path).
   Remember to use `VirtualFileSystem$Builder#resourceDirectory` when configuring the `VirtualFileSystem` in Java.
   ```
@@ -168,8 +226,18 @@ dependency `org.graalvm.python:python` to the community build: `org.graalvm.pyth
     ...
   }
   ```
+### Locking Python Packages
+To lock the dependency tree of the specified Python packages, execute the GraalPy plugin task `graalPyLockPackages`.
+```bash
+$ gradle graalPyLockPackages
+```
+*Note that the action will override the existing lock file.*
 
-### Related Documentation
+For more information on managing Python packages, please refer to the descriptions of
+the `graalPyLockFile` and `packages` fields in the [plugin configuration](#gradle-plugin-configuration), as well as the [Python Dependency Management](#python-dependency-management) sections
+in this document.
+
+## Related Documentation
 
 * [Embedding Graal languages in Java](https://www.graalvm.org/reference-manual/embed-languages/)
 * [Permissions for Python Embeddings](Embedding-Permissions.md)

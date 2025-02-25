@@ -492,6 +492,7 @@ class GraalPythonTags(object):
     unittest_gradle_plugin_long_run = 'python-unittest-gradle-plugin-long-run'
     unittest_maven_plugin = 'python-unittest-maven-plugin'
     unittest_maven_plugin_long_run = 'python-unittest-maven-plugin-long-run'
+    junit_vfsutils = 'python-junit-vfsutils'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
@@ -1209,7 +1210,7 @@ def graalpython_gate_runner(args, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'((graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util)))'
+                        r'((graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util))|(org\.graalvm\.python\.embedding\.(test|test\.integration)))'
                     ],
                     report=True
                 )
@@ -1389,7 +1390,7 @@ def graalpython_gate_runner(args, tasks):
                 parallel=3,
             )
 
-    with Task('GraalPython maven plugin long runnning tests', tasks, tags=[GraalPythonTags.unittest_maven_plugin_long_run]) as task:
+    with Task('GraalPython maven plugin long running tests', tasks, tags=[GraalPythonTags.unittest_maven_plugin_long_run]) as task:
         if task:
             standalone_home, env = setup_maven_plugin_tests()
             env['ENABLE_MAVEN_PLUGIN_LONG_RUNNING_UNITTESTS'] = 'true'
@@ -1403,6 +1404,12 @@ def graalpython_gate_runner(args, tasks):
                 env=env,
                 parallel=3,
             )
+
+    with Task('GraalPython VFSUtils long running tests', tasks, tags=[GraalPythonTags.junit_vfsutils]) as task:
+        if task:
+            args =['--verbose']
+            vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
+            mx_unittest.unittest(vm_args + ['org.graalvm.python.embedding.vfs.test'] + args + ["--use-graalvm"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -2985,6 +2992,7 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py/*=ALL-UNNAMED'])  # for Python internals
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.py.launcher/*=ALL-UNNAMED'])  # for Python launcher internals
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.python.embedding/*=ALL-UNNAMED'])
+        mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.python.embedding.tools/*=ALL-UNNAMED'])
         if not PythonMxUnittestConfig.useResources:
             vmArgs.append('-Dorg.graalvm.language.python.home=' + mx.dependency("GRAALPYTHON_GRAALVM_SUPPORT").get_output())
         if mx._opts.verbose:
