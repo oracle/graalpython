@@ -45,6 +45,7 @@ static const char copyright[] =
 
 #define PY_SSIZE_T_CLEAN
 
+#include "capi.h" // GraalPy change
 #include "Python.h"
 #include "pycore_long.h"          // _PyLong_GetZero()
 #include "pycore_moduleobject.h"  // _PyModule_GetState()
@@ -2995,7 +2996,6 @@ template_dealloc(TemplateObject *self)
     Py_DECREF(tp);
 }
 
-#if 0 // GraalPy change
 static PyObject *
 expand_template(TemplateObject *self, MatchObject *match)
 {
@@ -3010,6 +3010,7 @@ expand_template(TemplateObject *self, MatchObject *match)
     PyObject *buffer[10];
     PyObject **out = buffer;
     PyObject *list = NULL;
+#if 0 // GraalPy change
     if (self->chunks > (int)Py_ARRAY_LENGTH(buffer) ||
         !PyUnicode_Check(self->literal))
     {
@@ -3021,6 +3022,15 @@ expand_template(TemplateObject *self, MatchObject *match)
     }
 
     out[count++] = Py_NewRef(self->literal);
+#else // GraalPy change: different implementation
+    list = PyList_New(self->chunks);
+    if (!list) {
+        goto cleanup;
+    }
+    if (PyList_Append(list, self->literal) < 0) {
+        goto cleanup;
+    }
+#endif // GraalPy change
     for (Py_ssize_t i = 0; i < Py_SIZE(self); i++) {
         Py_ssize_t index = self->items[i].index;
         if (index >= match->groups) {
@@ -3032,22 +3042,36 @@ expand_template(TemplateObject *self, MatchObject *match)
             goto cleanup;
         }
         if (item != Py_None) {
-            out[count++] = Py_NewRef(item);
+            // out[count++] = Py_NewRef(item); // GraalPy change
+            if (PyList_Append(list, item) < 0) {
+                goto cleanup;
+            }
+            count++;
         }
         Py_DECREF(item);
 
         PyObject *literal = self->items[i].literal;
         if (literal != NULL) {
-            out[count++] = Py_NewRef(literal);
+            // out[count++] = Py_NewRef(literal); // GraalPy change
+            if (PyList_Append(list, literal) < 0) {
+                goto cleanup;
+            }
+            count++;
         }
     }
 
     if (PyUnicode_Check(self->literal)) {
+#if 0 // GraalPy change
         result = _PyUnicode_JoinArray(&_Py_STR(empty), out, count);
+#else // GraalPy change: different implementation
+        count = GraalPyTruffleList_TryGetItems(list, &out);
+        result = _PyUnicode_JoinArray(PyUnicode_FromString(""), out, count);
+#endif // GraalPy change
     }
     else {
-        Py_SET_SIZE(list, count);
-        result = _PyBytes_Join((PyObject *)&_Py_SINGLETON(bytes_empty), list);
+        // Py_SET_SIZE(list, count); // GraalPy change
+        // GraalPy change: replace '&_Py_SINGLETON(bytes_empty)' with 'GraalPyTruffle_Bytes_EmptyWithCapacity(0)'
+        result = _PyBytes_Join(GraalPyTruffle_Bytes_EmptyWithCapacity(0), list);
     }
 
 cleanup:
@@ -3061,7 +3085,6 @@ cleanup:
     }
     return result;
 }
-#endif // GraalPy change
 
 
 static Py_hash_t

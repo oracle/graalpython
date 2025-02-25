@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.CImpl;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR;
@@ -64,7 +65,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.FILE_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.FREEFUNC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INITTAB;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT_LIST;
@@ -81,7 +81,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYOBJECTARENAALLOCATOR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYPRECONFIG_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYSTATUS;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYUNICODE_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWEAKREFERENCE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWIDESTRINGLIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_AUDITHOOKFUNCTION;
@@ -1190,7 +1189,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyUnicode_FromASCII", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_InsertThousandsGrouping", ret = Py_ssize_t, args = {_PYUNICODEWRITER_PTR, Py_ssize_t, PyObject, Py_ssize_t, Py_ssize_t, Py_ssize_t, ConstCharPtrAsTruffleString,
                     PyObject, PY_UCS4_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyUnicode_JoinArray", ret = PyObject, args = {PyObject, PyObjectConstPtr, Py_ssize_t}, call = NotImplemented)
+    @CApiBuiltin(name = "_PyUnicode_JoinArray", ret = PyObject, args = {PyObject, PyObjectConstPtr, Py_ssize_t}, call = Direct)
     @CApiBuiltin(name = "_PyUnicode_ScanIdentifier", ret = Py_ssize_t, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_TransformDecimalAndSpaceToASCII", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicode_WideCharString_Converter", ret = Int, args = {PyObject, Pointer}, call = NotImplemented)

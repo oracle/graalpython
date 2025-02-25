@@ -1707,4 +1707,5 @@ public abstract class ErrorMessages {
     public static final TruffleString SYS_PREFIX_MUST_POINT_TO_A_VENV_FOR_CAPI_ISOLATION = tsLiteral(
                     "The sys.prefix must point to a venv, not be identical to sys.base_prefix when the `IsolateNativeModules' option is used, because it is the base path for searching and creating the relocated C API and extension modules. " +
                                     "Refer to https://www.graalvm.org/latest/reference-manual/python/Native-Extensions for details on native module isolation.");
+    public static final TruffleString SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND = tsLiteral("separator: expected str instance, %p found");
 }

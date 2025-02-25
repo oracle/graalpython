@@ -64,13 +64,17 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
+import static com.oracle.graal.python.nodes.ErrorMessages.SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
@@ -173,6 +177,7 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.FromByteArrayNode;
 import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
 import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public final class PythonCextUnicodeBuiltins {
 
@@ -621,6 +626,44 @@ public final class PythonCextUnicodeBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
             return getNativeNull(inliningTarget);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObjectConstPtr, Py_ssize_t}, call = Direct)
+    @TypeSystemReference(PythonTypes.class)
+    @ImportStatic(PythonCextUnicodeBuiltins.class)
+    abstract static class _PyUnicode_JoinArray extends CApiTernaryBuiltinNode {
+        @Specialization
+        static Object join(Object separatorObj, Object itemsObj, long seqlenlong,
+                        @Bind("this") Node inliningTarget,
+                        @Cached CStructAccess.ReadObjectNode readNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached CastToTruffleStringNode toTruffleStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            if (seqlenlong == 0) {
+                return T_EMPTY_STRING;
+            }
+
+            TruffleString separator = T_SPACE;
+            if (separatorObj != PNone.NO_VALUE) {
+                if (PGuards.isString(separatorObj)) {
+                    separator = toTruffleStringNode.execute(inliningTarget, separatorObj);
+                } else {
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND, separatorObj);
+                }
+            }
+            int seqlen = (int) seqlenlong;
+            assert seqlen == seqlenlong;
+            Object[] items = readNode.readPyObjectArray(itemsObj, seqlen);
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            for (int i = 0; i < items.length; i++) {
+                TruffleString item = toTruffleStringNode.execute(inliningTarget, items[i]);
+                if (i != 0) {
+                    appendStringNode.execute(sb, separator);
+                }
+                appendStringNode.execute(sb, item);
+            }
+            return toStringNode.execute(sb);
         }
     }
 
