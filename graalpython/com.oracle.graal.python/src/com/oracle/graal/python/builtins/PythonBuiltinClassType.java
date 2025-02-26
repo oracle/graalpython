@@ -123,7 +123,11 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BytesIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenSendBuiltins;
@@ -212,6 +216,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
+import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -317,7 +322,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Super("super", J_BUILTINS, SuperBuiltins.SLOTS),
     PCode("code", Flags.PRIVATE_DERIVED_WODICT),
     PGenericAlias("GenericAlias", J_TYPES, Flags.PUBLIC_BASE_WODICT, GENERIC_ALIAS_M_FLAGS, GenericAliasBuiltins.SLOTS),
-    PGenericAliasIterator("generic_alias_iterator", Flags.PRIVATE_DERIVED_WODICT),
+    PGenericAliasIterator("generic_alias_iterator", Flags.PRIVATE_DERIVED_WODICT, GenericAliasIteratorBuiltins.SLOTS),
     PUnionType("UnionType", J_TYPES, Flags.PUBLIC_DERIVED_WODICT, UNION_TYPE_M_FLAGS, UnionTypeBuiltins.SLOTS),
     PZip("zip", J_BUILTINS, PZipBuiltins.SLOTS),
     PThread("start_new_thread", J__THREAD),
@@ -367,15 +372,15 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PRawIOBase("_RawIOBase", "_io", IOBaseBuiltins.SLOTS),
     PTextIOBase("_TextIOBase", "_io", IOBaseBuiltins.SLOTS),
     PBufferedIOBase("_BufferedIOBase", "_io", IOBaseBuiltins.SLOTS),
-    PBufferedReader("BufferedReader", "_io", Flags.PUBLIC_BASE_WDICT),
+    PBufferedReader("BufferedReader", "_io", Flags.PUBLIC_BASE_WDICT, BufferedReaderMixinBuiltins.SLOTS),
     PBufferedWriter("BufferedWriter", "_io", Flags.PUBLIC_BASE_WDICT),
     PBufferedRWPair("BufferedRWPair", "_io", Flags.PUBLIC_BASE_WDICT),
-    PBufferedRandom("BufferedRandom", "_io", Flags.PUBLIC_BASE_WDICT),
+    PBufferedRandom("BufferedRandom", "_io", Flags.PUBLIC_BASE_WDICT, BufferedReaderMixinBuiltins.SLOTS),
     PFileIO("FileIO", "_io", Flags.PUBLIC_BASE_WDICT),
-    PTextIOWrapper("TextIOWrapper", "_io", Flags.PUBLIC_BASE_WDICT),
+    PTextIOWrapper("TextIOWrapper", "_io", Flags.PUBLIC_BASE_WDICT, TextIOWrapperBuiltins.SLOTS),
     PIncrementalNewlineDecoder("IncrementalNewlineDecoder", "_io", Flags.PUBLIC_BASE_WODICT),
-    PStringIO("StringIO", "_io", Flags.PUBLIC_BASE_WDICT),
-    PBytesIO("BytesIO", "_io", Flags.PUBLIC_BASE_WDICT),
+    PStringIO("StringIO", "_io", Flags.PUBLIC_BASE_WDICT, StringIOBuiltins.SLOTS),
+    PBytesIO("BytesIO", "_io", Flags.PUBLIC_BASE_WDICT, BytesIOBuiltins.SLOTS),
     PBytesIOBuf("_BytesIOBuffer", "_io", Flags.PRIVATE_BASE_WODICT),
 
     PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),

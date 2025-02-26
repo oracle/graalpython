@@ -78,6 +78,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
@@ -129,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrGe
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSetFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.IterNextWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbInPlacePowerWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbPowerWrapper;
@@ -169,6 +171,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.TpSlot
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.TpSlotGetAttrPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.TpSlotInquiryBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpSlotIterNextBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.TpSlotLenBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.TpSlotMpAssSubscriptBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.TpSlotMpAssSubscriptPython;
@@ -317,11 +321,15 @@ public record TpSlots(TpSlot nb_bool, //
                 TpSlot tp_setattr,
                 TpSlot combined_tp_setattro_setattr,
                 TpSlot tp_iter, //
+                TpSlot tp_iternext, //
                 boolean has_as_number,
                 boolean has_as_sequence,
                 boolean has_as_mapping) {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(TpSlot.class);
+
+    // Force class initialization earlier
+    private static final TpSlot NEXT_NOT_IMPLEMENTED = TpSlotIterNext.NEXT_NOT_IMPLEMENTED;
 
     @FunctionalInterface
     private interface TpSlotGetter {
@@ -837,7 +845,15 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_iter,
                         PExternalFunctionWrapper.UNARYFUNC,
-                        UnaryFuncWrapper::new);
+                        UnaryFuncWrapper::new),
+        TP_ITERNEXT(
+                        TpSlots::tp_iternext,
+                        TpSlotPythonSingle.class,
+                        TpSlotIterNextBuiltin.class,
+                        TpSlotGroup.NO_GROUP,
+                        CFields.PyTypeObject__tp_iternext,
+                        PExternalFunctionWrapper.ITERNEXT,
+                        IterNextWrapper::new);
 
         public static final TpSlotMeta[] VALUES = values();
 
@@ -1018,6 +1034,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotDef.withoutHPy(T___SET__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_SET), //
                         TpSlotDef.withoutHPy(T___DELETE__, TpSlotDescrSetPython::create, PExternalFunctionWrapper.DESCR_DELETE));
         addSlotDef(s, TpSlotMeta.TP_ITER, TpSlotDef.withSimpleFunction(T___ITER__, PExternalFunctionWrapper.UNARYFUNC));
+        addSlotDef(s, TpSlotMeta.TP_ITERNEXT, TpSlotDef.withSimpleFunction(T___NEXT__, PExternalFunctionWrapper.ITERNEXT));
         addSlotDef(s, TpSlotMeta.NB_ADD,
                         TpSlotDef.withoutHPy(T___ADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_L),
                         TpSlotDef.withoutHPy(T___RADD__, TpSlotReversiblePython::create, PExternalFunctionWrapper.BINARYFUNC_R));
@@ -1371,19 +1388,18 @@ public record TpSlots(TpSlot nb_bool, //
             // dynamic lookup.
             for (int i = 0; i < defs.length; i++) {
                 TruffleString name = defs[i].name();
-                Object decr = lookup.execute(klass, name);
-                genericCallables[i] = decr;
+                Object descr = lookup.execute(klass, name);
+                genericCallables[i] = descr;
                 genericCallablesNames[i] = name;
-                if (decr == PNone.NO_VALUE) {
-                    /*- TODO:
-                    if (ptr == (void**)&type->tp_iternext) {
-                        specific = (void *)_PyObject_NextNotImplemented;
-                    }*/
+                if (descr == PNone.NO_VALUE) {
+                    if (slot == TpSlotMeta.TP_ITERNEXT) {
+                        specific = NEXT_NOT_IMPLEMENTED;
+                    }
                     continue;
                 }
                 // Is the value a builtin function (in CPython PyWrapperDescr_Type) that wraps a
                 // builtin or native slot?
-                if (decr instanceof PBuiltinFunction builtin && builtin.getSlot() != null) {
+                if (descr instanceof PBuiltinFunction builtin && builtin.getSlot() != null) {
                     /*
                      * CPython source comment: if the special method is a wrapper_descriptor with
                      * the correct name but the type has precisely one slot set for that name and
@@ -1738,6 +1754,7 @@ public record TpSlots(TpSlot nb_bool, //
                             get(TpSlotMeta.TP_SETATTR),
                             tp_set_attro_attr,
                             get(TpSlotMeta.TP_ITER), //
+                            get(TpSlotMeta.TP_ITERNEXT), //
                             hasGroup(TpSlotGroup.AS_NUMBER),
                             hasGroup(TpSlotGroup.AS_SEQUENCE),
                             hasGroup(TpSlotGroup.AS_MAPPING));

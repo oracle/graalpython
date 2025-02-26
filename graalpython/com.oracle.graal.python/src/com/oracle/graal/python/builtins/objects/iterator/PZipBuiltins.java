@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
@@ -41,6 +40,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -72,14 +72,13 @@ public final class PZipBuiltins extends PythonBuiltins {
         return PZipBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
 
         @Specialization(guards = "isEmpty(self.getIterators())")
-        static Object doEmpty(@SuppressWarnings("unused") PZip self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
+        static Object doEmpty(@SuppressWarnings("unused") PZip self) {
+            return iteratorExhausted();
         }
 
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
@@ -121,6 +120,7 @@ public final class PZipBuiltins extends PythonBuiltins {
                     } catch (PException e2) {
                         e2.expectStopIteration(inliningTarget, classProfile);
                     }
+                    return iteratorExhausted();
                 }
                 throw e;
             }

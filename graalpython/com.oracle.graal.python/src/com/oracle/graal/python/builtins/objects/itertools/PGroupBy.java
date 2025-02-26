@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -110,8 +109,11 @@ public final class PGroupBy extends PythonBuiltinObject {
         this.currKey = currKey;
     }
 
-    void groupByStep(VirtualFrame frame, Node inliningTarget, BuiltinFunctions.NextNode nextNode, CallNode callNode, InlinedConditionProfile hasFuncProfile) {
-        Object newValue = nextNode.execute(frame, it, PNone.NO_VALUE);
+    boolean groupByStep(VirtualFrame frame, Node inliningTarget, PyIterNextNode nextNode, CallNode callNode, InlinedConditionProfile hasFuncProfile) {
+        Object newValue = nextNode.execute(frame, it);
+        if (PyIterNextNode.isExhausted(newValue)) {
+            return false;
+        }
         Object newKey;
         if (hasFuncProfile.profile(inliningTarget, keyFunc == null)) {
             newKey = newValue;
@@ -120,5 +122,6 @@ public final class PGroupBy extends PythonBuiltinObject {
         }
         currValue = newValue;
         currKey = newKey;
+        return true;
     }
 }

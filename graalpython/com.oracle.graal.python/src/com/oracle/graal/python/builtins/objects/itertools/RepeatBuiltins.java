@@ -40,12 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
@@ -61,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -99,20 +98,18 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.getCnt() > 0")
         static Object nextPos(PRepeat self) {
             self.setCnt(self.getCnt() - 1);
             return self.getElement();
         }
 
-        @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() == 0")
-        static Object nextZero(PRepeat self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
+        static Object nextZero(@SuppressWarnings("unused") PRepeat self) {
+            return iteratorExhausted();
         }
 
         @Specialization(guards = "self.getCnt() < 0")

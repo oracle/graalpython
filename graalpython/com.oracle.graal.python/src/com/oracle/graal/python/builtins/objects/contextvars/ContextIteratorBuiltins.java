@@ -40,27 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.contextvars;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
-
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextIterator)
 public final class ContextIteratorBuiltins extends PythonBuiltins {
@@ -80,17 +75,15 @@ public final class ContextIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class Next extends PythonUnaryBuiltinNode {
+    public abstract static class Next extends TpIterNextBuiltin {
         @Specialization
         static Object next(PContextIterator self,
-                        @Bind("this") Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind PythonLanguage language) {
             Object next = self.next(language);
             if (next == null) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return iteratorExhausted();
             } else {
                 return next;
             }

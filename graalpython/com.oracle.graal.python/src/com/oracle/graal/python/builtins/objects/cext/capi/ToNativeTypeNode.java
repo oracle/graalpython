@@ -271,7 +271,6 @@ public abstract class ToNativeTypeNode {
         writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, tpIsGc);
 
         writePtrNode.write(mem, CFields.PyTypeObject__tp_richcompare, lookup(clazz, SlotMethodDef.TP_RICHCOMPARE));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_iternext, lookup(clazz, SlotMethodDef.TP_ITERNEXT));
         writePtrNode.write(mem, CFields.PyTypeObject__tp_methods, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_members, nullValue);
         writePtrNode.write(mem, CFields.PyTypeObject__tp_getset, nullValue);

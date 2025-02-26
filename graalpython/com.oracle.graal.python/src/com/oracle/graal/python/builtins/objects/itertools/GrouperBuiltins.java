@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -53,10 +52,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -95,13 +95,13 @@ public final class GrouperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PGrouper self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached InlinedBranchProfile currGrouperProfile,
@@ -116,7 +116,10 @@ public final class GrouperBuiltins extends PythonBuiltins {
             }
             if (gbo.getCurrValue() == null) {
                 currValueMarkerProfile.enter(inliningTarget);
-                gbo.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
+                boolean cont = gbo.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
+                if (!cont) {
+                    return iteratorExhausted();
+                }
             }
             if (!eqNode.compare(frame, inliningTarget, self.getTgtKey(), gbo.getCurrKey())) {
                 currValueTgtProfile.enter(inliningTarget);

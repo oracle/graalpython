@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -52,10 +51,14 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -64,7 +67,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -92,38 +94,37 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "hasFunc(self)")
+    public abstract static class NextNode extends TpIterNextBuiltin {
+        @Specialization
         static Object next(VirtualFrame frame, PFilterfalse self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached CallNode callNode,
-                        @Shared @Cached PyObjectIsTrueNode isTrue,
-                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile) {
-            Object n;
+                        @Cached PyObjectIsTrueNode isTrue,
+                        @Cached InlinedConditionProfile hasFuncProfile,
+                        @Cached InlinedLoopConditionProfile loopConditionProfile) {
+            Object sequence = self.getSequence();
+            TpSlot iterNext = getSlots.execute(inliningTarget, sequence).tp_iternext();
+            Object func = self.getFunc();
+            boolean hasFunc = hasFuncProfile.profile(inliningTarget, func != null);
+            Object result;
+            boolean cont;
             do {
-                n = nextNode.execute(frame, self.getSequence(), PNone.NO_VALUE);
-            } while (loopConditionProfile.profile(inliningTarget, isTrue.execute(frame, callNode.execute(frame, self.getFunc(), n))));
-            return n;
-        }
-
-        @Specialization(guards = "!hasFunc(self)")
-        static Object nextNoFunc(VirtualFrame frame, PFilterfalse self,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
-                        @Shared @Cached PyObjectIsTrueNode isTrue,
-                        @Shared @Cached InlinedLoopConditionProfile loopConditionProfile) {
-            Object n;
-            do {
-                n = nextNode.execute(frame, self.getSequence(), PNone.NO_VALUE);
-            } while (loopConditionProfile.profile(inliningTarget, isTrue.execute(frame, n)));
-            return n;
-        }
-
-        protected boolean hasFunc(PFilterfalse self) {
-            return self.getFunc() != null;
+                result = callIterNext.execute(frame, inliningTarget, iterNext, sequence);
+                if (PyIterNextNode.isExhausted(result)) {
+                    cont = false;
+                } else {
+                    Object good = result;
+                    if (hasFunc) {
+                        good = callNode.execute(frame, func, result);
+                    }
+                    cont = isTrue.execute(frame, good);
+                }
+            } while (loopConditionProfile.profile(inliningTarget, cont));
+            return result;
         }
     }
 

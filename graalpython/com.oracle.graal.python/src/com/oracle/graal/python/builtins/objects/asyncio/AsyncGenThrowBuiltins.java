@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend.Aw
 import static com.oracle.graal.python.nodes.ErrorMessages.GENERATOR_IGNORED_EXIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
@@ -57,6 +56,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -102,9 +102,9 @@ public final class AsyncGenThrowBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class Next extends PythonUnaryBuiltinNode {
+    public abstract static class Next extends TpIterNextBuiltin {
         @Specialization
         public Object doSend(VirtualFrame frame, PAsyncGenAThrow self,
                         @Cached Send send) {

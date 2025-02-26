@@ -74,7 +74,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.SECOND_ITEM_OF_STATE_M
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -83,6 +82,8 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -97,6 +98,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
@@ -132,6 +135,8 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytesIO)
 public final class BytesIOBuiltins extends PythonBuiltins {
+
+    public static final TpSlots SLOTS = BytesIOBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -768,19 +773,17 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()")
         static Object doit(PBytesIO self,
-                        @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             int n = scanEOL(self, -1, bufferLib);
             if (n == 0) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return TpIterNextBuiltin.iteratorExhausted();
             }
             return readBytes(self, n, bufferLib, language);
         }

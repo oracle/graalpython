@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.map;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -55,7 +54,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -79,24 +79,31 @@ public final class MapBuiltins extends PythonBuiltins {
         return MapBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.getIterators().length == 1")
         Object doOne(VirtualFrame frame, PMap self,
                         @Shared @Cached CallVarargsMethodNode callNode,
-                        @Shared @Cached GetNextNode next) {
-            return callNode.execute(frame, self.getFunction(), new Object[]{next.execute(frame, self.getIterators()[0])}, PKeyword.EMPTY_KEYWORDS);
+                        @Shared @Cached PyIterNextNode nextNode) {
+            Object item = nextNode.execute(frame, self.getIterators()[0]);
+            if (PyIterNextNode.isExhausted(item)) {
+                return iteratorExhausted();
+            }
+            return callNode.execute(frame, self.getFunction(), new Object[]{item}, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(replaces = "doOne")
         Object doNext(VirtualFrame frame, PMap self,
                         @Shared @Cached CallVarargsMethodNode callNode,
-                        @Shared @Cached GetNextNode next) {
+                        @Shared @Cached PyIterNextNode nextNode) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
-                arguments[i] = next.execute(frame, iterators[i]);
+                arguments[i] = nextNode.execute(frame, iterators[i]);
+                if (PyIterNextNode.isExhausted(arguments[i])) {
+                    return iteratorExhausted();
+                }
             }
             return callNode.execute(frame, self.getFunction(), arguments, PKeyword.EMPTY_KEYWORDS);
         }

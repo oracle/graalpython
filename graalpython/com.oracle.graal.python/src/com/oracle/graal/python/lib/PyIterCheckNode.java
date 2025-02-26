@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,15 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -59,7 +56,6 @@ import com.oracle.truffle.api.nodes.Node;
  * Check if the object is iterable - has {@code __next__} method. Equivalent of CPython's
  * {@code PyIter_Check}.
  */
-@ImportStatic(SpecialMethodSlot.class)
 @GenerateInline(inlineByDefault = true)
 @GenerateUncached
 public abstract class PyIterCheckNode extends PNodeWithContext {
@@ -81,9 +77,12 @@ public abstract class PyIterCheckNode extends PNodeWithContext {
     @InliningCutoff
     @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Next", inline = false) LookupCallableSlotInMRONode lookupNext) {
-        Object type = getClassNode.execute(inliningTarget, object);
-        return !(lookupNext.execute(type) instanceof PNone);
+                    @Cached TpSlots.GetObjectSlotsNode getSlots) {
+        TpSlots slots = getSlots.execute(inliningTarget, object);
+        return checkSlots(slots);
+    }
+
+    public static boolean checkSlots(TpSlots slots) {
+        return slots.tp_iternext() != null && slots.tp_iternext() != TpSlotIterNext.NEXT_NOT_IMPLEMENTED;
     }
 }

@@ -40,141 +40,45 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
-
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.Node;
 
+@GenerateUncached
 public abstract class GetNextNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object iterator);
 
-    public Object execute(Object iterator) {
-        return execute(null, iterator);
+    public static Object executeUncached(Object iterator) {
+        return getUncached().execute(null, iterator);
     }
 
-    public abstract boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
-
-    public abstract int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
-
-    public abstract long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
-
-    private static final class GetNextCached extends GetNextNode {
-
-        @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next, () -> new NoAttributeHandler() {
-            private final BranchProfile errorProfile = BranchProfile.create();
-
-            @Override
-            public Object execute(Object receiver) {
-                errorProfile.enter();
-                throw PRaiseNode.raiseStatic(this, PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
-            }
-        });
-
-        @Override
-        public Object execute(Frame frame, Object iterator) {
-            return nextCall.executeObject((VirtualFrame) frame, iterator);
+    // TODO replace this node with PyIterNext
+    @Specialization
+    Object next(VirtualFrame frame, Object iterator,
+                    @Bind Node inliningTarget,
+                    @Cached PyIterNextNode iterNextNode,
+                    @Cached PRaiseNode raiseNode) {
+        Object result = iterNextNode.execute(frame, iterator);
+        if (PyIterNextNode.isExhausted(result)) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }
-
-        @Override
-        public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            return PGuards.expectBoolean(nextCall.executeObject(frame, iterator));
-        }
-
-        @Override
-        public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            return PGuards.expectInteger(nextCall.executeObject(frame, iterator));
-        }
-
-        @Override
-        public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            return PGuards.expectLong(nextCall.executeObject(frame, iterator));
-        }
-
-        @Override
-        public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            return PGuards.expectDouble(nextCall.executeObject(frame, iterator));
-        }
-    }
-
-    private static final class GetNextUncached extends GetNextNode {
-        static final GetNextUncached INSTANCE = new GetNextUncached();
-
-        @Override
-        public Object execute(Frame frame, Object iterator) {
-            return executeImpl(iterator);
-        }
-
-        @SuppressWarnings("static-method")
-        @TruffleBoundary
-        private Object executeImpl(Object iterator) {
-            Object nextMethod = LookupSpecialMethodSlotNode.getUncached(SpecialMethodSlot.Next).execute(null, GetClassNode.executeUncached(iterator), iterator);
-            if (nextMethod == PNone.NO_VALUE) {
-                throw PRaiseNode.raiseStatic(null, PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, T___NEXT__);
-            }
-            return CallUnaryMethodNode.getUncached().executeObject(nextMethod, iterator);
-        }
-
-        @Override
-        public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            Object value = execute(frame, iterator);
-            if (value instanceof Boolean) {
-                return (boolean) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        @Override
-        public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            Object value = execute(frame, iterator);
-            if (value instanceof Integer) {
-                return (int) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        @Override
-        public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            Object value = execute(frame, iterator);
-            if (value instanceof Long) {
-                return (long) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        @Override
-        public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            Object value = execute(frame, iterator);
-            if (value instanceof Double) {
-                return (double) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
+        return result;
     }
 
     @NeverDefault
     public static GetNextNode create() {
-        return new GetNextCached();
+        return GetNextNodeGen.create();
     }
 
     public static GetNextNode getUncached() {
-        return GetNextUncached.INSTANCE;
+        return GetNextNodeGen.getUncached();
     }
 }

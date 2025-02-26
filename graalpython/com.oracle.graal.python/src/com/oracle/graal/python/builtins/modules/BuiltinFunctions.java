@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
@@ -84,7 +85,6 @@ import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
@@ -156,16 +156,21 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyEvalGetLocals;
+import com.oracle.graal.python.lib.PyIterCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
@@ -288,7 +293,6 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1724,39 +1728,41 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // next(iterator[, default])
-    @SuppressWarnings("unused")
     @Builtin(name = J_NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonBinaryBuiltinNode {
+    abstract static class NextNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object next(VirtualFrame frame, Object iterator, Object defaultObject,
+        static Object next(VirtualFrame frame, Object iterator, Object defaultObject,
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedConditionProfile defaultIsNoValue,
-                        @Cached("createNextCall()") LookupAndCallUnaryNode callNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
-            if (defaultIsNoValue.profile(inliningTarget, isNoValue(defaultObject))) {
-                return callNode.executeObject(frame, iterator);
-            } else {
-                try {
-                    return callNode.executeObject(frame, iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
+                        @Cached PRaiseNode raiseTypeError,
+                        @Cached PRaiseNode raiseStopIteration,
+                        @Cached IsBuiltinObjectProfile stopIterationProfile) {
+            TpSlots slots = getSlots.execute(inliningTarget, iterator);
+            if (!PyIterCheckNode.checkSlots(slots)) {
+                throw raiseTypeError.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
+            }
+            Object result;
+            try {
+                result = callIterNext.execute(frame, inliningTarget, slots.tp_iternext(), iterator);
+            } catch (PException e) {
+                if (defaultIsNoValue.profile(inliningTarget, defaultObject == NO_VALUE)) {
+                    throw e;
+                } else {
+                    e.expectStopIteration(inliningTarget, stopIterationProfile);
                     return defaultObject;
                 }
             }
-        }
-
-        @NeverDefault
-        protected LookupAndCallUnaryNode createNextCall() {
-            return LookupAndCallUnaryNode.create(T___NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
-                private final BranchProfile errorProfile = BranchProfile.create();
-
-                @Override
-                public Object execute(Object iterator) {
-                    errorProfile.enter();
-                    throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
+            if (PyIterNextNode.isExhausted(result)) {
+                if (defaultIsNoValue.profile(inliningTarget, defaultObject == NO_VALUE)) {
+                    throw raiseStopIteration.raise(inliningTarget, StopIteration);
+                } else {
+                    return defaultObject;
                 }
-            });
+            }
+            return result;
         }
     }
 

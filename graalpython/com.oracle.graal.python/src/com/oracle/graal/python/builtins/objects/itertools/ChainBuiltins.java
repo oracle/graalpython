@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENTS_MUST_BE_ITERATORS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
@@ -57,19 +56,19 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -103,38 +102,46 @@ public final class ChainBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PChain self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinObjectProfile isStopIterationProfile,
-                        @Cached InlinedBranchProfile nextExceptioProfile,
-                        @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PyIterNextNode nextNode,
+                        @Cached InlinedBranchProfile nextExceptionProfile,
+                        @Cached InlinedLoopConditionProfile loopProfile) {
             while (loopProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
                 if (self.getActive() == PNone.NONE) {
                     try {
-                        Object next = nextNode.execute(frame, self.getSource(), PNone.NO_VALUE);
+                        Object next;
+                        try {
+                            next = nextNode.execute(frame, self.getSource());
+                        } catch (PException e) {
+                            nextExceptionProfile.enter(inliningTarget);
+                            self.setSource(PNone.NONE);
+                            throw e;
+                        }
+                        if (PyIterNextNode.isExhausted(next)) {
+                            self.setSource(PNone.NONE);
+                            return iteratorExhausted();
+                        }
                         Object iter = getIter.execute(frame, inliningTarget, next);
                         self.setActive(iter);
                     } catch (PException e) {
-                        nextExceptioProfile.enter(inliningTarget);
+                        nextExceptionProfile.enter(inliningTarget);
                         self.setSource(PNone.NONE);
                         throw e;
                     }
                 }
-                try {
-                    return nextNode.execute(frame, self.getActive(), PNone.NO_VALUE);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, isStopIterationProfile);
-                    self.setActive(PNone.NONE);
+                Object next = nextNode.execute(frame, self.getActive());
+                if (!PyIterNextNode.isExhausted(next)) {
+                    return next;
                 }
+                self.setActive(PNone.NONE);
             }
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+            return iteratorExhausted();
         }
     }
 

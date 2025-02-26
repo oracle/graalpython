@@ -31,7 +31,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -51,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
@@ -143,15 +143,20 @@ public final class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1, doc = "Implement next(self).")
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PGenerator self,
                         @Bind("this") Node inliningTarget,
                         @Cached CommonGeneratorBuiltins.ResumeGeneratorNode resumeGeneratorNode,
                         @Cached PRaiseNode raiseNode) {
-            checkResumable(inliningTarget, self, raiseNode);
+            if (self.isFinished()) {
+                return iteratorExhausted();
+            }
+            if (self.isRunning()) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
             return resumeGeneratorNode.execute(frame, inliningTarget, self, null);
         }
     }

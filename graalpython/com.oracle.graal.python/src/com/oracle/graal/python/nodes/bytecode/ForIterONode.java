@@ -40,17 +40,9 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,10 +54,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
-/**
- * Obtains the next value of an iterator. When the iterator is exhausted it returns {@code null}. It
- * never raises {@code StopIteration}.
- */
 @GenerateUncached
 @GenerateInline(false) // Used in BCI
 public abstract class ForIterONode extends PNodeWithContext {
@@ -92,24 +80,13 @@ public abstract class ForIterONode extends PNodeWithContext {
     @Specialization
     @InliningCutoff
     static boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
-                    @Bind("this") Node inliningTarget,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Next") LookupSpecialMethodSlotNode lookupNext,
-                    @Cached CallUnaryMethodNode callNext,
-                    @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Cached PRaiseNode raiseNode) {
-        assert iterator != null;
-        Object nextMethod = lookupNext.execute(frame, getClassNode.execute(inliningTarget, iterator), iterator);
-        if (nextMethod == PNone.NO_VALUE) {
-            throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterator);
-        }
-        try {
-            frame.setObject(stackTop, callNext.executeObject(frame, nextMethod, iterator));
-            return true;
-        } catch (PException e) {
-            e.expectStopIteration(inliningTarget, stopIterationProfile);
+                    @Cached PyIterNextNode nextNode) {
+        Object res = nextNode.execute(frame, iterator);
+        if (PyIterNextNode.isExhausted(res)) {
             return false;
         }
+        frame.setObject(stackTop, res);
+        return true;
     }
 
     public static ForIterONode create() {

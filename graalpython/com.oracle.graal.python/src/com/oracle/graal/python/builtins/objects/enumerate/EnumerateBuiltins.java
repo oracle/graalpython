@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.enumerate;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -40,7 +39,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -64,18 +64,21 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         return EnumerateBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
 
         @Specialization
         static Object doNext(VirtualFrame frame, PEnumerate self,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
-                        @Cached GetNextNode next) {
+                        @Cached PyIterNextNode next) {
             Object index = self.getAndIncrementIndex(inliningTarget, language, bigIntIndexProfile);
             Object nextValue = next.execute(frame, self.getDecoratedIterator());
+            if (PyIterNextNode.isExhausted(nextValue)) {
+                return iteratorExhausted();
+            }
             return PFactory.createTuple(language, (new Object[]{index, nextValue}));
         }
     }

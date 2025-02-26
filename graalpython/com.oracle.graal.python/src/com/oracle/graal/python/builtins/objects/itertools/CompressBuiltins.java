@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
@@ -52,10 +51,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -89,22 +91,37 @@ public final class CompressBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PCompress self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached GetObjectSlotsNode getDataSlots,
+                        @Cached GetObjectSlotsNode getSelectorsSlots,
+                        @Cached CallSlotTpIterNextNode callIterNextData,
+                        @Cached CallSlotTpIterNextNode callIterNextSelectors,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Cached InlinedLoopConditionProfile loopConditionProfile) {
-            Object nextSelector;
-            Object nextItem;
+            Object data = self.getData();
+            Object selectors = self.getSelectors();
+            TpSlot dataIterNext = getDataSlots.execute(inliningTarget, data).tp_iternext();
+            TpSlot selectorsIterNext = getSelectorsSlots.execute(inliningTarget, selectors).tp_iternext();
+            Object result = null;
             do {
-                nextItem = nextNode.execute(frame, self.getData(), PNone.NO_VALUE);
-                nextSelector = nextNode.execute(frame, self.getSelectors(), PNone.NO_VALUE);
-            } while (loopConditionProfile.profile(inliningTarget, !isTrue.execute(frame, nextSelector)));
-            return nextItem;
+                Object datum = callIterNextData.execute(frame, inliningTarget, dataIterNext, data);
+                if (PyIterNextNode.isExhausted(datum)) {
+                    result = iteratorExhausted();
+                } else {
+                    Object selector = callIterNextSelectors.execute(frame, inliningTarget, selectorsIterNext, selectors);
+                    if (PyIterNextNode.isExhausted(selector)) {
+                        result = iteratorExhausted();
+                    } else if (isTrue.execute(frame, selector)) {
+                        result = datum;
+                    }
+                }
+            } while (loopConditionProfile.profile(inliningTarget, result == null));
+            return result;
         }
     }
 

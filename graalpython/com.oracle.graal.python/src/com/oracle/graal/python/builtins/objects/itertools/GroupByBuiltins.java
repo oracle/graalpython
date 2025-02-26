@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
@@ -55,11 +54,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -98,13 +98,13 @@ public final class GroupByBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PGroupBy self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached InlinedBranchProfile eqProfile,
@@ -113,7 +113,10 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language) {
             self.setCurrGrouper(null);
             while (loopConditionProfile.profile(inliningTarget, doGroupByStep(frame, inliningTarget, self, eqProfile, eqNode))) {
-                self.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
+                boolean cont = self.groupByStep(frame, inliningTarget, nextNode, callNode, hasFuncProfile);
+                if (!cont) {
+                    return iteratorExhausted();
+                }
             }
             self.setTgtKey(self.getCurrKey());
             PGrouper grouper = PFactory.createGrouper(language, self, self.getTgtKey());

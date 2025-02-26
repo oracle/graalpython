@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_REQUIRED_GOT;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
@@ -62,12 +61,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -144,14 +144,14 @@ public final class TeeBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @ImportStatic(TeeDataObjectBuiltins.class)
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.getIndex() < LINKCELLS")
         static Object next(VirtualFrame frame, PTee self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
+                        @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
             self.setIndex(self.getIndex() + 1);
@@ -161,7 +161,7 @@ public final class TeeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getIndex() >= LINKCELLS")
         static Object nextNext(VirtualFrame frame, PTee self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached BuiltinFunctions.NextNode nextNode,
+                        @Shared @Cached PyIterNextNode nextNode,
                         @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode raiseNode) {
             self.setDataObj(self.getDataobj().jumplink(language));

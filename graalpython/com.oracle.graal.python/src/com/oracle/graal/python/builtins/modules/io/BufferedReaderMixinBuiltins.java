@@ -62,7 +62,6 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteAr
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_SHOULD_RETURN_BYTES;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEG_OR_NEG_1;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -73,9 +72,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.CheckIsClosedNode;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.EnterBufferedNode;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.FlushAndRewindUnlockedNode;
@@ -86,6 +86,8 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -117,6 +119,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedRandom})
 public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
+
+    public static final TpSlots SLOTS = BufferedReaderMixinBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedReaderMixinBuiltinsFactory.getFactories();
@@ -815,21 +820,20 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
-        static PBytes doit(VirtualFrame frame, PBuffered self,
+        static Object doit(VirtualFrame frame, PBuffered self,
                         @Bind("this") Node inliningTarget,
                         @Cached("create(T_READLINE)") CheckIsClosedNode checkIsClosedNode,
-                        @Cached BufferedReadlineNode readlineNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached BufferedReadlineNode readlineNode) {
             checkIsClosedNode.execute(frame, self);
             byte[] line = readlineNode.execute(frame, inliningTarget, self, -1);
             if (line.length == 0) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return TpIterNextBuiltin.iteratorExhausted();
             }
             return PFactory.createBytes(PythonLanguage.get(inliningTarget), line);
         }

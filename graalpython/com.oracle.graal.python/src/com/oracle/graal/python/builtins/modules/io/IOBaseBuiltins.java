@@ -77,7 +77,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -99,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -426,18 +426,17 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    abstract static class NextNode extends PythonUnaryBuiltinNode {
+    abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PythonObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PyObjectSizeNode sizeNode) {
             Object line = callMethod.execute(frame, inliningTarget, self, T_READLINE);
             if (sizeNode.execute(frame, inliningTarget, line) <= 0) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return iteratorExhausted();
             }
             return line;
         }

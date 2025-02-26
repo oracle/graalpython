@@ -74,7 +74,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_MU
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
@@ -88,6 +87,8 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -100,6 +101,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -135,6 +138,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 public final class StringIOBuiltins extends PythonBuiltins {
 
     private static final int NIL_CODEPOINT = 0;
+
+    public static final TpSlots SLOTS = StringIOBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -802,7 +807,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
     abstract static class IternextNode extends ClosedCheckPythonUnaryBuiltinNode {
 
@@ -816,12 +821,11 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinObjectExactProfile profile,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached FindLineEndingNode findLineEndingNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Cached TruffleString.SubstringNode substringNode) {
             self.realize();
             TruffleString line = stringioReadline(inliningTarget, self, -1, findLineEndingNode, substringNode, toStringNode);
             if (line.isEmpty()) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return TpIterNextBuiltin.iteratorExhausted();
             }
             return line;
         }
@@ -843,7 +847,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
             TruffleString line = toString.execute(inliningTarget, res);
             if (line.isEmpty()) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return TpIterNextBuiltin.iteratorExhausted();
             }
             return line;
         }

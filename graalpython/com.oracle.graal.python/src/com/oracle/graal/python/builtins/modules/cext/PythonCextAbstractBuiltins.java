@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TupleNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.NextNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -95,8 +94,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
@@ -886,18 +885,12 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyIter_Next extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(Object object,
-                        @Bind("this") Node inliningTarget,
-                        @Cached NextNode nextNode,
-                        @Cached IsBuiltinObjectProfile isClassProfile) {
-            try {
-                return nextNode.execute(null, object, PNone.NO_VALUE);
-            } catch (PException e) {
-                if (isClassProfile.profileException(inliningTarget, e, PythonBuiltinClassType.StopIteration)) {
-                    return getNativeNull();
-                } else {
-                    throw e;
-                }
+                        @Cached PyIterNextNode nextNode) {
+            Object result = nextNode.execute(null, object);
+            if (PyIterNextNode.isExhausted(result)) {
+                return getNativeNull();
             }
+            return result;
         }
     }
 
@@ -908,19 +901,20 @@ public final class PythonCextAbstractBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached PyIterCheckNode pyiterCheck,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
-                        @Cached GetNextNode getNextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached IsBuiltinObjectProfile isClassProfile) {
-            try {
-                if (arg instanceof PNone && pyiterCheck.execute(inliningTarget, iter)) {
-                    return getNextNode.execute(iter);
-                } else {
-                    return callMethodNode.execute(null, inliningTarget, iter, T_SEND, arg);
-                }
-            } catch (PException e) {
-                if (isClassProfile.profileException(inliningTarget, e, PythonBuiltinClassType.StopIteration)) {
+            if (arg instanceof PNone && pyiterCheck.execute(inliningTarget, iter)) {
+                Object result = nextNode.execute(null, iter);
+                if (PyIterNextNode.isExhausted(result)) {
                     return getNativeNull();
-                } else {
-                    throw e;
+                }
+                return result;
+            } else {
+                try {
+                    return callMethodNode.execute(null, inliningTarget, iter, T_SEND, arg);
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, isClassProfile);
+                    return getNativeNull();
                 }
             }
         }

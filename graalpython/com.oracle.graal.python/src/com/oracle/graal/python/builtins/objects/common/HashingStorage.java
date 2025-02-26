@@ -216,7 +216,7 @@ public abstract class HashingStorage {
             Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
             Object keyObj;
-            while ((keyObj = nextNode.execute(frame, keysIt)) != null) {
+            while (!PyIterNextNode.isExhausted(keyObj = nextNode.execute(frame, keysIt))) {
                 Object valueObj = getItemNode.execute(frame, inliningTarget, mapping, keyObj);
                 elements.add(new KeyValue(keyObj, valueObj));
             }
@@ -240,7 +240,7 @@ public abstract class HashingStorage {
             Object next;
             int len = 2;
             try {
-                while ((next = nextNode.execute(frame, it)) != null) {
+                while (!PyIterNextNode.isExhausted(next = nextNode.execute(frame, it))) {
                     PSequence element = createListNode.execute(frame, inliningTarget, next);
                     assert element != null;
                     // This constructs a new list using the builtin type. So, the object cannot

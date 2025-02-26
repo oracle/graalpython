@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.asyncio;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
-
 import java.util.List;
 
 import com.oracle.graal.python.annotations.Slot;
@@ -53,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -82,9 +81,9 @@ public final class CoroutineWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         public Object doNext(VirtualFrame frame, PCoroutineWrapper self,
                         @Cached CommonGeneratorBuiltins.SendNode send) {

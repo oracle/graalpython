@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,8 +47,11 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -61,6 +64,7 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline(false) // used in BCI root node
 public abstract class SendNode extends PNodeWithContext {
@@ -84,21 +88,34 @@ public abstract class SendNode extends PNodeWithContext {
         }
     }
 
-    @Specialization(guards = "iterCheck.execute(inliningTarget, iter)", limit = "1")
+    @Specialization(guards = "hasIterSlot(slots)", limit = "1")
     static boolean doIterator(VirtualFrame virtualFrame, int stackTop, Object iter, @SuppressWarnings("unused") PNone arg,
                     @Bind("this") Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached PyIterCheckNode iterCheck,
-                    @Cached GetNextNode getNextNode,
+                    @SuppressWarnings("unused") @Cached GetObjectSlotsNode getSlots,
+                    @Bind("getSlots.execute(inliningTarget, iter)") TpSlots slots,
+                    @Cached CallSlotTpIterNextNode callIterNext,
+                    @Exclusive @Cached InlinedBranchProfile exhaustedNoException,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
         try {
-            Object value = getNextNode.execute(virtualFrame, iter);
-            virtualFrame.setObject(stackTop, value);
-            return false;
+            Object value = callIterNext.execute(virtualFrame, inliningTarget, slots.tp_iternext(), iter);
+            if (PyIterNextNode.isExhausted(value)) {
+                exhaustedNoException.enter(inliningTarget);
+                virtualFrame.setObject(stackTop, null);
+                virtualFrame.setObject(stackTop - 1, PNone.NONE);
+                return true;
+            } else {
+                virtualFrame.setObject(stackTop, value);
+                return false;
+            }
         } catch (PException e) {
             handleException(virtualFrame, e, inliningTarget, stopIterationProfile, getValue, stackTop);
             return true;
         }
+    }
+
+    protected static boolean hasIterSlot(TpSlots slots) {
+        return PyIterCheckNode.checkSlots(slots);
     }
 
     @Fallback

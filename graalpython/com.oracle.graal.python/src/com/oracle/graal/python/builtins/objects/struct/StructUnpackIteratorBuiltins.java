@@ -9,7 +9,6 @@ import static com.oracle.graal.python.builtins.objects.struct.StructBuiltins.unp
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_P_OBJECTS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
@@ -24,6 +23,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -82,23 +82,20 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.isExhausted()")
-        static Object nextExhausted(@SuppressWarnings("unused") PStructUnpackIterator self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
+        static Object nextExhausted(@SuppressWarnings("unused") PStructUnpackIterator self) {
+            return iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isExhausted()", limit = "3")
         static Object next(VirtualFrame frame, PStructUnpackIterator self,
-                        @Bind("this") Node inliningTarget,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
-                        @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind PythonLanguage language) {
             final PStruct struct = self.getStruct();
             final Object buffer = self.getBuffer();
             final int bufferLen = bufferLib.getBufferLength(buffer);
@@ -106,7 +103,7 @@ public class StructUnpackIteratorBuiltins extends PythonBuiltins {
             if (struct == null || self.index >= bufferLen) {
                 self.setExhausted();
                 bufferLib.release(buffer, frame, indirectCallData);
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return iteratorExhausted();
             }
 
             assert self.index + struct.getSize() <= bufferLen;

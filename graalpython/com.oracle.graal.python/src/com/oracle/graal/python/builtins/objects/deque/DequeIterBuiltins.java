@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.deque;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.ConcurrentModificationException;
@@ -58,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -94,9 +94,9 @@ public final class DequeIterBuiltins extends PythonBuiltins {
     }
 
     // _deque_iterator.__next__()
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class DequeIterNextNode extends PythonUnaryBuiltinNode {
+    public abstract static class DequeIterNextNode extends TpIterNextBuiltin {
 
         public abstract Object execute(PDequeIter self);
 
@@ -107,7 +107,7 @@ public final class DequeIterBuiltins extends PythonBuiltins {
                 if (self.startState == self.deque.getState()) {
                     if (!self.hasNext()) {
                         assert self.lengthHint() == 0;
-                        throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.StopIteration);
+                        return iteratorExhausted();
                     }
                     return self.next();
                 }

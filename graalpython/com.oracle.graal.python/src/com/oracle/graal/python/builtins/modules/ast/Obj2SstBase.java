@@ -290,11 +290,10 @@ abstract class Obj2SstBase {
         boolean isTuple = PyTupleCheckExactNode.executeUncached(obj);
         if (isTuple || PyFrozenSetCheckExactNode.executeUncached(obj)) {
             Object iter = PyObjectGetIter.executeUncached(obj);
-            GetNextNode nextNode = GetNextNode.getUncached();
             ArrayList<ConstantValue> list = new ArrayList<>();
             while (true) {
                 try {
-                    list.add(obj2ConstantValue(nextNode.execute(iter)));
+                    list.add(obj2ConstantValue(GetNextNode.executeUncached(iter)));
                 } catch (PException e) {
                     e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
                     break;

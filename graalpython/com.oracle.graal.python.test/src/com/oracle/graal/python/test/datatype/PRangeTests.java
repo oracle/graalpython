@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -75,7 +76,7 @@ public class PRangeTests {
 
             while (true) {
                 try {
-                    int item = next.executeInt(null, iter);
+                    int item = PGuards.expectInteger(next.execute(null, iter));
                     assertEquals(index, item);
                 } catch (PException e) {
                     e.expectStopIteration(null, errorProfile);
@@ -103,7 +104,7 @@ public class PRangeTests {
 
             while (true) {
                 try {
-                    int item = next.executeInt(null, iter);
+                    int item = PGuards.expectInteger(next.execute(null, iter));
                     assertEquals(index, item);
                 } catch (PException e) {
                     e.expectStopIteration(null, errorProfile);

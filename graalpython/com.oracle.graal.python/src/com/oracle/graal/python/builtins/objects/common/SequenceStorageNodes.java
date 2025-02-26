@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
-import static com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextHelperNode.STOP_MARKER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -89,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -4112,7 +4112,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 while (true) {
-                                    boolean value = nextNode.executeBoolean(frame, iterator);
+                                    boolean value = PGuards.expectBoolean(nextNode.execute(frame, iterator));
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -4129,7 +4129,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 while (true) {
-                                    int value = nextNode.executeInt(frame, iterator);
+                                    int value = PGuards.expectInteger(nextNode.execute(frame, iterator));
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(value);
@@ -4152,7 +4152,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 while (true) {
-                                    int value = nextNode.executeInt(frame, iterator);
+                                    int value = PGuards.expectInteger(nextNode.execute(frame, iterator));
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -4169,7 +4169,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 while (true) {
-                                    long value = nextNode.executeLong(frame, iterator);
+                                    long value = PGuards.expectLong(nextNode.execute(frame, iterator));
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -4186,7 +4186,7 @@ public abstract class SequenceStorageNodes {
                             array = elements;
                             try {
                                 while (true) {
-                                    double value = nextNode.executeDouble(frame, iterator);
+                                    double value = PGuards.expectDouble(nextNode.execute(frame, iterator));
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -4281,7 +4281,7 @@ public abstract class SequenceStorageNodes {
                 int i = 0;
                 try {
                     Object value;
-                    for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator, false)) != STOP_MARKER); i++) {
+                    for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
                         if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                             elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                         }
@@ -4301,7 +4301,7 @@ public abstract class SequenceStorageNodes {
                             boolean[] elements = new boolean[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator, false)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                         array = elements;
@@ -4317,7 +4317,7 @@ public abstract class SequenceStorageNodes {
                             byte[] elements = new byte[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator, false)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(PGuards.expectInteger(value));
@@ -4338,7 +4338,7 @@ public abstract class SequenceStorageNodes {
                             int[] elements = new int[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator, false)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -4353,7 +4353,7 @@ public abstract class SequenceStorageNodes {
                             long[] elements = new long[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator, false)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -4368,7 +4368,7 @@ public abstract class SequenceStorageNodes {
                             double[] elements = new double[size];
                             array = elements;
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator, false)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         array = elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -4382,7 +4382,7 @@ public abstract class SequenceStorageNodes {
                         case Generic: {
                             Object[] elements = new Object[size];
                             try {
-                                for (; loopProfile.profile(inliningTarget, (value = nextNode.execute(frame, inliningTarget, iterator, false)) != STOP_MARKER); i++) {
+                                for (; loopProfile.profile(inliningTarget, !PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))); i++) {
                                     if (growArrayProfile.profile(inliningTarget, i >= elements.length)) {
                                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                                     }
@@ -4413,7 +4413,7 @@ public abstract class SequenceStorageNodes {
             elements[i++] = result;
             Object value;
             try {
-                while ((value = nextNode.execute(frame, inliningTarget, iterator, false)) != STOP_MARKER) {
+                while (!PyIterNextNode.isExhausted(value = nextNode.execute(frame, inliningTarget, iterator))) {
                     if (i >= elements.length) {
                         elements = PythonUtils.arrayCopyOf(elements, elements.length * 2);
                     }

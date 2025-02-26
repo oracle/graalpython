@@ -157,6 +157,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltinsFac
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -972,7 +973,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
 
             Object buf = getNextItem(frame, self.buffers);
-            if (buf == null) {
+            if (PyIterNextNode.isExhausted(buf)) {
                 throw raise(PythonBuiltinClassType.UnpicklingError, ErrorMessages.NOT_ENOUGH_BUFFERS);
             }
 

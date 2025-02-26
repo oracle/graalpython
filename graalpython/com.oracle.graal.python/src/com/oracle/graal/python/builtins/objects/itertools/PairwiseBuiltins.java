@@ -40,24 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
-
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -67,6 +62,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PPairwise})
 public final class PairwiseBuiltins extends PythonBuiltins {
@@ -87,37 +83,52 @@ public final class PairwiseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.getIterable() != null")
         static Object next(VirtualFrame frame, PPairwise self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinObjectProfile isStopIterationProfile,
+                        @Cached PyIterNextNode nextNode,
+                        @Cached InlinedBranchProfile exceptionProfile,
                         @Bind PythonLanguage language) {
             Object item;
             Object old = self.getOld();
-            if (self.getOld() == null) {
-                old = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
-                self.setOld(old);
-            }
+            Object iterable = self.getIterable();
             try {
-                item = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
+                if (self.getOld() == null) {
+                    old = nextNode.execute(frame, iterable);
+                    if (PyIterNextNode.isExhausted(old)) {
+                        self.setOld(null);
+                        self.setIterable(null);
+                        return iteratorExhausted();
+                    }
+                    self.setOld(old);
+                    iterable = self.getIterable();
+                    if (iterable == null) {
+                        self.setOld(null);
+                        return iteratorExhausted();
+                    }
+                }
+                item = nextNode.execute(frame, iterable);
+                if (PyIterNextNode.isExhausted(item)) {
+                    self.setOld(null);
+                    self.setIterable(null);
+                    return iteratorExhausted();
+                }
                 self.setOld(item);
+                return PFactory.createTuple(language, new Object[]{old, item});
             } catch (PException e) {
-                e.expectStopIteration(inliningTarget, isStopIterationProfile);
-                self.setIterable(null);
+                exceptionProfile.enter(inliningTarget);
                 self.setOld(null);
+                self.setIterable(null);
                 throw e;
             }
-            return PFactory.createTuple(language, new Object[]{old, item});
         }
 
         @Specialization(guards = "self.getIterable() == null")
-        static Object next(@SuppressWarnings("unused") PPairwise self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
+        static Object next(@SuppressWarnings("unused") PPairwise self) {
+            return iteratorExhausted();
         }
     }
 }

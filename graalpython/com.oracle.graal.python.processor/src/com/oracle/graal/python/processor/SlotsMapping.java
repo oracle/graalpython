@@ -76,6 +76,7 @@ public class SlotsMapping {
             case tp_descr_get -> "TpSlotDescrGet.TpSlotDescrGetBuiltin" + getSuffix(s.isComplex());
             case tp_descr_set -> "TpSlotDescrSet.TpSlotDescrSetBuiltin";
             case tp_setattro -> "TpSlotSetAttr.TpSlotSetAttrBuiltin";
+            case tp_iternext -> "TpSlotIterNext.TpSlotIterNextBuiltin";
         };
     }
 
@@ -84,7 +85,7 @@ public class SlotsMapping {
             case tp_descr_get -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode";
             case nb_bool -> "com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode";
             case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert,
-                            tp_iter ->
+                            tp_iter, tp_iternext ->
                 "com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode";
             case nb_add, nb_subtract, nb_multiply, nb_remainder, nb_divmod, nb_lshift, nb_rshift, nb_and, nb_xor, nb_or,
                             nb_floor_divide, nb_true_divide, nb_matrix_multiply ->

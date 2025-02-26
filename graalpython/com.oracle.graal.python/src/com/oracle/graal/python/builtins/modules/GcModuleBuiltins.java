@@ -138,9 +138,9 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             Object iter = getIter.execute(frame, inliningTarget, callbacks);
             Object cb = next.execute(frame, iter);
             TruffleString phase = null;
-            Object info = null;
+            Object info;
             long res = 0;
-            if (cb != null) {
+            if (!PyIterNextNode.isExhausted(cb)) {
                 phase = START;
                 info = PFactory.createDict(language, new PKeyword[]{
                                 new PKeyword(GENERATION, 2),
@@ -149,7 +149,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                 });
                 do {
                     call.executeObject(frame, cb, phase, info);
-                } while ((cb = next.execute(frame, iter)) != null);
+                } while (!PyIterNextNode.isExhausted(cb = next.execute(frame, iter)));
             }
             long freedMemory = javaCollect(inliningTarget, gil);
             PythonContext pythonContext = PythonContext.get(inliningTarget);
@@ -168,7 +168,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                                 new PKeyword(UNCOLLECTABLE, 0),
                 });
                 iter = getIter.execute(frame, inliningTarget, callbacks);
-                while ((cb = next.execute(frame, iter)) != null) {
+                while (!PyIterNextNode.isExhausted(cb = next.execute(frame, iter))) {
                     call.executeObject(frame, cb, phase, info);
                 }
             }

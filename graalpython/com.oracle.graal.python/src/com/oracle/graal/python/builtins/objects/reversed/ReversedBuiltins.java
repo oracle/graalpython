@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.reversed;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_HAS_NO_LEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -47,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
@@ -61,7 +61,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -85,22 +84,20 @@ public final class ReversedBuiltins extends PythonBuiltins {
         return ReversedBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
 
         @Specialization(guards = "self.isExhausted()")
-        static Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.StopIteration);
+        static Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+            return iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(VirtualFrame frame, PSequenceReverseIterator self,
                         @Bind("this") Node inliningTarget,
                         @Cached PySequenceGetItemNode getItemNode,
-                        @Cached IsBuiltinObjectProfile profile,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Cached IsBuiltinObjectProfile profile) {
             if (self.index >= 0) {
                 try {
                     return getItemNode.execute(frame, self.getObject(), self.index--);
@@ -109,19 +106,17 @@ public final class ReversedBuiltins extends PythonBuiltins {
                 }
             }
             self.setExhausted();
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+            return iteratorExhausted();
         }
 
         @Specialization(guards = "!self.isExhausted()")
         static Object next(PStringReverseIterator self,
-                        @Bind("this") Node inliningTarget,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Cached TruffleString.SubstringNode substringNode) {
             if (self.index >= 0) {
                 return substringNode.execute(self.value, self.index--, 1, TS_ENCODING, false);
             }
             self.setExhausted();
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+            return iteratorExhausted();
         }
     }
 
