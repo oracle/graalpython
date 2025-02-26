@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -221,3 +221,13 @@ def test_locals_freevar_in_class():
 #         assert e.__traceback__.tb_frame.f_back.f_code == sys._getframe(0).f_back.f_code
 #         assert e.__traceback__.tb_next.tb_next.tb_frame.f_back.f_code == foo.__code__
 #         assert e.__traceback__.tb_next.tb_frame.f_back.f_code == test_backref_from_traceback.__code__
+
+
+def test_clearing_globals():
+    global foo, junk
+    foo = 123
+    assert "foo" in globals().keys()
+    assert "junk" not in globals().keys()
+    junk = globals().clear()
+    assert "foo" not in globals().keys()
+    assert "junk" in globals().keys()
