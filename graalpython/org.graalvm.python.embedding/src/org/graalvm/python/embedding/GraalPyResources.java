@@ -354,7 +354,13 @@ public final class GraalPyResources {
      * <code>/python/venv</code> (python virtual environment)</li>
      * </ul>
      * </p>
-     * 
+     *
+     * <p/>
+     * When Maven or Gradle GraalPy plugin is used to build the virtual environment, it also has to
+     * be configured to generate the virtual environment into the same directory using the
+     * {@code <externalDirectory>} tag in Maven or the {@code externalDirectory} field in Gradle.
+     * <p/>
+     *
      * @param externalResourcesDirectory the root directory with GraalPy specific embedding
      *            resources
      * @return a new {@link org.graalvm.polyglot.Context.Builder} instance
