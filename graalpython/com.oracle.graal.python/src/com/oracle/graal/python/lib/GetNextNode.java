@@ -66,7 +66,7 @@ public abstract class GetNextNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached PyIterNextNode iterNextNode,
                     @Cached PRaiseNode raiseNode) {
-        Object result = iterNextNode.execute(frame, iterator);
+        Object result = iterNextNode.execute(frame, inliningTarget, iterator);
         if (PyIterNextNode.isExhausted(result)) {
             throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
         }

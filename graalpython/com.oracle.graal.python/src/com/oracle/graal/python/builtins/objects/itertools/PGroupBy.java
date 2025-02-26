@@ -110,7 +110,7 @@ public final class PGroupBy extends PythonBuiltinObject {
     }
 
     boolean groupByStep(VirtualFrame frame, Node inliningTarget, PyIterNextNode nextNode, CallNode callNode, InlinedConditionProfile hasFuncProfile) {
-        Object newValue = nextNode.execute(frame, it);
+        Object newValue = nextNode.execute(frame, inliningTarget, it);
         if (PyIterNextNode.isExhausted(newValue)) {
             return false;
         }

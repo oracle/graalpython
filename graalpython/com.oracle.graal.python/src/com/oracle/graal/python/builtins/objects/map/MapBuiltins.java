@@ -68,6 +68,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMap)
 public final class MapBuiltins extends PythonBuiltins {
@@ -84,9 +85,10 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "self.getIterators().length == 1")
         Object doOne(VirtualFrame frame, PMap self,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CallVarargsMethodNode callNode,
                         @Shared @Cached PyIterNextNode nextNode) {
-            Object item = nextNode.execute(frame, self.getIterators()[0]);
+            Object item = nextNode.execute(frame, inliningTarget, self.getIterators()[0]);
             if (PyIterNextNode.isExhausted(item)) {
                 return iteratorExhausted();
             }
@@ -95,12 +97,13 @@ public final class MapBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doOne")
         Object doNext(VirtualFrame frame, PMap self,
+                        @Bind Node inliningTarget,
                         @Shared @Cached CallVarargsMethodNode callNode,
                         @Shared @Cached PyIterNextNode nextNode) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
-                arguments[i] = nextNode.execute(frame, iterators[i]);
+                arguments[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
                 if (PyIterNextNode.isExhausted(arguments[i])) {
                     return iteratorExhausted();
                 }

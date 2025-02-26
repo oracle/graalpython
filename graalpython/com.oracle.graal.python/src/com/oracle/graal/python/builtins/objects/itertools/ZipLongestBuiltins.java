@@ -118,7 +118,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                     item = fillValue;
                 } else {
                     try {
-                        item = nextNode.execute(frame, it);
+                        item = nextNode.execute(frame, inliningTarget, it);
                     } catch (PException e) {
                         self.setNumActive(0);
                         throw e;

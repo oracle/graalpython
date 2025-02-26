@@ -560,7 +560,7 @@ public final class PicklerNodes {
         }
 
         public Object getNextItem(VirtualFrame frame, Object iterator) {
-            return getNextNode.execute(frame, iterator);
+            return getNextNode.executeCached(frame, iterator);
         }
 
         public Object getItem(VirtualFrame frame, SequenceStorage storage, int i) {

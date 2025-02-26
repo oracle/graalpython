@@ -75,7 +75,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile bigIntIndexProfile,
                         @Cached PyIterNextNode next) {
             Object index = self.getAndIncrementIndex(inliningTarget, language, bigIntIndexProfile);
-            Object nextValue = next.execute(frame, self.getDecoratedIterator());
+            Object nextValue = next.execute(frame, inliningTarget, self.getDecoratedIterator());
             if (PyIterNextNode.isExhausted(nextValue)) {
                 return iteratorExhausted();
             }

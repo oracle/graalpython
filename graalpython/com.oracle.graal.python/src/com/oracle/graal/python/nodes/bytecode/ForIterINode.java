@@ -82,8 +82,9 @@ public abstract class ForIterINode extends PNodeWithContext {
     @Specialization
     @InliningCutoff
     static boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
+                    @Bind Node inliningTarget,
                     @Cached PyIterNextNode nextNode) throws QuickeningGeneralizeException {
-        Object res = nextNode.execute(frame, iterator);
+        Object res = nextNode.execute(frame, inliningTarget, iterator);
         if (res instanceof Integer) {
             frame.setInt(stackTop, (int) res);
             return true;

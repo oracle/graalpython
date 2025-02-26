@@ -94,10 +94,11 @@ public final class StarmapBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object nextPos(VirtualFrame frame, PStarmap self,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode) {
-            Object obj = nextNode.execute(frame, self.getIterable());
+            Object obj = nextNode.execute(frame, inliningTarget, self.getIterable());
             if (PyIterNextNode.isExhausted(obj)) {
                 return iteratorExhausted();
             }

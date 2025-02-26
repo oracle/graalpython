@@ -97,7 +97,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
             Object iterable = self.getIterable();
             try {
                 if (self.getOld() == null) {
-                    old = nextNode.execute(frame, iterable);
+                    old = nextNode.execute(frame, inliningTarget, iterable);
                     if (PyIterNextNode.isExhausted(old)) {
                         self.setOld(null);
                         self.setIterable(null);
@@ -110,7 +110,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
                         return iteratorExhausted();
                     }
                 }
-                item = nextNode.execute(frame, iterable);
+                item = nextNode.execute(frame, inliningTarget, iterable);
                 if (PyIterNextNode.isExhausted(item)) {
                     self.setOld(null);
                     self.setIterable(null);

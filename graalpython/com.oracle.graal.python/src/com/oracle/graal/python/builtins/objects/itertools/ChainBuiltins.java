@@ -117,7 +117,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                     try {
                         Object next;
                         try {
-                            next = nextNode.execute(frame, self.getSource());
+                            next = nextNode.execute(frame, inliningTarget, self.getSource());
                         } catch (PException e) {
                             nextExceptionProfile.enter(inliningTarget);
                             self.setSource(PNone.NONE);
@@ -135,7 +135,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                         throw e;
                     }
                 }
-                Object next = nextNode.execute(frame, self.getActive());
+                Object next = nextNode.execute(frame, inliningTarget, self.getActive());
                 if (!PyIterNextNode.isExhausted(next)) {
                     return next;
                 }

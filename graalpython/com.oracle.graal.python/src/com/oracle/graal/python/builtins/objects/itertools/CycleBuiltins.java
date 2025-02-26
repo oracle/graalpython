@@ -120,7 +120,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile firstPassProfile) {
             if (self.getIterable() != null) {
                 iterableProfile.enter(inliningTarget);
-                Object item = nextNode.execute(frame, self.getIterable());
+                Object item = nextNode.execute(frame, inliningTarget, self.getIterable());
                 if (PyIterNextNode.isExhausted(item)) {
                     self.setIterable(null);
                 } else {

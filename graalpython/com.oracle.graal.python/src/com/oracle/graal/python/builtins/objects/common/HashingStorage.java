@@ -208,7 +208,7 @@ public abstract class HashingStorage {
         static ArrayBuilder<KeyValue> partialMerge(VirtualFrame frame, Object mapping, Object keyAttr,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached(neverDefault = false) PyIterNextNode nextNode,
+                        @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,
                         @Cached CallVarargsMethodNode callKeysMethod) {
             // We don't need to pass self as the attribute object has it already.
@@ -216,7 +216,7 @@ public abstract class HashingStorage {
             Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
             Object keyObj;
-            while (!PyIterNextNode.isExhausted(keyObj = nextNode.execute(frame, keysIt))) {
+            while (!PyIterNextNode.isExhausted(keyObj = nextNode.execute(frame, inliningTarget, keysIt))) {
                 Object valueObj = getItemNode.execute(frame, inliningTarget, mapping, keyObj);
                 elements.add(new KeyValue(keyObj, valueObj));
             }
@@ -228,7 +228,7 @@ public abstract class HashingStorage {
         static ArrayBuilder<KeyValue> partialMergeFromSeq2(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone keyAttr,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached(neverDefault = false) PyIterNextNode nextNode,
+                        @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,
                         @Cached FastConstructListNode createListNode,
                         @Cached LenNode seqLenNode,
@@ -240,7 +240,7 @@ public abstract class HashingStorage {
             Object next;
             int len = 2;
             try {
-                while (!PyIterNextNode.isExhausted(next = nextNode.execute(frame, it))) {
+                while (!PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, it))) {
                     PSequence element = createListNode.execute(frame, inliningTarget, next);
                     assert element != null;
                     // This constructs a new list using the builtin type. So, the object cannot

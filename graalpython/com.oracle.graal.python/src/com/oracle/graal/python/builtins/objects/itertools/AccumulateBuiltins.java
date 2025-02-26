@@ -113,7 +113,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 self.setInitial(null);
                 return self.getTotal();
             }
-            Object value = nextNode.execute(frame, self.getIterable());
+            Object value = nextNode.execute(frame, inliningTarget, self.getIterable());
             if (PyIterNextNode.isExhausted(value)) {
                 return iteratorExhausted();
             }

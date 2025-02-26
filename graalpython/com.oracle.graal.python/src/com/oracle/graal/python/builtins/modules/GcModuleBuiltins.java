@@ -136,7 +136,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode) {
             Object callbacks = getAttr.execute(frame, inliningTarget, self, CALLBACKS);
             Object iter = getIter.execute(frame, inliningTarget, callbacks);
-            Object cb = next.execute(frame, iter);
+            Object cb = next.execute(frame, inliningTarget, iter);
             TruffleString phase = null;
             Object info;
             long res = 0;
@@ -149,7 +149,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                 });
                 do {
                     call.executeObject(frame, cb, phase, info);
-                } while (!PyIterNextNode.isExhausted(cb = next.execute(frame, iter)));
+                } while (!PyIterNextNode.isExhausted(cb = next.execute(frame, inliningTarget, iter)));
             }
             long freedMemory = javaCollect(inliningTarget, gil);
             PythonContext pythonContext = PythonContext.get(inliningTarget);
@@ -168,7 +168,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                                 new PKeyword(UNCOLLECTABLE, 0),
                 });
                 iter = getIter.execute(frame, inliningTarget, callbacks);
-                while (!PyIterNextNode.isExhausted(cb = next.execute(frame, iter))) {
+                while (!PyIterNextNode.isExhausted(cb = next.execute(frame, inliningTarget, iter))) {
                     call.executeObject(frame, cb, phase, info);
                 }
             }

@@ -94,11 +94,12 @@ public final class TakewhileBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PTakewhile self,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Bind PythonLanguage language) {
-            Object value = nextNode.execute(frame, self.getIterable());
+            Object value = nextNode.execute(frame, inliningTarget, self.getIterable());
             if (PyIterNextNode.isExhausted(value)) {
                 return iteratorExhausted();
             }

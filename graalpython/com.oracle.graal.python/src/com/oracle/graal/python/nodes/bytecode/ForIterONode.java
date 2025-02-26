@@ -80,8 +80,9 @@ public abstract class ForIterONode extends PNodeWithContext {
     @Specialization
     @InliningCutoff
     static boolean doGeneric(VirtualFrame frame, Object iterator, int stackTop,
+                    @Bind Node inliningTarget,
                     @Cached PyIterNextNode nextNode) {
-        Object res = nextNode.execute(frame, iterator);
+        Object res = nextNode.execute(frame, inliningTarget, iterator);
         if (PyIterNextNode.isExhausted(res)) {
             return false;
         }

@@ -885,8 +885,9 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PyIter_Next extends CApiUnaryBuiltinNode {
         @Specialization
         Object check(Object object,
+                        @Bind Node inliningTarget,
                         @Cached PyIterNextNode nextNode) {
-            Object result = nextNode.execute(null, object);
+            Object result = nextNode.execute(null, inliningTarget, object);
             if (PyIterNextNode.isExhausted(result)) {
                 return getNativeNull();
             }
@@ -904,7 +905,7 @@ public final class PythonCextAbstractBuiltins {
                         @Cached PyIterNextNode nextNode,
                         @Cached IsBuiltinObjectProfile isClassProfile) {
             if (arg instanceof PNone && pyiterCheck.execute(inliningTarget, iter)) {
-                Object result = nextNode.execute(null, iter);
+                Object result = nextNode.execute(null, inliningTarget, iter);
                 if (PyIterNextNode.isExhausted(result)) {
                     return getNativeNull();
                 }

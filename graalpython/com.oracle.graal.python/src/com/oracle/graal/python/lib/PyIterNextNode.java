@@ -64,12 +64,16 @@ import com.oracle.truffle.api.nodes.Node;
  * exhausted.
  */
 @GenerateUncached
-@GenerateInline(false)
+@GenerateInline(inlineByDefault = true)
 public abstract class PyIterNextNode extends PNodeWithContext {
-    public abstract Object execute(Frame frame, Object iterator);
+    public abstract Object execute(Frame frame, Node inliningTarget, Object iterator);
+
+    public final Object executeCached(VirtualFrame frame, Object iterator) {
+        return execute(frame, this, iterator);
+    }
 
     public static Object executeUncached(Object iterator) {
-        return PyIterNextNodeGen.getUncached().execute(null, iterator);
+        return PyIterNextNodeGen.getUncached().execute(null, null, iterator);
     }
 
     public static boolean isExhausted(Object value) {
@@ -77,8 +81,7 @@ public abstract class PyIterNextNode extends PNodeWithContext {
     }
 
     @Specialization
-    static Object doGeneric(VirtualFrame frame, Object iterator,
-                    @Bind("this") Node inliningTarget,
+    static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object iterator,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotTpIterNextNode callNext,
