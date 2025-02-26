@@ -2069,6 +2069,9 @@ def _signature_is_builtin(obj):
     return (isbuiltin(obj) or
             ismethoddescriptor(obj) or
             isinstance(obj, _NonUserDefinedCallables) or
+            # Truffle change: treat foreign executables as builtin
+            (isinstance(obj, __graalpython__.ForeignType) and callable(obj)) or
+            # End Truffle change
             # Can't test 'isinstance(type)' here, as it would
             # also be True for regular python classes
             obj in (type, object))

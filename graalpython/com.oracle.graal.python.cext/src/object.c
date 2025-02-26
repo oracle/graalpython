@@ -2369,6 +2369,15 @@ _PyTrash_cond(PyObject *op, destructor dealloc)
     return Py_TYPE(op)->tp_dealloc == dealloc;
 }
 
+// Begin GraalPy change
+#if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)
+#include <execinfo.h>
+static void bt() {
+    void* stack[8];
+    backtrace_symbols_fd(stack, backtrace(stack, 8), stderr);
+}
+#endif
+// End GraalPy change
 
 void _Py_NO_RETURN
 _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
@@ -2394,7 +2403,14 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
     fprintf(stderr, "\n");
     fflush(stderr);
 
-#if 0 // GraalPy change
+    // Begin GraalPy change
+#if ((__linux__ && __GNU_LIBRARY__) || __APPLE__)
+    fprintf(stderr, "Native backtrace:\n");
+    bt();
+    fflush(stderr);
+#endif
+    // End GraalPy change
+
     if (_PyObject_IsFreed(obj)) {
         /* It seems like the object memory has been freed:
            don't access it to prevent a segmentation fault. */
@@ -2402,6 +2418,7 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
         fflush(stderr);
     }
     else {
+#if 0 // GraalPy change
         /* Display the traceback where the object has been allocated.
            Do it before dumping repr(obj), since repr() is more likely
            to crash than dumping the traceback. */
@@ -2418,14 +2435,11 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
 #endif // GraalPy change
         /* This might succeed or fail, but we're about to abort, so at least
            try to provide any extra info we can: */
-        if (obj) // GraalPy change, guard call to _PyObject_Dump
         _PyObject_Dump(obj);
 
-#if 0 // GraalPy change
         fprintf(stderr, "\n");
         fflush(stderr);
     }
-#endif // GraalPy change
 
     Py_FatalError("_PyObject_AssertFailed");
 }

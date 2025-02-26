@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
@@ -596,6 +597,15 @@ public abstract class PythonCextObjectBuiltins {
                 throw CompilerDirectives.shouldNotReachHere("unhandled storage type");
             }
             return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Direct)
+    abstract static class _PyObject_IsFreed extends CApiUnaryBuiltinNode {
+        @Specialization
+        int doGeneric(Object pointer,
+                        @Cached ToPythonWrapperNode toPythonWrapperNode) {
+            return toPythonWrapperNode.executeWrapper(pointer, false) == null ? 1 : 0;
         }
     }
 

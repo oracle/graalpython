@@ -1119,7 +1119,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyObject_GetState", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_HasLen", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_IsAbstract", ret = Int, args = {PyObject}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyObject_IsFreed", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_LookupSpecialId", ret = PyObject, args = {PyObject, PY_IDENTIFIER}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_RealIsInstance", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyObject_RealIsSubclass", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
