@@ -690,65 +690,80 @@ public final class VFSUtils {
         }
     }
 
-    private static void generateLaunchers(Launcher launcherArgs, BuildToolLog log) throws IOException {
-        if (!Files.exists(launcherArgs.launcherPath)) {
-            info(log, "Generating GraalPy launchers");
-            createParentDirectories(launcherArgs.launcherPath);
-            Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
-            String classpath = String.join(File.pathSeparator, launcherArgs.computeClassPath());
-            if (!IS_WINDOWS) {
-                var script = String.format("""
-                                #!/usr/bin/env bash
-                                %s --enable-native-access=ALL-UNNAMED -classpath %s %s --python.Executable="$0" "$@"
-                                """,
-                                java,
-                                String.join(File.pathSeparator, classpath),
-                                GRAALPY_MAIN_CLASS);
-                try {
-                    Files.writeString(launcherArgs.launcherPath, script);
-                    var perms = Files.getPosixFilePermissions(launcherArgs.launcherPath);
-                    perms.addAll(List.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
-                    Files.setPosixFilePermissions(launcherArgs.launcherPath, perms);
-                } catch (IOException e) {
-                    throw new IOException(String.format("failed to create launcher %s", launcherArgs.launcherPath), e);
+    private static boolean checkWinLauncherJavaPath(Path venvCfg, Path java) {
+        try {
+            for (String line : Files.readAllLines(venvCfg)) {
+                if (line.trim().startsWith("venvlauncher_command = " + java)) {
+                    return true;
                 }
-            } else {
-                // on windows, generate a venv launcher that executes our mvn target
-                var script = String.format("""
-                                import os, shutil, struct, venv
-                                from pathlib import Path
-                                vl = os.path.join(venv.__path__[0], 'scripts', 'nt', 'graalpy.exe')
-                                tl = os.path.join(r'%s')
-                                os.makedirs(Path(tl).parent.absolute(), exist_ok=True)
-                                shutil.copy(vl, tl)
-                                cmd = r'%s --enable-native-access=ALL-UNNAMED -classpath "%s" %s'
-                                pyvenvcfg = os.path.join(os.path.dirname(tl), "pyvenv.cfg")
-                                with open(pyvenvcfg, 'w', encoding='utf-8') as f:
-                                    f.write('venvlauncher_command = ')
-                                    f.write(cmd)
-                                """,
-                                launcherArgs.launcherPath,
-                                java,
-                                classpath,
-                                GRAALPY_MAIN_CLASS);
-                File tmp;
-                try {
-                    tmp = File.createTempFile("create_launcher", ".py");
-                } catch (IOException e) {
-                    throw new IOException("failed to create tmp launcher", e);
-                }
-                tmp.deleteOnExit();
-                try (var wr = new FileWriter(tmp)) {
-                    wr.write(script);
-                } catch (IOException e) {
-                    throw new IOException(String.format("failed to write tmp launcher %s", tmp), e);
-                }
+            }
+        } catch (IOException ignore) {
+        }
+        return false;
+    }
 
-                try {
-                    GraalPyRunner.run(classpath, log, tmp.getAbsolutePath());
-                } catch (InterruptedException e) {
-                    throw new IOException(String.format("failed to run Graalpy launcher"), e);
-                }
+    private static void generateLaunchers(Launcher launcherArgs, BuildToolLog log) throws IOException {
+        debug(log, "Generating GraalPy launchers");
+        createParentDirectories(launcherArgs.launcherPath);
+        Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
+        String classpath = String.join(File.pathSeparator, launcherArgs.computeClassPath());
+        String extraJavaOptions = String.join(" ", GraalPyRunner.getExtraJavaOptions());
+        if (!IS_WINDOWS) {
+            // we do not bother checking if it exists and has correct java home, since it is simple
+            // to regenerate the launcher
+            var script = String.format("""
+                            #!/usr/bin/env bash
+                            %s --enable-native-access=ALL-UNNAMED %s -classpath %s %s --python.Executable="$0" "$@"
+                            """,
+                            java,
+                            extraJavaOptions,
+                            String.join(File.pathSeparator, classpath),
+                            GRAALPY_MAIN_CLASS);
+            try {
+                Files.writeString(launcherArgs.launcherPath, script);
+                var perms = Files.getPosixFilePermissions(launcherArgs.launcherPath);
+                perms.addAll(List.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
+                Files.setPosixFilePermissions(launcherArgs.launcherPath, perms);
+            } catch (IOException e) {
+                throw new IOException(String.format("failed to create launcher %s", launcherArgs.launcherPath), e);
+            }
+        } else if (!Files.exists(launcherArgs.launcherPath) || !checkWinLauncherJavaPath(launcherArgs.launcherPath.getParent().resolve("pyenv.cfg"), java)) {
+            // on windows, generate a venv launcher that executes the java command
+            var script = String.format("""
+                            import os, shutil, struct, venv
+                            from pathlib import Path
+                            vl = os.path.join(venv.__path__[0], 'scripts', 'nt', 'graalpy.exe')
+                            tl = os.path.join(r'%s')
+                            os.makedirs(Path(tl).parent.absolute(), exist_ok=True)
+                            shutil.copy(vl, tl)
+                            cmd = r'%s --enable-native-access=ALL-UNNAMED %s -classpath "%s" %s'
+                            pyvenvcfg = os.path.join(os.path.dirname(tl), "pyvenv.cfg")
+                            with open(pyvenvcfg, 'w', encoding='utf-8') as f:
+                                f.write('venvlauncher_command = ')
+                                f.write(cmd)
+                            """,
+                            launcherArgs.launcherPath,
+                            java,
+                            extraJavaOptions,
+                            classpath,
+                            GRAALPY_MAIN_CLASS);
+            File tmp;
+            try {
+                tmp = File.createTempFile("create_launcher", ".py");
+            } catch (IOException e) {
+                throw new IOException("failed to create tmp launcher", e);
+            }
+            tmp.deleteOnExit();
+            try (var wr = new FileWriter(tmp)) {
+                wr.write(script);
+            } catch (IOException e) {
+                throw new IOException(String.format("failed to write tmp launcher %s", tmp), e);
+            }
+
+            try {
+                GraalPyRunner.run(classpath, log, tmp.getAbsolutePath());
+            } catch (InterruptedException e) {
+                throw new IOException("failed to run Graalpy launcher", e);
             }
         }
     }

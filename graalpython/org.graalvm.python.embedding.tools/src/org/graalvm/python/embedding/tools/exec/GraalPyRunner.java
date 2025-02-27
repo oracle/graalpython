@@ -51,6 +51,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -59,6 +60,18 @@ public class GraalPyRunner {
     private static final boolean IS_WINDOWS = System.getProperty("os.name").startsWith("Windows");
     private static final String BIN_DIR = IS_WINDOWS ? "Scripts" : "bin";
     private static final String EXE_SUFFIX = IS_WINDOWS ? ".exe" : "";
+
+    public static String[] getExtraJavaOptions() {
+        String javaVersion = System.getProperty("java.version");
+        try {
+            if (Integer.parseInt(javaVersion) >= 24) {
+                return new String[]{"--sun-misc-unsafe-memory-access=allow"};
+            }
+        } catch (NumberFormatException ex) {
+            // covers also javaVersion being 'null'
+        }
+        return new String[0];
+    }
 
     public static void run(Set<String> classpath, BuildToolLog log, String... args) throws IOException, InterruptedException {
         run(String.join(File.pathSeparator, classpath), log, args);
@@ -69,6 +82,8 @@ public class GraalPyRunner {
         Path java = Paths.get(System.getProperty("java.home"), "bin", "java");
         List<String> cmd = new ArrayList<>();
         cmd.add(java.toString());
+        cmd.add("--enable-native-access=ALL-UNNAMED");
+        cmd.addAll(Arrays.asList(getExtraJavaOptions()));
         cmd.add("-classpath");
         cmd.add(classpath);
         cmd.add("com.oracle.graal.python.shell.GraalPythonMain");
