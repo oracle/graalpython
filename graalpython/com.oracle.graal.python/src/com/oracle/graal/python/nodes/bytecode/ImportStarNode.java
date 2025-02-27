@@ -35,7 +35,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -83,15 +83,14 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     @Cached GetOrCreateDictNode getDictNode,
                     @Cached PyObjectGetAttr getAttrNode,
                     @Cached PyObjectGetIter getIterNode,
-                    @Cached GetNextNode getNextNode,
+                    @Cached PyIterNextNode nextNode,
                     @Cached PyObjectSizeNode sizeNode,
                     @Cached PyObjectGetItem getItemNode,
                     @Cached InlinedConditionProfile javaImport,
                     @Cached CastToTruffleStringNode castToTruffleStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                    @Cached IsBuiltinObjectProfile isAttributeErrorProfile,
-                    @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                    @Cached IsBuiltinObjectProfile isAttributeErrorProfile) {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), T_IMPORT_ALL, level, importNameNode);
         Object locals = PArguments.getSpecialArgument(frame);
         if (locals == null) {
@@ -128,14 +127,12 @@ public abstract class ImportStarNode extends AbstractImportNode {
                 assert importedModule instanceof PythonModule;
                 Object keysIterator = getIterNode.execute(frame, inliningTarget, getDictNode.execute(inliningTarget, importedModule));
                 while (true) {
-                    try {
-                        Object key = getNextNode.execute(frame, keysIterator);
-                        writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,
-                                        codePointAtIndexNode, getAttrNode, setItemNode, setAttrNode);
-                    } catch (PException iterException) {
-                        iterException.expectStopIteration(inliningTarget, isStopIterationProfile);
+                    Object key = nextNode.execute(frame, inliningTarget, keysIterator);
+                    if (PyIterNextNode.isExhausted(key)) {
                         break;
                     }
+                    writeAttributeToLocals(frame, inliningTarget, moduleName, (PythonModule) importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,
+                                    codePointAtIndexNode, getAttrNode, setItemNode, setAttrNode);
                 }
             }
         }

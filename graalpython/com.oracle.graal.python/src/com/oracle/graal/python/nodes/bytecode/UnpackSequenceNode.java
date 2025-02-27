@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -103,10 +103,8 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
     static int doUnpackIterable(Frame frame, int initialStackTop, Object collection, int count,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
-                    @Cached GetNextNode getNextNode,
+                    @Cached PyIterNextNode nextNode,
                     @Cached IsBuiltinObjectProfile notIterableProfile,
-                    @Cached IsBuiltinObjectProfile stopIterationProfile1,
-                    @Cached IsBuiltinObjectProfile stopIterationProfile2,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(count);
         int resultStackTop = initialStackTop + count;
@@ -119,18 +117,14 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
         for (int i = 0; i < count; i++) {
-            try {
-                Object item = getNextNode.execute(frame, iterator);
-                frame.setObject(stackTop--, item);
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, stopIterationProfile1);
+            Object item = nextNode.execute(frame, inliningTarget, iterator);
+            if (PyIterNextNode.isExhausted(item)) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, i);
             }
+            frame.setObject(stackTop--, item);
         }
-        try {
-            getNextNode.execute(frame, iterator);
-        } catch (PException e) {
-            e.expectStopIteration(inliningTarget, stopIterationProfile2);
+        Object next = nextNode.execute(frame, inliningTarget, iterator);
+        if (PyIterNextNode.isExhausted(next)) {
             return resultStackTop;
         }
         throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, count);

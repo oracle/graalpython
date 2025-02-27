@@ -103,8 +103,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -1758,8 +1758,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode raiseNode,
-                    @Cached GetNextNode getNextNode,
-                    @Exclusive @Cached IsBuiltinObjectProfile exceptionProfile,
+                    @Cached PyIterNextNode nextNode,
                     @Exclusive @Cached GilNode gil,
                     @CachedLibrary("this") InteropLibrary ilib,
                     // GR-44020: make shared:
@@ -1777,14 +1776,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     if (nextElement != null) {
                         return true;
                     }
-                    try {
-                        nextElement = getNextNode.execute(null, this);
-                        writeHiddenAttrNode.execute(inliningTarget, this, HiddenAttr.NEXT_ELEMENT, nextElement);
-                        return true;
-                    } catch (PException e) {
-                        e.expect(inliningTarget, PythonBuiltinClassType.StopIteration, exceptionProfile);
+                    nextElement = nextNode.execute(null, inliningTarget, this);
+                    if (PyIterNextNode.isExhausted(nextElement)) {
                         return false;
                     }
+                    writeHiddenAttrNode.execute(inliningTarget, this, HiddenAttr.NEXT_ELEMENT, nextElement);
+                    return true;
                 }
             }
             throw UnsupportedMessageException.create();

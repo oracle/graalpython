@@ -100,8 +100,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -113,10 +113,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -476,19 +474,15 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.hasBuf()")
         static Object writeLines(VirtualFrame frame, PBytesIO self, Object lines,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetNextNode getNextNode,
                         @Cached WriteNode writeNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
-                Object line;
-                try {
-                    line = getNextNode.execute(frame, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object line = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(line)) {
                     break;
                 }
                 writeNode.execute(frame, self, line);

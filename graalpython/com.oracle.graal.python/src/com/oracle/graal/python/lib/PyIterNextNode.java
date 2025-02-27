@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -99,5 +98,9 @@ public abstract class PyIterNextNode extends PNodeWithContext {
     @NeverDefault
     public static PyIterNextNode create() {
         return PyIterNextNodeGen.create();
+    }
+
+    public static PyIterNextNode getUncached() {
+        return PyIterNextNodeGen.getUncached();
     }
 }

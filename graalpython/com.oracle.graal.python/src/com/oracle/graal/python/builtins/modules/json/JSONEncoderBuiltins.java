@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyListCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
@@ -59,9 +59,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -269,11 +267,8 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             Object iter = callGetDictIter.executeCached(null, items);
             boolean first = true;
             while (true) {
-                Object item;
-                try {
-                    item = GetNextNode.getUncached().execute(null, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
+                Object item = PyIterNextNode.executeUncached(iter);
+                if (PyIterNextNode.isExhausted(item)) {
                     break;
                 }
                 if (!(item instanceof PTuple itemTuple) || itemTuple.getSequenceStorage().length() != 2) {
@@ -337,11 +332,8 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             Object iter = callGetListIter.executeCached(null, list);
             boolean first = true;
             while (true) {
-                Object item;
-                try {
-                    item = GetNextNode.getUncached().execute(null, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
+                Object item = PyIterNextNode.executeUncached(iter);
+                if (PyIterNextNode.isExhausted(item)) {
                     break;
                 }
                 if (!first) {

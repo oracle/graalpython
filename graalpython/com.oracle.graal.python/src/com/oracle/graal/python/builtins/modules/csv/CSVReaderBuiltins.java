@@ -66,19 +66,17 @@ import com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -125,15 +123,14 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
         static Object nextPos(VirtualFrame frame, CSVReader self,
                         @Bind("this") Node inliningTarget,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringIterator.NextNode stringNextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached PyNumberFloatNode pyNumberFloatNode,
                         @Cached AppendNode appendNode,
-                        @Cached GetNextNode getNextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             PList fields = PFactory.createList(language);
@@ -141,10 +138,8 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
             self.parseReset();
             do {
                 Object lineObj;
-                try {
-                    lineObj = getNextNode.execute(frame, self.inputIter);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
+                lineObj = nextNode.execute(frame, inliningTarget, self.inputIter);
+                if (PyIterNextNode.isExhausted(lineObj)) {
                     self.fieldLimit = csvModuleBuiltins.fieldLimit;
                     if (!self.field.isEmpty() || self.state == IN_QUOTED_FIELD) {
                         if (self.dialect.strict) {
@@ -153,7 +148,6 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                             try {
                                 parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                             } catch (AbstractTruffleException ignored) {
-                                throw e;
                             }
                             break;
                         }
@@ -172,7 +166,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                 self.lineNum++;
                 TruffleStringIterator tsi = createCodePointIteratorNode.execute(line, TS_ENCODING);
                 while (tsi.hasNext()) {
-                    final int codepoint = nextNode.execute(tsi);
+                    final int codepoint = stringNextNode.execute(tsi);
                     parseProcessCodePoint(inliningTarget, self, fields, codepoint, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode, raiseNode);
                 }
                 parseProcessCodePoint(inliningTarget, self, fields, EOL, appendCodePointNode, toStringNode, pyNumberFloatNode, appendNode, raiseNode);

@@ -165,7 +165,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyEvalGetLocals;
@@ -475,22 +474,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static boolean doObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, inliningTarget, object);
             int nbrIter = 0;
 
             while (true) {
                 try {
-                    Object next = nextNode.execute(frame, iterator);
+                    Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    if (PyIterNextNode.isExhausted(next)) {
+                        break;
+                    }
                     nbrIter++;
                     if (!isTrueNode.execute(frame, next)) {
                         return false;
                     }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    break;
                 } finally {
                     LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
@@ -528,22 +526,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static boolean doObject(VirtualFrame frame, Object object,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, inliningTarget, object);
             int nbrIter = 0;
 
             while (true) {
                 try {
-                    Object next = nextNode.execute(frame, iterator);
+                    Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    if (PyIterNextNode.isExhausted(next)) {
+                        break;
+                    }
                     nbrIter++;
                     if (isTrueNode.execute(frame, next)) {
                         return true;
                     }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    break;
                 } finally {
                     LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
@@ -1571,24 +1568,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static Object minmaxSequenceWithKey(VirtualFrame frame, Node inliningTarget, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArgIn, Object defaultVal, String name,
                         BinaryComparisonNode compare,
                         @Exclusive @Cached PyObjectGetIter getIter,
-                        @Cached(inline = false) GetNextNode nextNode,
+                        @Exclusive @Cached PyIterNextNode nextNode,
                         @Exclusive @Cached PyObjectIsTrueNode castToBooleanNode,
                         @Exclusive @Cached CallNode.Lazy keyCall,
                         @Exclusive @Cached InlinedBranchProfile seenNonBoolean,
                         @Exclusive @Cached InlinedConditionProfile keywordArgIsNone,
-                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile1,
-                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile2,
                         @Exclusive @Cached InlinedConditionProfile hasDefaultProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             boolean kwArgsAreNone = keywordArgIsNone.profile(inliningTarget, PGuards.isPNone(keywordArgIn));
             Object keywordArg = kwArgsAreNone ? null : keywordArgIn;
 
             Object iterator = getIter.execute(frame, inliningTarget, arg1);
-            Object currentValue;
-            try {
-                currentValue = nextNode.execute(frame, iterator);
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, errorProfile1);
+            Object currentValue = nextNode.execute(frame, inliningTarget, iterator);
+            if (PyIterNextNode.isExhausted(currentValue)) {
                 if (hasDefaultProfile.profile(inliningTarget, isNoValue(defaultVal))) {
                     throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, name);
                 } else {
@@ -1599,11 +1591,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             int loopCount = 0;
             try {
                 while (true) {
-                    Object nextValue;
-                    try {
-                        nextValue = nextNode.execute(frame, iterator);
-                    } catch (PException e) {
-                        e.expectStopIteration(inliningTarget, errorProfile2);
+                    Object nextValue = nextNode.execute(frame, inliningTarget, iterator);
+                    if (PyIterNextNode.isExhausted(nextValue)) {
                         break;
                     }
                     Object nextKey = applyKeyFunction(frame, inliningTarget, keywordArg, keyCall, nextValue);

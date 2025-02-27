@@ -82,7 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -92,8 +92,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ComparisonOp;
@@ -298,21 +296,12 @@ public final class DictViewBuiltins extends PythonBuiltins {
      * view comparisons dictates that we need to use iteration to compare them in the general case.
      */
     protected abstract static class ContainedInNode extends PNodeWithContext {
-        @Child private GetNextNode next;
         @Child private LookupAndCallBinaryNode contains;
         @Child private PyObjectIsTrueNode cast;
         private final boolean checkAll;
 
         public ContainedInNode(boolean checkAll) {
             this.checkAll = checkAll;
-        }
-
-        private GetNextNode getNext() {
-            if (next == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                next = insert(GetNextNode.create());
-            }
-            return next;
         }
 
         private LookupAndCallBinaryNode getContains() {
@@ -338,18 +327,19 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached InlinedLoopConditionProfile loopConditionProfile,
                         @Cached PyObjectGetIter getIterNode,
-                        @Cached IsBuiltinObjectProfile stopProfile) {
+                        @Cached PyIterNextNode nextNode) {
             Object iterator = getIterNode.execute(frame, inliningTarget, self);
             boolean ok = checkAll;
             int i = 0;
             try {
                 while (loopConditionProfile.profile(inliningTarget, checkAll && ok || !checkAll && !ok)) {
-                    Object item = getNext().execute(frame, iterator);
+                    Object item = nextNode.execute(frame, inliningTarget, iterator);
+                    if (PyIterNextNode.isExhausted(item)) {
+                        break;
+                    }
                     ok = getCast().execute(frame, getContains().executeObject(frame, other, item));
                     i++;
                 }
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, stopProfile);
             } finally {
                 LoopNode.reportLoopCount(this, i < 0 ? Integer.MAX_VALUE : i);
             }

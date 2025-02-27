@@ -154,7 +154,9 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object value = self.getDataobj().getItem(frame, inliningTarget, self.getIndex(), nextNode, raiseNode);
-            self.setIndex(self.getIndex() + 1);
+            if (!PyIterNextNode.isExhausted(value)) {
+                self.setIndex(self.getIndex() + 1);
+            }
             return value;
         }
 
@@ -165,9 +167,8 @@ public final class TeeBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Shared @Cached PRaiseNode raiseNode) {
             self.setDataObj(self.getDataobj().jumplink(language));
-            Object value = self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
             self.setIndex(1);
-            return value;
+            return self.getDataobj().getItem(frame, inliningTarget, 0, nextNode, raiseNode);
         }
     }
 

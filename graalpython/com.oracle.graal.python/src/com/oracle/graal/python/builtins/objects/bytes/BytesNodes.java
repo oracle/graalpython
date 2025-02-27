@@ -76,10 +76,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -181,19 +181,17 @@ public abstract class BytesNodes {
         @Specialization
         static byte[] join(VirtualFrame frame, Node inliningTarget, byte[] sep, Object iterable,
                         @Cached PyObjectGetIter getIter,
-                        @Cached(inline = false) GetNextNode getNextNode,
-                        @Cached(inline = false) ToBytesNode toBytesNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Cached PyIterNextNode nextNode,
+                        @Cached(inline = false) ToBytesNode toBytesNode) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                try {
-                    partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object next = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(next)) {
                     return joinArrays(sep, parts, partsTotalSize);
                 }
+                partsTotalSize += append(parts, toBytesNode.execute(frame, next));
             }
         }
 
@@ -776,8 +774,7 @@ public abstract class BytesNodes {
         static byte[] bytearray(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
                         @Cached IteratorNodes.GetLength lenghtHintNode,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile stopIterationProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Cached CastToByteNode castToByteNode,
                         @Cached PyObjectGetIter getIter) {
             Object it = getIter.execute(frame, inliningTarget, iterable);
@@ -785,16 +782,15 @@ public abstract class BytesNodes {
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
             int i = 0;
             while (true) {
-                try {
-                    byte item = castToByteNode.execute(frame, getNextNode.execute(frame, it));
-                    if (i >= arr.length) {
-                        arr = resize(arr, arr.length * 2);
-                    }
-                    arr[i++] = item;
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, stopIterationProfile);
+                Object next = nextNode.execute(frame, inliningTarget, it);
+                if (PyIterNextNode.isExhausted(next)) {
                     return resize(arr, i);
                 }
+                byte item = castToByteNode.execute(frame, next);
+                if (i >= arr.length) {
+                    arr = resize(arr, arr.length * 2);
+                }
+                arr[i++] = item;
             }
         }
 

@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_REENTER_TEE_ITE
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -133,17 +132,15 @@ public final class PTeeDataObject extends PythonBuiltinObject {
             }
 
             running = true;
-            Object value;
             try {
-                value = nextNode.execute(frame, inliningTarget, it);
+                Object value = nextNode.execute(frame, inliningTarget, it);
+                if (!PyIterNextNode.isExhausted(value)) {
+                    values[numread++] = value;
+                }
+                return value;
             } finally {
                 running = false;
             }
-            if (PyIterNextNode.isExhausted(value)) {
-                return TpIterNextBuiltin.iteratorExhausted();
-            }
-            values[numread++] = value;
-            return value;
         }
     }
 }

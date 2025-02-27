@@ -87,7 +87,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -97,10 +97,8 @@ import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -434,19 +432,16 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Cached PyIterNextNode nextNode) {
             HashingStorage selfStorage = ((PBaseSet) self).getDictStorage();
             Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {
-                try {
-                    Object nextValue = getNextNode.execute(frame, iterator);
-                    if (getHashingStorageItem.hasKey(frame, inliningTarget, selfStorage, nextValue)) {
-                        return false;
-                    }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object nextValue = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(nextValue)) {
                     return true;
+                }
+                if (getHashingStorageItem.hasKey(frame, inliningTarget, selfStorage, nextValue)) {
+                    return false;
                 }
             }
         }
