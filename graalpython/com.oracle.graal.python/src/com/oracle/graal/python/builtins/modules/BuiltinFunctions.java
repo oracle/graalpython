@@ -148,6 +148,9 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -256,6 +259,7 @@ import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -2117,112 +2121,171 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SumFunctionNode extends PythonBuiltinNode {
 
-        @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(SpecialMethodSlot.Next);
-
-        public static boolean isIntOrNone(Object o) {
-            return o instanceof Integer || PGuards.isNoValue(o);
-        }
-
-        @Specialization(guards = "isIntOrNone(startIn)", rewriteOn = UnexpectedResultException.class)
-        int sumInt(VirtualFrame frame, Object arg1, Object startIn,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile hasStart,
-                        @Shared @Cached PyNumberAddNode addNode,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
-            int start = hasStart.profile(inliningTarget, startIn instanceof Integer) ? (Integer) startIn : 0;
-            return sumIntInternal(frame, inliningTarget, arg1, start, addNode, getIter, errorProfile);
-        }
-
-        private int sumIntInternal(VirtualFrame frame, Node inliningTarget, Object arg1, int start, PyNumberAddNode add, PyObjectGetIter getIter,
-                        IsBuiltinObjectProfile errorProfile) throws UnexpectedResultException {
-            Object iterator = getIter.execute(frame, inliningTarget, arg1);
-            int value = start;
-            while (true) {
-                int nextValue;
-                try {
-                    nextValue = PGuards.expectInteger(next.executeObject(frame, iterator));
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    return value;
-                } catch (UnexpectedResultException e) {
-                    Object newValue = add.execute(frame, inliningTarget, value, e.getResult());
-                    throw new UnexpectedResultException(iterateGeneric(frame, inliningTarget, iterator, newValue, add, errorProfile));
-                }
-                try {
-                    value = add.executeInt(frame, inliningTarget, value, nextValue);
-                } catch (UnexpectedResultException e) {
-                    throw new UnexpectedResultException(iterateGeneric(frame, inliningTarget, iterator, e.getResult(), add, errorProfile));
-                }
-            }
-        }
-
-        @Specialization(rewriteOn = UnexpectedResultException.class)
-        double sumDoubleDouble(VirtualFrame frame, Object arg1, double start,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyNumberAddNode addNode,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
-                        // dummy inline profile, so it can be @Shared, to optimize generated code:
-                        @SuppressWarnings("unused") @Shared @Cached InlinedConditionProfile hasStart,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        // dummy raiseNode, so it can be @Shared, to optimize generated code:
-                        @SuppressWarnings("unused") @Shared @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, inliningTarget, arg1, start, addNode, getIter, errorProfile);
-        }
-
-        private double sumDoubleInternal(VirtualFrame frame, Node inliningTarget, Object arg1, double start, PyNumberAddNode add, PyObjectGetIter getIter,
-                        IsBuiltinObjectProfile errorProfile) throws UnexpectedResultException {
-            Object iterator = getIter.execute(frame, inliningTarget, arg1);
-            double value = start;
-            while (true) {
-                double nextValue;
-                try {
-                    nextValue = PGuards.expectDouble(next.executeObject(frame, iterator));
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    return value;
-                } catch (UnexpectedResultException e) {
-                    Object newValue = add.execute(frame, inliningTarget, value, e.getResult());
-                    throw new UnexpectedResultException(iterateGeneric(frame, inliningTarget, iterator, newValue, add, errorProfile));
-                }
-                try {
-                    value = add.executeDouble(frame, inliningTarget, value, nextValue);
-                } catch (UnexpectedResultException e) {
-                    throw new UnexpectedResultException(iterateGeneric(frame, inliningTarget, iterator, e.getResult(), add, errorProfile));
-                }
-            }
-        }
-
-        @Specialization(replaces = {"sumInt", "sumDoubleDouble"})
-        Object sum(VirtualFrame frame, Object arg1, Object start,
-                        @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyNumberAddNode addNode,
-                        @Shared @Cached IsBuiltinObjectProfile errorProfile,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Shared @Cached InlinedConditionProfile hasStart,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            if (PGuards.isString(start)) {
+        @Specialization
+        Object sum(VirtualFrame frame, Object iterable, Object start,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedConditionProfile defaultStart,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached SumIteratorNode sumIteratorNode) {
+            if (defaultStart.profile(inliningTarget, start == NO_VALUE)) {
+                start = 0;
+            } else if (PGuards.isString(start)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_SUM_STRINGS);
             } else if (start instanceof PBytes) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_SUM_BYTES);
             } else if (start instanceof PByteArray) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_SUM_BYTEARRAY);
             }
-            Object iterator = getIter.execute(frame, inliningTarget, arg1);
-            return iterateGeneric(frame, inliningTarget, iterator, hasStart.profile(inliningTarget, start != NO_VALUE) ? start : 0, addNode, errorProfile);
+            Object iterator = getIter.execute(frame, inliningTarget, iterable);
+            return sumIteratorNode.execute(frame, inliningTarget, iterator, start);
         }
 
-        private Object iterateGeneric(VirtualFrame frame, Node inliningTarget, Object iterator, Object start, PyNumberAddNode add, IsBuiltinObjectProfile errorProfile) {
-            Object value = start;
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = next.executeObject(frame, iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
-                    return value;
+        @GenerateInline
+        @GenerateCached(false)
+        abstract static class SumIteratorNode extends Node {
+            public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object iterator, Object start);
+
+            @Specialization
+            static Object sumIntIterator(VirtualFrame frame, Node inliningTarget, PIntegerSequenceIterator iterator, int start,
+                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive,
+                            @Shared @Cached InlinedLoopConditionProfile loopProfileGeneric,
+                            @Shared @Cached InlinedBranchProfile overflowProfile,
+                            @Shared @Cached PyNumberAddNode addNode,
+                            @Shared @Cached InlinedConditionProfile resultFitsInInt) {
+                long longResult = start;
+                while (loopProfilePrimitive.profile(inliningTarget, iterator.hasNext())) {
+                    long next = iterator.next();
+                    try {
+                        longResult = PythonUtils.addExact(longResult, next);
+                    } catch (OverflowException e) {
+                        overflowProfile.enter(inliningTarget);
+                        Object objectResult = addNode.execute(frame, inliningTarget, longResult, next);
+                        while (loopProfileGeneric.profile(inliningTarget, iterator.hasNext())) {
+                            objectResult = addNode.execute(frame, inliningTarget, objectResult, iterator.next());
+                        }
+                        return objectResult;
+                    }
                 }
-                value = add.execute(frame, inliningTarget, value, nextValue);
+                return maybeInt(inliningTarget, resultFitsInInt, longResult);
+            }
+
+            @Specialization
+            static Object sumLongIterator(VirtualFrame frame, Node inliningTarget, PLongSequenceIterator iterator, int start,
+                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive,
+                            @Shared @Cached InlinedLoopConditionProfile loopProfileGeneric,
+                            @Shared @Cached InlinedBranchProfile overflowProfile,
+                            @Shared @Cached PyNumberAddNode addNode,
+                            @Shared @Cached InlinedConditionProfile resultFitsInInt) {
+                long longResult = start;
+                while (loopProfilePrimitive.profile(inliningTarget, iterator.hasNext())) {
+                    long next = iterator.next();
+                    try {
+                        longResult = PythonUtils.addExact(longResult, next);
+                    } catch (OverflowException e) {
+                        overflowProfile.enter(inliningTarget);
+                        Object objectResult = addNode.execute(frame, inliningTarget, longResult, next);
+                        while (loopProfileGeneric.profile(inliningTarget, iterator.hasNext())) {
+                            objectResult = addNode.execute(frame, inliningTarget, objectResult, iterator.next());
+                        }
+                        return objectResult;
+                    }
+                }
+                return maybeInt(inliningTarget, resultFitsInInt, longResult);
+            }
+
+            @Specialization
+            static Object sumDoubleIterator(Node inliningTarget, PDoubleSequenceIterator iterator, double start,
+                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
+                double result = start;
+                while (loopProfilePrimitive.profile(inliningTarget, iterator.hasNext())) {
+                    result += iterator.next();
+                }
+                return result;
+            }
+
+            @Specialization
+            static Object sumDoubleIteratorIntStart(Node inliningTarget, PDoubleSequenceIterator iterator, int start,
+                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
+                /*
+                 * Need to make sure we keep start as int if the iterator was empty
+                 */
+                if (!iterator.hasNext()) {
+                    return start;
+                }
+                return sumDoubleIterator(inliningTarget, iterator, start, loopProfilePrimitive);
+            }
+
+            @Fallback
+            static Object sumGeneric(VirtualFrame frame, Node inliningTarget, Object iterator, Object start,
+                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive,
+                            @Shared @Cached InlinedLoopConditionProfile loopProfileGeneric,
+                            @Cached PyIterNextNode nextNode,
+                            @Shared @Cached PyNumberAddNode addNode,
+                            @Shared @Cached InlinedConditionProfile resultFitsInInt,
+                            @Exclusive @Cached InlinedBranchProfile seenInt,
+                            @Exclusive @Cached InlinedBranchProfile seenDouble,
+                            @Exclusive @Cached InlinedBranchProfile seenObject) {
+                /*
+                 * Peel the first iteration to see what's the type.
+                 */
+                Object next = nextNode.execute(frame, inliningTarget, iterator);
+                if (!PyIterNextNode.isExhausted(next)) {
+                    Object acc = addNode.execute(frame, inliningTarget, start, next);
+                    /*
+                     * We try to process integers/longs/doubles as long as we can. Then we always
+                     * fall through to the generic path. `next` and `acc` are always properly set so
+                     * that the generic path can check if there are remaining items and resume if
+                     * necessary.
+                     */
+                    if (acc instanceof Integer || acc instanceof Long) {
+                        seenInt.enter(inliningTarget);
+                        long longAcc = acc instanceof Integer ? (int) acc : (long) acc;
+                        while (loopProfilePrimitive.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
+                            try {
+                                if (next instanceof Integer nextInt) {
+                                    longAcc = PythonUtils.addExact(longAcc, nextInt);
+                                } else if (next instanceof Long nextLong) {
+                                    longAcc = PythonUtils.addExact(longAcc, nextLong);
+                                } else {
+                                    break;
+                                }
+                            } catch (OverflowException e) {
+                                break;
+                            }
+                        }
+                        acc = maybeInt(inliningTarget, resultFitsInInt, longAcc);
+                    } else if (acc instanceof Double doubleAcc) {
+                        seenDouble.enter(inliningTarget);
+                        while (loopProfilePrimitive.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator)))) {
+                            if (next instanceof Double nextDouble) {
+                                doubleAcc += nextDouble;
+                            } else {
+                                break;
+                            }
+                        }
+                        acc = doubleAcc;
+                    } else {
+                        next = nextNode.execute(frame, inliningTarget, iterator);
+                    }
+                    if (!PyIterNextNode.isExhausted(next)) {
+                        seenObject.enter(inliningTarget);
+                        do {
+                            acc = addNode.execute(frame, inliningTarget, acc, next);
+                        } while (loopProfileGeneric.profile(inliningTarget, !PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, iterator))));
+                    }
+                    return acc;
+                } else {
+                    return start;
+                }
+            }
+
+            private static long maybeInt(Node inliningTarget, InlinedConditionProfile resultFitsInInt, long result) {
+                if (resultFitsInInt.profile(inliningTarget, PInt.isIntRange(result))) {
+                    return (int) result;
+                } else {
+                    return result;
+                }
             }
         }
     }
