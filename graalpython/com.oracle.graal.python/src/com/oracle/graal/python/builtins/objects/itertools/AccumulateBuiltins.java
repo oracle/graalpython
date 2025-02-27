@@ -56,6 +56,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
@@ -101,7 +103,8 @@ public final class AccumulateBuiltins extends PythonBuiltins {
         @Specialization
         static Object next(VirtualFrame frame, PAccumulate self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyIterNextNode nextNode,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached PyNumberAddNode addNode,
                         @Cached CallNode callNode,
                         @Cached InlinedBranchProfile hasInitialProfile,
@@ -113,7 +116,8 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 self.setInitial(null);
                 return self.getTotal();
             }
-            Object value = nextNode.execute(frame, inliningTarget, self.getIterable());
+            Object it = self.getIterable();
+            Object value = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
             if (PyIterNextNode.isExhausted(value)) {
                 return iteratorExhausted();
             }

@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -89,7 +91,8 @@ public final class PairwiseBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getIterable() != null")
         static Object next(VirtualFrame frame, PPairwise self,
                         @Bind("this") Node inliningTarget,
-                        @Cached PyIterNextNode nextNode,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached InlinedBranchProfile exceptionProfile,
                         @Bind PythonLanguage language) {
             Object item;
@@ -97,7 +100,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
             Object iterable = self.getIterable();
             try {
                 if (self.getOld() == null) {
-                    old = nextNode.execute(frame, inliningTarget, iterable);
+                    old = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, iterable).tp_iternext(), iterable);
                     if (PyIterNextNode.isExhausted(old)) {
                         self.setOld(null);
                         self.setIterable(null);
@@ -110,7 +113,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
                         return iteratorExhausted();
                     }
                 }
-                item = nextNode.execute(frame, inliningTarget, iterable);
+                item = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, iterable).tp_iternext(), iterable);
                 if (PyIterNextNode.isExhausted(item)) {
                     self.setOld(null);
                     self.setIterable(null);

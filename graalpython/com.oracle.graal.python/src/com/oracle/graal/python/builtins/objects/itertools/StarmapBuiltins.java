@@ -54,6 +54,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -95,10 +97,12 @@ public final class StarmapBuiltins extends PythonBuiltins {
         @Specialization
         static Object nextPos(VirtualFrame frame, PStarmap self,
                         @Bind Node inliningTarget,
-                        @Cached PyIterNextNode nextNode,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode) {
-            Object obj = nextNode.execute(frame, inliningTarget, self.getIterable());
+            Object it = self.getIterable();
+            Object obj = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
             if (PyIterNextNode.isExhausted(obj)) {
                 return iteratorExhausted();
             }

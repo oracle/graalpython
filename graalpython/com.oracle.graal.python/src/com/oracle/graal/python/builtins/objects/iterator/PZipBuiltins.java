@@ -40,6 +40,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -52,7 +54,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -82,12 +83,18 @@ public final class PZipBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
         static Object doNext(VirtualFrame frame, PZip self,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyIterNextNode nextNode,
-                        @Bind PythonLanguage language) {
+                        @Bind PythonLanguage language,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
-                tupleElements[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
+                Object it = iterators[i];
+                /*
+                 * Not using PyIterNext because the non-strict version should pass through existing
+                 * StopIteration
+                 */
+                tupleElements[i] = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
                 if (PyIterNextNode.isExhausted(tupleElements[i])) {
                     return iteratorExhausted();
                 }
@@ -98,8 +105,8 @@ public final class PZipBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isEmpty(self.getIterators())", "self.isStrict()"})
         static Object doNext(VirtualFrame frame, PZip self,
                         @Bind("this") Node inliningTarget,
-                        @Shared @Cached PyIterNextNode nextNode,
                         @Bind PythonLanguage language,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PRaiseNode raiseNode) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];

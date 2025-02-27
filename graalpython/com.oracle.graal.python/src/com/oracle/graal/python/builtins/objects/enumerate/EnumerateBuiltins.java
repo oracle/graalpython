@@ -39,6 +39,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -73,9 +75,11 @@ public final class EnumerateBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile bigIntIndexProfile,
-                        @Cached PyIterNextNode next) {
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext) {
             Object index = self.getAndIncrementIndex(inliningTarget, language, bigIntIndexProfile);
-            Object nextValue = next.execute(frame, inliningTarget, self.getDecoratedIterator());
+            Object it = self.getDecoratedIterator();
+            Object nextValue = callIterNext.execute(frame, inliningTarget, getSlots.execute(inliningTarget, it).tp_iternext(), it);
             if (PyIterNextNode.isExhausted(nextValue)) {
                 return iteratorExhausted();
             }

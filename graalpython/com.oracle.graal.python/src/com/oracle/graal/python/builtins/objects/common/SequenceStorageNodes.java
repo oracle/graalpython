@@ -86,6 +86,9 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlic
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -2399,22 +2402,30 @@ public abstract class SequenceStorageNodes {
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Cached PyIterNextNode nextNode,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
+                        @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Cached AppendNode appendNode) {
             SequenceStorage currentStore = left;
             int lenLeft = currentStore.length();
             Object it = getIter.execute(frame, inliningTarget, iterable);
+            TpSlot iterNext = getSlots.execute(inliningTarget, it).tp_iternext();
             if (len > 0) {
                 ensureCapacityNode.execute(inliningTarget, left, lengthResult(lenLeft, len));
             }
-            while (true) {
-                Object value;
-                value = nextNode.execute(frame, inliningTarget, it);
-                if (PyIterNextNode.isExhausted(value)) {
-                    return currentStore;
+            try {
+                while (true) {
+                    Object value;
+                    value = callIterNext.execute(frame, inliningTarget, iterNext, it);
+                    if (PyIterNextNode.isExhausted(value)) {
+                        break;
+                    }
+                    currentStore = appendNode.execute(inliningTarget, currentStore, value, genNodeProvider);
                 }
-                currentStore = appendNode.execute(inliningTarget, currentStore, value, genNodeProvider);
+            } catch (PException e) {
+                e.expectStopIteration(inliningTarget, stopIterationProfile);
             }
+            return currentStore;
         }
 
         private SequenceStorage generalizeStore(SequenceStorage storage, Object value) {
