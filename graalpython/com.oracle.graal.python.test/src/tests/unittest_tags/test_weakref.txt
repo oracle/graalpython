@@ -53,6 +53,7 @@ test.test_weakref.ReferencesTestCase.test_set_callback_attribute @ darwin-arm64,
 test.test_weakref.ReferencesTestCase.test_sf_bug_840829 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_shared_ref_without_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_trashcan_16602 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_weakref.SubclassableWeakrefTestCase.test_subclass_refs @ win32-AMD64
 test.test_weakref.SubclassableWeakrefTestCase.test_subclass_refs_with_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.SubclassableWeakrefTestCase.test_subclass_refs_with_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.WeakKeyDictionaryTestCase.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
