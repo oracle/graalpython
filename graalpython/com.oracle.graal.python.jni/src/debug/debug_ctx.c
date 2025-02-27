@@ -256,7 +256,7 @@ const char *debug_ctx_Bytes_AS_STRING(HPyContext *dctx, DHPy h)
     return (const char *)protect_and_associate_data_ptr(h, (void *)ptr, data_size);
 }
 
-DHPy debug_ctx_Tuple_FromArray(HPyContext *dctx, DHPy dh_items[], HPy_ssize_t n)
+DHPy debug_ctx_Tuple_FromArray(HPyContext *dctx, const DHPy dh_items[], HPy_ssize_t n)
 {
     if (!get_ctx_info(dctx)->is_valid) {
         report_invalid_debug_context();
@@ -328,6 +328,7 @@ static const char *get_builtin_shape_name(HPyType_BuiltinShape shape)
     SHAPE_NAME(HPyType_BuiltinShape_Unicode)
     SHAPE_NAME(HPyType_BuiltinShape_Tuple)
     SHAPE_NAME(HPyType_BuiltinShape_List)
+    SHAPE_NAME(HPyType_BuiltinShape_Dict)
     }
     return "<unknown shape>";
 #undef SHAPE_NAME
@@ -371,6 +372,8 @@ MAKE_debug_ctx_AsStruct(Unicode)
 MAKE_debug_ctx_AsStruct(Tuple)
 
 MAKE_debug_ctx_AsStruct(List)
+
+MAKE_debug_ctx_AsStruct(Dict)
 
 /* ~~~ debug mode implementation of HPyTracker ~~~
 

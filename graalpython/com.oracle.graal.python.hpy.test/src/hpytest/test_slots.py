@@ -462,6 +462,7 @@ class TestSlots(HPyTest):
         assert repr(p) == 'repr(Point(1, 2))'
 
     def test_tp_hash(self):
+        import pytest
         mod = self.make_module("""
             @DEFINE_PointObject
             @DEFINE_Point_new
@@ -771,7 +772,6 @@ class TestSqSlots(HPyTest):
             'hello' in p
 
     def test_tp_richcompare(self):
-        import pytest
         mod = self.make_module("""
             @DEFINE_PointObject
             @DEFINE_Point_new
@@ -807,3 +807,27 @@ class TestSqSlots(HPyTest):
         #
         assert not p1 >= p2
         assert p1 >= p1
+
+    def test_tp_descr_get(self):
+        mod = self.make_module("""
+            @DEFINE_PointObject
+            @DEFINE_Point_new
+
+            HPyDef_SLOT(Point_get, HPy_tp_descr_get);
+            static HPy
+            Point_get_impl(HPyContext *ctx, HPy self, HPy obj, HPy type)
+            {
+                if (HPy_IsNull(obj) || HPy_Is(ctx, self, ctx->h_None)) {
+                    return HPy_Dup(ctx, self);
+                }
+                return HPyLong_FromLong(ctx, 123);
+            }
+
+            @EXPORT_POINT_TYPE(&Point_new, &Point_get)
+            @INIT
+        """)
+        p = mod.Point(10, 10)
+        class Dummy:
+            point_func = p
+        assert Dummy.point_func is p
+        assert Dummy().point_func == 123

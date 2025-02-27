@@ -1,5 +1,3 @@
-import types
-import pytest
 from .support import HPyTest
 
 class TestModule(HPyTest):
@@ -93,6 +91,7 @@ class TestModule(HPyTest):
         runtime and the extension can only populate that module object in the
         init slots.
         """
+        import types
         mod = self.make_module("""
             HPyDef_SLOT(create, HPy_mod_create)
             static HPy create_impl(HPyContext *ctx, HPy spec)
@@ -104,7 +103,7 @@ class TestModule(HPyTest):
                     return HPy_NULL;
 
                 ns_type = HPy_GetAttr_s(ctx, types, "SimpleNamespace");
-                if (HPy_IsNull(types))
+                if (HPy_IsNull(ns_type))
                     goto cleanup;
                 dict = HPyDict_New(ctx);
                 HPy_SetItem_s(ctx, dict, "spec", spec);
@@ -144,6 +143,7 @@ class TestModule(HPyTest):
         there are any actual use-cases, the purpose of the 'create' slot is to
         create non-builtin-module objects.
         """
+        import pytest
         expected_message = "HPy_mod_create slot returned a builtin module " \
                            "object. This is currently not supported."
         with pytest.raises(SystemError, match=expected_message):
@@ -171,6 +171,7 @@ class TestModule(HPyTest):
             """)
 
     def test_HPyModule_create_raises(self):
+        import pytest
         with pytest.raises(RuntimeError, match="Test error"):
             self.make_module("""
                 HPyDef_SLOT(create, HPy_mod_create)
@@ -197,6 +198,7 @@ class TestModule(HPyTest):
             """)
 
     def test_HPyModule_create_and_nondefault_values(self):
+        import pytest
         expected_message = r'^HPyModuleDef defines a HPy_mod_create slot.*'
         with pytest.raises(SystemError, match=expected_message):
             self.make_module("""
@@ -224,6 +226,7 @@ class TestModule(HPyTest):
             """)
 
     def test_HPyModule_create_and_exec_slots(self):
+        import pytest
         expected_message = r'^HPyModuleDef defines a HPy_mod_create slot.*'
         with pytest.raises(SystemError, match=expected_message):
             self.make_module("""
@@ -261,6 +264,7 @@ class TestModule(HPyTest):
         """
         The simplest fully declarative module creation.
         """
+        import pytest
         expected_message = "HPy does not permit HPyModuleDef.size < 0"
         with pytest.raises(SystemError, match=expected_message):
             self.make_module("""

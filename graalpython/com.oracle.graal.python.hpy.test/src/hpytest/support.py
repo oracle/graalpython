@@ -49,16 +49,19 @@ def make_hpy_abi_fixture(ABIs, class_fixture=False):
     class TestFoo(HPyTest):
         hpy_abi = make_hpy_abi_fixture('with hybrid', class_fixture=True)
     """
-    if ABIs == 'default':
-        ABIs = ['cpython', 'universal', 'debug']
-    elif ABIs == 'with hybrid':
-        ABIs = ['cpython', 'hybrid', 'hybrid+debug']
-    elif isinstance(ABIs, list):
+    is_cpython = not hasattr(sys, "implementation") or sys.implementation.name == 'cpython'
+    if isinstance(ABIs, list):
         pass
     else:
-        raise ValueError("ABIs must be 'default', 'with hybrid' "
-                         "or a list of strings. Got: %s" % ABIs)
-
+        if ABIs == 'default':
+            ABIs = ['universal', 'debug']
+        elif ABIs == 'with hybrid':
+            ABIs = ['hybrid', 'hybrid+debug']
+        else:
+            raise ValueError("ABIs must be 'default', 'with hybrid' "
+                             "or a list of strings. Got: %s" % ABIs)
+        if is_cpython:
+            ABIs.append('cpython')
     if class_fixture:
         @pytest.fixture(params=ABIs)
         def hpy_abi(self, request):
@@ -494,15 +497,6 @@ class HPyTest:
             method.
         """
         return True
-
-    def supports_refcounts(self):
-        """ Returns True if the underlying Python implementation supports
-            the vectorcall protocol.
-
-            By default, this returns True for Python version 3.8+ on all
-            implementations.
-        """
-        return sys.version_info >= (3, 8)
 
 
 class HPyDebugCapture:

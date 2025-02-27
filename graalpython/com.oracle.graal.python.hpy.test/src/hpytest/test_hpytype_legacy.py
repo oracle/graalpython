@@ -1,6 +1,7 @@
 """ HPyType tests on legacy types. """
 
 import pytest
+import sys
 from .support import HPyTest, make_hpy_abi_fixture
 from .test_hpytype import PointTemplate, TestType as _TestType
 
@@ -256,6 +257,57 @@ class TestLegacyType(_TestType):
                 @EXPORT_TYPE("Dummy", Dummy_spec)
                 @INIT
             """)
+
+    @pytest.mark.skipif(sys.version_info < (3, 9), reason="not for python<3.9") 
+    def test_legacy_class_method(self):
+        mod = self.make_module("""
+            @DEFINE_PointObject
+            @DEFINE_Point_xy
+            static PyObject * point_class_getitem(PyObject *cls, PyObject *args)
+            {
+                Py_ssize_t args_len = PyTuple_Check(args) ? PyTuple_Size(args) : 1;
+                if (args_len != 1) {
+                    return PyErr_Format(PyExc_TypeError,
+                                        "Too %s arguments for %s",
+                                        args_len > 1 ? "many" : "few",
+                                        ((PyTypeObject *)cls)->tp_name);
+                }
+                return Py_GenericAlias(cls, args);
+            }
+
+            static PyMethodDef point_methods[] = {
+                /* for typing; requires python >= 3.9 */
+                {"__class_getitem__",
+                    (PyCFunction)point_class_getitem,
+                    METH_CLASS | METH_O, NULL},
+                {NULL, NULL, 0, NULL}           /* sentinel */
+            };
+
+
+            static PyType_Slot Point_slots[] = {
+                {Py_tp_methods, point_methods},
+                {Py_tp_new, (void*)PyType_GenericNew},
+                {0, NULL},
+            };
+            static HPyDef *Point_defines[] = {&Point_x, &Point_y, NULL};
+            static HPyType_Spec Point_spec = {
+                .name = "mytest.Point",
+                .basicsize = sizeof(PointObject),
+                .builtin_shape = SHAPE(PointObject),
+                .legacy_slots = Point_slots,
+                .defines = Point_defines,
+            };
+
+            @EXPORT_TYPE("Point", Point_spec)
+            @INIT
+        """)
+        # Calls __class_getitem__
+        t = mod.Point[int]
+        assert str(t) == "mytest.Point[int]"
+        pt = mod.Point()
+        assert pt.x == 0
+        assert pt.y == 0
+
 
 class TestCustomLegacyFeatures(HPyTest):
 

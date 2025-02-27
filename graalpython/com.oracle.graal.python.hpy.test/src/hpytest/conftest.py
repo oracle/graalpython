@@ -1,7 +1,6 @@
 import pytest
 from .support import ExtensionCompiler, DefaultExtensionTemplate,\
     PythonSubprocessRunner, HPyDebugCapture, make_hpy_abi_fixture
-from hpy.debug.leakdetector import LeakDetector
 from pathlib import Path
 
 IS_VALGRIND_RUN = False
@@ -48,6 +47,7 @@ def leakdetector(hpy_abi):
     """
     Automatically detect leaks when the hpy_abi == 'debug'
     """
+    from hpy.debug.leakdetector import LeakDetector
     if 'debug' in hpy_abi:
         with LeakDetector() as ld:
             yield ld
