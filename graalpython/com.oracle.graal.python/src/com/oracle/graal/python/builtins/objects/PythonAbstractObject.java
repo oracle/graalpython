@@ -97,13 +97,13 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -125,7 +125,6 @@ import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -200,9 +199,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     private static final TruffleString T_PRIVATE_PREFIX = tsLiteral("__");
     private static final int PRIVATE_PREFIX_LENGTH = T_PRIVATE_PREFIX.codePointLengthUncached(TS_ENCODING);
     private PythonAbstractObjectNativeWrapper nativeWrapper;
-
-    // @ImportStatic doesn't work for this for some reason
-    protected static final SpecialMethodSlot Next = SpecialMethodSlot.Next;
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
 
@@ -1730,8 +1726,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastToJavaBooleanNode toBooleanNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode raiseNode,
-                    @Shared("getClass") @Cached(inline = false) GetClassNode getClassNode,
-                    @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupNext,
+                    @Cached PyIterCheckNode checkNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -1741,7 +1736,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (behavior != null) {
                 return getValue.executeBoolean(inliningTarget, behavior, method, toBooleanNode, raiseNode, this);
             } else {
-                return lookupNext.execute(getClassNode.executeCached(this)) != PNone.NO_VALUE;
+                return checkNode.execute(inliningTarget, this);
             }
         } finally {
             gil.release(mustRelease);

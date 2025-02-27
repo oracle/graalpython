@@ -71,7 +71,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
@@ -149,7 +148,6 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 public enum SpecialMethodSlot {
     Dict(T___DICT__),
 
-    Next(T___NEXT__),
     Await(T___AWAIT__, AM_AWAIT),
 
     AEnter(T___AENTER__),
@@ -748,9 +746,6 @@ public enum SpecialMethodSlot {
                 }
                 break;
             case 'n' * 26 + 'e':    // ne
-                if (eqNode.execute(name, T___NEXT__, TS_ENCODING)) {
-                    return Next;
-                }
                 if (eqNode.execute(name, T___NEW__, TS_ENCODING)) {
                     return New;
                 }
