@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -258,7 +258,6 @@ _PyModule_CreateInitialized(PyModuleDef* module, int module_api_version)
     return (PyObject*)m;
 }
 
-#if 0 // GraalPy change
 PyObject *
 PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_version)
 {
@@ -340,8 +339,12 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
     }
 
     if (PyModule_Check(m)) {
-        ((PyModuleObject*)m)->md_state = NULL;
-        ((PyModuleObject*)m)->md_def = def;
+        // GraalPy change: avoid direct struct access
+        GraalPy_set_PyModuleObject_md_state((PyModuleObject *)m, NULL);
+        GraalPy_set_PyModuleObject_md_def((PyModuleObject *)m, def);
+        // End of GraalPy change, CPython code was next two lines
+        // ((PyModuleObject*)m)->md_state = NULL;
+        // ((PyModuleObject*)m)->md_def = def;
     } else {
         if (def->m_size > 0 || def->m_traverse || def->m_clear || def->m_free) {
             PyErr_Format(
@@ -361,10 +364,16 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
     }
 
     if (def->m_methods != NULL) {
-        ret = _add_methods_to_object(m, nameobj, def->m_methods);
-        if (ret != 0) {
-            goto error;
+        // GraalPy change: use PyModule_AddFunctions instead of _add_methods_to_object
+        if (PyModule_AddFunctions(m, def->m_methods) != 0) {
+            Py_DECREF(m);
+            return NULL;
         }
+        // End of GraalPy change, original code below
+        // ret = _add_methods_to_object(m, nameobj, def->m_methods);
+        // if (ret != 0) {
+        //     goto error;
+        // }
     }
 
     if (def->m_doc != NULL) {
@@ -397,16 +406,27 @@ PyModule_ExecDef(PyObject *module, PyModuleDef *def)
 
     if (def->m_size >= 0) {
         PyModuleObject *md = (PyModuleObject*)module;
-        if (md->md_state == NULL) {
-            /* Always set a state pointer; this serves as a marker to skip
-             * multiple initialization (importlib.reload() is no-op) */
-            md->md_state = PyMem_Malloc(def->m_size);
-            if (!md->md_state) {
+        // GraalPy change: avoid direct struct access
+        if (GraalPy_get_PyModuleObject_md_state(md) == NULL) {
+            void* md_state = PyMem_Malloc(def->m_size);
+            if (!md_state) {
                 PyErr_NoMemory();
                 return -1;
             }
-            memset(md->md_state, 0, def->m_size);
+            memset(md_state, 0, def->m_size);
+            GraalPy_set_PyModuleObject_md_state(md, md_state);
         }
+        // End GraalPy change, original code below
+        // if (md->md_state == NULL) {
+        //     /* Always set a state pointer; this serves as a marker to skip
+        //      * multiple initialization (importlib.reload() is no-op) */
+        //     md->md_state = PyMem_Malloc(def->m_size);
+        //     if (!md->md_state) {
+        //         PyErr_NoMemory();
+        //         return -1;
+        //     }
+        //     memset(md->md_state, 0, def->m_size);
+        // }
     }
 
     if (def->m_slots == NULL) {
@@ -447,7 +467,6 @@ PyModule_ExecDef(PyObject *module, PyModuleDef *def)
     }
     return 0;
 }
-#endif // GraalPy change
 
 int
 PyModule_AddFunctions(PyObject *m, PyMethodDef *functions)
