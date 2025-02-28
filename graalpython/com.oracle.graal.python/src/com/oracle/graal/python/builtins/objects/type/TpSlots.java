@@ -1459,27 +1459,25 @@ public record TpSlots(TpSlot nb_bool, //
                 }
             }
 
+            TpSlot newValue = null;
             if (specific != null && !useGeneric) {
-                slots.set(slot, specific);
-            } else {
-                TpSlot newValue = null;
-                if (generic != null) {
-                    newValue = generic.create(genericCallables, genericCallablesNames, klass);
-                }
-                slots.set(slot, newValue);
-                if (klass instanceof PythonAbstractNativeObject nativeClass) {
-                    // Update the slots on the native side if this is a native class
-                    toNative(nativeClass.getPtr(), slot, newValue, nativeNull);
-                }
-                if (klass instanceof PythonManagedClass managedClass) {
-                    // Update the slots on the native side if this is a managed class that has a
-                    // native mirror allocated already
-                    PythonClassNativeWrapper classNativeWrapper = managedClass.getClassNativeWrapper();
-                    if (classNativeWrapper != null) {
-                        Object replacement = classNativeWrapper.getReplacementIfInitialized();
-                        if (replacement != null) {
-                            toNative(replacement, slot, newValue, nativeNull);
-                        }
+                newValue = specific;
+            } else if (generic != null) {
+                newValue = generic.create(genericCallables, genericCallablesNames, klass);
+            }
+            slots.set(slot, newValue);
+            if (klass instanceof PythonAbstractNativeObject nativeClass) {
+                // Update the slots on the native side if this is a native class
+                toNative(nativeClass.getPtr(), slot, newValue, nativeNull);
+            }
+            if (klass instanceof PythonManagedClass managedClass) {
+                // Update the slots on the native side if this is a managed class that has a
+                // native mirror allocated already
+                PythonClassNativeWrapper classNativeWrapper = managedClass.getClassNativeWrapper();
+                if (classNativeWrapper != null) {
+                    Object replacement = classNativeWrapper.getReplacementIfInitialized();
+                    if (replacement != null) {
+                        toNative(replacement, slot, newValue, nativeNull);
                     }
                 }
             }
