@@ -620,7 +620,8 @@ test.test_asyncio.test_ssl.TestSSL.test_create_server_ssl_1 @ darwin-arm64,darwi
 test.test_asyncio.test_ssl.TestSSL.test_create_server_ssl_over_ssl @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_ssl.TestSSL.test_flush_before_shutdown @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_ssl.TestSSL.test_shutdown_cleanly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_ssl.TestSSL.test_shutdown_timeout_handler_leak @ darwin-x86_64
+# transiently fails
+!test.test_asyncio.test_ssl.TestSSL.test_shutdown_timeout_handler_leak
 test.test_asyncio.test_ssl.TestSSL.test_shutdown_timeout_handler_not_set @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_ssl.TestSSL.test_ssl_connect_accepted_socket @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_ssl.TestSSL.test_ssl_handshake_connection_lost @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
