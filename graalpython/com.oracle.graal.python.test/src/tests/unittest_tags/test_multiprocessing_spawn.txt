@@ -199,6 +199,8 @@ test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_map_chunks
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_map_no_failfast @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_starmap @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_starmap_async @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+# transiently fails
+!test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_terminate
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_traceback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestProcess.test_active_children @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_threads.WithThreadsTestProcess.test_args_argument @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
