@@ -943,6 +943,27 @@ def test_PyType_Modified_doesnt_change_slots():
     assert tester.call_PySequence_GetItem(1) == 'sq_item'
 
 
+class DelegateSlot:
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj, objtype=None):
+        return getattr(obj.delegate, self.name)
+
+
+class DelegateInplaceSlot(DelegateSlot):
+    def __get__(self, obj, objtype=None):
+        method = getattr(obj.delegate, self.name, None)
+        if method is None:
+            method = getattr(obj.delegate, self.name.replace('__i', '__'))
+
+        def wrapper(*args):
+            self.delegate = method(*args)
+            return self
+
+        return wrapper
+
+
 def test_nb_slot_calls():
     slots = [
         ('proxy_nb_binary_slot', 'nb_add'),
@@ -1060,92 +1081,59 @@ def test_nb_slot_calls():
         **{slot: f'proxy_{slot}' for _, slot in slots},
     )
 
-    def _unary_op(op):
-        def fn(a):
-            return op(a.delegate)
-
-        return fn
-
-    def _binary_op(op):
-        def fn(a, b):
-            return op(a.delegate, b)
-
-        return fn
-
-    def _binary_op_r(op):
-        def fn(a, b):
-            return op(b, a.delegate)
-
-        return fn
-
-    def _binary_op_inplace(op):
-        def fn(a, b):
-            a.delegate = op(a.delegate, b)
-            return a
-
-        return fn
-
     class PureSlotProxy:
         def __init__(self, delegate):
             self.delegate = delegate
 
-        __add__ = _binary_op(operator.add)
-        __radd__ = _binary_op_r(operator.add)
-        __iadd__ = _binary_op_inplace(operator.add)
-        __sub__ = _binary_op(operator.sub)
-        __rsub__ = _binary_op_r(operator.sub)
-        __isub__ = _binary_op_inplace(operator.sub)
-        __mul__ = _binary_op(operator.mul)
-        __rmul__ = _binary_op_r(operator.mul)
-        __imul__ = _binary_op_inplace(operator.mul)
-        __mod__ = _binary_op(operator.mod)
-        __rmod__ = _binary_op_r(operator.mod)
-        __imod__ = _binary_op_inplace(operator.mod)
-        __floordiv__ = _binary_op(operator.floordiv)
-        __rfloordiv__ = _binary_op_r(operator.floordiv)
-        __ifloordiv__ = _binary_op_inplace(operator.floordiv)
-        __truediv__ = _binary_op(operator.truediv)
-        __rtruediv__ = _binary_op_r(operator.truediv)
-        __itruediv__ = _binary_op_inplace(operator.truediv)
-        __divmod__ = _binary_op(divmod)
-        __rdivmod__ = _binary_op_r(divmod)
-
-        def __pow__(self, power, modulo=None):
-            return pow(self.delegate, power, modulo)
-
-        def __rpow__(self, other):
-            return other ** self.delegate
-
-        def __ipow__(self, other):
-            self.delegate = self.delegate ** other
-            return self
-
-        __pos__ = _unary_op(operator.pos)
-        __neg__ = _unary_op(operator.neg)
-        __abs__ = _unary_op(abs)
-        __bool__ = _unary_op(bool)
-        __invert__ = _unary_op(operator.invert)
-        __index__ = _unary_op(operator.index)
-        __int__ = _unary_op(int)
-        __float__ = _unary_op(float)
-        __lshift__ = _binary_op(operator.lshift)
-        __rlshift__ = _binary_op_r(operator.lshift)
-        __ilshift__ = _binary_op_inplace(operator.lshift)
-        __rshift__ = _binary_op(operator.rshift)
-        __rrshift__ = _binary_op_r(operator.rshift)
-        __irshift__ = _binary_op_inplace(operator.rshift)
-        __and__ = _binary_op(operator.and_)
-        __rand__ = _binary_op_r(operator.and_)
-        __iand__ = _binary_op_inplace(operator.and_)
-        __or__ = _binary_op(operator.or_)
-        __ror__ = _binary_op_r(operator.or_)
-        __ior__ = _binary_op_inplace(operator.or_)
-        __xor__ = _binary_op(operator.xor)
-        __rxor__ = _binary_op_r(operator.xor)
-        __ixor__ = _binary_op_inplace(operator.xor)
-        __matmul__ = _binary_op(operator.matmul)
-        __rmatmul__ = _binary_op_r(operator.matmul)
-        __imatmul__ = _binary_op_inplace(operator.matmul)
+        __add__ = DelegateSlot()
+        __radd__ = DelegateSlot()
+        __iadd__ = DelegateInplaceSlot()
+        __sub__ = DelegateSlot()
+        __rsub__ = DelegateSlot()
+        __isub__ = DelegateInplaceSlot()
+        __mul__ = DelegateSlot()
+        __rmul__ = DelegateSlot()
+        __imul__ = DelegateInplaceSlot()
+        __mod__ = DelegateSlot()
+        __rmod__ = DelegateSlot()
+        __imod__ = DelegateInplaceSlot()
+        __floordiv__ = DelegateSlot()
+        __rfloordiv__ = DelegateSlot()
+        __ifloordiv__ = DelegateInplaceSlot()
+        __truediv__ = DelegateSlot()
+        __rtruediv__ = DelegateSlot()
+        __itruediv__ = DelegateInplaceSlot()
+        __divmod__ = DelegateSlot()
+        __rdivmod__ = DelegateSlot()
+        __pow__ = DelegateSlot()
+        __rpow__ = DelegateSlot()
+        __ipow__ = DelegateInplaceSlot()
+        __pos__ = DelegateSlot()
+        __neg__ = DelegateSlot()
+        __abs__ = DelegateSlot()
+        __bool__ = DelegateSlot()
+        __invert__ = DelegateSlot()
+        __index__ = DelegateSlot()
+        __int__ = DelegateSlot()
+        __float__ = DelegateSlot()
+        __lshift__ = DelegateSlot()
+        __rlshift__ = DelegateSlot()
+        __ilshift__ = DelegateInplaceSlot()
+        __rshift__ = DelegateSlot()
+        __rrshift__ = DelegateSlot()
+        __irshift__ = DelegateInplaceSlot()
+        __and__ = DelegateSlot()
+        __rand__ = DelegateSlot()
+        __iand__ = DelegateInplaceSlot()
+        __or__ = DelegateSlot()
+        __ror__ = DelegateSlot()
+        __ior__ = DelegateInplaceSlot()
+        __xor__ = DelegateSlot()
+        __rxor__ = DelegateSlot()
+        __ixor__ = DelegateInplaceSlot()
+        __matmul__ = DelegateSlot()
+        __rmatmul__ = DelegateSlot()
+        __imatmul__ = DelegateInplaceSlot()
 
     class ObjWithMatmul:
         def __matmul__(self, other):
@@ -1318,20 +1306,11 @@ def test_sq_slot_calls():
         def __init__(self, delegate):
             self.delegate = delegate
 
-        def __len__(self):
-            return len(self.delegate)
-
-        def __getitem__(self, item):
-            return self.delegate[item]
-
-        def __setitem__(self, key, value):
-            self.delegate[key] = value
-
-        def __delitem__(self, key):
-            del self.delegate[key]
-
-        def __contains__(self, item):
-            return item in self.delegate
+        __len__ = DelegateSlot()
+        __getitem__ = DelegateSlot()
+        __setitem__ = DelegateSlot()
+        __delitem__ = DelegateSlot()
+        __contains__ = DelegateSlot()
 
     for obj in [NativeSqSlotProxy([1]), NativeSqSlotProxy(PureSlotProxy([1]))]:
         assert len(obj) == 1
@@ -1430,17 +1409,11 @@ def test_mp_slot_calls():
         def __init__(self, delegate):
             self.delegate = delegate
 
-        def __len__(self):
-            return len(self.delegate)
-
-        def __getitem__(self, item):
-            return self.delegate[item]
-
-        def __setitem__(self, key, value):
-            self.delegate[key] = value
-
-        def __delitem__(self, key):
-            del self.delegate[key]
+        __len__ = DelegateSlot()
+        __getitem__ = DelegateSlot()
+        __setitem__ = DelegateSlot()
+        __delitem__ = DelegateSlot()
+        __contains__ = DelegateSlot()
 
     for obj in [NativeMpSlotProxy({'a': 1}), NativeMpSlotProxy(PureSlotProxy({'a': 1}))]:
         assert len(obj) == 1
@@ -1496,11 +1469,8 @@ def test_tp_slot_calls():
         def __init__(self, delegate):
             self.delegate = delegate
 
-        def __iter__(self):
-            return iter(self.delegate)
-
-        def __next__(self):
-            return next(self.delegate)
+        __iter__ = DelegateSlot()
+        __next__ = DelegateSlot()
 
     for obj in [NativeSlotProxy([1]), NativeSlotProxy(PureSlotProxy([1]))]:
         assert isinstance(iter(obj), type(iter([])))
