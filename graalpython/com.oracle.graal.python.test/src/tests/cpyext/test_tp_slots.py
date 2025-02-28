@@ -36,9 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import operator
+import itertools
 import sys
 
+import operator
 from . import CPyExtType, CPyExtHeapType, compile_module_from_string, assert_raises, compile_module_from_file
 
 
@@ -1478,3 +1479,77 @@ def test_tp_slot_calls():
     for obj in [NativeSlotProxy(iter([1])), NativeSlotProxy(PureSlotProxy(iter([1])))]:
         assert next(obj) == 1
         assert_raises(StopIteration, next, obj)
+
+
+def test_tp_iternext_not_implemented():
+    class ManagedTypeWithVanishingNext:
+        def __next__(self):
+            del type(self).__next__
+            return True
+
+    NativeTypeWithVanishingNext = CPyExtHeapType(
+        name='TypeWithVanishingNext',
+        code=r'''
+            static PyObject* tp_iternext(TypeWithVanishingNextObject* self) {
+                if (PyObject_DelAttrString((PyObject*)Py_TYPE(self), "__next__") < 0)
+                    return NULL;
+                Py_RETURN_TRUE;
+            }
+        ''',
+        slots=['{Py_tp_iternext, tp_iternext}'],
+    )
+
+    tester = CPyExtType(
+        'IterableTester',
+        r'''
+        PyObject* iter_check(PyObject* unused, PyObject* obj) {
+            return PyBool_FromLong(PyIter_Check(obj));
+        }
+        PyObject* not_impl_check(PyObject* unused, PyObject* obj) {
+            return PyBool_FromLong(Py_TYPE(obj)->tp_iternext == _PyObject_NextNotImplemented);
+        }
+        ''',
+        tp_methods='''
+        {"PyIter_Check", iter_check, METH_O | METH_STATIC, ""},
+        {"has_not_implemented_iternext", not_impl_check, METH_O | METH_STATIC, ""}
+        ''',
+    )
+
+    for TypeWithVanishingNext in (ManagedTypeWithVanishingNext, NativeTypeWithVanishingNext):
+
+        class Iterable:
+            def __iter__(self):
+                return TypeWithVanishingNext()
+
+        try:
+            # We need to use a builtin that stores the iterator inside without rechecking it
+            i = itertools.takewhile(lambda x: x, Iterable())
+            assert next(i) is True
+            next(i)
+        except TypeError as e:
+            # We need to check the message, because it's not the one from `next`, but from _PyObject_NextNotImplemented
+            assert str(e).endswith("is not iterable")
+        else:
+            assert False
+
+        i = TypeWithVanishingNext()
+        try:
+            next(i)
+        except TypeError as e:
+            # Different message, now from `next` directly
+            assert str(e).endswith("is not an iterator")
+
+        assert not tester.PyIter_Check(i)
+        assert tester.has_not_implemented_iternext(i)
+
+    NativeTypeWithNotImplementedNext = CPyExtHeapType(
+        name='TypeWithNotImplNext',
+        slots=['{Py_tp_iternext, _PyObject_NextNotImplemented}'],
+    )
+    i = NativeTypeWithNotImplementedNext()
+    assert not tester.PyIter_Check(i)
+    assert tester.has_not_implemented_iternext(i)
+    try:
+        next(i)
+    except TypeError as e:
+        assert str(e).endswith("is not an iterator")
