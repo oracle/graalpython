@@ -122,7 +122,9 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinaryOpSlotFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinarySlotFuncWrapper;
@@ -1160,12 +1162,20 @@ public record TpSlots(TpSlot nb_bool, //
             TpSlotWrapper existingSlotWrapper = null;
             if (interop.isPointer(field)) {
                 try {
-                    Object executable = ctx.getCApiContext().getClosureExecutable(interop.asPointer(field));
+                    long fieldPointer = interop.asPointer(field);
+                    Object executable = ctx.getCApiContext().getClosureExecutable(fieldPointer);
                     if (executable instanceof TpSlotWrapper execWrapper) {
                         existingSlotWrapper = execWrapper;
                     } else if (executable != null) {
                         // This can happen for legacy slots where the delegate would be a PFunction
                         LOGGER.fine(() -> String.format("Unexpected executable for slot pointer: %s", executable));
+                    } else {
+                        Object symbol = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED);
+                        InteropLibrary symbolLibrary = InteropLibrary.getUncached(symbol);
+                        if (fieldPointer == symbolLibrary.asPointer(symbol)) {
+                            builder.set(def, TpSlotIterNext.NEXT_NOT_IMPLEMENTED);
+                            continue;
+                        }
                     }
                 } catch (UnsupportedMessageException e) {
                     throw new IllegalStateException(e);
