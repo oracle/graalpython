@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -944,18 +945,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "which", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WhichNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object which(PBuiltinFunction object) {
-            RootCallTarget callTarget = object.getCallTarget();
-            return toTruffleStringUncached(String.format("%s(%s)", object.getClass().getName(), whichCallTarget(callTarget)));
-        }
-
-        @Specialization
-        @TruffleBoundary
-        Object which(PBuiltinMethod object) {
-            return toTruffleStringUncached(String.format("%s(%s)", object.getClass().getName(), whichCallTarget(object.getBuiltinFunction().getCallTarget())));
-        }
 
         private static String whichCallTarget(RootCallTarget callTarget) {
             RootNode rootNode = callTarget.getRootNode();
@@ -970,8 +959,33 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object which(Object object) {
-            return toTruffleStringUncached(object.getClass().getName());
+        // This is a builtin for debugging, so it also includes things that should never end up in
+        // python value space
+        static Object which(Object object) {
+            if (object == null) {
+                return "null";
+            }
+            String name = object.getClass().getName();
+            Object detail = null;
+            try {
+                if (object instanceof PNone) {
+                    detail = "NO_VALUE";
+                } else if (object instanceof PBuiltinFunction fn) {
+                    detail = whichCallTarget(fn.getCallTarget());
+                } else if (object instanceof PBuiltinMethod fn) {
+                    detail = whichCallTarget(fn.getBuiltinFunction().getCallTarget());
+                } else if (object instanceof PSequence sequence && !(object instanceof PString)) {
+                    detail = sequence.getSequenceStorage();
+                } else if (object instanceof PArray array) {
+                    detail = array.getSequenceStorage();
+                } else if (object instanceof PythonAbstractNativeObject nativeObject) {
+                    detail = PythonUtils.formatPointer(nativeObject.getPtr());
+                }
+            } catch (Throwable t) {
+                detail = "Detail computation threw exception: " + t;
+            }
+            String which = detail != null ? String.format("%s(%s)", name, detail) : name;
+            return toTruffleStringUncached(which);
         }
     }
 

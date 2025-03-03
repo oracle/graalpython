@@ -2119,7 +2119,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // sum(iterable[, start])
     @Builtin(name = J_SUM, minNumOfPositionalArgs = 1, parameterNames = {"iterable", "start"})
     @GenerateNodeFactory
-    public abstract static class SumFunctionNode extends PythonBuiltinNode {
+    public abstract static class SumFunctionNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         Object sum(VirtualFrame frame, Object iterable, Object start,
@@ -2143,6 +2143,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @GenerateInline
         @GenerateCached(false)
+        @ImportStatic(PGuards.class)
         abstract static class SumIteratorNode extends Node {
             public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object iterator, Object start);
 
@@ -2194,26 +2195,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return maybeInt(inliningTarget, resultFitsInInt, longResult);
             }
 
-            @Specialization
-            static Object sumDoubleIterator(Node inliningTarget, PDoubleSequenceIterator iterator, double start,
-                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
-                double result = start;
-                while (loopProfilePrimitive.profile(inliningTarget, iterator.hasNext())) {
-                    result += iterator.next();
-                }
-                return result;
-            }
-
-            @Specialization
-            static Object sumDoubleIteratorIntStart(Node inliningTarget, PDoubleSequenceIterator iterator, int start,
+            @Specialization(guards = "isDouble(start) || isInt(start)")
+            static Object sumDoubleIterator(Node inliningTarget, PDoubleSequenceIterator iterator, Object start,
+                            @Cached InlinedConditionProfile startIsDouble,
                             @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
                 /*
-                 * Need to make sure we keep start as int if the iterator was empty
+                 * Need to make sure we keep start type if the iterator was empty
                  */
                 if (!iterator.hasNext()) {
                     return start;
                 }
-                return sumDoubleIterator(inliningTarget, iterator, start, loopProfilePrimitive);
+                double result = startIsDouble.profile(inliningTarget, start instanceof Double) ? (double) start : (int) start;
+                while (loopProfilePrimitive.profile(inliningTarget, iterator.hasNext())) {
+                    result += iterator.next();
+                }
+                return result;
             }
 
             @Fallback
