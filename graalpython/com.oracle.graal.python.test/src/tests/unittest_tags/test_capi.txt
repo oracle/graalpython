@@ -97,6 +97,12 @@ test.test_capi.test_misc.CAPITest.test_subprocess_fork_exec @ darwin-arm64,darwi
 test.test_capi.test_misc.CAPITest.test_sys_getobject @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 # Segfaults most of the time
 !test.test_capi.test_misc.CAPITest.test_trashcan_subclass
+test.test_capi.test_misc.PyMemDebugTests.test_pyobject_forbidden_bytes_is_freed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.PyMemDebugTests.test_pyobject_null_is_freed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.PyMemDebugTests.test_pyobject_uninitialized_is_freed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.PyMemMallocDebugTests.test_pyobject_forbidden_bytes_is_freed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.PyMemMallocDebugTests.test_pyobject_null_is_freed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_capi.test_misc.PyMemMallocDebugTests.test_pyobject_uninitialized_is_freed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_FrameAPI.test_frame_fback_api @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_FrameAPI.test_frame_getters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.Test_ModuleStateAccess.test_get_module_bad_def @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
