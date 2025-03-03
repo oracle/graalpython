@@ -10,7 +10,7 @@ test.test_weakref.MappingTestCase.test_make_weak_valued_dict_misc @ darwin-arm64
 test.test_weakref.MappingTestCase.test_make_weak_valued_dict_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_valued_consistency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_valued_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_valued_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
