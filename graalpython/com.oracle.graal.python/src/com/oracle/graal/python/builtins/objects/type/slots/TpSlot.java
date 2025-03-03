@@ -316,7 +316,7 @@ public abstract class TpSlot {
             RootCallTarget callTarget = createBuiltinCallTarget(core.getLanguage(), signature, factory, name);
             Builtin builtin = ((BuiltinFunctionRootNode) callTarget.getRootNode()).getBuiltin();
             PBuiltinFunction function = PFactory.createWrapperDescriptor(core.getLanguage(), tsName, type, numDefaults(builtin), 0, callTarget, this, wrapper);
-            function.setAttribute(T___DOC__, PNone.NONE);
+            function.setAttribute(T___DOC__, SlotWrapperDocstrings.getDocstring(name));
             return function;
         }
 
