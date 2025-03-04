@@ -420,6 +420,8 @@ def punittest(ars, report=False):
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
         configs.append(TestConfig("async", vm_args + ['-Dpython.AutomaticAsyncActions=false', 'com.oracle.graal.python.test', 'org.graalvm.python.embedding.test'] + async_regex + args, True, False))
+    else:
+        skip_leak_tests = True
 
     for c in configs:
         mx.log(f"Python JUnit tests configuration: {c}")
