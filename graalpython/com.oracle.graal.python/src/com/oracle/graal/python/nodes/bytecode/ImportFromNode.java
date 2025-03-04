@@ -62,6 +62,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -128,6 +129,7 @@ public abstract class ImportFromNode extends PNodeWithContext {
         }
     }
 
+    @NeverDefault
     public static ImportFromNode create() {
         return ImportFromNodeGen.create();
     }

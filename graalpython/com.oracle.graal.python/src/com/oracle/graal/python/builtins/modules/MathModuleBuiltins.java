@@ -2487,7 +2487,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(inliningTarget, errorProfile);
                     return value;
                 }
-                value = multiplyNode.execute(frame, inliningTarget, value, nextValue);
+                value = multiplyNode.execute(frame, value, nextValue);
             }
         }
     }

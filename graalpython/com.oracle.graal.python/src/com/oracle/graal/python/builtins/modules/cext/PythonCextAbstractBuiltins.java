@@ -266,9 +266,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
-                        @Bind Node inliningTarget,
                         @Cached PyNumberAddNode addNode) {
-            return addNode.execute(null, inliningTarget, o1, o2);
+            return addNode.execute(null, o1, o2);
         }
     }
 
@@ -287,9 +286,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         static Object doGeneric(Object o1, Object o2,
-                        @Bind Node inliningTarget,
                         @Cached PyNumberMultiplyNode multiplyNode) {
-            return multiplyNode.execute(null, inliningTarget, o1, o2);
+            return multiplyNode.execute(null, o1, o2);
         }
     }
 
@@ -528,9 +526,8 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization
         Object doGeneric(Object o1, Object o2, Object o3,
-                        @Bind("this") Node inliningTarget,
                         @Cached PyNumberPowerNode powerNode) {
-            return powerNode.execute(null, inliningTarget, o1, o2, o3);
+            return powerNode.execute(null, o1, o2, o3);
         }
     }
 
