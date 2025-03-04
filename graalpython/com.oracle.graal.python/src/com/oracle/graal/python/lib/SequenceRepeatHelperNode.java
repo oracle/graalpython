@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,54 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.expression;
+package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
-/**
- * A simple base class for root nodes that call an arithmetic operation.
- */
-abstract class CallArithmeticRootNode extends PRootNode {
+@GenerateInline(false)
+@GenerateUncached
+public abstract class SequenceRepeatHelperNode extends Node {
+    abstract Object execute(VirtualFrame frame, TpSlot slot, Object seq, Object n);
 
-    @Child private CalleeContext calleeContext;
-
-    protected CallArithmeticRootNode(TruffleLanguage<?> language) {
-        super(language);
-    }
-
-    @Override
-    public boolean isInternal() {
-        return true;
-    }
-
-    @Override
-    public boolean isPythonInternal() {
-        return true;
-    }
-
-    @Override
-    public Object execute(VirtualFrame frame) {
-        if (calleeContext == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            calleeContext = insert(CalleeContext.create());
-        }
-
-        calleeContext.enter(frame);
-        try {
-            return doCall(frame);
-        } finally {
-            calleeContext.exit(frame, this);
+    @Specialization
+    static Object sequenceRepeat(VirtualFrame frame, TpSlot slot, Object seq, Object n,
+                    @Bind Node inliningTarget,
+                    @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PyNumberAsSizeNode asSizeNode,
+                    @Cached TpSlotSizeArgFun.CallSlotSizeArgFun callSlotNode,
+                    @Cached PRaiseNode raiseNode) {
+        if (indexCheckNode.execute(inliningTarget, n)) {
+            int count = asSizeNode.execute(frame, inliningTarget, n, PythonBuiltinClassType.OverflowError);
+            return callSlotNode.execute(frame, inliningTarget, slot, seq, count);
+        } else {
+            throw raiseNonIntSqMul(inliningTarget, n, raiseNode);
         }
     }
 
-    protected abstract Object doCall(VirtualFrame frame);
-
-    @Override
-    public boolean setsUpCalleeContext() {
-        return true;
+    @InliningCutoff
+    private static PException raiseNonIntSqMul(Node inliningTarget, Object n, PRaiseNode raiseNode) {
+        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, n);
     }
 }

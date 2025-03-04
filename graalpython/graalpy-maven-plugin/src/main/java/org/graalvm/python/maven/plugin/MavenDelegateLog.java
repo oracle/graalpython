@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,20 +41,73 @@
 package org.graalvm.python.maven.plugin;
 
 import org.apache.maven.plugin.logging.Log;
-import org.graalvm.python.embedding.tools.exec.SubprocessLog;
+import org.graalvm.python.embedding.tools.exec.BuildToolLog;
 
-final class MavenDelegateLog implements SubprocessLog {
+final class MavenDelegateLog implements BuildToolLog {
     private final Log delegate;
 
     MavenDelegateLog(Log delegate) {
         this.delegate = delegate;
     }
 
-    public void log(CharSequence var1) {
-        delegate.info(var1);
+    @Override
+    public void info(String txt) {
+        delegate.info(txt);
     }
 
-    public void log(CharSequence var1, Throwable t) {
-        delegate.error(var1, t);
+    @Override
+    public void warning(String txt) {
+        delegate.warn(txt);
+    }
+
+    @Override
+    public void warning(String txt, Throwable t) {
+        delegate.warn(txt, t);
+    }
+
+    @Override
+    public void error(String txt) {
+        delegate.error(txt);
+    }
+
+    @Override
+    public void debug(String txt) {
+        delegate.debug(txt);
+    }
+
+    @Override
+    public void subProcessOut(String out) {
+        // don't annotate output with [INFO]
+        System.out.println(out);
+    }
+
+    @Override
+    public void subProcessErr(String err) {
+        delegate.error(err);
+    }
+
+    @Override
+    public boolean isDebugEnabled() {
+        return delegate.isDebugEnabled();
+    }
+
+    @Override
+    public boolean isWarningEnabled() {
+        return delegate.isWarnEnabled();
+    }
+
+    @Override
+    public boolean isErrorEnabled() {
+        return delegate.isErrorEnabled();
+    }
+
+    @Override
+    public boolean isSubprocessOutEnabled() {
+        return delegate.isInfoEnabled();
+    }
+
+    @Override
+    public boolean isInfoEnabled() {
+        return delegate.isInfoEnabled();
     }
 }

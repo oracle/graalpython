@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -65,9 +65,14 @@ public final class BoolBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonBuiltinNode {
+        @Specialization
+        static TruffleString doBoolean(boolean self) {
+            return self ? T_TRUE : T_FALSE;
+        }
+
         @Specialization
         public static TruffleString doLong(long self) {
             return self == 1 ? T_TRUE : T_FALSE;
@@ -85,7 +90,6 @@ public final class BoolBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_and, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class AndNode extends BinaryOpBuiltinNode {
         @Specialization
@@ -101,7 +105,6 @@ public final class BoolBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_or, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization
@@ -117,7 +120,6 @@ public final class BoolBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_xor, isComplex = true)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class XorNode extends BinaryOpBuiltinNode {
         @Specialization

@@ -47,7 +47,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT_T
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerAndFloatTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -66,7 +66,7 @@ import com.oracle.truffle.api.nodes.Node;
 /**
  * Equivalent of {@code _PyTime_FromObject} from CPython.
  */
-@TypeSystemReference(PythonArithmeticTypes.class)
+@TypeSystemReference(PythonIntegerAndFloatTypes.class)
 @GenerateInline
 @GenerateCached(false)
 public abstract class PyTimeFromObjectNode extends PNodeWithContext {

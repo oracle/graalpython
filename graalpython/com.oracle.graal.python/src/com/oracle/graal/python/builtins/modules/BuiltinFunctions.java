@@ -109,6 +109,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
@@ -199,7 +200,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -230,7 +230,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -333,7 +333,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object absObject(VirtualFrame frame, Object object,
                         @Cached PyNumberAbsoluteNode absoluteNode) {
-            return absoluteNode.executeCached(frame, object);
+            return absoluteNode.execute(frame, object);
         }
     }
 
@@ -552,7 +552,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class BinOctHexHelperNode extends Node {
 
         @FunctionalInterface
@@ -594,20 +594,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        static TruffleString doD(double x, TruffleString prefix, int radix, LongToString longToString,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, (Object) x);
-        }
-
-        @Specialization
         static TruffleString doPI(PInt x, TruffleString prefix, int radix, @SuppressWarnings("unused") LongToString longToString,
                         @Shared @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
             BigInteger value = x.getValue();
             return buildString(value.signum() < 0, prefix, fromJavaStringNode.execute(bigToString(radix, PInt.abs(value)), TS_ENCODING));
         }
 
-        @Specialization(replaces = {"doL", "doD", "doPI"})
+        @Specialization(replaces = {"doL", "doPI"})
         static TruffleString doO(VirtualFrame frame, Node inliningTarget, Object x, TruffleString prefix, int radix, LongToString longToString,
                         @Exclusive @Cached InlinedConditionProfile isMinLong,
                         @Cached PyNumberIndexNode indexNode,
@@ -635,7 +628,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // bin(object)
     @Builtin(name = J_BIN, minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class BinNode extends PythonUnaryBuiltinNode {
         static final TruffleString T_BIN_PREFIX = tsLiteral("0b");
@@ -655,7 +647,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // oct(object)
     @Builtin(name = J_OCT, minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class OctNode extends PythonUnaryBuiltinNode {
         static final TruffleString T_OCT_PREFIX = tsLiteral("0o");
@@ -675,7 +666,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // hex(object)
     @Builtin(name = J_HEX, minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class HexNode extends PythonUnaryBuiltinNode {
         static final TruffleString T_HEX_PREFIX = tsLiteral("0x");
@@ -1086,6 +1076,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if (featureVersion < 7) {
                     compilerFlags.add(AbstractParser.Flags.ASYNC_HACKS);
                 }
+                if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
+                    PythonLanguage.LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
+                }
                 Parser parser = Compiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 parserCb.triggerDeprecationWarnings();
@@ -1295,8 +1288,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object delattr(VirtualFrame frame, Object object, Object name,
                         @Bind("this") Node inliningTarget,
-                        @Cached DeleteAttributeNode delNode) {
-            delNode.execute(frame, inliningTarget, object, name);
+                        @Cached PyObjectSetAttrO setAttr) {
+            setAttr.execute(frame, inliningTarget, object, name, NO_VALUE);
             return PNone.NONE;
         }
     }
@@ -1632,7 +1625,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             isTrue = castToBooleanNode.execute(frame, e.getResult());
                         }
                     } else {
-                        isTrue = castToBooleanNode.execute(frame, compare.executeObject(frame, nextKey, currentKey));
+                        isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
                     }
                     if (isTrue) {
                         currentKey = nextKey;
@@ -1676,7 +1669,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     isTrue = castToBooleanNode.execute(frame, e.getResult());
                 }
             } else {
-                isTrue = castToBooleanNode.execute(frame, compare.executeObject(frame, nextKey, currentKey));
+                isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
             }
             if (isTrue) {
                 currentKey = nextKey;
@@ -1696,7 +1689,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             isTrue = castToBooleanNode.execute(frame, e.getResult());
                         }
                     } else {
-                        isTrue = castToBooleanNode.execute(frame, compare.executeObject(frame, nextKey, currentKey));
+                        isTrue = castToBooleanNode.execute(frame, compare.execute(frame, nextKey, currentKey));
                     }
                     if (isTrue) {
                         currentKey = nextKey;

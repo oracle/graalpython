@@ -116,10 +116,6 @@ public abstract class ToNativeTypeNode {
         return (obj.getMethodsFlags() & MethodsFlags.ASYNC_METHODS) != 0;
     }
 
-    private static boolean hasSequenceMethods(PythonManagedClass obj) {
-        return (obj.getMethodsFlags() & MethodsFlags.SEQUENCE_METHODS) != 0;
-    }
-
     private static Object allocatePyAsyncMethods(PythonManagedClass obj, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyAsyncMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
@@ -145,25 +141,10 @@ public abstract class ToNativeTypeNode {
         return mem;
     }
 
-    private static Object allocatePyNumberMethods(PythonManagedClass obj, TpSlots slots, Object nullValue) {
+    private static Object allocatePyNumberMethods(TpSlots slots, Object nullValue) {
         Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyNumberMethods);
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-
         writeGroupSlots(CFields.PyTypeObject__tp_as_number, slots, writePointerNode, mem, nullValue);
-
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_add, getSlot(obj, SlotMethodDef.NB_INPLACE_ADD));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_and, getSlot(obj, SlotMethodDef.NB_INPLACE_AND));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_floor_divide, getSlot(obj, SlotMethodDef.NB_INPLACE_FLOOR_DIVIDE));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_lshift, getSlot(obj, SlotMethodDef.NB_INPLACE_LSHIFT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_matrix_multiply, nullValue);
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_multiply, getSlot(obj, SlotMethodDef.NB_INPLACE_MULTIPLY));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_or, getSlot(obj, SlotMethodDef.NB_INPLACE_OR));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_power, getSlot(obj, SlotMethodDef.NB_INPLACE_POWER));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_remainder, getSlot(obj, SlotMethodDef.NB_INPLACE_REMAINDER));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_rshift, getSlot(obj, SlotMethodDef.NB_INPLACE_RSHIFT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_subtract, getSlot(obj, SlotMethodDef.NB_INPLACE_SUBTRACT));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_true_divide, getSlot(obj, SlotMethodDef.NB_INPLACE_TRUE_DIVIDE));
-        writePointerNode.write(mem, CFields.PyNumberMethods__nb_inplace_xor, getSlot(obj, SlotMethodDef.NB_INPLACE_XOR));
         return mem;
     }
 
@@ -251,8 +232,8 @@ public abstract class ToNativeTypeNode {
             weaklistoffset = lookupNativeI64MemberInMRO(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
         }
         Object asAsync = hasAsyncMethods(clazz) ? allocatePyAsyncMethods(clazz, nullValue) : nullValue;
-        Object asNumber = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonObject) ? nullValue : allocatePyNumberMethods(clazz, slots, nullValue);
-        Object asSequence = (slots.has_as_sequence() || hasSequenceMethods(clazz)) ? allocatePySequenceMethods(slots, nullValue) : nullValue;
+        Object asNumber = slots.has_as_number() ? allocatePyNumberMethods(slots, nullValue) : nullValue;
+        Object asSequence = slots.has_as_sequence() ? allocatePySequenceMethods(slots, nullValue) : nullValue;
         Object asMapping = slots.has_as_mapping() ? allocatePyMappingMethods(slots, nullValue) : nullValue;
         Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, HiddenAttr.AS_BUFFER);
         writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);

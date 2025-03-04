@@ -137,6 +137,32 @@ public @interface Slot {
         nb_matrix_multiply("__matmul__, __rmatmul__"),
         /** foo ** bar */
         nb_power("__pow__, __rpow__"),
+        /** foo += bar */
+        nb_inplace_add("__iadd__"),
+        /** foo -= bar */
+        nb_inplace_subtract("__isub__"),
+        /** foo *= bar */
+        nb_inplace_multiply("__imul__"),
+        /** foo %= bar */
+        nb_inplace_remainder("__imod__"),
+        /** foo <<= bar */
+        nb_inplace_lshift("__ilshift__"),
+        /** foo >>= bar */
+        nb_inplace_rshift("__irshift__"),
+        /** foo &= bar */
+        nb_inplace_and("__iand__"),
+        /** foo ^= bar */
+        nb_inplace_xor("__ixor__"),
+        /** foo |= bar */
+        nb_inplace_or("__ior__"),
+        /** foo //= bar */
+        nb_inplace_floor_divide("__ifloordiv__"),
+        /** foo /= bar */
+        nb_inplace_true_divide("__itruediv__"),
+        /** foo @= bar */
+        nb_inplace_matrix_multiply("__imatmul__"),
+        /** foo **= bar */
+        nb_inplace_power("__ipow__"),
         /** sequence length/size */
         sq_length("__len__"),
         /** sequence item: read element at index */
@@ -147,6 +173,12 @@ public @interface Slot {
         sq_concat("__add__"),
         /** seq * number, nb_multiply is tried before */
         sq_repeat("__mul__"),
+        /** seq += seq */
+        sq_inplace_concat("__iadd__"),
+        /** seq *= seq */
+        sq_inplace_repeat("__imul__"),
+        /** item in seq **/
+        sq_contains("__contains__"),
         /** mapping length */
         mp_length("__len__"),
         /** mapping subscript, e.g. o[key], o[i:j] */

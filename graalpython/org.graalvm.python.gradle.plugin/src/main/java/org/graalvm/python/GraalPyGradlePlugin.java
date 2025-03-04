@@ -41,8 +41,10 @@
 package org.graalvm.python;
 
 import org.graalvm.python.dsl.GraalPyExtension;
+import org.graalvm.python.tasks.AbstractPackagesTask;
+import org.graalvm.python.tasks.LockPackagesTask;
 import org.graalvm.python.tasks.MetaInfTask;
-import org.graalvm.python.tasks.ResourcesTask;
+import org.graalvm.python.tasks.InstallPackagesTask;
 import org.graalvm.python.tasks.VFSFilesListTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
@@ -51,6 +53,9 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
@@ -84,9 +89,11 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
     private static final String DEFAULT_RESOURCES_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "resources";
     private static final String DEFAULT_FILESLIST_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "fileslist";
     private static final String GRAALPY_META_INF_DIRECTORY = "generated" + File.separator + "graalpy" + File.separator + "META-INF";
-    private static final String GRAALPY_RESOURCES_TASK = "graalPyResources";
+    private static final String GRAALPY_INSTALL_PACKAGES_TASK = "graalPyInstallPackages";
+    private static final String GRAALPY_LOCK_PACKAGES_TASK = "graalPyLockPackages";
     private static final String GRAALPY_META_INF_TASK_TASK = "graalPyMetaInf";
     private static final String GRAALPY_VFS_FILESLIST_TASK = "graalPyVFSFilesList";
+    private static final String GRAALPY_LOCK_FILE = "graalpy.lock";
 
     GraalPyExtension extension;
     Project project;
@@ -102,12 +109,15 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
 
         var launcherClasspath = createLauncherClasspath();
         var javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-        var resourcesTask = registerResourcesTask(project, launcherClasspath, extension);
+        TaskProvider<InstallPackagesTask> installPackagesTask = registerInstallPackagesTask(project, launcherClasspath, extension);
         registerMetaInfTask(extension);
 
-        var vfsFilesListTask = registerCreateVfsFilesListTask(resourcesTask, javaPluginExtension, extension);
+        TaskProvider<VFSFilesListTask> vfsFilesListTask = registerCreateVfsFilesListTask(installPackagesTask, javaPluginExtension, extension);
         var mainSourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-        mainSourceSet.getResources().srcDir(resourcesTask);
+        mainSourceSet.getResources().srcDir(installPackagesTask);
+
+        registerLockPackagesTask(project, launcherClasspath, extension);
+
         addDependencies();
 
         project.afterEvaluate(proj -> {
@@ -117,11 +127,11 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
 
             if (extension.getPythonResourcesDirectory().isPresent() && extension.getExternalDirectory().isPresent()) {
                 throw new GradleException(
-                        "Cannot set both 'externalDirectory' and 'resourcesDirectory' at the same time. " +
+                        "Cannot set both 'externalDirectory' and 'resourceDirectory' at the same time. " +
                                 "New property 'externalDirectory' is a replacement for deprecated 'pythonResourcesDirectory'. " +
                                 "If you want to deploy the virtual environment into physical filesystem, use 'externalDirectory'. " +
                                 "The deployment of the external directory alongside the application is not handled by the GraalPy Maven plugin in such case." +
-                                "If you wish to bundle the virtual filesystem in Java resources, use 'resourcesDirectory'. " +
+                                "If you wish to bundle the virtual filesystem in Java resources, use 'resourcesDirectory'. \n" +
                                 "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ");
             }
 
@@ -132,11 +142,11 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
             // Run the vfsFilesListTask conditionally only if 'externalDirectory' is not set
             if (!extension.getPythonResourcesDirectory().isPresent() && !extension.getExternalDirectory().isPresent()) {
                 if (!extension.getResourceDirectory().isPresent()) {
-                    proj.getLogger().info(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
+                    proj.getLogger().warn(String.format("Virtual filesystem is deployed to default resources directory '%s'. " +
                                     "This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem. " +
-                                    "Consider adding `resourcesDirectory = \"GRAALPY-VFS/${groupId}/${artifactId}\"` to your build.gradle script " +
+                                    "Consider adding `resourceDirectory = \"GRAALPY-VFS/${groupId}/${artifactId}\"` to your build.gradle script " +
                                     "(replace the placeholders with values specific to your project), " +
-                                    "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory." +
+                                    "moving any existing sources from '%s' to '%s', and using VirtualFileSystem$Builder#resourceDirectory.\n" +
                                     "For more details, please refer to https://www.graalvm.org/latest/reference-manual/python/Embedding-Build-Tools. ",
                             VFS_ROOT,
                             Path.of(VFS_ROOT, "src"),
@@ -153,12 +163,12 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
      * @param resourcesTask the resources task
      * @return the task provider
      */
-    private TaskProvider<VFSFilesListTask> registerCreateVfsFilesListTask(TaskProvider<ResourcesTask> resourcesTask, JavaPluginExtension javaPluginExtension, GraalPyExtension extension) {
+    private TaskProvider<VFSFilesListTask> registerCreateVfsFilesListTask(TaskProvider<InstallPackagesTask> installPackagesTask, JavaPluginExtension javaPluginExtension, GraalPyExtension extension) {
         var srcDirs = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
         return project.getTasks().register(GRAALPY_VFS_FILESLIST_TASK, VFSFilesListTask.class, t -> {
             t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
             t.getResourceDirectory().set(extension.getResourceDirectory());
-            t.getVfsDirectories().from(resourcesTask.flatMap(ResourcesTask::getOutput));
+            t.getVfsDirectories().from(installPackagesTask.flatMap(InstallPackagesTask::getOutput));
             srcDirs.forEach(t.getVfsDirectories()::from);
             t.getVfsFilesListOutputDir().convention(project.getLayout().getBuildDirectory().dir(DEFAULT_FILESLIST_DIRECTORY));
         });
@@ -182,8 +192,8 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
      * @param launcherClasspath the classpath of the Python launcher
      * @return the resources task provider
      */
-    private TaskProvider<ResourcesTask> registerResourcesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
-        return project.getTasks().register(GRAALPY_RESOURCES_TASK, ResourcesTask.class, t -> {
+    private TaskProvider<InstallPackagesTask> registerInstallPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
+        return project.getTasks().register(GRAALPY_INSTALL_PACKAGES_TASK, InstallPackagesTask.class, t -> {
             t.getLauncherClasspath().from(launcherClasspath);
             t.getLauncherDirectory().convention(project.getLayout().getBuildDirectory().dir("python-launcher"));
             t.getPolyglotVersion().convention(extension.getPolyglotVersion().orElse(determineGraalPyDefaultVersion()));
@@ -192,20 +202,38 @@ public abstract class GraalPyGradlePlugin implements Plugin<Project> {
                 t.getLogger().warn("The GraalPy plugin pythonHome configuration setting was deprecated and has no effect anymore.\n" +
                         "For execution in jvm mode, the python language home is always available.\n" +
                         "When building a native executable using GraalVM Native Image, then the full python language home is by default embedded into the native executable.\n" +
-                        "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources documentation.");
+                        "For more details, please refer to the documentation of GraalVM Native Image options IncludeLanguageResources and CopyLanguageResources.");
             }
-            t.getPackages().set(extension.getPackages());
-
-            t.getOutput().convention(
-                    extension.getExternalDirectory().orElse(
-                        extension.getPythonResourcesDirectory()
-                                .orElse(project.getLayout().getBuildDirectory().dir(DEFAULT_RESOURCES_DIRECTORY))));
-            t.getIncludeVfsRoot().convention(extension.getExternalDirectory().map(d -> false)
-                    .orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
-            t.getResourceDirectory().set(extension.getResourceDirectory());
-
-            t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
+            registerPackagesTask(project, launcherClasspath, extension, t);
         });
+    }
+
+    private TaskProvider<LockPackagesTask> registerLockPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension) {
+        return project.getTasks().register(GRAALPY_LOCK_PACKAGES_TASK, LockPackagesTask.class, t -> {
+            registerPackagesTask(project, launcherClasspath, extension, t);
+            // TODO probably not necessary
+            // t.getOutputs().upToDateWhen(tt -> false);
+        });
+    }
+
+    private void registerPackagesTask(Project project, Configuration launcherClasspath, GraalPyExtension extension, AbstractPackagesTask t) {
+        ProjectLayout layout = project.getLayout();
+        DirectoryProperty buildDirectory = layout.getBuildDirectory();
+        Directory projectDirectory = layout.getProjectDirectory();
+
+        t.getLauncherClasspath().from(launcherClasspath);
+        t.getLauncherDirectory().convention(buildDirectory.dir("python-launcher"));
+        t.getPolyglotVersion().convention(extension.getPolyglotVersion().orElse(determineGraalPyDefaultVersion()));
+        t.getPackages().set(extension.getPackages());
+
+        DirectoryProperty externalDirectory = extension.getExternalDirectory();
+        t.getOutput().convention(externalDirectory.orElse(extension.getPythonResourcesDirectory().orElse(buildDirectory.dir(DEFAULT_RESOURCES_DIRECTORY))));
+        t.getIncludeVfsRoot().convention(externalDirectory.map(d -> false).orElse(extension.getPythonResourcesDirectory().map(d -> false).orElse(true)));
+        t.getResourceDirectory().set(extension.getResourceDirectory());
+
+        t.getGraalPyLockFile().convention(extension.getGraalPyLockFile().orElse(projectDirectory.file(GRAALPY_LOCK_FILE)));
+
+        t.setGroup(GRAALPY_GRADLE_PLUGIN_TASK_GROUP);
     }
 
     private boolean userPythonHome() {

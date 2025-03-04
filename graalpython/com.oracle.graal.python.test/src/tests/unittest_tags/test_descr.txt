@@ -34,6 +34,7 @@ test.test_descr.ClassPropertiesAndMethods.test_hash_inheritance @ darwin-arm64,d
 test.test_descr.ClassPropertiesAndMethods.test_imul_bug @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_ipow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_descr.ClassPropertiesAndMethods.test_ipow_exception_text @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_ipow_returns_not_implemented @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_isinst_isclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_descr.ClassPropertiesAndMethods.test_keyword_arguments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,39 +25,29 @@
  */
 package com.oracle.graal.python.nodes.truffle;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.ImplicitCast;
-import com.oracle.truffle.api.dsl.TypeCast;
-import com.oracle.truffle.api.dsl.TypeCheck;
 import com.oracle.truffle.api.dsl.TypeSystem;
 
+/**
+ * This type system is supposed to be used in builtin nodes to reduce the number of specializations
+ * due to type combinations. Booleans and ints are converted to long. PInt needs to be handled
+ * separately.
+ */
 @TypeSystem
-public abstract class PythonTypes {
+public abstract class PythonIntegerTypes {
+
+    @ImplicitCast
+    public static int booleanToInt(boolean value) {
+        return value ? 1 : 0;
+    }
+
+    @ImplicitCast
+    public static long booleanToLong(boolean value) {
+        return value ? 1 : 0;
+    }
 
     @ImplicitCast
     public static long intToLong(int value) {
         return value;
-    }
-
-    @TypeCheck(PythonNativeObject.class)
-    public static boolean isNativeObject(Object object) {
-        return PythonNativeObject.isInstance(object);
-    }
-
-    @TypeCast(PythonNativeObject.class)
-    public static PythonNativeObject asNativeObject(Object object) {
-        return PythonNativeObject.cast(object);
-    }
-
-    @TypeCheck(PythonNativeClass.class)
-    public static boolean isNativeClass(Object object) {
-        return PGuards.isNativeClass(object);
-    }
-
-    @TypeCast(PythonNativeClass.class)
-    public static PythonNativeClass asNativeClass(Object object) {
-        return PythonNativeClass.cast(object);
     }
 }

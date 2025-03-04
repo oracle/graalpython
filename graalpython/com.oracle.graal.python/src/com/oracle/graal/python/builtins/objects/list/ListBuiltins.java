@@ -29,12 +29,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
@@ -89,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyListCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -751,7 +749,7 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached PyListCheckNode isListNode,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached GetClassForNewListNode getClassForNewListNode,
-                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
@@ -761,18 +759,13 @@ public final class ListBuiltins extends PythonBuiltins {
 
             var leftStorage = getStorageNode.execute(inliningTarget, left);
             var rightStorage = getStorageNode.execute(inliningTarget, right);
-            SequenceStorage newStore = concatNode.execute(leftStorage, rightStorage);
+            SequenceStorage newStore = concatNode.execute(inliningTarget, leftStorage, rightStorage);
             Object newClass = getClassForNewListNode.execute(inliningTarget, left);
             return PFactory.createList(language, newClass, getInstanceShape.execute(newClass), newStore);
         }
-
-        @NeverDefault
-        protected static SequenceStorageNodes.ConcatNode createConcat() {
-            return SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create);
-        }
     }
 
-    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_concat, isComplex = true)
     @GenerateNodeFactory
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -820,11 +813,11 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_repeat, isComplex = true)
     @GenerateNodeFactory
-    abstract static class IMulNode extends PythonBinaryBuiltinNode {
+    abstract static class IMulNode extends SqRepeatBuiltinNode {
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object list, Object right,
+        static Object doGeneric(VirtualFrame frame, Object list, int right,
                         @Bind("this") Node inliningTarget,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached ListNodes.UpdateListStorageNode updateStorageNode,
@@ -1018,9 +1011,9 @@ public final class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_contains, isComplex = true)
     @GenerateNodeFactory
-    abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+    abstract static class ContainsNode extends SqContainsBuiltinNode {
         @Specialization
         boolean contains(VirtualFrame frame, Object self, Object other,
                         @Bind("this") Node inliningTarget,

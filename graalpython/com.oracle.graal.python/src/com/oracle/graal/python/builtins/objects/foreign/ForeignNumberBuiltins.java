@@ -65,8 +65,10 @@ import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
+import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
 import com.oracle.graal.python.lib.PyNumberInvertNode;
+import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyNumberLshiftNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberNegativeNode;
@@ -83,9 +85,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -268,11 +269,8 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Cached UnboxNode unboxNode) {
             Object unboxed = unboxNode.execute(inliningTarget, value);
-            if (unboxed != null) {
-                return op.executeCached(frame, unboxed);
-            } else {
-                return PNotImplemented.NOT_IMPLEMENTED;
-            }
+            assert unboxed != null;
+            return op.execute(frame, unboxed);
         }
     }
 
@@ -292,9 +290,9 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
             Object unboxed = unboxNode.execute(inliningTarget, left);
             if (unboxed != null) {
                 if (!reverse) {
-                    return op.executeObject(frame, unboxed, right);
+                    return op.execute(frame, unboxed, right);
                 } else {
-                    return op.executeObject(frame, right, unboxed);
+                    return op.execute(frame, right, unboxed);
                 }
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -324,7 +322,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
             if (newLeft == null || newRight == null) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return op.executeObject(frame, newLeft, newRight);
+            return op.execute(frame, newLeft, newRight);
         }
     }
 
@@ -393,7 +391,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CeilNode extends ForeignUnaryNode {
         CeilNode() {
-            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___CEIL__));
+            super(LookupAndCallUnaryNode.create(SpecialMethodNames.T___CEIL__));
         }
     }
 
@@ -401,7 +399,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FloorNode extends ForeignUnaryNode {
         FloorNode() {
-            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___FLOOR__));
+            super(LookupAndCallUnaryNode.create(SpecialMethodNames.T___FLOOR__));
         }
     }
 
@@ -409,23 +407,33 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TruncNode extends ForeignUnaryNode {
         TruncNode() {
-            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___TRUNC__));
+            super(LookupAndCallUnaryNode.create(SpecialMethodNames.T___TRUNC__));
         }
     }
 
     @Slot(value = SlotKind.nb_int, isComplex = true)
     @GenerateNodeFactory
-    abstract static class IntNode extends ForeignUnaryNode {
-        IntNode() {
-            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___INT__));
+    abstract static class IntNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxNode,
+                        @Cached PyNumberLongNode longNode) {
+            Object unboxed = unboxNode.execute(inliningTarget, self);
+            return longNode.execute(frame, inliningTarget, unboxed);
         }
     }
 
     @Slot(value = SlotKind.nb_float, isComplex = true)
     @GenerateNodeFactory
-    abstract static class FloatNode extends ForeignUnaryNode {
-        FloatNode() {
-            super(UnaryArithmetic.GenericUnaryArithmeticNode.create(SpecialMethodNames.T___FLOAT__));
+    abstract static class FloatNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object self,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxNode,
+                        @Cached PyNumberFloatNode floatNode) {
+            Object unboxed = unboxNode.execute(inliningTarget, self);
+            return floatNode.execute(frame, inliningTarget, unboxed);
         }
     }
 
@@ -598,9 +606,15 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class RoundNode extends ForeignBinaryNode {
-        RoundNode() {
-            super(BinaryArithmetic.GenericBinaryArithmeticNode.create(SpecialMethodSlot.Round), false);
+    abstract static class RoundNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object self, Object n,
+                        @Bind("this") Node inliningTarget,
+                        @Cached UnboxNode unboxNode,
+                        @Cached("create(Round)") LookupAndCallBinaryNode callRound) {
+            Object unboxed = unboxNode.execute(inliningTarget, self);
+            return callRound.executeObject(frame, unboxed, n);
         }
     }
 

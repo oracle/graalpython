@@ -149,8 +149,7 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -383,11 +382,10 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PY_UCS4, Py_ssize_t, Py_ssize_t, Int}, call = Direct)
-    @TypeSystemReference(PythonTypes.class)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_FindChar extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction > 0"})
-        static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
+        static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared @Cached ChrNode chrNode,
                         @Cached FindNode findNode,
@@ -397,7 +395,7 @@ public final class PythonCextUnicodeBuiltins {
         }
 
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") long direction,
+        static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
                         @SuppressWarnings("unused") @Bind("this") Node inliningTarget,
                         @Shared @Cached ChrNode chrNode,
                         @Cached RFindNode rFindNode,
@@ -417,7 +415,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
-    @TypeSystemReference(PythonTypes.class)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Substring extends CApiTernaryBuiltinNode {
         @Specialization(guards = {"isString(s) || isStringSubtype(s, inliningTarget, getClassNode, isSubtypeNode)"}, limit = "1")
@@ -532,11 +529,10 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject, Py_ssize_t, Py_ssize_t, Int}, call = Direct)
-    @TypeSystemReference(PythonTypes.class)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Tailmatch extends CApi5BuiltinNode {
         @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction > 0"})
-        static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
+        static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttrNode,
                         @Shared @Cached PySliceNew sliceNode,
@@ -550,7 +546,7 @@ public final class PythonCextUnicodeBuiltins {
         }
 
         @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") long direction,
+        static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttrNode,
                         @Shared @Cached PySliceNew sliceNode,
@@ -595,7 +591,6 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Py_ssize_t}, call = Direct)
-    @TypeSystemReference(PythonTypes.class)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Replace extends CApiQuaternaryBuiltinNode {
         @Specialization(guards = {"isString(s)", "isString(substr)", "isString(replstr)"})
@@ -630,7 +625,7 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObjectConstPtr, Py_ssize_t}, call = Direct)
-    @TypeSystemReference(PythonTypes.class)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class _PyUnicode_JoinArray extends CApiTernaryBuiltinNode {
         @Specialization
@@ -1154,10 +1149,9 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Ignored)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_AsWideChar extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object doUnicode(Object s, long elementSize,
+        static Object doUnicode(Object s, int elementSize,
                         @Bind("this") Node inliningTarget,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached CastToTruffleStringNode castStr,

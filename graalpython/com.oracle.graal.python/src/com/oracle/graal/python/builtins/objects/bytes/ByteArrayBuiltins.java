@@ -33,8 +33,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
@@ -43,6 +41,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -82,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.MpAssSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqItemBuiltinNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.PyByteArrayCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -111,6 +111,8 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ComparisonOp;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -426,85 +428,68 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___IADD__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_concat, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         static PByteArray add(PByteArray self, PBytesLike other,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared SequenceStorageNodes.ConcatNode concatNode,
+                        @Shared @Cached SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PRaiseNode raiseNode) {
-            self.checkCanResize(inliningTarget, raiseNode);
-            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
-            updateSequenceStorage(self, res);
-            return self;
+            return extendWithBuffer(self, other, inliningTarget, ensureCapacityNode, bufferLib, raiseNode);
         }
 
         @Specialization(guards = "!isBytes(other)", limit = "3")
         static PByteArray add(VirtualFrame frame, PByteArray self, Object other,
                         @Bind("this") Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached("createFor(this)") IndirectCallData indirectCallData,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached @Shared SequenceStorageNodes.ConcatNode concatNode,
+                        @Shared @Cached SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
+                        @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PRaiseNode raiseNode) {
-            Object buffer;
+            Object otherBuffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(other, frame, indirectCallData);
+                otherBuffer = bufferAcquireLib.acquireReadonly(other, frame, indirectCallData);
             } catch (PException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
             try {
-                self.checkCanResize(inliningTarget, raiseNode);
-                // TODO avoid copying
-                PBytes bytes = PFactory.createBytes(language, bufferLib.getCopiedByteArray(buffer));
-                SequenceStorage res = concatNode.execute(self.getSequenceStorage(), bytes.getSequenceStorage());
-                updateSequenceStorage(self, res);
-                return self;
+                return extendWithBuffer(self, otherBuffer, inliningTarget, ensureCapacityNode, bufferLib, raiseNode);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(otherBuffer, frame, indirectCallData);
             }
         }
 
-        private static void updateSequenceStorage(PByteArray array, SequenceStorage s) {
-            if (array.getSequenceStorage() != s) {
-                array.setSequenceStorage(s);
+        private static PByteArray extendWithBuffer(PByteArray self, Object otherBuffer, Node inliningTarget, SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
+                        PythonBufferAccessLibrary bufferLib, PRaiseNode raiseNode) {
+            self.checkCanResize(inliningTarget, raiseNode);
+            try {
+                int len = self.getSequenceStorage().length();
+                int otherLen = bufferLib.getBufferLength(otherBuffer);
+                int newLen = PythonUtils.addExact(len, otherLen);
+                ensureCapacityNode.execute(inliningTarget, self.getSequenceStorage(), newLen);
+                self.getSequenceStorage().setNewLength(newLen);
+                bufferLib.readIntoBuffer(otherBuffer, 0, self, len, otherLen, bufferLib);
+                return self;
+            } catch (OverflowException e) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
             }
         }
     }
 
-    @Builtin(name = J___IMUL__, minNumOfPositionalArgs = 2)
+    @Slot(value = SlotKind.sq_inplace_repeat, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class IMulNode extends PythonBinaryBuiltinNode {
+    public abstract static class IMulNode extends SqRepeatBuiltinNode {
         @Specialization
         static Object mul(VirtualFrame frame, PByteArray self, int times,
                         @Bind("this") Node inliningTarget,
-                        @Cached @Shared SequenceStorageNodes.RepeatNode repeatNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached PRaiseNode raiseNode) {
             self.checkCanResize(inliningTarget, raiseNode);
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
             self.setSequenceStorage(res);
             return self;
-        }
-
-        @Specialization
-        static Object mul(VirtualFrame frame, PByteArray self, Object times,
-                        @Bind("this") Node inliningTarget,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached @Shared SequenceStorageNodes.RepeatNode repeatNode,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            self.checkCanResize(inliningTarget, raiseNode);
-            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), asSizeNode.executeExact(frame, inliningTarget, times));
-            self.setSequenceStorage(res);
-            return self;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        static Object mul(Object self, Object other,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, other);
         }
     }
 

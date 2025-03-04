@@ -65,10 +65,12 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallMan
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CallSlotNbBoolNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.CallSlotNbInPlacePowerNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPower.CallSlotNbPowerNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallManagedSlotSetAttrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.CallSlotSizeArgFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.CallSlotSqAssItemNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -548,6 +550,47 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    public static final class SqContainsWrapper extends TpSlotWrapper {
+        public SqContainsWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached CallSlotSqContainsNode callSlotNode,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                try {
+                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]));
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "SqContainsWrapper", getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return -1;
+            } finally {
+                CApiTiming.exit(timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER):SINT32";
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new SqContainsWrapper(slot);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     public static final class ObjobjargWrapper extends TpSlotWrapper {
 
         public ObjobjargWrapper(TpSlotManaged delegate) {
@@ -827,7 +870,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                         @Cached GetClassNode wGetClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetCachedTpSlotsNode wGetSlots,
-                        @Cached TpSlotNbPower.CallSlotNbPowerNode callSlot,
+                        @Cached CallSlotNbPowerNode callSlot,
                         @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             CApiTiming.enter();
@@ -845,6 +888,54 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     return toNativeNode.execute(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "NbPowerWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(inliningTarget, e);
+                return PythonContext.get(gil).getNativeNull();
+            } finally {
+                CApiTiming.exit(self.timing);
+                gil.release(mustRelease);
+            }
+        }
+
+        @Override
+        protected String getSignature() {
+            return "(POINTER,POINTER,POINTER):POINTER";
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class NbInPlacePowerWrapper extends TpSlotWrapper {
+
+        public NbInPlacePowerWrapper(TpSlotManaged delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public TpSlotWrapper cloneWith(TpSlotManaged slot) {
+            return new NbInPlacePowerWrapper(slot);
+        }
+
+        @ExportMessage
+        static Object execute(NbInPlacePowerWrapper self, Object[] arguments,
+                        @Bind("$node") Node inliningTarget,
+                        @Cached NativeToPythonNode toJavaNode,
+                        @Cached PythonToNativeNewRefNode toNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached CallSlotNbInPlacePowerNode callSlot,
+                        @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            CApiTiming.enter();
+            try {
+                try {
+                    // convert args
+                    Object v = toJavaNode.execute(arguments[0]);
+                    Object w = toJavaNode.execute(arguments[1]);
+                    Object z = toJavaNode.execute(arguments[2]);
+                    Object result = callSlot.execute(null, inliningTarget, self.getSlot(), v, w, z);
+                    return toNativeNode.execute(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "NbInPlacePowerWrapper", self.getDelegate());
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,6 +70,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.AbstractAnnotationValueVisitor14;
 import javax.lang.model.util.ElementFilter;
+import javax.tools.Diagnostic.Kind;
 import javax.tools.StandardLocation;
 
 import com.oracle.graal.python.annotations.CApiConstants;
@@ -121,8 +122,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         try {
             this.trees = Trees.instance(pe);
         } catch (Throwable t) {
-            // ECJ does not support this, so we skip the some processing of C API builtins
-            pe.getMessager().printWarning("The compiler does not support source tree parsing during annotation processing. Regeneration of Python C API builtins will be incorrect.");
+            // ECJ does not support this, so we skip the processing of C API builtins
+            pe.getMessager().printMessage(Kind.NOTE, "The compiler does not support source tree parsing during annotation processing. Regeneration of Python C API builtins will be incorrect.");
             this.trees = null;
         }
     }

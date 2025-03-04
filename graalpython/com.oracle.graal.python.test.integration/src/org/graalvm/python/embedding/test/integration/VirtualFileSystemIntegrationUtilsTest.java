@@ -71,7 +71,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Siple copy of VirtualFileSystemIntegrationTest to test also the deprecated
+ * Simple copy of VirtualFileSystemIntegrationTest to test also the deprecated
  * org.graalvm.python.embedding.utils pkg
  */
 @SuppressWarnings("deprecation")

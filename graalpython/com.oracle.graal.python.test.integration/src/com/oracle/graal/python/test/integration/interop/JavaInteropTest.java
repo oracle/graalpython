@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -838,6 +838,46 @@ public class JavaInteropTest {
             assertTrue(object.isMetaObject());
             assertEquals(object.getMetaSimpleName(), "object");
             assertFalse(object.hasMetaParents());
+        }
+
+        public static class MyFunction implements java.util.function.Function<String, String> {
+            public String __text_signature__ = "(string) -> str";
+
+            @Override
+            public String apply(String s) {
+                return s;
+            }
+        }
+
+        public static class MyFunctionWithCustomName implements java.util.function.Function<String, String> {
+            public String __text_signature__ = "(string) -> str";
+            public String __name__ = "myfunc";
+
+            @Override
+            public String apply(String s) {
+                return s;
+            }
+        }
+
+        public static class MyFunctionWithIncorrectSignature implements java.util.function.Function<String, String> {
+            public String __text_signature__ = "[I;java.lang.String;";
+
+            @Override
+            public String apply(String s) {
+                return s;
+            }
+        }
+
+        @Test
+        public void javaExecutablesAsPythonFunctions() {
+            Value inspectSignature = context.eval("python", "import inspect; inspect.signature");
+            assertEquals("<Signature (string)>", inspectSignature.execute(new MyFunction()).toString());
+
+            Value signature = context.eval("python", "lambda f: f.__text_signature__");
+            assertEquals(new MyFunctionWithIncorrectSignature().__text_signature__, signature.execute(new MyFunctionWithIncorrectSignature()).asString());
+
+            Value name = context.eval("python", "lambda f: f.__name__");
+            assertEquals(new MyFunctionWithCustomName().__name__, name.execute(new MyFunctionWithCustomName()).asString());
         }
     }
 

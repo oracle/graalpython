@@ -84,6 +84,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -565,6 +566,7 @@ public abstract class BytesNodes {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached PRaiseNode raiseNode) {
             if (bufferAcquireLib.hasBuffer(object)) {
                 // TODO PyBUF_FULL_RO
@@ -575,7 +577,7 @@ public abstract class BytesNodes {
                     bufferLib.release(buffer, frame, indirectCallData);
                 }
             }
-            if (!PGuards.isString(object)) {
+            if (!unicodeCheckNode.execute(inliningTarget, object)) {
                 try {
                     return iterableToByteNode.execute(frame, object);
                 } catch (PException e) {

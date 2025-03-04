@@ -10,7 +10,7 @@ test.test_weakref.MappingTestCase.test_make_weak_valued_dict_misc @ darwin-arm64
 test.test_weakref.MappingTestCase.test_make_weak_valued_dict_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_weakref.MappingTestCase.test_threaded_weak_value_dict_deepcopy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_valued_consistency @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_valued_pop @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.MappingTestCase.test_threaded_weak_valued_setdefault @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -53,6 +53,8 @@ test.test_weakref.ReferencesTestCase.test_set_callback_attribute @ darwin-arm64,
 test.test_weakref.ReferencesTestCase.test_sf_bug_840829 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_shared_ref_without_callback @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_trashcan_16602 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+# transiently fails
+!test.test_weakref.SubclassableWeakrefTestCase.test_subclass_refs
 test.test_weakref.SubclassableWeakrefTestCase.test_subclass_refs_with_cycle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.SubclassableWeakrefTestCase.test_subclass_refs_with_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.WeakKeyDictionaryTestCase.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

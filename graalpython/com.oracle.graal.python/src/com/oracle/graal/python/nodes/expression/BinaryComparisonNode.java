@@ -41,7 +41,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.LeNo
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.LtNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.NeNodeGen;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -52,7 +52,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@TypeSystemReference(PythonArithmeticTypes.class)
+@TypeSystemReference(PythonIntegerTypes.class)
 public abstract class BinaryComparisonNode extends BinaryOpNode {
 
     private abstract static class ErrorNode extends BinaryComparisonNode {

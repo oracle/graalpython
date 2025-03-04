@@ -118,7 +118,6 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -152,7 +151,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
@@ -2255,7 +2253,6 @@ public abstract class ExternalFunctionNodes {
      * Special helper nodes that materializes any primitive that would leak the wrapper if the
      * reference is owned by managed code only.
      */
-    @TypeSystemReference(PythonTypes.class)
     @GenerateInline(false)
     abstract static class MaterializePrimitiveNode extends Node {
 
@@ -2268,7 +2265,7 @@ public abstract class ExternalFunctionNodes {
             return PFactory.createInt(language, i);
         }
 
-        @Specialization(replaces = "doInteger")
+        @Specialization
         static PInt doLong(PythonLanguage language, long l) {
             return PFactory.createInt(language, l);
         }

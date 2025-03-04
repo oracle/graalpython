@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,50 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.graalvm.python.embedding.tools.exec;
+package com.oracle.graal.python.lib;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
-public interface SubprocessLog {
-
-    default void subProcessOut(CharSequence out) {
-        System.out.println(out);
+@GenerateInline(false)
+@GenerateUncached
+public abstract class PyNumberInPlaceXorNode extends PyNumberXorBaseNode {
+    @Fallback
+    @InliningCutoff
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
+                    @Cached CallBinaryIOpNode callBinaryOpNode) {
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_XOR, "^=");
     }
 
-    default void subProcessErr(CharSequence err) {
-        System.err.println(err);
+    @NeverDefault
+    public static PyNumberInPlaceXorNode create() {
+        return PyNumberInPlaceXorNodeGen.create();
     }
 
-    default void log(CharSequence txt) {
-        System.out.println(txt);
+    public static PyNumberInPlaceXorNode getUncached() {
+        return PyNumberInPlaceXorNodeGen.getUncached();
     }
-
-    default void log(CharSequence txt, Throwable t) {
-        System.out.println(txt);
-        t.printStackTrace();
-    }
-
-    final class CollectOutputLog implements SubprocessLog {
-        private final List<String> output = new ArrayList<>();
-
-        public List<String> getOutput() {
-            return output;
-        }
-
-        @Override
-        public void subProcessOut(CharSequence var1) {
-            output.add(var1.toString());
-        }
-
-        @Override
-        public void subProcessErr(CharSequence var1) {
-            System.err.println(var1);
-        }
-
-        @Override
-        public void log(CharSequence var1) {
-        }
-    }
-
 }

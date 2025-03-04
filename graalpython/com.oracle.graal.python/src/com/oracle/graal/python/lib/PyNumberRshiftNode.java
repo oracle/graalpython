@@ -46,33 +46,32 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(false)
-public abstract class PyNumberRshiftNode extends BinaryOpNode {
-    public abstract Object execute(VirtualFrame frame, Object v, Object w);
-
-    @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return execute(frame, left, right);
-    }
+@GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
+abstract class PyNumberRshiftBaseNode extends BinaryOpNode {
 
     @Specialization(guards = {"right < 32", "right >= 0"})
     public static int doIISmall(int left, int right) {
@@ -83,6 +82,11 @@ public abstract class PyNumberRshiftNode extends BinaryOpNode {
     public static long doIISmall(long left, long right) {
         return left >> right;
     }
+}
+
+@GenerateInline(false)
+@GenerateUncached
+public abstract class PyNumberRshiftNode extends PyNumberRshiftBaseNode {
 
     @Fallback
     public static Object doIt(VirtualFrame frame, Object v, Object w,
@@ -95,15 +99,13 @@ public abstract class PyNumberRshiftNode extends BinaryOpNode {
                     @Cached PRaiseNode raiseNode) {
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
-        TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_rshift();
-        TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_rshift();
-        if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_RSHIFT);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
+        TpSlots slotsV = getVSlots.execute(inliningTarget, classV);
+        TpSlots slotsW = getWSlots.execute(inliningTarget, classW);
+        Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotsV, w, classW, slotsW, ReversibleSlot.NB_RSHIFT);
+        if (result != PNotImplemented.NOT_IMPLEMENTED) {
+            return result;
         }
-        return raiseNotSupported(inliningTarget, v, w, raiseNode);
+        throw raiseNotSupported(inliningTarget, v, w, raiseNode);
     }
 
     @InliningCutoff
@@ -124,5 +126,9 @@ public abstract class PyNumberRshiftNode extends BinaryOpNode {
     @NeverDefault
     public static PyNumberRshiftNode create() {
         return PyNumberRshiftNodeGen.create();
+    }
+
+    public static PyNumberRshiftNode getUncached() {
+        return PyNumberRshiftNodeGen.getUncached();
     }
 }

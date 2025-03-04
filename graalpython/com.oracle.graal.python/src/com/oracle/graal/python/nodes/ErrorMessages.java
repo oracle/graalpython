@@ -213,6 +213,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_CONVERT_FLOAT_NAN_TO_INTEGER = tsLiteral("cannot convert float NaN to integer");
     public static final TruffleString CANT_CAPTURE_NAME_UNDERSCORE_IN_PATTERNS = tsLiteral("can't capture name '_' in patterns");
     public static final TruffleString CANT_CONCAT_P_TO_S = tsLiteral("can't concat %p to %s");
+    public static final TruffleString CANT_CONCAT_P_TO_P = tsLiteral("can't concat %p to %p");
     public static final TruffleString CANT_CONVERT_TO_STR_IMPLICITLY = tsLiteral("Can't convert '%p' object to str implicitly");
     public static final TruffleString CANT_COMPARE = tsLiteral("Can't compare %p and %p");
     public static final TruffleString CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE = tsLiteral("can't delete numeric/char attribute");
@@ -594,6 +595,7 @@ public abstract class ErrorMessages {
     public static final TruffleString OBJ_ISNT_MAPPING = tsLiteral("'%p' object is not a mapping");
     public static final TruffleString OBJ_ISNT_REVERSIBLE = tsLiteral("'%p' object is not reversible");
     public static final TruffleString OBJ_NOT_ITERABLE = tsLiteral("'%p' object is not iterable");
+    public static final TruffleString ARGUMENT_OF_TYPE_P_IS_NOT_ITERABLE = tsLiteral("argument of type '%p' is not iterable");
     public static final TruffleString OBJ_NOT_SUBSCRIPTABLE = tsLiteral("'%p' object is not subscriptable");
     public static final TruffleString TYPE_NOT_SUBSCRIPTABLE = tsLiteral("type '%N' is not subscriptable");
     public static final TruffleString OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ = tsLiteral("the object '%p' or klass '%p' arguments is not a host object");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,39 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.attributes;
+package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.InplaceSlot;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
+@GenerateInline(false)
 @GenerateUncached
-@GenerateInline
-@GenerateCached(false)
-public abstract class DeleteAttributeNode extends PNodeWithContext {
-    public abstract void execute(VirtualFrame frame, Node inliningTarget, Object object, Object key);
-
-    @Specialization
-    protected void doIt(VirtualFrame frame, Object object, Object key,
-                    @Cached(value = "create(DelAttr)", inline = false) LookupAndCallBinaryNode call) {
-        call.executeObject(frame, object, key);
+public abstract class PyNumberInPlaceSubtractNode extends PyNumberSubtractBaseNode {
+    @Fallback
+    @InliningCutoff
+    public static Object doIt(VirtualFrame frame, Object v, Object w,
+                    @Bind Node inliningTarget,
+                    @Cached CallBinaryIOpNode callBinaryOpNode) {
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, InplaceSlot.NB_INPLACE_SUBTRACT, "-=");
     }
 
-    @Specialization(replaces = "doIt")
-    protected void doItUncached(VirtualFrame frame, Object object, Object key) {
-        PythonUtils.assertUncached();
-        Object klass = GetClassNode.executeUncached(object);
-        Object method = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.DelAttr).execute(klass);
-        CallBinaryMethodNode.getUncached().executeObject(frame, method, object, key);
+    @NeverDefault
+    public static PyNumberInPlaceSubtractNode create() {
+        return PyNumberInPlaceSubtractNodeGen.create();
+    }
+
+    public static PyNumberInPlaceSubtractNode getUncached() {
+        return PyNumberInPlaceSubtractNodeGen.getUncached();
     }
 }

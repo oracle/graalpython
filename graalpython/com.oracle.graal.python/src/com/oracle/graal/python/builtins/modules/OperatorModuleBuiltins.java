@@ -54,13 +54,13 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
-import com.oracle.graal.python.lib.PySequenceConcat;
+import com.oracle.graal.python.lib.PySequenceConcatNode;
+import com.oracle.graal.python.lib.PySequenceInPlaceConcatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -71,7 +71,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -113,7 +112,18 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doObject(VirtualFrame frame, Object left, Object right,
                         @Bind("this") Node inliningTarget,
-                        @Cached PySequenceConcat concatNode) {
+                        @Cached PySequenceConcatNode concatNode) {
+            return concatNode.execute(frame, inliningTarget, left, right);
+        }
+    }
+
+    @Builtin(name = "iconcat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class IConcatNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doObject(VirtualFrame frame, Object left, Object right,
+                        @Bind("this") Node inliningTarget,
+                        @Cached PySequenceInPlaceConcatNode concatNode) {
             return concatNode.execute(frame, inliningTarget, left, right);
         }
     }
@@ -131,7 +141,6 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
 
     // _compare_digest
     @Builtin(name = "_compare_digest", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
 

@@ -72,16 +72,16 @@ SOFTWARE.
         <version>${env.GRAALPY_VERSION}</version>
         <executions>
           <execution>
-            <configuration>
-              <packages>
-
-              </packages>
-            </configuration>
             <goals>
               <goal>process-graalpy-resources</goal>
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <packages>
+
+          </packages>
+        </configuration>
       </plugin>
     </plugins>
   </build>

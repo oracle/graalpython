@@ -40,55 +40,66 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(false)
-public abstract class PyNumberSubtractNode extends BinaryOpNode {
-    @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return execute(frame, left, right);
-    }
-
-    public abstract Object execute(VirtualFrame frame, Object v, Object w);
+@GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
+abstract class PyNumberSubtractBaseNode extends BinaryOpNode {
 
     /*
      * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins, FloatBuiltins, ListBuiltins, ...
+     * in IntBuiltins
      */
-
     @Specialization(rewriteOn = ArithmeticException.class)
-    public static int doII(int x, int y) throws ArithmeticException {
+    static int doII(int x, int y) throws ArithmeticException {
         return Math.subtractExact(x, y);
     }
 
-    @Specialization
-    public static long doIIOvf(int x, int y) {
+    @Specialization(replaces = "doII")
+    static long doIIOvf(int x, int y) {
         return (long) x - (long) y;
     }
 
     @Specialization(rewriteOn = ArithmeticException.class)
-    public static long doLL(long x, long y) throws ArithmeticException {
+    static long doLL(long x, long y) throws ArithmeticException {
         return Math.subtractExact(x, y);
     }
 
+    @Specialization(replaces = "doLL")
+    static Object doLongWithOverflow(long x, long y,
+                    @Bind("this") Node inliningTarget) {
+        /* Inlined version of Math.subtractExact(x, y) with BigInteger fallback. */
+        long r = x - y;
+        // HD 2-12 Overflow iff the arguments have different signs and
+        // the sign of the result is different than the sign of x
+        if (((x ^ y) & (x ^ r)) < 0) {
+            return PFactory.createInt(PythonLanguage.get(inliningTarget), IntBuiltins.SubNode.sub(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+        }
+        return r;
+    }
+
+    /*
+     * All the following fast paths need to be kept in sync with the corresponding builtin functions
+     * in FloatBuiltins
+     */
     @Specialization
     public static double doDD(double left, double right) {
         return left - right;
@@ -103,46 +114,26 @@ public abstract class PyNumberSubtractNode extends BinaryOpNode {
     public static double doLD(long left, double right) {
         return left - right;
     }
+}
 
-    @Specialization
-    public static double doDI(double left, int right) {
-        return left - right;
-    }
-
-    @Specialization
-    public static double doID(int left, double right) {
-        return left - right;
-    }
+@GenerateInline(false)
+@GenerateUncached
+public abstract class PyNumberSubtractNode extends PyNumberSubtractBaseNode {
 
     @Fallback
+    @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
-                    @Cached GetClassNode getVClass,
-                    @Cached GetCachedTpSlotsNode getVSlots,
-                    @Cached GetCachedTpSlotsNode getWSlots,
-                    @Cached GetClassNode getWClass,
-                    @Cached CallBinaryOp1Node callBinaryOp1Node,
-                    @Cached PRaiseNode raiseNode) {
-        Object classV = getVClass.execute(inliningTarget, v);
-        Object classW = getWClass.execute(inliningTarget, w);
-        TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_subtract();
-        TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_subtract();
-        if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_SUBTRACT);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
-        }
-        return raiseNotSupported(inliningTarget, v, w, raiseNode);
-    }
-
-    @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
-        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "-", v, w);
+                    @Cached CallBinaryOpNode callBinaryOpNode) {
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, ReversibleSlot.NB_SUBTRACT, "-");
     }
 
     @NeverDefault
     public static PyNumberSubtractNode create() {
         return PyNumberSubtractNodeGen.create();
+    }
+
+    public static PyNumberSubtractNode getUncached() {
+        return PyNumberSubtractNodeGen.getUncached();
     }
 }

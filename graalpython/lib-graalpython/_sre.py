@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,9 @@ _mappingproxy = type(type.__dict__)
 
 from sys import maxsize
 
+# This does not load _polyglot.py (as desired for faster startup), due to AbstractImportNode.importModule(),
+# when the context is not initialized, only looking up builtin modules (and not running their postInitialize()).
+import polyglot
 
 def _check_pos(pos):
     if pos > maxsize:
@@ -266,7 +269,7 @@ class Pattern():
             self.groupindex = {}
             self.__indexgroup = {}
         else:
-            group_names = dir(groups)
+            group_names = polyglot.__keys__(groups)
             self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
             self.__indexgroup = {getattr(groups, name): name for name in group_names}
 

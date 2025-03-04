@@ -40,33 +40,29 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@GenerateInline(false)
-public abstract class PyNumberAndNode extends BinaryOpNode {
-    public abstract Object execute(VirtualFrame frame, Object v, Object w);
+@GenerateCached(false)
+@TypeSystemReference(PythonIntegerTypes.class)
+abstract class PyNumberAndBaseNode extends BinaryOpNode {
 
-    @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
-        return execute(frame, left, right);
+    @Specialization
+    public static boolean op(boolean left, boolean right) {
+        return left && right;
     }
 
     @Specialization
@@ -78,37 +74,26 @@ public abstract class PyNumberAndNode extends BinaryOpNode {
     public static long op(long left, long right) {
         return left & right;
     }
+}
+
+@GenerateInline(false)
+@GenerateUncached
+public abstract class PyNumberAndNode extends PyNumberAndBaseNode {
 
     @Fallback
     @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
-                    @Cached GetClassNode getVClass,
-                    @Cached GetCachedTpSlotsNode getVSlots,
-                    @Cached GetCachedTpSlotsNode getWSlots,
-                    @Cached GetClassNode getWClass,
-                    @Cached CallBinaryOp1Node callBinaryOp1Node,
-                    @Cached PRaiseNode raiseNode) {
-        Object classV = getVClass.execute(inliningTarget, v);
-        Object classW = getWClass.execute(inliningTarget, w);
-        TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_and();
-        TpSlot slotW = getWSlots.execute(inliningTarget, classW).nb_and();
-        if (slotV != null || slotW != null) {
-            Object result = callBinaryOp1Node.execute(frame, inliningTarget, v, classV, slotV, w, classW, slotW, ReversibleSlot.NB_AND);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
-        }
-        return raiseNotSupported(inliningTarget, v, w, raiseNode);
-    }
-
-    @InliningCutoff
-    private static PException raiseNotSupported(Node inliningTarget, Object v, Object w, PRaiseNode raiseNode) {
-        return raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "&", v, w);
+                    @Cached CallBinaryOpNode callBinaryOpNode) {
+        return callBinaryOpNode.execute(frame, inliningTarget, v, w, ReversibleSlot.NB_AND, "&");
     }
 
     @NeverDefault
     public static PyNumberAndNode create() {
         return PyNumberAndNodeGen.create();
+    }
+
+    public static PyNumberAndNode getUncached() {
+        return PyNumberAndNodeGen.getUncached();
     }
 }

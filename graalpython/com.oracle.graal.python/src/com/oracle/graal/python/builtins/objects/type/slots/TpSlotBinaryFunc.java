@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -111,7 +112,7 @@ public class TpSlotBinaryFunc {
 
     public abstract static class TpSlotSqConcat<T extends PythonBinaryBuiltinNode> extends TpSlotBinaryFuncBuiltin<T> {
         protected TpSlotSqConcat(NodeFactory<T> nodeFactory) {
-            super(nodeFactory, PExternalFunctionWrapper.BINARYFUNC, J___GETITEM__);
+            super(nodeFactory, PExternalFunctionWrapper.BINARYFUNC, J___ADD__);
         }
     }
 

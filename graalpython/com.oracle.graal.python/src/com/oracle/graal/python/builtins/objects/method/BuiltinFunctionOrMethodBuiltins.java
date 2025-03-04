@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___SIGNATURE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T__SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
@@ -152,7 +152,7 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget) {
             Signature signature = GetSignatureNode.executeUncached(fun);
             if (signature.isHidden()) {
-                throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T__SIGNATURE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T___SIGNATURE__);
             }
             return BuiltinFunctionBuiltins.SignatureNode.createInspectSignature(signature, true);
         }

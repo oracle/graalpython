@@ -57,7 +57,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EXIT__;
@@ -151,8 +150,6 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
  * initialized.
  */
 public enum SpecialMethodSlot {
-    DelAttr(T___DELATTR__),
-
     Dict(T___DICT__),
 
     Iter(T___ITER__),
@@ -748,11 +745,6 @@ public enum SpecialMethodSlot {
             case 's' * 26 + 'e':    // se
                 if (eqNode.execute(name, T___SET_NAME__, TS_ENCODING)) {
                     return SetName;
-                }
-                break;
-            case 'd' * 26 + 'e':    // de
-                if (eqNode.execute(name, T___DELATTR__, TS_ENCODING)) {
-                    return DelAttr;
                 }
                 break;
             case 'd' * 26 + 'i':    // di

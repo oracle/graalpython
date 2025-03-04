@@ -48,6 +48,10 @@ import unittest
 from tests.standalone import util
 from tests.standalone.util import TemporaryTestDirectory, Logger
 
+MISSING_FILE_WARNING = "The list of installed Python packages does not match the packages specified in the graalpy-maven-plugin configuration."
+PACKAGES_CHANGED_ERROR = "but packages and their version constraints in graalpy-maven-plugin configuration are different then previously used to generate the lock file"
+VENV_UPTODATE = "Virtual environment is up to date with lock file, skipping install"
+
 class MavenPluginTest(util.BuildToolTestBase):
 
     def generate_app(self, tmpdir, target_dir, target_name, pom_template=None, group_id="archetype.it", package="it.pkg"):
@@ -115,6 +119,8 @@ class MavenPluginTest(util.BuildToolTestBase):
             cmd = mvnw_cmd + ["package", "-Pnative", "-DmainClass=it.pkg.GraalPy"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput("Virtual filesystem is deployed to default resources directory", out, contains=use_default_vfs_path)
+            util.check_ouput("This can cause conflicts if used with other Java libraries that also deploy GraalPy virtual filesystem.", out, contains=use_default_vfs_path)
 
             # check fileslist.txt
             fl_path = os.path.join(target_dir, "target", "classes", vfs_prefix, "fileslist.txt")
@@ -178,6 +184,89 @@ class MavenPluginTest(util.BuildToolTestBase):
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app_utils_pkg(self):
         self.check_generated_app(use_default_vfs_path=True, use_utils_pkg=True)
+
+    @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
+    def test_lock_file(self):
+        with util.TemporaryTestDirectory() as tmpdir:
+
+            target_name = "test_lock_file"
+            target_dir = os.path.join(str(tmpdir), target_name)
+            self.generate_app(tmpdir, target_dir, target_name)
+
+            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
+            # run with java asserts on
+            if self.env.get("MAVEN_OPTS"):
+                self.env["MAVEN_OPTS"] = self.env.get("MAVEN_OPTS") + " -ea -esa"
+            else:
+                self.env["MAVEN_OPTS"] = "-ea -esa"
+
+            # start with requests package without version
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "termcolor==2.2", "requests")
+
+            # build
+            cmd = mvnw_cmd + ["package", "-DgraalPyLockFile=test-graalpy.lock"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("pip install", out)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=True)
+            assert not os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # freeze without version
+            cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:lock-packages", "-DgraalPyLockFile=test-graalpy.lock"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=True)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+            os.remove(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # freeze with correct version
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "requests", "requests==2.32.3")
+            cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:lock-packages", "-DgraalPyLockFile=test-graalpy.lock"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=True)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # add termcolor and build - fails as it is not part of lock file
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "<package>termcolor==2.2</package>\n</packages>")
+            cmd = mvnw_cmd + ["package", "-DgraalPyLockFile=test-graalpy.lock"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput(PACKAGES_CHANGED_ERROR, out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # freeze with termcolor
+            # stop using lock file system property but test also with field in pom.xml
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "</packages>\n<graalPyLockFile>test-graalpy.lock</graalPyLockFile>")
+            cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:lock-packages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=True)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+            assert os.path.exists(os.path.join(target_dir, "test-graalpy.lock"))
+
+            # should be able to import requests if installed
+            util.replace_in_file(os.path.join(target_dir, "src", "main", "java", "it", "pkg", "GraalPy.java"),
+                                 "import hello",
+                                 "import requests; import hello")
+
+            # rebuild with lock file and exec
+            cmd = mvnw_cmd + ["package", "exec:java", "-Dexec.mainClass=it.pkg.GraalPy"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out)
+            util.check_ouput(VENV_UPTODATE, out)
+            util.check_ouput("hello java", out)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
+
+            # disable packages config in pom - run with no packages, only lock file
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "<packages>", "<!--<packages>")
+            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "</packages>-->")
+
+            # clean and rebuild fails
+            cmd = mvnw_cmd + ["clean", "package"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput(MISSING_FILE_WARNING, out, contains=False)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_generated_app_external_resources(self):
@@ -248,41 +337,6 @@ class MavenPluginTest(util.BuildToolTestBase):
             cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("Missing GraalPy dependency. Please add to your pom either org.graalvm.polyglot:python-community or org.graalvm.polyglot:python", out)
-
-    @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
-    def test_gen_launcher_and_venv(self):
-        with util.TemporaryTestDirectory() as tmpdir:
-            target_name = "gen_launcher_and_venv_test"
-            target_dir = os.path.join(str(tmpdir), target_name)
-            pom_template = os.path.join(os.path.dirname(__file__), "prepare_venv_pom.xml")
-            self.generate_app(tmpdir, target_dir, target_name, pom_template)
-
-            mvnw_cmd = util.get_mvn_wrapper(target_dir, self.env)
-
-            cmd = mvnw_cmd + ["process-resources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out)
-            util.check_ouput("-m ensurepip",out)
-            util.check_ouput("ujson", out)
-            util.check_ouput("termcolor", out)
-
-            # run again and assert that we do not regenerate the venv
-            cmd = mvnw_cmd + ["process-resources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out, False)
-            util.check_ouput("-m ensurepip", out, False)
-            util.check_ouput("ujson", out, False)
-            util.check_ouput("termcolor", out, False)
-
-            # remove ujson pkg from plugin config and check if unistalled
-            util.replace_in_file(os.path.join(target_dir, "pom.xml"), "<package>ujson</package>", "")
-
-            cmd = mvnw_cmd + ["process-resources"]
-            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
-            util.check_ouput("-m venv", out, False)
-            util.check_ouput("-m ensurepip", out, False)
-            util.check_ouput("Uninstalling ujson", out)
-            util.check_ouput("termcolor", out, False)
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_check_home_warning(self):
@@ -381,11 +435,23 @@ class MavenPluginTest(util.BuildToolTestBase):
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
 
+            cmd = mvnw_cmd + ["-X", "org.graalvm.python:graalpy-maven-plugin:lock-packages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput("In order to run the lock-packages goal there have to be python packages declared in the graalpy-maven-plugin configuration", out)
+            assert not os.path.exists(os.path.join(target_dir, "graalpy.lock"))
+
             util.replace_in_file(os.path.join(target_dir, "pom.xml"), "</packages>", "<package></package><package> </package></packages>")
 
             cmd = mvnw_cmd + ["process-resources"]
             out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
             util.check_ouput("BUILD SUCCESS", out)
+
+            cmd = mvnw_cmd + ["org.graalvm.python:graalpy-maven-plugin:lock-packages"]
+            out, return_code = util.run_cmd(cmd, self.env, cwd=target_dir)
+            util.check_ouput("BUILD SUCCESS", out, contains=False)
+            util.check_ouput("In order to run the lock-packages goal there have to be python packages declared in the graalpy-maven-plugin configuration", out)
+            assert not os.path.exists(os.path.join(target_dir, "graalpy.lock"))
 
     @unittest.skipUnless(util.is_maven_plugin_test_enabled, "ENABLE_MAVEN_PLUGIN_UNITTESTS is not true")
     def test_python_resources_dir_deprecation(self):

@@ -104,7 +104,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSl
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.SetAttrBuiltinNode;
-import com.oracle.graal.python.lib.PyObjectIsNotTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -318,12 +317,12 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object self, Object other,
                         @Cached(parameters = "Eq") LookupAndCallBinaryNode eqNode,
-                        @Cached PyObjectIsNotTrueNode ifFalseNode) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object result = eqNode.executeObject(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
-            return ifFalseNode.execute(frame, result);
+            return !isTrueNode.execute(frame, result);
         }
     }
 
@@ -702,7 +701,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     return castToBooleanNode.execute(frame, e.getResult());
                 }
             } else {
-                return castToBooleanNode.execute(frame, node.executeObject(frame, left, right));
+                return castToBooleanNode.execute(frame, node.execute(frame, left, right));
             }
         }
     }

@@ -66,7 +66,7 @@ public abstract class PyNumberPowerNode extends BinaryOpNode {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w, Object z);
 
     @Override
-    public final Object executeObject(VirtualFrame frame, Object left, Object right) {
+    public final Object execute(VirtualFrame frame, Object left, Object right) {
         return executeCached(frame, left, right, PNone.NONE);
     }
 
@@ -105,5 +105,9 @@ public abstract class PyNumberPowerNode extends BinaryOpNode {
     @NeverDefault
     public static PyNumberPowerNode create() {
         return PyNumberPowerNodeGen.create();
+    }
+
+    public static PyNumberPowerNode getUncached() {
+        return PyNumberPowerNodeGen.getUncached();
     }
 }

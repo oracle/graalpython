@@ -1,0 +1,59 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -2,13 +2,10 @@
+ requires = [
+     "setuptools>=43",
+     "wheel",
++    "Cython==3.0.10",
+ ]
+ build-backend = "setuptools.build_meta"
+ 
+ [tool.cibuildwheel]
+-before-build = [
+-    "pip install cython==3.0.10",
+-    "cython {project}/jq.pyx",
+-]
+ test-requires = "-r test-requirements.txt"
+ test-command = "pytest {project}/tests"
+diff --git a/setup.py b/setup.py
+index 0b97097..54ed7b3 100644
+--- a/setup.py
++++ b/setup.py
+@@ -94,15 +94,27 @@ else:
+         os.path.join(jq_lib_dir, "modules/oniguruma/src/.libs/libonig.a"),
+     ]
+ 
++
++try:
++    # Follow recommendation from https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#distributing-cython-modules
++    from Cython.Build import cythonize
++except ImportError:
++    cythonize = lambda o: o
++    ext = ".c"
++else:
++    ext = ".pyx"
++
++
+ jq_extension = Extension(
+     "jq",
+-    sources=["jq.c"],
++    sources=[_path_in_dir(f"jq{ext}")],
+     define_macros=[("MS_WIN64" , 1)] if os.name == "nt" and sys.maxsize > 2**32  else None, # https://github.com/cython/cython/issues/2670
+     include_dirs=[os.path.join(jq_lib_dir, "src")],
+     extra_link_args=["-lm"] + (["-Wl,-Bstatic", "-lpthread", "-lshlwapi", "-static-libgcc"] if os.name == 'nt' else []) + link_args_deps,
+     extra_objects=extra_objects,
+ )
+ 
++
+ setup(
+     name='jq',
+     version='1.8.0',
+@@ -112,7 +124,7 @@ setup(
+     url='https://github.com/mwilliamson/jq.py',
+     python_requires='>=3.6',
+     license='BSD 2-Clause',
+-    ext_modules = [jq_extension],
++    ext_modules = cythonize([jq_extension]),
+     cmdclass={"build_ext": jq_build_ext},
+     classifiers=[
+         'Development Status :: 5 - Production/Stable',

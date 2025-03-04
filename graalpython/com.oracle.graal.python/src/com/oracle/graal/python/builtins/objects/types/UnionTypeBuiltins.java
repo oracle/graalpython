@@ -73,14 +73,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
+import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -289,12 +288,12 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.mp_subscript, isComplex = true)
     @GenerateNodeFactory
     abstract static class GetItemNode extends MpSubscriptBuiltinNode {
-        @Child BinaryOpNode orNode = BinaryArithmetic.Or.create();
 
         @Specialization
         Object getitem(VirtualFrame frame, PUnionType self, Object item,
                         @Bind("this") Node inliningTarget,
-                        @Cached InlinedBranchProfile createProfile) {
+                        @Cached InlinedBranchProfile createProfile,
+                        @Cached PyNumberOrNode orNode) {
             if (self.getParameters() == null) {
                 createProfile.enter(inliningTarget);
                 self.setParameters(PFactory.createTuple(PythonLanguage.get(inliningTarget), GenericTypeNodes.makeParameters(self.getArgs())));
@@ -302,7 +301,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
             Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
             Object result = newargs[0];
             for (int i = 1; i < newargs.length; i++) {
-                result = orNode.executeObject(frame, result, newargs[i]);
+                result = orNode.execute(frame, result, newargs[i]);
             }
             return result;
         }
