@@ -89,6 +89,14 @@ For more details about GraalPy context and Virtual FileSystem configuration plea
 
 ### Maven and Gradle applications
 
+####  ImportError reports "unknown location"
+A possible cause of an `ImportError` ending with `(unknown location)` when running a GraalPy Java Embedding project might be 
+that an embedded Python package was built for a different operating system. If you see an error like the following:
+```
+ImportError: cannot import name 'exceptions' from 'cryptography.hazmat.bindings._rust' (unknown location)
+``` 
+You probably need to rebuild your project on the correct operating system before running it.
+
 #### GraalVM JDK Compatibility
 To enable runtime compilation when running GraalPy from a Maven or Gradle application, 
 you must use versions of GraalPy and the Polyglot API dependencies that are compatible 
