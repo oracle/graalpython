@@ -446,7 +446,10 @@ class Pattern():
                 else:
                     _repl = repl(_srematch)
                 if _repl is not None:
-                    result.append(str(_repl))
+                    if self.__binary:
+                        result.append(bytes(_repl))
+                    else:
+                        result.append(str(_repl))
             pos = end
             must_advance = start == end
         result.append(string[pos:])
@@ -533,7 +536,9 @@ class SRETemplate(object):
 def expand_template(template, match):
     result = template.literal
     for index, literal in template.items:
-        result += match.group(index)
+        g = match.group(index)
+        if g is not None:
+            result += g
         if literal:
             result += literal
     return result

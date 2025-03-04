@@ -2113,8 +2113,13 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         static DoubleLength dl_mul(double x, double y) {
             /* Algorithm 3.5. Error-free transformation of a product */
             double z = x * y;
-            double zz = Math.fma(x, y, -z);
+            double zz = fma(x, y, -z);
             return new DoubleLength(z, zz);
+        }
+
+        @TruffleBoundary
+        static double fma(double a, double b, double c) {
+            return Math.fma(a, b, c);
         }
 
         record TripleLength(double hi, double lo, double tiny) {

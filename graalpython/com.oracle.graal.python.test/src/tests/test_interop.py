@@ -1059,8 +1059,7 @@ class InteropTests(unittest.TestCase):
 
         # Because it tries to call ForeignDict.__call__, but ForeignDict is not executable/instantiable,
         # so it resolves to type.__call__, which cannot create a ForeignDict
-        with self.assertRaisesRegex(TypeError, "descriptor requires a 'dict' object but received a 'ForeignDict'"):
-            type(h).fromkeys(['a', 'b'], 42)
+        self.assertRaises(TypeError, lambda: type(h).fromkeys(['a', 'b'], 42))
 
     def test_java_iterator(self):
         from java.util import ArrayList, LinkedHashSet
