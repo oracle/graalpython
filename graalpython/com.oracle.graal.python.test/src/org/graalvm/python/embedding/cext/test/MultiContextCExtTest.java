@@ -243,15 +243,9 @@ public class MultiContextCExtTest {
             } catch (PolyglotException e) {
                 assertTrue("We rely on sys.prefix", e.getMessage().contains("sys.prefix must be a str"));
             }
-            // Fifth one does not work because we don't have the venv configured
-            try {
-                c5.eval(code);
-                fail("should not reach here");
-            } catch (PolyglotException e) {
-                assertTrue("We need a venv", e.getMessage().contains("sys.prefix must point to a venv"));
-            }
-            // Using a context without isolation in the same process needs to use LLVM
-            assertFalse("have not had a context use LLVM, yet", log.truffleLog.toString().contains("as bitcode"));
+            // Fifth works even without a venv
+            c5.eval(code);
+            // Using a context without isolation in the same process does not work
             try {
                 c0.eval(code);
                 fail("should not reach here");

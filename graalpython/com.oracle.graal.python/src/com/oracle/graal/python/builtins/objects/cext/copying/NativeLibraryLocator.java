@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -189,11 +189,31 @@ public final class NativeLibraryLocator {
         String newName = copyNameOf(original.getName(), capiSlot);
 
         if (original.getAbsoluteFile().startsWith(context.getCoreHome().toJavaStringUncached())) {
-            // must be relocated to venv
+            // must be relocated to venv or tmpdir
             Object sysPrefix = context.getSysModule().getAttribute(T_PREFIX);
             Object sysBasePrefix = context.getSysModule().getAttribute(T_BASE_PREFIX);
             if (sysPrefix.equals(sysBasePrefix)) {
-                throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_POINT_TO_A_VENV_FOR_CAPI_ISOLATION);
+                TruffleFile tempDir;
+                try {
+                    tempDir = context.getEnv().createTempDirectory(null, null);
+                } catch (IOException e) {
+                    throw new ApiInitException(ErrorMessages.SYS_PREFIX_MUST_POINT_TO_A_VENV_FOR_CAPI_ISOLATION);
+                }
+                context.registerAtexitHook((ctx) -> {
+                    try {
+                        tempDir.delete();
+                    } catch (IOException e) {
+                        // Nothing we can do at this point
+                    }
+                });
+                copy = tempDir.resolve(newName);
+                context.registerAtexitHook((ctx) -> {
+                    try {
+                        copy.delete();
+                    } catch (IOException e) {
+                        // Nothing we can do at this point
+                    }
+                });
             } else {
                 try {
                     var tsSysPrefix = CastToTruffleStringNode.executeUncached(sysPrefix);
