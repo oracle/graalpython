@@ -68,11 +68,11 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyFrozenSetCheckExactNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -84,7 +84,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -290,14 +289,13 @@ abstract class Obj2SstBase {
         boolean isTuple = PyTupleCheckExactNode.executeUncached(obj);
         if (isTuple || PyFrozenSetCheckExactNode.executeUncached(obj)) {
             Object iter = PyObjectGetIter.executeUncached(obj);
-            GetNextNode nextNode = GetNextNode.getUncached();
             ArrayList<ConstantValue> list = new ArrayList<>();
             while (true) {
-                try {
-                    list.add(obj2ConstantValue(nextNode.execute(iter)));
-                } catch (PException e) {
-                    e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
+                Object item = PyIterNextNode.executeUncached(iter);
+                if (PyIterNextNode.isExhausted(item)) {
                     break;
+                } else {
+                    list.add(obj2ConstantValue(item));
                 }
             }
             if (isTuple) {

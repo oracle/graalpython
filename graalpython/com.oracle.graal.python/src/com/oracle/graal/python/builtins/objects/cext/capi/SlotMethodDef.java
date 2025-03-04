@@ -46,8 +46,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyAs
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_call;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_hash;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_init;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_iter;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_iternext;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_repr;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_richcompare;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_str;
@@ -57,8 +55,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUFFLE_RICHCOMPARE__;
@@ -78,8 +74,6 @@ public enum SlotMethodDef {
     TP_CALL(PyTypeObject__tp_call, T___CALL__, CallFunctionWrapper::new),
     TP_HASH(PyTypeObject__tp_hash, T___HASH__, HashfuncWrapper::new),
     TP_INIT(PyTypeObject__tp_init, T___INIT__, InitWrapper::new),
-    TP_ITER(PyTypeObject__tp_iter, T___ITER__, PyProcsWrapper.UnaryFuncLegacyWrapper::new),
-    TP_ITERNEXT(PyTypeObject__tp_iternext, T___NEXT__, UnaryFuncLegacyWrapper::new),
     TP_REPR(PyTypeObject__tp_repr, T___REPR__, PyProcsWrapper.UnaryFuncLegacyWrapper::new),
     TP_RICHCOMPARE(PyTypeObject__tp_richcompare, T___TRUFFLE_RICHCOMPARE__, RichcmpFunctionWrapper::new),
     TP_STR(PyTypeObject__tp_str, T___STR__, UnaryFuncLegacyWrapper::new),

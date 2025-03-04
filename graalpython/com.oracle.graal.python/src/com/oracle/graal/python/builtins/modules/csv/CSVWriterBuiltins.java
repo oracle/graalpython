@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -94,15 +94,14 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringIterator.NextNode stringNextNode,
                         @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached PyObjectStrAsTruffleStringNode objectStrAsTruffleStringNode,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PRaiseNode raiseNode) {
             Object iter;
 
@@ -118,26 +117,24 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             CSVDialect dialect = self.dialect;
             boolean first = true;
             while (true) {
-                try {
-                    Object field = getNextNode.execute(frame, iter);
-                    /* If this is not the first field we need a field separator */
-                    if (!first) {
-                        appendStringNode.execute(sb, dialect.delimiter);
-                    } else {
-                        first = false;
-                    }
-                    joinField(inliningTarget, sb, dialect, field, createCodePointIteratorNode, nextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode, objectStrAsTruffleStringNode,
-                                    pyNumberCheckNode, raiseNode);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
+                Object field = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(field)) {
                     break;
                 }
+                /* If this is not the first field we need a field separator */
+                if (!first) {
+                    appendStringNode.execute(sb, dialect.delimiter);
+                } else {
+                    first = false;
+                }
+                joinField(inliningTarget, sb, dialect, field, createCodePointIteratorNode, stringNextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode,
+                                objectStrAsTruffleStringNode, pyNumberCheckNode, raiseNode);
             }
             if (!first && sb.isEmpty()) {
                 if (dialect.quoting == QUOTE_NONE) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
                 }
-                joinAppend(inliningTarget, sb, dialect, null, true, createCodePointIteratorNode, nextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode, raiseNode);
+                joinAppend(inliningTarget, sb, dialect, null, true, createCodePointIteratorNode, stringNextNode, byteIndexOfCodePointNode, appendCodePointNode, appendStringNode, raiseNode);
             }
             appendStringNode.execute(sb, dialect.lineTerminator);
             return callNode.executeObject(frame, self.write, toStringNode.execute(sb));
@@ -259,21 +256,15 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, CSVWriter self, Object seq,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNext,
-                        @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Cached WriteRowNode writeRow) {
-            Object iter, row;
-
-            iter = getIter.execute(frame, inliningTarget, seq);
-
+            Object iter = getIter.execute(frame, inliningTarget, seq);
             while (true) {
-                try {
-                    row = getNext.execute(frame, iter);
-                    writeRow.execute(frame, self, row);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, isBuiltinClassProfile);
+                Object row = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(row)) {
                     break;
                 }
+                writeRow.execute(frame, self, row);
             }
             return PNone.NONE;
         }

@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.contextvars;
 
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 
 import java.util.List;
 
@@ -106,7 +105,7 @@ public final class ContextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class Iter extends PythonUnaryBuiltinNode {
         @Specialization

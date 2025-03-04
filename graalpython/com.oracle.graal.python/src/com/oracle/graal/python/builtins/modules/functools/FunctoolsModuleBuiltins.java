@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -119,7 +119,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
         Object doReduce(VirtualFrame frame, Object function, Object sequence, Object initialIn,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
+                        @Cached PyIterNextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached InlinedConditionProfile initialNoValueProfile,
                         @Cached IsBuiltinObjectProfile stopIterProfile,
@@ -138,23 +138,20 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
 
             int count = 0;
             while (true) {
-                Object op2;
-                try {
-                    op2 = nextNode.execute(frame, seqIterator);
-                    if (result == null) {
-                        result = op2;
-                    } else {
-                        // Update the args tuple in-place
-                        args[0] = result;
-                        args[1] = op2;
-                        result = callNode.execute(frame, function, args);
-                    }
-                    if (CompilerDirectives.hasNextTier()) {
-                        count++;
-                    }
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, stopIterProfile);
+                Object op2 = nextNode.execute(frame, inliningTarget, seqIterator);
+                if (PyIterNextNode.isExhausted(op2)) {
                     break;
+                }
+                if (result == null) {
+                    result = op2;
+                } else {
+                    // Update the args tuple in-place
+                    args[0] = result;
+                    args[1] = op2;
+                    result = callNode.execute(frame, function, args);
+                }
+                if (CompilerDirectives.hasNextTier()) {
+                    count++;
                 }
             }
             reportLoopCount(this, count >= 0 ? count : Integer.MAX_VALUE);

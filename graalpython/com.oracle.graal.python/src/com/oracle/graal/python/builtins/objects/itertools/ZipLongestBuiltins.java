@@ -40,27 +40,26 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -77,12 +76,14 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PZipLongest})
 public final class ZipLongestBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = ZipLongestBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ZipLongestBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -91,32 +92,23 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
-        @SuppressWarnings("unused")
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization(guards = "zeroSize(self)")
-        static Object nextNoFillValue(VirtualFrame frame, PZipLongest self,
-                        @Bind("this") Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, StopIteration);
+        static Object nextNoFillValue(@SuppressWarnings("unused") PZipLongest self) {
+            return iteratorExhausted();
         }
 
         @Specialization(guards = "!zeroSize(self)")
         static Object next(VirtualFrame frame, PZipLongest self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinObjectProfile isStopIterationProfile,
+                        @Cached PyIterNextNode nextNode,
                         @Cached InlinedConditionProfile noItProfile,
                         @Cached InlinedConditionProfile noActiveProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached InlinedConditionProfile isNullFillProfile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached InlinedConditionProfile isNullFillProfile) {
             Object fillValue = isNullFillProfile.profile(inliningTarget, isNullFillValue(self)) ? PNone.NONE : self.getFillValue();
-            return next(frame, inliningTarget, self, fillValue, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile, raiseNode);
-        }
-
-        private static Object next(VirtualFrame frame, Node inliningTarget, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinObjectProfile isStopIterationProfile,
-                        InlinedLoopConditionProfile loopProfile, InlinedConditionProfile noItProfile, InlinedConditionProfile noActiveProfile, PRaiseNode raiseNode) {
             Object[] result = new Object[self.getItTuple().length];
             loopProfile.profileCounted(inliningTarget, result.length);
             for (int i = 0; loopProfile.inject(inliningTarget, i < result.length); i++) {
@@ -126,19 +118,18 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                     item = fillValue;
                 } else {
                     try {
-                        item = nextNode.execute(frame, it, PNone.NO_VALUE);
+                        item = nextNode.execute(frame, inliningTarget, it);
                     } catch (PException e) {
-                        if (isStopIterationProfile.profileException(inliningTarget, e, StopIteration)) {
-                            self.setNumActive(self.getNumActive() - 1);
-                            if (noActiveProfile.profile(inliningTarget, self.getNumActive() == 0)) {
-                                throw raiseNode.raise(inliningTarget, StopIteration);
-                            } else {
-                                item = fillValue;
-                                self.getItTuple()[i] = PNone.NONE;
-                            }
+                        self.setNumActive(0);
+                        throw e;
+                    }
+                    if (PyIterNextNode.isExhausted(item)) {
+                        self.setNumActive(self.getNumActive() - 1);
+                        if (noActiveProfile.profile(inliningTarget, self.getNumActive() == 0)) {
+                            return iteratorExhausted();
                         } else {
-                            self.setNumActive(0);
-                            throw e;
+                            item = fillValue;
+                            self.getItTuple()[i] = PNone.NONE;
                         }
                     }
                 }

@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -61,7 +62,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -102,20 +102,20 @@ public abstract class HashingStorage {
             return new KeywordsStorage(kwargs);
         }
 
-        @Specialization(guards = {"isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, lookupIter)"})
+        @Specialization(guards = {"isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)"})
         static HashingStorage doPDict(PDict dict, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                         @Shared @Cached HashingStorageCopy copyNode) {
             return copyNode.execute(inliningTarget, dict.getDictStorage());
         }
 
-        @Specialization(guards = {"!isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, lookupIter)"})
+        @Specialization(guards = {"!isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)"})
         static HashingStorage doPDictKwargs(VirtualFrame frame, PDict dict, PKeyword[] kwargs,
                         @Bind("this") Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
                         @Shared @Cached HashingStorageCopy copyNode,
                         @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
             HashingStorage iterableDictStorage = dict.getDictStorage();
@@ -208,7 +208,7 @@ public abstract class HashingStorage {
         static ArrayBuilder<KeyValue> partialMerge(VirtualFrame frame, Object mapping, Object keyAttr,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached(neverDefault = false) PyIterNextNode nextNode,
+                        @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,
                         @Cached CallVarargsMethodNode callKeysMethod) {
             // We don't need to pass self as the attribute object has it already.
@@ -216,7 +216,7 @@ public abstract class HashingStorage {
             Object keysIt = getIter.execute(frame, inliningTarget, keysIterable);
             ArrayBuilder<KeyValue> elements = new ArrayBuilder<>();
             Object keyObj;
-            while ((keyObj = nextNode.execute(frame, keysIt)) != null) {
+            while (!PyIterNextNode.isExhausted(keyObj = nextNode.execute(frame, inliningTarget, keysIt))) {
                 Object valueObj = getItemNode.execute(frame, inliningTarget, mapping, keyObj);
                 elements.add(new KeyValue(keyObj, valueObj));
             }
@@ -228,7 +228,7 @@ public abstract class HashingStorage {
         static ArrayBuilder<KeyValue> partialMergeFromSeq2(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone keyAttr,
                         @Bind("this") Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached(neverDefault = false) PyIterNextNode nextNode,
+                        @Shared @Cached PyIterNextNode nextNode,
                         @Shared @Cached PyObjectGetItem getItemNode,
                         @Cached FastConstructListNode createListNode,
                         @Cached LenNode seqLenNode,
@@ -240,7 +240,7 @@ public abstract class HashingStorage {
             Object next;
             int len = 2;
             try {
-                while ((next = nextNode.execute(frame, it)) != null) {
+                while (!PyIterNextNode.isExhausted(next = nextNode.execute(frame, inliningTarget, it))) {
                     PSequence element = createListNode.execute(frame, inliningTarget, next);
                     assert element != null;
                     // This constructs a new list using the builtin type. So, the object cannot

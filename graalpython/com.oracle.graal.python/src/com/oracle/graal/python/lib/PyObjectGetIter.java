@@ -43,15 +43,13 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -59,10 +57,10 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -71,7 +69,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateCached
 @GenerateInline(inlineByDefault = true)
-@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetIter extends Node {
     public static Object executeUncached(Object obj) {
         return PyObjectGetIterNodeGen.getUncached().execute(null, null, obj);
@@ -91,31 +88,25 @@ public abstract class PyObjectGetIter extends Node {
 
     @Specialization
     @InliningCutoff
-    static Object getIter(Frame frame, Node inliningTarget, Object receiver,
+    static Object getIter(VirtualFrame frame, Node inliningTarget, Object receiver,
                     @Cached GetClassNode getReceiverClass,
-                    @Cached(parameters = "Iter", inline = false) LookupSpecialMethodSlotNode lookupIter,
+                    @Cached GetCachedTpSlotsNode getSlots,
                     @Cached PySequenceCheckNode sequenceCheckNode,
-                    @Bind PythonLanguage language,
                     @Cached PRaiseNode raise,
-                    @Cached(inline = false) CallUnaryMethodNode callIter,
+                    @Cached CallSlotUnaryNode callSlot,
                     @Cached PyIterCheckNode checkNode) {
         Object type = getReceiverClass.execute(inliningTarget, receiver);
-        Object iterMethod = PNone.NO_VALUE;
-        try {
-            iterMethod = lookupIter.execute(frame, type, receiver);
-        } catch (PException e) {
-            // ignore
-        }
-        if (iterMethod instanceof PNone) {
-            if (sequenceCheckNode.execute(inliningTarget, receiver)) {
-                return PFactory.createSequenceIterator(language, receiver);
-            }
-        } else {
-            Object result = callIter.executeObject(frame, iterMethod, receiver);
+        TpSlots slots = getSlots.execute(inliningTarget, type);
+        if (slots.tp_iter() != null) {
+            Object result = callSlot.execute(frame, inliningTarget, slots.tp_iter(), receiver);
             if (!checkNode.execute(inliningTarget, result)) {
                 throw raise.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NONITER, result);
             }
             return result;
+        } else {
+            if (sequenceCheckNode.execute(inliningTarget, receiver)) {
+                return PFactory.createSequenceIterator(PythonLanguage.get(inliningTarget), receiver);
+            }
         }
         throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
     }

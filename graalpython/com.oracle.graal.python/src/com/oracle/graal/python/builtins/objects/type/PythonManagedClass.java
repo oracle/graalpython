@@ -247,14 +247,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                         !SpecialMethodSlot.canBeSpecial(key, codePointLengthNode, codePointAtIndexNode);
     }
 
-    public final void onAttributeUpdate(Object key, Object value) {
-        // In compilation: use a profile and call the String key overload
-        CompilerAsserts.neverPartOfCompilation();
-        if (key instanceof TruffleString) {
-            onAttributeUpdate((TruffleString) key, value);
-        }
-    }
-
     @TruffleBoundary
     public void onAttributeUpdate(TruffleString key, Object value) {
         methodResolutionOrder.invalidateAttributeInMROFinalAssumptions(key);

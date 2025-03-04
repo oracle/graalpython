@@ -65,8 +65,8 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
-import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -367,19 +367,18 @@ public abstract class IteratorNodes {
         @Fallback
         public static Object[] doIt(VirtualFrame frame, Object iterable,
                         @Bind("this") Node inliningTarget,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Cached PyObjectGetIter getIter) {
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode nextNode) {
             Object it = getIter.execute(frame, inliningTarget, iterable);
             List<Object> result = createlist();
             while (true) {
-                try {
-                    result.add(getNextNode.execute(frame, it));
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, stopIterationProfile);
-                    return result.toArray(new Object[result.size()]);
+                Object next = nextNode.execute(frame, inliningTarget, it);
+                if (PyIterNextNode.isExhausted(next)) {
+                    break;
                 }
+                result.add(next);
             }
+            return result.toArray(new Object[result.size()]);
         }
 
         @TruffleBoundary

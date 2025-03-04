@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
@@ -57,7 +56,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
@@ -100,7 +98,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRepeatBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
@@ -175,19 +173,17 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Bind("this") Node inliningTarget,
                         @Exclusive @Cached InlinedConditionProfile sizeZeroProfile,
                         @Exclusive @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached GetNextNode getNextNode,
-                        @Exclusive @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Exclusive @Cached PyIterNextNode nextNode) {
             if (sizeZeroProfile.profile(inliningTarget, self.getSize() != 0)) {
                 self.clear();
             }
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                try {
-                    self.append(getNextNode.execute(frame, iterator));
-                } catch (PException e) {
-                    e.expect(inliningTarget, PythonBuiltinClassType.StopIteration, isStopIterationProfile);
+                Object next = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(next)) {
                     break;
                 }
+                self.append(next);
             }
             return PNone.NONE;
         }
@@ -198,9 +194,8 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Exclusive @Cached InlinedConditionProfile sizeZeroProfile,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Exclusive @Cached PyObjectGetIter getIter,
-                        @Exclusive @Cached GetNextNode getNextNode,
+                        @Exclusive @Cached PyIterNextNode nextNode,
                         @Exclusive @Cached IsBuiltinObjectProfile isTypeErrorProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile isStopIterationProfile,
                         @Cached PRaiseNode raiseNode) {
             if (!PGuards.isPNone(maxlenObj)) {
                 try {
@@ -222,7 +217,7 @@ public final class DequeBuiltins extends PythonBuiltins {
             }
 
             if (iterable != PNone.NO_VALUE) {
-                doIterable(frame, self, iterable, PNone.NO_VALUE, inliningTarget, sizeZeroProfile, getIter, getNextNode, isStopIterationProfile);
+                doIterable(frame, self, iterable, PNone.NO_VALUE, inliningTarget, sizeZeroProfile, getIter, nextNode);
             }
             return PNone.NONE;
         }
@@ -348,36 +343,32 @@ public final class DequeBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile selfIsOtherProfile,
                         @Cached InlinedConditionProfile maxLenZeroProfile,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Cached PyIterNextNode nextNode) {
             if (selfIsOtherProfile.profile(inliningTarget, self == other)) {
                 return doSelf(self, self);
             }
 
             Object it = getIter.execute(frame, inliningTarget, other);
             if (maxLenZeroProfile.profile(inliningTarget, self.getMaxLength() == 0)) {
-                consumeIterator(frame, it, getNextNode, inliningTarget, isStopIterationProfile);
+                consumeIterator(frame, it, nextNode, inliningTarget);
                 return PNone.NONE;
             }
 
             while (true) {
-                try {
-                    appendOperation(self, getNextNode.execute(frame, it));
-                } catch (PException e) {
-                    e.expect(inliningTarget, StopIteration, isStopIterationProfile);
+                Object next = nextNode.execute(frame, inliningTarget, it);
+                if (PyIterNextNode.isExhausted(next)) {
                     break;
                 }
+                appendOperation(self, next);
             }
-            consumeIterator(frame, it, getNextNode, inliningTarget, isStopIterationProfile);
+            consumeIterator(frame, it, nextNode, inliningTarget);
             return PNone.NONE;
         }
 
-        private static void consumeIterator(VirtualFrame frame, Object it, GetNextNode getNextNode, Node inliningTarget, IsBuiltinObjectProfile isStopIterationProfile) {
+        private static void consumeIterator(VirtualFrame frame, Object it, PyIterNextNode getNextNode, Node inliningTarget) {
             while (true) {
-                try {
-                    getNextNode.execute(frame, it);
-                } catch (PException e) {
-                    e.expect(inliningTarget, StopIteration, isStopIterationProfile);
+                Object next = getNextNode.execute(frame, inliningTarget, it);
+                if (PyIterNextNode.isExhausted(next)) {
                     break;
                 }
             }
@@ -691,8 +682,7 @@ public final class DequeBuiltins extends PythonBuiltins {
         static PDeque doOther(VirtualFrame frame, PDeque self, Object other,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile isStopIterationProfile) {
+                        @Cached PyIterNextNode nextNode) {
             if (other instanceof PDeque) {
                 return doDeque(self, (PDeque) other);
             }
@@ -703,12 +693,11 @@ public final class DequeBuiltins extends PythonBuiltins {
              */
             Object iterator = getIter.execute(frame, inliningTarget, other);
             while (true) {
-                try {
-                    self.append(getNextNode.execute(frame, iterator));
-                } catch (PException e) {
-                    e.expect(inliningTarget, PythonBuiltinClassType.StopIteration, isStopIterationProfile);
+                Object next = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(next)) {
                     break;
                 }
+                self.append(next);
             }
             return self;
         }
@@ -847,7 +836,7 @@ public final class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.__iter__()
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class DequeIterNode extends PythonUnaryBuiltinNode {
 
@@ -956,24 +945,25 @@ public final class DequeBuiltins extends PythonBuiltins {
         static Object doGeneric(VirtualFrame frame, Node inliningTarget, PDeque self, PDeque other, @SuppressWarnings("unused") ComparisonOp op, PyObjectRichCompareBool.ComparisonBaseNode cmpNode,
                         @Cached PyObjectGetIter getIterSelf,
                         @Cached PyObjectGetIter getIterOther,
-                        @Cached(inline = false) GetNextNode selfItNextNode,
-                        @Cached(inline = false) GetNextNode otherItNextNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached IsBuiltinObjectProfile profile) {
+                        @Cached PyIterNextNode selfItNextNode,
+                        @Cached PyIterNextNode otherItNextNode,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             Object ait = getIterSelf.execute(frame, inliningTarget, self);
             Object bit = getIterOther.execute(frame, inliningTarget, other);
             while (true) {
-                try {
-                    Object selfItem = selfItNextNode.execute(frame, ait);
-                    Object otherItem = otherItNextNode.execute(frame, bit);
-                    if (!eqNode.compare(frame, inliningTarget, selfItem, otherItem)) {
-                        return cmpNode.compare(frame, inliningTarget, selfItem, otherItem);
-                    }
-                } catch (PException e) {
-                    e.expect(inliningTarget, StopIteration, profile);
-                    return cmpNode.compare(frame, inliningTarget, self.getSize(), other.getSize());
+                Object selfItem = selfItNextNode.execute(frame, inliningTarget, ait);
+                if (PyIterNextNode.isExhausted(selfItem)) {
+                    break;
+                }
+                Object otherItem = otherItNextNode.execute(frame, inliningTarget, bit);
+                if (PyIterNextNode.isExhausted(otherItem)) {
+                    break;
+                }
+                if (!eqNode.compare(frame, inliningTarget, selfItem, otherItem)) {
+                    return cmpNode.compare(frame, inliningTarget, selfItem, otherItem);
                 }
             }
+            return cmpNode.compare(frame, inliningTarget, self.getSize(), other.getSize());
         }
 
         static boolean isPDeque(Object object) {

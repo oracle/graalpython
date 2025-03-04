@@ -77,8 +77,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -89,6 +87,8 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -97,8 +97,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyErrChainExceptions;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -116,7 +118,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -140,6 +141,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PIOBase)
 public final class IOBaseBuiltins extends PythonBuiltins {
+    public static final TpSlots SLOTS = IOBaseBuiltinsSlotsGen.SLOTS;
 
     // taken from usr/include/stdio.h
     public static final int BUFSIZ = 8192;
@@ -411,7 +413,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -423,18 +425,17 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    abstract static class NextNode extends PythonUnaryBuiltinNode {
+    abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PythonObject self,
                         @Bind("this") Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PyObjectSizeNode sizeNode) {
             Object line = callMethod.execute(frame, inliningTarget, self, T_READLINE);
             if (sizeNode.execute(frame, inliningTarget, line) <= 0) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
+                return iteratorExhausted();
             }
             return line;
         }
@@ -447,18 +448,14 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         static Object writeLines(VirtualFrame frame, PythonObject self, Object lines,
                         @Bind("this") Node inliningTarget,
                         @Cached CheckClosedHelperNode checkClosedNode,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectGetIter getIter) {
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode nextNode) {
             checkClosedNode.execute(frame, inliningTarget, self);
             Object iter = getIter.execute(frame, inliningTarget, lines);
             while (true) {
-                Object line;
-                try {
-                    line = getNextNode.execute(frame, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object line = nextNode.execute(frame, inliningTarget, iter);
+                if (PyIterNextNode.isExhausted(line)) {
                     break;
                 }
                 callMethod.execute(frame, inliningTarget, self, T_WRITE, line);
@@ -549,28 +546,25 @@ public final class IOBaseBuiltins extends PythonBuiltins {
         static Object withHint(VirtualFrame frame, Object self, int hintIn,
                         @Bind("this") Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached GetNextNode next,
                         @Cached InlinedConditionProfile isNegativeHintProfile,
-                        @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached PyObjectGetIter getIter,
+                        @Cached PyIterNextNode nextNode,
                         @Cached PyObjectSizeNode sizeNode) {
             int hint = isNegativeHintProfile.profile(inliningTarget, hintIn <= 0) ? Integer.MAX_VALUE : hintIn;
             int length = 0;
             Object iterator = getIter.execute(frame, inliningTarget, self);
             ArrayBuilder<Object> list = new ArrayBuilder<>();
             while (true) {
-                try {
-                    Object line = next.execute(frame, iterator);
-                    list.add(line);
-                    int lineLength = sizeNode.execute(frame, inliningTarget, line);
-                    if (lineLength > hint - length) {
-                        break;
-                    }
-                    length += lineLength;
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object line = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(line)) {
                     break;
                 }
+                list.add(line);
+                int lineLength = sizeNode.execute(frame, inliningTarget, line);
+                if (lineLength > hint - length) {
+                    break;
+                }
+                length += lineLength;
             }
             return PFactory.createList(language, list.toArray(new Object[0]));
         }

@@ -46,14 +46,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -85,17 +83,15 @@ public abstract class SetNodes {
                         @Bind PythonLanguage language,
                         @Exclusive @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PyObjectGetIter getIter,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile errorProfile) {
+                        @Cached PyIterNextNode nextNode) {
             PSet set = PFactory.createSet(language);
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
             while (true) {
-                try {
-                    setItemNode.execute(frame, inliningTarget, set, nextNode.execute(frame, iterator), PNone.NONE);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, errorProfile);
+                Object next = nextNode.execute(frame, inliningTarget, iterator);
+                if (PyIterNextNode.isExhausted(next)) {
                     return set;
                 }
+                setItemNode.execute(frame, inliningTarget, set, next, PNone.NONE);
             }
         }
 

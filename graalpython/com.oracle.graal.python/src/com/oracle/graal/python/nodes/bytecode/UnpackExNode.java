@@ -47,7 +47,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -105,9 +105,8 @@ public abstract class UnpackExNode extends PNodeWithContext {
     static int doUnpackIterable(VirtualFrame frame, int initialStackTop, Object collection, int countBefore, int countAfter,
                     @Bind("this") Node inliningTarget,
                     @Cached PyObjectGetIter getIter,
-                    @Cached GetNextNode getNextNode,
+                    @Cached PyIterNextNode nextNode,
                     @Cached IsBuiltinObjectProfile notIterableProfile,
-                    @Cached IsBuiltinObjectProfile stopIterationProfile,
                     @Cached ListNodes.ConstructListNode constructListNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
@@ -124,7 +123,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
             e.expectTypeError(inliningTarget, notIterableProfile);
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_UNPACK_NON_ITERABLE, collection);
         }
-        stackTop = moveItemsToStack(frame, inliningTarget, iterator, stackTop, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
+        stackTop = moveItemsToStack(frame, inliningTarget, iterator, stackTop, 0, countBefore, countBefore + countAfter, nextNode, raiseNode);
         PList starAndAfter = constructListNode.execute(frame, iterator);
         SequenceStorage storage = starAndAfter.getSequenceStorage();
         int lenAfter = storage.length();
@@ -143,18 +142,16 @@ public abstract class UnpackExNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static int moveItemsToStack(VirtualFrame frame, Node inliningTarget, Object iterator, int initialStackTop, int offset, int length, int totalLength, GetNextNode getNextNode,
-                    IsBuiltinObjectProfile stopIterationProfile, PRaiseNode raiseNode) {
+    private static int moveItemsToStack(VirtualFrame frame, Node inliningTarget, Object iterator, int initialStackTop, int offset, int length, int totalLength, PyIterNextNode nextNode,
+                    PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(length);
         int stackTop = initialStackTop;
         for (int i = 0; i < length; i++) {
-            try {
-                Object item = getNextNode.execute(frame, iterator);
-                frame.setObject(stackTop--, item);
-            } catch (PException e) {
-                e.expectStopIteration(inliningTarget, stopIterationProfile);
+            Object item = nextNode.execute(frame, inliningTarget, iterator);
+            if (PyIterNextNode.isExhausted(item)) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, totalLength, offset + i);
             }
+            frame.setObject(stackTop--, item);
         }
         return stackTop;
     }

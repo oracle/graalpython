@@ -113,6 +113,7 @@ import java.util.stream.Collectors;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
@@ -122,31 +123,67 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BytesIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenSendBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenThrowBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.CoroutineWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.ContextBuiltins;
+import com.oracle.graal.python.builtins.objects.contextvars.ContextIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
+import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.MethodDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.WrapperDescriptorBuiltins;
+import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.MemberDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
+import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.DropwhileBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.FilterfalseBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GroupByBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GrouperBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.PairwiseBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
@@ -157,13 +194,21 @@ import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictItemsBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictKeysBuiltins;
+import com.oracle.graal.python.builtins.objects.ordereddict.OrderedDictValuesBuiltins;
+import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
+import com.oracle.graal.python.builtins.objects.reversed.ReversedBuiltins;
 import com.oracle.graal.python.builtins.objects.set.BaseSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
+import com.oracle.graal.python.builtins.objects.struct.StructUnpackIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
+import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -171,6 +216,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.Builder;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
+import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -191,8 +237,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     Boolean("bool", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, BOOLEAN_M_FLAGS, BoolBuiltins.SLOTS),
     PArray("array", "array", ARRAY_M_FLAGS, ArrayBuiltins.SLOTS),
-    PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),
-    PIterator("iterator", Flags.PRIVATE_DERIVED_WODICT),
+    PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
+    PIterator("iterator", Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
     /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
     PBuiltinFunction("method_descriptor", Flags.PRIVATE_DERIVED_WODICT, MethodDescriptorBuiltins.SLOTS),
     /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
@@ -217,41 +263,41 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PDefaultDict(J_DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT, DEFAULTDICT_M_FLAGS, DefaultDictBuiltins.SLOTS),
     PDeque(J_DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT, DEQUE_M_FLAGS, DequeBuiltins.SLOTS),
     PTupleGetter(J_TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT, TupleGetterBuiltins.SLOTS),
-    PDequeIter(J_DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
-    PDequeRevIter(J_DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
+    PDequeIter(J_DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT, DequeIterBuiltins.SLOTS),
+    PDequeRevIter(J_DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT, DequeIterBuiltins.SLOTS),
     POrderedDict(J_ORDERED_DICT, "_collections", Flags.PUBLIC_BASE_WDICT, DICT_M_FLAGS, OrderedDictBuiltins.SLOTS),
-    POrderedDictKeys("odict_keys", Flags.PRIVATE_DERIVED_WODICT, DICTKEYSVIEW_M_FLAGS),
-    POrderedDictValues("odict_values", Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS),
-    POrderedDictItems("odict_items", Flags.PRIVATE_DERIVED_WODICT, DICTITEMSVIEW_M_FLAGS),
-    POrderedDictIterator("odict_iterator", Flags.PRIVATE_DERIVED_WODICT),
+    POrderedDictKeys("odict_keys", Flags.PRIVATE_DERIVED_WODICT, DICTKEYSVIEW_M_FLAGS, OrderedDictKeysBuiltins.SLOTS),
+    POrderedDictValues("odict_values", Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS, OrderedDictValuesBuiltins.SLOTS),
+    POrderedDictItems("odict_items", Flags.PRIVATE_DERIVED_WODICT, DICTITEMSVIEW_M_FLAGS, OrderedDictItemsBuiltins.SLOTS),
+    POrderedDictIterator("odict_iterator", Flags.PRIVATE_DERIVED_WODICT, OrderedDictIteratorBuiltins.SLOTS),
     PComplex("complex", J_BUILTINS, COMPLEX_M_FLAGS, ComplexBuiltins.SLOTS),
     PDict("dict", J_BUILTINS, DICT_M_FLAGS, DictBuiltins.SLOTS),
-    PDictItemIterator(J_DICT_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictReverseItemIterator(J_DICT_REVERSE_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictItemIterator(J_DICT_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
+    PDictReverseItemIterator(J_DICT_REVERSE_ITEMITERATOR, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
     PDictItemsView(J_DICT_ITEMS, Flags.PRIVATE_DERIVED_WODICT, DICTITEMSVIEW_M_FLAGS, DictViewBuiltins.SLOTS),
-    PDictKeyIterator(J_DICT_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictReverseKeyIterator(J_DICT_REVERSE_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictKeyIterator(J_DICT_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
+    PDictReverseKeyIterator(J_DICT_REVERSE_KEYITERATOR, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
     PDictKeysView(J_DICT_KEYS, Flags.PRIVATE_DERIVED_WODICT, DICTKEYSVIEW_M_FLAGS, DictViewBuiltins.SLOTS),
-    PDictValueIterator(J_DICT_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
-    PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT),
+    PDictValueIterator(J_DICT_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
+    PDictReverseValueIterator(J_DICT_REVERSE_VALUEITERATOR, Flags.PRIVATE_DERIVED_WODICT, IteratorBuiltins.SLOTS),
     PDictValuesView(J_DICT_VALUES, Flags.PRIVATE_DERIVED_WODICT, DICTVALUESVIEW_M_FLAGS, DictValuesBuiltins.SLOTS),
     PEllipsis("ellipsis", Flags.PRIVATE_DERIVED_WODICT),
-    PEnumerate("enumerate", J_BUILTINS),
-    PMap("map", J_BUILTINS),
+    PEnumerate("enumerate", J_BUILTINS, EnumerateBuiltins.SLOTS),
+    PMap("map", J_BUILTINS, MapBuiltins.SLOTS),
     PFloat("float", J_BUILTINS, FLOAT_M_FLAGS, FloatBuiltins.SLOTS),
     PFrame("frame", Flags.PRIVATE_DERIVED_WODICT),
     PFrozenSet("frozenset", J_BUILTINS, FROZENSET_M_FLAGS, BaseSetBuiltins.SLOTS),
     PFunction("function", Flags.PRIVATE_DERIVED_WDICT, FunctionBuiltins.SLOTS),
-    PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT, GENERATOR_M_FLAGS),
+    PGenerator("generator", Flags.PRIVATE_DERIVED_WODICT, GENERATOR_M_FLAGS, GeneratorBuiltins.SLOTS),
     PCoroutine("coroutine", Flags.PRIVATE_DERIVED_WODICT, COROUTINE_M_FLAGS),
-    PCoroutineWrapper("coroutine_wrapper", Flags.PRIVATE_DERIVED_WODICT),
+    PCoroutineWrapper("coroutine_wrapper", Flags.PRIVATE_DERIVED_WODICT, CoroutineWrapperBuiltins.SLOTS),
     PAsyncGenerator("async_generator", Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_M_FLAGS),
     PInt("int", J_BUILTINS, INT_M_FLAGS, IntBuiltins.SLOTS),
     PList("list", J_BUILTINS, LIST_M_FLAGS, ListBuiltins.SLOTS),
     PMappingproxy("mappingproxy", Flags.PRIVATE_DERIVED_WODICT, MAPPINGPROXY_M_FLAGS, MappingproxyBuiltins.SLOTS),
     PMemoryView("memoryview", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, MEMORYVIEW_M_FLAGS, MemoryViewBuiltins.SLOTS),
-    PAsyncGenASend("async_generator_asend", Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ASEND_M_FLAGS),
-    PAsyncGenAThrow("async_generator_athrow", Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ATHROW_M_FLAGS),
+    PAsyncGenASend("async_generator_asend", Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ASEND_M_FLAGS, AsyncGenSendBuiltins.SLOTS),
+    PAsyncGenAThrow("async_generator_athrow", Flags.PRIVATE_DERIVED_WODICT, ASYNC_GENERATOR_ATHROW_M_FLAGS, AsyncGenThrowBuiltins.SLOTS),
     PAsyncGenAWrappedValue("async_generator_wrapped_value", Flags.PRIVATE_DERIVED_WODICT),
     PMethod("method", Flags.PRIVATE_DERIVED_WODICT, MethodBuiltins.SLOTS),
     PMMap("mmap", "mmap", MMAP_M_FLAGS, MMapBuiltins.SLOTS),
@@ -262,8 +308,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PRandom("Random", "_random"),
     PRange("range", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT, RANGE_M_FLAGS, RangeBuiltins.SLOTS),
     PReferenceType("ReferenceType", "_weakref"),
-    PSentinelIterator("callable_iterator", Flags.PRIVATE_DERIVED_WODICT),
-    PReverseIterator("reversed", J_BUILTINS),
+    PSentinelIterator("callable_iterator", Flags.PRIVATE_DERIVED_WODICT, SentinelIteratorBuiltins.SLOTS),
+    PReverseIterator("reversed", J_BUILTINS, ReversedBuiltins.SLOTS),
     PSet("set", J_BUILTINS, SET_M_FLAGS, TpSlots.merge(BaseSetBuiltins.SLOTS, SetBuiltins.SLOTS)),
     PSlice("slice", J_BUILTINS),
     PString("str", J_BUILTINS, STRING_M_FLAGS, StringBuiltins.SLOTS),
@@ -276,9 +322,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Super("super", J_BUILTINS, SuperBuiltins.SLOTS),
     PCode("code", Flags.PRIVATE_DERIVED_WODICT),
     PGenericAlias("GenericAlias", J_TYPES, Flags.PUBLIC_BASE_WODICT, GENERIC_ALIAS_M_FLAGS, GenericAliasBuiltins.SLOTS),
-    PGenericAliasIterator("generic_alias_iterator", Flags.PRIVATE_DERIVED_WODICT),
+    PGenericAliasIterator("generic_alias_iterator", Flags.PRIVATE_DERIVED_WODICT, GenericAliasIteratorBuiltins.SLOTS),
     PUnionType("UnionType", J_TYPES, Flags.PUBLIC_DERIVED_WODICT, UNION_TYPE_M_FLAGS, UnionTypeBuiltins.SLOTS),
-    PZip("zip", J_BUILTINS),
+    PZip("zip", J_BUILTINS, PZipBuiltins.SLOTS),
     PThread("start_new_thread", J__THREAD),
     PThreadLocal("_local", J__THREAD, ThreadLocalBuiltins.SLOTS),
     PLock("LockType", J__THREAD),
@@ -289,11 +335,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStaticmethod("staticmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT, StaticmethodBuiltins.SLOTS),
     PClassmethod("classmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT, ClassmethodBuiltins.SLOTS),
     PInstancemethod("instancemethod", Flags.PUBLIC_BASE_WDICT, InstancemethodBuiltins.SLOTS),
-    PScandirIterator("ScandirIterator", J_POSIX, Flags.PRIVATE_DERIVED_WODICT),
+    PScandirIterator("ScandirIterator", J_POSIX, Flags.PRIVATE_DERIVED_WODICT, ScandirIteratorBuiltins.SLOTS),
     PDirEntry("DirEntry", J_POSIX, Flags.PUBLIC_DERIVED_WODICT),
     LsprofProfiler("Profiler", "_lsprof"),
     PStruct("Struct", J__STRUCT),
-    PStructUnpackIterator("unpack_iterator", J__STRUCT),
+    PStructUnpackIterator("unpack_iterator", J__STRUCT, StructUnpackIteratorBuiltins.SLOTS),
     Pickler("Pickler", "_pickle"),
     PicklerMemoProxy("PicklerMemoProxy", "_pickle"),
     UnpicklerMemoProxy("UnpicklerMemoProxy", "_pickle"),
@@ -307,7 +353,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ForeignAbstractClass("ForeignAbstractClass", J_POLYGLOT, ForeignObject, Flags.PUBLIC_BASE_WDICT),
     ForeignExecutable("ForeignExecutable", J_POLYGLOT, ForeignObject, Flags.PUBLIC_BASE_WDICT),
     ForeignInstantiable("ForeignInstantiable", J_POLYGLOT, ForeignObject, Flags.PUBLIC_BASE_WDICT),
-    ForeignIterable("ForeignIterable", J_POLYGLOT, ForeignObject, Flags.PUBLIC_BASE_WDICT),
+    ForeignIterable("ForeignIterable", J_POLYGLOT, ForeignObject, Flags.PUBLIC_BASE_WDICT, ForeignIterableBuiltins.SLOTS),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
@@ -322,19 +368,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ZlibDecompress("Decompress", "zlib"),
 
     // io
-    PIOBase("_IOBase", "_io", Flags.PUBLIC_BASE_WDICT),
-    PRawIOBase("_RawIOBase", "_io"),
-    PTextIOBase("_TextIOBase", "_io"),
-    PBufferedIOBase("_BufferedIOBase", "_io"),
-    PBufferedReader("BufferedReader", "_io", Flags.PUBLIC_BASE_WDICT),
+    PIOBase("_IOBase", "_io", Flags.PUBLIC_BASE_WDICT, IOBaseBuiltins.SLOTS),
+    PRawIOBase("_RawIOBase", "_io", IOBaseBuiltins.SLOTS),
+    PTextIOBase("_TextIOBase", "_io", IOBaseBuiltins.SLOTS),
+    PBufferedIOBase("_BufferedIOBase", "_io", IOBaseBuiltins.SLOTS),
+    PBufferedReader("BufferedReader", "_io", Flags.PUBLIC_BASE_WDICT, BufferedReaderMixinBuiltins.SLOTS),
     PBufferedWriter("BufferedWriter", "_io", Flags.PUBLIC_BASE_WDICT),
     PBufferedRWPair("BufferedRWPair", "_io", Flags.PUBLIC_BASE_WDICT),
-    PBufferedRandom("BufferedRandom", "_io", Flags.PUBLIC_BASE_WDICT),
+    PBufferedRandom("BufferedRandom", "_io", Flags.PUBLIC_BASE_WDICT, BufferedReaderMixinBuiltins.SLOTS),
     PFileIO("FileIO", "_io", Flags.PUBLIC_BASE_WDICT),
-    PTextIOWrapper("TextIOWrapper", "_io", Flags.PUBLIC_BASE_WDICT),
+    PTextIOWrapper("TextIOWrapper", "_io", Flags.PUBLIC_BASE_WDICT, TextIOWrapperBuiltins.SLOTS),
     PIncrementalNewlineDecoder("IncrementalNewlineDecoder", "_io", Flags.PUBLIC_BASE_WODICT),
-    PStringIO("StringIO", "_io", Flags.PUBLIC_BASE_WDICT),
-    PBytesIO("BytesIO", "_io", Flags.PUBLIC_BASE_WDICT),
+    PStringIO("StringIO", "_io", Flags.PUBLIC_BASE_WDICT, StringIOBuiltins.SLOTS),
+    PBytesIO("BytesIO", "_io", Flags.PUBLIC_BASE_WDICT, BytesIOBuiltins.SLOTS),
     PBytesIOBuf("_BytesIOBuffer", "_io", Flags.PRIVATE_BASE_WODICT),
 
     PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT, TUPLE_M_FLAGS),
@@ -361,27 +407,27 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PMemoryBIO("MemoryBIO", J__SSL),
 
     // itertools
-    PTee("_tee", "itertools", Flags.PUBLIC_DERIVED_WODICT),
+    PTee("_tee", "itertools", Flags.PUBLIC_DERIVED_WODICT, TeeBuiltins.SLOTS),
     PTeeDataObject("_tee_dataobject", "itertools", Flags.PUBLIC_DERIVED_WODICT),
-    PAccumulate("accumulate", "itertools"),
-    PCombinations("combinations", "itertools"),
-    PCombinationsWithReplacement("combinations_with_replacement", "itertools"),
-    PCompress("compress", "itertools"),
-    PCycle("cycle", "itertools"),
-    PDropwhile("dropwhile", "itertools"),
-    PFilterfalse("filterfalse", "itertools"),
-    PGroupBy("groupby", "itertools"),
-    PGrouper("grouper", "itertools", Flags.PUBLIC_DERIVED_WODICT),
-    PPairwise("pairwise", "itertools"),
-    PPermutations("permutations", "itertools"),
-    PProduct("product", "itertools"),
-    PRepeat("repeat", "itertools"),
-    PChain("chain", "itertools"),
-    PCount("count", "itertools"),
-    PIslice("islice", "itertools"),
-    PStarmap("starmap", "itertools"),
-    PTakewhile("takewhile", "itertools"),
-    PZipLongest("zip_longest", "itertools"),
+    PAccumulate("accumulate", "itertools", AccumulateBuiltins.SLOTS),
+    PCombinations("combinations", "itertools", CombinationsBuiltins.SLOTS),
+    PCombinationsWithReplacement("combinations_with_replacement", "itertools", CombinationsBuiltins.SLOTS),
+    PCompress("compress", "itertools", CompressBuiltins.SLOTS),
+    PCycle("cycle", "itertools", CycleBuiltins.SLOTS),
+    PDropwhile("dropwhile", "itertools", DropwhileBuiltins.SLOTS),
+    PFilterfalse("filterfalse", "itertools", FilterfalseBuiltins.SLOTS),
+    PGroupBy("groupby", "itertools", GroupByBuiltins.SLOTS),
+    PGrouper("grouper", "itertools", Flags.PUBLIC_DERIVED_WODICT, GrouperBuiltins.SLOTS),
+    PPairwise("pairwise", "itertools", PairwiseBuiltins.SLOTS),
+    PPermutations("permutations", "itertools", PermutationsBuiltins.SLOTS),
+    PProduct("product", "itertools", ProductBuiltins.SLOTS),
+    PRepeat("repeat", "itertools", RepeatBuiltins.SLOTS),
+    PChain("chain", "itertools", ChainBuiltins.SLOTS),
+    PCount("count", "itertools", CountBuiltins.SLOTS),
+    PIslice("islice", "itertools", IsliceBuiltins.SLOTS),
+    PStarmap("starmap", "itertools", StarmapBuiltins.SLOTS),
+    PTakewhile("takewhile", "itertools", TakewhileBuiltins.SLOTS),
+    PZipLongest("zip_longest", "itertools", ZipLongestBuiltins.SLOTS),
 
     // json
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
@@ -389,7 +435,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // csv
     CSVDialect("Dialect", "_csv", Flags.PUBLIC_BASE_WODICT),
-    CSVReader("Reader", "_csv", Flags.PUBLIC_BASE_WODICT),
+    CSVReader("Reader", "_csv", Flags.PUBLIC_BASE_WODICT, CSVReaderBuiltins.SLOTS),
     CSVWriter("Writer", "_csv", Flags.PUBLIC_BASE_WODICT),
 
     // codecs
@@ -556,11 +602,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ContextVarsContext("Context", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, CONTEXT_M_FLAGS, ContextBuiltins.SLOTS),
     ContextVar("ContextVar", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
     // CPython uses separate keys, values, items python types for the iterators.
-    ContextIterator("context_iterator", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
+    ContextIterator("context_iterator", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT, ContextIteratorBuiltins.SLOTS),
 
     Capsule("PyCapsule"),
 
-    PTokenizerIter("TokenizerIter", "_tokenize"),
+    PTokenizerIter("TokenizerIter", "_tokenize", TokenizerIterBuiltins.SLOTS),
 
     // A marker for @Builtin that is not a class. Must always come last.
     nil("nil");
@@ -646,6 +692,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PythonBuiltinClassType(String name, String module, Flags flags, long methodsFlags, TpSlots slots) {
         this(name, module, module, flags, methodsFlags, slots);
+    }
+
+    PythonBuiltinClassType(String name, String module, PythonBuiltinClassType base, Flags flags, TpSlots slots) {
+        this(name, module, module, flags, slots);
+        this.base = base;
     }
 
     PythonBuiltinClassType(String name, String module, PythonBuiltinClassType base, Flags flags, long methodsFlags, TpSlots slots) {
@@ -815,7 +866,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         UnicodeDecodeError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
         UnicodeTranslateError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
         OSError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
-        PStructUnpackIterator.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Next, SpecialMethodSlot.Iter, SpecialMethodSlot.LengthHint};
+        PStructUnpackIterator.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.LengthHint};
 
         // These slots actually contain context independent values, but they are initialized in
         // StructSequence to artificial PBuiltinFunctions with artificial builtin node factories,

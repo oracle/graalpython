@@ -33,10 +33,9 @@ import org.junit.Test;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.lib.GetNextNode;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -67,20 +66,15 @@ public class PRangeTests {
             PythonLanguage language = PythonLanguage.get(null);
             PRange range = PFactory.createIntRange(language, 10);
             int index = 0;
-            TestRoot testRoot = new TestRoot(language);
             Object iter = PyObjectGetIter.executeUncached(range);
-            GetNextNode next = GetNextNode.create();
-            testRoot.doInsert(next);
-            IsBuiltinObjectProfile errorProfile = IsBuiltinObjectProfile.getUncached();
 
             while (true) {
-                try {
-                    int item = next.executeInt(null, iter);
-                    assertEquals(index, item);
-                } catch (PException e) {
-                    e.expectStopIteration(null, errorProfile);
+                Object next = PyIterNextNode.executeUncached(iter);
+                if (PyIterNextNode.isExhausted(next)) {
                     break;
                 }
+                int item = PGuards.expectInteger(next);
+                assertEquals(index, item);
                 index++;
             }
         } finally {
@@ -95,20 +89,15 @@ public class PRangeTests {
             PythonLanguage language = PythonLanguage.get(null);
             PRange range = PFactory.createIntRange(language, 0, 10, 2, 5);
             int index = 0;
-            TestRoot testRoot = new TestRoot(language);
             Object iter = PyObjectGetIter.executeUncached(range);
-            GetNextNode next = GetNextNode.create();
-            testRoot.doInsert(next);
-            IsBuiltinObjectProfile errorProfile = IsBuiltinObjectProfile.getUncached();
 
             while (true) {
-                try {
-                    int item = next.executeInt(null, iter);
-                    assertEquals(index, item);
-                } catch (PException e) {
-                    e.expectStopIteration(null, errorProfile);
+                Object next = PyIterNextNode.executeUncached(iter);
+                if (PyIterNextNode.isExhausted(next)) {
                     break;
                 }
+                int item = PGuards.expectInteger(next);
+                assertEquals(index, item);
                 index += 2;
             }
         } finally {

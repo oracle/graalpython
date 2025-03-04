@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
@@ -51,13 +49,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -81,12 +86,14 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDropwhile})
 public final class DropwhileBuiltins extends PythonBuiltins {
 
+    public static final TpSlots SLOTS = DropwhileBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DropwhileBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iter, isComplex = true)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -95,27 +102,34 @@ public final class DropwhileBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
+    @Slot(value = SlotKind.tp_iternext, isComplex = true)
     @GenerateNodeFactory
-    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+    public abstract static class NextNode extends TpIterNextBuiltin {
         @Specialization
         static Object next(VirtualFrame frame, PDropwhile self,
                         @Bind("this") Node inliningTarget,
-                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Cached InlinedBranchProfile doneDroppingProfile,
                         @Cached InlinedLoopConditionProfile loopProfile) {
-
-            while (loopProfile.profile(inliningTarget, !self.isDoneDropping())) {
-                Object n = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
-                if (!isTrue.execute(frame, callNode.execute(frame, self.getPredicate(), n))) {
+            Object iterable = self.getIterable();
+            TpSlot iterNext = getSlots.execute(inliningTarget, iterable).tp_iternext();
+            Object result = null;
+            do {
+                Object item = callIterNext.execute(frame, inliningTarget, iterNext, iterable);
+                if (self.isDoneDropping()) {
+                    result = item;
+                } else if (PyIterNextNode.isExhausted(item)) {
+                    result = iteratorExhausted();
+                } else if (!isTrue.execute(frame, callNode.execute(frame, self.getPredicate(), item))) {
                     doneDroppingProfile.enter(inliningTarget);
                     self.setDoneDropping(true);
-                    return n;
+                    result = item;
                 }
-            }
-            return nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
+            } while (loopProfile.profile(inliningTarget, result == null));
+            return result;
         }
     }
 

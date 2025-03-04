@@ -764,13 +764,11 @@ def CPyExtHeapType(name, bases=(object), code='', slots=None, **kwargs):
 
     {code}
 
-    PyType_Slot slots[] = {{
-        {slots}
-    }};
-
-    PyType_Spec spec = {{ "{name}", sizeof({name}Object), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots }};
-
     static PyObject* create(PyObject* unused, PyObject* bases) {{
+        PyType_Slot slots[] = {{
+            {slots}
+        }};
+        PyType_Spec spec = {{ "{name}", sizeof({name}Object), 0, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, slots }};
         {ready_code}
         PyObject* type = PyType_FromSpecWithBases(&spec, bases);
         if (type == NULL)
