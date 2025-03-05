@@ -1789,7 +1789,7 @@ def release_level(variant=None):
     return level
 
 
-def graalpy_ext(_, **kwargs):
+def graalpy_ext(*args, **kwargs):
     os = mx_subst.path_substitutions.substitute('<os>')
     arch = mx_subst.path_substitutions.substitute('<arch>')
     if arch == 'amd64':
@@ -1840,8 +1840,8 @@ mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
 mx_subst.path_substitutions.register_with_arg('release_level', release_level)
 mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
 
-mx_subst.path_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
-mx_subst.results_substitutions.register_with_arg('graalpy_ext', graalpy_ext)
+mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
+mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 
 
 def update_import(name, suite_py, args):
