@@ -1961,7 +1961,7 @@ PyLong_FromString(const char *str, char **pend, int base)
     // is a small integer cache and if we're lucky we can just return from
     // that.
     // In base 2, up to 8 digits may be a small integer, in base 36 8 digits
-    // still fit in 64 bits
+    // still fit easily in 64 bits
     for (int i = 0; i < 8; i++) {
         char c = str[i];
         if (c == '\0') {
