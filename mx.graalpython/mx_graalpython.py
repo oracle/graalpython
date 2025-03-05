@@ -1726,9 +1726,12 @@ def _get_src_dir(projectname):
 
 
 def _get_output_root(projectname):
+    prefix, _, suffix = projectname.rpartition(":")
     for suite in mx.suites():
-        for p in suite.projects:
-            if p.name == projectname:
+        if prefix and suite.name != prefix:
+            continue
+        for p in itertools.chain(suite.projects, suite.dists):
+            if p.name == suffix:
                 return p.get_output_root()
     mx.abort("Could not find out dir for project %s" % projectname)
 
