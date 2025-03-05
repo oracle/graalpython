@@ -382,6 +382,17 @@ def punittest(ars, report=False):
     Pass --regex to further filter the junit and TSK tests. GraalPy tests are always run in two configurations:
     with language home on filesystem and with language home served from the Truffle resources.
     """
+    path = os.environ.get("PATH", "")
+    if mx.is_linux() and not shutil.which("patchelf"):
+        venv = Path(SUITE.get_output_root()).absolute() / "patchelf-venv"
+        path += os.pathsep + str(venv / "bin")
+        if not shutil.which("patchelf", path=path):
+            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building patchelf-venv with {sys.executable}... [patchelf not found on PATH]")
+            t0 = time.time()
+            subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
+            subprocess.check_call([str(venv / "bin" / "pip"), "install", "patchelf"])
+            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building patchelf-venv with {sys.executable}... [duration: {time.time() - t0}]")
+
     args = [] if ars is None else ars
     @dataclass
     class TestConfig:
@@ -426,7 +437,8 @@ def punittest(ars, report=False):
     for c in configs:
         mx.log(f"Python JUnit tests configuration: {c}")
         PythonMxUnittestConfig.useResources = c.useResources
-        mx_unittest.unittest(c.args, test_report_tags=({"task": f"punittest-{c.identifier}-{'w' if c.useResources else 'wo'}-resources"} if c.reportConfig else None))
+        with set_env(PATH=path):
+            mx_unittest.unittest(c.args, test_report_tags=({"task": f"punittest-{c.identifier}-{'w' if c.useResources else 'wo'}-resources"} if c.reportConfig else None))
 
     if skip_leak_tests:
         return
