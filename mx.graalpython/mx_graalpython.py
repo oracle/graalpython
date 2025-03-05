@@ -536,7 +536,7 @@ def find_eclipse():
                                                  for f in os.listdir(pardir)]:
         if os.path.basename(f) == "eclipse" and os.path.isdir(f):
             mx.log("Automatically choosing %s for Eclipse" % f)
-            eclipse_exe = os.path.join(f, "eclipse")
+            eclipse_exe = os.path.join(f, f"eclipse{'.exe' if mx.is_windows() else ''}")
             if os.path.exists(eclipse_exe):
                 os.environ["ECLIPSE_EXE"] = eclipse_exe
                 return
@@ -2101,6 +2101,9 @@ def python_style_checks(args):
 
 
 def python_checkcopyrights(args):
+    if mx.is_windows():
+        # skip, broken with crlf stuff
+        return
     # we wan't to ignore lib-python/3, because that's just crazy
     listfilename = tempfile.mktemp()
     with open(listfilename, "w") as listfile:
