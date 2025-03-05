@@ -2684,14 +2684,15 @@ class GraalpythonProject(mx.ArchivableProject):
 orig_clean = mx.command_function("clean")
 def python_clean(args):
     orig_clean(args)
-    count = 0
-    for path in os.walk(SUITE.dir):
-        for file in glob.iglob(os.path.join(path[0], '*.pyc')):
-            count += 1
-            os.remove(file)
+    if not args:
+        count = 0
+        for path in os.walk(SUITE.dir):
+            for file in glob.iglob(os.path.join(path[0], '*.pyc')):
+                count += 1
+                os.remove(file)
 
-    if count > 0:
-        print('Cleaning', count, "`*.pyc` files...")
+        if count > 0:
+            print('Cleaning', count, "`*.pyc` files...")
 
 def update_hpy_import_cmd(args):
     """Update our import of HPy sources."""
