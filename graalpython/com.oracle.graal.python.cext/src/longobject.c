@@ -1904,98 +1904,99 @@ long_from_binary_base(const char **str, int base, PyLongObject **res)
 PyObject *
 PyLong_FromString(const char *str, char **pend, int base)
 {
-    // GraalPy change: different implementation
-    int negative = 0, error_if_nonzero = 0;
+    int sign = 1, error_if_nonzero = 0;
+    const char *start, *orig_str = str;
+    PyObject *z = NULL;
+    PyObject *strobj;
+    Py_ssize_t slen;
+
     if ((base != 0 && base < 2) || base > 36) {
         PyErr_SetString(PyExc_ValueError,
                         "int() arg 2 must be >= 2 and <= 36");
         return NULL;
     }
-    while (*str != '\0' && Py_ISSPACE(Py_CHARMASK(*str))) {
+    while (*str != '\0' && Py_ISSPACE(*str)) {
         str++;
     }
-    const char *orig_str = str;
     if (*str == '+') {
         ++str;
-    } else if (*str == '-') {
+    }
+    else if (*str == '-') {
         ++str;
-        negative = 1;
+        sign = -1;
     }
     if (base == 0) {
         if (str[0] != '0') {
             base = 10;
-        } else if (str[1] == 'x' || str[1] == 'X') {
+        }
+        else if (str[1] == 'x' || str[1] == 'X') {
             base = 16;
-            str += 2;
-        } else if (str[1] == 'o' || str[1] == 'O') {
+        }
+        else if (str[1] == 'o' || str[1] == 'O') {
             base = 8;
-            str += 2;
-        } else if (str[1] == 'b' || str[1] == 'B') {
+        }
+        else if (str[1] == 'b' || str[1] == 'B') {
             base = 2;
-            str += 2;
-        } else {
+        }
+        else {
             /* "old" (C-style) octal literal, now invalid.
                it might still be zero though */
             error_if_nonzero = 1;
             base = 10;
         }
     }
-
-    char* numberStart = str;
-    int overflow = 0;
-    int digits = 0;
-    char prev;
-    long value;
-    while (1) {
+    if (str[0] == '0' &&
+        ((base == 16 && (str[1] == 'x' || str[1] == 'X')) ||
+         (base == 8  && (str[1] == 'o' || str[1] == 'O')) ||
+         (base == 2  && (str[1] == 'b' || str[1] == 'B')))) {
+        str += 2;
+        /* One underscore allowed here. */
         if (*str == '_') {
-            if (prev == '_') {
-                goto error;
-            }
-        } else {
-            unsigned char digit = _PyLong_DigitValue[Py_CHARMASK(*str)];
-            if (digit >= base) {
+            ++str;
+        }
+    }
+
+    // GraalPy change: remove the CPython code below and upcall quickly. Only
+    // optimization we do is to check if this may be a small-ish integer. There
+    // is a small integer cache and if we're lucky we can just return from
+    // that.
+    // In base 2, up to 8 digits may be a small integer, in base 36 8 digits
+    // still fit in 64 bits
+    for (int i = 0; i < 8; i++) {
+        char c = str[i];
+        if (c == '\0') {
+            int errsv = errno;
+            char *endptr;
+            long long result = strtoll(str, &endptr, base);
+            if (error_if_nonzero && result != 0) {
+                // let upcall handle the error reporting
+                base = 0;
                 break;
             }
-            long new_value = value * base - digit;
-            if (new_value > value) {
-                // overflow
-                overflow = 1;
+            // POSIX.1-2008: strtoll must not set errno on success, and set
+            // *endptr to str when no conversion is performed
+            if (errno == 0 && str != endptr) {
+                while (*endptr && Py_ISSPACE(*endptr)) {
+                    endptr++;
+                }
+                if (*endptr == '\0') {
+                    z = PyLong_FromLongLong(sign < 0 ? -result : result);
+                }
             }
-            value = new_value;
+            errno = errsv;
+            break;
+        } else if (!(isascii(c) && isalnum(c))) {
+            // cannot be a base 2 to 36 digit
+            break;
         }
-        prev = *str;
-        ++str;
-        ++digits;
     }
-
-    if (prev == '_') {
-        /* Trailing underscore not allowed. */
-        goto error;
-    }
-    while (*str != '\0' && Py_ISSPACE(Py_CHARMASK(*str))) {
-        str++;
-    }
-    if (pend != NULL) {
-        *pend = str;
-    }
-    if (value == LONG_MIN && !negative) {
-        overflow = 1;
-    }
-
-    if (overflow || (error_if_nonzero && value != 0)) {
-        if (error_if_nonzero) {
-            base = 0;
+    if (!z) {
+        z = GraalPyTruffleLong_FromString(orig_str, base);
+        if (z) {
+            // TODO: we should probably set the **pend out argument
         }
-        return GraalPyTruffleLong_FromString(orig_str, base);
-    } else {
-        return PyLong_FromLong(negative ? value : -value);
     }
-
- error:
-    PyErr_Format(PyExc_ValueError,
-                 "invalid literal for int() with base %d: %.200R",
-                 base, PyUnicode_FromString(str));
-    return NULL;
+    return z;
 }
 
 #if 0 // GraalPy change
