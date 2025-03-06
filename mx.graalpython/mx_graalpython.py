@@ -71,7 +71,8 @@ from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
 from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=unused-import
 
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JAVA_DRIVER_BENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JAVA_DRIVER_BENCHMARKS, \
+    HEAP_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
     GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
@@ -82,7 +83,8 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA, PythonJMHDistMxBenchmarkSuite
+    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_PANAMA, PythonJMHDistMxBenchmarkSuite, \
+    PythonHeapBenchmarkSuite
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -2314,6 +2316,8 @@ def _register_bench_suites(namespace):
     for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
     mx_benchmark.add_bm_suite(PythonJMHDistMxBenchmarkSuite())
+    for py_bench_suite in PythonHeapBenchmarkSuite.get_benchmark_suites(HEAP_BENCHMARKS):
+        mx_benchmark.add_bm_suite(py_bench_suite)
 
 
 class CharsetFilteringPariticpant:

@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2025, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -39,6 +39,7 @@ PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
 PATH_WARMUP = os.path.join(_BASE_PATH, 'warmup')
 PATH_INTEROP = os.path.join(_BASE_PATH, 'host_interop')
 PATH_JAVA_EMBEDDING = os.path.join(_BASE_PATH, 'java-embedding')
+PATH_HEAP = os.path.join(_BASE_PATH, 'heap')
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -330,4 +331,12 @@ JAVA_DRIVER_BENCHMARKS = {
 
 WARMUP_BENCHMARKS = {
     "python-warmup": [PATH_WARMUP, WARMUP_BENCHMARKS],
+}
+
+HEAP_BENCHMARKS = {
+    "heap": [PATH_HEAP, {
+        "post-startup": [],
+        "import-a-lot": [],
+        "allocate-objects": [],
+    }]
 }
