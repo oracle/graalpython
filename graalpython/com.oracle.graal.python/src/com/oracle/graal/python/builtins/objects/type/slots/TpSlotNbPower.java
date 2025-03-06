@@ -107,7 +107,7 @@ public final class TpSlotNbPower {
 
         @Override
         public void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createBuiltinCallTarget(language, SIGNATURE, getNodeFactory(), J___POW__);
+            RootCallTarget callTarget = createSlotCallTarget(language, SIGNATURE, getNodeFactory(), J___POW__);
             language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
         }
 
