@@ -67,7 +67,7 @@ import org.graalvm.python.embedding.tools.vfs.VFSUtils;
 public abstract class InstallPackagesTask extends AbstractPackagesTask {
     @TaskAction
     public void exec() throws GradleException {
-        Path venvDirectory = getVenvDirectory();
+        Path venvDirectory = getVenvDirectory().get().getAsFile().toPath();
         try {
             VFSUtils.createVenv(venvDirectory, getPackages().get(), getLockFilePath(), PACKAGES_CHANGED_ERROR, MISSING_LOCK_FILE_WARNING, createLauncher(),  getPolyglotVersion().get(), getLog());
         } catch (IOException e) {
