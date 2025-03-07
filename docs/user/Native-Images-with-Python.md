@@ -1,11 +1,3 @@
----
-layout: docs
-toc_group: python
-link_title: Native Java-Python Applications
-permalink: /reference-manual/python/native-applications/
-redirect_from: /reference-manual/python/native-image/
----
-
 # Native Executables with Python
 
 GraalPy supports GraalVM Native Image to generate native binaries of Java applications that use GraalPy.

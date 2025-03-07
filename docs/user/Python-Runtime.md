@@ -1,12 +1,4 @@
----
-layout: docs
-toc_group: python
-link_title: Python Runtime
-permalink: /reference-manual/python/Python-Runtime/
-redirect_from: /reference-manual/python/Packages/
----
-
-# GraalPy as a CPython Replacement
+# Testing Python Applications and Packages on GraalPy
 
 ## Choosing the GraalPy Runtime
 
@@ -16,7 +8,7 @@ GraalPy is distributed as an ahead-of-time compiled native executable, compact i
 
 GraalPy provides the following capabilities:
 
-* Replacement for CPython. Use GraalPy as a replacement for CPython. It is the most compatible, since it most closely resembles the structure of CPython installation packages.
+* CPython-compatible distribution. This is the most compatible option to test Python code on GraalPy, since it most closely resembles the structure of CPython distributions.
 * Unique deployment mode for Python applications. Compile a Python application on GraalPy to [a single native binary](Python-Standalone-Applications.md) that embeds all needed resources.
 * Access to GraalVM's language ecosystems and tools. GraalPy can run many standard Python tools as well as tools from the GraalVM ecosystem.
 

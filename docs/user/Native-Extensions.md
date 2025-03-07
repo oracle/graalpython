@@ -1,17 +1,10 @@
----
-layout: docs-experimental
-toc_group: python
-link_title: Native Extensions Support
-permalink: /reference-manual/python/Native-Extensions/
----
-
 # Native Extensions Support
 
 CPython provides a [native extensions API](https://docs.python.org/3/c-api/index.html) for writing Python extensions in C/C++.
 GraalPy provides experimental support for this API, which allows many packages like NumPy and PyTorch to work well for many use cases.
 The support extends only to the API, not the binary interface (ABI), so extensions built for CPython are not binary compatible with GraalPy.
 Packages that use the native API must be built and installed with GraalPy, and the prebuilt wheels for CPython from pypi.org cannot be used.
-For best results, it is crucial that you only use the `pip` command that comes preinstalled in GraalPy virtualenvs to install packages.
+For best results, it is crucial that you only use the `pip` command that comes preinstalled in GraalPy virtual environments to install packages.
 The version of `pip` shipped with GraalPy applies additional patches to packages upon installation to fix known compatibility issues and it is preconfigured to use an additional repository from graalvm.org where we publish a selection of prebuilt wheels for GraalPy.
 Please do not update `pip` or use alternative tools such as `uv`.
 
@@ -51,8 +44,8 @@ You can also manually trigger the detector with the Python `gc.collect()` call.
 
 Using C extensions in multiple contexts is only possible on Linux for now, and many C extensions still have issues in this mode.
 You should test your applications thoroughly if you want to use this feature.
-There are many possiblities for native code to sidestep the library isolation through other process-wide global state, corrupting the state and leading to incorrect results or crashing.
-The implementation also relies on a venv to work, even if you are not using external packages.
+There are many possibilities for native code to sidestep the library isolation through other process-wide global state, corrupting the state and leading to incorrect results or crashing.
+The implementation also relies on `venv` to work, even if you are not using external packages.
 
 To support creating multiple GraalPy contexts that access native modules within the same JVM or Native Image, we need to isolate them from each other.
 The current strategy for this is to copy the libraries and modify them such that the dynamic library loader of the operating system will isolate them for us.
